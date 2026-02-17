@@ -1,541 +1,799 @@
 /**
- * DOCUMENT CENTER — UNIVERSAL DOCUMENT MANAGEMENT
- * Upload any document → AI OCR reads, classifies & labels it automatically
- * Supports all file types: PDF, DOC, images, spreadsheets
+ * DOCUMENT CENTER — Smart Compliance-Aware Document Management
+ * Role-based requirements, expiration tracking, compliance scoring,
+ * document upload with versioning, admin verification workflow.
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
-  FileText, Search, Upload, Download, Trash2, Eye, X, Plus,
-  CheckCircle, Clock, AlertTriangle, FolderOpen, PenTool,
-  Receipt, FileSignature, ScrollText, Handshake, ClipboardList,
-  ScanLine, RotateCcw, Save, Eraser, Loader2, Brain, Tag
+  FileText, Search, Upload, Download, Trash2, Eye, X,
+  CheckCircle, Clock, AlertTriangle, Shield, ShieldCheck,
+  XCircle, ArrowUpCircle, RefreshCw, ExternalLink,
+  ChevronDown, ChevronRight, Filter, Loader2,
+  FolderOpen, CreditCard, Truck, Users, Scale, Briefcase,
+  GraduationCap, ScrollText, MapPin, Building2, Lock
 } from "lucide-react";
-import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-type DocTab = "all" | "compliance" | "financial" | "contracts" | "operations" | "other";
+// ── Types ──
+type DocTab = "all" | "missing" | "expiring" | "pending" | "rejected" | "verified";
 
-// ── Gradient Ink Signature Pad ──
-function SignaturePad({ onSave, onClose }: { onSave: (d: string) => void; onClose: () => void }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [drawing, setDrawing] = useState(false);
-  const [hasDrawn, setHasDrawn] = useState(false);
-  const strokes = useRef<{ x: number; y: number }[][]>([]);
-  const currentStroke = useRef<{ x: number; y: number }[]>([]);
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  CDL: <CreditCard className="w-4 h-4" />,
+  DOT: <Shield className="w-4 h-4" />,
+  HAZ: <AlertTriangle className="w-4 h-4" />,
+  INS: <ShieldCheck className="w-4 h-4" />,
+  TAX: <Scale className="w-4 h-4" />,
+  EMP: <Users className="w-4 h-4" />,
+  VEH: <Truck className="w-4 h-4" />,
+  SAF: <GraduationCap className="w-4 h-4" />,
+  OPS: <FolderOpen className="w-4 h-4" />,
+  COM: <Building2 className="w-4 h-4" />,
+  LEG: <ScrollText className="w-4 h-4" />,
+  STATE: <MapPin className="w-4 h-4" />,
+  AUT: <Briefcase className="w-4 h-4" />,
+};
 
-  const drawBaseline = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
-    ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(40, h - 50); ctx.lineTo(w - 40, h - 50); ctx.stroke();
-    ctx.font = "12px Inter, sans-serif"; ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.fillText("Sign here", 40, h - 30);
+const CATEGORY_LABELS: Record<string, string> = {
+  CDL: "Driver License", DOT: "DOT/FMCSA", HAZ: "Hazmat", INS: "Insurance",
+  TAX: "Tax Forms", EMP: "Employment", VEH: "Vehicle", SAF: "Safety",
+  OPS: "Operations", COM: "Compliance", LEG: "Legal", STATE: "State", AUT: "Authority",
+};
+
+function statusBadge(status: string, isLight: boolean) {
+  const cfg: Record<string, { bg: string; text: string; label: string }> = {
+    VERIFIED: { bg: "bg-green-500/15", text: "text-green-400", label: "Verified" },
+    PENDING_REVIEW: { bg: "bg-blue-500/15", text: "text-blue-400", label: "Pending Review" },
+    NOT_UPLOADED: { bg: "bg-slate-500/15", text: "text-slate-400", label: "Not Uploaded" },
+    EXPIRING_SOON: { bg: "bg-yellow-500/15", text: "text-yellow-400", label: "Expiring Soon" },
+    EXPIRED: { bg: "bg-red-500/15", text: "text-red-400", label: "Expired" },
+    REJECTED: { bg: "bg-red-500/15", text: "text-red-400", label: "Rejected" },
+    UPLOADING: { bg: "bg-blue-500/15", text: "text-blue-400", label: "Uploading..." },
+    WAIVED: { bg: "bg-slate-500/15", text: "text-slate-400", label: "Waived" },
+    NOT_APPLICABLE: { bg: "bg-slate-500/15", text: "text-slate-400", label: "N/A" },
   };
+  const c = cfg[status] || cfg.NOT_UPLOADED;
+  return <Badge className={cn("text-[10px] font-semibold border-0", c.bg, c.text)}>{c.label}</Badge>;
+}
 
-  const lerpColor = (t: number): string => {
-    // 0-25% blue, 25-35% blue→violet, 35-65% violet→fuchsia, 65-100% fuchsia→pink
-    const colors = [
-      { r: 37, g: 99, b: 235 },   // #2563EB blue
-      { r: 124, g: 58, b: 237 },  // #7C3AED violet
-      { r: 192, g: 38, b: 211 },  // #C026D3 fuchsia
-      { r: 224, g: 64, b: 160 },  // #E040A0 pink
-    ];
-    let c0, c1, frac;
-    if (t <= 0.25) { return `rgb(${colors[0].r},${colors[0].g},${colors[0].b})`; }
-    else if (t <= 0.35) { c0 = colors[0]; c1 = colors[1]; frac = (t - 0.25) / 0.10; }
-    else if (t <= 0.65) { c0 = colors[1]; c1 = colors[2]; frac = (t - 0.35) / 0.30; }
-    else { c0 = colors[2]; c1 = colors[3]; frac = (t - 0.65) / 0.35; }
-    frac = Math.max(0, Math.min(1, frac));
-    const r = Math.round(c0.r + (c1.r - c0.r) * frac);
-    const g = Math.round(c0.g + (c1.g - c0.g) * frac);
-    const b = Math.round(c0.b + (c1.b - c0.b) * frac);
-    return `rgb(${r},${g},${b})`;
+function severityBadge(severity: string) {
+  const cfg: Record<string, { bg: string; text: string }> = {
+    CRITICAL: { bg: "bg-red-500/15", text: "text-red-400" },
+    HIGH: { bg: "bg-orange-500/15", text: "text-orange-400" },
+    MEDIUM: { bg: "bg-yellow-500/15", text: "text-yellow-400" },
+    LOW: { bg: "bg-blue-500/15", text: "text-blue-400" },
   };
+  const c = cfg[severity] || cfg.MEDIUM;
+  return <Badge className={cn("text-[10px] font-bold border-0 uppercase", c.bg, c.text)}>{severity}</Badge>;
+}
 
-  const redrawAll = () => {
-    const c = canvasRef.current; if (!c) return;
-    const ctx = c.getContext("2d"); if (!ctx) return;
-    const w = c.offsetWidth, h = c.offsetHeight;
-    ctx.clearRect(0, 0, c.width, c.height);
-    drawBaseline(ctx, w, h);
-
-    const all = [...strokes.current, ...(currentStroke.current.length > 0 ? [currentStroke.current] : [])];
-    if (all.length === 0) return;
-
-    // Compute cumulative distance for every point across all strokes
-    const segments: { p0: { x: number; y: number }; p1: { x: number; y: number }; distStart: number; distEnd: number }[] = [];
-    let totalDist = 0;
-    for (const stroke of all) {
-      for (let i = 1; i < stroke.length; i++) {
-        const dx = stroke[i].x - stroke[i - 1].x, dy = stroke[i].y - stroke[i - 1].y;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        segments.push({ p0: stroke[i - 1], p1: stroke[i], distStart: totalDist, distEnd: totalDist + d });
-        totalDist += d;
-      }
-    }
-    if (totalDist === 0) return;
-
-    // Draw each segment with the correct color based on its position along the total line
-    for (const seg of segments) {
-      const t = (seg.distStart + seg.distEnd) / 2 / totalDist;
-      const color = lerpColor(t);
-      // Glow
-      ctx.save(); ctx.shadowColor = color; ctx.shadowBlur = 10;
-      ctx.strokeStyle = color.replace("rgb", "rgba").replace(")", ",0.18)"); ctx.lineWidth = 6; ctx.lineCap = "round"; ctx.lineJoin = "round";
-      ctx.beginPath(); ctx.moveTo(seg.p0.x, seg.p0.y); ctx.lineTo(seg.p1.x, seg.p1.y); ctx.stroke();
-      ctx.restore();
-      // Main stroke
-      ctx.save(); ctx.shadowColor = color; ctx.shadowBlur = 3;
-      ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.lineJoin = "round";
-      ctx.beginPath(); ctx.moveTo(seg.p0.x, seg.p0.y); ctx.lineTo(seg.p1.x, seg.p1.y); ctx.stroke();
-      ctx.restore();
-    }
-  };
-
-  useEffect(() => {
-    const c = canvasRef.current; if (!c) return;
-    const ctx = c.getContext("2d"); if (!ctx) return;
-    c.width = c.offsetWidth * 2; c.height = c.offsetHeight * 2; ctx.scale(2, 2);
-    drawBaseline(ctx, c.offsetWidth, c.offsetHeight);
-  }, []);
-
-  const pos = (e: React.MouseEvent | React.TouchEvent) => {
-    const c = canvasRef.current!;
-    const r = c.getBoundingClientRect();
-    const cx = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const cy = "touches" in e ? e.touches[0].clientY : e.clientY;
-    // Scale from CSS display size to canvas logical coordinate space
-    const scaleX = c.offsetWidth / r.width;
-    const scaleY = c.offsetHeight / r.height;
-    return { x: (cx - r.left) * scaleX, y: (cy - r.top) * scaleY };
-  };
-  const start = (e: React.MouseEvent | React.TouchEvent) => { setDrawing(true); setHasDrawn(true); currentStroke.current = [pos(e)]; };
-  const move = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!drawing) return;
-    currentStroke.current.push(pos(e));
-    redrawAll();
-  };
-  const stop = () => {
-    if (currentStroke.current.length > 1) strokes.current.push([...currentStroke.current]);
-    currentStroke.current = [];
-    setDrawing(false);
-    redrawAll();
-  };
-  const clear = () => {
-    strokes.current = []; currentStroke.current = [];
-    const c = canvasRef.current; if (!c) return;
-    const ctx = c.getContext("2d"); if (!ctx) return;
-    ctx.clearRect(0, 0, c.width, c.height);
-    drawBaseline(ctx, c.offsetWidth, c.offsetHeight);
-    setHasDrawn(false);
-  };
+// ── Compliance Score Ring ──
+function ComplianceRing({ score, size = 120 }: { score: number; size?: number }) {
+  const r = (size - 12) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (score / 100) * circ;
+  const color = score >= 80 ? "#22c55e" : score >= 50 ? "#eab308" : "#ef4444";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-2xl shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-[#1473FF]/20 to-[#BE01FF]/20"><PenTool className="w-5 h-5 text-purple-400" /></div>
-            <div><h3 className="text-lg font-bold text-white">Digital Signature</h3><p className="text-xs text-slate-400">Sign with gradient ink — legally binding</p></div>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-lg"><X className="w-5 h-5 text-slate-400" /></button>
-        </div>
-        <div className="p-5">
-          <canvas ref={canvasRef} className="w-full h-[240px] rounded-xl border border-slate-700/50 bg-black cursor-crosshair touch-none"
-            onMouseDown={start} onMouseMove={move} onMouseUp={stop} onMouseLeave={stop} onTouchStart={start} onTouchMove={move} onTouchEnd={stop} />
-          <div className="flex items-center justify-between mt-4">
-            <Button variant="outline" size="sm" onClick={clear} className="border-slate-600 text-slate-400 rounded-lg"><Eraser className="w-4 h-4 mr-2" />Clear</Button>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={onClose} className="border-slate-600 text-slate-400 rounded-lg">Cancel</Button>
-              <Button size="sm" disabled={!hasDrawn} onClick={() => { if (canvasRef.current && hasDrawn) onSave(canvasRef.current.toDataURL("image/png")); }}
-                className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg disabled:opacity-40"><Save className="w-4 h-4 mr-2" />Save Signature</Button>
-            </div>
-          </div>
-        </div>
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={10} />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke={color} strokeWidth={10} strokeLinecap="round"
+          strokeDasharray={circ} strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 1s ease" }}
+        />
+      </svg>
+      <div className="absolute flex flex-col items-center">
+        <span className="text-2xl font-black text-white">{score}%</span>
+        <span className="text-[10px] text-slate-400 font-medium">Compliance</span>
       </div>
     </div>
   );
 }
 
 // ── Upload Modal ──
-function UploadModal({ onClose, onUpload, uploading }: { onClose: () => void; onUpload: (d: any) => void; uploading: boolean }) {
-  const [dragOver, setDragOver] = useState(false);
+function UploadModal({
+  onClose,
+  documentTypes,
+  onUpload,
+  uploading,
+}: {
+  onClose: () => void;
+  documentTypes: any[];
+  onUpload: (data: any) => void;
+  uploading: boolean;
+}) {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+  const [selectedType, setSelectedType] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [docName, setDocName] = useState("");
-  const [docCat, setDocCat] = useState("other");
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [docNumber, setDocNumber] = useState("");
+  const [issuedBy, setIssuedBy] = useState("");
+  const [issuedByState, setIssuedByState] = useState("");
+  const [issuedDate, setIssuedDate] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
+  const [converting, setConverting] = useState(false);
 
-  const cats = [
-    { v: "compliance", l: "Compliance", I: CheckCircle },
-    { v: "financial", l: "Financial", I: FileText },
-    { v: "contracts", l: "Contract", I: FileSignature },
-    { v: "operations", l: "Operations", I: ClipboardList },
-    { v: "insurance", l: "Insurance", I: FileText },
-    { v: "license", l: "License / Permit", I: FileText },
-    { v: "report", l: "Report", I: FileText },
-    { v: "correspondence", l: "Correspondence", I: FileText },
-    { v: "other", l: "Other", I: FolderOpen },
-  ];
+  const selectedDocType = documentTypes.find((t: any) => t.id === selectedType);
 
-  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) { setFile(f); if (!docName) setDocName(f.name.replace(/\.[^/.]+$/, "")); } };
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) { setFile(f); if (!docName) setDocName(f.name.replace(/\.[^/.]+$/, "")); } };
-
-  const submit = () => {
-    if (!file || !docName) return;
-    const reader = new FileReader();
-    reader.onload = () => onUpload({ name: docName, category: docCat, fileData: reader.result as string });
-    reader.readAsDataURL(file);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-lg shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-[#1473FF]/20 to-[#BE01FF]/20"><Upload className="w-5 h-5 text-blue-400" /></div>
-            <h3 className="text-lg font-bold text-white">Upload Document</h3>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-lg"><X className="w-5 h-5 text-slate-400" /></button>
-        </div>
-        <div className="p-5 space-y-4">
-          <div onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleDrop} onClick={() => fileRef.current?.click()}
-            className={cn("border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all", dragOver ? "border-blue-500 bg-blue-500/10" : "border-slate-700 hover:border-slate-500 bg-slate-800/30")}>
-            <input ref={fileRef} type="file" className="hidden" onChange={handleFile} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.tiff,.xlsx,.csv" />
-            {file ? (
-              <div className="flex items-center justify-center gap-3"><FileText className="w-8 h-8 text-blue-400" /><div className="text-left"><p className="text-white font-medium">{file.name}</p><p className="text-xs text-slate-400">{(file.size / 1024).toFixed(1)} KB</p></div></div>
-            ) : (<><Upload className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-white font-medium">Drop file here or click to browse</p><p className="text-xs text-slate-400 mt-1">PDF, DOC, JPG, PNG, TIFF, XLSX, CSV</p></>)}
-          </div>
-          <Input value={docName} onChange={(e: any) => setDocName(e.target.value)} placeholder="Document name" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
-          <Select value={docCat} onValueChange={setDocCat}>
-            <SelectTrigger className="bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue placeholder="Category" /></SelectTrigger>
-            <SelectContent>{cats.map(c => <SelectItem key={c.v} value={c.v}><span className="flex items-center gap-2"><c.I className="w-4 h-4" />{c.l}</span></SelectItem>)}</SelectContent>
-          </Select>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={onClose} className="border-slate-600 text-slate-400 rounded-lg">Cancel</Button>
-            <Button onClick={submit} disabled={!file || !docName || uploading} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg disabled:opacity-40">
-              {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}Upload
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-// ── Document Digitize by ESANG AI ──
-function DigitizeModal({ onClose, onDigitized }: { onClose: () => void; onDigitized: () => void }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const digitizeMut = (trpc as any).documents.digitize.useMutation();
-
-  const readBase64 = (f: File): Promise<string> =>
-    new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(f); });
-
-  const scan = async () => {
-    if (!file) return;
-    setScanning(true);
-    try {
-      const base64 = await readBase64(file);
-      const res = await digitizeMut.mutateAsync({ fileData: base64, filename: file.name, autoSave: true });
-      setResult(res);
-      toast.success("ESANG AI analysis complete — document saved");
-      onDigitized();
-    } catch (err: any) {
-      console.error("[Digitize]", err);
-      toast.error("Digitize failed", { description: err?.message || "Try again" });
-    } finally {
-      setScanning(false);
+  const handleSubmit = useCallback(async () => {
+    if (!file || !selectedType) {
+      toast.error("Select a document type and file");
+      return;
     }
-  };
-
-  const classification = result?.classification;
-  const ocr = result?.ocr;
+    setConverting(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(",")[1];
+        onUpload({
+          documentTypeId: selectedType,
+          fileName: file.name,
+          fileBase64: base64,
+          mimeType: file.type,
+          documentNumber: docNumber || undefined,
+          issuedBy: issuedBy || undefined,
+          issuedByState: issuedByState || undefined,
+          issuedDate: issuedDate || undefined,
+          expiresAt: expiresAt || undefined,
+        });
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      toast.error("Failed to read file");
+      setConverting(false);
+    }
+  }, [file, selectedType, docNumber, issuedBy, issuedByState, issuedDate, expiresAt, onUpload]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/20"><Brain className="w-5 h-5 text-cyan-400" /></div>
-            <div><h3 className="text-lg font-bold text-white">Document Digitize</h3><p className="text-xs text-slate-400">Powered by ESANG AI — auto-classify & extract</p></div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <Card className={cn("w-full max-w-lg max-h-[90vh] overflow-y-auto", isLight ? "bg-white border-slate-200" : "bg-slate-900 border-slate-700/50")}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className={cn("text-lg", isLight ? "text-slate-900" : "text-white")}>Upload Document</CardTitle>
+            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0"><X className="w-4 h-4" /></Button>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-lg"><X className="w-5 h-5 text-slate-400" /></button>
-        </div>
-        <div className="p-5 space-y-4">
-          {!result ? (<>
-            <div onClick={() => fileRef.current?.click()} className={cn("border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all", file ? "border-cyan-500/50 bg-cyan-500/5" : "border-slate-700 hover:border-slate-500 bg-slate-800/30")}>
-              <input ref={fileRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.tiff,.doc,.docx" onChange={e => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
-              {file ? <div className="flex items-center justify-center gap-3"><ScanLine className="w-8 h-8 text-cyan-400" /><div className="text-left"><p className="text-white font-medium">{file.name}</p><p className="text-xs text-cyan-400">Ready for ESANG AI analysis</p></div></div>
-                : <><EsangIcon className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-white font-medium">Upload document to digitize</p><p className="text-xs text-slate-400 mt-1">PDF, DOC, JPG, PNG, TIFF — ESANG AI reads & classifies automatically</p></>}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>Document Type *</label>
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger className={cn("h-10", isLight ? "bg-white border-slate-300" : "bg-slate-800 border-slate-600")}>
+                <SelectValue placeholder="Select document type..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {documentTypes.map((t: any) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    <span className="flex items-center gap-2">
+                      {CATEGORY_ICONS[t.category] || <FileText className="w-3 h-3" />}
+                      <span>{t.name}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedDocType?.description && (
+              <p className="text-xs text-slate-400 mt-1">{selectedDocType.description}</p>
+            )}
+          </div>
+
+          <div>
+            <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>File *</label>
+            <div
+              className={cn(
+                "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors",
+                file ? "border-green-500/40 bg-green-500/5" : isLight ? "border-slate-300 hover:border-blue-400 bg-slate-50" : "border-slate-600 hover:border-blue-500 bg-slate-800/50"
+              )}
+              onClick={() => document.getElementById("doc-file-input")?.click()}
+            >
+              {file ? (
+                <div className="flex items-center justify-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <span className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{file.name}</span>
+                  <span className="text-xs text-slate-400">({(file.size / 1024).toFixed(0)} KB)</span>
+                </div>
+              ) : (
+                <>
+                  <Upload className="w-8 h-8 mx-auto text-slate-400 mb-2" />
+                  <p className={cn("text-sm font-medium", isLight ? "text-slate-600" : "text-slate-300")}>Click to select file</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Accepted: {selectedDocType?.acceptedFileTypes || "pdf, jpg, jpeg, png"} | Max {selectedDocType?.maxFileSizeMb || 10}MB
+                  </p>
+                </>
+              )}
+              <input
+                id="doc-file-input"
+                type="file"
+                className="hidden"
+                accept={selectedDocType?.acceptedFileTypes?.split(",").map((t: string) => `.${t.trim()}`).join(",") || ".pdf,.jpg,.jpeg,.png"}
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              />
             </div>
-            {scanning && <div className="flex items-center gap-3 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20"><Loader2 className="w-5 h-5 text-cyan-400 animate-spin" /><div><p className="text-cyan-400 font-medium text-sm">ESANG AI analyzing document...</p><p className="text-xs text-slate-400">Digitizing → extracting text → classifying</p></div></div>}
-            <Button onClick={scan} disabled={!file || scanning} className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 text-white border-0 rounded-lg disabled:opacity-40">
-              {scanning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Brain className="w-4 h-4 mr-2" />}{scanning ? "Analyzing..." : "Digitize with ESANG AI"}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>Document Number</label>
+              <Input value={docNumber} onChange={(e) => setDocNumber(e.target.value)} placeholder="e.g. CDL number" className={cn("h-9", isLight ? "" : "bg-slate-800 border-slate-600")} />
+            </div>
+            <div>
+              <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>Issued By</label>
+              <Input value={issuedBy} onChange={(e) => setIssuedBy(e.target.value)} placeholder="e.g. State DMV" className={cn("h-9", isLight ? "" : "bg-slate-800 border-slate-600")} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>State</label>
+              <Input value={issuedByState} onChange={(e) => setIssuedByState(e.target.value.toUpperCase().slice(0, 2))} placeholder="TX" maxLength={2} className={cn("h-9", isLight ? "" : "bg-slate-800 border-slate-600")} />
+            </div>
+            <div>
+              <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>Issued Date</label>
+              <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} className={cn("h-9", isLight ? "" : "bg-slate-800 border-slate-600")} />
+            </div>
+            <div>
+              <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>Expiration</label>
+              <Input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} className={cn("h-9", isLight ? "" : "bg-slate-800 border-slate-600")} />
+            </div>
+          </div>
+
+          {selectedDocType?.downloadUrl && (
+            <a href={selectedDocType.downloadUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300">
+              <ExternalLink className="w-3 h-3" /> Download blank form from {selectedDocType.issuingAuthority || "official source"}
+            </a>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!file || !selectedType || uploading || converting}
+              className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 hover:opacity-90"
+            >
+              {(uploading || converting) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Upload Document
             </Button>
-          </>) : (<>
-            {/* AI Results */}
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
-              <CheckCircle className="w-5 h-5 text-green-400" />
-              <span className="text-green-400 font-medium text-sm">ESANG AI analysis complete — {classification?.confidence || 0}% confidence</span>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/30">
-              <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Document Type</p>
-              <p className="text-white font-semibold">{classification?.documentTitle || file?.name}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-xs">{classification?.category}</Badge>
-                <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs">{classification?.subcategory}</Badge>
-              </div>
-            </div>
-            {classification?.summary && (
-              <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/30">
-                <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Summary</p>
-                <p className="text-sm text-slate-200">{classification.summary}</p>
-              </div>
-            )}
-            {classification?.extractedFields && Object.keys(classification.extractedFields).length > 0 && (
-              <div className="space-y-1.5">
-                <p className="text-xs text-slate-400 uppercase tracking-wider">Extracted Fields</p>
-                {Object.entries(classification.extractedFields).map(([k, v]) => (
-                  <div key={k} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/30">
-                    <span className="text-xs text-slate-400">{k}</span>
-                    <span className="text-sm text-white font-medium">{String(v)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {classification?.suggestedTags?.length > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <Tag className="w-3.5 h-3.5 text-slate-400" />
-                {classification.suggestedTags.map((t: string) => (
-                  <Badge key={t} className="bg-slate-700/50 text-slate-300 border-0 text-xs">{t}</Badge>
-                ))}
-              </div>
-            )}
-            {ocr && (
-              <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/30">
-                <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Document Digitize by ESANG AI — {ocr.lineCount || ocr.lines?.length || 0} lines extracted</p>
-                <p className="text-xs text-slate-500 mt-1 line-clamp-3">{ocr.textPreview || ocr.text?.slice(0, 200)}</p>
-              </div>
-            )}
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => { setResult(null); setFile(null); }} className="flex-1 border-slate-600 text-slate-400 rounded-lg"><RotateCcw className="w-4 h-4 mr-2" />Scan Another</Button>
-              <Button onClick={onClose} className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg"><CheckCircle className="w-4 h-4 mr-2" />Done</Button>
-            </div>
-          </>)}
-        </div>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-// ═══════════════════════════════════════════
-// MAIN DOCUMENT CENTER
-// ═══════════════════════════════════════════
+// ── Main Document Center Page ──
 export default function DocumentCenter() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [activeTab, setActiveTab] = useState<DocTab>("all");
-  const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [showUpload, setShowUpload] = useState(false);
-  const [showSign, setShowSign] = useState(false);
-  const [showDigitize, setShowDigitize] = useState(false);
-  const [savedSig, setSavedSig] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  // Signature persistence — load from DB
-  const sigQuery = (trpc as any).documents.getSignature.useQuery();
-  const saveSignatureMut = (trpc as any).documents.saveSignature.useMutation({
-    onSuccess: () => { sigQuery.refetch(); toast.success("Signature saved to your account"); },
-    onError: (e: any) => toast.error("Failed to save signature", { description: e.message }),
+  // ── Data queries ──
+  const centerQuery = (trpc as any).documentCenter.getDocumentCenter.useQuery(undefined, {
+    staleTime: 30000,
+    retry: 2,
   });
-  const deleteSignatureMut = (trpc as any).documents.deleteSignature.useMutation({
-    onSuccess: () => { setSavedSig(null); sigQuery.refetch(); toast.success("Signature deleted"); },
-    onError: (e: any) => toast.error("Failed to delete signature", { description: e.message }),
+  const docTypesQuery = (trpc as any).documentCenter.getDocumentTypes.useQuery(undefined, {
+    staleTime: 60000,
   });
 
-  // Sync DB signature into local state
-  useEffect(() => {
-    if (sigQuery.data?.signatureData) setSavedSig(sigQuery.data.signatureData);
-  }, [sigQuery.data]);
-
-  const docsQuery = (trpc as any).documents.getAll.useQuery({ search, category: activeTab === "all" ? undefined : activeTab });
-  const statsQuery = (trpc as any).documents.getStats.useQuery();
-  const uploadMut = (trpc as any).documents.upload.useMutation({
-    onSuccess: () => { toast.success("Document uploaded"); docsQuery.refetch(); statsQuery.refetch(); setShowUpload(false); },
-    onError: (e: any) => toast.error("Upload failed", { description: e.message }),
-  });
-  const deleteMut = (trpc as any).documents.delete.useMutation({
-    onSuccess: () => { toast.success("Document deleted"); docsQuery.refetch(); statsQuery.refetch(); setDeleteId(null); },
-    onError: (e: any) => toast.error("Delete failed", { description: e.message }),
+  // ── Mutations ──
+  const uploadMut = (trpc as any).documentCenter.uploadDocument.useMutation({
+    onSuccess: () => {
+      toast.success("Document uploaded successfully");
+      setShowUpload(false);
+      centerQuery.refetch();
+    },
+    onError: (err: any) => toast.error(err.message || "Upload failed"),
   });
 
-  const stats = statsQuery.data;
-  const tabs: { id: DocTab; label: string; icon: any }[] = [
-    { id: "all", label: "All", icon: FolderOpen },
-    { id: "compliance", label: "Compliance", icon: CheckCircle },
-    { id: "financial", label: "Financial", icon: FileText },
-    { id: "contracts", label: "Contracts", icon: FileSignature },
-    { id: "operations", label: "Operations", icon: ClipboardList },
-    { id: "other", label: "Other", icon: FolderOpen },
-  ];
+  const deleteMut = (trpc as any).documentCenter.deleteDocument.useMutation({
+    onSuccess: () => {
+      toast.success("Document removed");
+      centerQuery.refetch();
+    },
+    onError: (err: any) => toast.error(err.message || "Delete failed"),
+  });
 
-  const getStatusBadge = (status: string) => {
-    const m: Record<string, { bg: string; t: string; l: string; I: any }> = {
-      active: { bg: "bg-green-500/20", t: "text-green-400", l: "Active", I: CheckCircle },
-      valid: { bg: "bg-green-500/20", t: "text-green-400", l: "Valid", I: CheckCircle },
-      expiring_soon: { bg: "bg-yellow-500/20", t: "text-yellow-400", l: "Expiring", I: Clock },
-      expiring: { bg: "bg-yellow-500/20", t: "text-yellow-400", l: "Expiring", I: Clock },
-      expired: { bg: "bg-red-500/20", t: "text-red-400", l: "Expired", I: AlertTriangle },
-      pending_review: { bg: "bg-blue-500/20", t: "text-blue-400", l: "Pending", I: Clock },
-    };
-    const s = m[status] || { bg: "bg-slate-500/20", t: "text-slate-400", l: status || "—", I: FileText };
-    return <Badge className={`${s.bg} ${s.t} border-0 text-xs font-semibold`}><s.I className="w-3 h-3 mr-1" />{s.l}</Badge>;
+  const seedTypesMut = (trpc as any).documentCenter.seedDocumentTypes.useMutation({
+    onSuccess: (d: any) => {
+      toast.success(`Seeded ${d.inserted} document types`);
+      docTypesQuery.refetch();
+      centerQuery.refetch();
+    },
+    onError: (err: any) => toast.error(err.message || "Seed failed"),
+  });
+
+  const seedReqsMut = (trpc as any).documentCenter.seedDocumentRequirements.useMutation({
+    onSuccess: (d: any) => {
+      toast.success(`Seeded ${d.inserted} requirements`);
+      centerQuery.refetch();
+    },
+    onError: (err: any) => toast.error(err.message || "Seed failed"),
+  });
+
+  // ── Derived data ──
+  const data = centerQuery.data;
+  const summary = data?.summary || { complianceScore: 0, canOperate: false, totalRequired: 0, totalCompleted: 0, totalMissing: 0, totalExpiring: 0, totalIssues: 0 };
+  const urgentActions: any[] = data?.urgentActions || [];
+  const allDocs: any[] = data?.documents?.all || [];
+
+  const tabDocs: Record<DocTab, any[]> = {
+    all: allDocs,
+    missing: data?.documents?.missing || [],
+    expiring: data?.documents?.expiring || [],
+    pending: data?.documents?.pending || [],
+    rejected: data?.documents?.rejected || [],
+    verified: data?.documents?.verified || [],
   };
 
-  const getCatIcon = (c: string) => {
-    const map: Record<string, any> = { compliance: CheckCircle, financial: FileText, contracts: FileSignature, operations: ClipboardList, other: FolderOpen };
-    const I = map[c] || FileText; return <I className="w-5 h-5" />;
+  // Filter by search + category
+  let filteredDocs = tabDocs[activeTab];
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filteredDocs = filteredDocs.filter((d: any) =>
+      d.documentTypeName?.toLowerCase().includes(q) || d.documentTypeId?.toLowerCase().includes(q)
+    );
+  }
+  if (categoryFilter && categoryFilter !== "all") {
+    filteredDocs = filteredDocs.filter((d: any) => d.category === categoryFilter);
+  }
+
+  // Group by category
+  const grouped = filteredDocs.reduce((acc: Record<string, any[]>, doc: any) => {
+    const cat = doc.category || "OTHER";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(doc);
+    return acc;
+  }, {});
+  const categoryKeys = Object.keys(grouped).sort();
+
+  const toggleCategory = (cat: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
   };
 
-  const statCards = [
-    { label: "Total", value: stats?.total || 0, icon: FileText, color: "text-cyan-400", bg: "bg-cyan-500/15" },
-    { label: "Active", value: stats?.valid || 0, icon: CheckCircle, color: "text-green-400", bg: "bg-green-500/15" },
-    { label: "Expiring", value: stats?.expiring || 0, icon: Clock, color: "text-yellow-400", bg: "bg-yellow-500/15" },
-    { label: "Expired", value: stats?.expired || 0, icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/15" },
+  // Unique categories for filter
+  const uniqueCategories = Array.from(new Set(allDocs.map((d: any) => d.category).filter(Boolean)));
+
+  const tabs: { key: DocTab; label: string; count: number }[] = [
+    { key: "all", label: "All", count: allDocs.length },
+    { key: "missing", label: "Missing", count: (data?.documents?.missing || []).length },
+    { key: "expiring", label: "Expiring", count: (data?.documents?.expiring || []).length },
+    { key: "pending", label: "Pending", count: (data?.documents?.pending || []).length },
+    { key: "rejected", label: "Rejected", count: (data?.documents?.rejected || []).length },
+    { key: "verified", label: "Verified", count: (data?.documents?.verified || []).length },
   ];
+
+  // ── Loading state ──
+  if (centerQuery.isLoading) {
+    return (
+      <div className="space-y-4 max-w-7xl mx-auto">
+        <Skeleton className="h-10 w-64 rounded-lg" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
+        </div>
+        <Skeleton className="h-64 rounded-xl" />
+      </div>
+    );
+  }
+
+  // ── Empty state: no requirements found (need seed) ──
+  const needsSeed = allDocs.length === 0 && !centerQuery.isLoading;
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-[1400px] mx-auto">
-      {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Document Center</h1>
-          <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Upload, manage & organize all your important documents with AI-powered classification</p>
+          <h1 className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>
+            Document Center
+          </h1>
+          <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
+            Smart compliance tracking with role-based requirements
+          </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button size="sm" onClick={() => setShowDigitize(true)} className="bg-gradient-to-r from-cyan-600 to-emerald-600 text-white border-0 rounded-lg"><Brain className="w-4 h-4 mr-1" />Digitize</Button>
-          <Button size="sm" onClick={() => setShowSign(true)} className={cn("rounded-lg border", isLight ? "bg-white border-slate-300 text-slate-700" : "bg-slate-800 border-slate-600 text-slate-200")}><PenTool className="w-4 h-4 mr-1" />Sign</Button>
-          <Button size="sm" onClick={() => setShowUpload(true)} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg"><Upload className="w-4 h-4 mr-1" />Upload</Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => centerQuery.refetch()}
+            variant="outline"
+            size="sm"
+            className={cn("gap-1.5", isLight ? "" : "border-slate-700 text-slate-300")}
+          >
+            <RefreshCw className={cn("w-3.5 h-3.5", centerQuery.isFetching ? "animate-spin" : "")} />
+            Refresh
+          </Button>
+          <Button
+            onClick={() => setShowUpload(true)}
+            size="sm"
+            className="gap-1.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 hover:opacity-90"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            Upload Document
+          </Button>
         </div>
       </div>
 
-      {/* ── Saved Signature ── */}
-      {savedSig && (
-        <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-purple-500/15"><PenTool className="w-5 h-5 text-purple-400" /></div>
-              <div><p className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>Signature on file</p><p className="text-xs text-slate-400">Ready to apply to documents</p></div>
-            </div>
-            <div className="flex items-center gap-3">
-              <img src={savedSig} alt="Signature" className="h-10 rounded border border-slate-700/30" />
-              <Button size="sm" variant="outline" onClick={() => setShowSign(true)} className={cn("rounded-lg text-xs", isLight ? "border-slate-300" : "border-slate-600")}>Update</Button>
-              <Button size="sm" variant="outline" onClick={() => deleteSignatureMut.mutate({})} disabled={deleteSignatureMut.isPending} className={cn("rounded-lg text-xs text-red-400 hover:text-red-300", isLight ? "border-red-300 hover:bg-red-50" : "border-red-500/30 hover:bg-red-500/10")}>
-                <Trash2 className="w-3.5 h-3.5 mr-1" />{deleteSignatureMut.isPending ? "..." : "Delete"}
+      {/* Seed Banner */}
+      {needsSeed && (
+        <Card className={cn("border-dashed border-2", isLight ? "border-blue-300 bg-blue-50" : "border-blue-500/30 bg-blue-500/5")}>
+          <CardContent className="py-8 text-center">
+            <Shield className={cn("w-12 h-12 mx-auto mb-3", isLight ? "text-blue-500" : "text-blue-400")} />
+            <h3 className={cn("text-lg font-bold mb-2", isLight ? "text-slate-900" : "text-white")}>Initialize Document Center</h3>
+            <p className={cn("text-sm mb-4 max-w-md mx-auto", isLight ? "text-slate-600" : "text-slate-400")}>
+              Seed the database with 80+ federal document types and role-based requirements to enable smart compliance tracking.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                onClick={() => seedTypesMut.mutate()}
+                disabled={seedTypesMut.isPending}
+                className="gap-1.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0"
+              >
+                {seedTypesMut.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                Seed Document Types
+              </Button>
+              <Button
+                onClick={() => seedReqsMut.mutate()}
+                disabled={seedReqsMut.isPending}
+                variant="outline"
+                className="gap-1.5"
+              >
+                {seedReqsMut.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                Seed Requirements
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {statCards.map(s => (
-          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className={cn("p-2.5 rounded-xl", s.bg)}><s.icon className={cn("w-5 h-5", s.color)} /></div>
-                <div>{statsQuery.isLoading ? <Skeleton className="h-7 w-12" /> : <p className={cn("text-xl font-bold", s.color)}>{s.value}</p>}<p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>{s.label}</p></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* ── Tab Navigation ── */}
-      <div className={cn("flex items-center gap-1 p-1 rounded-xl border overflow-x-auto", isLight ? "bg-slate-100 border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)} className={cn(
-            "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap",
-            activeTab === t.id ? isLight ? "bg-white text-slate-900 shadow-sm" : "bg-slate-700 text-white shadow" : isLight ? "text-slate-500 hover:text-slate-700" : "text-slate-400 hover:text-white"
-          )}><t.icon className="w-3.5 h-3.5" />{t.label}</button>
-        ))}
-      </div>
-
-      {/* ── Search ── */}
-      <div className="relative max-w-md">
-        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search documents..." className={cn("pl-9 rounded-lg", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")} />
-      </div>
-
-      {/* ── Document List ── */}
-      <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
-        <CardHeader className="pb-2 px-5 pt-5">
-          <CardTitle className={cn("text-base font-semibold flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
-            <FolderOpen className="w-5 h-5 text-cyan-400" />{activeTab === "all" ? "All Documents" : tabs.find(t => t.id === activeTab)?.label || "Documents"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {docsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : !(docsQuery.data as any)?.length ? (
-            <div className="text-center py-16">
-              <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
-                <FileText className="w-10 h-10 text-slate-400" />
-              </div>
-              <p className={cn("text-lg font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No documents found</p>
-              <p className="text-sm text-slate-400 mt-1">Upload your first document to get started</p>
-              <Button size="sm" onClick={() => setShowUpload(true)} className="mt-4 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg"><Plus className="w-4 h-4 mr-1" />Upload Document</Button>
-            </div>
-          ) : (
-            <div className={cn("divide-y", isLight ? "divide-slate-100" : "divide-slate-700/40")}>
-              {(docsQuery.data as any).map((doc: any) => (
-                <div key={doc.id} className={cn("flex items-center justify-between px-5 py-4 transition-colors", doc.status === "expired" ? "bg-red-500/5 border-l-2 border-red-500" : "", isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20")}>
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className={cn("p-3 rounded-xl flex-shrink-0", doc.status === "expired" ? "bg-red-500/15" : doc.status === "expiring" || doc.status === "expiring_soon" ? "bg-yellow-500/15" : "bg-cyan-500/15")}>
-                      {getCatIcon(doc.category)}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <p className={cn("font-semibold text-sm truncate", isLight ? "text-slate-800" : "text-white")}>{doc.name}</p>
-                        {getStatusBadge(doc.status)}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
-                        <span className="capitalize">{(doc.category || "").replace("_", " ")}</span>
-                        <span>Uploaded: {doc.uploadedAt}</span>
-                        {doc.expiresAt && <span>Expires: {doc.expiresAt}</span>}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white h-8 w-8 p-0" title="View"
-                      onClick={() => toast.info(`Viewing: ${doc.name}`)}><Eye className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white h-8 w-8 p-0" title="Download"
-                      onClick={() => { const b = new Blob([`Document: ${doc.name}\nCategory: ${doc.category}\nStatus: ${doc.status}\nUploaded: ${doc.uploadedAt}`], { type: "text/plain" }); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `${doc.name || "document"}.txt`; a.click(); URL.revokeObjectURL(u); }}><Download className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 h-8 w-8 p-0" title="Delete"
-                      onClick={() => { setDeleteId(doc.id); deleteMut.mutate({ id: doc.id }); }}><Trash2 className="w-4 h-4" /></Button>
-                  </div>
+      {/* Compliance Dashboard */}
+      {!needsSeed && (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            {/* Compliance Score Ring */}
+            <Card className={cn("lg:col-span-1 flex items-center justify-center", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
+              <CardContent className="py-6 flex flex-col items-center">
+                <ComplianceRing score={summary.complianceScore} />
+                <div className="mt-3 text-center">
+                  {summary.canOperate ? (
+                    <Badge className="bg-green-500/15 text-green-400 border-0 text-xs gap-1">
+                      <CheckCircle className="w-3 h-3" /> Can Operate
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-red-500/15 text-red-400 border-0 text-xs gap-1">
+                      <XCircle className="w-3 h-3" /> Blocked
+                    </Badge>
+                  )}
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Stats Grid */}
+            <div className="lg:col-span-2 grid grid-cols-2 gap-3">
+              {[
+                { label: "Required", value: summary.totalRequired, icon: FileText, color: "text-blue-400", bg: "bg-blue-500/10" },
+                { label: "Completed", value: summary.totalCompleted, icon: CheckCircle, color: "text-green-400", bg: "bg-green-500/10" },
+                { label: "Missing", value: summary.totalMissing, icon: AlertTriangle, color: "text-yellow-400", bg: "bg-yellow-500/10" },
+                { label: "Issues", value: summary.totalIssues, icon: XCircle, color: "text-red-400", bg: "bg-red-500/10" },
+              ].map((stat) => (
+                <Card key={stat.label} className={cn(isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
+                  <CardContent className="py-4 px-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={cn("p-1.5 rounded-lg", stat.bg)}>
+                        <stat.icon className={cn("w-4 h-4", stat.color)} />
+                      </div>
+                      <span className={cn("text-xs font-medium", isLight ? "text-slate-500" : "text-slate-400")}>{stat.label}</span>
+                    </div>
+                    <p className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>{stat.value}</p>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* ── Modals ── */}
-      {showUpload && <UploadModal onClose={() => setShowUpload(false)} onUpload={(d) => uploadMut.mutate(d)} uploading={uploadMut.isPending} />}
-      {showSign && <SignaturePad onSave={(d) => { setSavedSig(d); saveSignatureMut.mutate({ signatureData: d }); setShowSign(false); }} onClose={() => setShowSign(false)} />}
-      {showDigitize && <DigitizeModal onClose={() => setShowDigitize(false)} onDigitized={() => { docsQuery.refetch(); statsQuery.refetch(); }} />}
+            {/* Urgent Actions */}
+            <Card className={cn("lg:col-span-2", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
+              <CardHeader className="pb-2">
+                <CardTitle className={cn("text-sm font-semibold flex items-center gap-2", isLight ? "text-slate-900" : "text-white")}>
+                  <AlertTriangle className="w-4 h-4 text-orange-400" />
+                  Urgent Actions
+                  {urgentActions.length > 0 && (
+                    <Badge className="bg-red-500/15 text-red-400 border-0 text-[10px]">{urgentActions.length}</Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 max-h-[200px] overflow-y-auto">
+                {urgentActions.length === 0 ? (
+                  <div className="text-center py-4">
+                    <CheckCircle className="w-8 h-8 mx-auto text-green-400 mb-2" />
+                    <p className={cn("text-sm font-medium", isLight ? "text-slate-600" : "text-slate-300")}>All clear</p>
+                    <p className="text-xs text-slate-400">No urgent actions required</p>
+                  </div>
+                ) : (
+                  urgentActions.map((action: any, i: number) => (
+                    <div key={i} className={cn("flex items-start gap-3 p-2.5 rounded-lg", isLight ? "bg-slate-50" : "bg-slate-700/30")}>
+                      <div className="flex-shrink-0 mt-0.5">
+                        {action.severity === "CRITICAL" ? <XCircle className="w-4 h-4 text-red-400" /> :
+                         action.severity === "HIGH" ? <AlertTriangle className="w-4 h-4 text-orange-400" /> :
+                         <Clock className="w-4 h-4 text-yellow-400" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className={cn("text-xs font-semibold truncate", isLight ? "text-slate-800" : "text-white")}>{action.documentTypeName}</span>
+                          {severityBadge(action.severity)}
+                        </div>
+                        <p className="text-[11px] text-slate-400 line-clamp-2">{action.message}</p>
+                      </div>
+                      {action.blocksOperations && (
+                        <Lock className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+                      )}
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Progress Bar */}
+          {summary.totalRequired > 0 && (
+            <div className={cn("px-4 py-3 rounded-xl", isLight ? "bg-white border border-slate-200" : "bg-slate-800/50 border border-slate-700/50")}>
+              <div className="flex items-center justify-between mb-2">
+                <span className={cn("text-xs font-semibold", isLight ? "text-slate-700" : "text-slate-300")}>
+                  Document Completion
+                </span>
+                <span className="text-xs text-slate-400">
+                  {summary.totalCompleted} / {summary.totalRequired}
+                </span>
+              </div>
+              <Progress
+                value={summary.totalRequired > 0 ? (summary.totalCompleted / summary.totalRequired) * 100 : 0}
+                className="h-2.5 bg-slate-700/30"
+              />
+            </div>
+          )}
+
+          {/* Tabs + Filter + Search */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-1 overflow-x-auto pb-1">
+              {tabs.map((tab) => (
+                <Button
+                  key={tab.key}
+                  variant={activeTab === tab.key ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={cn(
+                    "gap-1.5 text-xs whitespace-nowrap",
+                    activeTab === tab.key
+                      ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0"
+                      : isLight ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
+                  )}
+                >
+                  {tab.label}
+                  {tab.count > 0 && (
+                    <span className={cn(
+                      "text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1",
+                      activeTab === tab.key ? "bg-white/20" : "bg-slate-500/20"
+                    )}>
+                      {tab.count}
+                    </span>
+                  )}
+                </Button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 sm:ml-auto">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search documents..."
+                  className={cn("h-8 pl-8 w-48 text-xs", isLight ? "" : "bg-slate-800 border-slate-600")}
+                />
+              </div>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className={cn("h-8 w-36 text-xs", isLight ? "" : "bg-slate-800 border-slate-600")}>
+                  <Filter className="w-3 h-3 mr-1" />
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {uniqueCategories.map((cat: string) => (
+                    <SelectItem key={cat} value={cat}>
+                      <span className="flex items-center gap-1.5">
+                        {CATEGORY_ICONS[cat]} {CATEGORY_LABELS[cat] || cat}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Document List grouped by category */}
+          <div className="space-y-3">
+            {filteredDocs.length === 0 ? (
+              <Card className={cn(isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
+                <CardContent className="py-12 text-center">
+                  <FolderOpen className="w-12 h-12 mx-auto text-slate-500 mb-3" />
+                  <p className={cn("text-sm font-medium", isLight ? "text-slate-600" : "text-slate-300")}>
+                    {activeTab === "all" ? "No documents found" : `No ${activeTab} documents`}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {searchQuery ? "Try a different search term" : "Upload documents to get started"}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              categoryKeys.map((cat) => {
+                const docs = grouped[cat];
+                const isExpanded = expandedCategories.has(cat) || categoryKeys.length <= 3;
+
+                return (
+                  <Card key={cat} className={cn(isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
+                    <button
+                      onClick={() => toggleCategory(cat)}
+                      className={cn(
+                        "w-full flex items-center justify-between px-5 py-3 text-left",
+                        isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn("p-2 rounded-lg", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
+                          {CATEGORY_ICONS[cat] || <FileText className="w-4 h-4 text-slate-400" />}
+                        </div>
+                        <div>
+                          <span className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>
+                            {CATEGORY_LABELS[cat] || cat}
+                          </span>
+                          <span className="text-xs text-slate-400 ml-2">({docs.length})</span>
+                        </div>
+                      </div>
+                      {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                    </button>
+
+                    {isExpanded && (
+                      <div className={cn("divide-y", isLight ? "divide-slate-100" : "divide-slate-700/30")}>
+                        {docs.map((doc: any) => (
+                          <div
+                            key={doc.documentTypeId}
+                            className={cn(
+                              "flex items-center justify-between px-5 py-3.5 transition-colors",
+                              doc.status === "EXPIRED" ? "bg-red-500/5 border-l-2 border-red-500" :
+                              doc.status === "REJECTED" ? "bg-red-500/5 border-l-2 border-red-400" :
+                              doc.status === "NOT_UPLOADED" && doc.isBlocking ? "bg-yellow-500/5 border-l-2 border-yellow-500" : "",
+                              isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20"
+                            )}
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className={cn(
+                                "p-2.5 rounded-xl flex-shrink-0",
+                                doc.status === "VERIFIED" ? "bg-green-500/10" :
+                                doc.status === "EXPIRED" || doc.status === "REJECTED" ? "bg-red-500/10" :
+                                doc.status === "EXPIRING_SOON" ? "bg-yellow-500/10" :
+                                doc.status === "NOT_UPLOADED" ? "bg-slate-500/10" :
+                                "bg-blue-500/10"
+                              )}>
+                                {doc.status === "VERIFIED" ? <CheckCircle className="w-4 h-4 text-green-400" /> :
+                                 doc.status === "EXPIRED" ? <XCircle className="w-4 h-4 text-red-400" /> :
+                                 doc.status === "REJECTED" ? <XCircle className="w-4 h-4 text-red-400" /> :
+                                 doc.status === "EXPIRING_SOON" ? <Clock className="w-4 h-4 text-yellow-400" /> :
+                                 doc.status === "NOT_UPLOADED" ? <ArrowUpCircle className="w-4 h-4 text-slate-400" /> :
+                                 doc.status === "PENDING_REVIEW" ? <Clock className="w-4 h-4 text-blue-400" /> :
+                                 <FileText className="w-4 h-4 text-slate-400" />}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className={cn("text-sm font-semibold truncate", isLight ? "text-slate-800" : "text-white")}>{doc.documentTypeName}</p>
+                                  {statusBadge(doc.status, isLight)}
+                                  {doc.isBlocking && doc.status === "NOT_UPLOADED" && (
+                                    <Badge className="bg-red-500/10 text-red-400 border-0 text-[9px] gap-0.5">
+                                      <Lock className="w-2.5 h-2.5" /> Required
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5">
+                                  {doc.expiresAt && <span>Expires: {doc.expiresAt}</span>}
+                                  {doc.daysUntilExpiry !== null && doc.daysUntilExpiry >= 0 && (
+                                    <span className={doc.daysUntilExpiry <= 30 ? "text-yellow-400" : ""}>
+                                      {doc.daysUntilExpiry} days left
+                                    </span>
+                                  )}
+                                  {doc.rejectionReason && <span className="text-red-400 truncate max-w-[200px]">{doc.rejectionReason}</span>}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                              {doc.downloadTemplateUrl && (
+                                <a href={doc.downloadTemplateUrl} target="_blank" rel="noreferrer" title="Download form">
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-blue-400">
+                                    <Download className="w-4 h-4" />
+                                  </Button>
+                                </a>
+                              )}
+                              {(doc.status === "NOT_UPLOADED" || doc.status === "EXPIRED" || doc.status === "REJECTED") && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-slate-400 hover:text-green-400"
+                                  title="Upload"
+                                  onClick={() => setShowUpload(true)}
+                                >
+                                  <Upload className="w-4 h-4" />
+                                </Button>
+                              )}
+                              {doc.currentDocumentId && (
+                                <>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-white" title="View">
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost" size="sm"
+                                    className="h-8 w-8 p-0 text-red-400/60 hover:text-red-400"
+                                    title="Remove"
+                                    onClick={() => {
+                                      if (confirm("Remove this document?")) {
+                                        deleteMut.mutate({ documentId: doc.currentDocumentId });
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                );
+              })
+            )}
+          </div>
+
+          {/* Next Expiration */}
+          {data?.nextExpiration && (
+            <Card className={cn("border-l-4 border-yellow-500", isLight ? "bg-yellow-50 border-yellow-200" : "bg-yellow-500/5 border-slate-700/50")}>
+              <CardContent className="py-3 px-5 flex items-center gap-3">
+                <Clock className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+                <div>
+                  <span className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>Next Expiration: </span>
+                  <span className="text-sm text-yellow-400 font-medium">{data.nextExpiration.date}</span>
+                  <span className="text-xs text-slate-400 ml-2">({data.nextExpiration.documentTypeId})</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* Upload Modal */}
+      {showUpload && (
+        <UploadModal
+          onClose={() => setShowUpload(false)}
+          documentTypes={docTypesQuery.data || []}
+          onUpload={(d) => uploadMut.mutate(d)}
+          uploading={uploadMut.isPending}
+        />
+      )}
     </div>
   );
 }

@@ -4989,3 +4989,361 @@ export const stateCrossings = mysqlTable(
 export type StateCrossing = typeof stateCrossings.$inferSelect;
 export type InsertStateCrossing = typeof stateCrossings.$inferInsert;
 
+// ============================================================================
+// DOCUMENT CENTER — Smart Document Management System
+// ============================================================================
+
+export const documentTypes = mysqlTable(
+  "document_types",
+  {
+    id: varchar("id", { length: 50 }).primaryKey(),
+    category: mysqlEnum("category", [
+      "CDL", "DOT", "HAZ", "INS", "TAX", "EMP", "VEH", "SAF", "OPS", "AUT", "COM", "LEG", "STATE",
+    ]).notNull(),
+    subcategory: varchar("subcategory", { length: 50 }),
+    name: varchar("name", { length: 200 }).notNull(),
+    shortName: varchar("shortName", { length: 50 }),
+    description: text("description"),
+    formNumber: varchar("formNumber", { length: 50 }),
+    issuingAuthority: varchar("issuingAuthority", { length: 200 }),
+    regulatoryReference: varchar("regulatoryReference", { length: 200 }),
+    sourceUrl: text("sourceUrl"),
+    downloadUrl: text("downloadUrl"),
+    instructionsUrl: text("instructionsUrl"),
+    hasExpiration: boolean("hasExpiration").default(false),
+    typicalValidityDays: int("typicalValidityDays"),
+    expirationWarningDays: int("expirationWarningDays").default(30),
+    verificationLevel: mysqlEnum("verificationLevel", [
+      "L0_SELF", "L1_SYSTEM", "L2_STAFF", "L3_EXTERNAL",
+    ]).default("L1_SYSTEM"),
+    requiresSignature: boolean("requiresSignature").default(false),
+    requiresNotarization: boolean("requiresNotarization").default(false),
+    requiresWitness: boolean("requiresWitness").default(false),
+    acceptedFileTypes: varchar("acceptedFileTypes", { length: 100 }).default("pdf,jpg,jpeg,png"),
+    maxFileSizeMb: int("maxFileSizeMb").default(10),
+    minResolutionDpi: int("minResolutionDpi").default(150),
+    ocrEnabled: boolean("ocrEnabled").default(true),
+    ocrFieldMappings: json("ocrFieldMappings"),
+    isStateSpecific: boolean("isStateSpecific").default(false),
+    applicableStates: json("applicableStates"),
+    sortOrder: int("sortOrder").default(100),
+    isActive: boolean("isActive").default(true),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    categoryIdx: index("idx_doc_types_category").on(table.category),
+    activeIdx: index("idx_doc_types_active").on(table.isActive),
+  })
+);
+
+export type DocumentType = typeof documentTypes.$inferSelect;
+export type InsertDocumentType = typeof documentTypes.$inferInsert;
+
+export const documentRequirements = mysqlTable(
+  "document_requirements",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    documentTypeId: varchar("documentTypeId", { length: 50 }).notNull(),
+    requiredForRole: mysqlEnum("requiredForRole", [
+      "DRIVER", "OWNER_OPERATOR", "CARRIER", "FLEET_MANAGER", "DISPATCHER",
+      "SHIPPER", "BROKER", "COMPLIANCE_OFFICER", "SAFETY_MANAGER",
+      "LUMPER", "FACTORING_COMPANY", "ADMIN", "SUPER_ADMIN",
+    ]).notNull(),
+    requiredForEmploymentType: mysqlEnum("requiredForEmploymentType", [
+      "W2_EMPLOYEE", "1099_CONTRACTOR", "OWNER_OPERATOR", "COMPANY_OWNER",
+    ]),
+    isRequired: boolean("isRequired").default(true),
+    isBlocking: boolean("isBlocking").default(true),
+    priority: int("priority").default(1),
+    conditionType: varchar("conditionType", { length: 50 }),
+    conditionOperator: varchar("conditionOperator", { length: 20 }),
+    conditionValue: json("conditionValue"),
+    requiredInStates: json("requiredInStates"),
+    exemptInStates: json("exemptInStates"),
+    requiredAtOnboarding: boolean("requiredAtOnboarding").default(true),
+    gracePeriodDays: int("gracePeriodDays").default(0),
+    renewalReminderDays: json("renewalReminderDays").default([90, 60, 30, 14, 7, 3, 1]),
+    uploadInstructions: text("uploadInstructions"),
+    acceptanceCriteria: text("acceptanceCriteria"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    roleIdx: index("idx_doc_req_role").on(table.requiredForRole),
+    docTypeIdx: index("idx_doc_req_doctype").on(table.documentTypeId),
+  })
+);
+
+export type DocumentRequirement = typeof documentRequirements.$inferSelect;
+export type InsertDocumentRequirement = typeof documentRequirements.$inferInsert;
+
+export const userDocuments = mysqlTable(
+  "user_documents",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    companyId: int("companyId"),
+    documentTypeId: varchar("documentTypeId", { length: 50 }).notNull(),
+    blobUrl: text("blobUrl").notNull(),
+    blobPath: varchar("blobPath", { length: 500 }),
+    fileName: varchar("fileName", { length: 500 }).notNull(),
+    fileSize: int("fileSize"),
+    mimeType: varchar("mimeType", { length: 100 }),
+    fileHash: varchar("fileHash", { length: 64 }),
+    documentNumber: text("documentNumber"),
+    documentNumberLast4: varchar("documentNumberLast4", { length: 4 }),
+    issuedBy: varchar("issuedBy", { length: 200 }),
+    issuedByState: varchar("issuedByState", { length: 2 }),
+    issuedDate: varchar("issuedDate", { length: 10 }),
+    effectiveDate: varchar("effectiveDate", { length: 10 }),
+    expiresAt: varchar("expiresAt", { length: 10 }),
+    status: mysqlEnum("docStatus", [
+      "NOT_UPLOADED", "UPLOADING", "PENDING_REVIEW", "VERIFIED", "REJECTED",
+      "EXPIRED", "EXPIRING_SOON", "SUPERSEDED", "NOT_APPLICABLE", "WAIVED",
+    ]).default("PENDING_REVIEW").notNull(),
+    statusChangedAt: timestamp("statusChangedAt").defaultNow(),
+    statusChangedBy: int("statusChangedBy"),
+    verificationLevel: mysqlEnum("docVerifLevel", [
+      "L0_SELF", "L1_SYSTEM", "L2_STAFF", "L3_EXTERNAL",
+    ]),
+    verifiedAt: timestamp("verifiedAt"),
+    verifiedBy: int("verifiedBy"),
+    verificationNotes: text("verificationNotes"),
+    rejectionReason: text("rejectionReason"),
+    rejectionCode: varchar("rejectionCode", { length: 50 }),
+    ocrProcessed: boolean("ocrProcessed").default(false),
+    ocrProcessedAt: timestamp("ocrProcessedAt"),
+    ocrExtractedData: json("ocrExtractedData"),
+    ocrConfidenceScore: decimal("ocrConfidenceScore", { precision: 5, scale: 2 }),
+    ocrErrors: json("ocrErrors"),
+    externalVerified: boolean("externalVerified").default(false),
+    externalVerifiedAt: timestamp("externalVerifiedAt"),
+    externalVerificationSource: varchar("externalVerificationSource", { length: 100 }),
+    externalVerificationData: json("externalVerificationData"),
+    version: int("version").default(1),
+    previousVersionId: int("previousVersionId"),
+    supersededAt: timestamp("supersededAt"),
+    supersededBy: int("supersededBy"),
+    uploadedBy: int("uploadedBy").notNull(),
+    uploadedAt: timestamp("uploadedAt").defaultNow(),
+    uploadIpAddress: varchar("uploadIpAddress", { length: 45 }),
+    uploadUserAgent: text("uploadUserAgent"),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deletedAt"),
+    deletedBy: int("deletedBy"),
+    deletionReason: text("deletionReason"),
+  },
+  (table) => ({
+    userIdx: index("idx_user_docs_user").on(table.userId),
+    companyIdx: index("idx_user_docs_company").on(table.companyId),
+    typeIdx: index("idx_user_docs_type").on(table.documentTypeId),
+    statusIdx: index("idx_user_docs_status").on(table.status),
+    expiresIdx: index("idx_user_docs_expires").on(table.expiresAt),
+    userTypeIdx: index("idx_user_docs_user_type").on(table.userId, table.documentTypeId),
+  })
+);
+
+export type UserDocument = typeof userDocuments.$inferSelect;
+export type InsertUserDocument = typeof userDocuments.$inferInsert;
+
+export const userDocumentRequirements = mysqlTable(
+  "user_document_requirements",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    documentTypeId: varchar("documentTypeId", { length: 50 }).notNull(),
+    documentRequirementId: int("documentRequirementId"),
+    isRequired: boolean("isRequired").default(true),
+    isBlocking: boolean("isBlocking").default(true),
+    priority: int("priority").default(1),
+    status: mysqlEnum("udrStatus", [
+      "NOT_UPLOADED", "UPLOADING", "PENDING_REVIEW", "VERIFIED", "REJECTED",
+      "EXPIRED", "EXPIRING_SOON", "SUPERSEDED", "NOT_APPLICABLE", "WAIVED",
+    ]).default("NOT_UPLOADED").notNull(),
+    currentDocumentId: int("currentDocumentId"),
+    expiresAt: varchar("udrExpiresAt", { length: 10 }),
+    daysUntilExpiry: int("daysUntilExpiry"),
+    isExpired: boolean("isExpired").default(false),
+    isExpiringSoon: boolean("isExpiringSoon").default(false),
+    complianceWeight: int("complianceWeight").default(10),
+    requirementReason: text("requirementReason"),
+    requirementSource: varchar("requirementSource", { length: 100 }),
+    calculatedAt: timestamp("calculatedAt").defaultNow(),
+    lastNotifiedAt: timestamp("lastNotifiedAt"),
+    nextNotificationAt: timestamp("nextNotificationAt"),
+    gracePeriodEndsAt: timestamp("gracePeriodEndsAt"),
+    isInGracePeriod: boolean("isInGracePeriod").default(false),
+  },
+  (table) => ({
+    userIdx: index("idx_udr_user").on(table.userId),
+    statusIdx: index("idx_udr_status").on(table.status),
+    expiresIdx: index("idx_udr_expires").on(table.expiresAt),
+    userDocUnique: unique("idx_udr_unique").on(table.userId, table.documentTypeId),
+  })
+);
+
+export type UserDocumentRequirement = typeof userDocumentRequirements.$inferSelect;
+export type InsertUserDocumentRequirement = typeof userDocumentRequirements.$inferInsert;
+
+export const docComplianceStatus = mysqlTable(
+  "doc_compliance_status",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId"),
+    companyId: int("companyId"),
+    overallStatus: varchar("overallStatus", { length: 20 }).notNull(),
+    complianceScore: int("complianceScore"),
+    canOperate: boolean("canOperate").default(false),
+    totalRequired: int("totalRequired").default(0),
+    totalUploaded: int("totalUploaded").default(0),
+    totalVerified: int("totalVerified").default(0),
+    totalMissing: int("totalMissing").default(0),
+    totalExpired: int("totalExpired").default(0),
+    totalExpiringSoon: int("totalExpiringSoon").default(0),
+    totalPendingReview: int("totalPendingReview").default(0),
+    totalRejected: int("totalRejected").default(0),
+    hasBlockingIssues: boolean("hasBlockingIssues").default(false),
+    blockingDocuments: json("blockingDocuments").default([]),
+    missingDocuments: json("missingDocuments").default([]),
+    expiredDocuments: json("expiredDocuments").default([]),
+    expiringDocuments: json("expiringDocuments").default([]),
+    pendingDocuments: json("pendingDocuments").default([]),
+    rejectedDocuments: json("rejectedDocuments").default([]),
+    nextExpirationDate: varchar("nextExpirationDate", { length: 10 }),
+    nextExpiringDocument: varchar("nextExpiringDocument", { length: 50 }),
+    calculatedAt: timestamp("calculatedAt").defaultNow(),
+    validUntil: timestamp("validUntil"),
+  },
+  (table) => ({
+    userIdx: unique("idx_doc_compliance_user").on(table.userId),
+    companyIdx: index("idx_doc_compliance_company").on(table.companyId),
+  })
+);
+
+export type DocComplianceStatus = typeof docComplianceStatus.$inferSelect;
+export type InsertDocComplianceStatus = typeof docComplianceStatus.$inferInsert;
+
+export const stateDocRequirements = mysqlTable(
+  "state_doc_requirements",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    stateCode: varchar("stateCode", { length: 2 }).notNull(),
+    stateName: varchar("stateName", { length: 100 }).notNull(),
+    documentTypeId: varchar("documentTypeId", { length: 50 }).notNull(),
+    stateFormNumber: varchar("stateFormNumber", { length: 50 }),
+    stateFormName: varchar("stateFormName", { length: 200 }),
+    stateIssuingAgency: varchar("stateIssuingAgency", { length: 200 }),
+    statePortalUrl: text("statePortalUrl"),
+    stateFormUrl: text("stateFormUrl"),
+    stateInstructionsUrl: text("stateInstructionsUrl"),
+    isRequired: boolean("isRequired").default(true),
+    requiredForRoles: json("requiredForRoles"),
+    conditions: json("conditions"),
+    filingFee: decimal("filingFee", { precision: 10, scale: 2 }),
+    renewalFee: decimal("renewalFee", { precision: 10, scale: 2 }),
+    lateFee: decimal("lateFee", { precision: 10, scale: 2 }),
+    validityPeriod: varchar("validityPeriod", { length: 50 }),
+    renewalWindow: varchar("renewalWindow", { length: 100 }),
+    notes: text("notes"),
+    lastVerified: varchar("lastVerified", { length: 10 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    stateIdx: index("idx_state_doc_req_state").on(table.stateCode),
+    docTypeIdx: index("idx_state_doc_req_doctype").on(table.documentTypeId),
+    stateDocUnique: unique("idx_state_doc_req_unique").on(table.stateCode, table.documentTypeId),
+  })
+);
+
+export type StateDocRequirement = typeof stateDocRequirements.$inferSelect;
+export type InsertStateDocRequirement = typeof stateDocRequirements.$inferInsert;
+
+export const userOperatingStates = mysqlTable(
+  "user_operating_states",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    stateCode: varchar("stateCode", { length: 2 }).notNull(),
+    isHomeState: boolean("isHomeState").default(false),
+    isRegisteredState: boolean("isRegisteredState").default(false),
+    isOperatingState: boolean("isOperatingState").default(true),
+    hasStatePermit: boolean("hasStatePermit").default(false),
+    permitNumber: varchar("permitNumber", { length: 100 }),
+    permitExpiresAt: varchar("permitExpiresAt", { length: 10 }),
+    hasWeightDistanceTax: boolean("hasWeightDistanceTax").default(false),
+    weightDistanceAccountNumber: varchar("weightDistanceAccountNumber", { length: 100 }),
+    addedAt: timestamp("addedAt").defaultNow(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("idx_user_op_states_user").on(table.userId),
+    userStateUnique: unique("idx_user_op_states_unique").on(table.userId, table.stateCode),
+  })
+);
+
+export type UserOperatingState = typeof userOperatingStates.$inferSelect;
+export type InsertUserOperatingState = typeof userOperatingStates.$inferInsert;
+
+export const documentTemplates = mysqlTable(
+  "document_templates",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    documentTypeId: varchar("documentTypeId", { length: 50 }).notNull(),
+    name: varchar("name", { length: 200 }).notNull(),
+    description: text("description"),
+    version: varchar("version", { length: 20 }).notNull(),
+    templateUrl: text("templateUrl").notNull(),
+    thumbnailUrl: text("thumbnailUrl"),
+    isFillable: boolean("isFillable").default(false),
+    formFields: json("formFields"),
+    sourceUrl: text("sourceUrl"),
+    lastOfficialUpdate: varchar("lastOfficialUpdate", { length: 10 }),
+    stateCode: varchar("stateCode", { length: 2 }),
+    isActive: boolean("isActive").default(true),
+    effectiveDate: varchar("effectiveDate", { length: 10 }),
+    supersededById: int("supersededById"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    docTypeIdx: index("idx_templates_doctype").on(table.documentTypeId),
+    stateIdx: index("idx_templates_state").on(table.stateCode),
+  })
+);
+
+export type DocumentTemplate = typeof documentTemplates.$inferSelect;
+export type InsertDocumentTemplate = typeof documentTemplates.$inferInsert;
+
+export const documentNotifications = mysqlTable(
+  "document_notifications",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    documentTypeId: varchar("documentTypeId", { length: 50 }).notNull(),
+    userDocumentId: int("userDocumentId"),
+    notificationType: varchar("notificationType", { length: 50 }).notNull(),
+    scheduledFor: timestamp("scheduledFor").notNull(),
+    sentAt: timestamp("sentAt"),
+    isSent: boolean("isSent").default(false),
+    channels: json("channels").default(["EMAIL", "IN_APP"]),
+    channelResults: json("channelResults"),
+    subject: text("subject"),
+    message: text("message"),
+    actionUrl: text("actionUrl"),
+    readAt: timestamp("readAt"),
+    clickedAt: timestamp("clickedAt"),
+    dismissedAt: timestamp("dismissedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("idx_doc_notif_user").on(table.userId),
+    scheduledIdx: index("idx_doc_notif_scheduled").on(table.scheduledFor),
+    pendingIdx: index("idx_doc_notif_pending").on(table.isSent, table.scheduledFor),
+  })
+);
+
+export type DocumentNotification = typeof documentNotifications.$inferSelect;
+export type InsertDocumentNotification = typeof documentNotifications.$inferInsert;
+
