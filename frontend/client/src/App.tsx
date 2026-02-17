@@ -240,6 +240,53 @@ import FactoringAgingPage from "./pages/factoring/FactoringAging";
 import FactoringChargebacksPage from "./pages/factoring/FactoringChargebacks";
 import FactoringDebtorsPage from "./pages/factoring/FactoringDebtors";
 import FactoringReportsPage from "./pages/factoring/FactoringReports";
+// ── Gold Standard Wiring: 46 previously dead-code pages ─────────────────────
+import BackgroundChecks from "./pages/BackgroundChecks";
+import BOLManagementPage from "./pages/BOLManagement";
+import BrokerCompliancePage from "./pages/BrokerCompliance";
+import ChangePasswordPage from "./pages/ChangePassword";
+import DetentionTrackingPage from "./pages/DetentionTracking";
+import DriverNavPage from "./pages/DriverNavigation";
+import DriverSafetyScorecardPage from "./pages/DriverSafetyScorecard";
+import DrugAlcoholTestingPage from "./pages/DrugAlcoholTesting";
+import DVIRManagementPage from "./pages/DVIRManagement";
+import ELDIntegrationPage from "./pages/ELDIntegration";
+import EquipmentMgmtPage from "./pages/EquipmentManagement";
+import ERGGuidePage from "./pages/ERGGuide";
+import ERGLookupPage from "./pages/ERGLookup";
+import FeatureFlagsPage from "./pages/FeatureFlags";
+import HazmatCertsPage from "./pages/HazmatCertifications";
+import HOSCompliancePage from "./pages/HOSCompliance";
+import IFTAReportingPage from "./pages/IFTAReporting";
+import InsuranceMgmtPage from "./pages/InsuranceManagement";
+import InvoiceMgmtPage from "./pages/InvoiceManagement";
+import LaneAnalysisPage from "./pages/LaneAnalysis";
+import LoadHistoryPage from "./pages/LoadHistory";
+import MaintenanceSchedulePage from "./pages/MaintenanceSchedule";
+import MedicalCertsPage from "./pages/MedicalCertifications";
+import MVRReportsPage from "./pages/MVRReports";
+import OnTimePerformancePage from "./pages/OnTimePerformance";
+import PaymentHistoryPage from "./pages/PaymentHistory";
+import PermitMgmtPage from "./pages/PermitManagement";
+import PODManagementPage from "./pages/PODManagement";
+import QuoteMgmtPage from "./pages/QuoteManagement";
+import ReportBuilderPage from "./pages/ReportBuilder";
+import RestStopsPage from "./pages/RestStops";
+import RevenueAnalyticsPage from "./pages/RevenueAnalytics";
+import RolePermissionsPage from "./pages/RolePermissions";
+import RoutePlanningPage from "./pages/RoutePlanning";
+import SAFERLookupPage from "./pages/SAFERLookup";
+import SafetyMeetingsPage from "./pages/SafetyMeetings";
+import ScaleLocationsPage from "./pages/ScaleLocations";
+import SecuritySettingsPage from "./pages/SecuritySettings";
+import SessionMgmtPage from "./pages/SessionManagement";
+import SettlementStatementsPage from "./pages/SettlementStatements";
+import ShipperCompliancePage from "./pages/ShipperCompliance";
+import TaxDocumentsPage from "./pages/TaxDocuments";
+import TrafficConditionsPage from "./pages/TrafficConditions";
+import TwoFactorAuthPage from "./pages/TwoFactorAuth";
+import TwoFactorSetupPage from "./pages/TwoFactorSetup";
+import VehicleInspectionsPage from "./pages/VehicleInspections";
 
 function Router() {
   // Role constants for route protection
@@ -314,6 +361,20 @@ function Router() {
       <Route path={"/claims"} component={guard(ALL, <ClaimsPage />)} />
       <Route path={"/market-pricing"} component={guard(ALL, <MarketPricing />)} />
       <Route path={"/authority"} component={guard([...CARR, ...DRIV, ...BROK, ...DISP, ...ESCT], <OperatingAuthority />)} />
+      {/* Gold Standard: Shared auth, settings & cross-role compliance */}
+      <Route path={"/settings/change-password"} component={guard(ALL, <ChangePasswordPage />)} />
+      <Route path={"/settings/2fa-setup"} component={guard(ALL, <TwoFactorSetupPage />)} />
+      <Route path={"/settings/2fa"} component={guard(ALL, <TwoFactorAuthPage />)} />
+      <Route path={"/settings/sessions"} component={guard(ALL, <SessionMgmtPage />)} />
+      <Route path={"/bol-management"} component={guard(ALL, <BOLManagementPage />)} />
+      <Route path={"/pod"} component={guard(ALL, <PODManagementPage />)} />
+      <Route path={"/erg/guide"} component={guard(ALL, <ERGGuidePage />)} />
+      <Route path={"/erg/lookup"} component={guard(ALL, <ERGLookupPage />)} />
+      <Route path={"/fmcsa-lookup"} component={guard([...CARR, ...BROK, ...COMP, ...SHIP], <SAFERLookupPage />)} />
+      <Route path={"/hazmat/certifications"} component={guard(ALL, <HazmatCertsPage />)} />
+      <Route path={"/insurance"} component={guard([...CARR, ...BROK, ...COMP], <InsuranceMgmtPage />)} />
+      <Route path={"/inspections"} component={guard([...CARR, ...COMP, ...SAFE], <VehicleInspectionsPage />)} />
+      <Route path={"/report-builder"} component={guard([...CARR, ...BROK, ...COMP, ...SAFE, ...ADMN], <ReportBuilderPage />)} />
 
       {/* ============================================ */}
       {/* SHIPPER ROUTES */}
@@ -332,6 +393,9 @@ function Router() {
       <Route path={"/loads/recurring"} component={guard(SHIP, <RecurringLoadScheduler />)} />
       <Route path={"/loads/:id"} component={guard(LOAD, <LoadDetails />)} />
       <Route path={"/shipper/dispatch"} component={guard(SHIP, <ShipperDispatchControl />)} />
+      <Route path={"/shipper/compliance"} component={guard(SHIP, <ShipperCompliancePage />)} />
+      <Route path={"/quotes"} component={guard([...SHIP, ...BROK], <QuoteMgmtPage />)} />
+      <Route path={"/payment-history"} component={guard([...SHIP, ...CARR, ...BROK], <PaymentHistoryPage />)} />
 
       {/* ============================================ */}
       {/* CATALYST ROUTES */}
@@ -350,6 +414,17 @@ function Router() {
       <Route path={"/drivers"} component={guard(CARR, <FleetCommandCenter />)} />
       <Route path={"/earnings"} component={guard([...CARR, "DRIVER", "DISPATCH", "ESCORT"], <WalletPage />)} />
       <Route path={"/analytics"} component={guard([...CARR, "BROKER"], <Analytics />)} />
+      <Route path={"/equipment"} component={guard(CARR, <EquipmentMgmtPage />)} />
+      <Route path={"/invoices"} component={guard([...CARR, ...SHIP, ...BROK], <InvoiceMgmtPage />)} />
+      <Route path={"/revenue"} component={guard([...CARR, ...BROK], <RevenueAnalyticsPage />)} />
+      <Route path={"/settlements"} component={guard(CARR, <SettlementStatementsPage />)} />
+      <Route path={"/maintenance"} component={guard(CARR, <MaintenanceSchedulePage />)} />
+      <Route path={"/compliance/ifta"} component={guard([...CARR, ...COMP], <IFTAReportingPage />)} />
+      <Route path={"/permits"} component={guard([...CARR, ...COMP], <PermitMgmtPage />)} />
+      <Route path={"/compliance/mvr"} component={guard([...CARR, ...COMP], <MVRReportsPage />)} />
+      <Route path={"/compliance/drug-alcohol"} component={guard([...SAFE, ...COMP, ...CARR], <DrugAlcoholTestingPage />)} />
+      <Route path={"/hos-compliance"} component={guard([...DRIV, ...CARR, ...COMP], <HOSCompliancePage />)} />
+      <Route path={"/on-time"} component={guard([...DISP, ...CARR, ...SHIP], <OnTimePerformancePage />)} />
 
       {/* ============================================ */}
       {/* BROKER ROUTES */}
@@ -358,6 +433,8 @@ function Router() {
       <Route path={"/commission"} component={guard(BROK, <CommissionPage />)} />
       <Route path={"/catalyst-vetting"} component={guard(BROK, <CatalystVetting />)} />
       <Route path={"/catalyst/:catalystId"} component={guard(BROK, <CatalystVettingDetails />)} />
+      <Route path={"/broker/compliance"} component={guard(BROK, <BrokerCompliancePage />)} />
+      <Route path={"/lane-analysis"} component={guard([...BROK, ...CARR], <LaneAnalysisPage />)} />
 
       {/* ============================================ */}
       {/* DRIVER ROUTES */}
@@ -425,6 +502,18 @@ function Router() {
       <Route path={"/hazmat/check-in"} component={guard(DRIV, <HazmatCheckIn />)} />
       <Route path={"/hazmat/dock-assignment"} component={guard(DRIV, <DockAssignment />)} />
       <Route path={"/hazmat/loading-status"} component={guard(DRIV, <LoadingUnloadingStatus />)} />
+      <Route path={"/driver/background-checks"} component={guard(DRIV, <BackgroundChecks />)} />
+      <Route path={"/driver/medical-cert"} component={guard(DRIV, <MedicalCertsPage />)} />
+      <Route path={"/driver/dvir-history"} component={guard(DRIV, <DVIRManagementPage />)} />
+      <Route path={"/driver/navigation"} component={guard(DRIV, <DriverNavPage />)} />
+      <Route path={"/driver/safety-score"} component={guard(DRIV, <DriverSafetyScorecardPage />)} />
+      <Route path={"/driver/eld-transfer"} component={guard(DRIV, <ELDIntegrationPage />)} />
+      <Route path={"/loads/history"} component={guard(LOAD, <LoadHistoryPage />)} />
+      <Route path={"/rest-stops"} component={guard(DRIV, <RestStopsPage />)} />
+      <Route path={"/traffic"} component={guard([...DRIV, ...DISP], <TrafficConditionsPage />)} />
+      <Route path={"/route-planning"} component={guard([...DRIV, ...DISP, ...CARR], <RoutePlanningPage />)} />
+      <Route path={"/tax-documents"} component={guard([...DRIV, ...CARR], <TaxDocumentsPage />)} />
+      <Route path={"/scale-locations"} component={guard(DRIV, <ScaleLocationsPage />)} />
 
       {/* ============================================ */}
       {/* DISPATCH (DISPATCHER) ROUTES */}
@@ -469,6 +558,7 @@ function Router() {
       <Route path={"/terminal-inventory"} component={guard(TERM, <TerminalInventory />)} />
       <Route path={"/bol"} component={guard(TERM, <BOLGeneration />)} />
       <Route path={"/spectra-match"} component={guard(TERM, <SpectraMatch />)} />
+      <Route path={"/detention"} component={guard([...TERM, ...CARR, ...SHIP], <DetentionTrackingPage />)} />
       <Route path={"/euso-ticket"} component={guard(TERM, <EusoTicket />)} />
       <Route path={"/run-tickets"} component={guard(TERM, <EusoTicket />)} />
 
@@ -500,6 +590,7 @@ function Router() {
       <Route path={"/fleet-compliance"} component={guard(COMP, <FleetOverview />)} />
       <Route path={"/driver-compliance"} component={guard(COMP, <DriverPerformance />)} />
       <Route path={"/compliance/reports"} component={guard(COMP, <Audits />)} />
+      <Route path={"/compliance/inspections"} component={guard(COMP, <VehicleInspectionsPage />)} />
 
       {/* ============================================ */}
       {/* SAFETY MANAGER ROUTES */}
@@ -515,6 +606,7 @@ function Router() {
       <Route path={"/hazmat"} component={guard(SAFE, <ErgPage />)} />
       <Route path={"/incidents"} component={guard(SAFE, <IncidentReport />)} />
       <Route path={"/accident-report"} component={guard(SAFE, <AccidentReport />)} />
+      <Route path={"/safety/meetings"} component={guard(SAFE, <SafetyMeetingsPage />)} />
 
       {/* ============================================ */}
       {/* ADMIN ROUTES */}
@@ -532,6 +624,8 @@ function Router() {
       <Route path={"/admin/audit-logs"} component={guard(ADMN, <AuditLogs />)} />
       <Route path={"/admin/rss-feeds"} component={guard(ADMN, <AdminRSSFeeds />)} />
       <Route path={"/admin/platform-fees"} component={guard(ADMN, <AdminPlatformFees />)} />
+      <Route path={"/admin/feature-flags"} component={guard(ADMN, <FeatureFlagsPage />)} />
+      <Route path={"/admin/roles"} component={guard(ADMN, <RolePermissionsPage />)} />
 
       {/* ============================================ */}
       {/* SUPER ADMIN ROUTES */}
@@ -547,6 +641,7 @@ function Router() {
       <Route path={"/super-admin/logs"} component={guard(SUPR, <AuditLogs />)} />
       <Route path={"/super-admin/monitoring"} component={guard(SUPR, <Analytics />)} />
       <Route path={"/super-admin/settings"} component={guard(SUPR, <SettingsPage />)} />
+      <Route path={"/super-admin/security"} component={guard(SUPR, <SecuritySettingsPage />)} />
 
       {/* ============================================ */}
       {/* UTILITY & DETAIL ROUTES */}
