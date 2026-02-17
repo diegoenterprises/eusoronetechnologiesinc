@@ -394,7 +394,221 @@ export const hazmatRouter = router({
     ergContacts: EMERGENCY_CONTACTS,
   })),
 
-  // 14. getIncidentHistory — Past hazmat incidents for a company/driver
+  // 14. getRouteRestrictions — Hazmat Route Planner (49 CFR 397)
+  getRouteRestrictions: protectedProcedure
+    .input(z.object({
+      hazmatClass: z.string(),
+      unNumber: z.string().optional(),
+      originState: z.string(),
+      destinationState: z.string(),
+      transitStates: z.array(z.string()).optional(),
+      isTIH: z.boolean().optional(),
+      isRadioactive: z.boolean().optional(),
+      isExplosive: z.boolean().optional(),
+      weight: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const restrictions: Array<{
+        type: string;
+        location: string;
+        description: string;
+        regulation: string;
+        severity: "blocked" | "restricted" | "advisory";
+        alternatives: string;
+      }> = [];
+
+      const allStates = Array.from(new Set([input.originState, input.destinationState, ...(input.transitStates || [])]));
+
+      // Tunnel restrictions (49 CFR 397.71)
+      const TUNNEL_RESTRICTIONS: Record<string, Array<{ name: string; category: string; blockedClasses: string[]; note: string }>> = {
+        NY: [
+          { name: "Lincoln Tunnel", category: "E", blockedClasses: ["1.1","1.2","1.3","1.4","1.5","1.6","2.1","2.3","3","4.1","4.2","4.3","5.1","5.2","6.1","7"], note: "Most hazmat prohibited" },
+          { name: "Holland Tunnel", category: "E", blockedClasses: ["1.1","1.2","1.3","1.4","1.5","1.6","2.1","2.3","3","4.1","4.2","4.3","5.1","5.2","6.1","7"], note: "Most hazmat prohibited" },
+          { name: "Queens-Midtown Tunnel", category: "D", blockedClasses: ["1.1","1.2","1.3","2.3","3","4.2","4.3","5.1","5.2","6.1","7"], note: "Flammable and toxic prohibited" },
+          { name: "Brooklyn-Battery Tunnel", category: "D", blockedClasses: ["1.1","1.2","1.3","2.3","3","4.2","4.3","5.1","5.2","6.1","7"], note: "Flammable and toxic prohibited" },
+        ],
+        NJ: [
+          { name: "Lincoln Tunnel (NJ side)", category: "E", blockedClasses: ["1.1","1.2","1.3","1.4","1.5","1.6","2.1","2.3","3","4.1","4.2","4.3","5.1","5.2","6.1","7"], note: "Most hazmat prohibited" },
+          { name: "Holland Tunnel (NJ side)", category: "E", blockedClasses: ["1.1","1.2","1.3","1.4","1.5","1.6","2.1","2.3","3","4.1","4.2","4.3","5.1","5.2","6.1","7"], note: "Most hazmat prohibited" },
+        ],
+        MA: [
+          { name: "Ted Williams Tunnel (I-90)", category: "D", blockedClasses: ["1.1","1.2","1.3","2.3","3","4.2","4.3","5.1","5.2","6.1","7"], note: "Flammable and toxic prohibited" },
+          { name: "Sumner/Callahan Tunnels", category: "C", blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], note: "Explosives and toxic gas prohibited" },
+        ],
+        VA: [
+          { name: "Hampton Roads Bridge-Tunnel", category: "C", blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], note: "Escort may be required" },
+          { name: "Monitor-Merrimac Bridge-Tunnel", category: "C", blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], note: "Check with VDOT" },
+        ],
+        MD: [
+          { name: "Baltimore Harbor Tunnel", category: "C", blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], note: "MdTA restrictions apply" },
+          { name: "Fort McHenry Tunnel (I-95)", category: "C", blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], note: "MdTA restrictions apply" },
+        ],
+        CO: [
+          { name: "Eisenhower/Johnson Tunnels (I-70)", category: "C", blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], note: "CDOT hazmat escort program" },
+        ],
+        WA: [
+          { name: "SR 99 Tunnel (Seattle)", category: "D", blockedClasses: ["1.1","1.2","1.3","2.3","3","4.2","4.3","5.1","5.2","6.1","7"], note: "Most hazmat prohibited" },
+        ],
+      };
+
+      for (let si = 0; si < allStates.length; si++) {
+        const st = allStates[si];
+        const tunnels = TUNNEL_RESTRICTIONS[st.toUpperCase()];
+        if (tunnels) {
+          for (const t of tunnels) {
+            const nc = normalizeClass(input.hazmatClass);
+            if (t.blockedClasses.some(bc => input.hazmatClass === bc || nc === bc.split(".")[0])) {
+              restrictions.push({
+                type: "tunnel",
+                location: `${t.name} (${st})`,
+                description: `Class ${input.hazmatClass} prohibited — Tunnel Category ${t.category}. ${t.note}`,
+                regulation: "49 CFR 397.71 — FHWA Tunnel Categories",
+                severity: "blocked",
+                alternatives: "Use surface routes or alternative crossings",
+              });
+            }
+          }
+        }
+      }
+
+      // Time-of-day restrictions (common in metro areas)
+      const TIME_RESTRICTIONS: Record<string, Array<{ area: string; hours: string; days: string }>> = {
+        NY: [{ area: "New York City (all boroughs)", hours: "No hazmat on NYC roads 12am-6am without permit; specific route restrictions 24/7", days: "All days" }],
+        IL: [{ area: "Chicago metro (Cook County)", hours: "No hazmat on certain routes during rush hours (6am-9am, 3pm-7pm)", days: "Weekdays" }],
+        CA: [{ area: "Los Angeles metro", hours: "Hazmat vehicles prohibited on certain freeways during peak hours", days: "Weekdays" }],
+        DC: [{ area: "Washington DC", hours: "Hazmat restricted on most DC streets; designated routes only", days: "All days" }],
+      };
+
+      for (let si2 = 0; si2 < allStates.length; si2++) {
+        const st = allStates[si2];
+        const times = TIME_RESTRICTIONS[st.toUpperCase()];
+        if (times) {
+          for (const t of times) {
+            restrictions.push({
+              type: "time_of_day",
+              location: `${t.area} (${st})`,
+              description: `${t.hours}. Applies: ${t.days}`,
+              regulation: "49 CFR 397.67 — Routing designations",
+              severity: "restricted",
+              alternatives: "Plan arrival/departure outside restricted hours or use designated hazmat routes",
+            });
+          }
+        }
+      }
+
+      // State permit requirements
+      const STATE_PERMITS: Record<string, { requiresPermit: boolean; permitTypes: string[]; agency: string; website: string; notes: string }> = {
+        NY: { requiresPermit: true, permitTypes: ["Highway Route Controlled Quantity (HRCQ)", "Oversize/Overweight Hazmat"], agency: "NYSDOT", website: "dot.ny.gov", notes: "NYC requires separate NYC DOT permit for all hazmat vehicles" },
+        NJ: { requiresPermit: true, permitTypes: ["Hazmat Transport Permit"], agency: "NJDOT", website: "nj.gov/transportation", notes: "Required for Class 1, 2.3, 7 materials" },
+        CA: { requiresPermit: true, permitTypes: ["Caltrans Hazmat Permit", "CHP Escort (explosives)"], agency: "Caltrans/CHP", website: "dot.ca.gov", notes: "Required for radioactive, explosives, certain toxic materials" },
+        TX: { requiresPermit: true, permitTypes: ["TxDMV Hazmat Oversize Permit"], agency: "TxDMV", website: "txdmv.gov", notes: "Required for oversize hazmat loads" },
+        IL: { requiresPermit: true, permitTypes: ["IDOT Hazmat Routing Permit"], agency: "IDOT", website: "idot.illinois.gov", notes: "Required for HRCQ through Chicago metro" },
+        PA: { requiresPermit: true, permitTypes: ["PennDOT Hazmat Permit"], agency: "PennDOT", website: "penndot.gov", notes: "Required for PA Turnpike hazmat transport" },
+        OH: { requiresPermit: false, permitTypes: [], agency: "ODOT", website: "transportation.ohio.gov", notes: "No state-specific hazmat permit; federal HMSP sufficient" },
+        FL: { requiresPermit: false, permitTypes: [], agency: "FDOT", website: "fdot.gov", notes: "No state-specific hazmat permit; federal HMSP sufficient" },
+      };
+
+      for (let si3 = 0; si3 < allStates.length; si3++) {
+        const st = allStates[si3];
+        const permit = STATE_PERMITS[st.toUpperCase()];
+        if (permit?.requiresPermit) {
+          restrictions.push({
+            type: "state_permit",
+            location: st.toUpperCase(),
+            description: `State permit required: ${permit.permitTypes.join(", ")}. Agency: ${permit.agency}. ${permit.notes}`,
+            regulation: "49 CFR 397 + State regulations",
+            severity: "restricted",
+            alternatives: `Apply at ${permit.website}`,
+          });
+        }
+      }
+
+      // Special restrictions for explosives (Class 1)
+      if (input.hazmatClass.startsWith("1")) {
+        restrictions.push({
+          type: "explosives_routing",
+          location: "All states",
+          description: "Class 1 materials must use DOT-designated preferred routes. Must avoid densely populated areas whenever possible. Vehicle must display proper placards and carry shipping papers.",
+          regulation: "49 CFR 397.65 — Highway route controlled quantities of Class 7 / 49 CFR 397.67",
+          severity: "restricted",
+          alternatives: "Use FMCSA National Hazmat Route Registry for approved routes",
+        });
+      }
+
+      // Radioactive (Class 7) HRCQ restrictions
+      if (input.hazmatClass === "7" || input.isRadioactive) {
+        restrictions.push({
+          type: "radioactive_routing",
+          location: "All states",
+          description: "Highway Route Controlled Quantity (HRCQ) of radioactive materials must use Interstate System preferred routes. Written route plan required. 90-day advance notice to governor's office.",
+          regulation: "49 CFR 397.101 — Routing for radioactive materials",
+          severity: "restricted",
+          alternatives: "Consult DOE/NRC for approved transportation corridors",
+        });
+      }
+
+      // TIH/PIH routing
+      if (input.isTIH || input.hazmatClass === "2.3" || input.hazmatClass === "6.1") {
+        restrictions.push({
+          type: "tih_routing",
+          location: "All states",
+          description: "Toxic Inhalation Hazard (TIH/PIH) materials require preferred routing. Must avoid populated areas. Emergency response plan required onboard.",
+          regulation: "49 CFR 172.505 + 49 CFR 397",
+          severity: "restricted",
+          alternatives: "Use designated TIH routes; carry CHEMTREC emergency response info",
+        });
+      }
+
+      // Populated area avoidance (49 CFR 397.9)
+      restrictions.push({
+        type: "general",
+        location: "All routes",
+        description: "Hazmat vehicles must avoid routes through or near heavily populated areas, places of assembly, tunnels, narrow streets, or alleys — except where no practicable alternative exists.",
+        regulation: "49 CFR 397.9 — Routing",
+        severity: "advisory",
+        alternatives: "Use bypass routes, ring roads, or designated truck routes",
+      });
+
+      // ERG-based distance info
+      let ergInfo = null;
+      if (input.unNumber) {
+        const info = await getFullERGInfo(input.unNumber);
+        if (info?.protectiveDistance) {
+          ergInfo = info.protectiveDistance;
+          restrictions.push({
+            type: "erg_isolation",
+            location: "In case of spill/leak",
+            description: `ERG protective distance: Small spill — ${info.protectiveDistance.smallSpill?.day || "see ERG"} (day), ${info.protectiveDistance.smallSpill?.night || "see ERG"} (night). Large spill — ${info.protectiveDistance.largeSpill?.day || "see ERG"} (day), ${info.protectiveDistance.largeSpill?.night || "see ERG"} (night).`,
+            regulation: "ERG 2024 — Protective Action Distances",
+            severity: "advisory",
+            alternatives: "Carry ERG guide onboard; know evacuation distances",
+          });
+        }
+      }
+
+      const blocked = restrictions.filter(r => r.severity === "blocked").length;
+      const restricted = restrictions.filter(r => r.severity === "restricted").length;
+
+      return {
+        hazmatClass: input.hazmatClass,
+        unNumber: input.unNumber || null,
+        originState: input.originState,
+        destinationState: input.destinationState,
+        transitStates: input.transitStates || [],
+        restrictions,
+        summary: {
+          total: restrictions.length,
+          blocked,
+          restricted,
+          advisory: restrictions.length - blocked - restricted,
+        },
+        routeStatus: blocked > 0 ? "ROUTE_BLOCKED" as const : restricted > 0 ? "RESTRICTIONS_APPLY" as const : "CLEAR" as const,
+        ergProtectiveDistances: ergInfo,
+        regulation: "49 CFR Part 397 — Transportation of Hazardous Materials; Driving and Parking Rules",
+      };
+    }),
+
+  // 15. getIncidentHistory — Past hazmat incidents for a company/driver
   getIncidentHistory: protectedProcedure
     .input(z.object({ companyId: z.number().optional(), driverId: z.number().optional(), limit: z.number().optional() }).optional())
     .query(async ({ ctx, input }) => {

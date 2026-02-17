@@ -239,4 +239,81 @@ export const searchRouter = router({
   saveSearch: protectedProcedure.input(z.object({ name: z.string(), query: z.string(), filters: z.any().optional() })).mutation(async ({ ctx, input }) => {
     return { success: true, id: `saved_${Date.now()}`, name: input.name, query: input.query, savedBy: ctx.user?.id, savedAt: new Date().toISOString() };
   }),
+
+  hazmatByUNNumber: protectedProcedure
+    .input(z.object({
+      unNumber: z.string().optional(),
+      productName: z.string().optional(),
+      hazmatClass: z.string().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { searchMaterials, getFullERGInfo } = await import("../_core/ergDatabaseDB");
+
+      const results: Array<{
+        unNumber: string;
+        name: string;
+        guideNumber: number;
+        hazardClass: string;
+        placardName: string;
+        isTIH: boolean;
+        isWR: boolean;
+        packingGroup: string;
+        emergencyGuide: any;
+        protectiveDistance: any;
+      }> = [];
+
+      if (input.unNumber) {
+        const info = await getFullERGInfo(input.unNumber);
+        if (info?.material) {
+          const m = info.material;
+          results.push({
+            unNumber: m.unNumber,
+            name: m.name,
+            guideNumber: m.guide,
+            hazardClass: m.hazardClass,
+            placardName: m.hazardClass === "3" ? "FLAMMABLE" : m.hazardClass === "8" ? "CORROSIVE" : m.hazardClass.startsWith("2.1") ? "FLAMMABLE GAS" : m.hazardClass.startsWith("2.3") ? "POISON GAS" : `CLASS ${m.hazardClass}`,
+            isTIH: m.isTIH || false,
+            isWR: m.isWR || false,
+            packingGroup: (m as any).packingGroup || "",
+            emergencyGuide: info.guide ? {
+              title: info.guide.title,
+              potentialHazards: info.guide.potentialHazards,
+              publicSafety: info.guide.publicSafety,
+              emergencyResponse: info.guide.emergencyResponse,
+            } : null,
+            protectiveDistance: info.protectiveDistance || null,
+          });
+        }
+      }
+
+      if (input.productName) {
+        const materials = await searchMaterials(input.productName, input.limit || 20);
+        for (const m of materials) {
+          if (input.hazmatClass && m.hazardClass !== input.hazmatClass) continue;
+          const info = await getFullERGInfo(m.unNumber);
+          results.push({
+            unNumber: m.unNumber,
+            name: m.name,
+            guideNumber: m.guide,
+            hazardClass: m.hazardClass,
+            placardName: m.hazardClass === "3" ? "FLAMMABLE" : m.hazardClass === "8" ? "CORROSIVE" : `CLASS ${m.hazardClass}`,
+            isTIH: m.isTIH || false,
+            isWR: m.isWR || false,
+            packingGroup: (m as any).packingGroup || "",
+            emergencyGuide: info?.guide ? {
+              title: info.guide.title,
+              potentialHazards: info.guide.potentialHazards,
+            } : null,
+            protectiveDistance: info?.protectiveDistance || null,
+          });
+        }
+      }
+
+      return {
+        results,
+        total: results.length,
+        query: { unNumber: input.unNumber, productName: input.productName, hazmatClass: input.hazmatClass },
+      };
+    }),
 });
