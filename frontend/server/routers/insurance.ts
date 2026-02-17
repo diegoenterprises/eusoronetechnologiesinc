@@ -651,9 +651,156 @@ export const insuranceRouter = router({
 
   getInsuredVehicles: protectedProcedure
     .input(z.object({ limit: z.number().optional() }).optional())
-    .query(async ({ ctx }) => {
-      // Would join with vehicles table - return empty for now
-      return [];
+    .query(async ({ ctx, input }) => {
+      try {
+        const { vehicles } = await import("../../drizzle/schema");
+        const db = await getDb(); if (!db) return [];
+        const companyId = ctx.user?.companyId;
+        if (!companyId) return [];
+
+        const vList = await db.select({
+          id: vehicles.id,
+          vin: vehicles.vin,
+          licensePlate: vehicles.licensePlate,
+          make: vehicles.make,
+          model: vehicles.model,
+          year: vehicles.year,
+          vehicleType: vehicles.vehicleType,
+          status: vehicles.status,
+        }).from(vehicles)
+          .where(eq(vehicles.companyId, companyId))
+          .limit(input?.limit || 50);
+
+        // Cross-reference with active policies
+        const activePolicies = await db.select().from(insurancePolicies)
+          .where(and(eq(insurancePolicies.companyId, companyId), eq(insurancePolicies.status, "active")));
+
+        const hasAutoPolicy = activePolicies.some(p =>
+          p.policyType === "auto_liability" || p.policyType === "physical_damage" || p.policyType === "cargo"
+        );
+
+        return vList.map(v => ({
+          id: v.id,
+          vin: v.vin,
+          licensePlate: v.licensePlate,
+          make: v.make,
+          model: v.model,
+          year: v.year,
+          vehicleType: v.vehicleType,
+          status: v.status,
+          insured: hasAutoPolicy,
+          coverageType: hasAutoPolicy ? activePolicies.find(p => p.policyType === "auto_liability")?.policyType || "auto_liability" : "none",
+        }));
+      } catch (error) {
+        console.error("[Insurance] getInsuredVehicles error:", error);
+        return [];
+      }
+    }),
+
+  /**
+   * Verify carrier's insurance coverage (for shippers before booking)
+   * Checks company insurance policies, FMCSA filing, and minimum coverage requirements
+   */
+  verifyCarrierCoverage: protectedProcedure
+    .input(z.object({
+      catalystCompanyId: z.number(),
+      requiredCoverageTypes: z.array(z.string()).optional(),
+      minCoverageAmount: z.number().optional(),
+      hazmatRequired: z.boolean().default(false),
+    }))
+    .query(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) return { verified: false, errors: ["Database unavailable"], warnings: [], policies: [], companyName: "" };
+
+        const { companies } = await import("../../drizzle/schema");
+
+        // Get carrier company info
+        const [company] = await db.select().from(companies).where(eq(companies.id, input.catalystCompanyId)).limit(1);
+        if (!company) return { verified: false, errors: ["Carrier company not found"], warnings: [], policies: [], companyName: "" };
+
+        // Get carrier's active policies
+        const policies = await db.select().from(insurancePolicies)
+          .where(and(
+            eq(insurancePolicies.companyId, input.catalystCompanyId),
+            eq(insurancePolicies.status, "active")
+          ));
+
+        const errors: string[] = [];
+        const warnings: string[] = [];
+        const now = new Date();
+        const thirtyDaysFromNow = new Date(now.getTime() + 30 * 86400000);
+
+        // Check minimum required policy types
+        const requiredTypes = input.requiredCoverageTypes || ["auto_liability", "cargo"];
+        for (const reqType of requiredTypes) {
+          const found = policies.find(p => p.policyType === reqType);
+          if (!found) {
+            errors.push(`Missing required ${reqType.replace(/_/g, " ")} coverage`);
+          } else if (found.expirationDate && new Date(found.expirationDate) < now) {
+            errors.push(`${reqType.replace(/_/g, " ")} policy expired on ${new Date(found.expirationDate).toISOString().split("T")[0]}`);
+          } else if (found.expirationDate && new Date(found.expirationDate) < thirtyDaysFromNow) {
+            warnings.push(`${reqType.replace(/_/g, " ")} policy expires in ${Math.ceil((new Date(found.expirationDate).getTime() - now.getTime()) / 86400000)} days`);
+          }
+        }
+
+        // Check minimum coverage amount
+        if (input.minCoverageAmount) {
+          const totalCoverage = policies.reduce((sum, p) => {
+            const limit = parseFloat(String(p.perOccurrenceLimit || p.aggregateLimit || 0));
+            return sum + (isNaN(limit) ? 0 : limit);
+          }, 0);
+          if (totalCoverage < input.minCoverageAmount) {
+            errors.push(`Total coverage $${totalCoverage.toLocaleString()} below required $${input.minCoverageAmount.toLocaleString()}`);
+          }
+        }
+
+        // Hazmat-specific checks
+        if (input.hazmatRequired) {
+          const hazmatPolicy = policies.find(p =>
+            p.policyType === "pollution_liability" || p.policyType === "environmental_impairment"
+          );
+          if (!hazmatPolicy) {
+            errors.push("Missing hazmat/environmental liability coverage (required for hazmat loads)");
+          }
+          // Check company hazmat authorization
+          if (!company.hazmatLicense) {
+            errors.push("Carrier does not have hazmat authorization on file");
+          } else if (company.hazmatExpiry && new Date(company.hazmatExpiry) < now) {
+            errors.push("Carrier hazmat authorization has expired");
+          }
+        }
+
+        // Check FMCSA compliance
+        if (company.complianceStatus === "non_compliant") {
+          errors.push("Carrier is non-compliant per FMCSA records");
+        } else if (company.complianceStatus === "expired") {
+          errors.push("Carrier operating authority has expired");
+        }
+
+        return {
+          verified: errors.length === 0,
+          companyName: company.legalName || company.name,
+          dotNumber: company.dotNumber || "",
+          mcNumber: company.mcNumber || "",
+          complianceStatus: company.complianceStatus || "unknown",
+          errors,
+          warnings,
+          policies: policies.map(p => ({
+            id: p.id,
+            type: p.policyType,
+            provider: p.providerName,
+            policyNumber: p.policyNumber,
+            coverageLimit: parseFloat(String(p.perOccurrenceLimit || p.aggregateLimit || 0)),
+            expirationDate: p.expirationDate?.toISOString().split("T")[0] || "",
+            status: p.status,
+          })),
+          verifiedAt: new Date().toISOString(),
+        };
+      } catch (error) {
+        console.error("[Insurance] verifyCarrierCoverage error:", error);
+        return { verified: false, errors: ["Verification failed"], warnings: [], policies: [], companyName: "" };
+      }
     }),
 
   renewPolicy: protectedProcedure
