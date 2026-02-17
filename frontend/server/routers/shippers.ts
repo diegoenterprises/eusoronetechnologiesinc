@@ -394,13 +394,18 @@ export const shippersRouter = router({
       bidId: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        loadId: input.loadId,
-        bidId: input.bidId,
-        status: "assigned",
-        acceptedAt: new Date().toISOString(),
-      };
+      const db = await getDb(); if (!db) throw new Error('Database unavailable');
+      const bidId = parseInt(input.bidId.replace('bid_', ''), 10) || parseInt(input.bidId, 10);
+      const loadId = parseInt(input.loadId.replace('load_', ''), 10) || parseInt(input.loadId, 10);
+      await db.update(bids).set({ status: 'accepted' as any }).where(eq(bids.id, bidId));
+      // Reject other pending bids on same load
+      await db.update(bids).set({ status: 'rejected' as any }).where(and(eq(bids.loadId, loadId), sql`${bids.id} != ${bidId}`, eq(bids.status, 'pending')));
+      // Assign load
+      const [bid] = await db.select({ catalystId: bids.catalystId }).from(bids).where(eq(bids.id, bidId)).limit(1);
+      if (bid) {
+        await db.update(loads).set({ status: 'assigned' as any, catalystId: bid.catalystId }).where(eq(loads.id, loadId));
+      }
+      return { success: true, loadId: input.loadId, bidId: input.bidId, status: 'assigned', acceptedAt: new Date().toISOString() };
     }),
 
   /**
@@ -413,11 +418,12 @@ export const shippersRouter = router({
       reason: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      return {
-        success: true,
-        bidId: input.bidId,
-        rejectedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (db) {
+        const bidId = parseInt(input.bidId.replace('bid_', ''), 10) || parseInt(input.bidId, 10);
+        await db.update(bids).set({ status: 'rejected' as any, notes: input.reason || null }).where(eq(bids.id, bidId));
+      }
+      return { success: true, bidId: input.bidId, rejectedAt: new Date().toISOString() };
     }),
 
   /**
@@ -427,8 +433,34 @@ export const shippersRouter = router({
     .input(z.object({
       period: z.enum(["month", "quarter", "year"]).default("quarter"),
     }))
-    .query(async ({ input }) => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const userId = ctx.user?.id || 0;
+        const daysMap: Record<string, number> = { month: 30, quarter: 90, year: 365 };
+        const since = new Date(Date.now() - (daysMap[input.period] || 90) * 86400000);
+        const rows = await db.select({
+          catalystId: loads.catalystId,
+          total: sql<number>`COUNT(*)`,
+          delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`,
+          onTime: sql<number>`SUM(CASE WHEN ${loads.actualDeliveryDate} <= ${loads.estimatedDeliveryDate} OR ${loads.actualDeliveryDate} IS NULL THEN 1 ELSE 0 END)`,
+          revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+        }).from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.catalystId} IS NOT NULL`, gte(loads.createdAt, since))).groupBy(loads.catalystId);
+        const results = [];
+        for (const r of rows) {
+          if (!r.catalystId) continue;
+          const [company] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, r.catalystId)).limit(1);
+          results.push({
+            catalystId: `car_${r.catalystId}`,
+            name: company?.name || 'Unknown',
+            totalLoads: r.total || 0,
+            delivered: r.delivered || 0,
+            onTimeRate: (r.total || 0) > 0 ? Math.round(((r.onTime || 0) / (r.total || 1)) * 100) : 0,
+            totalSpend: Math.round(r.revenue || 0),
+          });
+        }
+        return results;
+      } catch { return []; }
     }),
 
   /**
@@ -438,17 +470,27 @@ export const shippersRouter = router({
     .input(z.object({
       period: z.enum(["month", "quarter", "year"]).default("month"),
     }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        totalSpend: 0,
-        loadCount: 0,
-        avgPerLoad: 0,
-        avgPerMile: 0,
-        vsMarketRate: 0,
-        byLane: [],
-        byCatalyst: [],
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const empty = { period: input.period, totalSpend: 0, loadCount: 0, avgPerLoad: 0, avgPerMile: 0, vsMarketRate: 0, byLane: [] as any[], byCatalyst: [] as any[] };
+      if (!db) return empty;
+      try {
+        const userId = ctx.user?.id || 0;
+        const daysMap: Record<string, number> = { month: 30, quarter: 90, year: 365 };
+        const since = new Date(Date.now() - (daysMap[input.period] || 30) * 86400000);
+        const [stats] = await db.select({
+          total: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+          count: sql<number>`COUNT(*)`,
+          avgRate: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)`,
+        }).from(loads).where(and(eq(loads.shipperId, userId), gte(loads.createdAt, since)));
+        const totalSpend = Math.round(stats?.total || 0);
+        const loadCount = stats?.count || 0;
+        return {
+          period: input.period, totalSpend, loadCount,
+          avgPerLoad: loadCount > 0 ? Math.round(totalSpend / loadCount) : 0,
+          avgPerMile: 0, vsMarketRate: 0, byLane: [], byCatalyst: [],
+        };
+      } catch { return empty; }
     }),
 
   /**
@@ -456,7 +498,23 @@ export const shippersRouter = router({
    */
   getFavoriteCatalysts: protectedProcedure
     .query(async ({ ctx }) => {
-      return [];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const userId = ctx.user?.id || 0;
+        // Catalysts the shipper has worked with most
+        const rows = await db.select({
+          catalystId: loads.catalystId,
+          count: sql<number>`COUNT(*)`,
+          totalSpend: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+        }).from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.catalystId} IS NOT NULL`, eq(loads.status, 'delivered'))).groupBy(loads.catalystId).orderBy(sql`COUNT(*) DESC`).limit(10);
+        const results = [];
+        for (const r of rows) {
+          if (!r.catalystId) continue;
+          const [company] = await db.select({ name: companies.name, dotNumber: companies.dotNumber }).from(companies).where(eq(companies.id, r.catalystId)).limit(1);
+          results.push({ catalystId: `car_${r.catalystId}`, name: company?.name || 'Unknown', dotNumber: company?.dotNumber || '', loadsCompleted: r.count || 0, totalSpend: Math.round(r.totalSpend || 0) });
+        }
+        return results;
+      } catch { return []; }
     }),
 
   /**
@@ -465,11 +523,8 @@ export const shippersRouter = router({
   addFavoriteCatalyst: protectedProcedure
     .input(z.object({ catalystId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        catalystId: input.catalystId,
-        addedAt: new Date().toISOString(),
-      };
+      // Favorite catalysts are derived from load history; this is a no-op acknowledgment
+      return { success: true, catalystId: input.catalystId, addedAt: new Date().toISOString() };
     }),
 
   /**
@@ -480,8 +535,23 @@ export const shippersRouter = router({
       status: z.enum(["pending", "confirmed", "disputed"]).optional(),
       limit: z.number().default(20),
     }))
-    .query(async ({ input }) => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const userId = ctx.user?.id || 0;
+        const rows = await db.select().from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'delivered'))).orderBy(desc(loads.actualDeliveryDate)).limit(input.limit);
+        return rows.map(l => {
+          const p = l.pickupLocation as any || {};
+          const d = l.deliveryLocation as any || {};
+          return {
+            loadId: `load_${l.id}`, loadNumber: l.loadNumber,
+            origin: `${p.city || ''}, ${p.state || ''}`, destination: `${d.city || ''}, ${d.state || ''}`,
+            deliveredAt: l.actualDeliveryDate?.toISOString() || l.deliveryDate?.toISOString() || '',
+            status: 'confirmed' as const,
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+          };
+        });
+      } catch { return []; }
     }),
 
   /**
@@ -495,28 +565,70 @@ export const shippersRouter = router({
       review: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        ratingId: `rating_${Date.now()}`,
-        submittedAt: new Date().toISOString(),
-      };
+      // Store rating as a note on the load
+      const db = await getDb();
+      if (db) {
+        try {
+          const loadId = parseInt(input.loadId.replace('load_', ''), 10) || parseInt(input.loadId, 10);
+          await db.update(loads).set({ specialInstructions: sql`CONCAT(COALESCE(${loads.specialInstructions}, ''), '\n[Rating: ${input.rating}/5] ', ${input.review || ''})` }).where(eq(loads.id, loadId));
+        } catch {}
+      }
+      return { success: true, ratingId: `rating_${Date.now()}`, submittedAt: new Date().toISOString() };
     }),
 
   /**
    * Get shipper profile for ShipperProfile page
    */
   getProfile: protectedProcedure
-    .query(async () => ({
-      id: "", companyName: "", contactName: "", email: "", phone: "",
-      address: "", dotNumber: "", mcNumber: "", verified: false, memberSince: "", website: "",
-    })),
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { id: '', companyName: '', contactName: '', email: '', phone: '', address: '', dotNumber: '', mcNumber: '', verified: false, memberSince: '', website: '' };
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const userId = ctx.user?.id;
+        const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+        const [user] = userId ? await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, userId)).limit(1) : [null];
+        return {
+          id: String(companyId), companyName: company?.name || '', contactName: user?.name || '',
+          email: company?.email || user?.email || '', phone: company?.phone || '',
+          address: company?.address || '', dotNumber: company?.dotNumber || '', mcNumber: company?.mcNumber || '',
+          verified: company?.complianceStatus === 'compliant', memberSince: company?.createdAt?.toISOString() || '',
+          website: company?.website || '',
+        };
+      } catch { return { id: '', companyName: '', contactName: '', email: '', phone: '', address: '', dotNumber: '', mcNumber: '', verified: false, memberSince: '', website: '' }; }
+    }),
 
   /**
    * Get shipper stats for ShipperProfile page
    */
   getStats: protectedProcedure
-    .query(async () => ({
-      totalLoads: 0, totalSpend: 0, avgRatePerMile: 0, onTimeDeliveryRate: 0,
-      preferredCatalysts: 0, avgPaymentTime: 0, onTimeRate: 0, monthlyVolume: [], maxMonthlyLoads: 0,
-    })),
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { totalLoads: 0, totalSpend: 0, avgRatePerMile: 0, onTimeDeliveryRate: 0, preferredCatalysts: 0, avgPaymentTime: 0, onTimeRate: 0, monthlyVolume: [] as any[], maxMonthlyLoads: 0 };
+      try {
+        const userId = ctx.user?.id || 0;
+        const [stats] = await db.select({
+          total: sql<number>`COUNT(*)`,
+          totalSpend: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+          delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`,
+          onTime: sql<number>`SUM(CASE WHEN ${loads.actualDeliveryDate} <= ${loads.estimatedDeliveryDate} OR ${loads.actualDeliveryDate} IS NULL THEN 1 ELSE 0 END)`,
+          catalysts: sql<number>`COUNT(DISTINCT ${loads.catalystId})`,
+        }).from(loads).where(eq(loads.shipperId, userId));
+        const total = stats?.total || 0;
+        const delivered = stats?.delivered || 0;
+        const monthly = await db.select({
+          month: sql<string>`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`,
+          count: sql<number>`COUNT(*)`,
+        }).from(loads).where(eq(loads.shipperId, userId)).groupBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`).orderBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m') DESC`).limit(12);
+        const monthlyVolume = monthly.reverse().map(m => ({ month: m.month, loads: m.count || 0 }));
+        const maxMonthlyLoads = Math.max(...monthlyVolume.map(m => m.loads), 0);
+        return {
+          totalLoads: total, totalSpend: Math.round(stats?.totalSpend || 0), avgRatePerMile: 0,
+          onTimeDeliveryRate: delivered > 0 ? Math.round(((stats?.onTime || 0) / delivered) * 100) : 0,
+          preferredCatalysts: stats?.catalysts || 0, avgPaymentTime: 0,
+          onTimeRate: delivered > 0 ? Math.round(((stats?.onTime || 0) / delivered) * 100) : 0,
+          monthlyVolume, maxMonthlyLoads,
+        };
+      } catch { return { totalLoads: 0, totalSpend: 0, avgRatePerMile: 0, onTimeDeliveryRate: 0, preferredCatalysts: 0, avgPaymentTime: 0, onTimeRate: 0, monthlyVolume: [], maxMonthlyLoads: 0 }; }
+    }),
 });
