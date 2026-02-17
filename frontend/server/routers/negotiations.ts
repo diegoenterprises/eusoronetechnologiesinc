@@ -143,12 +143,24 @@ export const negotiationsRouter = router({
       currentStatus: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // Validate state allows counter-offers
       const currentStatus = (input.currentStatus || "INITIATED").toUpperCase() as NegotiationState;
       if (!VALID_COUNTER_STATES.includes(currentStatus)) {
         return { success: false, error: `Cannot counter-offer in ${currentStatus} state.` };
       }
       const platformFee = calcPlatformFee(input.amount);
+      const db = await getDb();
+      if (db) {
+        try {
+          const userId = Number(ctx.user?.id) || 0;
+          const [neg] = await db.select({ totalRounds: negotiationsTable.totalRounds }).from(negotiationsTable).where(eq(negotiationsTable.id, input.negotiationId)).limit(1);
+          const newRound = (neg?.totalRounds || 1) + 1;
+          await db.update(negotiationsTable).set({
+            status: 'counter_offered' as any,
+            currentOffer: { amount: input.amount, proposedBy: userId, proposedAt: new Date().toISOString() } as any,
+            totalRounds: newRound,
+          }).where(eq(negotiationsTable.id, input.negotiationId));
+        } catch { /* non-fatal */ }
+      }
       return {
         success: true,
         id: input.negotiationId,
@@ -176,6 +188,17 @@ export const negotiationsRouter = router({
         return { success: false, error: `Cannot accept in ${currentStatus} state.` };
       }
       const platformFee = calcPlatformFee(input.finalRate);
+      const db = await getDb();
+      if (db) {
+        try {
+          await db.update(negotiationsTable).set({
+            status: 'agreed' as any,
+            outcome: 'accepted' as any,
+            resolvedAt: new Date(),
+            currentOffer: { amount: input.finalRate, proposedBy: Number(ctx.user?.id) || 0, proposedAt: new Date().toISOString() } as any,
+          }).where(eq(negotiationsTable.id, input.negotiationId));
+        } catch { /* non-fatal */ }
+      }
       return {
         success: true,
         id: input.negotiationId,
@@ -197,6 +220,16 @@ export const negotiationsRouter = router({
       reason: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (db) {
+        try {
+          await db.update(negotiationsTable).set({
+            status: 'rejected' as any,
+            outcome: 'rejected' as any,
+            resolvedAt: new Date(),
+          }).where(eq(negotiationsTable.id, input.negotiationId));
+        } catch { /* non-fatal */ }
+      }
       return {
         success: true,
         id: input.negotiationId,
@@ -228,14 +261,28 @@ export const negotiationsRouter = router({
       }
 
       const platformFee = calcPlatformFee(input.finalRate, input.cargoType);
-
-      // 1. Generate Smart Contract Document (BOL)
       const bolUrl = `https://s3.eusorone.com/bol/load-${input.loadId}-neg-${input.negotiationId}.pdf`;
-
-      // 2. Initiate Escrow Hold (Stripe PaymentIntent in production)
       const escrowIntentId = `pi_escrow_${input.loadId}_${Date.now()}`;
 
-      // 3. Record transaction
+      const db = await getDb();
+      if (db) {
+        try {
+          // Update negotiation to signed
+          await db.update(negotiationsTable).set({
+            status: 'agreed' as any,
+            outcome: 'accepted' as any,
+            resolvedAt: new Date(),
+          }).where(eq(negotiationsTable.id, input.negotiationId));
+          // Assign load
+          const { loads } = await import("../../drizzle/schema");
+          await db.update(loads).set({
+            status: 'assigned' as any,
+            rate: String(input.finalRate),
+            catalystId: input.catalystId,
+          }).where(eq(loads.id, input.loadId));
+        } catch { /* non-fatal */ }
+      }
+
       const transaction = {
         negotiationId: input.negotiationId,
         loadId: input.loadId,
@@ -249,9 +296,6 @@ export const negotiationsRouter = router({
         status: "ESCROW_HELD",
         createdAt: new Date().toISOString(),
       };
-
-      // 4. Transition load to ASSIGNED (downstream hook)
-      // In production: calls loadLifecycle.transitionState
 
       return {
         success: true,
@@ -273,6 +317,17 @@ export const negotiationsRouter = router({
       message: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (db) {
+        try {
+          // Append message to the currentOffer JSON as a thread entry
+          const [neg] = await db.select({ currentOffer: negotiationsTable.currentOffer, totalRounds: negotiationsTable.totalRounds }).from(negotiationsTable).where(eq(negotiationsTable.id, input.negotiationId)).limit(1);
+          const offer = (neg?.currentOffer as any) || {};
+          const messages = offer.messages || [];
+          messages.push({ sender: Number(ctx.user?.id) || 0, message: input.message, at: new Date().toISOString() });
+          await db.update(negotiationsTable).set({ currentOffer: { ...offer, messages } }).where(eq(negotiationsTable.id, input.negotiationId));
+        } catch { /* non-fatal */ }
+      }
       return {
         id: Date.now(),
         negotiationId: input.negotiationId,

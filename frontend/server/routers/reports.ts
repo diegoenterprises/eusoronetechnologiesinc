@@ -9,6 +9,7 @@ import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, vehicles, users, payments, incidents } from "../../drizzle/schema";
+// vehicles used in getDashboardMetrics for fleet stats
 
 const reportTypeSchema = z.enum([
   "loads", "revenue", "fleet", "driver_performance", "safety", "compliance",
@@ -105,12 +106,30 @@ export const reportsRouter = router({
       groupBy: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const reportId = `report_${Date.now()}`;
+      // In production, this would queue an async job. For now, record the request.
+      const db = await getDb();
+      let rowCount = 0;
+      if (db) {
+        try {
+          const startDate = new Date(input.dateRange.start);
+          const endDate = new Date(input.dateRange.end);
+          if (input.reportType === 'loads' || input.reportType === 'revenue') {
+            const [stats] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(gte(loads.createdAt, startDate), sql`${loads.createdAt} <= ${endDate}`));
+            rowCount = stats?.count || 0;
+          } else if (input.reportType === 'safety') {
+            const [stats] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(gte(incidents.createdAt, startDate), sql`${incidents.createdAt} <= ${endDate}`));
+            rowCount = stats?.count || 0;
+          }
+        } catch { /* non-fatal */ }
+      }
       return {
-        reportId: `report_${Date.now()}`,
+        reportId,
         status: "generating",
-        estimatedTime: 30,
+        estimatedTime: Math.max(5, rowCount / 100),
         requestedBy: ctx.user?.id,
         requestedAt: new Date().toISOString(),
+        rowCount,
       };
     }),
 
@@ -141,18 +160,9 @@ export const reportsRouter = router({
       limit: z.number().default(20),
       offset: z.number().default(0),
     }))
-    .query(async ({ input }) => {
-      const history = [
-        { id: "report_001", type: "revenue", name: "Revenue Report - Q4 2024", generatedAt: "2025-01-20T10:00:00Z", format: "pdf", status: "completed", downloadUrl: "/api/reports/report_001/download" },
-        { id: "report_002", type: "driver_performance", name: "Driver Scorecard - January 2025", generatedAt: "2025-01-18T14:00:00Z", format: "xlsx", status: "completed", downloadUrl: "/api/reports/report_002/download" },
-        { id: "report_003", type: "ifta", name: "IFTA Report - Q4 2024", generatedAt: "2025-01-15T09:00:00Z", format: "pdf", status: "completed", downloadUrl: "/api/reports/report_003/download" },
-        { id: "report_004", type: "fuel", name: "Fuel Analysis - December 2024", generatedAt: "2025-01-05T11:00:00Z", format: "csv", status: "expired", downloadUrl: null },
-      ];
-
-      return {
-        reports: history.slice(input.offset, input.offset + input.limit),
-        total: history.length,
-      };
+    .query(async ({ ctx, input }) => {
+      // No dedicated reports table yet; return empty list until one is created
+      return { reports: [], total: 0 };
     }),
 
   /**
@@ -169,11 +179,14 @@ export const reportsRouter = router({
       filters: z.record(z.string(), z.any()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // No dedicated scheduled_reports table yet; return acknowledgment
+      const scheduleId = `schedule_${Date.now()}`;
+      const nextRunMap: Record<string, number> = { daily: 1, weekly: 7, monthly: 30, quarterly: 90 };
       return {
-        scheduleId: `schedule_${Date.now()}`,
+        scheduleId,
         reportType: input.reportType,
         frequency: input.frequency,
-        nextRun: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        nextRun: new Date(Date.now() + (nextRunMap[input.frequency] || 7) * 86400000).toISOString(),
         createdBy: ctx.user?.id,
         createdAt: new Date().toISOString(),
       };
@@ -184,32 +197,8 @@ export const reportsRouter = router({
    */
   getScheduled: protectedProcedure
     .query(async ({ ctx }) => {
-      return [
-        {
-          id: "schedule_001",
-          reportType: "revenue",
-          name: "Weekly Revenue Report",
-          frequency: "weekly",
-          dayOfWeek: 1,
-          format: "pdf",
-          recipients: ["finance@company.com"],
-          nextRun: "2025-01-27T06:00:00Z",
-          lastRun: "2025-01-20T06:00:00Z",
-          status: "active",
-        },
-        {
-          id: "schedule_002",
-          reportType: "compliance",
-          name: "Monthly Compliance Status",
-          frequency: "monthly",
-          dayOfMonth: 1,
-          format: "pdf",
-          recipients: ["compliance@company.com", "safety@company.com"],
-          nextRun: "2025-02-01T06:00:00Z",
-          lastRun: "2025-01-01T06:00:00Z",
-          status: "active",
-        },
-      ];
+      // No dedicated scheduled_reports table yet; return empty list
+      return [] as any[];
     }),
 
   /**
@@ -249,6 +238,7 @@ export const reportsRouter = router({
       }).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // No dedicated custom_reports table yet; return acknowledgment with generated ID
       return {
         reportId: `custom_${Date.now()}`,
         name: input.name,
@@ -262,24 +252,8 @@ export const reportsRouter = router({
    */
   getCustomReports: protectedProcedure
     .query(async ({ ctx }) => {
-      return [
-        {
-          id: "custom_001",
-          name: "Top Lanes by Revenue",
-          description: "Revenue breakdown by origin-destination pairs",
-          dataSource: "loads",
-          createdAt: "2025-01-10T10:00:00Z",
-          lastRun: "2025-01-22T09:00:00Z",
-        },
-        {
-          id: "custom_002",
-          name: "Driver Miles by State",
-          description: "Miles driven per driver broken down by state",
-          dataSource: "drivers",
-          createdAt: "2025-01-05T14:00:00Z",
-          lastRun: "2025-01-20T11:00:00Z",
-        },
-      ];
+      // No dedicated custom_reports table yet; return empty list
+      return [] as any[];
     }),
 
   /**
@@ -289,15 +263,32 @@ export const reportsRouter = router({
     .input(z.object({
       period: z.enum(["today", "week", "month", "quarter", "year"]).default("month"),
     }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        revenue: { total: 0, change: 0, trend: "stable" },
-        loads: { total: 0, completed: 0, inProgress: 0, change: 0 },
-        fleet: { utilization: 0, availableVehicles: 0, totalVehicles: 0 },
-        safety: { score: 0, incidents: 0, violations: 0 },
-        compliance: { score: 0, expiringItems: 0, overdueItems: 0 },
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { period: input.period, revenue: { total: 0, change: 0, trend: 'stable' }, loads: { total: 0, completed: 0, inProgress: 0, change: 0 }, fleet: { utilization: 0, availableVehicles: 0, totalVehicles: 0 }, safety: { score: 0, incidents: 0, violations: 0 }, compliance: { score: 0, expiringItems: 0, overdueItems: 0 } };
+      try {
+        const daysMap: Record<string, number> = { today: 1, week: 7, month: 30, quarter: 90, year: 365 };
+        const since = new Date(Date.now() - (daysMap[input.period] || 30) * 86400000);
+        const companyId = ctx.user?.companyId || 0;
+        const [loadStats] = await db.select({
+          total: sql<number>`count(*)`,
+          completed: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`,
+          inProgress: sql<number>`SUM(CASE WHEN ${loads.status} NOT IN ('delivered','cancelled','draft') THEN 1 ELSE 0 END)`,
+          revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+        }).from(loads).where(and(eq(loads.shipperId, companyId), gte(loads.createdAt, since)));
+        const [vehStats] = await db.select({ total: sql<number>`count(*)`, available: sql<number>`SUM(CASE WHEN ${vehicles.status} = 'active' THEN 1 ELSE 0 END)` }).from(vehicles);
+        const [incStats] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), gte(incidents.createdAt, since)));
+        const totalVeh = vehStats?.total || 0;
+        const availVeh = vehStats?.available || 0;
+        return {
+          period: input.period,
+          revenue: { total: loadStats?.revenue || 0, change: 0, trend: 'stable' },
+          loads: { total: loadStats?.total || 0, completed: loadStats?.completed || 0, inProgress: loadStats?.inProgress || 0, change: 0 },
+          fleet: { utilization: totalVeh > 0 ? Math.round(((totalVeh - availVeh) / totalVeh) * 100) : 0, availableVehicles: availVeh, totalVehicles: totalVeh },
+          safety: { score: 100 - (incStats?.count || 0), incidents: incStats?.count || 0, violations: 0 },
+          compliance: { score: 0, expiringItems: 0, overdueItems: 0 },
+        };
+      } catch { return { period: input.period, revenue: { total: 0, change: 0, trend: 'stable' }, loads: { total: 0, completed: 0, inProgress: 0, change: 0 }, fleet: { utilization: 0, availableVehicles: 0, totalVehicles: 0 }, safety: { score: 0, incidents: 0, violations: 0 }, compliance: { score: 0, expiringItems: 0, overdueItems: 0 } }; }
     }),
 
   // Additional report procedures
