@@ -4776,3 +4776,216 @@ export const creditChecks = mysqlTable(
 export type CreditCheck = typeof creditChecks.$inferSelect;
 export type InsertCreditCheck = typeof creditChecks.$inferInsert;
 
+// ============================================================================
+// LOCATION BREADCRUMBS — High-volume GPS trail (Section 3/13 of EusoMap spec)
+// Every GPS point from every driver becomes a breadcrumb for route replay,
+// mileage calculation, route deviation detection, detention proof, safety reconstruction.
+// ============================================================================
+
+export const locationBreadcrumbs = mysqlTable(
+  "location_breadcrumbs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId"),
+    driverId: int("driverId").notNull(),
+    vehicleId: int("vehicleId"),
+    lat: decimal("lat", { precision: 10, scale: 7 }).notNull(),
+    lng: decimal("lng", { precision: 10, scale: 7 }).notNull(),
+    accuracy: decimal("accuracy", { precision: 8, scale: 2 }),
+    speed: decimal("speed", { precision: 6, scale: 2 }),
+    heading: decimal("heading", { precision: 6, scale: 2 }),
+    altitude: decimal("altitude", { precision: 8, scale: 2 }),
+    batteryLevel: int("batteryLevel"),
+    isCharging: boolean("isCharging").default(false),
+    loadState: varchar("loadState", { length: 30 }),
+    snappedLat: decimal("snappedLat", { precision: 10, scale: 7 }),
+    snappedLng: decimal("snappedLng", { precision: 10, scale: 7 }),
+    roadName: varchar("roadName", { length: 200 }),
+    odometerMiles: decimal("odometerMiles", { precision: 10, scale: 2 }),
+    isMock: boolean("isMock").default(false),
+    source: mysqlEnum("source", ["device", "eld", "manual", "system"]).default("device"),
+    isGeofenceEvent: boolean("isGeofenceEvent").default(false),
+    geofenceId: int("geofenceId"),
+    deviceTimestamp: timestamp("deviceTimestamp"),
+    serverTimestamp: timestamp("serverTimestamp").defaultNow().notNull(),
+  },
+  (table) => ({
+    loadTsIdx: index("breadcrumb_load_ts_idx").on(table.loadId, table.serverTimestamp),
+    driverTsIdx: index("breadcrumb_driver_ts_idx").on(table.driverId, table.serverTimestamp),
+    vehicleTsIdx: index("breadcrumb_vehicle_ts_idx").on(table.vehicleId, table.serverTimestamp),
+    loadStateIdx: index("breadcrumb_state_idx").on(table.loadState),
+  })
+);
+
+export type LocationBreadcrumb = typeof locationBreadcrumbs.$inferSelect;
+export type InsertLocationBreadcrumb = typeof locationBreadcrumbs.$inferInsert;
+
+// ============================================================================
+// GEOTAGS — Immutable audit trail (Section 5/13 of EusoMap spec)
+// Every significant event is location-stamped. Once created, geotags CANNOT be
+// modified or deleted. They are the legal audit trail for detention claims,
+// delivery proof, and compliance.
+// ============================================================================
+
+export const geotags = mysqlTable(
+  "geotags",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId"),
+    userId: int("userId").notNull(),
+    userRole: varchar("userRole", { length: 30 }).notNull(),
+    driverId: int("driverId"),
+    vehicleId: int("vehicleId"),
+    eventType: varchar("eventType", { length: 50 }).notNull(),
+    eventCategory: mysqlEnum("eventCategory", [
+      "load_lifecycle", "compliance", "safety", "operational", "photo", "document"
+    ]).notNull(),
+    lat: decimal("lat", { precision: 10, scale: 7 }).notNull(),
+    lng: decimal("lng", { precision: 10, scale: 7 }).notNull(),
+    accuracy: decimal("accuracy", { precision: 8, scale: 2 }),
+    altitude: decimal("altitude", { precision: 8, scale: 2 }),
+    reverseGeocode: json("reverseGeocode"),
+    eventTimestamp: timestamp("eventTimestamp").notNull(),
+    deviceTimestamp: timestamp("deviceTimestamp"),
+    serverTimestamp: timestamp("serverTimestamp").defaultNow().notNull(),
+    photoUrls: json("photoUrls"),
+    signatureUrl: varchar("signatureUrl", { length: 500 }),
+    documentUrls: json("documentUrls"),
+    metadata: json("metadata"),
+    loadState: varchar("loadState", { length: 30 }),
+    source: mysqlEnum("source", ["gps_auto", "geofence_auto", "driver_manual", "system"]).notNull(),
+    isVerified: boolean("isVerified").default(false),
+    verifiedBy: int("verifiedBy"),
+    tamperedFlag: boolean("tamperedFlag").default(false),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    loadTsIdx: index("geotag_load_ts_idx").on(table.loadId, table.eventTimestamp),
+    userTsIdx: index("geotag_user_ts_idx").on(table.userId, table.eventTimestamp),
+    typeIdx: index("geotag_type_idx").on(table.eventType, table.eventTimestamp),
+    categoryIdx: index("geotag_category_idx").on(table.eventCategory),
+    driverIdx: index("geotag_driver_idx").on(table.driverId),
+  })
+);
+
+export type Geotag = typeof geotags.$inferSelect;
+export type InsertGeotag = typeof geotags.$inferInsert;
+
+// ============================================================================
+// LOAD ROUTES — Hazmat-compliant cached routes (Section 6/13/17 of EusoMap spec)
+// Stores the full calculated route including polyline, hazmat restrictions,
+// tunnel restrictions, state crossings, suggested HOS stops, weigh stations.
+// ============================================================================
+
+export const loadRoutes = mysqlTable(
+  "load_routes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    polyline: text("polyline").notNull(),
+    distanceMiles: decimal("distanceMiles", { precision: 10, scale: 2 }).notNull(),
+    durationSeconds: int("durationSeconds").notNull(),
+    isHazmatCompliant: boolean("isHazmatCompliant").notNull().default(false),
+    hazmatRestrictions: json("hazmatRestrictions"),
+    tunnelRestrictions: json("tunnelRestrictions"),
+    stateCrossings: json("stateCrossings"),
+    suggestedStops: json("suggestedStops"),
+    weighStations: json("weighStations"),
+    weatherAlerts: json("weatherAlerts"),
+    permitRequirements: json("permitRequirements"),
+    fuelStops: json("fuelStops"),
+    boundsNeLat: decimal("boundsNeLat", { precision: 10, scale: 7 }),
+    boundsNeLng: decimal("boundsNeLng", { precision: 10, scale: 7 }),
+    boundsSwLat: decimal("boundsSwLat", { precision: 10, scale: 7 }),
+    boundsSwLng: decimal("boundsSwLng", { precision: 10, scale: 7 }),
+    tollEstimate: decimal("tollEstimate", { precision: 10, scale: 2 }),
+    fuelEstimate: decimal("fuelEstimate", { precision: 10, scale: 2 }),
+    isActive: boolean("isActive").default(true),
+    calculatedAt: timestamp("calculatedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("load_route_load_idx").on(table.loadId),
+    activeIdx: index("load_route_active_idx").on(table.isActive),
+  })
+);
+
+export type LoadRoute = typeof loadRoutes.$inferSelect;
+export type InsertLoadRoute = typeof loadRoutes.$inferInsert;
+
+// ============================================================================
+// DETENTION RECORDS — Automatic detention tracking (Sections 4.3/8.2 of EusoMap spec)
+// Clocks start on geofence ENTER, stop on EXIT. If dwell exceeds free time
+// (default 2 hours), detention billing triggers automatically.
+// ============================================================================
+
+export const detentionRecords = mysqlTable(
+  "detention_records",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    locationType: mysqlEnum("locationType", ["pickup", "delivery"]).notNull(),
+    facilityId: int("facilityId"),
+    geofenceId: int("geofenceId"),
+    driverId: int("driverId"),
+    geofenceEnterAt: timestamp("geofenceEnterAt").notNull(),
+    geofenceExitAt: timestamp("geofenceExitAt"),
+    freeTimeMinutes: int("freeTimeMinutes").default(120),
+    detentionStartedAt: timestamp("detentionStartedAt"),
+    totalDwellMinutes: int("totalDwellMinutes"),
+    detentionMinutes: int("detentionMinutes"),
+    detentionRatePerHour: decimal("detentionRatePerHour", { precision: 10, scale: 2 }),
+    detentionCharge: decimal("detentionCharge", { precision: 10, scale: 2 }),
+    isBillable: boolean("isBillable").default(false),
+    isPaid: boolean("isPaid").default(false),
+    enterGeotagId: int("enterGeotagId"),
+    exitGeotagId: int("exitGeotagId"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("detention_load_idx").on(table.loadId),
+    driverIdx: index("detention_driver_idx").on(table.driverId),
+    facilityIdx: index("detention_facility_idx").on(table.facilityId),
+    billableIdx: index("detention_billable_idx").on(table.isBillable),
+  })
+);
+
+export type DetentionRecord = typeof detentionRecords.$inferSelect;
+export type InsertDetentionRecord = typeof detentionRecords.$inferInsert;
+
+// ============================================================================
+// STATE CROSSINGS — IFTA fuel tax + permit compliance (Section 4.3/17 of EusoMap spec)
+// Logged automatically when STATE_BORDER geofence fires. Used for IFTA mileage
+// reports by state, permit verification, and compliance auditing.
+// ============================================================================
+
+export const stateCrossings = mysqlTable(
+  "state_crossings",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    driverId: int("driverId").notNull(),
+    vehicleId: int("vehicleId"),
+    fromState: varchar("fromState", { length: 2 }).notNull(),
+    toState: varchar("toState", { length: 2 }).notNull(),
+    crossingLat: decimal("crossingLat", { precision: 10, scale: 7 }).notNull(),
+    crossingLng: decimal("crossingLng", { precision: 10, scale: 7 }).notNull(),
+    crossedAt: timestamp("crossedAt").notNull(),
+    odometerAtCrossing: decimal("odometerAtCrossing", { precision: 10, scale: 2 }),
+    milesInFromState: decimal("milesInFromState", { precision: 10, scale: 2 }),
+    permitValid: boolean("permitValid"),
+    permitCheckedAt: timestamp("permitCheckedAt"),
+    geotagId: int("geotagId"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("state_crossing_load_idx").on(table.loadId, table.crossedAt),
+    vehicleIdx: index("state_crossing_vehicle_idx").on(table.vehicleId, table.crossedAt),
+    driverIdx: index("state_crossing_driver_idx").on(table.driverId),
+    stateIdx: index("state_crossing_state_idx").on(table.toState),
+  })
+);
+
+export type StateCrossing = typeof stateCrossings.$inferSelect;
+export type InsertStateCrossing = typeof stateCrossings.$inferInsert;
+
