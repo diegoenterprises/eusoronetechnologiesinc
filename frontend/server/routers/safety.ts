@@ -316,16 +316,28 @@ export const safetyRouter = router({
    */
   getAccidentIncidents: protectedProcedure
     .input(z.object({ filter: z.string().optional(), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const rows = await db.select().from(incidents).where(and(eq(incidents.companyId, companyId), eq(incidents.type, 'accident'))).orderBy(desc(incidents.createdAt)).limit(50);
+        return rows.map(r => ({ id: String(r.id), type: r.type, severity: r.severity, status: r.status, description: r.description || '', location: r.location || '', date: r.occurredAt?.toISOString() || '', driverId: String(r.driverId || ''), injuries: r.injuries || 0, fatalities: r.fatalities || 0 }));
+      } catch (e) { return []; }
     }),
 
   /**
    * Get accident stats for AccidentInvestigation page
    */
   getAccidentStats: protectedProcedure
-    .query(async () => {
-      return { total: 0, open: 0, investigating: 0, closed: 0, thisYear: 0, avgResolutionDays: 0 };
+    .query(async ({ ctx }) => {
+      const db = await getDb(); if (!db) return { total: 0, open: 0, investigating: 0, closed: 0, thisYear: 0, avgResolutionDays: 0 };
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const yearStart = new Date(new Date().getFullYear(), 0, 1);
+        const [stats] = await db.select({ total: sql<number>`count(*)`, open: sql<number>`SUM(CASE WHEN ${incidents.status} = 'reported' THEN 1 ELSE 0 END)`, investigating: sql<number>`SUM(CASE WHEN ${incidents.status} = 'investigating' THEN 1 ELSE 0 END)`, closed: sql<number>`SUM(CASE WHEN ${incidents.status} = 'resolved' THEN 1 ELSE 0 END)` }).from(incidents).where(and(eq(incidents.companyId, companyId), eq(incidents.type, 'accident')));
+        const [thisYear] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), eq(incidents.type, 'accident'), gte(incidents.occurredAt, yearStart)));
+        return { total: stats?.total || 0, open: stats?.open || 0, investigating: stats?.investigating || 0, closed: stats?.closed || 0, thisYear: thisYear?.count || 0, avgResolutionDays: 0 };
+      } catch (e) { return { total: 0, open: 0, investigating: 0, closed: 0, thisYear: 0, avgResolutionDays: 0 }; }
     }),
 
   /**
@@ -339,8 +351,18 @@ export const safetyRouter = router({
       limit: z.number().optional(),
       filter: z.string().optional(),
     }).optional())
-    .query(async ({ input }) => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const conds: any[] = [eq(incidents.companyId, companyId)];
+        if (input?.status && input.status !== 'all') conds.push(eq(incidents.status, input.status as any));
+        if (input?.type && input.type !== 'all') conds.push(eq(incidents.type, input.type as any));
+        const rows = await db.select().from(incidents).where(and(...conds)).orderBy(desc(incidents.createdAt)).limit(input?.limit || 50);
+        let results = rows.map(r => ({ id: String(r.id), type: r.type, severity: r.severity, status: r.status, description: r.description || '', location: r.location || '', date: r.occurredAt?.toISOString() || r.createdAt?.toISOString() || '', driverId: String(r.driverId || '') }));
+        if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(r => r.description.toLowerCase().includes(q) || r.location.toLowerCase().includes(q)); }
+        return results;
+      } catch (e) { return []; }
     }),
 
   /**
@@ -357,11 +379,21 @@ export const safetyRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ ctx, input }) => {
-      return {
-        incidents: [],
-        total: 0,
-        summary: { total: 0, open: 0, critical: 0 },
-      };
+      const db = await getDb(); if (!db) return { incidents: [], total: 0, summary: { total: 0, open: 0, critical: 0 } };
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const conds: any[] = [eq(incidents.companyId, companyId)];
+        if (input.status) conds.push(eq(incidents.status, input.status as any));
+        if (input.type) conds.push(eq(incidents.type, input.type as any));
+        if (input.severity) conds.push(eq(incidents.severity, input.severity as any));
+        if (input.startDate) conds.push(gte(incidents.occurredAt, new Date(input.startDate)));
+        const rows = await db.select().from(incidents).where(and(...conds)).orderBy(desc(incidents.createdAt)).limit(input.limit).offset(input.offset);
+        const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(...conds));
+        const [openCount] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), sql`${incidents.status} IN ('reported','investigating')`));
+        const [critCount] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), eq(incidents.severity, 'critical')));
+        const mapped = rows.map(r => ({ id: String(r.id), incidentNumber: `INC-${r.id}`, type: r.type, severity: r.severity, status: r.status, description: r.description || '', location: r.location || '', date: r.occurredAt?.toISOString() || '', injuries: r.injuries || 0, fatalities: r.fatalities || 0 }));
+        return { incidents: mapped, total: countRow?.count || 0, summary: { total: countRow?.count || 0, open: openCount?.count || 0, critical: critCount?.count || 0 } };
+      } catch (e) { return { incidents: [], total: 0, summary: { total: 0, open: 0, critical: 0 } }; }
     }),
 
   /**
@@ -370,26 +402,17 @@ export const safetyRouter = router({
   getIncident: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      return {
-        id: input.id,
-        incidentNumber: "",
-        type: "",
-        severity: "",
-        status: "",
-        date: "",
-        time: "",
-        location: { address: "", city: "", state: "", lat: 0, lng: 0 },
-        description: "",
-        driver: { id: "", name: "", phone: "" },
-        vehicle: { id: "", unitNumber: "", make: "", model: "" },
-        loadNumber: "",
-        injuries: false,
-        hazmatRelease: false,
-        propertyDamage: false,
-        estimatedCost: 0,
-        timeline: [],
-        documents: [],
-      };
+      const empty = { id: input.id, incidentNumber: '', type: '', severity: '', status: '', date: '', time: '', location: { address: '', city: '', state: '', lat: 0, lng: 0 }, description: '', driver: { id: '', name: '', phone: '' }, vehicle: { id: '', unitNumber: '', make: '', model: '' }, loadNumber: '', injuries: false, hazmatRelease: false, propertyDamage: false, estimatedCost: 0, timeline: [] as any[], documents: [] as any[] };
+      const db = await getDb(); if (!db) return empty;
+      try {
+        const iid = parseInt(input.id.replace('i_', '').replace('inc_', ''), 10);
+        if (isNaN(iid)) return empty;
+        const [inc] = await db.select().from(incidents).where(eq(incidents.id, iid)).limit(1);
+        if (!inc) return empty;
+        let driverName = '', driverPhone = '';
+        if (inc.driverId) { const [u] = await db.select({ name: users.name, phone: users.phone }).from(users).where(eq(users.id, inc.driverId)).limit(1); driverName = u?.name || ''; driverPhone = u?.phone || ''; }
+        return { ...empty, id: String(inc.id), incidentNumber: `INC-${inc.id}`, type: inc.type || '', severity: inc.severity || '', status: inc.status || '', date: inc.occurredAt?.toISOString().split('T')[0] || '', time: inc.occurredAt?.toISOString().split('T')[1]?.slice(0, 5) || '', location: { address: inc.location || '', city: '', state: '', lat: 0, lng: 0 }, description: inc.description || '', driver: { id: String(inc.driverId || ''), name: driverName, phone: driverPhone }, vehicle: { id: String(inc.vehicleId || ''), unitNumber: '', make: '', model: '' }, injuries: (inc.injuries || 0) > 0 };
+      } catch (e) { return empty; }
     }),
 
   /**
@@ -411,15 +434,21 @@ export const safetyRouter = router({
       propertyDamage: z.union([z.boolean(), z.string()]).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const incidentNumber = `INC-2025-${String(Date.now()).slice(-4)}`;
-      
-      return {
-        id: `i_${Date.now()}`,
-        incidentNumber,
-        status: "reported",
-        reportedBy: ctx.user?.id,
-        reportedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      const companyId = ctx.user?.companyId || 0;
+      if (db) {
+        try {
+          const occurredAt = input.date ? new Date(`${input.date}${input.time ? 'T' + input.time : ''}`) : new Date();
+          const [result] = await db.insert(incidents).values({
+            companyId, type: (input.type || 'accident') as any, severity: (input.severity || 'minor') as any,
+            description: input.description || '', location: input.location || '', occurredAt,
+            driverId: input.driverId ? parseInt(input.driverId) : null, vehicleId: input.vehicleId ? parseInt(input.vehicleId) : null,
+            injuries: input.injuries ? 1 : 0, fatalities: 0, status: 'reported',
+          } as any).$returningId();
+          return { id: `i_${result.id}`, incidentNumber: `INC-${result.id}`, status: 'reported', reportedBy: ctx.user?.id, reportedAt: new Date().toISOString() };
+        } catch (e) { console.error('[Safety] reportIncident error:', e); }
+      }
+      return { id: `i_${Date.now()}`, incidentNumber: `INC-2026-${String(Date.now()).slice(-4)}`, status: 'reported', reportedBy: ctx.user?.id, reportedAt: new Date().toISOString() };
     }),
 
   /**
@@ -432,13 +461,12 @@ export const safetyRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        id: input.id,
-        newStatus: input.status,
-        updatedBy: ctx.user?.id,
-        updatedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      const iid = parseInt(input.id.replace('i_', '').replace('inc_', ''), 10);
+      if (db && iid) {
+        try { await db.update(incidents).set({ status: input.status as any }).where(eq(incidents.id, iid)); } catch (e) { console.error('[Safety] updateIncidentStatus error:', e); }
+      }
+      return { success: true, id: input.id, newStatus: input.status, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
 
   /**
@@ -446,8 +474,15 @@ export const safetyRouter = router({
    */
   getDriverScorecards: protectedProcedure
     .input(z.object({ limit: z.number().optional(), search: z.string().optional(), sortBy: z.string().optional() }).optional())
-    .query(async ({ input }) => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const rows = await db.select({ id: drivers.id, safetyScore: drivers.safetyScore, totalLoads: drivers.totalLoads, totalMiles: drivers.totalMiles, status: drivers.status, userName: users.name }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).orderBy(desc(drivers.safetyScore)).limit(input?.limit || 20);
+        let results = rows.map(d => ({ id: String(d.id), name: d.userName || `Driver #${d.id}`, safetyScore: d.safetyScore || 100, totalLoads: d.totalLoads || 0, totalMiles: d.totalMiles || 0, status: d.status || 'active', incidents: 0, inspections: 0 }));
+        if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(r => r.name.toLowerCase().includes(q)); }
+        return results;
+      } catch (e) { return []; }
     }),
 
   /**
@@ -458,8 +493,17 @@ export const safetyRouter = router({
       driverId: z.string().optional(),
       status: z.enum(["scheduled", "completed", "pending_results"]).optional(),
     }))
-    .query(async ({ input }) => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const conds: any[] = [eq(drugTests.companyId, companyId)];
+        if (input.driverId) conds.push(eq(drugTests.driverId, parseInt(input.driverId)));
+        if (input.status === 'completed') conds.push(sql`${drugTests.result} != 'pending'`);
+        if (input.status === 'pending_results') conds.push(eq(drugTests.result, 'pending'));
+        const rows = await db.select().from(drugTests).where(and(...conds)).orderBy(desc(drugTests.testDate)).limit(50);
+        return rows.map(r => ({ id: String(r.id), driverId: String(r.driverId), type: r.type, result: r.result, testDate: r.testDate?.toISOString() || '', status: r.result === 'pending' ? 'pending_results' : 'completed' }));
+      } catch (e) { return []; }
     }),
 
   /**
@@ -474,7 +518,18 @@ export const safetyRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ ctx, input }) => {
-      return [];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const conds: any[] = [eq(incidents.companyId, companyId)];
+        if (input.status && input.status !== 'all') conds.push(eq(incidents.status, input.status as any));
+        if (input.type && input.type !== 'all') conds.push(eq(incidents.type, input.type as any));
+        const offset = (input.page - 1) * input.limit;
+        const rows = await db.select().from(incidents).where(and(...conds)).orderBy(desc(incidents.createdAt)).limit(input.limit).offset(offset);
+        let results = rows.map(r => ({ id: String(r.id), incidentNumber: `INC-${r.id}`, type: r.type, severity: r.severity, status: r.status, description: r.description || '', location: r.location || '', date: r.occurredAt?.toISOString() || '', driverId: String(r.driverId || ''), vehicleId: String(r.vehicleId || ''), injuries: r.injuries || 0, fatalities: r.fatalities || 0 }));
+        if (input.search) { const q = input.search.toLowerCase(); results = results.filter(r => r.description.toLowerCase().includes(q) || r.location.toLowerCase().includes(q)); }
+        return results;
+      } catch (e) { return []; }
     }),
 
   /**
@@ -483,19 +538,18 @@ export const safetyRouter = router({
   getIncidentStats: protectedProcedure
     .input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional())
     .query(async ({ ctx }) => {
-      return {
-        total: 0,
-        open: 0,
-        investigating: 0,
-        thisMonth: 0,
-        resolved: 0,
-        severe: 0,
-        critical: 0,
-        closed: 0,
-        daysWithoutIncident: 0,
-        yearToDate: 0,
-        severity: { high: 3, medium: 8, low: 24 },
-      };
+      const db = await getDb(); if (!db) return { total: 0, open: 0, investigating: 0, thisMonth: 0, resolved: 0, severe: 0, critical: 0, closed: 0, daysWithoutIncident: 0, yearToDate: 0, severity: { high: 0, medium: 0, low: 0 } };
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
+        const yearStart = new Date(new Date().getFullYear(), 0, 1);
+        const [stats] = await db.select({ total: sql<number>`count(*)`, open: sql<number>`SUM(CASE WHEN ${incidents.status} = 'reported' THEN 1 ELSE 0 END)`, investigating: sql<number>`SUM(CASE WHEN ${incidents.status} = 'investigating' THEN 1 ELSE 0 END)`, resolved: sql<number>`SUM(CASE WHEN ${incidents.status} = 'resolved' THEN 1 ELSE 0 END)`, critical: sql<number>`SUM(CASE WHEN ${incidents.severity} = 'critical' THEN 1 ELSE 0 END)`, major: sql<number>`SUM(CASE WHEN ${incidents.severity} = 'major' THEN 1 ELSE 0 END)`, minor: sql<number>`SUM(CASE WHEN ${incidents.severity} = 'minor' THEN 1 ELSE 0 END)` }).from(incidents).where(eq(incidents.companyId, companyId));
+        const [thisMonth] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), gte(incidents.createdAt, monthAgo)));
+        const [ytd] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), gte(incidents.occurredAt, yearStart)));
+        const [lastInc] = await db.select({ occurredAt: incidents.occurredAt }).from(incidents).where(eq(incidents.companyId, companyId)).orderBy(desc(incidents.occurredAt)).limit(1);
+        const daysSince = lastInc?.occurredAt ? Math.floor((Date.now() - new Date(lastInc.occurredAt).getTime()) / 86400000) : 365;
+        return { total: stats?.total || 0, open: stats?.open || 0, investigating: stats?.investigating || 0, thisMonth: thisMonth?.count || 0, resolved: stats?.resolved || 0, severe: stats?.critical || 0, critical: stats?.critical || 0, closed: stats?.resolved || 0, daysWithoutIncident: daysSince, yearToDate: ytd?.count || 0, severity: { high: stats?.critical || 0, medium: stats?.major || 0, low: stats?.minor || 0 } };
+      } catch (e) { return { total: 0, open: 0, investigating: 0, thisMonth: 0, resolved: 0, severe: 0, critical: 0, closed: 0, daysWithoutIncident: 0, yearToDate: 0, severity: { high: 0, medium: 0, low: 0 } }; }
     }),
 
   /**
@@ -508,12 +562,12 @@ export const safetyRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        id: input.id,
-        closedAt: new Date().toISOString(),
-        closedBy: ctx.user?.id,
-      };
+      const db = await getDb();
+      const iid = parseInt(input.id.replace('i_', '').replace('inc_', ''), 10);
+      if (db && iid) {
+        try { await db.update(incidents).set({ status: 'resolved' as any }).where(eq(incidents.id, iid)); } catch (e) { console.error('[Safety] closeIncident error:', e); }
+      }
+      return { success: true, id: input.id, closedAt: new Date().toISOString(), closedBy: ctx.user?.id };
     }),
 
   /**
@@ -524,22 +578,23 @@ export const safetyRouter = router({
       timeframe: z.string().default("30d"),
     }))
     .query(async ({ ctx, input }) => {
-      return {
-        overallScore: 92,
-        scoreTrend: 3.5,
-        activeDrivers: 18,
-        driversInCompliance: 16,
-        openIncidents: 3,
-        incidentsThisMonth: 5,
-        daysWithoutIncident: 8,
-        recordDays: 45,
-        goals: [
-          { name: "Zero Accidents", target: 0, current: 1, progress: 90, achieved: false },
-          { name: "CSA Score < 50%", target: 50, current: 42, progress: 100, achieved: true },
-          { name: "Training Completion", target: 100, current: 95, progress: 95, achieved: false },
-          { name: "Inspection Pass Rate", target: 95, current: 97, progress: 100, achieved: true },
-        ],
-      };
+      const db = await getDb();
+      const empty = { overallScore: 0, scoreTrend: 0, activeDrivers: 0, driversInCompliance: 0, openIncidents: 0, incidentsThisMonth: 0, daysWithoutIncident: 0, recordDays: 0, goals: [] as any[] };
+      if (!db) return empty;
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const [activeD] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(and(eq(drivers.companyId, companyId), eq(drivers.status, 'active')));
+        const [avgScore] = await db.select({ avg: sql<number>`AVG(${drivers.safetyScore})` }).from(drivers).where(eq(drivers.companyId, companyId));
+        const [openInc] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), sql`${incidents.status} IN ('reported','investigating')`));
+        const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
+        const [monthInc] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), gte(incidents.createdAt, monthAgo)));
+        const [lastInc] = await db.select({ occurredAt: incidents.occurredAt }).from(incidents).where(eq(incidents.companyId, companyId)).orderBy(desc(incidents.occurredAt)).limit(1);
+        const daysSince = lastInc?.occurredAt ? Math.floor((Date.now() - new Date(lastInc.occurredAt).getTime()) / 86400000) : 365;
+        const [totalInsp] = await db.select({ count: sql<number>`count(*)` }).from(inspections).where(eq(inspections.companyId, companyId));
+        const [passedInsp] = await db.select({ count: sql<number>`count(*)` }).from(inspections).where(and(eq(inspections.companyId, companyId), eq(inspections.status, 'passed')));
+        const passRate = (totalInsp?.count || 0) > 0 ? Math.round(((passedInsp?.count || 0) / (totalInsp?.count || 1)) * 100) : 100;
+        return { overallScore: Math.round(avgScore?.avg || 100), scoreTrend: 0, activeDrivers: activeD?.count || 0, driversInCompliance: activeD?.count || 0, openIncidents: openInc?.count || 0, incidentsThisMonth: monthInc?.count || 0, daysWithoutIncident: daysSince, recordDays: daysSince, goals: [{ name: 'Zero Accidents', target: 0, current: monthInc?.count || 0, progress: (monthInc?.count || 0) === 0 ? 100 : 50, achieved: (monthInc?.count || 0) === 0 }, { name: 'Inspection Pass Rate > 95%', target: 95, current: passRate, progress: Math.min(100, Math.round((passRate / 95) * 100)), achieved: passRate >= 95 }] };
+      } catch (e) { return empty; }
     }),
 
   /**
@@ -550,13 +605,25 @@ export const safetyRouter = router({
       timeframe: z.string().default("30d"),
     }))
     .query(async ({ ctx, input }) => {
-      return [
-        { metric: "Incidents", current: 3, previous: 5, change: -40, positive: true },
-        { metric: "Near Misses", current: 2, previous: 4, change: -50, positive: true },
-        { metric: "Inspection Pass Rate", current: 97, previous: 94, change: 3.2, positive: true },
-        { metric: "Training Completion", current: 95, previous: 88, change: 8, positive: true },
-        { metric: "HOS Violations", current: 1, previous: 2, change: -50, positive: true },
-      ];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const daysMap: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90, '365d': 365 };
+        const days = daysMap[input.timeframe] || 30;
+        const currentStart = new Date(Date.now() - days * 86400000);
+        const prevStart = new Date(Date.now() - days * 2 * 86400000);
+        const [curInc] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), gte(incidents.createdAt, currentStart)));
+        const [prevInc] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), gte(incidents.createdAt, prevStart), sql`${incidents.createdAt} < ${currentStart}`));
+        const [curInsp] = await db.select({ total: sql<number>`count(*)`, passed: sql<number>`SUM(CASE WHEN ${inspections.status} = 'passed' THEN 1 ELSE 0 END)` }).from(inspections).where(and(eq(inspections.companyId, companyId), gte(inspections.createdAt, currentStart)));
+        const [prevInsp] = await db.select({ total: sql<number>`count(*)`, passed: sql<number>`SUM(CASE WHEN ${inspections.status} = 'passed' THEN 1 ELSE 0 END)` }).from(inspections).where(and(eq(inspections.companyId, companyId), gte(inspections.createdAt, prevStart), sql`${inspections.createdAt} < ${currentStart}`));
+        const curPassRate = (curInsp?.total || 0) > 0 ? Math.round(((curInsp?.passed || 0) / (curInsp?.total || 1)) * 100) : 100;
+        const prevPassRate = (prevInsp?.total || 0) > 0 ? Math.round(((prevInsp?.passed || 0) / (prevInsp?.total || 1)) * 100) : 100;
+        const calcChange = (cur: number, prev: number) => prev > 0 ? Math.round(((cur - prev) / prev) * 100) : 0;
+        return [
+          { metric: 'Incidents', current: curInc?.count || 0, previous: prevInc?.count || 0, change: calcChange(curInc?.count || 0, prevInc?.count || 0), positive: (curInc?.count || 0) <= (prevInc?.count || 0) },
+          { metric: 'Inspection Pass Rate', current: curPassRate, previous: prevPassRate, change: curPassRate - prevPassRate, positive: curPassRate >= prevPassRate },
+        ];
+      } catch (e) { return []; }
     }),
 
   /**
@@ -589,14 +656,23 @@ export const safetyRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        id: `vi_${Date.now()}`,
-        vehicleId: input.vehicleId,
-        status: input.passed ? "passed" : "failed",
-        submittedAt: new Date().toISOString(),
-        submittedBy: ctx.user?.id,
-      };
+      const db = await getDb();
+      const companyId = ctx.user?.companyId || 0;
+      const defectsCount = input.defects?.length || 0;
+      const hasOOS = input.defects?.some(d => d.severity === 'out_of_service') || false;
+      if (db) {
+        try {
+          const vid = input.vehicleId ? parseInt(input.vehicleId) : null;
+          const [result] = await db.insert(inspections).values({
+            companyId, vehicleId: vid, driverId: ctx.user?.id || null,
+            type: input.type as any, status: input.passed ? 'passed' : 'failed',
+            defectsFound: defectsCount, oosViolation: hasOOS,
+            notes: input.notes || null, completedAt: new Date(),
+          } as any).$returningId();
+          return { success: true, id: `vi_${result.id}`, vehicleId: input.vehicleId, status: input.passed ? 'passed' : 'failed', submittedAt: new Date().toISOString(), submittedBy: ctx.user?.id };
+        } catch (e) { console.error('[Safety] submitInspection error:', e); }
+      }
+      return { success: true, id: `vi_${Date.now()}`, vehicleId: input.vehicleId, status: input.passed ? 'passed' : 'failed', submittedAt: new Date().toISOString(), submittedBy: ctx.user?.id };
     }),
 
   // Accident reports

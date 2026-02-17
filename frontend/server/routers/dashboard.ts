@@ -344,14 +344,23 @@ export const dashboardRouter = router({
    * Get market rates for brokers
    */
   getMarketRates: protectedProcedure.query(async () => {
-    // In production, this would pull from market data APIs
-    return [
-      { lane: 'DAL → HOU', rate: 2.45, change: '+5%', volume: 'High' },
-      { lane: 'CHI → DET', rate: 2.85, change: '-2%', volume: 'Medium' },
-      { lane: 'LA → PHX', rate: 3.10, change: '+8%', volume: 'High' },
-      { lane: 'ATL → MIA', rate: 2.95, change: '+3%', volume: 'Medium' },
-      { lane: 'SEA → PDX', rate: 2.20, change: '-1%', volume: 'Low' },
-    ];
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const rows = await db.select().from(loads).where(eq(loads.status, 'delivered')).orderBy(desc(loads.createdAt)).limit(200);
+      const laneMap: Record<string, { count: number; totalRate: number }> = {};
+      for (const l of rows) {
+        const p = (l.pickupLocation as any) || {}; const d = (l.deliveryLocation as any) || {};
+        const lane = `${(p.city || p.state || '?').slice(0, 3).toUpperCase()} → ${(d.city || d.state || '?').slice(0, 3).toUpperCase()}`;
+        if (!laneMap[lane]) laneMap[lane] = { count: 0, totalRate: 0 };
+        laneMap[lane].count++;
+        laneMap[lane].totalRate += parseFloat(String(l.rate || 0));
+      }
+      return Object.entries(laneMap).sort((a, b) => b[1].count - a[1].count).slice(0, 5).map(([lane, s]) => ({
+        lane, rate: s.count > 0 ? Math.round((s.totalRate / s.count) * 100) / 100 : 0, change: '0%',
+        volume: s.count > 10 ? 'High' : s.count > 3 ? 'Medium' : 'Low',
+      }));
+    } catch (e) { return []; }
   }),
 
   /**
@@ -637,7 +646,13 @@ export const dashboardRouter = router({
    * Get inbound shipments for terminal managers
    */
   getInboundShipments: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedInboundShipments();
+    const db = await getDb();
+    if (!db) return getSeedInboundShipments();
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select({ id: loads.id, loadNumber: loads.loadNumber, status: loads.status, deliveryDate: loads.deliveryDate, pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation }).from(loads).where(sql`${loads.status} IN ('in_transit','assigned','loading') AND (${loads.catalystId} = ${companyId} OR ${loads.shipperId} = ${companyId})`).orderBy(loads.deliveryDate).limit(10);
+      return rows.map(r => ({ id: r.loadNumber || String(r.id), status: r.status, origin: ((r.pickupLocation as any)?.city || 'Unknown'), destination: ((r.deliveryLocation as any)?.city || 'Unknown'), eta: r.deliveryDate?.toISOString() || 'TBD' }));
+    } catch (e) { return getSeedInboundShipments(); }
   }),
 
   /**
@@ -686,14 +701,39 @@ export const dashboardRouter = router({
    * Get shipping volume data
    */
   getShippingVolume: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedShippingVolume();
+    const db = await getDb();
+    if (!db) return getSeedShippingVolume();
+    try {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const [mtd] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(gte(loads.createdAt, monthStart));
+      const [lastMonth] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(gte(loads.createdAt, lastMonthStart), lte(loads.createdAt, monthStart)));
+      const mtdVal = mtd?.count || 0;
+      const lastVal = lastMonth?.count || 1;
+      const growth = lastVal > 0 ? `${Math.round(((mtdVal - lastVal) / lastVal) * 100)}%` : '0%';
+      return { mtd: mtdVal, lastMonth: lastVal, growth, byMode: { ftl: mtdVal, ltl: 0, intermodal: 0 }, trend: [] };
+    } catch (e) { return getSeedShippingVolume(); }
   }),
 
   /**
    * Get lane analytics data
    */
   getLaneAnalytics: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedLaneAnalytics();
+    const db = await getDb();
+    if (!db) return getSeedLaneAnalytics();
+    try {
+      const rows = await db.select().from(loads).where(eq(loads.status, 'delivered')).orderBy(desc(loads.createdAt)).limit(200);
+      const laneMap: Record<string, { count: number; rev: number }> = {};
+      for (const l of rows) {
+        const p = (l.pickupLocation as any) || {}; const d = (l.deliveryLocation as any) || {};
+        const lane = `${p.state || '?'} → ${d.state || '?'}`;
+        if (!laneMap[lane]) laneMap[lane] = { count: 0, rev: 0 };
+        laneMap[lane].count++;
+        laneMap[lane].rev += parseFloat(String(l.rate || 0));
+      }
+      return Object.entries(laneMap).sort((a, b) => b[1].count - a[1].count).slice(0, 10).map(([lane, s]) => ({ lane, loads: s.count, revenue: Math.round(s.rev), avgRate: s.count > 0 ? Math.round(s.rev / s.count) : 0 }));
+    } catch (e) { return getSeedLaneAnalytics(); }
   }),
 
   /**

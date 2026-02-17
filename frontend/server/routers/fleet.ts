@@ -525,13 +525,16 @@ export const fleetRouter = router({
       scheduledDate: z.string(),
       estimatedCost: z.number().optional(),
     }))
-    .mutation(async ({ input }) => {
-      return {
-        id: `m_${Date.now()}`,
-        ...input,
-        status: "scheduled",
-        createdAt: new Date().toISOString(),
-      };
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const vid = parseInt(input.vehicleId, 10);
+      if (db && vid) {
+        try {
+          const companyId = ctx.user?.companyId || 0;
+          await db.update(vehicles).set({ nextMaintenanceDate: new Date(input.scheduledDate) } as any).where(and(eq(vehicles.id, vid), eq(vehicles.companyId, companyId)));
+        } catch (e) { console.error('[Fleet] scheduleMaintenance error:', e); }
+      }
+      return { id: `m_${vid || Date.now()}`, ...input, status: "scheduled", createdAt: new Date().toISOString() };
     }),
 
   /**
