@@ -291,6 +291,25 @@ import TrafficConditionsPage from "./pages/TrafficConditions";
 import TwoFactorAuthPage from "./pages/TwoFactorAuth";
 import TwoFactorSetupPage from "./pages/TwoFactorSetup";
 import VehicleInspectionsPage from "./pages/VehicleInspections";
+// ── Gold Standard Gap Audit: 18 pages with files but no routes ────────────────
+import AchievementsBadges from "./pages/AchievementsBadges";
+import QuickActions from "./pages/QuickActions";
+import UtilizationReport from "./pages/UtilizationReport";
+import ExpenseReports from "./pages/ExpenseReports";
+import HazmatShipments from "./pages/HazmatShipments";
+import BillingSettings from "./pages/BillingSettings";
+import BroadcastMessages from "./pages/BroadcastMessages";
+import EscortEarnings from "./pages/EscortEarnings";
+import EscortCertifications from "./pages/EscortCertifications";
+import SupportTickets from "./pages/SupportTickets";
+import RateManagement from "./pages/RateManagement";
+import APIManagement from "./pages/APIManagement";
+import IntegrationSettings from "./pages/IntegrationSettings";
+import BackupManagement from "./pages/BackupManagement";
+import ReleaseNotes from "./pages/ReleaseNotes";
+import DataExport from "./pages/DataExport";
+import HelpCenter from "./pages/HelpCenter";
+import NotificationSettings from "./pages/NotificationSettings";
 
 function Router() {
   // Role constants for route protection
@@ -381,6 +400,15 @@ function Router() {
       <Route path={"/insurance/per-load"} component={guard([...CARR, ...SHIP, ...BROK], <PerLoadInsurance />)} />
       <Route path={"/inspections"} component={guard([...CARR, ...COMP, ...SAFE], <VehicleInspectionsPage />)} />
       <Route path={"/report-builder"} component={guard([...CARR, ...BROK, ...COMP, ...SAFE, ...ADMN], <ReportBuilderPage />)} />
+      {/* Gold Standard Gap Audit: 18 missing routes wired */}
+      <Route path={"/help"} component={guard(ALL, <HelpCenter />)} />
+      <Route path={"/settings/notifications"} component={guard(ALL, <NotificationSettings />)} />
+      <Route path={"/achievements"} component={guard(ALL, <AchievementsBadges />)} />
+      <Route path={"/quick-actions"} component={guard(ALL, <QuickActions />)} />
+      <Route path={"/hazmat/shipments"} component={guard([...CARR, ...SHIP, ...BROK, ...COMP, ...SAFE, ...ADMN], <HazmatShipments />)} />
+      <Route path={"/settings/billing"} component={guard([...CARR, ...SHIP, ...BROK], <BillingSettings />)} />
+      <Route path={"/utilization"} component={guard([...CARR, ...COMP, ...ADMN], <UtilizationReport />)} />
+      <Route path={"/expenses"} component={guard([...CARR, ...DRIV], <ExpenseReports />)} />
 
       {/* ============================================ */}
       {/* SHIPPER ROUTES */}
@@ -499,6 +527,7 @@ function Router() {
       <Route path={"/driver/hopper-inspection"} component={guard(DRIV, <HopperInspection />)} />
       <Route path={"/driver/voice-messages"} component={guard(DRIV, <VoiceMessaging />)} />
       <Route path={"/dispatch/emergency-broadcast"} component={guard(DISP, <EmergencyBroadcast />)} />
+      <Route path={"/dispatch/broadcast"} component={guard(DISP, <BroadcastMessages />)} />
       <Route path={"/driver/profile-setup"} component={guard(DRIV, <ProfileSetup />)} />
       <Route path={"/driver/today"} component={guard(DRIV, <TodaySchedule />)} />
       <Route path={"/hazmat/driver-filter"} component={guard(DISP, <HazmatDriverFilter />)} />
@@ -547,12 +576,14 @@ function Router() {
       <Route path={"/escort/marketplace"} component={guard(ESCT, <EscortJobMarketplace />)} />
       <Route path={"/escort/permits"} component={guard(ESCT, <EscortPermits />)} />
       <Route path={"/escort/schedule"} component={guard(ESCT, <EscortSchedule />)} />
+      <Route path={"/escort/earnings"} component={guard(ESCT, <EscortEarnings />)} />
+      <Route path={"/escort/certifications"} component={guard(ESCT, <EscortCertifications />)} />
 
       {/* ============================================ */}
       {/* TERMINAL MANAGER ROUTES */}
       {/* ============================================ */}
       <Route path={"/terminal"} component={guard(TERM, <TerminalDashboard />)} />
-      <Route path={"/facility"} component={guard(TERM, <FacilityPage />)} />
+      <Route path={"/facility"} component={guard([...TERM, ...SHIP], <FacilityPage />)} />
       <Route path={"/incoming"} component={guard(TERM, <IncomingShipments />)} />
       <Route path={"/outgoing"} component={guard(TERM, <OutgoingShipments />)} />
       <Route path={"/staff"} component={guard(TERM, <TerminalStaff />)} />
@@ -633,6 +664,10 @@ function Router() {
       <Route path={"/admin/platform-fees"} component={guard(ADMN, <AdminPlatformFees />)} />
       <Route path={"/admin/feature-flags"} component={guard(ADMN, <FeatureFlagsPage />)} />
       <Route path={"/admin/roles"} component={guard(ADMN, <RolePermissionsPage />)} />
+      <Route path={"/admin/support-tickets"} component={guard(ADMN, <SupportTickets />)} />
+      <Route path={"/admin/rates"} component={guard(ADMN, <RateManagement />)} />
+      <Route path={"/admin/api"} component={guard(ADMN, <APIManagement />)} />
+      <Route path={"/admin/integrations"} component={guard(ADMN, <IntegrationSettings />)} />
 
       {/* ============================================ */}
       {/* SUPER ADMIN ROUTES */}
@@ -649,6 +684,9 @@ function Router() {
       <Route path={"/super-admin/monitoring"} component={guard(SUPR, <Analytics />)} />
       <Route path={"/super-admin/settings"} component={guard(SUPR, <SettingsPage />)} />
       <Route path={"/super-admin/security"} component={guard(SUPR, <SecuritySettingsPage />)} />
+      <Route path={"/super-admin/backups"} component={guard(SUPR, <BackupManagement />)} />
+      <Route path={"/super-admin/releases"} component={guard(SUPR, <ReleaseNotes />)} />
+      <Route path={"/super-admin/data-export"} component={guard(SUPR, <DataExport />)} />
 
       {/* ============================================ */}
       {/* UTILITY & DETAIL ROUTES */}
