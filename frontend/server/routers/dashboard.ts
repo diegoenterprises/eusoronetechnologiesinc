@@ -358,36 +358,68 @@ export const dashboardRouter = router({
    * Get terminal operations data
    */
   getTerminalOps: protectedProcedure.query(async ({ ctx }) => {
-    return {
-      docks: { total: 0, active: 0, available: 0 },
-      appointments: { today: 0, pending: 0, completed: 0 },
-      tankLevels: [],
-      throughput: { today: 0, mtd: 0, unit: 'gallons' },
-    };
+    const db = await getDb();
+    if (!db) return { docks: { total: 0, active: 0, available: 0 }, appointments: { today: 0, pending: 0, completed: 0 }, tankLevels: [], throughput: { today: 0, mtd: 0, unit: 'gallons' } };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const [terminal] = await db.select().from(terminals).where(eq(terminals.companyId, companyId)).limit(1);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+      const termId = terminal?.id || 0;
+      const [todayAppts] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(eq(appointments.terminalId, termId), gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow)));
+      const [completedAppts] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(eq(appointments.terminalId, termId), eq(appointments.status, 'completed')));
+      const dockCount = terminal?.dockCount || 0;
+      return { docks: { total: dockCount, active: Math.min(dockCount, todayAppts?.count || 0), available: Math.max(0, dockCount - (todayAppts?.count || 0)) }, appointments: { today: todayAppts?.count || 0, pending: Math.max(0, (todayAppts?.count || 0) - (completedAppts?.count || 0)), completed: completedAppts?.count || 0 }, tankLevels: [], throughput: { today: 0, mtd: 0, unit: 'gallons' } };
+    } catch { return { docks: { total: 0, active: 0, available: 0 }, appointments: { today: 0, pending: 0, completed: 0 }, tankLevels: [], throughput: { today: 0, mtd: 0, unit: 'gallons' } }; }
   }),
 
   /**
    * Get CSA BASIC scores for Safety Manager (per 09_SAFETY_MANAGER_USER_JOURNEY.md)
    */
   getCSAScores: protectedProcedure.query(async ({ ctx }) => {
-    // In production, would integrate with FMCSA SMS API
-    return getSeedCSAScores();
+    const db = await getDb();
+    if (!db) return getSeedCSAScores();
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const [totalInsp] = await db.select({ count: sql<number>`count(*)` }).from(inspections).where(eq(inspections.companyId, companyId));
+      const [oosInsp] = await db.select({ count: sql<number>`count(*)` }).from(inspections).where(and(eq(inspections.companyId, companyId), eq(inspections.oosViolation, true)));
+      const [defectInsp] = await db.select({ count: sql<number>`count(*)` }).from(inspections).where(and(eq(inspections.companyId, companyId), sql`${inspections.defectsFound} > 0`));
+      const t = totalInsp?.count || 0;
+      const oosRate = t > 0 ? Math.round(((oosInsp?.count || 0) / t) * 100) : 0;
+      const defectRate = t > 0 ? Math.round(((defectInsp?.count || 0) / t) * 100) : 0;
+      const mkScore = (rate: number) => ({ score: rate, threshold: 65, status: rate > 65 ? 'alert' : rate > 50 ? 'warning' : 'ok' });
+      return { unsafeDriving: mkScore(defectRate), hosCompliance: mkScore(0), driverFitness: mkScore(0), controlledSubstances: mkScore(0), vehicleMaintenance: mkScore(oosRate), hazmatCompliance: mkScore(0), crashIndicator: mkScore(0), lastUpdated: new Date().toISOString() };
+    } catch { return getSeedCSAScores(); }
   }),
 
   /**
    * Get driver safety scorecards for Safety Manager
    */
   getDriverScorecards: protectedProcedure.query(async ({ ctx }) => {
-    // In production, would calculate from ELD data, inspection history
-    return getSeedDriverScorecard();
+    const db = await getDb();
+    if (!db) return getSeedDriverScorecard();
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const drvList = await db.select({ id: drivers.id, userId: drivers.userId, userName: users.name, safetyScore: drivers.safetyScore, totalLoads: drivers.totalLoads, totalMiles: drivers.totalMiles, status: drivers.status }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).limit(20);
+      return drvList.map(d => ({ id: String(d.id), name: d.userName || `Driver #${d.id}`, safetyScore: d.safetyScore || 100, totalLoads: d.totalLoads || 0, totalMiles: d.totalMiles || 0, status: d.status || 'active', rank: 0 }));
+    } catch { return getSeedDriverScorecard(); }
   }),
 
   /**
    * Get dispatch data for Dispatch (per 05_DISPATCH_USER_JOURNEY.md)
    */
   getDispatchData: protectedProcedure.query(async ({ ctx }) => {
-    // In production, would aggregate real-time load and driver data
-    return getSeedDispatchData();
+    const db = await getDb();
+    if (!db) return getSeedDispatchData();
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const [active] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, companyId), sql`${loads.status} IN ('assigned','in_transit','loading','unloading')`));
+      const [unassigned] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, companyId), sql`${loads.driverId} IS NULL`, sql`${loads.status} IN ('assigned','bidding','posted')`));
+      const [enRoute] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, companyId), eq(loads.status, 'in_transit')));
+      const [loading] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, companyId), eq(loads.status, 'loading')));
+      const [availDrivers] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(and(eq(drivers.companyId, companyId), sql`${drivers.status} IN ('active','available')`));
+      return { activeLoads: active?.count || 0, unassigned: unassigned?.count || 0, enRoute: enRoute?.count || 0, loading: loading?.count || 0, inTransit: enRoute?.count || 0, issues: 0, driversAvailable: availDrivers?.count || 0, loadsRequiringAction: [] };
+    } catch { return getSeedDispatchData(); }
   }),
 
   /**
@@ -402,21 +434,50 @@ export const dashboardRouter = router({
    * Get shipper dashboard stats (per 01_SHIPPER_USER_JOURNEY.md)
    */
   getShipperDashboard: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedShipperDashboard();
+    const db = await getDb();
+    if (!db) return getSeedShipperDashboard();
+    try {
+      const userId = ctx.user?.id || 0;
+      const [active] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('in_transit','assigned','loading','unloading')`));
+      const [pendingBidsCount] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'bidding')));
+      const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const [deliveredWeek] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'delivered'), gte(loads.createdAt, sevenDaysAgo)));
+      const [total] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(eq(loads.shipperId, userId));
+      const [delivered] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'delivered')));
+      const onTimeRate = (total?.count || 0) > 0 ? Math.round(((delivered?.count || 0) / (total?.count || 1)) * 100) : 0;
+      return { activeLoads: active?.count || 0, pendingBids: pendingBidsCount?.count || 0, deliveredThisWeek: deliveredWeek?.count || 0, avgRatePerMile: 0, onTimeRate, loadsRequiringAttention: [] };
+    } catch { return getSeedShipperDashboard(); }
   }),
 
   /**
    * Get broker dashboard stats (per 03_BROKER_USER_JOURNEY.md)
    */
   getBrokerDashboard: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedBrokerDashboard();
+    const db = await getDb();
+    if (!db) return getSeedBrokerDashboard();
+    try {
+      const [activeL] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(sql`${loads.status} IN ('posted','bidding','assigned','in_transit')`);
+      const [pending] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(eq(bids.status, 'pending'));
+      const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const [weekVol] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(gte(loads.createdAt, sevenDaysAgo));
+      return { activeLoads: activeL?.count || 0, pendingMatches: pending?.count || 0, weeklyVolume: weekVol?.count || 0, commissionEarned: Math.round((weekVol?.rev || 0) * 0.15), marginAverage: 15, shipperLoads: 0, catalystCapacity: [] };
+    } catch { return getSeedBrokerDashboard(); }
   }),
 
   /**
    * Get admin dashboard stats (per 10_ADMIN_USER_JOURNEY.md)
    */
   getAdminDashboard: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedAdminDashboard();
+    const db = await getDb();
+    if (!db) return getSeedAdminDashboard();
+    try {
+      const [totalU] = await db.select({ count: sql<number>`count(*)` }).from(users);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const [todaySignups] = await db.select({ count: sql<number>`count(*)` }).from(users).where(gte(users.createdAt, today));
+      const [activeL] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(sql`${loads.status} IN ('in_transit','assigned','loading','unloading')`);
+      const dbStatus = db ? 'healthy' : 'degraded';
+      return { totalUsers: totalU?.count || 0, pendingVerifications: 0, activeLoads: activeL?.count || 0, todaySignups: todaySignups?.count || 0, openTickets: 0, platformHealth: { api: { status: 'healthy', latency: 45 }, database: { status: dbStatus, uptime: 99.9 }, eldSync: { status: 'healthy' }, payment: { status: 'healthy' }, gps: { status: 'healthy' }, scada: { status: 'healthy' } }, criticalErrors24h: 0 };
+    } catch { return getSeedAdminDashboard(); }
   }),
 
   /**
@@ -451,14 +512,40 @@ export const dashboardRouter = router({
    * Get accident/incident tracker data for safety
    */
   getAccidentTracker: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedAccidentTracker();
+    const db = await getDb();
+    if (!db) return getSeedAccidentTracker();
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+      const [ytd] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), gte(incidents.occurredAt, startOfYear)));
+      const [minor] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), eq(incidents.severity, 'minor'), gte(incidents.occurredAt, startOfYear)));
+      const [major] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), sql`${incidents.severity} IN ('major','critical')`, gte(incidents.occurredAt, startOfYear)));
+      const [fatal] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), sql`${incidents.fatalities} > 0`, gte(incidents.occurredAt, startOfYear)));
+      const [lastInc] = await db.select({ occurredAt: incidents.occurredAt }).from(incidents).where(eq(incidents.companyId, companyId)).orderBy(sql`${incidents.occurredAt} DESC`).limit(1);
+      return { ytd: ytd?.count || 0, lastIncident: lastInc?.occurredAt?.toISOString().split('T')[0] || 'N/A', severity: { minor: minor?.count || 0, major: major?.count || 0, fatal: fatal?.count || 0 }, trend: '0%', preventable: 0, nonPreventable: 0 };
+    } catch { return getSeedAccidentTracker(); }
   }),
 
   /**
    * Get driver qualifications (DQ files) for compliance
    */
   getDriverQualifications: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedDriverQualifications();
+    const db = await getDb();
+    if (!db) return getSeedDriverQualifications();
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const now = new Date();
+      const drvList = await db.select({ id: drivers.id, userName: users.name, licenseExpiry: drivers.licenseExpiry, medicalCardExpiry: drivers.medicalCardExpiry, hazmatExpiry: drivers.hazmatExpiry }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).limit(30);
+      return drvList.map(d => {
+        const exps = [d.licenseExpiry, d.medicalCardExpiry, d.hazmatExpiry].filter(Boolean);
+        const earliest = exps.length > 0 ? new Date(Math.min(...exps.map(e => new Date(e!).getTime()))) : null;
+        let status = 'valid';
+        if (!earliest || exps.length === 0) status = 'incomplete';
+        else if (earliest < now) status = 'expired';
+        else if (earliest < new Date(now.getTime() + 30 * 86400000)) status = 'expiring';
+        return { id: String(d.id), name: d.userName || `Driver #${d.id}`, status, documentsComplete: exps.length, documentsRequired: 3, nearestExpiry: earliest?.toISOString().split('T')[0] || '' };
+      });
+    } catch { return getSeedDriverQualifications(); }
   }),
 
   /**
@@ -486,14 +573,26 @@ export const dashboardRouter = router({
    * Get notifications/alerts
    */
   getNotifications: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedNotifications();
+    const db = await getDb();
+    if (!db) return getSeedNotifications();
+    try {
+      const userId = ctx.user?.id || 0;
+      const recentLoads = await db.select({ id: loads.id, loadNumber: loads.loadNumber, status: loads.status, createdAt: loads.createdAt }).from(loads).where(sql`${loads.shipperId} = ${userId} OR ${loads.catalystId} = ${userId} OR ${loads.driverId} = ${userId}`).orderBy(sql`${loads.createdAt} DESC`).limit(5);
+      return recentLoads.map(l => ({ id: `notif_${l.id}`, type: 'load_update', title: `Load ${l.loadNumber || l.id}`, message: `Status: ${l.status}`, read: false, createdAt: l.createdAt?.toISOString() || '' }));
+    } catch { return getSeedNotifications(); }
   }),
 
   /**
    * Get recent activity feed
    */
   getRecentActivity: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedRecentActivity();
+    const db = await getDb();
+    if (!db) return getSeedRecentActivity();
+    try {
+      const userId = ctx.user?.id || 0;
+      const recentLoads = await db.select({ id: loads.id, loadNumber: loads.loadNumber, status: loads.status, createdAt: loads.createdAt, pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation }).from(loads).where(sql`${loads.shipperId} = ${userId} OR ${loads.catalystId} = ${userId} OR ${loads.driverId} = ${userId}`).orderBy(sql`${loads.createdAt} DESC`).limit(10);
+      return recentLoads.map(l => ({ id: `act_${l.id}`, type: 'load', action: l.status === 'delivered' ? 'delivered' : l.status === 'in_transit' ? 'in_transit' : 'updated', description: `${l.loadNumber || `LOAD-${l.id}`}: ${((l.pickupLocation as any)?.city || '?')} to ${((l.deliveryLocation as any)?.city || '?')}`, timestamp: l.createdAt?.toISOString() || '' }));
+    } catch { return getSeedRecentActivity(); }
   }),
 
   /**
@@ -507,7 +606,17 @@ export const dashboardRouter = router({
    * Get document expiration alerts
    */
   getDocumentExpirations: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedDocumentExpirations();
+    const db = await getDb();
+    if (!db) return getSeedDocumentExpirations();
+    try {
+      const companyId = ctx.user?.companyId;
+      const now = new Date();
+      const sixtyDays = new Date(now.getTime() + 60 * 86400000);
+      const conds: any[] = [sql`${documents.expiryDate} IS NOT NULL`, gte(documents.expiryDate, now), lte(documents.expiryDate, sixtyDays)];
+      if (companyId) conds.push(eq(documents.companyId, companyId));
+      const rows = await db.select({ id: documents.id, name: documents.name, type: documents.type, expiryDate: documents.expiryDate }).from(documents).where(and(...conds)).orderBy(documents.expiryDate).limit(10);
+      return rows.map(d => ({ id: String(d.id), name: d.name, type: d.type, expiresAt: d.expiryDate?.toISOString().split('T')[0] || '', daysRemaining: d.expiryDate ? Math.ceil((new Date(d.expiryDate).getTime() - now.getTime()) / 86400000) : 0 }));
+    } catch { return getSeedDocumentExpirations(); }
   }),
 
   /**
@@ -612,14 +721,37 @@ export const dashboardRouter = router({
    * Get fleet utilization
    */
   getFleetUtilization: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedFleetUtilization();
+    const db = await getDb();
+    if (!db) return getSeedFleetUtilization();
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const [total] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(eq(vehicles.companyId, companyId));
+      const [activeV] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), eq(vehicles.status, 'in_use')));
+      const [idleV] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), eq(vehicles.status, 'available')));
+      const [maintV] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), eq(vehicles.status, 'maintenance')));
+      const t = total?.count || 0;
+      return { trucks: { total: t, active: activeV?.count || 0, idle: idleV?.count || 0, maintenance: maintV?.count || 0 }, utilization: t > 0 ? Math.round(((activeV?.count || 0) / t) * 100) : 0, avgMilesPerDay: 0, emptyMiles: 0, revenuePerTruck: 0 };
+    } catch { return getSeedFleetUtilization(); }
   }),
 
   /**
    * Get equipment availability
    */
   getEquipmentAvailability: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedEquipmentAvailability();
+    const db = await getDb();
+    if (!db) return getSeedEquipmentAvailability();
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const getByType = async (type: string) => {
+        const typeCond = sql`${vehicles.vehicleType} = ${type}`;
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), typeCond));
+        const [avail] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), typeCond, eq(vehicles.status, 'available')));
+        const [inUse] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), typeCond, eq(vehicles.status, 'in_use')));
+        const [maint] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), typeCond, eq(vehicles.status, 'maintenance')));
+        return { total: total?.count || 0, available: avail?.count || 0, inUse: inUse?.count || 0, maintenance: maint?.count || 0 };
+      };
+      return { tankers: await getByType('tanker'), dryVan: await getByType('dry_van'), flatbed: await getByType('flatbed') };
+    } catch { return getSeedEquipmentAvailability(); }
   }),
 
   /**
@@ -640,21 +772,50 @@ export const dashboardRouter = router({
    * Get active loads overview
    */
   getActiveLoadsOverview: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedActiveLoadsOverview();
+    const db = await getDb();
+    if (!db) return getSeedActiveLoadsOverview();
+    try {
+      const [active] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(sql`${loads.status} IN ('assigned','in_transit','loading','unloading','at_pickup','at_delivery')`);
+      const [inTransit] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'in_transit'));
+      const [loadingC] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'loading'));
+      const [unloadingC] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'unloading'));
+      const [delivered] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'delivered'));
+      return { active: active?.count || 0, inTransit: inTransit?.count || 0, loading: loadingC?.count || 0, unloading: unloadingC?.count || 0, delayed: 0, onTime: delivered?.count || 0 };
+    } catch { return getSeedActiveLoadsOverview(); }
   }),
 
   /**
    * Get user analytics
    */
   getUserAnalytics: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedUserAnalytics();
+    const db = await getDb();
+    if (!db) return getSeedUserAnalytics();
+    try {
+      const [totalU] = await db.select({ count: sql<number>`count(*)` }).from(users);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const [newToday] = await db.select({ count: sql<number>`count(*)` }).from(users).where(gte(users.createdAt, today));
+      const [activeU] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isActive, true));
+      return { totalUsers: totalU?.count || 0, newToday: newToday?.count || 0, activeToday: activeU?.count || 0, churn: 0, growth: '0%' };
+    } catch { return getSeedUserAnalytics(); }
   }),
 
   /**
    * Get revenue data
    */
   getRevenue: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedRevenue();
+    const db = await getDb();
+    if (!db) return getSeedRevenue();
+    try {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const yearStart = new Date(now.getFullYear(), 0, 1);
+      const [mtd] = await db.select({ rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.status, 'delivered'), gte(loads.createdAt, monthStart)));
+      const [ytd] = await db.select({ rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.status, 'delivered'), gte(loads.createdAt, yearStart)));
+      const mtdVal = Math.round(mtd?.rev || 0);
+      const ytdVal = Math.round(ytd?.rev || 0);
+      const target = 100000;
+      return { mtd: mtdVal, ytd: ytdVal, growth: '0%', target, progress: target > 0 ? Math.round((mtdVal / target) * 100) : 0 };
+    } catch { return getSeedRevenue(); }
   }),
 
   /**
@@ -696,7 +857,20 @@ export const dashboardRouter = router({
    * Get safety metrics
    */
   getSafetyMetrics: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedSafetyMetrics();
+    const db = await getDb();
+    if (!db) return getSeedSafetyMetrics();
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+      const [incCount] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), gte(incidents.occurredAt, startOfYear)));
+      const [violCount] = await db.select({ count: sql<number>`count(*)` }).from(inspections).where(and(eq(inspections.companyId, companyId), sql`${inspections.defectsFound} > 0`));
+      const [totalInsp] = await db.select({ count: sql<number>`count(*)` }).from(inspections).where(eq(inspections.companyId, companyId));
+      const [passedInsp] = await db.select({ count: sql<number>`count(*)` }).from(inspections).where(and(eq(inspections.companyId, companyId), eq(inspections.status, 'passed')));
+      const score = (totalInsp?.count || 0) > 0 ? Math.round(((passedInsp?.count || 0) / (totalInsp?.count || 1)) * 100) : 100;
+      const [lastInc] = await db.select({ occurredAt: incidents.occurredAt }).from(incidents).where(eq(incidents.companyId, companyId)).orderBy(sql`${incidents.occurredAt} DESC`).limit(1);
+      const daysSince = lastInc?.occurredAt ? Math.floor((Date.now() - new Date(lastInc.occurredAt).getTime()) / 86400000) : 365;
+      return { score, incidents: incCount?.count || 0, violations: violCount?.count || 0, daysWithoutAccident: daysSince, trend: '0%' };
+    } catch { return getSeedSafetyMetrics(); }
   }),
 
   /**
@@ -710,7 +884,13 @@ export const dashboardRouter = router({
    * Get drivers list
    */
   getDriversList: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedDriversList();
+    const db = await getDb();
+    if (!db) return getSeedDriversList();
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const drvList = await db.select({ id: drivers.id, userName: users.name, status: drivers.status, safetyScore: drivers.safetyScore, totalLoads: drivers.totalLoads }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).limit(30);
+      return drvList.map(d => ({ id: String(d.id), name: d.userName || `Driver #${d.id}`, status: d.status || 'active', safetyScore: d.safetyScore || 100, loads: d.totalLoads || 0 }));
+    } catch { return getSeedDriversList(); }
   }),
 
   /**

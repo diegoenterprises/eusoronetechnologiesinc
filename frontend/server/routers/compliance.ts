@@ -939,6 +939,12 @@ export const complianceRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+      const docId = parseInt(input.documentId.replace(/\D/g, ''));
+      const updateData: any = { status: input.status };
+      if (input.expirationDate) updateData.expiryDate = new Date(input.expirationDate);
+      await db.update(documents).set(updateData).where(eq(documents.id, docId));
       return {
         success: true,
         documentId: input.documentId,
@@ -1106,6 +1112,13 @@ export const complianceRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (db) {
+        const inspId = parseInt(input.id.replace(/\D/g, ''));
+        if (inspId) {
+          await db.update(inspections).set({ status: 'passed' }).where(eq(inspections.id, inspId));
+        }
+      }
       return {
         success: true,
         id: input.id,
@@ -1187,9 +1200,26 @@ export const complianceRouter = router({
       auditor: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const companyId = ctx.user?.companyId || 0;
+      let auditId = `a_${Date.now()}`;
+      if (db) {
+        const typeMap: Record<string, string> = { dot: 'dot_inspection', fmcsa: 'roadside', internal: 'annual', hazmat: 'hazmat_inspection' };
+        const [result] = await db.insert(inspections).values({
+          companyId,
+          driverId: 0,
+          vehicleId: 0,
+          type: (typeMap[input.type] || 'annual') as any,
+          location: input.location,
+          status: 'pending',
+          completedAt: new Date(input.scheduledDate),
+          defectsFound: 0,
+        }).$returningId();
+        if (result) auditId = `a_${result.id}`;
+      }
       return {
         success: true,
-        id: `a_${Date.now()}`,
+        id: auditId,
         ...input,
         status: "scheduled",
         createdAt: new Date().toISOString(),
@@ -1253,9 +1283,24 @@ export const complianceRouter = router({
       priority: z.enum(["low", "medium", "high"]).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const companyId = ctx.user?.companyId || 0;
+      let trainingId = `t_${Date.now()}`;
+      if (db) {
+        const userId = input.driverId ? parseInt(input.driverId) : 0;
+        const [result] = await db.insert(trainingRecords).values({
+          companyId,
+          userId: userId || (ctx.user?.id || 0),
+          courseName: input.trainingType,
+          expiresAt: new Date(input.dueDate),
+          status: 'assigned',
+          passed: false,
+        }).$returningId();
+        if (result) trainingId = `t_${result.id}`;
+      }
       return {
         success: true,
-        id: `t_${Date.now()}`,
+        id: trainingId,
         ...input,
         status: "assigned",
         assignedAt: new Date().toISOString(),
@@ -1318,8 +1363,26 @@ export const complianceRouter = router({
   initiateBackgroundCheck: protectedProcedure
     .input(z.object({ driverId: z.string(), checkType: z.enum(["standard", "enhanced", "continuous"]).optional() }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      let checkId = `bg_${Date.now()}`;
+      if (db) {
+        const drvId = parseInt(input.driverId);
+        const [drv] = await db.select({ userId: drivers.userId }).from(drivers).where(eq(drivers.id, drvId)).limit(1);
+        if (drv?.userId) {
+          const companyId = ctx.user?.companyId || 0;
+          const [result] = await db.insert(documents).values({
+            companyId,
+            userId: drv.userId,
+            name: `Background Check - ${input.checkType || 'standard'}`,
+            type: 'background_check',
+            fileUrl: '',
+            status: 'pending',
+          }).$returningId();
+          if (result) checkId = `bg_${result.id}`;
+        }
+      }
       return {
-        success: true, checkId: `bg_${Date.now()}`, driverId: input.driverId,
+        success: true, checkId, driverId: input.driverId,
         checkType: input.checkType || 'standard', status: 'pending',
         initiatedAt: new Date().toISOString(), initiatedBy: ctx.user?.id,
         regulation: '49 CFR 391.23', estimatedCompletion: new Date(Date.now() + 3 * 86400000).toISOString(),
