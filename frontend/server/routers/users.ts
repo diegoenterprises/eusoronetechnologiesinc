@@ -263,28 +263,63 @@ export const usersRouter = router({
   // Get leaderboard for Leaderboard page
   getLeaderboard: protectedProcedure
     .input(z.object({ timeRange: z.string().optional(), category: z.string().optional(), limit: z.number().optional() }))
-    .query(async () => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const { drivers } = await import('../../drizzle/schema');
+        const companyId = ctx.user?.companyId || 0;
+        const rows = await db.select({ id: drivers.id, userId: drivers.userId, safetyScore: drivers.safetyScore, totalLoads: drivers.totalLoads, totalMiles: drivers.totalMiles, userName: users.name }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).orderBy(desc(drivers.safetyScore)).limit(input.limit || 20);
+        return rows.map((d, idx) => ({ rank: idx + 1, id: String(d.id), name: d.userName || 'Unknown', score: d.safetyScore || 0, points: (d.safetyScore || 0) * 10, loads: d.totalLoads || 0, miles: parseFloat(d.totalMiles || '0') }));
+      } catch (e) { return []; }
     }),
 
   // Get my rank for Leaderboard page
   getMyRank: protectedProcedure
     .input(z.object({ timeRange: z.string().optional(), category: z.string().optional() }))
-    .query(async () => {
-      return { rank: 0, points: 0, percentile: 0, score: 0, trend: "flat", trendValue: 0 };
+    .query(async ({ ctx }) => {
+      const db = await getDb(); if (!db) return { rank: 0, points: 0, percentile: 0, score: 0, trend: 'flat', trendValue: 0 };
+      try {
+        const { drivers } = await import('../../drizzle/schema');
+        const userId = ctx.user?.id || 0;
+        const companyId = ctx.user?.companyId || 0;
+        const [driver] = await db.select({ safetyScore: drivers.safetyScore }).from(drivers).where(eq(drivers.userId, userId)).limit(1);
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, companyId));
+        const score = driver?.safetyScore || 0;
+        const totalCount = total?.count || 1;
+        const [higher] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(and(eq(drivers.companyId, companyId), sql`${drivers.safetyScore} > ${score}`));
+        const rank = (higher?.count || 0) + 1;
+        const percentile = totalCount > 0 ? Math.round(((totalCount - rank) / totalCount) * 100) : 0;
+        return { rank, points: score * 10, percentile, score, trend: 'flat', trendValue: 0 };
+      } catch (e) { return { rank: 0, points: 0, percentile: 0, score: 0, trend: 'flat', trendValue: 0 }; }
     }),
 
   // Get activity feed for ActivityFeed page
   getActivityFeed: protectedProcedure
     .input(z.object({ filter: z.string().optional(), limit: z.number().optional() }))
-    .query(async () => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const userId = ctx.user?.id || 0;
+        const rows = await db.select().from(auditLogs).where(eq(auditLogs.userId, userId)).orderBy(desc(auditLogs.createdAt)).limit(input.limit || 20);
+        return rows.map(r => ({ id: String(r.id), type: r.action, description: `${r.action} on ${r.entityType} #${r.entityId || ''}`, timestamp: r.createdAt?.toISOString() || '', entityType: r.entityType, entityId: String(r.entityId || '') }));
+      } catch (e) { return []; }
     }),
 
   // Get activity stats for ActivityFeed page
   getActivityStats: protectedProcedure
-    .query(async () => {
-      return { totalActivities: 0, todayActivities: 0, weekActivities: 0, totalToday: 0, loadsToday: 0, bidsToday: 0, thisWeek: 0 };
+    .query(async ({ ctx }) => {
+      const db = await getDb(); if (!db) return { totalActivities: 0, todayActivities: 0, weekActivities: 0, totalToday: 0, loadsToday: 0, bidsToday: 0, thisWeek: 0 };
+      try {
+        const userId = ctx.user?.id || 0;
+        const now = new Date(); const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(eq(auditLogs.userId, userId));
+        const [today] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), sql`${auditLogs.createdAt} >= ${todayStart}`));
+        const [week] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), sql`${auditLogs.createdAt} >= ${weekAgo}`));
+        const [loadsToday] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.entityType, 'load'), sql`${auditLogs.createdAt} >= ${todayStart}`));
+        const [bidsToday] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.entityType, 'bid'), sql`${auditLogs.createdAt} >= ${todayStart}`));
+        return { totalActivities: total?.count || 0, todayActivities: today?.count || 0, weekActivities: week?.count || 0, totalToday: today?.count || 0, loadsToday: loadsToday?.count || 0, bidsToday: bidsToday?.count || 0, thisWeek: week?.count || 0 };
+      } catch (e) { return { totalActivities: 0, todayActivities: 0, weekActivities: 0, totalToday: 0, loadsToday: 0, bidsToday: 0, thisWeek: 0 }; }
     }),
 
   // Get account info
@@ -377,14 +412,26 @@ export const usersRouter = router({
   // Get login history for LoginHistory page
   getLoginHistory: protectedProcedure
     .input(z.object({ status: z.string().optional(), limit: z.number().optional().default(50) }))
-    .query(async () => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const userId = ctx.user?.id || 0;
+        const rows = await db.select().from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.action, 'login'))).orderBy(desc(auditLogs.createdAt)).limit(input.limit);
+        return rows.map(r => ({ id: String(r.id), timestamp: r.createdAt?.toISOString() || '', ip: r.ipAddress || '', userAgent: (r.userAgent as string)?.slice(0, 80) || '', status: 'success', location: '' }));
+      } catch (e) { return []; }
     }),
 
   // Get login summary for LoginHistory page
   getLoginSummary: protectedProcedure
-    .query(async () => {
-      return { totalLogins: 0, successfulLogins: 0, failedAttempts: 0, failedLogins: 0, lastLogin: new Date().toISOString() };
+    .query(async ({ ctx }) => {
+      const db = await getDb(); if (!db) return { totalLogins: 0, successfulLogins: 0, failedAttempts: 0, failedLogins: 0, lastLogin: new Date().toISOString() };
+      try {
+        const userId = ctx.user?.id || 0;
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.action, 'login')));
+        const [latest] = await db.select({ createdAt: auditLogs.createdAt }).from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.action, 'login'))).orderBy(desc(auditLogs.createdAt)).limit(1);
+        const count = total?.count || 0;
+        return { totalLogins: count, successfulLogins: count, failedAttempts: 0, failedLogins: 0, lastLogin: latest?.createdAt?.toISOString() || new Date().toISOString() };
+      } catch (e) { return { totalLogins: 0, successfulLogins: 0, failedAttempts: 0, failedLogins: 0, lastLogin: new Date().toISOString() }; }
     }),
 
   // Get referrals list
@@ -395,27 +442,61 @@ export const usersRouter = router({
   // Get leaderboard (detailed version)
   getLeaderboardDetailed: protectedProcedure
     .input(z.object({ timeRange: z.string().optional(), category: z.string().optional(), limit: z.number().optional() }))
-    .query(async () => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const { drivers } = await import('../../drizzle/schema');
+        const companyId = ctx.user?.companyId || 0;
+        const rows = await db.select({ id: drivers.id, safetyScore: drivers.safetyScore, totalLoads: drivers.totalLoads, totalMiles: drivers.totalMiles, userName: users.name }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).orderBy(desc(drivers.safetyScore)).limit(input.limit || 20);
+        return rows.map((d, idx) => ({ rank: idx + 1, id: String(d.id), name: d.userName || 'Unknown', score: d.safetyScore || 0, loads: d.totalLoads || 0, miles: parseFloat(d.totalMiles || '0') }));
+      } catch (e) { return []; }
     }),
 
   // Get my rank (detailed version)
   getMyRankDetailed: protectedProcedure
     .input(z.object({ timeRange: z.string().optional(), category: z.string().optional() }))
-    .query(async () => {
-      return { rank: 0, score: 0, percentile: 0 };
+    .query(async ({ ctx }) => {
+      const db = await getDb(); if (!db) return { rank: 0, score: 0, percentile: 0 };
+      try {
+        const { drivers } = await import('../../drizzle/schema');
+        const userId = ctx.user?.id || 0;
+        const companyId = ctx.user?.companyId || 0;
+        const [driver] = await db.select({ safetyScore: drivers.safetyScore }).from(drivers).where(eq(drivers.userId, userId)).limit(1);
+        const score = driver?.safetyScore || 0;
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, companyId));
+        const [higher] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(and(eq(drivers.companyId, companyId), sql`${drivers.safetyScore} > ${score}`));
+        const rank = (higher?.count || 0) + 1;
+        const totalCount = total?.count || 1;
+        return { rank, score, percentile: Math.round(((totalCount - rank) / totalCount) * 100) };
+      } catch (e) { return { rank: 0, score: 0, percentile: 0 }; }
     }),
 
   // Get activity feed (detailed version)
   getActivityFeedDetailed: protectedProcedure
     .input(z.object({ limit: z.number().optional() }))
-    .query(async () => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const userId = ctx.user?.id || 0;
+        const rows = await db.select().from(auditLogs).where(eq(auditLogs.userId, userId)).orderBy(desc(auditLogs.createdAt)).limit(input.limit || 20);
+        return rows.map(r => ({ id: String(r.id), type: r.action, description: `${r.action} on ${r.entityType} #${r.entityId || ''}`, timestamp: r.createdAt?.toISOString() || '', entityType: r.entityType, entityId: String(r.entityId || '') }));
+      } catch (e) { return []; }
     }),
 
   // Get activity stats (detailed version)
-  getActivityStatsDetailed: protectedProcedure.query(async () => {
-    return { today: 0, thisWeek: 0, thisMonth: 0 };
+  getActivityStatsDetailed: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { today: 0, thisWeek: 0, thisMonth: 0 };
+    try {
+      const userId = ctx.user?.id || 0;
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+      const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
+      const [today] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), sql`${auditLogs.createdAt} >= ${todayStart}`));
+      const [week] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), sql`${auditLogs.createdAt} >= ${weekAgo}`));
+      const [month] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), sql`${auditLogs.createdAt} >= ${monthAgo}`));
+      return { today: today?.count || 0, thisWeek: week?.count || 0, thisMonth: month?.count || 0 };
+    } catch (e) { return { today: 0, thisWeek: 0, thisMonth: 0 }; }
   }),
 
   // Update user profile
@@ -606,7 +687,19 @@ export const usersRouter = router({
   getPasswordSecurity: protectedProcedure.query(async () => ({ lastChanged: "2025-01-01", strength: "strong", requiresChange: false, expiresIn: 60 })),
 
   // User management stats
-  getStats: protectedProcedure.query(async () => ({ total: 0, active: 0, pending: 0, suspended: 0, admins: 0, newThisMonth: 0 })),
+  getStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { total: 0, active: 0, pending: 0, suspended: 0, admins: 0, newThisMonth: 0 };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
+      const [total] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.companyId, companyId));
+      const [active] = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(eq(users.companyId, companyId), eq(users.isActive, true)));
+      const [pending] = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(eq(users.companyId, companyId), eq(users.isVerified, false), eq(users.isActive, true)));
+      const [admins] = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(eq(users.companyId, companyId), sql`${users.role} IN ('ADMIN', 'SUPER_ADMIN')`));
+      const [newMonth] = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(eq(users.companyId, companyId), sql`${users.createdAt} >= ${monthAgo}`));
+      return { total: total?.count || 0, active: active?.count || 0, pending: pending?.count || 0, suspended: 0, admins: admins?.count || 0, newThisMonth: newMonth?.count || 0 };
+    } catch (e) { return { total: 0, active: 0, pending: 0, suspended: 0, admins: 0, newThisMonth: 0 }; }
+  }),
   updateStatus: protectedProcedure.input(z.object({ userId: z.string().optional(), id: z.string().optional(), status: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId || input.id })),
 
   // Rewards
