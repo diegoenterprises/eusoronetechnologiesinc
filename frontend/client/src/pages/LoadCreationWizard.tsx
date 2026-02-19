@@ -418,8 +418,31 @@ export default function LoadCreationWizard() {
   }, []);
 
   const createLoadMutation = (trpc as any).loads.create.useMutation({
-    onSuccess: () => { toast.success("Load created successfully"); setStep(0); setFormData({}); },
-    onError: (error: any) => toast.error("Failed", { description: error.message }),
+    onSuccess: (data: any) => {
+      toast.success("Load created successfully", { description: `Load ${data.loadNumber || ''} posted to marketplace` });
+      // Post to loadBoard for enhanced matching
+      if (data.loadId && selectedTrailer) {
+        try {
+          const isHz = selectedTrailer.hazmat && formData.hazmatClass;
+          postToLoadBoardMutation.mutate({
+            origin: { facility: "", address: formData.origin?.split(",")[0]?.trim() || "", city: formData.origin?.split(",")[0]?.trim() || "", state: formData.origin?.split(",")[1]?.trim() || "", zip: "", contact: "", phone: "" },
+            destination: { facility: "", address: formData.destination?.split(",")[0]?.trim() || "", city: formData.destination?.split(",")[0]?.trim() || "", state: formData.destination?.split(",")[1]?.trim() || "", zip: "", contact: "", phone: "" },
+            pickupDate: formData.pickupDate || new Date().toISOString(),
+            deliveryDate: formData.deliveryDate || new Date().toISOString(),
+            commodity: formData.productName || "General Freight",
+            weight: Number(formData.weight) || 0,
+            equipmentType: selectedTrailer.equipment || "dry-van",
+            hazmat: !!isHz,
+            hazmatClass: isHz ? formData.hazmatClass : undefined,
+            unNumber: isHz ? formData.unNumber : undefined,
+            rate: Number(formData.rate) || 0,
+          });
+        } catch (e) { /* non-blocking */ }
+      }
+      // Navigate to the new load detail page
+      navigate(`/loads/${data.loadId || data.id}`);
+    },
+    onError: (error: any) => { setIsSubmitting(false); toast.error("Failed", { description: error.message }); },
   });
 
   // Also post to loadBoard for enhanced matching (hazmat-aware, trailer type enriched)
@@ -496,13 +519,21 @@ export default function LoadCreationWizard() {
       quantityUnit: formData.quantityUnit,
       origin: formData.origin,
       destination: formData.destination,
+      originLat: formData.originLat || 0,
+      originLng: formData.originLng || 0,
+      destLat: formData.destLat || 0,
+      destLng: formData.destLng || 0,
+      distance: formData.distance || 0,
       pickupDate: formData.pickupDate,
       deliveryDate: formData.deliveryDate,
       equipment: selectedTrailer?.equipment || formData.equipment,
+      trailerType: formData.trailerType,
       compartments: formData.compartments || 1,
       compartmentProducts: formData.compartmentProducts || undefined,
       rate: formData.rate,
       ratePerMile: formData.ratePerMile,
+      assignmentType: formData.assignmentType || "open_market",
+      linkedAgreementId: linkedAgreementId && linkedAgreementId !== "none" ? linkedAgreementId : undefined,
       minSafetyScore: formData.minSafetyScore,
       endorsements: formData.endorsements,
       apiGravity: formData.apiGravity,

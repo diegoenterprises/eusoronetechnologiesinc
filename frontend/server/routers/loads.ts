@@ -95,9 +95,17 @@ export const loadsRouter = router({
       quantityUnit: z.string().optional(),
       origin: z.string().optional(),
       destination: z.string().optional(),
+      originLat: z.number().optional(),
+      originLng: z.number().optional(),
+      destLat: z.number().optional(),
+      destLng: z.number().optional(),
+      distance: z.number().optional(),
       pickupDate: z.string().optional(),
       deliveryDate: z.string().optional(),
       equipment: z.string().optional(),
+      trailerType: z.string().optional(),
+      assignmentType: z.string().optional(),
+      linkedAgreementId: z.string().optional(),
       compartments: z.number().optional(),
       compartmentProducts: z.array(z.object({
         product: z.string().optional(),
@@ -140,6 +148,8 @@ export const loadsRouter = router({
 
       // Build special instructions with full ERG/SPECTRA-MATCH data for all users
       const ergNotes = [
+        input?.trailerType ? `Trailer Type: ${input.trailerType}` : null,
+        input?.equipment ? `Equipment: ${input.equipment}` : null,
         input?.productName ? `Product: ${input.productName}` : null,
         input?.unNumber ? `UN Number: ${input.unNumber}` : null,
         input?.hazmatClass ? `Hazmat Class: ${input.hazmatClass}` : null,
@@ -147,6 +157,10 @@ export const loadsRouter = router({
         input?.placardName ? `Placard: ${input.placardName}` : null,
         input?.isTIH ? `[WARNING] Toxic Inhalation Hazard (TIH)` : null,
         input?.isWR ? `[WARNING] Water-Reactive Material` : null,
+        input?.assignmentType ? `Assignment: ${input.assignmentType.replace(/_/g, " ")}` : null,
+        input?.linkedAgreementId ? `Linked Agreement: #${input.linkedAgreementId}` : null,
+        input?.ratePerMile ? `Rate Per Mile: $${input.ratePerMile}/mi` : null,
+        input?.distance ? `Distance: ${input.distance} miles` : null,
         input?.endorsements ? `Required Endorsements: ${input.endorsements}` : null,
         input?.minSafetyScore ? `Min Safety Score: ${input.minSafetyScore}` : null,
         input?.apiGravity ? `SPECTRA-MATCH API Gravity: ${input.apiGravity}` : null,
@@ -186,8 +200,10 @@ export const loadsRouter = router({
             volume: input?.quantity || null,
             volumeUnit: input?.quantityUnit === "Gallons" ? "gal" : input?.quantityUnit === "Barrels" ? "bbl" : input?.quantityUnit?.toLowerCase() || "gal",
             commodityName: input?.productName || null,
-            pickupLocation: input?.origin ? { address: input.origin, city: input.origin.split(",")[0]?.trim() || "", state: input.origin.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 } : undefined,
-            deliveryLocation: input?.destination ? { address: input.destination, city: input.destination.split(",")[0]?.trim() || "", state: input.destination.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 } : undefined,
+            pickupLocation: input?.origin ? { address: input.origin, city: input.origin.split(",")[0]?.trim() || "", state: input.origin.split(",")[1]?.trim() || "", zipCode: "", lat: input?.originLat || 0, lng: input?.originLng || 0 } : undefined,
+            deliveryLocation: input?.destination ? { address: input.destination, city: input.destination.split(",")[0]?.trim() || "", state: input.destination.split(",")[1]?.trim() || "", zipCode: "", lat: input?.destLat || 0, lng: input?.destLng || 0 } : undefined,
+            distance: input?.distance ? String(input.distance) : null,
+            distanceUnit: input?.distance ? "miles" : null,
             pickupDate: input?.pickupDate ? new Date(input.pickupDate) : undefined,
             deliveryDate: input?.deliveryDate ? new Date(input.deliveryDate) : undefined,
             rate: input?.rate || null,
@@ -246,7 +262,7 @@ export const loadsRouter = router({
       if (dbCreatorId) fireGamificationEvent({ userId: dbCreatorId, type: "load_created", value: 1 });
       fireGamificationEvent({ userId: dbCreatorId, type: "platform_action", value: 1 });
 
-      return { success: true, id: String(insertedId), loadNumber };
+      return { success: true, id: String(insertedId), loadId: String(insertedId), loadNumber };
     }),
 
   update: protectedProcedure
