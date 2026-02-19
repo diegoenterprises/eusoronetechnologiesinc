@@ -1386,94 +1386,175 @@ export default function LoadCreationWizard() {
 
           {/* STEP 7: Review */}
           {rs === 7 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-              <p className="text-white font-bold text-lg">Review Your Load</p>
+            <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
+              {/* ── Header ── */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Review Your Load</h2>
+                  <p className="text-slate-500 text-xs mt-0.5">Verify all details before posting to the market</p>
+                </div>
+                <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-xs px-3 py-1">
+                  {formData.assignmentType?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Open Market"}
+                </Badge>
+              </div>
+
+              {/* ── SPECTRA-MATCH Verified Banner ── */}
               {formData.spectraVerified && (
-                <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-emerald-500/10 border border-cyan-500/20">
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-500/10 to-emerald-500/10 border border-cyan-500/20">
                   <div className="flex items-center gap-2 mb-3">
-                    <CheckCircle className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
+                    <CheckCircle className="w-5 h-5 text-emerald-400" />
                     <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-sm">SPECTRA-MATCH Verified</span>
                     <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400 ml-auto">ERG 2020</Badge>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">Product</p><p className="text-white text-sm font-medium truncate">{formData.productName}</p></div>
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">UN Number</p><p className="text-cyan-400 text-sm font-bold">{formData.unNumber}</p></div>
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">Hazmat Class</p><p className="text-purple-400 text-sm font-medium">{formData.hazmatClass} - {formData.placardName}</p></div>
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">ERG Guide</p><p className="text-white text-sm font-medium">Guide {formData.ergGuide}</p></div>
+                    <div className="p-2.5 rounded-xl bg-slate-900/50 border border-slate-700/30"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Product</p><p className="text-white text-sm font-semibold truncate mt-0.5">{formData.productName}</p></div>
+                    <div className="p-2.5 rounded-xl bg-slate-900/50 border border-slate-700/30"><p className="text-[10px] text-slate-500 uppercase tracking-wider">UN Number</p><p className="text-cyan-400 text-sm font-bold mt-0.5">{formData.unNumber}</p></div>
+                    <div className="p-2.5 rounded-xl bg-slate-900/50 border border-slate-700/30"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Hazmat Class</p><p className="text-purple-400 text-sm font-semibold mt-0.5">{formData.hazmatClass} - {formData.placardName}</p></div>
+                    <div className="p-2.5 rounded-xl bg-slate-900/50 border border-slate-700/30"><p className="text-[10px] text-slate-500 uppercase tracking-wider">ERG Guide</p><p className="text-white text-sm font-semibold mt-0.5">Guide {formData.ergGuide}</p></div>
                   </div>
                   {(formData.isTIH || formData.isWR) && (
-                    <div className="flex gap-2 mt-2">
-                      {formData.isTIH && <div className="flex items-center gap-1 px-2 py-1 rounded bg-red-500/20 border border-red-500/30"><AlertTriangle className="w-3 h-3 text-red-400" /><span className="text-red-400 text-[10px] font-bold">TOXIC INHALATION HAZARD</span></div>}
-                      {formData.isWR && <div className="flex items-center gap-1 px-2 py-1 rounded bg-blue-500/20 border border-blue-500/30"><AlertTriangle className="w-3 h-3 text-blue-400" /><span className="text-blue-400 text-[10px] font-bold">WATER-REACTIVE</span></div>}
+                    <div className="flex gap-2 mt-3">
+                      {formData.isTIH && <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/15 border border-red-500/25"><AlertTriangle className="w-3 h-3 text-red-400" /><span className="text-red-400 text-[10px] font-bold">TOXIC INHALATION HAZARD</span></div>}
+                      {formData.isWR && <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-500/15 border border-blue-500/25"><AlertTriangle className="w-3 h-3 text-blue-400" /><span className="text-blue-400 text-[10px] font-bold">WATER-REACTIVE</span></div>}
                     </div>
                   )}
-                  <p className="text-[10px] text-slate-500 mt-2">Visible to all users: catalysts, drivers, brokers, compliance officers.</p>
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Trailer</p><p className="text-white">{selectedTrailer?.name}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Product</p><p className="text-white">{formData.productName}</p></div>
-                {formData.hazmatClass && <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Hazmat Class</p><p className="text-white">{HAZMAT_CLASSES.find(c => c.id === formData.hazmatClass)?.name || formData.hazmatClass}</p></div>}
-                {formData.unNumber && <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">UN Number</p><p className="text-white">{formData.unNumber}</p></div>}
-                {formData.ergGuide && <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">ERG Guide</p><p className="text-white">Guide {formData.ergGuide}</p></div>}
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Volume</p><p className="text-white">{formData.quantity} {formData.quantityUnit || (isLiquidOrGas ? "Gallons" : "Pallets")}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Weight</p><p className="text-white">{formData.weight} {formData.weightUnit || "lbs"}</p></div>
-                {isTanker && <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Compartments</p><p className="text-white">{formData.compartments || 1}</p></div>}
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Origin</p><p className="text-white">{formData.origin}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Destination</p><p className="text-white">{formData.destination}</p></div>
-                {formData.distance && <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Distance</p><p className="text-white">{formData.distance} miles</p></div>}
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Pickup</p><p className="text-white">{formData.pickupDate || "N/A"}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Delivery</p><p className="text-white">{formData.deliveryDate || "N/A"}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Rate</p><p className="text-white">${formData.rate}{formData.ratePerMile ? ` ($${formData.ratePerMile}/mi)` : ""}</p></div>
-                {formData.assignmentType && <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Assignment</p><p className="text-white">{formData.assignmentType?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}</p></div>}
+
+              {/* ── Cargo Section ── */}
+              <div className="rounded-2xl border border-slate-700/40 overflow-hidden">
+                <div className="px-5 py-3 bg-slate-800/80 border-b border-slate-700/40 flex items-center gap-2">
+                  <Package className="w-4 h-4 text-cyan-400" />
+                  <span className="text-sm font-semibold text-white">Cargo Details</span>
+                </div>
+                <div className="p-5">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">
+                    <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Trailer</p><p className="text-white text-sm font-semibold">{selectedTrailer?.name}</p></div>
+                    <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Product</p><p className="text-white text-sm font-semibold">{formData.productName}</p></div>
+                    <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Volume</p><p className="text-white text-sm font-semibold">{formData.quantity} {formData.quantityUnit || (isLiquidOrGas ? "Gallons" : "Pallets")}</p></div>
+                    <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Weight</p><p className="text-white text-sm font-semibold">{formData.weight} {formData.weightUnit || "lbs"}</p></div>
+                    {isTanker && <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Compartments</p><p className="text-white text-sm font-semibold">{formData.compartments || 1}</p></div>}
+                    {formData.hazmatClass && !formData.spectraVerified && <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Hazmat Class</p><p className="text-orange-400 text-sm font-semibold">{HAZMAT_CLASSES.find(c => c.id === formData.hazmatClass)?.name || formData.hazmatClass}</p></div>}
+                    {formData.unNumber && !formData.spectraVerified && <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">UN Number</p><p className="text-cyan-400 text-sm font-semibold">{formData.unNumber}</p></div>}
+                    {formData.ergGuide && !formData.spectraVerified && <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">ERG Guide</p><p className="text-white text-sm font-semibold">Guide {formData.ergGuide}</p></div>}
+                  </div>
+                </div>
               </div>
 
-              {/* Fleet Summary */}
-              {fleet && fleet.totalLoads > 1 && (
-                <div className="p-4 rounded-xl bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border border-[#1473FF]/30">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Calculator className="w-4 h-4 text-[#1473FF]" />
-                    <span className="text-white font-bold text-sm">Fleet Summary</span>
+              {/* ── Route Section ── */}
+              <div className="rounded-2xl border border-slate-700/40 overflow-hidden">
+                <div className="px-5 py-3 bg-slate-800/80 border-b border-slate-700/40 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm font-semibold text-white">Route</span>
+                  {formData.distance && <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400 ml-auto">{formData.distance} miles</Badge>}
+                </div>
+                <div className="p-5">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /><p className="text-[10px] text-slate-500 uppercase tracking-wider">Origin</p></div>
+                      <p className="text-white text-sm font-semibold pl-[18px]">{formData.origin}</p>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1"><div className="w-2.5 h-2.5 rounded-full bg-red-500" /><p className="text-[10px] text-slate-500 uppercase tracking-wider">Destination</p></div>
+                      <p className="text-white text-sm font-semibold pl-[18px]">{formData.destination}</p>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Total Loads</p><p className="text-[#1473FF] text-xl font-bold">{fleet.totalLoads}</p></div>
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Trucks</p><p className="text-[#BE01FF] text-xl font-bold">{fleet.trucksNeeded}</p></div>
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Catalyst Payout</p><p className="text-white text-xl font-bold">${fleet.totalJobCost.toLocaleString()}</p></div>
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Total w/ Fee</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xl font-bold">${fleet.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                    <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Pickup</p><p className="text-white text-sm font-semibold">{formData.pickupDate || "Flexible"}</p></div>
+                    <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Delivery</p><p className="text-white text-sm font-semibold">{formData.deliveryDate || "Flexible"}</p></div>
                   </div>
-                  {fleet.hasRoster && fleet.truckBreakdown.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-slate-700/30 space-y-1">
-                      {fleet.truckBreakdown.map((tb, i) => (
-                        <div key={i} className="flex items-center justify-between px-2 py-1 rounded bg-slate-800/30 text-xs">
-                          <span className="text-white font-medium">{tb.name}</span>
-                          <div className="flex items-center gap-3">
-                            <span className="text-slate-400">{tb.fill}/{tb.capacity}</span>
-                            <Badge variant="outline" className="text-[9px] border-[#1473FF]/30 text-[#1473FF]">{tb.loads} loads</Badge>
-                          </div>
-                        </div>
-                      ))}
+                  {/* Route Map Preview */}
+                  {formData.originLat && formData.destLat && (
+                    <div className="mt-4 rounded-xl overflow-hidden border border-slate-700/30">
+                      <RouteMap originLat={formData.originLat} originLng={formData.originLng} destLat={formData.destLat} destLng={formData.destLng} originLabel={formData.origin} destLabel={formData.destination} height="220px" />
                     </div>
                   )}
                 </div>
-              )}
+              </div>
 
-              {/* Linked Agreement */}
-              {linkedAgreementId && linkedAgreementId !== "none" && (
-                <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-2">
-                  <Link2 className="w-4 h-4 text-green-400 shrink-0" />
-                  <p className="text-white text-xs font-medium">Linked Agreement: #{linkedAgreementId}</p>
+              {/* ── Pricing Section ── */}
+              <div className="rounded-2xl border border-slate-700/40 overflow-hidden">
+                <div className="px-5 py-3 bg-slate-800/80 border-b border-slate-700/40 flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm font-semibold text-white">Pricing</span>
+                </div>
+                <div className="p-5">
+                  <div className="flex items-center gap-6">
+                    <div>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Total Rate</p>
+                      <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${Number(formData.rate || 0).toLocaleString()}</p>
+                    </div>
+                    {formData.distance && formData.rate && (
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Rate / Mile</p>
+                        <p className="text-2xl font-bold text-white">${(Number(formData.rate) / formData.distance).toFixed(2)}<span className="text-sm text-slate-400 font-normal">/mi</span></p>
+                      </div>
+                    )}
+                    {formData.distance && (
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Distance</p>
+                        <p className="text-2xl font-bold text-white">{formData.distance}<span className="text-sm text-slate-400 font-normal"> mi</span></p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Fleet Summary (multi-load) ── */}
+              {fleet && fleet.totalLoads > 1 && (
+                <div className="rounded-2xl border border-[#1473FF]/30 bg-gradient-to-r from-[#1473FF]/5 to-[#BE01FF]/5 overflow-hidden">
+                  <div className="px-5 py-3 bg-slate-800/60 border-b border-[#1473FF]/20 flex items-center gap-2">
+                    <Calculator className="w-4 h-4 text-[#1473FF]" />
+                    <span className="text-sm font-semibold text-white">Fleet Summary</span>
+                    <Badge variant="outline" className="text-[10px] border-[#BE01FF]/30 text-[#BE01FF] ml-auto">{fleet.totalLoads} loads</Badge>
+                  </div>
+                  <div className="p-5">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                      <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Total Loads</p><p className="text-[#1473FF] text-xl font-bold mt-1">{fleet.totalLoads}</p></div>
+                      <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Trucks</p><p className="text-[#BE01FF] text-xl font-bold mt-1">{fleet.trucksNeeded}</p></div>
+                      <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Catalyst Payout</p><p className="text-white text-xl font-bold mt-1">${fleet.totalJobCost.toLocaleString()}</p></div>
+                      <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Total w/ Fee</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xl font-bold mt-1">${fleet.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
+                    </div>
+                    {fleet.hasRoster && fleet.truckBreakdown.length > 0 && (
+                      <div className="mt-4 pt-3 border-t border-slate-700/30 space-y-1.5">
+                        {fleet.truckBreakdown.map((tb, i) => (
+                          <div key={i} className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900/30 text-xs">
+                            <span className="text-white font-medium">{tb.name}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-slate-400">{tb.fill}/{tb.capacity}</span>
+                              <Badge variant="outline" className="text-[9px] border-[#1473FF]/30 text-[#1473FF]">{tb.loads} loads</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
+
+              {/* ── Linked Agreement ── */}
+              {linkedAgreementId && linkedAgreementId !== "none" && (
+                <div className="p-4 rounded-2xl bg-green-500/5 border border-green-500/20 flex items-center gap-3">
+                  <Link2 className="w-5 h-5 text-green-400 shrink-0" />
+                  <div>
+                    <p className="text-white text-sm font-semibold">Linked Agreement</p>
+                    <p className="text-slate-400 text-xs">Contract #{linkedAgreementId} — rates auto-applied</p>
+                  </div>
+                </div>
+              )}
+
               {/* ── Compartment Breakdown (multi-comp tankers) ── */}
               {(formData.compartments || 1) > 1 && formData.compartmentProducts?.length > 0 && (
-                <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-500/5 to-purple-500/5 overflow-hidden">
+                  <div className="px-5 py-3 bg-slate-800/60 border-b border-blue-500/15 flex items-center gap-2">
                     <Droplets className="w-4 h-4 text-blue-400" />
-                    <span className="text-blue-400 font-bold text-sm">Compartment Breakdown — {formData.compartments} Compartments</span>
+                    <span className="text-sm font-semibold text-white">Compartment Breakdown</span>
+                    <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-400 ml-auto">{formData.compartments} comp.</Badge>
                   </div>
-                  <div className="grid gap-2">
+                  <div className="p-5 space-y-2">
                     {(formData.compartmentProducts as any[]).map((cp: any, i: number) => (
-                      <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
+                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/40 border border-slate-700/20">
                         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{i + 1}</div>
                         <div className="flex-1 min-w-0">
                           <p className="text-white text-sm font-medium truncate">{cp.product || "Not specified"}</p>
@@ -1485,11 +1566,10 @@ export default function LoadCreationWizard() {
                         </div>
                       </div>
                     ))}
-                    {/* Total volume across compartments */}
                     {(() => {
                       const totalVol = (formData.compartmentProducts as any[]).reduce((s: number, cp: any) => s + (Number(cp.volume) || 0), 0);
                       return totalVol > 0 ? (
-                        <div className="flex items-center justify-between pt-2 mt-1 border-t border-slate-700/30">
+                        <div className="flex items-center justify-between pt-3 mt-1 border-t border-slate-700/30">
                           <span className="text-slate-400 text-xs font-medium">Total Volume</span>
                           <span className="text-white text-sm font-bold">{totalVol.toLocaleString()} {currentUnit === "Gallons" ? "gal" : currentUnit === "Barrels" ? "bbl" : currentUnit.toLowerCase().slice(0, 3)}</span>
                         </div>
@@ -1498,37 +1578,27 @@ export default function LoadCreationWizard() {
                   </div>
                 </div>
               )}
-              {/* Route Map */}
-              {formData.originLat && formData.destLat && (
-                <RouteMap
-                  originLat={formData.originLat}
-                  originLng={formData.originLng}
-                  destLat={formData.destLat}
-                  destLng={formData.destLng}
-                  originLabel={formData.origin}
-                  destLabel={formData.destination}
-                  height="280px"
-                />
-              )}
+
+              {/* ── SPECTRA-MATCH Parameters ── */}
               {(formData.apiGravity || formData.bsw || formData.sulfurContent || formData.flashPoint) && (
-                <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="rounded-2xl border border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-cyan-500/5 overflow-hidden">
+                  <div className="px-5 py-3 bg-slate-800/60 border-b border-purple-500/15 flex items-center gap-2">
                     <EsangIcon className="w-4 h-4 text-purple-400" />
-                    <span className="text-purple-400 font-bold text-sm">SPECTRA-MATCH Parameters</span>
+                    <span className="text-sm font-semibold text-white">SPECTRA-MATCH Parameters</span>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {formData.apiGravity && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">API Gravity</p><p className="text-white text-sm">{formData.apiGravity}</p></div>}
-                    {formData.bsw && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">BS&W</p><p className="text-white text-sm">{formData.bsw}%</p></div>}
-                    {formData.sulfurContent && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">Sulfur</p><p className="text-white text-sm">{formData.sulfurContent}%</p></div>}
-                    {formData.flashPoint && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">Flash Point</p><p className="text-white text-sm">{formData.flashPoint}F</p></div>}
-                    {formData.viscosity && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">Viscosity</p><p className="text-white text-sm">{formData.viscosity} cSt</p></div>}
-                    {formData.pourPoint && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">Pour Point</p><p className="text-white text-sm">{formData.pourPoint}F</p></div>}
-                    {formData.reidVaporPressure && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">RVP</p><p className="text-white text-sm">{formData.reidVaporPressure} psi</p></div>}
-                    {formData.appearance && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">Appearance</p><p className="text-white text-sm">{formData.appearance}</p></div>}
+                  <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {formData.apiGravity && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">API Gravity</p><p className="text-white text-sm font-semibold mt-0.5">{formData.apiGravity}</p></div>}
+                    {formData.bsw && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">BS&W</p><p className="text-white text-sm font-semibold mt-0.5">{formData.bsw}%</p></div>}
+                    {formData.sulfurContent && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Sulfur</p><p className="text-white text-sm font-semibold mt-0.5">{formData.sulfurContent}%</p></div>}
+                    {formData.flashPoint && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Flash Point</p><p className="text-white text-sm font-semibold mt-0.5">{formData.flashPoint}F</p></div>}
+                    {formData.viscosity && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Viscosity</p><p className="text-white text-sm font-semibold mt-0.5">{formData.viscosity} cSt</p></div>}
+                    {formData.pourPoint && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Pour Point</p><p className="text-white text-sm font-semibold mt-0.5">{formData.pourPoint}F</p></div>}
+                    {formData.reidVaporPressure && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">RVP</p><p className="text-white text-sm font-semibold mt-0.5">{formData.reidVaporPressure} psi</p></div>}
+                    {formData.appearance && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Appearance</p><p className="text-white text-sm font-semibold mt-0.5">{formData.appearance}</p></div>}
                   </div>
                 </div>
               )}
-              {formData.hazmatClass && <div className="mt-4"><HazmatDecalPreview hazmatClass={formData.hazmatClass} unNumber={formData.unNumber} productName={formData.productName} /></div>}
+              {formData.hazmatClass && <div className="mt-2"><HazmatDecalPreview hazmatClass={formData.hazmatClass} unNumber={formData.unNumber} productName={formData.productName} /></div>}
             </div>
           )}
         </CardContent>
