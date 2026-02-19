@@ -14,16 +14,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   FileText, DollarSign, Clock, CheckCircle, Search,
-  Plus, Eye, MapPin, Send
+  Plus, Eye, MapPin, Send, Zap, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import QuoteWidget from "@/components/QuoteWidget";
 
 export default function QuoteRequests() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("pending");
   const [searchTerm, setSearchTerm] = useState("");
+  const [showQuoteWidget, setShowQuoteWidget] = useState(false);
 
   const quotesQuery = (trpc as any).quotes.list.useQuery({ limit: 50 });
   const summaryQuery = (trpc as any).quotes.getSummary.useQuery();
@@ -64,7 +66,24 @@ export default function QuoteRequests() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Manage incoming quote requests from shippers</p>
         </div>
+        <Button
+          onClick={() => setShowQuoteWidget(!showQuoteWidget)}
+          className={showQuoteWidget ? "bg-slate-700 hover:bg-slate-600 rounded-xl" : "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 rounded-xl"}
+        >
+          <Zap className="w-4 h-4 mr-2" />
+          Instant Quote
+          {showQuoteWidget ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
+        </Button>
       </div>
+
+      {/* Instant Quote Widget */}
+      {showQuoteWidget && (
+        <div className="max-w-2xl animate-in fade-in slide-in-from-top-2 duration-300">
+          <QuoteWidget
+            onQuoteGenerated={(q: any) => toast.info(`Quote ${q.quoteId}`, { description: `$${q.pricing.totalEstimate.toLocaleString()} — ${q.distance} mi` })}
+          />
+        </div>
+      )}
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
