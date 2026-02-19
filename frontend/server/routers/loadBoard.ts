@@ -951,7 +951,32 @@ export const loadBoardRouter = router({
         return rows.map(l => {
           const pickup = l.pickupLocation as any || {};
           const delivery = l.deliveryLocation as any || {};
-          return { id: String(l.id), loadNumber: l.loadNumber, status: l.status, origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : '', destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : '', rate: l.rate ? parseFloat(String(l.rate)) : 0, postedAt: l.createdAt?.toISOString() || '' };
+          return {
+            id: String(l.id),
+            loadNumber: l.loadNumber,
+            status: l.status,
+            origin: { city: pickup.city || '', state: pickup.state || '', address: pickup.address || '' },
+            destination: { city: delivery.city || '', state: delivery.state || '', address: delivery.address || '' },
+            pickupLocation: pickup,
+            deliveryLocation: delivery,
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+            distance: l.distance ? parseFloat(String(l.distance)) : 0,
+            weight: l.weight ? parseFloat(String(l.weight)) : 0,
+            weightUnit: 'lbs',
+            distanceUnit: 'mi',
+            cargoType: l.cargoType || '',
+            equipmentType: l.cargoType || '',
+            hazmatClass: l.hazmatClass || null,
+            commodityName: l.commodityName || '',
+            specialInstructions: l.specialInstructions || '',
+            shipperId: l.shipperId,
+            catalystId: l.catalystId,
+            driverId: l.driverId,
+            pickupDate: l.pickupDate?.toISOString() || null,
+            deliveryDate: l.deliveryDate?.toISOString() || null,
+            createdAt: l.createdAt?.toISOString() || '',
+            postedAt: l.createdAt?.toISOString() || '',
+          };
         });
       } catch (e) { return []; }
     }),

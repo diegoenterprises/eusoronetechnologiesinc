@@ -30,11 +30,16 @@ export default function BidManagement() {
   const [bidAmount, setBidAmount] = useState<Record<string, string>>({});
 
   const bidsQuery = (trpc as any).catalysts.getBids.useQuery({ filter });
-  const statsQuery = (trpc as any).catalysts.getBidStats.useQuery();
-  const availableLoadsQuery = (trpc as any).catalysts.getAvailableLoads.useQuery({ limit: 5 });
+  const statsQuery = (trpc as any).loadBoard.getStats.useQuery();
+  const availableLoadsQuery = (trpc as any).loadBoard.search.useQuery({ limit: 5 });
 
-  const submitBidMutation = (trpc as any).catalysts.submitBid.useMutation({
-    onSuccess: () => { toast.success("Bid submitted"); bidsQuery.refetch(); availableLoadsQuery.refetch(); statsQuery.refetch(); },
+  const submitBidMutation = (trpc as any).loadBoard.submitEnhancedBid.useMutation({
+    onSuccess: (data: any) => {
+      if (data?.autoAccepted) toast.success("Bid auto-accepted! Load assigned.");
+      else if (data?.hazmatWarnings?.length > 0) toast.warning("Bid submitted with hazmat warnings", { description: data.hazmatWarnings.join("; ") });
+      else toast.success("Bid submitted");
+      bidsQuery.refetch(); availableLoadsQuery.refetch(); statsQuery.refetch();
+    },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
@@ -45,7 +50,7 @@ export default function BidManagement() {
 
   const analyzeMutation = (trpc as any).esang.analyzeBidFairness.useMutation();
 
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
   const titleCls = cn("text-lg font-semibold", isLight ? "text-slate-800" : "text-white");
@@ -113,14 +118,14 @@ export default function BidManagement() {
       </div>
 
       {/* ── Quick Bid on Available Loads ── */}
-      {((availableLoadsQuery.data as any)?.length ?? 0) > 0 && (
+      {((availableLoadsQuery.data as any)?.loads?.length ?? 0) > 0 && (
         <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-blue-200 shadow-sm" : "bg-slate-800/60 border-blue-500/30")}>
           <div className="bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 px-5 py-3 flex items-center gap-2">
             <Package className="w-5 h-5 text-blue-500" />
             <span className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>Quick Bid — Available Loads</span>
           </div>
           <CardContent className="p-4 space-y-3">
-            {(availableLoadsQuery.data as any)?.map((load: any) => (
+            {(availableLoadsQuery.data as any)?.loads?.map((load: any) => (
               <div key={load.id} className={cn("p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3", cellCls)}>
                 <div className="flex-1">
                   <p className={cn("font-bold text-sm", isLight ? "text-slate-800" : "text-white")}>#{load.loadNumber} — {load.origin} → {load.destination}</p>
@@ -137,7 +142,7 @@ export default function BidManagement() {
                   <Button size="sm" variant="outline" className={cn("rounded-lg h-9", isLight ? "border-purple-200 text-purple-600 hover:bg-purple-50" : "bg-purple-500/15 border-purple-500/30 text-purple-400")} onClick={() => analyzeMutation.mutate({ loadId: load.id, bidAmount: parseFloat(bidAmount[load.id] || "0") })}>
                     <EsangIcon className="w-3 h-3" />
                   </Button>
-                  <Button size="sm" className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-lg h-9 font-bold" onClick={() => submitBidMutation.mutate({ loadId: load.id, amount: parseFloat(bidAmount[load.id] || "0") })} disabled={!bidAmount[load.id]}>
+                  <Button size="sm" className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-lg h-9 font-bold" onClick={() => submitBidMutation.mutate({ loadId: parseInt(load.id), bidAmount: parseFloat(bidAmount[load.id] || "0") })} disabled={!bidAmount[load.id]}>
                     Bid
                   </Button>
                 </div>

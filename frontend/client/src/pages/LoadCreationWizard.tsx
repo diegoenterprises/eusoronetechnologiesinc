@@ -422,6 +422,16 @@ export default function LoadCreationWizard() {
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
+  // Also post to loadBoard for enhanced matching (hazmat-aware, trailer type enriched)
+  const postToLoadBoardMutation = (trpc as any).loadBoard.postLoad.useMutation({
+    onSuccess: () => console.log("[LoadCreationWizard] Load also posted to loadBoard"),
+    onError: (e: any) => console.warn("[LoadCreationWizard] loadBoard.postLoad failed:", e.message),
+  });
+
+  // Fetch dynamic trailer types from loadBoard (20 types with DOT specs)
+  const dynamicTrailerTypesQuery = (trpc as any).loadBoard.getTrailerTypes.useQuery({ category: "all" });
+  const dynamicHazmatClassesQuery = (trpc as any).loadBoard.getHazmatClassRequirements.useQuery({});
+
   const updateField = (field: string, value: any) => setFormData((prev: any) => ({ ...prev, [field]: value }));
 
   const getMaterialType = () => selectedTrailer?.animType || "liquid";

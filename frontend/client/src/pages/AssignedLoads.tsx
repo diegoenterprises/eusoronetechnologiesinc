@@ -25,9 +25,8 @@ export default function AssignedLoadsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
 
-  const { data: loads, isLoading, refetch } = (trpc as any).loads.list.useQuery({
-    status: "assigned",
-    limit: 100,
+  const { data: loads, isLoading, refetch } = (trpc as any).loadBoard.getMyPostedLoads.useQuery({
+    status: "all",
   });
 
   const handleStartPickup = (loadId: number) => {

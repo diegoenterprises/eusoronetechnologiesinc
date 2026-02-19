@@ -70,7 +70,7 @@ export default function MyLoads() {
   const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
   // Show all loads by default — only filter by date when the calendar is used
   const [dateFilterActive, setDateFilterActive] = useState(false);
-  const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100, ...(dateFilterActive ? { date: dateStr } : {}) });
+  const loadsQuery = (trpc as any).loadBoard.getMyPostedLoads.useQuery({ status: "all" });
 
   // Message catalyst/driver
   const createConversation = (trpc as any).messages?.createConversation?.useMutation?.({

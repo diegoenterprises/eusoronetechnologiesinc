@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 
-type EquipFilter = "all" | "tanker" | "flatbed" | "dry_van" | "reefer";
+type EquipFilter = "all" | "tanker" | "flatbed" | "dry_van" | "reefer" | "hopper" | "cryogenic" | "hazmat";
 
 export default function FindLoads() {
   const { theme } = useTheme();
@@ -31,9 +31,10 @@ export default function FindLoads() {
   const [searchTerm, setSearchTerm] = useState("");
   const [equipFilter, setEquipFilter] = useState<EquipFilter>("all");
 
-  const loadsQuery = (trpc as any).loads.list.useQuery({ status: "posted", limit: 50, marketplace: true });
+  const loadsQuery = (trpc as any).loadBoard.search.useQuery({ limit: 50 });
+  const statsQuery = (trpc as any).loadBoard.getStats.useQuery();
 
-  const allLoads = (loadsQuery.data as any[]) || [];
+  const allLoads = (loadsQuery.data as any)?.loads || [];
 
   const filteredLoads = useMemo(() => {
     return allLoads.filter((load: any) => {
@@ -41,7 +42,9 @@ export default function FindLoads() {
         load.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         load.destination?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         load.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesEquip = equipFilter === "all" || load.equipmentType === equipFilter;
+      const matchesEquip = equipFilter === "all" ||
+        load.equipmentType === equipFilter ||
+        (equipFilter === "hazmat" && load.hazmat);
       return matchesSearch && matchesEquip;
     });
   }, [allLoads, searchTerm, equipFilter]);
@@ -53,12 +56,18 @@ export default function FindLoads() {
     return <Package className="w-4 h-4" />;
   };
 
+  const marketStats = (loadsQuery.data as any)?.marketStats;
+  const boardStats = statsQuery.data;
+
   const equipTabs: { id: EquipFilter; label: string }[] = [
     { id: "all", label: `All (${allLoads.length})` },
     { id: "tanker", label: "Tanker" },
     { id: "flatbed", label: "Flatbed" },
     { id: "dry_van", label: "Dry Van" },
     { id: "reefer", label: "Reefer" },
+    { id: "hopper", label: "Bulk/Hopper" },
+    { id: "cryogenic", label: "Cryogenic" },
+    { id: "hazmat", label: "Hazmat" },
   ];
 
   return (

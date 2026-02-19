@@ -61,7 +61,7 @@ export default function LoadBoard() {
   const [weekBase, setWeekBase] = useState(new Date());
 
   const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-  const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100, marketplace: true, date: dateStr });
+  const loadsQuery = (trpc as any).loadBoard.search.useQuery({ limit: 100 });
 
   const weekDays = useMemo(() => getWeekDays(weekBase), [weekBase]);
 
@@ -72,7 +72,7 @@ export default function LoadBoard() {
     setSelectedDate(d);
   };
 
-  const allLoads = (loadsQuery.data as any[]) || [];
+  const allLoads = (loadsQuery.data as any)?.loads || [];
   const totalLoads = allLoads.length;
   const postedLoads = allLoads.filter((l: any) => l.status === "posted").length;
   const inTransit = allLoads.filter((l: any) => l.status === "in_transit").length;
