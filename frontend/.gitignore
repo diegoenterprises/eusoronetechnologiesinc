@@ -122,6 +122,10 @@ scripts/add-confirmation-dialogs.cjs
 *.local
 .turbo/
 
+# Archived dead code
+_archive/
+cleanup-dead-code.sh
+
 # Deployment artifacts
 .netlify/
 .vercel/

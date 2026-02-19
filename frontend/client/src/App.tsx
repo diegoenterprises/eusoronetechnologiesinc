@@ -311,6 +311,23 @@ import ReleaseNotes from "./pages/ReleaseNotes";
 import DataExport from "./pages/DataExport";
 import HelpCenter from "./pages/HelpCenter";
 import NotificationSettings from "./pages/NotificationSettings";
+// ── Frontend Gap Audit: 16 new pages for backend routers ─────────────────────
+import RateNegotiations from "./pages/RateNegotiations";
+import CarrierScorecardPage from "./pages/CarrierScorecardPage";
+import TruckPostingBoard from "./pages/TruckPostingBoard";
+import DrugTestingManagement from "./pages/DrugTestingManagement";
+import DriverQualificationFiles from "./pages/DriverQualificationFiles";
+import LaneContractsPage from "./pages/LaneContractsPage";
+import LoadBiddingAdvanced from "./pages/LoadBiddingAdvanced";
+import AccountingPage from "./pages/AccountingPage";
+import InHouseFleet from "./pages/InHouseFleet";
+import InspectionFormsPage from "./pages/InspectionFormsPage";
+import VendorManagement from "./pages/VendorManagement";
+import CommissionEnginePage from "./pages/CommissionEnginePage";
+import NewsfeedPage from "./pages/NewsfeedPage";
+import ComplianceNetworksPage from "./pages/ComplianceNetworksPage";
+import SuperAdminTools from "./pages/SuperAdminTools";
+import AuditLogsPage from "./pages/AuditLogsPage";
 
 function Router() {
   // Role constants for route protection
@@ -710,6 +727,26 @@ function Router() {
       <Route path={"/shipments"} component={guard(ALL, <ShipmentPage />)} />
       <Route path={"/channels"} component={guard(ALL, <ChannelsPage />)} />
       <Route path={"/reports"} component={guard(ALL, <Analytics />)} />
+
+      {/* ============================================ */}
+      {/* FRONTEND GAP AUDIT: 16 NEW PAGES */}
+      {/* ============================================ */}
+      <Route path="/rate-negotiations" component={guard([...SHIP, ...CARR, ...BROK], <RateNegotiations />)} />
+      <Route path="/carrier-scorecard" component={guard([...SHIP, ...CARR, ...BROK, ...COMP], <CarrierScorecardPage />)} />
+      <Route path="/truck-posting" component={guard([...SHIP, ...CARR, ...BROK, ...DISP], <TruckPostingBoard />)} />
+      <Route path="/drug-testing" component={guard([...COMP, ...SAFE, ...CARR], <DrugTestingManagement />)} />
+      <Route path="/dq-files" component={guard([...COMP, ...SAFE, ...CARR], <DriverQualificationFiles />)} />
+      <Route path="/lane-contracts" component={guard([...SHIP, ...CARR, ...BROK], <LaneContractsPage />)} />
+      <Route path="/advanced-bidding" component={guard([...SHIP, ...CARR, ...BROK, ...DISP], <LoadBiddingAdvanced />)} />
+      <Route path="/accounting" component={guard([...SHIP, ...CARR, ...BROK, ...FACT], <AccountingPage />)} />
+      <Route path="/in-house" component={guard(ALL, <InHouseFleet />)} />
+      <Route path="/inspection-forms" component={guard([...COMP, ...SAFE, ...CARR, ...DRIV], <InspectionFormsPage />)} />
+      <Route path="/vendors" component={guard([...CARR, ...SHIP, ...ADMN], <VendorManagement />)} />
+      <Route path="/commission-engine" component={guard(ADMN, <CommissionEnginePage />)} />
+      <Route path="/newsfeed" component={guard(ALL, <NewsfeedPage />)} />
+      <Route path="/compliance-networks" component={guard([...COMP, ...SAFE, ...CARR], <ComplianceNetworksPage />)} />
+      <Route path="/super-admin/tools" component={guard(SUPR, <SuperAdminTools />)} />
+      <Route path="/audit-logs" component={guard(ADMN, <AuditLogsPage />)} />
 
       {/* ============================================ */}
       {/* ZEUN MECHANICS ROUTES */}
