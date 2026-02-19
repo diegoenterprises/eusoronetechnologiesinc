@@ -18,11 +18,36 @@ import { useTheme } from "@/contexts/ThemeContext";
 import {
   Search, MapPin, Package, Truck, Eye,
   Navigation, Building2, Droplets, FlaskConical,
-  AlertTriangle, Gavel, SlidersHorizontal
+  AlertTriangle, Gavel, SlidersHorizontal,
+  ChevronLeft, ChevronRight, RefreshCw
 } from "lucide-react";
 import { useLocation } from "wouter";
 
 type EquipFilter = "all" | "tanker" | "flatbed" | "dry_van" | "reefer" | "hopper" | "cryogenic" | "hazmat";
+
+const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+
+function getWeekDays(baseDate: Date) {
+  const d = new Date(baseDate);
+  const day = d.getDay();
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - ((day + 6) % 7));
+  const days: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const dd = new Date(monday);
+    dd.setDate(monday.getDate() + i);
+    days.push(dd);
+  }
+  return days;
+}
+
+function formatMonthYear(d: Date) {
+  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
 
 export default function FindLoads() {
   const { theme } = useTheme();
@@ -30,11 +55,23 @@ export default function FindLoads() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [equipFilter, setEquipFilter] = useState<EquipFilter>("all");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [weekBase, setWeekBase] = useState(new Date());
+  const [dateFilterActive, setDateFilterActive] = useState(false);
 
-  const loadsQuery = (trpc as any).loadBoard.search.useQuery({ limit: 50 });
+  const loadsQuery = (trpc as any).loadBoard.search.useQuery({ limit: 100 });
   const statsQuery = (trpc as any).loadBoard.getStats.useQuery();
 
   const allLoads = (loadsQuery.data as any)?.loads || [];
+
+  const weekDays = useMemo(() => getWeekDays(weekBase), [weekBase]);
+
+  const shiftWeek = (dir: number) => {
+    const d = new Date(weekBase);
+    d.setDate(d.getDate() + dir * 7);
+    setWeekBase(d);
+    setSelectedDate(d);
+  };
 
   const filteredLoads = useMemo(() => {
     return allLoads.filter((load: any) => {
@@ -45,9 +82,21 @@ export default function FindLoads() {
       const matchesEquip = equipFilter === "all" ||
         load.equipmentType === equipFilter ||
         (equipFilter === "hazmat" && load.hazmat);
-      return matchesSearch && matchesEquip;
+
+      let matchesDate = true;
+      if (dateFilterActive) {
+        const loadDateRaw = load.pickupDate || load.createdAt;
+        if (loadDateRaw) {
+          const loadDate = new Date(loadDateRaw);
+          matchesDate = loadDate.getFullYear() === selectedDate.getFullYear()
+            && loadDate.getMonth() === selectedDate.getMonth()
+            && loadDate.getDate() === selectedDate.getDate();
+        }
+      }
+
+      return matchesSearch && matchesEquip && matchesDate;
     });
-  }, [allLoads, searchTerm, equipFilter]);
+  }, [allLoads, searchTerm, equipFilter, dateFilterActive, selectedDate]);
 
   const getCargoIcon = (cargoType: string) => {
     if (cargoType === "petroleum" || cargoType === "liquid") return <Droplets className="w-4 h-4" />;
@@ -80,15 +129,20 @@ export default function FindLoads() {
             Find Loads
           </h1>
           <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
-            Browse available loads matching your equipment
+            Browse available loads posted by shippers
           </p>
         </div>
-        <div className={cn(
-          "flex items-center gap-2 px-4 py-2 rounded-xl border",
-          isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/10 border-blue-500/30"
-        )}>
-          <Package className="w-4 h-4 text-blue-500" />
-          <span className="text-blue-500 text-sm font-bold">{allLoads.length} Available</span>
+        <div className="flex items-center gap-2">
+          <div className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-xl border",
+            isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/10 border-blue-500/30"
+          )}>
+            <Package className="w-4 h-4 text-blue-500" />
+            <span className="text-blue-500 text-sm font-bold">{filteredLoads.length} Available</span>
+          </div>
+          <Button variant="outline" size="sm" className={cn("rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-600 hover:bg-slate-700")} onClick={() => loadsQuery.refetch()}>
+            <RefreshCw className={cn("w-4 h-4", loadsQuery.isRefetching && "animate-spin")} />
+          </Button>
         </div>
       </div>
 
@@ -107,6 +161,58 @@ export default function FindLoads() {
             isLight ? "bg-transparent" : "bg-transparent text-white placeholder:text-slate-400"
           )}
         />
+      </div>
+
+      {/* ── Week Date Picker ── */}
+      <div className={cn(
+        "rounded-xl border p-4",
+        isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50"
+      )}>
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => shiftWeek(-1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
+            <ChevronLeft className="w-5 h-5 text-slate-400" />
+          </button>
+          <div className="flex items-center gap-2">
+            <p className={cn("text-sm font-semibold", isLight ? "text-slate-700" : "text-white")}>
+              {formatMonthYear(selectedDate)}
+            </p>
+            {dateFilterActive ? (
+              <button onClick={() => setDateFilterActive(false)} className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-medium">
+                Show All
+              </button>
+            ) : (
+              <button onClick={() => setDateFilterActive(true)} className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium border", isLight ? "border-slate-300 text-slate-500 hover:bg-slate-100" : "border-slate-600 text-slate-400 hover:bg-slate-700")}>
+                Showing All
+              </button>
+            )}
+          </div>
+          <button onClick={() => shiftWeek(1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
+            <ChevronRight className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+        <div className="grid grid-cols-7 gap-2">
+          {weekDays.map((day, i) => {
+            const isSelected = isSameDay(day, selectedDate);
+            const isToday = isSameDay(day, new Date());
+            return (
+              <button
+                key={i}
+                onClick={() => { setSelectedDate(day); setDateFilterActive(true); }}
+                className={cn(
+                  "flex flex-col items-center py-2 rounded-xl transition-all text-center",
+                  isSelected
+                    ? "bg-gradient-to-b from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-purple-500/25"
+                    : isToday
+                      ? isLight ? "bg-slate-100 text-slate-800" : "bg-slate-700 text-white"
+                      : isLight ? "hover:bg-slate-50 text-slate-600" : "hover:bg-slate-700/50 text-slate-400"
+                )}
+              >
+                <span className="text-[10px] font-medium mb-0.5">{DAY_LABELS[day.getDay()]}</span>
+                <span className={cn("text-base font-bold", isSelected ? "text-white" : "")}>{day.getDate()}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Equipment Filter Tabs ── */}

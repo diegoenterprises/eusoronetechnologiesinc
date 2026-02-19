@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -257,7 +258,7 @@ function UploadModal({
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
       <div
         className={cn("w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col", isLight ? "bg-white border border-slate-200" : "bg-slate-900 border border-slate-700")}
@@ -425,7 +426,8 @@ function UploadModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

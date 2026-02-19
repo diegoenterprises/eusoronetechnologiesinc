@@ -641,7 +641,7 @@ export const loadBoardRouter = router({
         city: z.string().optional(),
         state: z.string(),
         radius: z.number().default(50),
-      }),
+      }).optional(),
       destination: z.object({
         city: z.string().optional(),
         state: z.string(),
@@ -688,6 +688,8 @@ export const loadBoardRouter = router({
               unNumber: (si as any)?.unNumber || null,
               packingGroup: (si as any)?.packingGroup || null,
               properShippingName: (si as any)?.properShippingName || null,
+              pickupDate: l.pickupDate?.toISOString() || null,
+              createdAt: l.createdAt?.toISOString() || null,
               postedAt: l.createdAt?.toISOString() || '',
             };
           }),
