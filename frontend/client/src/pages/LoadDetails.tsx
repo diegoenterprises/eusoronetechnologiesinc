@@ -38,6 +38,7 @@ import PrimaryActionButton from "@/components/load/PrimaryActionButton";
 import DetentionTimer from "@/components/financial/DetentionTimer";
 import FinancialSummaryCard from "@/components/financial/FinancialSummaryCard";
 import { useLoadSocket } from "@/hooks/useLoadSocket";
+import ApprovalGateCard, { ApprovalBadge } from "@/components/load/ApprovalGateCard";
 
 const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
 const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
@@ -99,10 +100,42 @@ export default function LoadDetails() {
     { enabled: !!loadId && !!load && (isInExecution || isInFinancial || load?.status === "delivered") }
   );
 
+  const pendingApprovalsQuery = (trpc as any).loadLifecycle.getPendingApprovals.useQuery(
+    undefined,
+    { enabled: isDispatchOrAdmin }
+  );
+
   const availableTransitions = (transitionsQuery.data || []) as any[];
   const stateHistory = (stateHistoryQuery.data || []) as any[];
   const activeTimers = (activeTimersQuery.data || []) as any[];
   const financialSummary = financialSummaryQuery.data as any;
+  const allPendingApprovals = (pendingApprovalsQuery.data || []) as any[];
+  const loadApprovals = allPendingApprovals.filter((a: any) => String(a.loadId) === String(loadId));
+
+  // ── Approval mutations ──
+  const approveMutation = (trpc as any).loadLifecycle.approveRequest.useMutation({
+    onSuccess: (data: any) => {
+      if (data.success) {
+        toast.success("Approval granted");
+        pendingApprovalsQuery.refetch();
+        loadQuery.refetch();
+      } else {
+        toast.error("Approval failed", { description: data.error });
+      }
+    },
+    onError: (err: any) => toast.error("Approval error", { description: err.message }),
+  });
+  const denyMutation = (trpc as any).loadLifecycle.denyRequest.useMutation({
+    onSuccess: (data: any) => {
+      if (data.success) {
+        toast.success("Request denied");
+        pendingApprovalsQuery.refetch();
+      } else {
+        toast.error("Deny failed", { description: data.error });
+      }
+    },
+    onError: (err: any) => toast.error("Deny error", { description: err.message }),
+  });
 
   // ── Real-time WebSocket subscription ──
   const refetchAll = useCallback(() => {
@@ -111,6 +144,7 @@ export default function LoadDetails() {
     stateHistoryQuery.refetch();
     activeTimersQuery.refetch();
     financialSummaryQuery.refetch();
+    pendingApprovalsQuery.refetch();
   }, []);
   const { isConnected: wsConnected, lastEvent: wsLastEvent } = useLoadSocket(loadId, {
     onStateChange: refetchAll,
@@ -802,6 +836,30 @@ export default function LoadDetails() {
           timerHistory={financialSummary.timerHistory}
           currency={financialSummary.currency}
         />
+      )}
+
+      {/* ═══════════ APPROVAL GATES ═══════════ */}
+      {isDispatchOrAdmin && loadApprovals.length > 0 && (
+        <Card className={cardCls}>
+          <CardHeader className="pb-3">
+            <CardTitle className={cn(titleCls, "flex items-center gap-2")}>
+              <Shield className="w-5 h-5 text-amber-500" />
+              Pending Approvals
+              <ApprovalBadge count={loadApprovals.length} />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loadApprovals.map((approval: any) => (
+              <ApprovalGateCard
+                key={approval.id}
+                approval={approval}
+                onApprove={(id, notes) => approveMutation.mutate({ approvalId: id, notes })}
+                onDeny={(id, reason) => denyMutation.mutate({ approvalId: id, reason })}
+                loading={approveMutation.isPending || denyMutation.isPending}
+              />
+            ))}
+          </CardContent>
+        </Card>
       )}
 
       {/* ═══════════ GEOTAG EVENT TIMELINE ═══════════ */}

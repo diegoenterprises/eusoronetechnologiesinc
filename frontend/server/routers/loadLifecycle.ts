@@ -758,4 +758,157 @@ export const loadLifecycleRouter = router({
         return [];
       }
     }),
+
+  // ── CREATE APPROVAL REQUEST ──
+  createApprovalRequest: protectedProcedure
+    .input(z.object({
+      loadId: z.string(),
+      gateId: z.string(),
+      transitionId: z.string(),
+      expiresInMinutes: z.number().optional().default(60),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "Database unavailable" };
+      try {
+        const expiresAt = new Date(Date.now() + input.expiresInMinutes * 60000);
+        await db.execute(sql`
+          INSERT INTO approval_requests (load_id, gate_id, transition_id, status, requested_by, created_at, expires_at)
+          VALUES (${Number(input.loadId) || 0}, ${input.gateId}, ${input.transitionId}, 'PENDING',
+                  ${ctx.user?.id || 0}, NOW(), ${expiresAt.toISOString()})
+        `);
+
+        // Broadcast approval event via Socket.io
+        try {
+          const { emitApprovalEvent } = await import("../services/socketService");
+          emitApprovalEvent({
+            loadId: input.loadId,
+            approvalId: 0,
+            gateId: input.gateId,
+            action: "requested",
+            actorId: ctx.user?.id || 0,
+            timestamp: new Date().toISOString(),
+          });
+        } catch { /* non-critical */ }
+
+        return { success: true };
+      } catch (e) {
+        return { success: false, error: (e as Error).message };
+      }
+    }),
+
+  // ── APPROVE REQUEST ──
+  approveRequest: protectedProcedure
+    .input(z.object({
+      approvalId: z.number(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "Database unavailable" };
+
+      // Only dispatch/admin/super_admin can approve
+      const userRole = (ctx.user?.role || "").toUpperCase();
+      if (!["DISPATCH", "ADMIN", "SUPER_ADMIN", "TERMINAL_MANAGER"].includes(userRole)) {
+        return { success: false, error: "Insufficient permissions to approve" };
+      }
+
+      try {
+        // Get the approval request
+        const rows = await db.execute(sql`
+          SELECT * FROM approval_requests WHERE id = ${input.approvalId} AND status = 'PENDING' LIMIT 1
+        `);
+        const approval = ((rows as unknown as any[][])[0] || [])[0];
+        if (!approval) return { success: false, error: "Approval request not found or already resolved" };
+
+        // Check expiration
+        if (approval.expires_at && new Date(approval.expires_at) < new Date()) {
+          await db.execute(sql`UPDATE approval_requests SET status = 'EXPIRED' WHERE id = ${input.approvalId}`);
+          return { success: false, error: "Approval request has expired" };
+        }
+
+        // Approve it
+        await db.execute(sql`
+          UPDATE approval_requests
+          SET status = 'APPROVED', resolved_by = ${ctx.user?.id || 0}, resolved_at = NOW(),
+              notes = ${input.notes || null}
+          WHERE id = ${input.approvalId}
+        `);
+
+        // Broadcast via Socket.io
+        try {
+          const { emitApprovalEvent } = await import("../services/socketService");
+          emitApprovalEvent({
+            loadId: String(approval.load_id),
+            approvalId: input.approvalId,
+            gateId: approval.gate_id,
+            action: "approved",
+            actorId: ctx.user?.id || 0,
+            timestamp: new Date().toISOString(),
+          });
+        } catch { /* non-critical */ }
+
+        return {
+          success: true,
+          approvalId: input.approvalId,
+          loadId: String(approval.load_id),
+          gateId: approval.gate_id,
+          transitionId: approval.transition_id,
+        };
+      } catch (e) {
+        return { success: false, error: (e as Error).message };
+      }
+    }),
+
+  // ── DENY REQUEST ──
+  denyRequest: protectedProcedure
+    .input(z.object({
+      approvalId: z.number(),
+      reason: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "Database unavailable" };
+
+      const userRole = (ctx.user?.role || "").toUpperCase();
+      if (!["DISPATCH", "ADMIN", "SUPER_ADMIN", "TERMINAL_MANAGER"].includes(userRole)) {
+        return { success: false, error: "Insufficient permissions to deny" };
+      }
+
+      try {
+        const rows = await db.execute(sql`
+          SELECT * FROM approval_requests WHERE id = ${input.approvalId} AND status = 'PENDING' LIMIT 1
+        `);
+        const approval = ((rows as unknown as any[][])[0] || [])[0];
+        if (!approval) return { success: false, error: "Approval request not found or already resolved" };
+
+        await db.execute(sql`
+          UPDATE approval_requests
+          SET status = 'DENIED', resolved_by = ${ctx.user?.id || 0}, resolved_at = NOW(),
+              notes = ${input.reason}
+          WHERE id = ${input.approvalId}
+        `);
+
+        // Broadcast via Socket.io
+        try {
+          const { emitApprovalEvent } = await import("../services/socketService");
+          emitApprovalEvent({
+            loadId: String(approval.load_id),
+            approvalId: input.approvalId,
+            gateId: approval.gate_id,
+            action: "denied",
+            actorId: ctx.user?.id || 0,
+            timestamp: new Date().toISOString(),
+          });
+        } catch { /* non-critical */ }
+
+        return {
+          success: true,
+          approvalId: input.approvalId,
+          loadId: String(approval.load_id),
+        };
+      } catch (e) {
+        return { success: false, error: (e as Error).message };
+      }
+    }),
 });
