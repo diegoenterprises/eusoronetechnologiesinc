@@ -17,7 +17,97 @@ import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { auditedProtectedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { loads, companies, vehicles, bids, drivers, loadBids, bidAutoAcceptRules, negotiations, negotiationMessages, laneContracts, agreements } from "../../drizzle/schema";
+import { loads, companies, vehicles, bids, drivers, users, loadBids, bidAutoAcceptRules, negotiations, negotiationMessages, laneContracts, agreements } from "../../drizzle/schema";
+import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ROLE-AWARE USER RESOLUTION
+// Maps auth context (Clerk/JWT) → DB user ID, role, company, driver profile
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function resolveUserId(ctxUser: any): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const email = ctxUser?.email || "";
+  if (!email) return ctxUser?.id ? Number(ctxUser.id) : 0;
+  try {
+    const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    if (row) return row.id;
+  } catch { /* fall through */ }
+  return ctxUser?.id ? Number(ctxUser.id) : 0;
+}
+
+interface UserProfile {
+  userId: number;
+  role: string;
+  isAdmin: boolean;
+  companyId: number | null;
+  driverId: number | null;
+  hasHazmatEndorsement: boolean;
+  hazmatExpired: boolean;
+  carrierHazmatAuth: boolean;
+  carrierInsuranceAmount: number;
+}
+
+async function resolveUserProfile(ctxUser: any): Promise<UserProfile> {
+  const userId = await resolveUserId(ctxUser);
+  const role = await resolveUserRole(ctxUser);
+  const admin = isAdminRole(role);
+  let companyId: number | null = null;
+  let driverId: number | null = null;
+  let hasHazmatEndorsement = false;
+  let hazmatExpired = false;
+  let carrierHazmatAuth = false;
+  let carrierInsuranceAmount = 0;
+
+  const db = await getDb();
+  if (db && userId) {
+    try {
+      // Get driver record (links user → company, endorsements)
+      const [drv] = await db.select().from(drivers).where(eq(drivers.userId, userId)).limit(1);
+      if (drv) {
+        driverId = drv.id;
+        companyId = drv.companyId;
+        hasHazmatEndorsement = !!drv.hazmatEndorsement;
+        if (drv.hazmatExpiry && new Date(drv.hazmatExpiry) < new Date()) hazmatExpired = true;
+      }
+      // Get company details for carrier/hazmat/insurance checks
+      if (companyId) {
+        const [co] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+        if (co) {
+          carrierHazmatAuth = !!co.hazmatLicense && !(co.hazmatExpiry && new Date(co.hazmatExpiry) < new Date());
+          if (co.insurancePolicy) {
+            try {
+              const ins = typeof co.insurancePolicy === 'string' ? JSON.parse(co.insurancePolicy) : co.insurancePolicy;
+              carrierInsuranceAmount = (ins as any)?.amount || (ins as any)?.limit || 0;
+            } catch { carrierInsuranceAmount = 0; }
+          }
+        }
+      }
+    } catch (e) { console.warn('[LoadBoard] resolveUserProfile failed:', e); }
+  }
+
+  return { userId, role, isAdmin: admin, companyId, driverId, hasHazmatEndorsement, hazmatExpired, carrierHazmatAuth, carrierInsuranceAmount };
+}
+
+// Maps user role → bidder role for the loadBids table
+function roleToBidderRole(role: string): "catalyst" | "broker" | "driver" | "escort" {
+  if (role === "BROKER") return "broker";
+  if (role === "DRIVER") return "driver";
+  if (role === "ESCORT") return "escort";
+  return "catalyst"; // CATALYST, DISPATCH, ADMIN, etc default to catalyst
+}
+
+// Roles allowed to post loads
+const LOAD_POSTER_ROLES = ["SHIPPER", "BROKER", "ADMIN", "SUPER_ADMIN", "DISPATCH", "TERMINAL_MANAGER"];
+// Roles allowed to bid on loads
+const LOAD_BIDDER_ROLES = ["CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"];
+// Roles allowed to book loads (assign carrier)
+const LOAD_BOOKER_ROLES = ["CATALYST", "BROKER", "DISPATCH", "ADMIN", "SUPER_ADMIN"];
+// Roles that see matching (carrier-facing)
+const CARRIER_ROLES = ["CATALYST", "BROKER", "DISPATCH", "DRIVER", "ESCORT"];
+// Roles that see carrier search (shipper-facing)
+const SHIPPER_ROLES = ["SHIPPER", "BROKER", "ADMIN", "SUPER_ADMIN", "TERMINAL_MANAGER"];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPREHENSIVE TRAILER TYPE SYSTEM
@@ -666,6 +756,8 @@ export const loadBoardRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const profile = await resolveUserProfile(ctx.user);
+      if (!LOAD_POSTER_ROLES.includes(profile.role) && !profile.isAdmin) throw new Error(`Role ${profile.role} cannot post loads`);
       const isHazmat = input.hazmat || !!input.hazmatClass;
       if (isHazmat && input.hazmatClass) {
         const classReqs = HAZMAT_CLASS_REQUIREMENTS[input.hazmatClass];
@@ -678,7 +770,7 @@ export const loadBoardRouter = router({
       }) : null;
       const loadNumber = `LB-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
       const [result] = await db.insert(loads).values({
-        shipperId: ctx.user?.id || 0,
+        shipperId: profile.userId,
         loadNumber,
         status: "posted",
         cargoType: isHazmat ? "hazmat" as const : "general" as const,
@@ -696,7 +788,7 @@ export const loadBoardRouter = router({
         id: String(result.id),
         loadNumber,
         status: "posted",
-        postedBy: ctx.user?.id,
+        postedBy: profile.userId,
         postedAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + input.expiresIn * 60 * 60 * 1000).toISOString(),
       };
@@ -715,6 +807,8 @@ export const loadBoardRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const profile = await resolveUserProfile(ctx.user);
+      if (!LOAD_BOOKER_ROLES.includes(profile.role) && !profile.isAdmin) throw new Error(`Role ${profile.role} cannot book loads`);
       const loadId = parseInt(input.loadId);
       const [load] = await db.select().from(loads).where(eq(loads.id, loadId)).limit(1);
       if (!load) throw new Error("Load not found");
@@ -732,17 +826,13 @@ export const loadBoardRouter = router({
             if (driver) {
               const reqEndorsement = classReqs?.endorsement || 'H';
               const hasH = !!driver.hazmatEndorsement;
-              // Tanker endorsement: inferred from hazmatEndorsement + tanker equipment assignment
-              // (drivers table doesn't store N separately — treat tanker-endorsed if hazmat-endorsed for now)
               const hasN = hasH;
               if (reqEndorsement.includes('H') && !hasH) hazmatWarnings.push(`Driver missing CDL-H (Hazmat) endorsement required for Class ${load.hazmatClass}`);
               if (reqEndorsement === 'HN' && !hasH) hazmatWarnings.push(`Driver missing CDL-HN (Hazmat+Tanker) endorsement required for Class ${load.hazmatClass}`);
               if (reqEndorsement === 'N' && !hasN) hazmatWarnings.push(`Driver missing CDL-N (Tanker) endorsement required for Class ${load.hazmatClass}`);
-              // Check hazmat endorsement expiry
               if (hasH && driver.hazmatExpiry && new Date(driver.hazmatExpiry) < new Date()) {
                 hazmatWarnings.push(`Driver's hazmat endorsement expired on ${driver.hazmatExpiry.toISOString().split('T')[0]}`);
               }
-              // Check medical card expiry
               if (driver.medicalCardExpiry && new Date(driver.medicalCardExpiry) < new Date()) {
                 hazmatWarnings.push(`Driver's medical certificate expired on ${driver.medicalCardExpiry.toISOString().split('T')[0]}`);
               }
@@ -770,27 +860,28 @@ export const loadBoardRouter = router({
             loadId: input.loadId,
             status: "hazmat_verification_failed",
             hazmatWarnings,
-            bookedBy: ctx.user?.id,
+            bookedBy: profile.userId,
             bookedAt: new Date().toISOString(),
             confirmationNumber: null,
           };
         }
       }
 
+      const confirmationNumber = `CONF-${Date.now()}`;
       await db.update(loads).set({
         status: "assigned",
-        catalystId: ctx.user?.id || 0,
+        catalystId: profile.userId,
         vehicleId: input.vehicleId ? parseInt(input.vehicleId) : undefined,
         driverId: input.driverId ? parseInt(input.driverId) : undefined,
         rate: input.agreedRate ? String(input.agreedRate) : load.rate,
       }).where(eq(loads.id, loadId));
-      const confirmationNumber = `CONF-${String(Date.now()).slice(-6)}`;
+
       return {
         bookingId: String(loadId),
         loadId: input.loadId,
         status: "assigned",
         hazmatWarnings: [],
-        bookedBy: ctx.user?.id,
+        bookedBy: profile.userId,
         bookedAt: new Date().toISOString(),
         confirmationNumber,
       };
@@ -810,9 +901,11 @@ export const loadBoardRouter = router({
       const loadId = parseInt(input.loadId);
       const [load] = await db.select().from(loads).where(eq(loads.id, loadId)).limit(1);
       if (!load) throw new Error("Load not found");
+      const bidderProfile = await resolveUserProfile(ctx.user);
+      if (!LOAD_BIDDER_ROLES.includes(bidderProfile.role) && !bidderProfile.isAdmin) throw new Error(`Role ${bidderProfile.role} cannot negotiate rates`);
       const [result] = await db.insert(bids).values({
         loadId,
-        catalystId: ctx.user?.id || 0,
+        catalystId: bidderProfile.userId,
         amount: String(input.proposedRate),
         status: "pending",
         notes: input.message || null,
@@ -825,7 +918,7 @@ export const loadBoardRouter = router({
         loadId: input.loadId,
         proposedRate: input.proposedRate,
         status: "pending",
-        submittedBy: ctx.user?.id,
+        submittedBy: bidderProfile.userId,
         submittedAt: new Date().toISOString(),
       };
     }),
@@ -838,8 +931,23 @@ export const loadBoardRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb(); if (!db) return [];
       try {
-        const userId = ctx.user?.id || 0;
-        const rows = await db.select().from(loads).where(eq(loads.shipperId, userId)).orderBy(desc(loads.createdAt)).limit(50);
+        const profile = await resolveUserProfile(ctx.user);
+        const userId = profile.userId;
+        // Role-aware scoping: SHIPPER sees posted, CATALYST/DRIVER sees assigned, BROKER sees both, ADMIN sees all
+        let scopeCondition;
+        if (profile.isAdmin) {
+          scopeCondition = sql`1 = 1`;
+        } else if (profile.role === 'CATALYST' || profile.role === 'DISPATCH') {
+          scopeCondition = sql`(${loads.shipperId} = ${userId} OR ${loads.catalystId} = ${userId})`;
+        } else if (profile.role === 'DRIVER' || profile.role === 'ESCORT') {
+          scopeCondition = sql`(${loads.driverId} = ${userId} OR ${loads.shipperId} = ${userId})`;
+        } else if (profile.role === 'BROKER') {
+          scopeCondition = sql`(${loads.shipperId} = ${userId} OR ${loads.catalystId} = ${userId})`;
+        } else {
+          // SHIPPER, TERMINAL_MANAGER, COMPLIANCE_OFFICER, SAFETY_MANAGER, FACTORING
+          scopeCondition = eq(loads.shipperId, userId);
+        }
+        const rows = await db.select().from(loads).where(scopeCondition).orderBy(desc(loads.createdAt)).limit(50);
         return rows.map(l => {
           const pickup = l.pickupLocation as any || {};
           const delivery = l.deliveryLocation as any || {};
@@ -883,7 +991,7 @@ export const loadBoardRouter = router({
       return {
         id: `search_${Date.now()}`,
         name: input.name,
-        savedBy: ctx.user?.id,
+        savedBy: (await resolveUserId(ctx.user)),
         savedAt: new Date().toISOString(),
       };
     }),
@@ -921,7 +1029,7 @@ export const loadBoardRouter = router({
       return {
         success: true,
         loadId: input.loadId,
-        updatedBy: ctx.user?.id,
+        updatedBy: (await resolveUserId(ctx.user)),
         updatedAt: new Date().toISOString(),
       };
     }),
@@ -944,7 +1052,7 @@ export const loadBoardRouter = router({
       return {
         success: true,
         loadId: input.loadId,
-        cancelledBy: ctx.user?.id,
+        cancelledBy: (await resolveUserId(ctx.user)),
         cancelledAt: new Date().toISOString(),
       };
     }),
@@ -1304,10 +1412,11 @@ export const loadBoardRouter = router({
    */
   getStats: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    const empty = { totalAvailable: 0, hazmatLoads: 0, generalLoads: 0, avgRate: 0, myPosted: 0, myBooked: 0, bidsReceived: 0, topLanes: [] as any[] };
+    const empty = { totalAvailable: 0, hazmatLoads: 0, generalLoads: 0, avgRate: 0, myPosted: 0, myBooked: 0, bidsReceived: 0, topLanes: [] as any[], userRole: '' };
     if (!db) return empty;
     try {
-      const userId = ctx.user?.id || 0;
+      const profile = await resolveUserProfile(ctx.user);
+      const userId = profile.userId;
       const [avail] = await db.select({
         total: sql<number>`COUNT(*)`,
         hazmat: sql<number>`SUM(CASE WHEN ${loads.hazmatClass} IS NOT NULL AND ${loads.hazmatClass} != '' THEN 1 ELSE 0 END)`,
@@ -1315,9 +1424,25 @@ export const loadBoardRouter = router({
         avgRate: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)`,
       }).from(loads).where(sql`${loads.status} IN ('posted', 'available', 'bidding')`);
 
-      const [myPosted] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('posted', 'available', 'bidding')`));
-      const [myBooked] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(and(eq(loads.catalystId, userId), eq(loads.status, 'assigned' as any)));
-      const [bidsCount] = await db.select({ c: sql<number>`COUNT(*)` }).from(bids).where(and(eq(bids.status, 'pending'), sql`${bids.loadId} IN (SELECT id FROM loads WHERE shipper_id = ${userId})`));
+      // Role-aware "my" counts: SHIPPER sees posted loads, CATALYST sees booked, BROKER/ADMIN sees both
+      let myPostedCount = 0, myBookedCount = 0, bidsReceivedCount = 0;
+      if (profile.isAdmin) {
+        const [mp] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(sql`${loads.status} IN ('posted', 'available', 'bidding')`);
+        const [mb] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(eq(loads.status, 'assigned' as any));
+        const [bc] = await db.select({ c: sql<number>`COUNT(*)` }).from(bids).where(eq(bids.status, 'pending'));
+        myPostedCount = mp?.c || 0; myBookedCount = mb?.c || 0; bidsReceivedCount = bc?.c || 0;
+      } else if (CARRIER_ROLES.includes(profile.role)) {
+        const [mp] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('posted', 'available', 'bidding')`));
+        const [mb] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(and(eq(loads.catalystId, userId), eq(loads.status, 'assigned' as any)));
+        const [bc] = await db.select({ c: sql<number>`COUNT(*)` }).from(bids).where(eq(bids.catalystId, userId));
+        myPostedCount = mp?.c || 0; myBookedCount = mb?.c || 0; bidsReceivedCount = bc?.c || 0;
+      } else {
+        // SHIPPER, TERMINAL_MANAGER, FACTORING, COMPLIANCE_OFFICER, SAFETY_MANAGER
+        const [mp] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('posted', 'available', 'bidding')`));
+        const [mb] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(and(eq(loads.catalystId, userId), eq(loads.status, 'assigned' as any)));
+        const [bc] = await db.select({ c: sql<number>`COUNT(*)` }).from(bids).where(and(eq(bids.status, 'pending'), sql`${bids.loadId} IN (SELECT id FROM loads WHERE shipper_id = ${userId})`));
+        myPostedCount = mp?.c || 0; myBookedCount = mb?.c || 0; bidsReceivedCount = bc?.c || 0;
+      }
 
       // Top lanes by volume (last 30 days)
       const topLanes = await db.select({
@@ -1336,9 +1461,10 @@ export const loadBoardRouter = router({
         hazmatLoads: avail?.hazmat || 0,
         generalLoads: avail?.general || 0,
         avgRate: Math.round((avail?.avgRate || 0) * 100) / 100,
-        myPosted: myPosted?.c || 0,
-        myBooked: myBooked?.c || 0,
-        bidsReceived: bidsCount?.c || 0,
+        myPosted: myPostedCount,
+        myBooked: myBookedCount,
+        bidsReceived: bidsReceivedCount,
+        userRole: profile.role,
         topLanes: topLanes.map(l => ({
           lane: `${l.originState || '?'} → ${l.destState || '?'}`,
           volume: l.count || 0,
@@ -1357,8 +1483,9 @@ export const loadBoardRouter = router({
       const db = await getDb();
       if (!db) return [];
       try {
-        const userId = ctx.user?.id || 0;
-        // Recent loads posted, booked, or bid on by the user
+        const profile = await resolveUserProfile(ctx.user);
+        const userId = profile.userId;
+        // Role-aware: each role sees activity relevant to them
         const recentLoads = await db.select({
           id: loads.id, loadNumber: loads.loadNumber, status: loads.status,
           pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
@@ -1735,7 +1862,9 @@ export const loadBoardRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
-      const userId = ctx.user?.id || 0;
+      const profile = await resolveUserProfile(ctx.user);
+      if (!LOAD_BIDDER_ROLES.includes(profile.role) && !profile.isAdmin) throw new Error(`Role ${profile.role} cannot submit bids`);
+      const userId = profile.userId;
 
       // 1. Fetch the load to check hazmat requirements
       const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId)).limit(1);
@@ -1787,7 +1916,7 @@ export const loadBoardRouter = router({
         loadId: input.loadId,
         bidderUserId: userId,
         bidderCompanyId,
-        bidderRole: "catalyst",
+        bidderRole: roleToBidderRole(profile.role),
         bidAmount: String(input.bidAmount),
         rateType: input.rateType,
         parentBidId: input.parentBidId || null,
@@ -1951,13 +2080,12 @@ export const loadBoardRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
-      const userId = ctx.user?.id || 0;
+      const profile = await resolveUserProfile(ctx.user);
+      const userId = profile.userId;
 
       // Get company IDs
-      let initiatorCompanyId: number | null = null;
+      let initiatorCompanyId: number | null = profile.companyId;
       let respondentCompanyId: number | null = null;
-      const [initDrv] = await db.select({ companyId: drivers.companyId }).from(drivers).where(eq(drivers.userId, userId)).limit(1);
-      initiatorCompanyId = initDrv?.companyId || null;
       const [respDrv] = await db.select({ companyId: drivers.companyId }).from(drivers).where(eq(drivers.userId, input.respondentUserId)).limit(1);
       respondentCompanyId = respDrv?.companyId || null;
 
@@ -2089,11 +2217,14 @@ export const loadBoardRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
-      const userId = ctx.user?.id || 0;
+      const profile = await resolveUserProfile(ctx.user);
+      const userId = profile.userId;
 
       const [neg] = await db.select().from(negotiations).where(eq(negotiations.id, input.negotiationId)).limit(1);
       if (!neg) throw new Error("Negotiation not found");
       if (["agreed", "rejected", "expired", "cancelled"].includes(neg.status as string)) throw new Error("Negotiation is already closed");
+      // Verify user is a party to this negotiation
+      if (!profile.isAdmin && userId !== neg.initiatorUserId && userId !== neg.respondentUserId) throw new Error("You are not a party to this negotiation");
 
       const newRound = (neg.totalRounds || 0) + 1;
 
@@ -2216,7 +2347,7 @@ export const loadBoardRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) return { contracts: [], total: 0 };
       try {
-        const userId = ctx.user?.id || 0;
+        const userId = await resolveUserId(ctx.user);
         const conditions = [
           eq(laneContracts.status, "active"),
           eq(laneContracts.originState, input.originState),
