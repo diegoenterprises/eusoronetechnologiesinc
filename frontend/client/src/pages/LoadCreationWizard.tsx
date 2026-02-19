@@ -25,6 +25,7 @@ import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { HazmatDecalPreview } from "@/components/HazmatDecal";
+import HazmatRouteRestrictions from "@/components/HazmatRouteRestrictions";
 import { MultiTruckVisualization } from "@/components/TruckVisualization";
 import RouteMap from "@/components/RouteMap";
 import DatePicker from "@/components/DatePicker";
@@ -1556,6 +1557,19 @@ export default function LoadCreationWizard() {
                   )}
                 </div>
               </div>
+
+              {/* ── Hazmat Route Restrictions (only for hazmat loads) ── */}
+              {selectedTrailer?.hazmat && formData.hazmatClass && formData.origin && formData.destination && (
+                <HazmatRouteRestrictions
+                  hazmatClass={formData.hazmatClass}
+                  unNumber={formData.unNumber}
+                  originState={(formData.origin || "").split(",").pop()?.trim() || ""}
+                  destinationState={(formData.destination || "").split(",").pop()?.trim() || ""}
+                  isTIH={formData.isTIH}
+                  isRadioactive={formData.hazmatClass === "7"}
+                  weight={Number(formData.weight) || undefined}
+                />
+              )}
 
               {/* ── Pricing Section ── */}
               <div className="rounded-2xl border border-slate-700/40 overflow-hidden">
