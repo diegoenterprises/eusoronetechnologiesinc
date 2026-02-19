@@ -61,6 +61,7 @@ export default function LoadBoard() {
   const [weekBase, setWeekBase] = useState(new Date());
 
   const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+  const [dateFilterActive, setDateFilterActive] = useState(true);
   const loadsQuery = (trpc as any).loadBoard.search.useQuery({ limit: 100 });
 
   const weekDays = useMemo(() => getWeekDays(weekBase), [weekBase]);
@@ -85,9 +86,21 @@ export default function LoadBoard() {
         load.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         load.destination?.city?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesFilter = activeFilter === "all" || load.status === activeFilter;
-      return matchesSearch && matchesFilter;
+
+      let matchesDate = true;
+      if (dateFilterActive) {
+        const loadDateRaw = load.pickupDate || load.createdAt;
+        if (loadDateRaw) {
+          const loadDate = new Date(loadDateRaw);
+          matchesDate = loadDate.getFullYear() === selectedDate.getFullYear()
+            && loadDate.getMonth() === selectedDate.getMonth()
+            && loadDate.getDate() === selectedDate.getDate();
+        }
+      }
+
+      return matchesSearch && matchesFilter && matchesDate;
     });
-  }, [allLoads, searchTerm, activeFilter]);
+  }, [allLoads, searchTerm, activeFilter, dateFilterActive, selectedDate]);
 
   const getStatusConfig = (status: string) => {
     const map: Record<string, { label: string; bg: string; text: string }> = {
@@ -158,9 +171,20 @@ export default function LoadBoard() {
           <button onClick={() => shiftWeek(-1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
             <ChevronLeft className="w-5 h-5 text-slate-400" />
           </button>
-          <p className={cn("text-sm font-semibold", isLight ? "text-slate-700" : "text-white")}>
-            {formatMonthYear(selectedDate)}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className={cn("text-sm font-semibold", isLight ? "text-slate-700" : "text-white")}>
+              {formatMonthYear(selectedDate)}
+            </p>
+            {dateFilterActive ? (
+              <button onClick={() => setDateFilterActive(false)} className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-medium">
+                Show All
+              </button>
+            ) : (
+              <button onClick={() => setDateFilterActive(true)} className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium border", isLight ? "border-slate-300 text-slate-500 hover:bg-slate-100" : "border-slate-600 text-slate-400 hover:bg-slate-700")}>
+                Showing All
+              </button>
+            )}
+          </div>
           <button onClick={() => shiftWeek(1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
             <ChevronRight className="w-5 h-5 text-slate-400" />
           </button>
@@ -172,7 +196,7 @@ export default function LoadBoard() {
             return (
               <button
                 key={i}
-                onClick={() => setSelectedDate(day)}
+                onClick={() => { setSelectedDate(day); setDateFilterActive(true); }}
                 className={cn(
                   "flex flex-col items-center py-2 rounded-xl transition-all text-center",
                   isSelected

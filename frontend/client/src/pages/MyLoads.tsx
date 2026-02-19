@@ -68,8 +68,8 @@ export default function MyLoads() {
 
   // Format selected date as YYYY-MM-DD for DB query
   const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-  // Show all loads by default — only filter by date when the calendar is used
-  const [dateFilterActive, setDateFilterActive] = useState(false);
+  // Filter by selected date by default — user can toggle "Show All" to see everything
+  const [dateFilterActive, setDateFilterActive] = useState(true);
   const loadsQuery = (trpc as any).loadBoard.getMyPostedLoads.useQuery({ status: "all" });
 
   // Message catalyst/driver
@@ -125,9 +125,22 @@ export default function MyLoads() {
         load.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         load.destination?.city?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesFilter = activeFilter === "all" || getFilterGroup(load.status) === activeFilter;
-      return matchesSearch && matchesFilter;
+
+      // Date filtering: compare against pickupDate, fallback to createdAt
+      let matchesDate = true;
+      if (dateFilterActive) {
+        const loadDateRaw = load.pickupDate || load.createdAt;
+        if (loadDateRaw) {
+          const loadDate = new Date(loadDateRaw);
+          matchesDate = loadDate.getFullYear() === selectedDate.getFullYear()
+            && loadDate.getMonth() === selectedDate.getMonth()
+            && loadDate.getDate() === selectedDate.getDate();
+        }
+      }
+
+      return matchesSearch && matchesFilter && matchesDate;
     });
-  }, [loadsQuery.data, searchTerm, activeFilter]);
+  }, [loadsQuery.data, searchTerm, activeFilter, dateFilterActive, selectedDate]);
 
   // Active load stats
   const allLoads = (loadsQuery.data as any[]) || [];
@@ -232,9 +245,13 @@ export default function MyLoads() {
             <p className={cn("text-sm font-semibold", isLight ? "text-slate-700" : "text-white")}>
               {formatMonthYear(selectedDate)}
             </p>
-            {dateFilterActive && (
+            {dateFilterActive ? (
               <button onClick={() => setDateFilterActive(false)} className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-medium">
                 Show All
+              </button>
+            ) : (
+              <button onClick={() => setDateFilterActive(true)} className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium border", isLight ? "border-slate-300 text-slate-500 hover:bg-slate-100" : "border-slate-600 text-slate-400 hover:bg-slate-700")}>
+                Showing All
               </button>
             )}
           </div>
