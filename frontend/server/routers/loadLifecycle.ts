@@ -529,6 +529,22 @@ export const loadLifecycleRouter = router({
 
       console.log(`[LoadLifecycle] ${currentState} → ${transition.to} (${input.transitionId}) for load ${input.loadId}`);
 
+      // ── Real-time broadcast via Socket.io ──
+      try {
+        const { emitLoadStateChange } = await import("../services/socketService");
+        emitLoadStateChange({
+          loadId: input.loadId,
+          previousState: currentState,
+          newState: transition.to,
+          transitionId: input.transitionId,
+          actorId: ctx.user?.id || 0,
+          actorName: ctx.user?.name || "System",
+          actorRole: userRole,
+          timestamp: new Date().toISOString(),
+          metadata: input.metadata || {},
+        });
+      } catch { /* non-critical — page still works via polling */ }
+
       return {
         success: true,
         loadId: input.loadId,
@@ -626,6 +642,21 @@ export const loadLifecycleRouter = router({
       // Audit
       const userRole = (ctx.user?.role || "DRIVER").toUpperCase();
       await logTransition(numericLoadId, from, to, match, ctx.user?.id || 0, userRole, match.guards.map(g => g.check), financialEffects.map(e => e.action), input.metadata, true);
+
+      // ── Real-time broadcast via Socket.io ──
+      try {
+        const { emitLoadStateChange } = await import("../services/socketService");
+        emitLoadStateChange({
+          loadId: input.loadId,
+          previousState: from,
+          newState: to,
+          actorId: ctx.user?.id || 0,
+          actorName: ctx.user?.name || "System",
+          actorRole: userRole,
+          timestamp: new Date().toISOString(),
+          metadata: (input.metadata as Record<string, unknown>) || {},
+        });
+      } catch { /* non-critical */ }
 
       return {
         success: true,

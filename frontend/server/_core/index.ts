@@ -39,6 +39,12 @@ async function startServer() {
   const server = createServer(app);
 
   // =========================================================================
+  // SOCKET.IO — Real-time state change broadcasting (attaches to HTTP server)
+  // =========================================================================
+  const { initializeSocketIO } = await import("../services/socketService");
+  initializeSocketIO(server);
+
+  // =========================================================================
   // SECURITY LAYER 1: TLS 1.3 / HTTPS enforcement
   // In production, Azure App Service terminates TLS 1.3 at the load balancer.
   // This middleware enforces HSTS headers and redirects HTTP → HTTPS.

@@ -12,7 +12,7 @@
  * Theme-aware | Brand gradient | Role-aware actions | Trailer-type compliance
  */
 
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,7 @@ import StatePanel from "@/components/load/StatePanel";
 import PrimaryActionButton from "@/components/load/PrimaryActionButton";
 import DetentionTimer from "@/components/financial/DetentionTimer";
 import FinancialSummaryCard from "@/components/financial/FinancialSummaryCard";
+import { useLoadSocket } from "@/hooks/useLoadSocket";
 
 const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
 const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
@@ -67,6 +68,7 @@ export default function LoadDetails() {
   const { user: authUser } = useAuth();
   const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId });
   const load = loadQuery.data;
+
   // ── Role & permission checks ──
   const isLoadOwner = load?.shipperId && authUser?.id && Number(load.shipperId) === Number(authUser.id);
   const userRole = (authUser?.role || "").toUpperCase();
@@ -101,6 +103,21 @@ export default function LoadDetails() {
   const stateHistory = (stateHistoryQuery.data || []) as any[];
   const activeTimers = (activeTimersQuery.data || []) as any[];
   const financialSummary = financialSummaryQuery.data as any;
+
+  // ── Real-time WebSocket subscription ──
+  const refetchAll = useCallback(() => {
+    loadQuery.refetch();
+    transitionsQuery.refetch();
+    stateHistoryQuery.refetch();
+    activeTimersQuery.refetch();
+    financialSummaryQuery.refetch();
+  }, []);
+  const { isConnected: wsConnected, lastEvent: wsLastEvent } = useLoadSocket(loadId, {
+    onStateChange: refetchAll,
+    onTimerUpdate: refetchAll,
+    onApprovalUpdate: refetchAll,
+    enabled: !!loadId,
+  });
 
   // Build timeline data from state history
   const timelineTimestamps = useMemo(() => {
@@ -355,6 +372,12 @@ export default function LoadDetails() {
                 {load.loadNumber || `Load #${String(load.id).slice(0, 8)}`}
               </h1>
               <LoadStatusBadge state={load.status} size="md" />
+              {wsConnected && (
+                <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  LIVE
+                </span>
+              )}
             </div>
             <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
               {originCity} → {destCity}{distance > 0 ? ` · ${distance} mi` : ""}
