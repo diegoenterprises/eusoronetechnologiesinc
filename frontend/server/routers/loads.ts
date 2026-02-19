@@ -2236,7 +2236,7 @@ export const bidsRouter = router({
     .input(z.object({
       loads: z.array(z.object({
         origin: z.string(), destination: z.string(),
-        cargoType: z.string().optional(),
+        cargoType: z.enum(["general", "hazmat", "refrigerated", "oversized", "liquid", "gas", "chemicals", "petroleum"]).optional(),
         weight: z.number().optional(), rate: z.number().optional(),
         pickupDate: z.string().optional(), deliveryDate: z.string().optional(),
         specialInstructions: z.string().optional(),

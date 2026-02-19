@@ -148,6 +148,16 @@ function estimateRoadDistance(straightLine: number): number {
   return Math.round(straightLine * 1.3);
 }
 
+// Map equipment types to valid cargoType enum values
+function equipmentToCargoType(equip: string): string {
+  const map: Record<string, string> = {
+    tanker: "liquid", mc331: "gas", mc338: "gas", dry_van: "general",
+    flatbed: "general", reefer: "refrigerated", hopper: "general",
+    hazmat_van: "hazmat", food_grade: "liquid", lowboy: "oversized",
+  };
+  return map[equip] || "general";
+}
+
 function estimateTransitTime(distanceMiles: number): string {
   const drivingHours = distanceMiles / 55; // avg 55 mph
   if (drivingHours <= 4) return `${Math.ceil(drivingHours)} hours`;
@@ -449,7 +459,7 @@ export const quotesRouter = router({
         loadNumber,
         shipperId: companyId,
         status: 'posted' as any,
-        cargoType: input.equipmentType as any,
+        cargoType: equipmentToCargoType(input.equipmentType) as any,
         commodityName: input.commodity,
         weight: input.weight ? String(input.weight) : null,
         rate: String(input.pricing.total),
