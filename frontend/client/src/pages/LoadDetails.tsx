@@ -39,6 +39,7 @@ import DetentionTimer from "@/components/financial/DetentionTimer";
 import FinancialSummaryCard from "@/components/financial/FinancialSummaryCard";
 import { useLoadSocket } from "@/hooks/useLoadSocket";
 import ApprovalGateCard, { ApprovalBadge } from "@/components/load/ApprovalGateCard";
+import GuardChecklist from "@/components/load/GuardChecklist";
 
 const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
 const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
@@ -897,6 +898,11 @@ export default function LoadDetails() {
             <Scale className="w-5 h-5 mr-2" />Place Bid Now
           </Button>
         </div>
+      )}
+
+      {/* ═══════════ GUARD CHECKLIST (blocked transitions) ═══════════ */}
+      {canUpdateStatus && availableTransitions.filter((t: any) => !t.canExecute).length > 0 && (
+        <GuardChecklist blockedTransitions={availableTransitions.filter((t: any) => !t.canExecute)} />
       )}
 
       {/* ═══════════ PRIMARY ACTION BUTTON (fixed bottom) ═══════════ */}

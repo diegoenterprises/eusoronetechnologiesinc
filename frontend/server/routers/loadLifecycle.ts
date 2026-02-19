@@ -71,9 +71,11 @@ interface GuardContext {
   data?: Record<string, unknown>;
 }
 
+const IS_PROD = process.env.NODE_ENV === "production";
+
 function evaluateGuard(guard: { type: string; check: string; errorMessage: string }, ctx: GuardContext): string | null {
   switch (guard.check) {
-    // Data guards
+    // ── Data guards (always enforced) ──
     case "has_pickup_location":
       return ctx.load?.pickupLocation ? null : guard.errorMessage;
     case "has_delivery_location":
@@ -91,47 +93,113 @@ function evaluateGuard(guard: { type: string; check: string; errorMessage: strin
     case "has_seal_numbers":
       return ctx.data?.sealNumbers ? null : guard.errorMessage;
 
-    // Time guards
-    case "pickup_date_future":
-      if (!ctx.load?.pickupDate) return null; // optional
-      return new Date(ctx.load.pickupDate) > new Date() ? null : guard.errorMessage;
+    // ── Time-window guards (enforced in production) ──
+    case "pickup_date_future": {
+      if (!ctx.load?.pickupDate) return IS_PROD ? guard.errorMessage : null;
+      const pickupDate = new Date(ctx.load.pickupDate);
+      // Allow 4-hour early window before pickup date
+      const earlyWindow = new Date(pickupDate.getTime() - 4 * 3600000);
+      return new Date() >= earlyWindow ? null : guard.errorMessage;
+    }
+    case "within_pickup_window": {
+      if (!ctx.load?.pickupDate) return IS_PROD ? guard.errorMessage : null;
+      const pickupDate = new Date(ctx.load.pickupDate);
+      // Must be within ±24h of scheduled pickup
+      const diff = Math.abs(Date.now() - pickupDate.getTime());
+      return diff <= 24 * 3600000 ? null : guard.errorMessage;
+    }
+    case "within_delivery_window": {
+      if (!ctx.load?.deliveryDate) return IS_PROD ? guard.errorMessage : null;
+      const deliveryDate = new Date(ctx.load.deliveryDate);
+      // Must be within ±48h of scheduled delivery
+      const diff = Math.abs(Date.now() - deliveryDate.getTime());
+      return diff <= 48 * 3600000 ? null : guard.errorMessage;
+    }
     case "past_deadline":
     case "award_expired_2hr":
     case "pod_24h_elapsed":
       return null; // Timer-triggered: always pass when triggered by system
 
-    // Location guards
-    case "within_pickup_geofence":
-      if (!ctx.location || !ctx.targetLocation) return null; // skip if no location data
-      return calculateDistanceMiles(ctx.location.lat, ctx.location.lng, ctx.targetLocation.lat, ctx.targetLocation.lng) <= GEOFENCE_RADIUS_MILES
-        ? null : guard.errorMessage;
-    case "within_delivery_geofence":
-      if (!ctx.location || !ctx.targetLocation) return null;
-      return calculateDistanceMiles(ctx.location.lat, ctx.location.lng, ctx.targetLocation.lat, ctx.targetLocation.lng) <= GEOFENCE_RADIUS_MILES
-        ? null : guard.errorMessage;
+    // ── GPS geofence guards (enforced in production) ──
+    case "within_pickup_geofence": {
+      if (!ctx.location) return IS_PROD ? "GPS location required for pickup check-in" : null;
+      const target = ctx.targetLocation || parseLocation(ctx.load?.pickupLocation);
+      if (!target) return IS_PROD ? "Pickup location coordinates unavailable" : null;
+      const dist = calculateDistanceMiles(ctx.location.lat, ctx.location.lng, target.lat, target.lng);
+      return dist <= GEOFENCE_RADIUS_MILES ? null : `${guard.errorMessage} (${dist.toFixed(2)} mi away, must be within ${GEOFENCE_RADIUS_MILES} mi)`;
+    }
+    case "within_delivery_geofence": {
+      if (!ctx.location) return IS_PROD ? "GPS location required for delivery check-in" : null;
+      const target = ctx.targetLocation || parseLocation(ctx.load?.deliveryLocation);
+      if (!target) return IS_PROD ? "Delivery location coordinates unavailable" : null;
+      const dist = calculateDistanceMiles(ctx.location.lat, ctx.location.lng, target.lat, target.lng);
+      return dist <= GEOFENCE_RADIUS_MILES ? null : `${guard.errorMessage} (${dist.toFixed(2)} mi away, must be within ${GEOFENCE_RADIUS_MILES} mi)`;
+    }
 
-    // Document guards
+    // ── Document guards (tightened — check explicit flags or metadata) ──
     case "pre_trip_complete":
-      return ctx.complianceChecks?.vehicleInspected !== false ? null : guard.errorMessage;
+      if (ctx.complianceChecks?.vehicleInspected === true) return null;
+      if (ctx.complianceChecks?.vehicleInspected === false) return guard.errorMessage;
+      return IS_PROD ? guard.errorMessage : null;
     case "bol_signed":
-      return (ctx.complianceChecks?.bolPresent !== false || ctx.metadata?.bolDocumentId) ? null : guard.errorMessage;
+      if (ctx.metadata?.bolDocumentId) return null;
+      if (ctx.complianceChecks?.bolPresent === true) return null;
+      if (ctx.complianceChecks?.bolPresent === false) return guard.errorMessage;
+      return IS_PROD ? guard.errorMessage : null;
+    case "run_ticket_present":
+      if (ctx.metadata?.runTicketId) return null;
+      if (ctx.complianceChecks?.runTicketPresent === true) return null;
+      return IS_PROD ? guard.errorMessage : null;
     case "pod_photo_present":
-      return (ctx.metadata?.podPhotoUrl || ctx.complianceChecks?.podSigned !== false) ? null : guard.errorMessage;
+      if (ctx.metadata?.podPhotoUrl) return null;
+      if (ctx.complianceChecks?.podSigned === true) return null;
+      return IS_PROD ? guard.errorMessage : null;
     case "pod_signature_present":
-      return (ctx.metadata?.podSignatureUrl || ctx.complianceChecks?.podSigned !== false) ? null : guard.errorMessage;
+      if (ctx.metadata?.podSignatureUrl) return null;
+      if (ctx.complianceChecks?.podSigned === true) return null;
+      return IS_PROD ? guard.errorMessage : null;
 
-    // HOS guards
+    // ── HOS guard (tightened — explicit check required in production) ──
     case "driver_has_hours":
-      return ctx.complianceChecks?.hosCompliant !== false ? null : guard.errorMessage;
+      if (ctx.complianceChecks?.hosCompliant === true) return null;
+      if (ctx.complianceChecks?.hosCompliant === false) return guard.errorMessage;
+      return IS_PROD ? guard.errorMessage : null;
 
-    // Approval guards
+    // ── Hazmat endorsement guard ──
+    case "hazmat_endorsed":
+      if (ctx.complianceChecks?.hazmatEndorsed === true) return null;
+      if (ctx.complianceChecks?.hazmatEndorsed === false) return guard.errorMessage;
+      // If load is hazmat, require explicit endorsement in production
+      if (IS_PROD && (ctx.load?.hazmatClass || ctx.load?.cargoType === "hazmat")) return guard.errorMessage;
+      return null;
+
+    // ── Approval guards (handled by approval gate system) ──
     case "rate_within_limit":
     case "payment_amount_valid":
-      return null; // Approval gates handled separately
+      return null;
 
     default:
-      return null; // Unknown guards pass by default
+      // In production, unknown guards warn but pass (to avoid blocking on new guards)
+      if (IS_PROD) {
+        console.warn(`[Guard] Unknown guard check: ${guard.check} — passing by default`);
+      }
+      return null;
   }
+}
+
+/** Parse lat/lng from a location object (handles various DB shapes) */
+function parseLocation(loc: any): { lat: number; lng: number } | null {
+  if (!loc) return null;
+  if (typeof loc.lat === "number" && typeof loc.lng === "number") return loc;
+  if (typeof loc.latitude === "number" && typeof loc.longitude === "number") {
+    return { lat: loc.latitude, lng: loc.longitude };
+  }
+  // Try parsing coordinates string "lat,lng"
+  if (typeof loc.coordinates === "string") {
+    const [lat, lng] = loc.coordinates.split(",").map(Number);
+    if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+  }
+  return null;
 }
 
 // ═══════════════════════════════════════════════════════════════
