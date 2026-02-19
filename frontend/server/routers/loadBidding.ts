@@ -17,6 +17,15 @@ import {
   companies,
 } from "../../drizzle/schema";
 
+// Map platform roles to valid load_bids.bidderRole enum values
+function roleToBidderRole(role?: string): "catalyst" | "broker" | "driver" | "escort" {
+  const r = (role || "").toUpperCase();
+  if (r === "BROKER") return "broker";
+  if (r === "DRIVER") return "driver";
+  if (r === "ESCORT") return "escort";
+  return "catalyst"; // CATALYST, DISPATCH, ADMIN, SHIPPER, etc. all bid as catalyst
+}
+
 export const loadBiddingRouter = router({
   // --------------------------------------------------------------------------
   // BIDS
@@ -184,7 +193,7 @@ export const loadBiddingRouter = router({
         loadId: input.loadId,
         bidderUserId: ctx.user!.id,
         bidderCompanyId: ctx.user?.companyId || null,
-        bidderRole: (ctx.user?.role?.toLowerCase() || "catalyst") as any,
+        bidderRole: roleToBidderRole(ctx.user?.role),
         bidAmount: input.bidAmount.toString(),
         rateType: input.rateType,
         equipmentType: input.equipmentType,
@@ -242,7 +251,7 @@ export const loadBiddingRouter = router({
         loadId: input.loadId,
         bidderUserId: ctx.user!.id,
         bidderCompanyId: ctx.user?.companyId || null,
-        bidderRole: (ctx.user?.role?.toLowerCase() || "catalyst") as any,
+        bidderRole: roleToBidderRole(ctx.user?.role),
         bidAmount: input.counterAmount.toString(),
         rateType: input.rateType,
         parentBidId: input.parentBidId,
