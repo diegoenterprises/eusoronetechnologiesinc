@@ -320,6 +320,27 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "All available loads"
     },
     { 
+      icon: "Gavel", 
+      label: "My Bids", 
+      path: "/bids", 
+      badge: 0,
+      description: "Active and pending bids"
+    },
+    { 
+      icon: "Package", 
+      label: "Load Board", 
+      path: "/load-board", 
+      badge: 0,
+      description: "Full marketplace load board"
+    },
+    { 
+      icon: "CheckCircle", 
+      label: "My Loads", 
+      path: "/loads", 
+      badge: 0,
+      description: "Track posted and assigned loads"
+    },
+    { 
       icon: "MapPin", 
       label: "Track Loads", 
       path: "/fleet-tracking", 
@@ -443,6 +464,20 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/", 
       badge: 0,
       description: "Daily overview, schedule & availability"
+    },
+    { 
+      icon: "Search", 
+      label: "Find Loads", 
+      path: "/marketplace", 
+      badge: 0,
+      description: "Browse available loads to bid on"
+    },
+    { 
+      icon: "Gavel", 
+      label: "My Bids", 
+      path: "/bids", 
+      badge: 0,
+      description: "Active and pending bids"
     },
     { 
       icon: "Briefcase", 
@@ -569,6 +604,34 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Your expertise areas"
     },
     { 
+      icon: "Plus", 
+      label: "Create Load", 
+      path: "/loads/create", 
+      badge: 0,
+      description: "Post a new load to the board"
+    },
+    { 
+      icon: "Package", 
+      label: "Load Board", 
+      path: "/load-board", 
+      badge: 0,
+      description: "Full marketplace load board"
+    },
+    { 
+      icon: "Search", 
+      label: "Find Loads", 
+      path: "/marketplace", 
+      badge: 0,
+      description: "Search available loads"
+    },
+    { 
+      icon: "Gavel", 
+      label: "My Bids", 
+      path: "/bids", 
+      badge: 0,
+      description: "Active and pending bids"
+    },
+    { 
       icon: "Search", 
       label: "Matched Loads", 
       path: "/matched-loads", 
@@ -683,6 +746,20 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/", 
       badge: 0,
       description: "Escort dashboard"
+    },
+    { 
+      icon: "Search", 
+      label: "Find Loads", 
+      path: "/marketplace", 
+      badge: 0,
+      description: "Browse available escort-eligible loads"
+    },
+    { 
+      icon: "Gavel", 
+      label: "My Bids", 
+      path: "/bids", 
+      badge: 0,
+      description: "Active and pending bids"
     },
     { 
       icon: "Shield", 
@@ -833,6 +910,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/", 
       badge: 0,
       description: "Terminal operations overview"
+    },
+    { 
+      icon: "Plus", 
+      label: "Create Load", 
+      path: "/loads/create", 
+      badge: 0,
+      description: "Post new outbound shipment to load board"
     },
     { 
       icon: "Building2", 

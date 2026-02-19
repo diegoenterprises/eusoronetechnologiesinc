@@ -327,7 +327,7 @@ function Router() {
   const SAFE: UserRole[] = ["SAFETY_MANAGER","ADMIN","SUPER_ADMIN"];
   const ADMN: UserRole[] = ["ADMIN","SUPER_ADMIN"];
   const SUPR: UserRole[] = ["SUPER_ADMIN"];
-  const LOAD: UserRole[] = ["SHIPPER","CATALYST","BROKER","ADMIN","SUPER_ADMIN"];
+  const LOAD: UserRole[] = ["SHIPPER","CATALYST","BROKER","DRIVER","DISPATCH","ADMIN","SUPER_ADMIN"];
 
   // Helper: wrap page in DashboardLayout + ProtectedRoute
   const guard = (roles: UserRole[], Page: React.ReactNode) => () => (
@@ -415,7 +415,7 @@ function Router() {
       {/* SHIPPER ROUTES */}
       {/* ============================================ */}
       <Route path={"/loads"} component={guard(LOAD, <MyLoadsPage />)} />
-      <Route path={"/loads/create"} component={guard([...SHIP, "BROKER"], <LoadCreationWizard />)} />
+      <Route path={"/loads/create"} component={guard([...SHIP, "BROKER", "DISPATCH", "TERMINAL_MANAGER"], <LoadCreationWizard />)} />
       <Route path={"/loads/active"} component={guard(LOAD, <MyLoadsPage />)} />
       <Route path={"/tracking"} component={guard(LOAD, <ShipperDispatchControl />)} />
       <Route path={"/catalysts"} component={guard([...SHIP, "BROKER"], <CatalystsPage />)} />
@@ -435,8 +435,8 @@ function Router() {
       {/* ============================================ */}
       {/* CATALYST ROUTES */}
       {/* ============================================ */}
-      <Route path={"/marketplace"} component={guard([...CARR, "BROKER"], <FindLoadsPage />)} />
-      <Route path={"/bids"} component={guard(CARR, <BidManagement />)} />
+      <Route path={"/marketplace"} component={guard([...CARR, "BROKER", "DRIVER", "DISPATCH", "ESCORT"], <FindLoadsPage />)} />
+      <Route path={"/bids"} component={guard([...CARR, "BROKER", "DRIVER", "DISPATCH", "ESCORT"], <BidManagement />)} />
       <Route path={"/bids/submit/:loadId"} component={guard(CARR, <CatalystBidSubmission />)} />
       <Route path={"/bids/:bidId"} component={guard(CARR, <BidDetails />)} />
       <Route path={"/contract/sign/:loadId"} component={guard(CARR, <ContractSigning />)} />
