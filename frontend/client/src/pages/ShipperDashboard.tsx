@@ -12,11 +12,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Package, Truck, DollarSign, Clock, Plus,
-  MapPin, CheckCircle, AlertTriangle, TrendingUp
+  MapPin, CheckCircle, AlertTriangle, TrendingUp, Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
+import QuoteWidget from "@/components/QuoteWidget";
 
 export default function ShipperDashboard() {
+  const [, navigate] = useLocation();
   const statsQuery = (trpc as any).shippers.getDashboardStats.useQuery();
   const activeLoadsQuery = (trpc as any).shippers.getActiveLoads.useQuery({ limit: 5 });
   const attentionQuery = (trpc as any).shippers.getLoadsRequiringAttention.useQuery();
@@ -41,7 +44,7 @@ export default function ShipperDashboard() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Shipper Dashboard</h1>
           <p className="text-slate-400 text-sm mt-1">Manage your shipments</p>
         </div>
-        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
+        <Button onClick={() => navigate("/loads/create")} className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
           <Plus className="w-4 h-4 mr-2" />Create Load
         </Button>
       </div>
@@ -106,7 +109,7 @@ export default function ShipperDashboard() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Truck className="w-5 h-5 text-cyan-400" />Active Loads</CardTitle></CardHeader>
           <CardContent className="p-0">
@@ -160,6 +163,13 @@ export default function ShipperDashboard() {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Zap className="w-5 h-5 text-[#1473FF]" />Instant Quote</CardTitle></CardHeader>
+          <CardContent className="p-3 pt-0">
+            <QuoteWidget compact onQuoteGenerated={() => {}} />
           </CardContent>
         </Card>
       </div>
