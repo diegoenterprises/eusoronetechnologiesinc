@@ -41,6 +41,7 @@ import { useLoadSocket } from "@/hooks/useLoadSocket";
 import ApprovalGateCard, { ApprovalBadge } from "@/components/load/ApprovalGateCard";
 import GuardChecklist from "@/components/load/GuardChecklist";
 import ConvoySyncDashboard from "@/components/convoy/ConvoySyncDashboard";
+import HazmatRouteRestrictions from "@/components/HazmatRouteRestrictions";
 
 const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
 const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
@@ -687,6 +688,20 @@ export default function LoadDetails() {
               <p className="text-[10px] text-slate-400">Classification data from U.S. DOT ERG 2020 Emergency Response Guidebook</p>
             </CardContent>
           </Card>
+        )}
+
+        {/* ── Hazmat Route Restrictions ── */}
+        {isHazmatLoad && originState && destState && (
+          <HazmatRouteRestrictions
+            hazmatClass={load.hazmatClass || "3"}
+            unNumber={load.unNumber}
+            originState={originState}
+            destinationState={destState}
+            isTIH={String(load.notes || "").includes("Toxic Inhalation")}
+            isRadioactive={load.hazmatClass === "7"}
+            weight={Number(load.weight) || undefined}
+            compact
+          />
         )}
 
         {/* ── SPECTRA-MATCH™ Oil Identification ── */}
