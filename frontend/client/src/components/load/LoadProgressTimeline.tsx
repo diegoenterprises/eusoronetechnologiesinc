@@ -6,7 +6,8 @@
  */
 
 import { motion } from "framer-motion";
-import { STATE_META } from "./LoadStatusBadge";
+import { HelpCircle } from "lucide-react";
+import { STATE_META, ICON_MAP } from "./LoadStatusBadge";
 
 // Canonical display order (happy path)
 const HAPPY_PATH: string[] = [
@@ -105,7 +106,7 @@ export default function LoadProgressTimeline({
               {/* Label */}
               <div className={`pb-3 pt-1 ${isFuture ? "opacity-40" : ""}`}>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm">{meta.icon}</span>
+                  {(() => { const IC = ICON_MAP[meta.icon] || HelpCircle; return <IC size={14} />; })()}
                   <span
                     className={`text-sm font-medium ${isCurrent ? "text-white" : isCompleted ? "text-gray-300" : "text-gray-500"}`}
                   >
@@ -152,7 +153,7 @@ export default function LoadProgressTimeline({
                 animate={isCurrent ? { scale: [1, 1.1, 1] } : {}}
                 transition={isCurrent ? { duration: 2, repeat: Infinity } : {}}
               >
-                {meta.icon}
+                {(() => { const IC = ICON_MAP[meta.icon] || HelpCircle; return <IC size={14} />; })()}
               </motion.div>
               {!compact && (
                 <span

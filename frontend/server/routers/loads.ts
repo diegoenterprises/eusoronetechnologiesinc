@@ -311,7 +311,7 @@ export const loadsRouter = router({
         let result = loadList.map(l => {
           const pickup = l.pickupLocation as any || {};
           const delivery = l.deliveryLocation as any || {};
-          const progress = l.status === 'delivered' ? 100 : l.status === 'in_transit' ? 65 : l.status === 'assigned' ? 25 : l.status === 'loading' ? 35 : l.status === 'at_pickup' ? 30 : l.status === 'en_route_pickup' ? 20 : 10;
+          const progress = ({'draft':2,'posted':5,'bidding':8,'expired':0,'awarded':12,'declined':0,'lapsed':0,'accepted':15,'assigned':18,'confirmed':20,'en_route_pickup':25,'at_pickup':30,'pickup_checkin':32,'loading':38,'loading_exception':38,'loaded':45,'in_transit':55,'transit_hold':55,'transit_exception':55,'at_delivery':70,'delivery_checkin':72,'unloading':78,'unloading_exception':78,'unloaded':82,'pod_pending':88,'pod_rejected':85,'delivered':92,'invoiced':94,'disputed':90,'paid':97,'complete':100,'cancelled':0,'on_hold':0} as Record<string,number>)[l.status] ?? 10;
           return {
             id: String(l.id),
             loadNumber: l.loadNumber,
@@ -391,7 +391,7 @@ export const loadsRouter = router({
         const pickup = load.pickupLocation as any || {};
         const delivery = load.deliveryLocation as any || {};
         const current = load.currentLocation as any || {};
-        const progress = load.status === 'delivered' ? 100 : load.status === 'in_transit' ? 65 : load.status === 'assigned' ? 25 : load.status === 'loading' ? 35 : load.status === 'at_pickup' ? 30 : load.status === 'en_route_pickup' ? 20 : 10;
+        const progress = ({'draft':2,'posted':5,'bidding':8,'expired':0,'awarded':12,'declined':0,'lapsed':0,'accepted':15,'assigned':18,'confirmed':20,'en_route_pickup':25,'at_pickup':30,'pickup_checkin':32,'loading':38,'loading_exception':38,'loaded':45,'in_transit':55,'transit_hold':55,'transit_exception':55,'at_delivery':70,'delivery_checkin':72,'unloading':78,'unloading_exception':78,'unloaded':82,'pod_pending':88,'pod_rejected':85,'delivered':92,'invoiced':94,'disputed':90,'paid':97,'complete':100,'cancelled':0,'on_hold':0} as Record<string,number>)[load.status] ?? 10;
 
         const originStr = [pickup.city, pickup.state].filter(Boolean).join(', ') || 'Unknown';
         const destStr = [delivery.city, delivery.state].filter(Boolean).join(', ') || 'Unknown';
@@ -440,7 +440,16 @@ export const loadsRouter = router({
   list: protectedProcedure
     .input(
       z.object({
-        status: z.enum(["draft", "posted", "bidding", "assigned", "in_transit", "delivered", "cancelled", "disputed"]).optional(),
+        status: z.enum([
+          "draft", "posted", "bidding", "expired",
+          "awarded", "declined", "lapsed", "accepted", "assigned", "confirmed",
+          "en_route_pickup", "at_pickup", "pickup_checkin", "loading", "loading_exception", "loaded",
+          "in_transit", "transit_hold", "transit_exception",
+          "at_delivery", "delivery_checkin", "unloading", "unloading_exception", "unloaded",
+          "pod_pending", "pod_rejected", "delivered",
+          "invoiced", "disputed", "paid", "complete",
+          "cancelled", "on_hold",
+        ]).optional(),
         date: z.string().optional(),
         marketplace: z.boolean().optional(),
         limit: z.number().min(1).max(100).default(20),
@@ -475,7 +484,7 @@ export const loadsRouter = router({
         }
       } else {
         // Marketplace: only show publicly available loads
-        filters.push(sql`${loads.status} IN ('posted', 'bidding')`);
+        filters.push(sql`${loads.status} IN ('posted', 'bidding', 'awarded')`);
       }
       if (input.status) {
         filters.push(eq(loads.status, input.status as any));
