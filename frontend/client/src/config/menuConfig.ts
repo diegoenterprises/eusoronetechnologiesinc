@@ -320,7 +320,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "All available loads"
     },
     { 
-      icon: "Gavel", 
+      icon: "Scale", 
       label: "My Bids", 
       path: "/bids", 
       badge: 0,
@@ -473,7 +473,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Browse available loads to bid on"
     },
     { 
-      icon: "Gavel", 
+      icon: "Scale", 
       label: "My Bids", 
       path: "/bids", 
       badge: 0,
@@ -625,7 +625,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Search available loads"
     },
     { 
-      icon: "Gavel", 
+      icon: "Scale", 
       label: "My Bids", 
       path: "/bids", 
       badge: 0,
@@ -755,7 +755,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Browse available escort-eligible loads"
     },
     { 
-      icon: "Gavel", 
+      icon: "Scale", 
       label: "My Bids", 
       path: "/bids", 
       badge: 0,

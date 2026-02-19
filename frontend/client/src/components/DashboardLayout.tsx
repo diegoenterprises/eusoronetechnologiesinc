@@ -150,6 +150,7 @@ const iconMap: Record<string, React.ReactNode> = {
   Banknote: <Banknote size={20} />,
   UserCheck: <UserCheck size={20} />,
   Radio: <Radio size={20} />,
+  Percent: <Percent size={20} />,
 };
 
 // --- Notification Bell Component ---
