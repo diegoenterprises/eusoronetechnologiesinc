@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Search, CheckCircle, XCircle, AlertTriangle, Loader2,
-  Building2, Shield, Truck, FileText, Activity, Lock
+  Building2, Shield, Truck, FileText, Activity, Lock, FlaskConical
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -423,6 +423,11 @@ export function FMCSALookup({
             </div>
           )}
 
+          {/* HMSP Compliance Panel — Key Differentiator */}
+          {d.hazmat?.authorized && !compact && d.authority?.dotNumber && (
+            <HMSPCompliancePanel dotNumber={d.authority.dotNumber} />
+          )}
+
           {/* Insurance */}
           {d.insurance && !compact && (
             <div className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30">
@@ -442,6 +447,107 @@ export function FMCSALookup({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * HMSP Compliance Panel
+ * Auto-fires verifyHMSP when carrier has hazmat authorization.
+ * Shows cargo types, inspection history, and HMSP status.
+ * NO competitor (McLeod, DAT, Uber Freight) offers this during onboarding.
+ */
+function HMSPCompliancePanel({ dotNumber }: { dotNumber: string }) {
+  const hmspQuery = (trpc as any).fmcsa.verifyHMSP.useQuery(
+    { dotNumber },
+    { enabled: !!dotNumber && /^\d{5,8}$/.test(dotNumber) }
+  );
+
+  if (hmspQuery.isLoading) {
+    return (
+      <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center gap-3">
+        <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+        <span className="text-sm text-purple-300">Verifying HMSP permit status...</span>
+      </div>
+    );
+  }
+
+  const h = hmspQuery.data;
+  if (!h?.verified) return null;
+
+  const statusColor = h.overallStatus === "CLEAR" ? "green" : h.overallStatus === "WARNING" ? "amber" : "red";
+
+  return (
+    <div className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30">
+      <div className="flex items-center gap-2 mb-3">
+        <FlaskConical className="w-4 h-4 text-purple-400" />
+        <span className="text-sm font-semibold text-white">Hazmat Safety Permit (HMSP)</span>
+        <Badge className={`text-[10px] ml-auto ${
+          statusColor === "green" ? "bg-green-500/20 text-green-400" :
+          statusColor === "amber" ? "bg-amber-500/20 text-amber-400" :
+          "bg-red-500/20 text-red-400"
+        }`}>
+          {h.overallStatus}
+        </Badge>
+      </div>
+
+      {/* Compliance Checks */}
+      <div className="space-y-1.5 mb-3">
+        {h.checks?.map((check: any, i: number) => (
+          <div key={i} className="flex items-center justify-between p-2 rounded bg-slate-700/30">
+            <span className="text-xs text-slate-400">{check.check}</span>
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[10px] ${
+                check.status === "pass" ? "text-green-400" :
+                check.status === "warn" ? "text-amber-400" : "text-red-400"
+              }`}>
+                {check.detail?.length > 60 ? check.detail.slice(0, 57) + "..." : check.detail}
+              </span>
+              {check.status === "pass" ? <CheckCircle className="w-3 h-3 text-green-400" /> :
+               check.status === "warn" ? <AlertTriangle className="w-3 h-3 text-amber-400" /> :
+               <XCircle className="w-3 h-3 text-red-400" />}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Hazmat Inspection Stats */}
+      {h.hazmatInspections && (
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="p-2 rounded bg-slate-700/30 text-center">
+            <span className="text-slate-500 text-[10px] block">HM Inspections</span>
+            <p className="text-white font-medium text-sm">{h.hazmatInspections.total}</p>
+          </div>
+          <div className="p-2 rounded bg-slate-700/30 text-center">
+            <span className="text-slate-500 text-[10px] block">HM OOS</span>
+            <p className="text-white font-medium text-sm">{h.hazmatInspections.oos}</p>
+          </div>
+          <div className="p-2 rounded bg-slate-700/30 text-center">
+            <span className="text-slate-500 text-[10px] block">HM OOS Rate</span>
+            <p className={`font-medium text-sm ${
+              h.hazmatInspections.aboveAverage ? "text-amber-400" : "text-green-400"
+            }`}>
+              {h.hazmatInspections.oosRate}%
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Cargo Types */}
+      {h.cargoTypes?.length > 0 && (
+        <div>
+          <span className="text-slate-500 text-[10px] block mb-1">Registered Cargo Types</span>
+          <div className="flex flex-wrap gap-1">
+            {h.cargoTypes.map((ct: any, i: number) => (
+              <Badge key={i} className="bg-slate-600/30 text-slate-300 text-[10px] px-1.5 py-0">
+                {ct.description || ct.code}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p className="text-[10px] text-slate-600 mt-2">49 CFR Part 385 Subpart E</p>
     </div>
   );
 }

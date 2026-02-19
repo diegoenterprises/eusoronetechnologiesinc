@@ -18,7 +18,8 @@ import {
   Package, MapPin, Truck, DollarSign, CheckCircle,
   ArrowRight, ArrowLeft, AlertTriangle, Info, Search,
   Droplets, Wind, Box, Thermometer, Snowflake,
-  Scale, Link2, Plus, Trash2, Calculator
+  Scale, Link2, Plus, Trash2, Calculator,
+  GlassWater, MilkOff
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,8 @@ const TRAILER_TYPES = [
   { id: "bulk_hopper", name: "Dry Bulk / Hopper", desc: "Pneumatic: cement, lime, flour, plastic pellets", icon: "package", animType: "solid" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
   { id: "hazmat_van", name: "Hazmat Box / Van", desc: "Packaged hazmat: batteries, chemicals, oxidizers", icon: "alert", animType: "hazmat" as const, hazmat: true, equipment: "dry-van", maxGal: 0 },
   { id: "cryogenic", name: "Cryogenic Tank", desc: "LNG, liquid nitrogen, liquid oxygen, liquid hydrogen", icon: "snowflake", animType: "gas" as const, hazmat: true, equipment: "tanker", maxGal: 10000 },
+  { id: "food_grade_tank", name: "Food-Grade Liquid Tank", desc: "Milk, juice, cooking oil, wine, liquid sugar, edible oils", icon: "milkoff", animType: "liquid" as const, hazmat: false, equipment: "tank", maxGal: 6500 },
+  { id: "water_tank", name: "Water Tank", desc: "Potable water, non-potable water, industrial water", icon: "glasswater", animType: "liquid" as const, hazmat: false, equipment: "tank", maxGal: 5500 },
 ];
 
 const TRAILER_ICON: Record<string, React.ReactNode> = {
@@ -50,6 +53,8 @@ const TRAILER_ICON: Record<string, React.ReactNode> = {
   package: <Package className="w-8 h-8" />,
   alert: <AlertTriangle className="w-8 h-8" />,
   snowflake: <Snowflake className="w-8 h-8" />,
+  milkoff: <MilkOff className="w-8 h-8" />,
+  glasswater: <GlassWater className="w-8 h-8" />,
 };
 
 const HAZMAT_CLASSES = [
@@ -121,14 +126,37 @@ export default function LoadCreationWizard() {
     window.history.pushState({ wizardStep: next, idx }, "");
   }, []);
   const [formData, setFormData] = useState<any>({});
+
+  // Pre-fill from Hot Zones "Post Load" button query params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prefill: Record<string, any> = {};
+    if (params.get("origin")) prefill.origin = params.get("origin");
+    if (params.get("suggestedRate")) prefill.rate = params.get("suggestedRate");
+    if (params.get("equipment")) {
+      const eq = params.get("equipment") || "";
+      const match = TRAILER_TYPES.find(t => t.equipment === eq || t.id === eq);
+      if (match) { prefill.trailerType = match.id; prefill.equipment = match.equipment; }
+    }
+    if (params.get("lat")) prefill.originLat = Number(params.get("lat"));
+    if (params.get("lng")) prefill.originLng = Number(params.get("lng"));
+    if (Object.keys(prefill).length > 0) {
+      setFormData((prev: any) => ({ ...prev, ...prefill }));
+    }
+  }, []);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [unSearchQuery, setUNSearchQuery] = useState("");
   const [showUNSuggestions, setShowUNSuggestions] = useState(false);
   const [mapsLoaded, setMapsLoaded] = useState(false);
+  const [productDropdownSearch, setProductDropdownSearch] = useState("");
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const [isOtherProduct, setIsOtherProduct] = useState(false);
   const suggestRef = useRef<HTMLDivElement>(null);
   const unSuggestRef = useRef<HTMLDivElement>(null);
+  const productDropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<any>(null);
   const unDebounceRef = useRef<any>(null);
   const [rateMode, setRateMode] = useState<"total" | "perMile">("total");
@@ -160,7 +188,7 @@ export default function LoadCreationWizard() {
   const selectedTrailer = TRAILER_TYPES.find(t => t.id === formData.trailerType);
   const isHazmat = selectedTrailer?.hazmat ?? false;
   const isLiquidOrGas = selectedTrailer?.animType === "liquid" || selectedTrailer?.animType === "gas";
-  const isTanker = ["liquid_tank", "gas_tank", "cryogenic"].includes(formData.trailerType || "");
+  const isTanker = ["liquid_tank", "gas_tank", "cryogenic", "food_grade_tank", "water_tank"].includes(formData.trailerType || "");
 
   // Unit-aware max capacity per truck (must match fleet calc unitMaxMap)
   const truckUnitDefaults = useMemo(() => {
@@ -273,6 +301,8 @@ export default function LoadCreationWizard() {
       case "flatbed": return ["Pieces", "Bundles", "Linear Feet", "Tons"];
       case "bulk_hopper": return ["Cubic Yards", "Cubic Feet", "Tons"];
       case "hazmat_van": return ["Drums", "Pallets", "Units", "Cases"];
+      case "food_grade_tank": return ["Gallons", "Barrels", "Liters"];
+      case "water_tank": return ["Gallons", "Barrels", "Liters"];
       default: return ["Units", "Pallets", "Cases"];
     }
   };
@@ -287,6 +317,8 @@ export default function LoadCreationWizard() {
       case "flatbed": return "6";
       case "bulk_hopper": return "30";
       case "hazmat_van": return "48";
+      case "food_grade_tank": return "6000";
+      case "water_tank": return "5000";
       default: return "24";
     }
   };
@@ -313,6 +345,13 @@ export default function LoadCreationWizard() {
     { query: compSearchQuery, limit: 10 },
     { enabled: compSearchQuery.length >= 2, staleTime: 30000 }
   );
+
+  // Non-hazmat product dropdown — 50 products per trailer type
+  const productListQuery = (trpc as any).trailerRegulatory?.getProductsByTrailerType?.useQuery?.(
+    { trailerType: formData.trailerType || "", search: productDropdownSearch || undefined },
+    { enabled: !!formData.trailerType && !isHazmat, staleTime: 60000 }
+  ) ?? { data: null, isLoading: false };
+  const productList: Array<{ id: string; name: string; category: string; notes?: string; freightClass?: string }> = productListQuery.data?.products || [];
 
   // Detect Google Maps API loaded from index.html
   useEffect(() => {
@@ -372,6 +411,7 @@ export default function LoadCreationWizard() {
       if (suggestRef.current && !suggestRef.current.contains(e.target as Node)) setShowSuggestions(false);
       if (unSuggestRef.current && !unSuggestRef.current.contains(e.target as Node)) setShowUNSuggestions(false);
       if (compSuggestRef.current && !compSuggestRef.current.contains(e.target as Node)) setShowCompSuggestions(false);
+      if (productDropdownRef.current && !productDropdownRef.current.contains(e.target as Node)) setShowProductDropdown(false);
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -605,11 +645,90 @@ export default function LoadCreationWizard() {
                 {formData.hazmatClass && <HazmatDecalPreview hazmatClass={formData.hazmatClass} unNumber={formData.unNumber} productName={formData.productName} />}
               </>) : (
                 <div className="space-y-4">
-                  <div>
+                  <div ref={productDropdownRef} className="relative">
                     <label className="text-sm text-slate-400 mb-1 block">Product / Commodity</label>
-                    <Input value={formData.productName || ""} onChange={(e: any) => updateField("productName", e.target.value)}
-                      placeholder={selectedTrailer?.id === "dry_van" ? "e.g., Electronics, Furniture, Packaged Goods..." : selectedTrailer?.id === "reefer" ? "e.g., Frozen Foods, Pharmaceuticals, Produce..." : selectedTrailer?.id === "flatbed" ? "e.g., Steel Beams, Lumber, Heavy Equipment..." : selectedTrailer?.id === "bulk_hopper" ? "e.g., Cement, Lime, Flour, Plastic Pellets..." : "Describe your product..."}
-                      className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                    {isOtherProduct ? (
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                          <Input value={formData.productName || ""} onChange={(e: any) => updateField("productName", e.target.value)}
+                            placeholder="Type your product name..."
+                            className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10" />
+                        </div>
+                        <Button variant="outline" size="sm" className="text-slate-400 border-slate-600/50 hover:bg-slate-700/50 rounded-lg"
+                          onClick={() => { setIsOtherProduct(false); updateField("productName", ""); updateField("productId", ""); }}>
+                          Back to list
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10" />
+                        <Input
+                          value={formData.productName && !showProductDropdown ? formData.productName : productDropdownSearch}
+                          onChange={(e: any) => {
+                            setProductDropdownSearch(e.target.value);
+                            setShowProductDropdown(true);
+                            if (!e.target.value) { updateField("productName", ""); updateField("productId", ""); }
+                          }}
+                          onFocus={() => setShowProductDropdown(true)}
+                          placeholder={`Search ${productList.length || 50} products for ${selectedTrailer?.name || "this trailer"}...`}
+                          className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10" />
+                        {showProductDropdown && (
+                          <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-72 overflow-y-auto">
+                            <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50 sticky top-0 bg-slate-800">
+                              {selectedTrailer?.name} -- {productList.length} products {productDropdownSearch ? `matching "${productDropdownSearch}"` : ""}
+                            </div>
+                            {productListQuery.isLoading ? (
+                              <div className="p-3 flex items-center gap-2 text-slate-400 text-sm">
+                                <Search className="w-4 h-4 animate-spin" />Loading products...
+                              </div>
+                            ) : productList.length === 0 && productDropdownSearch ? (
+                              <div className="p-3 text-slate-500 text-sm">No products match "{productDropdownSearch}"</div>
+                            ) : null}
+                            {productList.map((p: any) => (
+                              <button key={p.id} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors"
+                                onClick={() => {
+                                  updateField("productName", p.name);
+                                  updateField("productId", p.id);
+                                  updateField("productCategory", p.category);
+                                  updateField("freightClass", p.freightClass || "");
+                                  setProductDropdownSearch("");
+                                  setShowProductDropdown(false);
+                                  if (p.notes) toast.info(p.name, { description: p.notes });
+                                }}>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-white text-sm font-medium truncate">{p.name}</p>
+                                  {p.notes && <p className="text-slate-500 text-[10px] truncate">{p.notes}</p>}
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  <Badge variant="outline" className="text-[10px] border-slate-500/30 text-slate-400">{p.category}</Badge>
+                                  {p.freightClass && <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">FC {p.freightClass}</Badge>}
+                                </div>
+                              </button>
+                            ))}
+                            <button className="w-full text-left px-3 py-2.5 hover:bg-purple-500/10 flex items-center gap-2 border-t border-slate-600/50 transition-colors"
+                              onClick={() => { setIsOtherProduct(true); setShowProductDropdown(false); setProductDropdownSearch(""); updateField("productName", ""); updateField("productId", "other"); }}>
+                              <Plus className="w-4 h-4 text-purple-400" />
+                              <span className="text-purple-400 text-sm font-medium">Other -- Type product name manually</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {formData.productName && !showProductDropdown && !isOtherProduct && (
+                      <div className="mt-2 p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                          <div>
+                            <p className="text-cyan-400 text-sm font-medium">{formData.productName}</p>
+                            <p className="text-slate-500 text-[10px]">{formData.productCategory || ""}{formData.freightClass ? ` -- Freight Class ${formData.freightClass}` : ""}</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" className="text-slate-500 hover:text-white h-6 px-2" onClick={() => { updateField("productName", ""); updateField("productId", ""); updateField("productCategory", ""); updateField("freightClass", ""); }}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   {selectedTrailer?.id === "reefer" && (
                     <div>
@@ -624,8 +743,21 @@ export default function LoadCreationWizard() {
                       </div>
                     </div>
                   )}
+                  {(selectedTrailer?.id === "food_grade_tank" || selectedTrailer?.id === "water_tank") && (
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Required Temperature Range (optional)</label>
+                      <div className="flex gap-2">
+                        <Input type="number" value={formData.tempMin || ""} onChange={(e: any) => updateField("tempMin", e.target.value)} placeholder="Min" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                        <Input type="number" value={formData.tempMax || ""} onChange={(e: any) => updateField("tempMax", e.target.value)} placeholder="Max" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                        <Select value={formData.tempUnit || "F"} onValueChange={(v: any) => updateField("tempUnit", v)}>
+                          <SelectTrigger className="w-16 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
+                          <SelectContent><SelectItem value="F">F</SelectItem><SelectItem value="C">C</SelectItem></SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
                   <div className="p-3 rounded-xl bg-slate-700/20 border border-slate-700/30">
-                    <div className="flex items-center gap-2"><Info className="w-4 h-4 text-slate-500" /><span className="text-slate-500 text-xs">Non-hazmat load -- no ERG classification required for {selectedTrailer?.name}.</span></div>
+                    <div className="flex items-center gap-2"><Info className="w-4 h-4 text-slate-500" /><span className="text-slate-500 text-xs">{selectedTrailer?.id === "food_grade_tank" ? "Food-grade liquid load -- requires food safety certification & tanker endorsement. No hazmat classification needed." : selectedTrailer?.id === "water_tank" ? "Water tanker load -- requires tanker endorsement. No hazmat classification needed." : `Non-hazmat load -- no ERG classification required for ${selectedTrailer?.name}.`}</span></div>
                   </div>
                 </div>
               )}

@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { useLocation, useParams } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
 import SpectraMatchWidget from "@/components/SpectraMatchWidget";
+import LoadStatusTimeline from "@/components/tracking/LoadStatusTimeline";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
@@ -52,23 +53,129 @@ export default function LoadDetails() {
   const isShipper = isLoadOwner || userRole === "SHIPPER";
   const canBid = !isLoadOwner && ["CATALYST", "BROKER", "DISPATCH"].includes(userRole);
   const isAssignedCatalyst = load?.catalystId && authUser?.id && Number(load.catalystId) === Number(authUser.id);
+  const isDispatchOrAdmin = ["DISPATCH", "ADMIN", "SUPER_ADMIN"].includes(userRole);
+  const canUpdateStatus = isAssignedCatalyst || isDispatchOrAdmin;
 
-  // Load status progression mutation (catalyst/driver use)
+  // Load status progression mutation (catalyst/driver/dispatch/admin use)
   const updateStatusMutation = (trpc as any).bids.updateLoadStatus.useMutation({
     onSuccess: (data: any) => { toast.success(`Load status updated to ${data.status.replace(/_/g, ' ')}`); loadQuery.refetch(); },
     onError: (err: any) => toast.error("Failed to update status", { description: err.message }),
   });
 
-  // Status progression chain per contract Articles 7, 9, 10
-  const STATUS_CHAIN: Record<string, { next: string; label: string; icon: React.ReactNode; color: string }> = {
-    assigned: { next: 'en_route_pickup', label: 'Start Route to Pickup', icon: <Truck className="w-4 h-4" />, color: 'from-blue-500 to-cyan-500' },
-    en_route_pickup: { next: 'at_pickup', label: 'Arrived at Pickup', icon: <MapPin className="w-4 h-4" />, color: 'from-blue-500 to-cyan-500' },
-    at_pickup: { next: 'loading', label: 'Start Loading', icon: <Package className="w-4 h-4" />, color: 'from-cyan-500 to-emerald-500' },
-    loading: { next: 'in_transit', label: 'Loading Complete — Depart', icon: <Navigation className="w-4 h-4" />, color: 'from-emerald-500 to-green-500' },
-    in_transit: { next: 'at_delivery', label: 'Arrived at Delivery', icon: <MapPin className="w-4 h-4" />, color: 'from-green-500 to-emerald-600' },
-    at_delivery: { next: 'unloading', label: 'Start Unloading', icon: <Package className="w-4 h-4" />, color: 'from-emerald-600 to-teal-500' },
-    unloading: { next: 'delivered', label: 'Unloading Complete — Delivered', icon: <CheckCircle className="w-4 h-4" />, color: 'from-[#1473FF] to-[#BE01FF]' },
-  };
+  // Trailer-type-aware status progression chain per contract Articles 7, 9, 10
+  // Provides specific labels, compliance hints, and procedural checklists per trailer/equipment type
+  const equipType = (load?.equipmentType || load?.cargoType || "").toLowerCase();
+  const isHazmatLoad = !!(load?.hazmatClass || load?.unNumber);
+  const isReeferLoad = equipType.includes("reefer") || equipType.includes("refrigerat");
+  const isFlatbedLoad = equipType.includes("flatbed");
+  const isTankerLoad = equipType.includes("tank") || equipType.includes("tanker");
+  const isBulkLoad = equipType.includes("hopper") || equipType.includes("bulk") || equipType.includes("pneumatic");
+  const isFoodGradeLoad = equipType.includes("food") || (load?.commodity || "").toLowerCase().match(/milk|juice|oil|wine|sugar|edible/);
+  const isWaterLoad = equipType.includes("water");
+
+  type StatusStep = { next: string; label: string; icon: React.ReactNode; color: string; hint?: string };
+  const STATUS_CHAIN: Record<string, StatusStep> = (() => {
+    // Base chain — every load type uses this structure
+    const base: Record<string, StatusStep> = {
+      assigned: { next: 'en_route_pickup', label: 'Start Route to Pickup', icon: <Truck className="w-4 h-4" />, color: 'from-blue-500 to-cyan-500' },
+      en_route_pickup: { next: 'at_pickup', label: 'Arrived at Pickup', icon: <MapPin className="w-4 h-4" />, color: 'from-blue-500 to-cyan-500' },
+      at_pickup: { next: 'loading', label: 'Start Loading', icon: <Package className="w-4 h-4" />, color: 'from-cyan-500 to-emerald-500' },
+      loading: { next: 'in_transit', label: 'Loading Complete — Depart', icon: <Navigation className="w-4 h-4" />, color: 'from-emerald-500 to-green-500' },
+      in_transit: { next: 'at_delivery', label: 'Arrived at Delivery', icon: <MapPin className="w-4 h-4" />, color: 'from-green-500 to-emerald-600' },
+      at_delivery: { next: 'unloading', label: 'Start Unloading', icon: <Package className="w-4 h-4" />, color: 'from-emerald-600 to-teal-500' },
+      unloading: { next: 'delivered', label: 'Unloading Complete — Delivered', icon: <CheckCircle className="w-4 h-4" />, color: 'from-[#1473FF] to-[#BE01FF]' },
+    };
+
+    // Hazmat overlay (49 CFR 172-177)
+    if (isHazmatLoad) {
+      base.assigned.hint = "Verify placards, shipping papers (49 CFR 172.200), tanker endorsement";
+      base.at_pickup.label = "Begin Hazmat Loading";
+      base.at_pickup.hint = "Confirm placard placement, seal integrity, emergency info packet";
+      base.loading.label = "Loading Complete — Verify Seals & Depart";
+      base.loading.hint = "Confirm seal numbers, check for leaks, verify shipping papers match cargo";
+      base.in_transit.hint = "Monitor for spills/leaks, keep shipping papers accessible, avoid tunnels/restrictions";
+      base.at_delivery.hint = "Present shipping papers, confirm consignee identity";
+      base.unloading.label = "Hazmat Unloading Complete — Delivered";
+      base.unloading.hint = "Verify all product discharged, remove placards if empty, retain shipping papers";
+    }
+
+    // Reefer overlay (FSMA 21 CFR 1.908)
+    if (isReeferLoad) {
+      base.assigned.hint = "Pre-cool unit to required temperature before loading";
+      base.at_pickup.label = "Begin Temperature-Controlled Loading";
+      base.at_pickup.hint = "Verify reefer temp is within range, record pre-load temp reading (FSMA)";
+      base.loading.label = "Loading Complete — Confirm Temp & Depart";
+      base.loading.hint = "Record post-load temp, verify door seals, activate continuous temp monitoring";
+      base.in_transit.hint = "Monitor reefer temp continuously, log any alarm events (FSMA 21 CFR 1.908)";
+      base.at_delivery.hint = "Record arrival temp before opening doors, present temp log to consignee";
+      base.unloading.label = "Reefer Unloading Complete — Delivered";
+      base.unloading.hint = "Record final temp, retain temp log for 2 years (FSMA compliance)";
+    }
+
+    // Flatbed overlay (49 CFR 393.100-136)
+    if (isFlatbedLoad) {
+      base.assigned.hint = "Inspect chains, binders, straps, and tarps before departing";
+      base.at_pickup.label = "Begin Flatbed Loading";
+      base.at_pickup.hint = "Position cargo per 49 CFR 393.100, ensure proper blocking and bracing";
+      base.loading.label = "Securement Complete — Depart";
+      base.loading.hint = "Verify tiedowns meet 49 CFR 393.106 (1 per 10ft + 2 minimum), tarp if required";
+      base.in_transit.hint = "Re-check securement within first 50 miles, then every 150 miles or 3 hours";
+      base.at_delivery.hint = "Do not remove securement until receiver is ready to unload";
+      base.unloading.label = "Flatbed Unloading Complete — Delivered";
+    }
+
+    // Tanker overlay (liquid tank, cryogenic, food-grade, water)
+    if (isTankerLoad) {
+      base.assigned.hint = "Verify tanker endorsement, inspect valves, gaskets, and manhole covers";
+      base.at_pickup.label = "Begin Tanker Loading";
+      base.at_pickup.hint = "Ground trailer, connect loading arms, open valves, verify compartment sequence";
+      base.loading.label = "Loading Complete — Seal & Depart";
+      base.loading.hint = "Record gauge readings, seal all valves, verify ullage, check for leaks";
+      base.in_transit.hint = "Monitor for surge, maintain safe speed on curves, check valve seals at stops";
+      base.at_delivery.label = "Arrived at Delivery";
+      base.at_delivery.hint = "Ground trailer, connect unloading lines, confirm receiving tank compatibility";
+      base.unloading.label = "Tanker Discharge Complete — Delivered";
+      base.unloading.hint = "Verify all product discharged, drain lines, close valves, record final gauge";
+    }
+
+    // Food-grade overlay (FSMA, PMO, 3-A Sanitary)
+    if (isFoodGradeLoad) {
+      base.assigned.hint = "Verify wash ticket from last 3 loads, confirm food-grade certification";
+      base.at_pickup.label = "Begin Food-Grade Loading";
+      base.at_pickup.hint = "Present wash ticket to shipper, verify no prohibited prior cargo (FSMA)";
+      base.loading.label = "Loading Complete — Seal & Depart";
+      base.loading.hint = "Apply tamper-evident seals, record seal numbers, temp if applicable";
+      base.in_transit.hint = "Maintain product integrity, no stops at non-food facilities (FSMA)";
+      base.unloading.label = "Food-Grade Discharge Complete — Delivered";
+      base.unloading.hint = "Verify product quality at delivery, retain wash ticket + seal records";
+    }
+
+    // Water tank overlay (EPA Safe Drinking Water Act)
+    if (isWaterLoad) {
+      base.assigned.hint = "Verify tank is NSF 61 certified for potable water, inspect for contamination";
+      base.at_pickup.label = "Begin Water Loading";
+      base.at_pickup.hint = "Verify water source quality, connect sanitary hoses, record chlorine levels if potable";
+      base.loading.label = "Loading Complete — Seal & Depart";
+      base.loading.hint = "Seal fill ports, record volume and water quality readings";
+      base.in_transit.hint = "Protect from contamination, no mixing with non-potable equipment";
+      base.unloading.label = "Water Discharge Complete — Delivered";
+      base.unloading.hint = "Verify delivery volume, record final quality readings";
+    }
+
+    // Bulk/Hopper overlay (pneumatic)
+    if (isBulkLoad) {
+      base.assigned.hint = "Inspect pneumatic lines, pressure relief valves, hopper gates";
+      base.at_pickup.label = "Begin Pneumatic Loading";
+      base.at_pickup.hint = "Position under silo/hopper, connect pneumatic lines, verify product grade";
+      base.loading.label = "Loading Complete — Seal & Depart";
+      base.loading.hint = "Verify weight (80,000 lb GVW max), seal hopper gates, check dust containment";
+      base.in_transit.hint = "Monitor for shifting load, maintain pressure, weigh at certified scale";
+      base.unloading.label = "Pneumatic Discharge Complete — Delivered";
+      base.unloading.hint = "Verify complete discharge, clean residual product, close all valves";
+    }
+
+    return base;
+  })();
 
   // Fetch bids for this load (shipper view)
   const bidsQuery = (trpc as any).bids.getByLoad.useQuery(
@@ -504,8 +611,48 @@ export default function LoadDetails() {
         </Card>
       )}
 
-      {/* ── Catalyst Load Status Progression (per Contract Articles 7, 9, 10) ── */}
-      {isAssignedCatalyst && STATUS_CHAIN[load.status] && (
+      {/* ── Read-Only Status Chain for Shipper/Broker (see where load is in lifecycle) ── */}
+      {!canUpdateStatus && ['assigned','en_route_pickup','at_pickup','loading','in_transit','at_delivery','unloading'].includes(load.status) && (
+        <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+          <div className={cn("bg-gradient-to-r px-6 py-4", isLight ? "from-blue-50 to-purple-50" : "from-[#1473FF]/10 to-[#BE01FF]/10")}>
+            <div className="flex items-center gap-2">
+              <Navigation className="w-5 h-5 text-blue-500" />
+              <p className={cn("font-bold", isLight ? "text-slate-800" : "text-white")}>Load Progress</p>
+            </div>
+            <p className={cn("text-xs mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Current lifecycle stage of this shipment</p>
+          </div>
+          <CardContent className="p-6">
+            <div className="flex flex-wrap items-center gap-2">
+              {['assigned', 'en_route_pickup', 'at_pickup', 'loading', 'in_transit', 'at_delivery', 'unloading', 'delivered'].map((s, idx, arr) => {
+                const isCurrent = load.status === s;
+                const isPast = arr.indexOf(load.status) > idx;
+                return (
+                  <React.Fragment key={s}>
+                    <div className={cn(
+                      "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                      isCurrent ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent" :
+                      isPast ? (isLight ? "bg-green-50 text-green-600 border-green-200" : "bg-green-500/15 text-green-400 border-green-500/30") :
+                      isLight ? "bg-slate-100 text-slate-400 border-slate-200" : "bg-slate-800 text-slate-500 border-slate-700"
+                    )}>
+                      {s.replace(/_/g, ' ')}
+                    </div>
+                    {idx < arr.length - 1 && <span className="text-slate-400 text-xs">&rarr;</span>}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+            {STATUS_CHAIN[load.status]?.hint && (
+              <div className={cn("flex items-start gap-2.5 p-3 rounded-xl mt-4 border", isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/10 border-blue-500/20")}>
+                <Shield className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                <p className={cn("text-xs leading-relaxed", isLight ? "text-blue-700" : "text-blue-300/90")}>{STATUS_CHAIN[load.status].hint}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Load Status Progression (catalyst/dispatch/admin can update) ── */}
+      {canUpdateStatus && STATUS_CHAIN[load.status] && (
         <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-slate-200 shadow-md" : "bg-slate-800/60 border-slate-700/50")}>
           <div className={cn("bg-gradient-to-r px-6 py-4", isLight ? "from-blue-50 to-purple-50" : "from-[#1473FF]/10 to-[#BE01FF]/10")}>
             <div className="flex items-center gap-2">
@@ -535,6 +682,13 @@ export default function LoadDetails() {
                 );
               })}
             </div>
+            {/* Compliance hint — trailer-type-specific procedural guidance */}
+            {STATUS_CHAIN[load.status]?.hint && (
+              <div className={cn("flex items-start gap-2.5 p-3 rounded-xl mb-4 border", isLight ? "bg-amber-50 border-amber-200" : "bg-amber-500/10 border-amber-500/20")}>
+                <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className={cn("text-xs leading-relaxed", isLight ? "text-amber-700" : "text-amber-300/90")}>{STATUS_CHAIN[load.status].hint}</p>
+              </div>
+            )}
             <Button
               className={cn("w-full rounded-xl font-bold h-12 text-base bg-gradient-to-r text-white", STATUS_CHAIN[load.status].color)}
               onClick={() => updateStatusMutation.mutate({ loadId: String(load.id), status: STATUS_CHAIN[load.status].next })}
@@ -547,8 +701,13 @@ export default function LoadDetails() {
         </Card>
       )}
 
+      {/* ── Geotag Event Timeline (visible to ALL user types) ── */}
+      {load?.id && ['assigned','en_route_pickup','at_pickup','loading','in_transit','at_delivery','unloading','delivered'].includes(load.status) && (
+        <LoadStatusTimeline loadId={Number(load.id)} />
+      )}
+
       {/* ── Load Delivered Confirmation ── */}
-      {isAssignedCatalyst && load.status === 'delivered' && (
+      {canUpdateStatus && load.status === 'delivered' && (
         <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-green-50 border-green-200" : "bg-green-500/10 border-green-500/30")}>
           <CardContent className="p-6 text-center">
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />

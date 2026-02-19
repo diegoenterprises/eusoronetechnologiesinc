@@ -30,16 +30,7 @@ type ScheduleItem = {
   loadNumber?: string;
 };
 
-const SAMPLE_SCHEDULE: ScheduleItem[] = [
-  { id: "s1", time: "06:00", title: "Pre-Trip Inspection", location: "Yard — Houston, TX", type: "inspection", status: "completed" },
-  { id: "s2", time: "07:00", title: "Pickup — Crude Oil", location: "Permian Basin Terminal, Midland, TX", type: "pickup", status: "completed", loadNumber: "LD-4521" },
-  { id: "s3", time: "10:30", title: "30-Min Break", location: "Rest Area — I-20 MM 312", type: "break", status: "completed" },
-  { id: "s4", time: "11:00", title: "Fuel Stop", location: "Pilot Travel Center, Abilene, TX", type: "fuel", status: "current" },
-  { id: "s5", time: "14:00", title: "Delivery — Crude Oil", location: "Refinery Gate 3, Corpus Christi, TX", type: "delivery", status: "upcoming", loadNumber: "LD-4521" },
-  { id: "s6", time: "15:30", title: "Pickup — Diesel Fuel", location: "Refinery Loading Rack, Corpus Christi, TX", type: "pickup", status: "upcoming", loadNumber: "LD-4522" },
-  { id: "s7", time: "19:00", title: "Delivery — Diesel", location: "Fuel Depot, San Antonio, TX", type: "delivery", status: "upcoming", loadNumber: "LD-4522" },
-  { id: "s8", time: "20:00", title: "End of Day", location: "Overnight — San Antonio, TX", type: "break", status: "upcoming" },
-];
+// Schedule is now built from real load data — no hardcoded items
 
 const TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
   pickup: { icon: <Package className="w-4 h-4" />, color: "text-blue-500", bg: "bg-blue-500/15" },
@@ -54,13 +45,43 @@ export default function TodaySchedule() {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
-  const loadsQuery = (trpc as any).loads?.list?.useQuery?.({ limit: 5 }) || { data: [], isLoading: false, refetch: () => {} };
-  const isLoading = loadsQuery.isLoading;
+  // Real data from driver's current load and HOS
+  const currentLoadQuery = trpc.drivers.getCurrentLoad.useQuery();
+  const hosQuery = trpc.drivers.getHOSStatus.useQuery();
+  const load = currentLoadQuery.data;
+  const hos = hosQuery.data;
+  const isLoading = currentLoadQuery.isLoading;
 
-  const schedule = SAMPLE_SCHEDULE;
+  // Build schedule dynamically from real load data
+  const schedule: ScheduleItem[] = React.useMemo(() => {
+    const items: ScheduleItem[] = [];
+    // Pre-trip inspection is always first
+    items.push({ id: "pre-trip", time: "Start", title: "Pre-Trip Inspection", location: "Current Location", type: "inspection", status: load ? "completed" : "upcoming" });
+
+    if (load) {
+      const pickup = load.origin;
+      const delivery = load.destination;
+      const isDeliveryPhase = ['in_transit', 'at_delivery', 'unloading', 'delivered', 'en_route_delivery'].includes(load.status);
+      const isPickupDone = ['loading', 'in_transit', 'at_delivery', 'unloading', 'delivered', 'en_route_delivery'].includes(load.status);
+
+      items.push({
+        id: `pickup-${load.id}`, time: load.pickupDate ? new Date(load.pickupDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--',
+        title: `Pickup — ${load.commodity}`, location: `${pickup.name || pickup.city}, ${pickup.state}`,
+        type: "pickup", status: isPickupDone ? "completed" : load.status === 'at_pickup' ? "current" : "upcoming", loadNumber: load.loadNumber,
+      });
+
+      items.push({
+        id: `delivery-${load.id}`, time: load.deliveryDate ? new Date(load.deliveryDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--',
+        title: `Delivery — ${load.commodity}`, location: `${delivery.name || delivery.city}, ${delivery.state}`,
+        type: "delivery", status: load.status === 'delivered' ? "completed" : isDeliveryPhase ? "current" : "upcoming", loadNumber: load.loadNumber,
+      });
+    }
+    return items;
+  }, [load]);
+
   const completed = schedule.filter((s) => s.status === "completed").length;
   const currentItem = schedule.find((s) => s.status === "current");
-  const hoursRemaining = 6.5;
+  const hoursRemaining = hos?.hoursAvailable?.driving || hos?.driving || 11;
 
   const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
 
@@ -76,7 +97,7 @@ export default function TodaySchedule() {
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
           </p>
         </div>
-        <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => loadsQuery.refetch?.()}>
+        <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => currentLoadQuery.refetch?.()}>
           <RefreshCw className="w-4 h-4" />
         </Button>
       </div>

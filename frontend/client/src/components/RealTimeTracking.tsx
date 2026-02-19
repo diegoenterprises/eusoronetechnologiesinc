@@ -13,6 +13,7 @@
 
 import { useEffect, useState } from "react";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -87,53 +88,53 @@ export default function RealTimeTracking({
   const [isTracking, setIsTracking] = useState(true);
   const { isConnected, send, ws } = useWebSocket(`tracking:${loadId}`);
 
-  // Initialize with mock data and subscribe to updates
+  // Initialize with real load data and subscribe to WebSocket updates
+  const loadQuery = trpc.drivers.getCurrentLoad.useQuery(undefined, { enabled: !!loadId });
+  const load = loadQuery.data;
+
   useEffect(() => {
-    const mockData: TrackingData = {
+    // Build tracking data from real load, with GPS location from WebSocket
+    const pickup = load?.origin || { city: '', state: '' };
+    const delivery = load?.destination || { city: '', state: '' };
+    const totalMiles = load?.miles || 0;
+
+    const initialData: TrackingData = {
       loadId,
-      driverId: "DRV-001",
+      driverId: "",
       currentLocation: {
-        id: "LOC-001",
-        latitude: 40.7128,
-        longitude: -74.006,
-        speed: 65,
-        heading: 45,
+        id: "LOC-PENDING",
+        latitude: 0,
+        longitude: 0,
+        speed: 0,
+        heading: 0,
         timestamp: new Date(),
-        accuracy: 5,
+        accuracy: 0,
       },
       destination: {
-        latitude: 34.0522,
-        longitude: -118.2437,
-        address: "123 Main St, Los Angeles, CA 90001",
+        latitude: 0,
+        longitude: 0,
+        address: `${delivery.city}, ${delivery.state}`,
       },
       origin: {
-        latitude: 40.7128,
-        longitude: -74.006,
-        address: "456 Park Ave, New York, NY 10022",
+        latitude: 0,
+        longitude: 0,
+        address: `${pickup.city}, ${pickup.state}`,
       },
-      distanceTraveled: 1250,
-      distanceRemaining: 3750,
-      estimatedArrival: new Date(Date.now() + 48 * 60 * 60 * 1000),
-      status: "in_transit",
-      complianceAlerts: [
-        {
-          id: "ALERT-001",
-          type: "speed_violation",
-          severity: "warning",
-          message: "Speed exceeded 65 mph for 5 minutes",
-          timestamp: new Date(Date.now() - 10 * 60 * 1000),
-        },
-      ],
-      driverName: "John Smith",
+      distanceTraveled: 0,
+      distanceRemaining: totalMiles,
+      estimatedArrival: load?.deliveryDate ? new Date(load.deliveryDate) : new Date(Date.now() + 24 * 60 * 60 * 1000),
+      status: (load?.status as any) || "in_transit",
+      complianceAlerts: [],
+      driverName: "",
       vehicleInfo: {
-        vin: "WBA1234567890ABCD",
-        licensePlate: "CA-12345",
-        make: "Freightliner",
-        model: "Cascadia",
+        vin: "",
+        licensePlate: "",
+        make: "",
+        model: "",
       },
     };
 
-    setTrackingData(mockData);
+    setTrackingData(initialData);
 
     if (ws && isConnected) {
       send({

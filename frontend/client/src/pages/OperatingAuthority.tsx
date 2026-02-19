@@ -29,9 +29,10 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; ico
 };
 
 const TRAILER_TYPES = [
-  "Dry Van", "Flatbed", "Refrigerated", "Tanker", "Lowboy", "Step Deck",
-  "Double Drop", "Conestoga", "Hopper", "Dump", "Car Hauler", "Livestock",
-  "Oversized", "Intermodal", "Pneumatic", "Side Kit", "Curtain Side",
+  "Dry Van", "Flatbed", "Refrigerated", "Tanker (Hazmat)", "Food-Grade Tank", "Water Tank",
+  "Lowboy", "Step Deck", "Double Drop", "Conestoga", "Hopper", "Dump",
+  "Car Hauler", "Livestock", "Oversized", "Intermodal", "Pneumatic",
+  "Side Kit", "Curtain Side", "Cryogenic Tank",
 ];
 
 const VEHICLE_TYPES = [

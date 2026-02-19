@@ -210,6 +210,7 @@ import SpectraMatch from "./pages/SpectraMatch";
 import EusoTicket from "./pages/EusoTicket";
 import LocationIntelligence from "./pages/LocationIntelligence";
 import AdminRSSFeeds from "./pages/AdminRSSFeeds";
+import SyncDashboard from "./pages/admin/SyncDashboard";
 import AdminPlatformFees from "./pages/AdminPlatformFees";
 import Missions from "./pages/Missions";
 import DriverTracking from "./pages/DriverTracking";
@@ -668,6 +669,7 @@ function Router() {
       <Route path={"/admin/rates"} component={guard(ADMN, <RateManagement />)} />
       <Route path={"/admin/api"} component={guard(ADMN, <APIManagement />)} />
       <Route path={"/admin/integrations"} component={guard(ADMN, <IntegrationSettings />)} />
+      <Route path={"/admin/sync"} component={guard(ADMN, <SyncDashboard />)} />
 
       {/* ============================================ */}
       {/* SUPER ADMIN ROUTES */}

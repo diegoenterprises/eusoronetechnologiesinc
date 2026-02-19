@@ -135,14 +135,16 @@ const initialFormData: CatalystFormData = {
 };
 
 const EQUIPMENT_TYPES = [
-  { value: "mc306", label: "MC-306 (Gasoline Tanker)" },
-  { value: "mc307", label: "MC-307 (Chemical Tanker)" },
-  { value: "mc312", label: "MC-312 (Corrosive Tanker)" },
-  { value: "mc331", label: "MC-331 (Pressure Tank)" },
-  { value: "mc338", label: "MC-338 (Cryogenic)" },
-  { value: "dryvan", label: "Dry Van" },
-  { value: "flatbed", label: "Flatbed" },
-  { value: "reefer", label: "Refrigerated" },
+  { value: "liquid_tank", label: "Liquid Tank Trailer (MC-306/DOT-406)", hazmat: true },
+  { value: "gas_tank", label: "Pressurized Gas Tank (MC-331)", hazmat: true },
+  { value: "dry_van", label: "Dry Van", hazmat: false },
+  { value: "reefer", label: "Refrigerated (Reefer)", hazmat: false },
+  { value: "flatbed", label: "Flatbed", hazmat: false },
+  { value: "bulk_hopper", label: "Dry Bulk / Hopper", hazmat: false },
+  { value: "hazmat_van", label: "Hazmat Box / Van", hazmat: true },
+  { value: "cryogenic", label: "Cryogenic Tank (MC-338)", hazmat: true },
+  { value: "food_grade_tank", label: "Food-Grade Liquid Tank (Milk, Juice, Oil)", hazmat: false },
+  { value: "water_tank", label: "Water Tank (Potable / Non-Potable)", hazmat: false },
 ];
 
 export default function RegisterCatalyst() {

@@ -6,16 +6,17 @@
  * Theme-aware | Brand gradient | Oil & gas industry focused
  */
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 import {
   MapPin, Clock, CheckCircle, AlertTriangle, Truck,
-  Navigation, ArrowRight, Shield, RefreshCw, Phone
+  Navigation, ArrowRight, Shield, RefreshCw, Phone, Loader2
 } from "lucide-react";
 
 type DockStatus = "assigned" | "waiting" | "loading" | "complete";
@@ -33,26 +34,47 @@ type DockInfo = {
   contactPhone: string;
 };
 
-const SAMPLE_DOCK: DockInfo = {
-  dockNumber: "D-07",
-  bay: "Bay 3 — East Rack",
-  facility: "Permian Basin Terminal",
-  status: "assigned",
-  estimatedWait: 15,
-  loadNumber: "LD-4521",
-  product: "Crude Oil — UN1267",
-  instructions: [
-    "Proceed to Bay 3 on the east loading rack",
-    "Position vehicle with driver side facing the control booth",
-    "Set parking brake and chock wheels before disconnecting",
-    "Ground vehicle before connecting loading arms",
-    "Report to rack operator at control booth before loading begins",
-    "Stay within 25 feet of vehicle during entire loading operation",
-    "No cell phone use in loading zone — two-way radio only",
-  ],
-  contactName: "Rack Operator — Station 3",
-  contactPhone: "432-555-0187",
-};
+// Default instructions by cargo type
+const HAZMAT_INSTRUCTIONS = [
+  "Proceed to assigned bay on the loading rack",
+  "Position vehicle with driver side facing the control booth",
+  "Set parking brake and chock wheels before disconnecting",
+  "Ground vehicle before connecting loading arms",
+  "Report to rack operator at control booth before loading begins",
+  "Stay within 25 feet of vehicle during entire loading operation",
+  "No cell phone use in loading zone — two-way radio only",
+];
+const FOOD_GRADE_INSTRUCTIONS = [
+  "Proceed to assigned bay — food-grade loading area",
+  "Present tank washout certificate to operator",
+  "Set parking brake and chock wheels",
+  "Connect sanitized hose to fill port — inspect for contaminants",
+  "Verify product temperature is within acceptable range",
+  "Stay within 25 feet of vehicle during loading",
+  "Apply tamper-evident seal after loading is complete",
+];
+const WATER_INSTRUCTIONS = [
+  "Proceed to assigned fill station",
+  "Set parking brake and chock wheels",
+  "Connect fill hose to tank inlet",
+  "Monitor fill level — do not overfill",
+  "Seal all ports and verify no leaks after filling",
+];
+const GENERAL_INSTRUCTIONS = [
+  "Proceed to assigned dock/bay",
+  "Set parking brake and chock wheels",
+  "Open trailer as directed by dock staff",
+  "Remain available during loading/unloading",
+  "Verify seals and sign paperwork before departure",
+];
+
+function getInstructions(cargoType: string | null): string[] {
+  if (!cargoType) return GENERAL_INSTRUCTIONS;
+  if (['liquid', 'petroleum', 'chemicals', 'hazmat', 'gas'].includes(cargoType)) return HAZMAT_INSTRUCTIONS;
+  if (cargoType === 'food_grade') return FOOD_GRADE_INSTRUCTIONS;
+  if (cargoType === 'water') return WATER_INSTRUCTIONS;
+  return GENERAL_INSTRUCTIONS;
+}
 
 const STATUS_CFG: Record<DockStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   assigned: { label: "Assigned", color: "text-blue-500", bg: "bg-blue-500/15", icon: <MapPin className="w-5 h-5" /> },
@@ -64,20 +86,64 @@ const STATUS_CFG: Record<DockStatus, { label: string; color: string; bg: string;
 export default function DockAssignment() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  const [dock, setDock] = useState<DockInfo>(SAMPLE_DOCK);
   const [acknowledged, setAcknowledged] = useState(false);
 
-  const st = STATUS_CFG[dock.status];
+  // Real data from driver's current load
+  const currentLoadQuery = trpc.drivers.getCurrentLoad.useQuery();
+  const load = currentLoadQuery.data;
+
+  // Build dock info from load data
+  const dock: DockInfo = useMemo(() => {
+    if (!load) return {
+      dockNumber: '--', bay: '--', facility: 'Unknown', status: 'assigned' as DockStatus,
+      estimatedWait: 0, loadNumber: '--', product: '--',
+      instructions: GENERAL_INSTRUCTIONS, contactName: 'Facility Contact', contactPhone: '',
+    };
+    const pickup = load.origin;
+    return {
+      dockNumber: 'TBD',
+      bay: 'Assigned at arrival',
+      facility: pickup.name || `${pickup.city}, ${pickup.state}`,
+      status: 'assigned' as DockStatus,
+      estimatedWait: 15,
+      loadNumber: load.loadNumber,
+      product: `${load.commodity}${load.hazmatClass ? ` — Class ${load.hazmatClass}` : ''}`,
+      instructions: getInstructions(load.cargoType || null),
+      contactName: 'Facility Contact',
+      contactPhone: '',
+    };
+  }, [load]);
+
+  const [dockStatus, setDockStatus] = useState<DockStatus>('assigned');
+  const st = STATUS_CFG[dockStatus];
   const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
 
   const advanceStatus = () => {
     const order: DockStatus[] = ["assigned", "waiting", "loading", "complete"];
-    const idx = order.indexOf(dock.status);
+    const idx = order.indexOf(dockStatus);
     if (idx < order.length - 1) {
-      setDock((prev) => ({ ...prev, status: order[idx + 1] }));
+      setDockStatus(order[idx + 1]);
       toast.success(`Status: ${STATUS_CFG[order[idx + 1]].label}`);
     }
   };
+
+  if (currentLoadQuery.isLoading) {
+    return (
+      <div className="p-8 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <span className="ml-3 text-slate-400">Loading dock assignment...</span>
+      </div>
+    );
+  }
+
+  if (!load) {
+    return (
+      <div className="p-8 text-center">
+        <MapPin className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+        <p className="text-slate-400">No active load — dock assignment not available</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[900px] mx-auto">
@@ -163,7 +229,7 @@ export default function DockAssignment() {
         {(["assigned", "waiting", "loading", "complete"] as DockStatus[]).map((s, i) => {
           const cfg = STATUS_CFG[s];
           const order: DockStatus[] = ["assigned", "waiting", "loading", "complete"];
-          const currentIdx = order.indexOf(dock.status);
+          const currentIdx = order.indexOf(dockStatus);
           const isActive = i <= currentIdx;
           return (
             <React.Fragment key={s}>
@@ -180,14 +246,14 @@ export default function DockAssignment() {
       </div>
 
       {/* Action button */}
-      {dock.status !== "complete" ? (
+      {dockStatus !== "complete" ? (
         <Button
           className="w-full h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl text-base font-medium shadow-lg shadow-purple-500/20"
           onClick={advanceStatus}
         >
-          {dock.status === "assigned" && "Confirm Arrival at Dock"}
-          {dock.status === "waiting" && "Loading Started"}
-          {dock.status === "loading" && "Loading Complete"}
+          {dockStatus === "assigned" && "Confirm Arrival at Dock"}
+          {dockStatus === "waiting" && "Loading Started"}
+          {dockStatus === "loading" && "Loading Complete"}
         </Button>
       ) : (
         <div className={cn("flex items-center gap-3 p-4 rounded-xl", isLight ? "bg-green-50 border border-green-200" : "bg-green-500/10 border border-green-500/20")}>

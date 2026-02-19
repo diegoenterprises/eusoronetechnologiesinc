@@ -283,6 +283,74 @@ async function startServer() {
       } catch {}
     }, 5000);
 
+    // Auto-seed Document Center types & requirements on startup
+    setTimeout(async () => {
+      try {
+        const { getDb } = await import("../db");
+        const db = await getDb();
+        if (db) {
+          const { documentTypes, documentRequirements } = await import("../../drizzle/schema");
+          const { documentTypesSeed } = await import("../seeds/documentTypesSeed");
+          const { documentRequirementsSeed } = await import("../seeds/documentRequirementsSeed");
+
+          // Always upsert document types so download/source URLs stay current
+          console.log("[DocumentCenter] Upserting document types...");
+          let tc = 0;
+          for (const seed of documentTypesSeed) {
+            try {
+              await db.insert(documentTypes).values({
+                id: seed.id, category: seed.category, name: seed.name,
+                shortName: seed.shortName || null, description: seed.description || null,
+                formNumber: seed.formNumber || null, issuingAuthority: seed.issuingAuthority || null,
+                regulatoryReference: seed.regulatoryReference || null,
+                sourceUrl: seed.sourceUrl || null, downloadUrl: seed.downloadUrl || null,
+                instructionsUrl: (seed as any).instructionsUrl || null,
+                hasExpiration: seed.hasExpiration ?? false,
+                typicalValidityDays: seed.typicalValidityDays || null,
+                expirationWarningDays: seed.expirationWarningDays || 30,
+                verificationLevel: seed.verificationLevel || "L1_SYSTEM",
+                requiresSignature: seed.requiresSignature ?? false,
+                ocrEnabled: seed.ocrEnabled ?? true,
+                ocrFieldMappings: seed.ocrFieldMappings || null,
+                isStateSpecific: seed.isStateSpecific ?? false,
+                applicableStates: (seed as any).applicableStates || null,
+                sortOrder: seed.sortOrder || 100, isActive: true,
+              }).onDuplicateKeyUpdate({ set: { downloadUrl: seed.downloadUrl || null, sourceUrl: seed.sourceUrl || null, instructionsUrl: (seed as any).instructionsUrl || null, name: seed.name, isActive: true } });
+              tc++;
+            } catch {}
+          }
+          console.log(`[DocumentCenter] Upserted ${tc} document types`);
+
+          // Always re-seed requirements (roles may have changed: CARRIER→CATALYST, DISPATCHER→DISPATCH)
+          // Delete stale rows with old role names, then re-insert all
+          const { sql: rawSql } = await import("drizzle-orm");
+          try { await db.execute(rawSql`DELETE FROM document_requirements WHERE required_for_role IN ('CARRIER','DISPATCHER','FLEET_MANAGER','FACTORING_COMPANY')`); } catch {}
+          console.log("[DocumentCenter] Seeding document requirements...");
+          let rc = 0;
+          for (const seed of documentRequirementsSeed) {
+            try {
+              await db.insert(documentRequirements).values({
+                documentTypeId: seed.documentTypeId,
+                requiredForRole: seed.requiredForRole as any,
+                requiredForEmploymentType: (seed as any).requiredForEmploymentType || null,
+                isRequired: seed.isRequired ?? true,
+                isBlocking: seed.isBlocking ?? true,
+                priority: seed.priority || 1,
+                conditionType: (seed as any).conditionType || null,
+                conditionValue: (seed as any).conditionValue != null ? (seed as any).conditionValue : null,
+                requiredAtOnboarding: (seed as any).requiredAtOnboarding ?? true,
+                gracePeriodDays: (seed as any).gracePeriodDays || 0,
+              });
+              rc++;
+            } catch {}
+          }
+          console.log(`[DocumentCenter] Seeded ${rc} document requirements`);
+        }
+      } catch (err) {
+        console.error("[DocumentCenter] Auto-seed failed:", err);
+      }
+    }, 3000);
+
     // Start weekly mission generator scheduler
     setTimeout(async () => {
       try {
@@ -302,6 +370,34 @@ async function startServer() {
         console.error("[GamificationSync] Failed to start:", err);
       }
     }, 12000);
+
+    // Start Hot Zones data sync v5.0 — orchestrator + scheduler (22+ data sources)
+    setTimeout(async () => {
+      try {
+        if (process.env.SYNC_ENABLED !== "false") {
+          const { warmCache } = await import("../services/cache/hotZonesCache");
+          await warmCache();
+
+          // Register all jobs with the sync orchestrator (admin controls, failure tracking)
+          const { registerAllSyncJobs } = await import("../services/sync/registerJobs");
+          const { syncOrchestrator } = await import("../services/sync/syncOrchestrator");
+          registerAllSyncJobs();
+          syncOrchestrator.initialize();
+          console.log("[HotZones] Sync orchestrator v5.0 initialized (22 jobs)");
+
+          // Also start the legacy scheduler for backward compatibility
+          const { initializeDataSyncScheduler, runInitialSync } = await import("../services/dataSync/scheduler");
+          initializeDataSyncScheduler();
+
+          // Non-blocking initial sync
+          runInitialSync().catch((err) => console.error("[HotZones] Initial sync error:", err));
+        } else {
+          console.log("[HotZones] Data sync disabled (SYNC_ENABLED=false)");
+        }
+      } catch (err) {
+        console.error("[HotZones] Failed to start data sync:", err);
+      }
+    }, 15000);
   });
 }
 

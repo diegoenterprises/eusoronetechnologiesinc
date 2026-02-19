@@ -7,7 +7,7 @@
  * Theme-aware | Brand gradient | Oil & gas industry focused
  */
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
 import {
   Gauge, AlertTriangle, CheckCircle, Clock, Shield,
-  Settings, RefreshCw, ChevronRight, Activity, Thermometer
+  Settings, RefreshCw, ChevronRight, Activity, Thermometer, Loader2
 } from "lucide-react";
 
 type PressureStatus = "normal" | "warning" | "critical";
@@ -33,20 +33,24 @@ type TankReading = {
   status: PressureStatus;
 };
 
-const SAMPLE_READINGS: TankReading[] = [
-  { id: "c1", compartment: "Compartment 1 (Main)", currentPsi: 25, mawpPsi: 100, testPsi: 150, reliefSetPsi: 110, temperature: 72, status: "normal" },
-  { id: "c2", compartment: "Compartment 2", currentPsi: 28, mawpPsi: 100, testPsi: 150, reliefSetPsi: 110, temperature: 74, status: "normal" },
-  { id: "c3", compartment: "Compartment 3", currentPsi: 85, mawpPsi: 100, testPsi: 150, reliefSetPsi: 110, temperature: 78, status: "warning" },
-  { id: "vapor", compartment: "Vapor Recovery", currentPsi: 2, mawpPsi: 15, testPsi: 22, reliefSetPsi: 16, temperature: 70, status: "normal" },
-];
+// MAWP defaults by cargo category (PSI)
+const MAWP_DEFAULTS: Record<string, number> = {
+  petroleum: 100, chemicals: 100, liquid: 100, gas: 250,
+  hazmat: 100, food_grade: 35, water: 25, general: 50,
+};
 
+function getDefaultMawp(cargoType: string | null): number {
+  return MAWP_DEFAULTS[cargoType || ''] || 50;
+}
+
+// Regulatory test history reference (49 CFR 180.407 schedule)
 const TEST_HISTORY = [
-  { type: "Hydrostatic (K) Test", date: "2025-06-15", result: "Pass", nextDue: "2030-06-15", spec: "49 CFR 180.407(c)" },
-  { type: "External Visual (V) Inspection", date: "2025-12-01", result: "Pass", nextDue: "2026-12-01", spec: "49 CFR 180.407(d)" },
-  { type: "Internal Visual Inspection", date: "2025-06-15", result: "Pass", nextDue: "2026-06-15", spec: "49 CFR 180.407(e)" },
-  { type: "Lining Inspection", date: "2025-06-15", result: "Pass", nextDue: "2026-06-15", spec: "49 CFR 180.407(f)" },
-  { type: "Leakage (L) Test", date: "2026-01-10", result: "Pass", nextDue: "2027-01-10", spec: "49 CFR 180.407(h)" },
-  { type: "Pressure Relief Device Test", date: "2025-06-15", result: "Pass", nextDue: "2026-06-15", spec: "49 CFR 180.407(j)" },
+  { type: "Hydrostatic (K) Test", date: "", result: "—", nextDue: "", spec: "49 CFR 180.407(c)" },
+  { type: "External Visual (V) Inspection", date: "", result: "—", nextDue: "", spec: "49 CFR 180.407(d)" },
+  { type: "Internal Visual Inspection", date: "", result: "—", nextDue: "", spec: "49 CFR 180.407(e)" },
+  { type: "Lining Inspection", date: "", result: "—", nextDue: "", spec: "49 CFR 180.407(f)" },
+  { type: "Leakage (L) Test", date: "", result: "—", nextDue: "", spec: "49 CFR 180.407(h)" },
+  { type: "Pressure Relief Device Test", date: "", result: "—", nextDue: "", spec: "49 CFR 180.407(j)" },
 ];
 
 const STATUS_CONFIG: Record<PressureStatus, { label: string; color: string; bg: string }> = {
@@ -59,8 +63,65 @@ export default function TankPressure() {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
-  const readings = SAMPLE_READINGS;
-  const maxPressurePct = Math.max(...readings.map((r) => (r.currentPsi / r.mawpPsi) * 100));
+  // Real data from driver's current load
+  const currentLoadQuery = trpc.drivers.getCurrentLoad.useQuery();
+  const load = currentLoadQuery.data;
+
+  // Derive pressure readings from load (real telemetry would come from SCADA integration)
+  const readings: TankReading[] = useMemo(() => {
+    if (!load) return [];
+    const ct = (load.cargoType || '') as string;
+    const isTanker = ['liquid', 'petroleum', 'chemicals', 'gas', 'hazmat'].includes(ct);
+    const isFoodGrade = ct === 'food_grade';
+    const isWater = ct === 'water';
+    if (!isTanker && !isFoodGrade && !isWater) return [];
+
+    const mawp = getDefaultMawp(load.cargoType);
+    const testPsi = Math.round(mawp * 1.5);
+    const reliefSetPsi = Math.round(mawp * 1.1);
+    const numComps = isFoodGrade || isWater ? 1 : 3;
+
+    const comps: TankReading[] = Array.from({ length: numComps }, (_, i) => ({
+      id: `c${i + 1}`,
+      compartment: numComps === 1 ? 'Main Tank' : `Compartment ${i + 1}`,
+      currentPsi: 0, // Real readings come from SCADA/telemetry integration
+      mawpPsi: mawp,
+      testPsi,
+      reliefSetPsi,
+      temperature: 72,
+      status: 'normal' as PressureStatus,
+    }));
+
+    // Add vapor recovery for hazmat/petroleum tankers
+    if (isTanker && !isFoodGrade && !isWater) {
+      comps.push({
+        id: 'vapor', compartment: 'Vapor Recovery',
+        currentPsi: 0, mawpPsi: 15, testPsi: 22, reliefSetPsi: 16,
+        temperature: 70, status: 'normal',
+      });
+    }
+    return comps;
+  }, [load]);
+
+  if (currentLoadQuery.isLoading) {
+    return (
+      <div className="p-8 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <span className="ml-3 text-slate-400">Loading pressure data...</span>
+      </div>
+    );
+  }
+
+  if (!load || readings.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <Gauge className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+        <p className="text-slate-400">No tanker load active — pressure monitoring not applicable</p>
+      </div>
+    );
+  }
+
+  const maxPressurePct = readings.length > 0 ? Math.max(...readings.map((r) => r.mawpPsi > 0 ? (r.currentPsi / r.mawpPsi) * 100 : 0)) : 0;
   const overallStatus: PressureStatus = maxPressurePct > 90 ? "critical" : maxPressurePct > 75 ? "warning" : "normal";
   const overallConfig = STATUS_CONFIG[overallStatus];
 

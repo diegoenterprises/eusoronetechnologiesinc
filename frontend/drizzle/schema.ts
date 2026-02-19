@@ -6,11 +6,16 @@ import {
   text,
   timestamp,
   varchar,
+  char,
   decimal,
   boolean,
   json,
+  date,
+  datetime,
+  tinyint,
   index,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
@@ -5346,4 +5351,664 @@ export const documentNotifications = mysqlTable(
 
 export type DocumentNotification = typeof documentNotifications.$inferSelect;
 export type InsertDocumentNotification = typeof documentNotifications.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HOT ZONES DATA INTEGRATION TABLES (16 tables)
+// Real-time government data feeds for hazmat logistics intelligence
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// -- FUEL PRICES (EIA + AAA + OPIS) --
+export const hzFuelPrices = mysqlTable("hz_fuel_prices", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  stateCode: char("state_code", { length: 2 }).notNull(),
+  paddRegion: varchar("padd_region", { length: 10 }),
+  dieselRetail: decimal("diesel_retail", { precision: 6, scale: 3 }),
+  gasolineRetail: decimal("gasoline_retail", { precision: 6, scale: 3 }),
+  dieselRack: decimal("diesel_rack", { precision: 6, scale: 3 }),
+  ulsdRack: decimal("ulsd_rack", { precision: 6, scale: 3 }),
+  dieselChange1w: decimal("diesel_change_1w", { precision: 5, scale: 3 }),
+  dieselChange1m: decimal("diesel_change_1m", { precision: 5, scale: 3 }),
+  source: mysqlEnum("source", ["EIA", "AAA", "OPIS"]).notNull(),
+  reportDate: date("report_date").notNull(),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  stateDate: index("idx_hz_fuel_state_date").on(table.stateCode, table.reportDate),
+  paddDate: index("idx_hz_fuel_padd_date").on(table.paddRegion, table.reportDate),
+}));
+
+export type HzFuelPrice = typeof hzFuelPrices.$inferSelect;
+export type InsertHzFuelPrice = typeof hzFuelPrices.$inferInsert;
+
+// -- WEATHER ALERTS (NWS) --
+export const hzWeatherAlerts = mysqlTable("hz_weather_alerts", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  stateCodes: json("state_codes"),
+  zoneIds: json("zone_ids"),
+  affectedCounties: json("affected_counties"),
+  geometry: json("geometry"),
+  eventType: varchar("event_type", { length: 100 }).notNull(),
+  severity: mysqlEnum("severity", ["Minor", "Moderate", "Severe", "Extreme", "Unknown"]).notNull(),
+  urgency: mysqlEnum("urgency", ["Immediate", "Expected", "Future", "Past", "Unknown"]).notNull(),
+  certainty: mysqlEnum("certainty", ["Observed", "Likely", "Possible", "Unlikely", "Unknown"]).notNull(),
+  headline: varchar("headline", { length: 500 }),
+  description: text("description"),
+  instruction: text("instruction"),
+  onsetAt: timestamp("onset_at"),
+  expiresAt: timestamp("expires_at"),
+  endsAt: timestamp("ends_at"),
+  status: mysqlEnum("status", ["Actual", "Exercise", "System", "Test", "Draft"]).notNull(),
+  messageType: mysqlEnum("message_type", ["Alert", "Update", "Cancel"]).notNull(),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  severityIdx: index("idx_hz_weather_severity").on(table.severity),
+  expiresIdx: index("idx_hz_weather_expires").on(table.expiresAt),
+  eventIdx: index("idx_hz_weather_event").on(table.eventType),
+}));
+
+export type HzWeatherAlert = typeof hzWeatherAlerts.$inferSelect;
+export type InsertHzWeatherAlert = typeof hzWeatherAlerts.$inferInsert;
+
+// -- CARRIER SAFETY (FMCSA) --
+export const hzCarrierSafety = mysqlTable("hz_carrier_safety", {
+  dotNumber: varchar("dot_number", { length: 10 }).primaryKey(),
+  legalName: varchar("legal_name", { length: 255 }).notNull(),
+  dbaName: varchar("dba_name", { length: 255 }),
+  unsafeDrivingScore: decimal("unsafe_driving_score", { precision: 5, scale: 2 }),
+  hosComplianceScore: decimal("hos_compliance_score", { precision: 5, scale: 2 }),
+  driverFitnessScore: decimal("driver_fitness_score", { precision: 5, scale: 2 }),
+  controlledSubstancesScore: decimal("controlled_substances_score", { precision: 5, scale: 2 }),
+  vehicleMaintenanceScore: decimal("vehicle_maintenance_score", { precision: 5, scale: 2 }),
+  hazmatComplianceScore: decimal("hazmat_compliance_score", { precision: 5, scale: 2 }),
+  crashIndicatorScore: decimal("crash_indicator_score", { precision: 5, scale: 2 }),
+  safetyRating: mysqlEnum("safety_rating", ["Satisfactory", "Conditional", "Unsatisfactory", "None"]).default("None"),
+  safetyRatingDate: date("safety_rating_date"),
+  totalInspections: int("total_inspections").default(0),
+  driverInspections: int("driver_inspections").default(0),
+  vehicleInspections: int("vehicle_inspections").default(0),
+  hazmatInspections: int("hazmat_inspections").default(0),
+  driverOosRate: decimal("driver_oos_rate", { precision: 5, scale: 2 }),
+  vehicleOosRate: decimal("vehicle_oos_rate", { precision: 5, scale: 2 }),
+  totalCrashes: int("total_crashes").default(0),
+  fatalCrashes: int("fatal_crashes").default(0),
+  injuryCrashes: int("injury_crashes").default(0),
+  towCrashes: int("tow_crashes").default(0),
+  commonAuthority: boolean("common_authority").default(false),
+  contractAuthority: boolean("contract_authority").default(false),
+  brokerAuthority: boolean("broker_authority").default(false),
+  hazmatAuthority: boolean("hazmat_authority").default(false),
+  bipdInsuranceRequired: int("bipd_insurance_required"),
+  bipdInsuranceOnFile: int("bipd_insurance_on_file"),
+  cargoInsuranceRequired: int("cargo_insurance_required"),
+  cargoInsuranceOnFile: int("cargo_insurance_on_file"),
+  bondInsuranceRequired: int("bond_insurance_required"),
+  bondInsuranceOnFile: int("bond_insurance_on_file"),
+  physicalState: char("physical_state", { length: 2 }),
+  physicalCity: varchar("physical_city", { length: 100 }),
+  physicalZip: varchar("physical_zip", { length: 10 }),
+  lastUpdate: date("last_update"),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  stateIdx: index("idx_hz_carrier_state").on(table.physicalState),
+  hazmatIdx: index("idx_hz_carrier_hazmat").on(table.hazmatAuthority),
+  ratingIdx: index("idx_hz_carrier_rating").on(table.safetyRating),
+}));
+
+export type HzCarrierSafety = typeof hzCarrierSafety.$inferSelect;
+export type InsertHzCarrierSafety = typeof hzCarrierSafety.$inferInsert;
+
+// -- HAZMAT INCIDENTS (PHMSA) --
+export const hzHazmatIncidents = mysqlTable("hz_hazmat_incidents", {
+  reportNumber: varchar("report_number", { length: 20 }).primaryKey(),
+  stateCode: char("state_code", { length: 2 }).notNull(),
+  city: varchar("city", { length: 100 }),
+  county: varchar("county", { length: 100 }),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
+  incidentDate: date("incident_date").notNull(),
+  mode: mysqlEnum("mode", ["Highway", "Rail", "Air", "Water", "Pipeline"]).notNull(),
+  incidentType: varchar("incident_type", { length: 100 }),
+  hazmatClass: varchar("hazmat_class", { length: 20 }),
+  hazmatName: varchar("hazmat_name", { length: 255 }),
+  unNumber: varchar("un_number", { length: 10 }),
+  quantityReleased: decimal("quantity_released", { precision: 15, scale: 4 }),
+  quantityUnit: varchar("quantity_unit", { length: 20 }),
+  fatalities: int("fatalities").default(0),
+  injuries: int("injuries").default(0),
+  hospitalized: int("hospitalized").default(0),
+  evacuated: int("evacuated").default(0),
+  propertyDamage: decimal("property_damage", { precision: 15, scale: 2 }),
+  carrierName: varchar("carrier_name", { length: 255 }),
+  carrierDotNumber: varchar("carrier_dot_number", { length: 10 }),
+  causeCategory: varchar("cause_category", { length: 100 }),
+  causeSubcategory: varchar("cause_subcategory", { length: 100 }),
+  federalResponse: boolean("federal_response").default(false),
+  cleanupCost: decimal("cleanup_cost", { precision: 15, scale: 2 }),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  stateDateIdx: index("idx_hz_hazmat_state_date").on(table.stateCode, table.incidentDate),
+  hazmatClassIdx: index("idx_hz_hazmat_class").on(table.hazmatClass),
+  carrierIdx: index("idx_hz_hazmat_carrier").on(table.carrierDotNumber),
+  modeIdx: index("idx_hz_hazmat_mode").on(table.mode),
+}));
+
+export type HzHazmatIncident = typeof hzHazmatIncidents.$inferSelect;
+export type InsertHzHazmatIncident = typeof hzHazmatIncidents.$inferInsert;
+
+// -- EPA FACILITIES (TRI + ECHO) --
+export const hzEpaFacilities = mysqlTable("hz_epa_facilities", {
+  registryId: varchar("registry_id", { length: 20 }).primaryKey(),
+  facilityName: varchar("facility_name", { length: 255 }).notNull(),
+  stateCode: char("state_code", { length: 2 }).notNull(),
+  city: varchar("city", { length: 100 }),
+  county: varchar("county", { length: 100 }),
+  zipCode: varchar("zip_code", { length: 10 }),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
+  industrySector: varchar("industry_sector", { length: 100 }),
+  naicsCodes: json("naics_codes"),
+  sicCodes: json("sic_codes"),
+  triFacility: boolean("tri_facility").default(false),
+  totalReleasesLbs: decimal("total_releases_lbs", { precision: 15, scale: 2 }),
+  airReleasesLbs: decimal("air_releases_lbs", { precision: 15, scale: 2 }),
+  waterReleasesLbs: decimal("water_releases_lbs", { precision: 15, scale: 2 }),
+  landReleasesLbs: decimal("land_releases_lbs", { precision: 15, scale: 2 }),
+  chemicalsReported: json("chemicals_reported"),
+  complianceStatus: mysqlEnum("compliance_status", ["In Compliance", "Violation", "Unknown"]).default("Unknown"),
+  qtrsInNoncompliance: int("qtrs_in_noncompliance").default(0),
+  informalEnforcementActions: int("informal_enforcement_actions").default(0),
+  formalEnforcementActions: int("formal_enforcement_actions").default(0),
+  penaltiesLast5yr: decimal("penalties_last_5yr", { precision: 15, scale: 2 }),
+  rcraHandler: boolean("rcra_handler").default(false),
+  npdesPermit: boolean("npdes_permit").default(false),
+  caaPermit: boolean("caa_permit").default(false),
+  lastInspectionDate: date("last_inspection_date"),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  stateIdx: index("idx_hz_epa_state").on(table.stateCode),
+  complianceIdx: index("idx_hz_epa_compliance").on(table.complianceStatus),
+  locationIdx: index("idx_hz_epa_location").on(table.latitude, table.longitude),
+}));
+
+export type HzEpaFacility = typeof hzEpaFacilities.$inferSelect;
+export type InsertHzEpaFacility = typeof hzEpaFacilities.$inferInsert;
+
+// -- SEISMIC EVENTS (USGS) --
+export const hzSeismicEvents = mysqlTable("hz_seismic_events", {
+  eventId: varchar("event_id", { length: 20 }).primaryKey(),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }).notNull(),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }).notNull(),
+  depthKm: decimal("depth_km", { precision: 8, scale: 3 }),
+  placeDescription: varchar("place_description", { length: 255 }),
+  magnitude: decimal("magnitude", { precision: 4, scale: 2 }).notNull(),
+  magnitudeType: varchar("magnitude_type", { length: 10 }),
+  eventTime: timestamp("event_time").notNull(),
+  feltReports: int("felt_reports").default(0),
+  cdi: decimal("cdi", { precision: 4, scale: 2 }),
+  mmi: decimal("mmi", { precision: 4, scale: 2 }),
+  alertLevel: mysqlEnum("alert_level", ["green", "yellow", "orange", "red"]),
+  tsunamiFlag: boolean("tsunami_flag").default(false),
+  status: varchar("status", { length: 20 }),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  timeIdx: index("idx_hz_seismic_time").on(table.eventTime),
+  magIdx: index("idx_hz_seismic_mag").on(table.magnitude),
+  locationIdx: index("idx_hz_seismic_location").on(table.latitude, table.longitude),
+}));
+
+export type HzSeismicEvent = typeof hzSeismicEvents.$inferSelect;
+export type InsertHzSeismicEvent = typeof hzSeismicEvents.$inferInsert;
+
+// -- WILDFIRES (NIFC) --
+export const hzWildfires = mysqlTable("hz_wildfires", {
+  incidentId: varchar("incident_id", { length: 50 }).primaryKey(),
+  incidentName: varchar("incident_name", { length: 255 }).notNull(),
+  stateCode: char("state_code", { length: 2 }),
+  county: varchar("county", { length: 100 }),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
+  perimeterGeometry: json("perimeter_geometry"),
+  fireDiscoveryDate: date("fire_discovery_date"),
+  containmentDate: date("containment_date"),
+  acresBurned: decimal("acres_burned", { precision: 12, scale: 2 }),
+  percentContained: decimal("percent_contained", { precision: 5, scale: 2 }),
+  totalPersonnel: int("total_personnel"),
+  totalEngines: int("total_engines"),
+  totalHelicopters: int("total_helicopters"),
+  estimatedCost: decimal("estimated_cost", { precision: 15, scale: 2 }),
+  structuresDestroyed: int("structures_destroyed").default(0),
+  structuresThreatened: int("structures_threatened").default(0),
+  evacuationsOrdered: boolean("evacuations_ordered").default(false),
+  fireStatus: mysqlEnum("fire_status", ["Active", "Contained", "Controlled", "Out"]).notNull(),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  stateIdx: index("idx_hz_fire_state").on(table.stateCode),
+  statusIdx: index("idx_hz_fire_status").on(table.fireStatus),
+  dateIdx: index("idx_hz_fire_date").on(table.fireDiscoveryDate),
+}));
+
+export type HzWildfire = typeof hzWildfires.$inferSelect;
+export type InsertHzWildfire = typeof hzWildfires.$inferInsert;
+
+// -- FEMA DISASTERS --
+export const hzFemaDisasters = mysqlTable("hz_fema_disasters", {
+  disasterNumber: varchar("disaster_number", { length: 10 }).primaryKey(),
+  stateCode: char("state_code", { length: 2 }).notNull(),
+  designatedArea: varchar("designated_area", { length: 255 }),
+  declarationDate: date("declaration_date").notNull(),
+  incidentType: varchar("incident_type", { length: 100 }),
+  declarationType: mysqlEnum("declaration_type", ["DR", "EM", "FM", "FS"]).notNull(),
+  incidentBeginDate: date("incident_begin_date"),
+  incidentEndDate: date("incident_end_date"),
+  closeoutDate: date("closeout_date"),
+  ihProgramDeclared: boolean("ih_program_declared").default(false),
+  iaProgramDeclared: boolean("ia_program_declared").default(false),
+  paProgramDeclared: boolean("pa_program_declared").default(false),
+  hmProgramDeclared: boolean("hm_program_declared").default(false),
+  totalObligatedAmount: decimal("total_obligated_amount", { precision: 15, scale: 2 }),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  stateIdx: index("idx_hz_fema_state").on(table.stateCode),
+  dateIdx: index("idx_hz_fema_date").on(table.declarationDate),
+  typeIdx: index("idx_hz_fema_type").on(table.declarationType),
+}));
+
+export type HzFemaDisaster = typeof hzFemaDisasters.$inferSelect;
+export type InsertHzFemaDisaster = typeof hzFemaDisasters.$inferInsert;
+
+// -- FREIGHT FLOWS (BTS) --
+export const hzFreightFlows = mysqlTable("hz_freight_flows", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  originState: char("origin_state", { length: 2 }).notNull(),
+  originCfsArea: varchar("origin_cfs_area", { length: 10 }),
+  destinationState: char("destination_state", { length: 2 }).notNull(),
+  destinationCfsArea: varchar("destination_cfs_area", { length: 10 }),
+  sctgCode: varchar("sctg_code", { length: 5 }),
+  sctgDescription: varchar("sctg_description", { length: 255 }),
+  hazmatFlag: boolean("hazmat_flag").default(false),
+  tonsThousands: decimal("tons_thousands", { precision: 15, scale: 2 }),
+  tonMillesMillions: decimal("ton_miles_millions", { precision: 15, scale: 2 }),
+  valueMillions: decimal("value_millions", { precision: 15, scale: 2 }),
+  mode: varchar("mode", { length: 50 }),
+  dataYear: int("data_year").notNull(),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  originIdx: index("idx_hz_freight_origin").on(table.originState),
+  destIdx: index("idx_hz_freight_dest").on(table.destinationState),
+  commodityIdx: index("idx_hz_freight_commodity").on(table.sctgCode),
+  hazmatIdx: index("idx_hz_freight_hazmat").on(table.hazmatFlag),
+}));
+
+export type HzFreightFlow = typeof hzFreightFlows.$inferSelect;
+export type InsertHzFreightFlow = typeof hzFreightFlows.$inferInsert;
+
+// -- RATE INDICES (USDA + Freightos) --
+export const hzRateIndices = mysqlTable("hz_rate_indices", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  origin: varchar("origin", { length: 100 }),
+  destination: varchar("destination", { length: 100 }),
+  region: varchar("region", { length: 50 }),
+  ratePerMile: decimal("rate_per_mile", { precision: 6, scale: 3 }),
+  ratePerLoad: decimal("rate_per_load", { precision: 10, scale: 2 }),
+  fuelSurcharge: decimal("fuel_surcharge", { precision: 6, scale: 3 }),
+  rateChange1w: decimal("rate_change_1w", { precision: 5, scale: 2 }),
+  rateChange1m: decimal("rate_change_1m", { precision: 5, scale: 2 }),
+  rateChange1y: decimal("rate_change_1y", { precision: 5, scale: 2 }),
+  equipmentType: mysqlEnum("equipment_type", ["DRY_VAN", "REEFER", "FLATBED", "TANKER", "ALL"]).notNull(),
+  rateType: mysqlEnum("rate_type", ["SPOT", "CONTRACT", "INDEX"]).notNull(),
+  source: mysqlEnum("source", ["USDA", "FREIGHTOS", "DAT_PUBLIC", "INTERNAL"]).notNull(),
+  reportDate: date("report_date").notNull(),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  regionIdx: index("idx_hz_rate_region").on(table.region),
+  dateIdx: index("idx_hz_rate_date").on(table.reportDate),
+  equipIdx: index("idx_hz_rate_equip").on(table.equipmentType),
+}));
+
+export type HzRateIndex = typeof hzRateIndices.$inferSelect;
+export type InsertHzRateIndex = typeof hzRateIndices.$inferInsert;
+
+// -- CRUDE OIL PRICING (CME + EIA) --
+export const hzCrudePrices = mysqlTable("hz_crude_prices", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  productCode: varchar("product_code", { length: 20 }).notNull(),
+  productName: varchar("product_name", { length: 100 }),
+  priceUsd: decimal("price_usd", { precision: 10, scale: 4 }).notNull(),
+  priceChange1d: decimal("price_change_1d", { precision: 8, scale: 4 }),
+  priceChange1w: decimal("price_change_1w", { precision: 8, scale: 4 }),
+  volumeBarrels: bigint("volume_barrels", { mode: "number" }),
+  openInterest: int("open_interest"),
+  contractMonth: varchar("contract_month", { length: 10 }),
+  settlementDate: date("settlement_date"),
+  source: mysqlEnum("source", ["CME", "EIA", "PLATTS_FREE", "ICE_FREE"]).notNull(),
+  reportDate: date("report_date").notNull(),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  productIdx: index("idx_hz_crude_product").on(table.productCode),
+  dateIdx: index("idx_hz_crude_date").on(table.reportDate),
+}));
+
+export type HzCrudePrice = typeof hzCrudePrices.$inferSelect;
+export type InsertHzCrudePrice = typeof hzCrudePrices.$inferInsert;
+
+// -- PORT ACTIVITY --
+export const hzPortActivity = mysqlTable("hz_port_activity", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  portCode: varchar("port_code", { length: 10 }).notNull(),
+  portName: varchar("port_name", { length: 100 }).notNull(),
+  stateCode: char("state_code", { length: 2 }).notNull(),
+  containerTeus: int("container_teus"),
+  bulkTons: decimal("bulk_tons", { precision: 15, scale: 2 }),
+  tankerBarrels: bigint("tanker_barrels", { mode: "number" }),
+  vesselCalls: int("vessel_calls"),
+  berthAvailability: decimal("berth_availability", { precision: 5, scale: 2 }),
+  terminalUtilization: decimal("terminal_utilization", { precision: 5, scale: 2 }),
+  avgDwellTimeHours: decimal("avg_dwell_time_hours", { precision: 6, scale: 2 }),
+  avgWaitTimeHours: decimal("avg_wait_time_hours", { precision: 6, scale: 2 }),
+  vesselsAtAnchor: int("vessels_at_anchor"),
+  volumeChangeMom: decimal("volume_change_mom", { precision: 5, scale: 2 }),
+  volumeChangeYoy: decimal("volume_change_yoy", { precision: 5, scale: 2 }),
+  reportDate: date("report_date").notNull(),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  portIdx: index("idx_hz_port_code").on(table.portCode),
+  stateIdx: index("idx_hz_port_state").on(table.stateCode),
+  dateIdx: index("idx_hz_port_date").on(table.reportDate),
+}));
+
+export type HzPortActivity = typeof hzPortActivity.$inferSelect;
+export type InsertHzPortActivity = typeof hzPortActivity.$inferInsert;
+
+// -- LOCK & WATERWAY STATUS (USACE) --
+export const hzLockStatus = mysqlTable("hz_lock_status", {
+  lockId: varchar("lock_id", { length: 20 }).primaryKey(),
+  lockName: varchar("lock_name", { length: 100 }).notNull(),
+  riverName: varchar("river_name", { length: 100 }),
+  stateCode: char("state_code", { length: 2 }),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
+  operationalStatus: mysqlEnum("operational_status", ["Open", "Closed", "Restricted", "Scheduled_Closure"]).notNull(),
+  closureReason: varchar("closure_reason", { length: 255 }),
+  expectedReopen: date("expected_reopen"),
+  avgDelayHours: decimal("avg_delay_hours", { precision: 6, scale: 2 }),
+  vesselsWaiting: int("vessels_waiting"),
+  dailyLockages: int("daily_lockages"),
+  scheduledMaintenance: json("scheduled_maintenance"),
+  lastUpdated: timestamp("last_updated"),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  statusIdx: index("idx_hz_lock_status").on(table.operationalStatus),
+  stateIdx: index("idx_hz_lock_state").on(table.stateCode),
+}));
+
+export type HzLockStatus = typeof hzLockStatus.$inferSelect;
+export type InsertHzLockStatus = typeof hzLockStatus.$inferInsert;
+
+// -- AIRSPACE RESTRICTIONS (FAA TFRs) --
+export const hzTfrRestrictions = mysqlTable("hz_tfr_restrictions", {
+  notamId: varchar("notam_id", { length: 50 }).primaryKey(),
+  centerLatitude: decimal("center_latitude", { precision: 10, scale: 7 }),
+  centerLongitude: decimal("center_longitude", { precision: 10, scale: 7 }),
+  radiusNm: decimal("radius_nm", { precision: 8, scale: 2 }),
+  altitudeFloor: int("altitude_floor"),
+  altitudeCeiling: int("altitude_ceiling"),
+  geometry: json("geometry"),
+  restrictionType: varchar("restriction_type", { length: 100 }),
+  reason: varchar("reason", { length: 255 }),
+  effectiveStart: timestamp("effective_start").notNull(),
+  effectiveEnd: timestamp("effective_end"),
+  affectsOversize: boolean("affects_oversize").default(false),
+  surfaceRestrictions: text("surface_restrictions"),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  datesIdx: index("idx_hz_tfr_dates").on(table.effectiveStart, table.effectiveEnd),
+}));
+
+export type HzTfrRestriction = typeof hzTfrRestrictions.$inferSelect;
+export type InsertHzTfrRestriction = typeof hzTfrRestrictions.$inferInsert;
+
+// -- ZONE INTELLIGENCE CACHE (Aggregated Metrics) --
+export const hzZoneIntelligence = mysqlTable("hz_zone_intelligence", {
+  zoneId: varchar("zone_id", { length: 20 }).primaryKey(),
+  liveLoads: int("live_loads").default(0),
+  liveTrucks: int("live_trucks").default(0),
+  loadToTruckRatio: decimal("load_to_truck_ratio", { precision: 5, scale: 2 }),
+  surgeMultiplier: decimal("surge_multiplier", { precision: 4, scale: 2 }).default("1.0"),
+  avgRatePerMile: decimal("avg_rate_per_mile", { precision: 6, scale: 3 }),
+  rateChange24h: decimal("rate_change_24h", { precision: 5, scale: 2 }),
+  rateChange7d: decimal("rate_change_7d", { precision: 5, scale: 2 }),
+  dieselPrice: decimal("diesel_price", { precision: 6, scale: 3 }),
+  dieselTrend: mysqlEnum("diesel_trend", ["rising", "falling", "stable"]),
+  activeWeatherAlerts: int("active_weather_alerts").default(0),
+  maxWeatherSeverity: mysqlEnum("max_weather_severity", ["None", "Minor", "Moderate", "Severe", "Extreme"]).default("None"),
+  weatherAlertTypes: json("weather_alert_types"),
+  avgCarrierSafetyScore: decimal("avg_carrier_safety_score", { precision: 5, scale: 2 }),
+  carriersWithViolations: int("carriers_with_violations").default(0),
+  recentHazmatIncidents: int("recent_hazmat_incidents").default(0),
+  complianceRiskScore: decimal("compliance_risk_score", { precision: 5, scale: 2 }),
+  complianceFactors: json("compliance_factors"),
+  epaFacilitiesCount: int("epa_facilities_count").default(0),
+  facilitiesWithViolations: int("facilities_with_violations").default(0),
+  seismicRiskLevel: mysqlEnum("seismic_risk_level", ["Low", "Moderate", "High"]).default("Low"),
+  activeWildfires: int("active_wildfires").default(0),
+  femaDisasterActive: boolean("fema_disaster_active").default(false),
+  portCongestionLevel: mysqlEnum("port_congestion_level", ["Low", "Normal", "High", "Critical"]).default("Normal"),
+  lockDelaysAvgHours: decimal("lock_delays_avg_hours", { precision: 6, scale: 2 }),
+  computedAt: timestamp("computed_at").defaultNow(),
+  validUntil: timestamp("valid_until"),
+}, (table) => ({
+  computedIdx: index("idx_hz_zone_computed").on(table.computedAt),
+}));
+
+export type HzZoneIntelligence = typeof hzZoneIntelligence.$inferSelect;
+export type InsertHzZoneIntelligence = typeof hzZoneIntelligence.$inferInsert;
+
+// -- DATA SYNC LOG --
+export const hzDataSyncLog = mysqlTable("hz_data_sync_log", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  sourceName: varchar("source_name", { length: 50 }).notNull(),
+  syncType: mysqlEnum("sync_type", ["FULL", "INCREMENTAL", "DELTA"]).notNull(),
+  startedAt: timestamp("started_at").notNull(),
+  completedAt: timestamp("completed_at"),
+  recordsFetched: int("records_fetched").default(0),
+  recordsInserted: int("records_inserted").default(0),
+  recordsUpdated: int("records_updated").default(0),
+  recordsDeleted: int("records_deleted").default(0),
+  status: mysqlEnum("status", ["RUNNING", "SUCCESS", "FAILED", "PARTIAL"]).notNull(),
+  errorMessage: text("error_message"),
+}, (table) => ({
+  sourceIdx: index("idx_hz_sync_source").on(table.sourceName),
+  statusIdx: index("idx_hz_sync_status").on(table.status),
+  startedIdx: index("idx_hz_sync_started").on(table.startedAt),
+}));
+
+export type HzDataSyncLog = typeof hzDataSyncLog.$inferSelect;
+export type InsertHzDataSyncLog = typeof hzDataSyncLog.$inferInsert;
+
+// -- CLEAN AIR MARKETS EMISSIONS (CAMPD) --
+export const hzEmissions = mysqlTable("hz_emissions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  facilityId: varchar("facility_id", { length: 20 }).notNull(),
+  facilityName: varchar("facility_name", { length: 255 }).notNull(),
+  stateCode: char("state_code", { length: 2 }).notNull(),
+  countyName: varchar("county_name", { length: 100 }),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
+  fuelTypes: json("fuel_types"),
+  unitTypes: json("unit_types"),
+  so2Tons: decimal("so2_tons", { precision: 12, scale: 2 }),
+  noxTons: decimal("nox_tons", { precision: 12, scale: 2 }),
+  co2Tons: decimal("co2_tons", { precision: 15, scale: 2 }),
+  hgLbs: decimal("hg_lbs", { precision: 10, scale: 4 }),
+  grossLoadMwh: decimal("gross_load_mwh", { precision: 15, scale: 2 }),
+  heatInputMmbtu: decimal("heat_input_mmbtu", { precision: 15, scale: 2 }),
+  operatingHours: int("operating_hours"),
+  programCodes: json("program_codes"),
+  reportingYear: int("reporting_year").notNull(),
+  reportingQuarter: int("reporting_quarter"),
+  sourceCategory: varchar("source_category", { length: 100 }),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  stateIdx: index("idx_hz_emissions_state").on(table.stateCode),
+  facilityIdx: index("idx_hz_emissions_facility").on(table.facilityId),
+  yearIdx: index("idx_hz_emissions_year").on(table.reportingYear),
+  locationIdx: index("idx_hz_emissions_location").on(table.latitude, table.longitude),
+}));
+
+export type HzEmission = typeof hzEmissions.$inferSelect;
+export type InsertHzEmission = typeof hzEmissions.$inferInsert;
+
+// -- RCRA HAZARDOUS WASTE HANDLERS (ECHO) --
+export const hzRcraHandlers = mysqlTable("hz_rcra_handlers", {
+  handlerId: varchar("handler_id", { length: 20 }).primaryKey(),
+  handlerName: varchar("handler_name", { length: 255 }).notNull(),
+  stateCode: char("state_code", { length: 2 }).notNull(),
+  city: varchar("city", { length: 100 }),
+  county: varchar("county", { length: 100 }),
+  zipCode: varchar("zip_code", { length: 10 }),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
+  handlerType: mysqlEnum("handler_type", ["Generator", "Transporter", "TSDF", "Mixed"]).default("Generator"),
+  generatorStatus: varchar("generator_status", { length: 10 }),
+  wasteActivityCodes: json("waste_activity_codes"),
+  wasteCodes: json("waste_codes"),
+  landType: varchar("land_type", { length: 50 }),
+  complianceStatus: mysqlEnum("compliance_status", ["In Compliance", "Violation", "Unknown"]).default("Unknown"),
+  evaluationsCount: int("evaluations_count").default(0),
+  violationsCount: int("violations_count").default(0),
+  enforcementActionsCount: int("enforcement_actions_count").default(0),
+  penaltiesTotal: decimal("penalties_total", { precision: 15, scale: 2 }),
+  lastEvaluationDate: date("last_evaluation_date"),
+  naicsCode: varchar("naics_code", { length: 10 }),
+  industrySector: varchar("industry_sector", { length: 100 }),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+}, (table) => ({
+  stateIdx: index("idx_hz_rcra_state").on(table.stateCode),
+  typeIdx: index("idx_hz_rcra_type").on(table.handlerType),
+  complianceIdx: index("idx_hz_rcra_compliance").on(table.complianceStatus),
+  locationIdx: index("idx_hz_rcra_location").on(table.latitude, table.longitude),
+}));
+
+export type HzRcraHandler = typeof hzRcraHandlers.$inferSelect;
+export type InsertHzRcraHandler = typeof hzRcraHandlers.$inferInsert;
+
+// -- ROUTE INTELLIGENCE — Crowd-sourced corridor metrics --
+export const hzRouteIntelligence = mysqlTable("hz_route_intelligence", {
+  id: int("id").autoincrement().primaryKey(),
+  originZone: varchar("origin_zone", { length: 64 }).notNull(),
+  destZone: varchar("dest_zone", { length: 64 }).notNull(),
+  corridorName: varchar("corridor_name", { length: 255 }),
+  avgSpeedMph: decimal("avg_speed_mph", { precision: 6, scale: 2 }).default("0"),
+  avgTravelTimeMins: decimal("avg_travel_time_mins", { precision: 8, scale: 2 }).default("0"),
+  avgDistanceMiles: decimal("avg_distance_miles", { precision: 8, scale: 2 }).default("0"),
+  tripCount: int("trip_count").default(0),
+  uniqueDrivers: int("unique_drivers").default(0),
+  congestionScore: decimal("congestion_score", { precision: 5, scale: 2 }).default("0"),
+  reliabilityScore: decimal("reliability_score", { precision: 5, scale: 2 }).default("0"),
+  peakHourDelayPct: decimal("peak_hour_delay_pct", { precision: 5, scale: 2 }).default("0"),
+  avgStopsPerTrip: decimal("avg_stops_per_trip", { precision: 4, scale: 1 }).default("0"),
+  hazmatTripCount: int("hazmat_trip_count").default(0),
+  lastTripAt: datetime("last_trip_at"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  originIdx: index("idx_ri_origin").on(table.originZone),
+  destIdx: index("idx_ri_dest").on(table.destZone),
+  corridorIdx: index("idx_ri_corridor").on(table.originZone, table.destZone),
+  updatedIdx: index("idx_ri_updated").on(table.updatedAt),
+}));
+
+export type HzRouteIntelligence = typeof hzRouteIntelligence.$inferSelect;
+export type InsertHzRouteIntelligence = typeof hzRouteIntelligence.$inferInsert;
+
+// -- GRID HEAT — Spatial driver density heatmap --
+export const hzGridHeat = mysqlTable("hz_grid_heat", {
+  id: int("id").autoincrement().primaryKey(),
+  gridLat: decimal("grid_lat", { precision: 6, scale: 2 }).notNull(),
+  gridLng: decimal("grid_lng", { precision: 7, scale: 2 }).notNull(),
+  periodStart: datetime("period_start").notNull(),
+  periodHours: int("period_hours").default(1),
+  pingCount: int("ping_count").default(0),
+  uniqueDrivers: int("unique_drivers").default(0),
+  avgSpeedMph: decimal("avg_speed_mph", { precision: 6, scale: 2 }).default("0"),
+  movingPct: decimal("moving_pct", { precision: 5, scale: 2 }).default("0"),
+  hazmatPings: int("hazmat_pings").default(0),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  gridPeriodUniq: uniqueIndex("uk_grid_period").on(table.gridLat, table.gridLng, table.periodStart),
+  periodIdx: index("idx_gh_period").on(table.periodStart),
+}));
+
+export type HzGridHeat = typeof hzGridHeat.$inferSelect;
+export type InsertHzGridHeat = typeof hzGridHeat.$inferInsert;
+
+// -- LANE LEARNING — Per-lane real performance from completed trips --
+export const hzLaneLearning = mysqlTable("hz_lane_learning", {
+  id: int("id").autoincrement().primaryKey(),
+  originCity: varchar("origin_city", { length: 128 }).notNull(),
+  originState: char("origin_state", { length: 2 }).notNull(),
+  destCity: varchar("dest_city", { length: 128 }).notNull(),
+  destState: char("dest_state", { length: 2 }).notNull(),
+  equipmentType: varchar("equipment_type", { length: 32 }),
+  isHazmat: tinyint("is_hazmat").default(0),
+  tripCount: int("trip_count").default(0),
+  avgRatePerMile: decimal("avg_rate_per_mile", { precision: 6, scale: 2 }),
+  avgTotalRate: decimal("avg_total_rate", { precision: 10, scale: 2 }),
+  avgDistanceMiles: decimal("avg_distance_miles", { precision: 8, scale: 2 }),
+  avgTransitHours: decimal("avg_transit_hours", { precision: 6, scale: 2 }),
+  avgFuelCost: decimal("avg_fuel_cost", { precision: 8, scale: 2 }),
+  avgDeadheadMiles: decimal("avg_deadhead_miles", { precision: 6, scale: 2 }),
+  onTimePct: decimal("on_time_pct", { precision: 5, scale: 2 }),
+  avgDwellMinsPickup: decimal("avg_dwell_mins_pickup", { precision: 6, scale: 1 }),
+  avgDwellMinsDelivery: decimal("avg_dwell_mins_delivery", { precision: 6, scale: 1 }),
+  bestDayOfWeek: tinyint("best_day_of_week"),
+  bestHourDepart: tinyint("best_hour_depart"),
+  seasonalPeak: varchar("seasonal_peak", { length: 16 }),
+  lastTripAt: datetime("last_trip_at"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  laneIdx: index("idx_ll_lane").on(table.originState, table.destState),
+  cityIdx: index("idx_ll_city").on(table.originCity, table.destCity),
+  hazmatIdx: index("idx_ll_hazmat").on(table.isHazmat),
+  updatedIdx: index("idx_ll_updated").on(table.updatedAt),
+}));
+
+export type HzLaneLearning = typeof hzLaneLearning.$inferSelect;
+export type InsertHzLaneLearning = typeof hzLaneLearning.$inferInsert;
+
+// -- DRIVER ROUTE REPORTS — Completed trip submissions for ML learning --
+export const hzDriverRouteReports = mysqlTable("hz_driver_route_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  driverId: int("driver_id").notNull(),
+  loadId: int("load_id"),
+  originLat: decimal("origin_lat", { precision: 9, scale: 6 }).notNull(),
+  originLng: decimal("origin_lng", { precision: 10, scale: 6 }).notNull(),
+  destLat: decimal("dest_lat", { precision: 9, scale: 6 }).notNull(),
+  destLng: decimal("dest_lng", { precision: 10, scale: 6 }).notNull(),
+  originCity: varchar("origin_city", { length: 128 }),
+  originState: char("origin_state", { length: 2 }),
+  destCity: varchar("dest_city", { length: 128 }),
+  destState: char("dest_state", { length: 2 }),
+  distanceMiles: decimal("distance_miles", { precision: 8, scale: 2 }),
+  transitMinutes: int("transit_minutes"),
+  avgSpeedMph: decimal("avg_speed_mph", { precision: 6, scale: 2 }),
+  maxSpeedMph: decimal("max_speed_mph", { precision: 6, scale: 2 }),
+  stopCount: int("stop_count").default(0),
+  fuelStops: int("fuel_stops").default(0),
+  isHazmat: tinyint("is_hazmat").default(0),
+  equipmentType: varchar("equipment_type", { length: 32 }),
+  weatherConditions: varchar("weather_conditions", { length: 64 }),
+  roadQualityScore: tinyint("road_quality_score"),
+  congestionScore: tinyint("congestion_score"),
+  routePolyline: text("route_polyline"),
+  startedAt: datetime("started_at").notNull(),
+  completedAt: datetime("completed_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  driverIdx: index("idx_drr_driver").on(table.driverId),
+  loadIdx: index("idx_drr_load").on(table.loadId),
+  completedIdx: index("idx_drr_completed").on(table.completedAt),
+  laneIdx: index("idx_drr_lane").on(table.originState, table.destState),
+}));
+
+export type HzDriverRouteReport = typeof hzDriverRouteReports.$inferSelect;
+export type InsertHzDriverRouteReport = typeof hzDriverRouteReports.$inferInsert;
 

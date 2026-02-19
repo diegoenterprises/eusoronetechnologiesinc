@@ -206,6 +206,66 @@ export const driversRouter = router({
     }),
 
   /**
+   * Get current active load for the logged-in driver
+   */
+  getCurrentLoad: auditedOperationsProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return null;
+      try {
+        const userId = ctx.user?.id || 0;
+        const [load] = await db.select().from(loads)
+          .where(and(
+            eq(loads.driverId, userId),
+            sql`${loads.status} NOT IN ('delivered', 'cancelled', 'draft')`
+          ))
+          .orderBy(desc(loads.createdAt))
+          .limit(1);
+        if (!load) return null;
+
+        const pickup = load.pickupLocation as any || {};
+        const delivery = load.deliveryLocation as any || {};
+
+        // Get shipper name
+        const [shipper] = await db.select({ name: users.name, metadata: users.metadata })
+          .from(users).where(eq(users.id, load.shipperId)).limit(1);
+        const shipperMeta = shipper?.metadata ? (typeof shipper.metadata === 'string' ? JSON.parse(shipper.metadata) : shipper.metadata) : {};
+
+        return {
+          id: String(load.id),
+          loadNumber: load.loadNumber,
+          status: load.status,
+          shipper: shipperMeta?.registration?.companyName || shipper?.name || 'Unknown',
+          commodity: load.commodityName || load.cargoType || 'General',
+          hazmatClass: load.hazmatClass || null,
+          unNumber: load.unNumber || null,
+          cargoType: load.cargoType,
+          origin: {
+            name: pickup.facility || pickup.city || 'Pickup',
+            address: pickup.address || '',
+            city: pickup.city || '',
+            state: pickup.state || '',
+          },
+          destination: {
+            name: delivery.facility || delivery.city || 'Delivery',
+            address: delivery.address || '',
+            city: delivery.city || '',
+            state: delivery.state || '',
+          },
+          pickupDate: load.pickupDate?.toISOString() || '',
+          deliveryDate: load.deliveryDate?.toISOString() || '',
+          rate: load.rate ? parseFloat(String(load.rate)) : 0,
+          miles: load.distance ? parseFloat(String(load.distance)) : 0,
+          weight: load.weight ? parseFloat(String(load.weight)) : 0,
+          specialInstructions: load.specialInstructions || null,
+        };
+      } catch (error) {
+        console.error('[Drivers] getCurrentLoad error:', error);
+        return null;
+      }
+    }),
+
+  /**
    * List all drivers
    */
   list: auditedOperationsProcedure

@@ -6,16 +6,17 @@
  * Theme-aware | Brand gradient | Oil & gas industry focused
  */
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 import {
   Droplets, CheckCircle, AlertTriangle, Clock, Gauge,
-  Thermometer, ArrowRight, Shield, Send, Activity
+  Thermometer, ArrowRight, Shield, Send, Activity, Loader2
 } from "lucide-react";
 
 type OperationType = "loading" | "unloading";
@@ -32,10 +33,49 @@ type Compartment = {
   flowRate: number;
 };
 
-const SAMPLE_COMPARTMENTS: Compartment[] = [
-  { id: "c1", name: "Compartment 1", capacity: 3200, currentLevel: 3200, status: "full", product: "Crude Oil", temperature: 78, flowRate: 0 },
-  { id: "c2", name: "Compartment 2", capacity: 3000, currentLevel: 2100, status: "filling", product: "Crude Oil", temperature: 76, flowRate: 450 },
-  { id: "c3", name: "Compartment 3", capacity: 3000, currentLevel: 0, status: "empty", product: "Crude Oil", temperature: 72, flowRate: 0 },
+// Loading steps by cargo category
+const HAZMAT_LOADING_STEPS = [
+  { step: 1, label: "Ground vehicle and verify connection" },
+  { step: 2, label: "Connect loading arms to fill connections" },
+  { step: 3, label: "Open internal valves for active compartment" },
+  { step: 4, label: "Begin product transfer — monitor flow rate" },
+  { step: 5, label: "Monitor fill level — do not exceed outage" },
+  { step: 6, label: "Close valves and disconnect loading arms" },
+  { step: 7, label: "Verify seal integrity and close all hatches" },
+  { step: 8, label: "Remove ground connection last" },
+  { step: 9, label: "Verify placards and shipping papers" },
+];
+
+const FOOD_GRADE_LOADING_STEPS = [
+  { step: 1, label: "Verify tank washout certificate is current" },
+  { step: 2, label: "Inspect tank interior — no residue or contaminants" },
+  { step: 3, label: "Connect sanitized loading hose to fill port" },
+  { step: 4, label: "Check product temperature before transfer" },
+  { step: 5, label: "Begin product transfer — monitor flow rate & temp" },
+  { step: 6, label: "Monitor fill level — leave required headspace" },
+  { step: 7, label: "Disconnect hose and seal all ports" },
+  { step: 8, label: "Apply tamper-evident seal and record seal number" },
+  { step: 9, label: "Verify food safety cert and shipping papers" },
+];
+
+const WATER_LOADING_STEPS = [
+  { step: 1, label: "Verify tank is clean and free of contaminants" },
+  { step: 2, label: "Connect fill hose to tank inlet" },
+  { step: 3, label: "Open fill valve and begin transfer" },
+  { step: 4, label: "Monitor fill level — do not overfill" },
+  { step: 5, label: "Close fill valve and disconnect hose" },
+  { step: 6, label: "Seal all ports and verify no leaks" },
+  { step: 7, label: "Record quantity loaded and check paperwork" },
+];
+
+const GENERAL_LOADING_STEPS = [
+  { step: 1, label: "Position vehicle at dock/bay as directed" },
+  { step: 2, label: "Set parking brake and chock wheels" },
+  { step: 3, label: "Open trailer doors or loading ports" },
+  { step: 4, label: "Verify product matches shipping documents" },
+  { step: 5, label: "Begin loading — monitor weight distribution" },
+  { step: 6, label: "Secure cargo and close all doors/ports" },
+  { step: 7, label: "Verify seals and complete paperwork" },
 ];
 
 const STATUS_CFG: Record<CompartmentStatus, { label: string; color: string; bg: string }> = {
@@ -46,29 +86,80 @@ const STATUS_CFG: Record<CompartmentStatus, { label: string; color: string; bg: 
   complete: { label: "Complete", color: "text-green-500", bg: "bg-green-500/15" },
 };
 
-const LOADING_STEPS = [
-  { step: 1, label: "Ground vehicle and verify connection", done: true },
-  { step: 2, label: "Connect loading arms to fill connections", done: true },
-  { step: 3, label: "Open internal valves for active compartment", done: true },
-  { step: 4, label: "Begin product transfer — monitor flow rate", done: true },
-  { step: 5, label: "Monitor fill level — do not exceed outage", done: false },
-  { step: 6, label: "Close valves and disconnect loading arms", done: false },
-  { step: 7, label: "Verify seal integrity and close all hatches", done: false },
-  { step: 8, label: "Remove ground connection last", done: false },
-  { step: 9, label: "Verify placards and shipping papers", done: false },
-];
+function getLoadingSteps(cargoType: string | null): { step: number; label: string }[] {
+  if (!cargoType) return GENERAL_LOADING_STEPS;
+  if (['liquid', 'petroleum', 'chemicals', 'hazmat'].includes(cargoType)) return HAZMAT_LOADING_STEPS;
+  if (cargoType === 'food_grade' || cargoType === 'food_grade_tank') return FOOD_GRADE_LOADING_STEPS;
+  if (cargoType === 'water' || cargoType === 'water_tank') return WATER_LOADING_STEPS;
+  return GENERAL_LOADING_STEPS;
+}
 
 export default function LoadingUnloadingStatus() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [opType] = useState<OperationType>("loading");
-  const [compartments] = useState(SAMPLE_COMPARTMENTS);
+  const [completedStepIdx, setCompletedStepIdx] = useState(0);
+
+  // Real data from driver's current load
+  const currentLoadQuery = trpc.drivers.getCurrentLoad.useQuery();
+  const load = currentLoadQuery.data;
+
+  // Derive compartments from load data (or single-compartment default)
+  const compartments: Compartment[] = useMemo(() => {
+    if (!load) return [];
+    const ct = (load.cargoType || '') as string;
+    const isTanker = ['liquid', 'petroleum', 'chemicals', 'gas'].includes(ct);
+    const volume = load.weight || 0; // volume stored as weight for liquid loads
+    if (isTanker || ct === 'food_grade' || ct === 'water') {
+      // Default to 3 compartments for tankers
+      const numComps = 3;
+      const perComp = Math.round(volume / numComps);
+      return Array.from({ length: numComps }, (_, i) => ({
+        id: `c${i + 1}`,
+        name: `Compartment ${i + 1}`,
+        capacity: perComp || 3000,
+        currentLevel: 0,
+        status: 'empty' as CompartmentStatus,
+        product: load.commodity || 'Product',
+        temperature: 72,
+        flowRate: 0,
+      }));
+    }
+    return [{
+      id: 'c1', name: 'Main Tank', capacity: volume || 9000,
+      currentLevel: 0, status: 'empty' as CompartmentStatus,
+      product: load.commodity || 'Product', temperature: 72, flowRate: 0,
+    }];
+  }, [load]);
+
+  const LOADING_STEPS = useMemo(() => {
+    const steps = getLoadingSteps(load?.cargoType || null);
+    return steps.map((s, i) => ({ ...s, done: i < completedStepIdx }));
+  }, [load?.cargoType, completedStepIdx]);
 
   const totalCapacity = compartments.reduce((s, c) => s + c.capacity, 0);
   const totalLoaded = compartments.reduce((s, c) => s + c.currentLevel, 0);
-  const overallPct = Math.round((totalLoaded / totalCapacity) * 100);
+  const overallPct = totalCapacity > 0 ? Math.round((totalLoaded / totalCapacity) * 100) : 0;
   const activeCompartment = compartments.find((c) => c.status === "filling" || c.status === "draining");
   const completedSteps = LOADING_STEPS.filter((s) => s.done).length;
+
+  if (currentLoadQuery.isLoading) {
+    return (
+      <div className="p-8 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <span className="ml-3 text-slate-400">Loading status...</span>
+      </div>
+    );
+  }
+
+  if (!load) {
+    return (
+      <div className="p-8 text-center">
+        <Droplets className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+        <p className="text-slate-400">No active load — loading/unloading status not available</p>
+      </div>
+    );
+  }
 
   const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
 

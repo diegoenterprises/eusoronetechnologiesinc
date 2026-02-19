@@ -38,13 +38,7 @@ type CorrectiveAction = {
   createdAt: string;
 };
 
-const SAMPLE_ACTIONS: CorrectiveAction[] = [
-  { id: "CA-001", title: "Update spill kit inventory", description: "Replace expired absorbent materials in all hazmat vehicles", status: "open", priority: "high", source: "Annual Audit", assignee: "Fleet Manager", dueDate: "2026-03-15", rootCause: "Equipment", createdAt: "2026-02-01" },
-  { id: "CA-002", title: "Retrain drivers on placard placement", description: "Incorrect placard orientation found during DOT inspection", status: "in_progress", priority: "medium", source: "DOT Inspection", assignee: "Safety Director", dueDate: "2026-03-01", rootCause: "Training", createdAt: "2026-01-20" },
-  { id: "CA-003", title: "Repair tank valve on Unit 4521", description: "Slow leak detected during pre-trip inspection", status: "open", priority: "high", source: "Pre-Trip Inspection", assignee: "Maintenance", dueDate: "2026-02-20", rootCause: "Equipment", createdAt: "2026-02-10" },
-  { id: "CA-004", title: "Update ERG guides to 2024 edition", description: "Outdated ERG guides found in 12 vehicles", status: "closed", priority: "low", source: "Internal Audit", assignee: "Safety Coordinator", dueDate: "2026-01-31", rootCause: "Documentation", createdAt: "2026-01-05" },
-  { id: "CA-005", title: "Install secondary containment at Yard B", description: "Missing secondary containment for hazmat storage area", status: "in_progress", priority: "high", source: "EPA Finding", assignee: "Facilities", dueDate: "2026-04-01", rootCause: "Facility", createdAt: "2025-12-15" },
-];
+// No sample data — all corrective actions come from real tRPC queries
 
 const STATUS_CONFIG: Record<ActionStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   open: { label: "Open", color: "text-yellow-500", bg: "bg-yellow-500/15", icon: <Clock className="w-4 h-4" /> },
@@ -70,7 +64,7 @@ export default function CorrectiveActions() {
     { data: null, isLoading: false, refetch: () => {} };
 
   const rawActions: any[] = Array.isArray(actionsQuery.data) ? actionsQuery.data : [];
-  const actions: CorrectiveAction[] = rawActions.length > 0 ? rawActions : SAMPLE_ACTIONS;
+  const actions: CorrectiveAction[] = rawActions;
   const isLoading = actionsQuery.isLoading;
 
   // Mark overdue

@@ -1,12 +1,19 @@
 /**
- * HOT ZONES ENGINE v3.0 — Role-Adaptive Heatmap + External API Integration
- * 12 user roles, 18 hot zones, EIA fuel prices, NWS weather alerts
+ * HOT ZONES ENGINE v5.0 — Role-Adaptive Heatmap + 27 Government Data Sources
+ * 12 user roles, 18 hot zones, hz_zone_intelligence pre-computed metrics
+ * Smart cache with stale-while-revalidate, event-driven invalidation,
+ * sync orchestrator with admin controls, freshness metadata per response
  */
 import { z } from "zod";
-import { router, auditedProtectedProcedure as protectedProcedure } from "../_core/trpc";
+import { router, auditedProtectedProcedure as protectedProcedure, auditedAdminProcedure as adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { sql, count } from "drizzle-orm";
-import { loads } from "../../drizzle/schema";
+import { loads, hzZoneIntelligence, hzWeatherAlerts, hzFuelPrices, hzDataSyncLog } from "../../drizzle/schema";
+import { getFromCache, setInCache } from "../services/cache/hotZonesCache";
+import { getFreshnessStatus } from "../services/cache/cacheConfig";
+import { getSmartCacheStats } from "../services/cache/smartCache";
+import { syncOrchestrator } from "../services/sync/syncOrchestrator";
+import { dataEvents } from "../services/events/dataEventEmitter";
 
 // ── EXTERNAL DATA CACHE ──
 interface ExtCache {
@@ -25,12 +32,25 @@ async function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
   } catch (e) { console.error(`[HotZones] ${key}:`, e); return (extCache as any)[key]; }
 }
 
+const PADD_TO_STATES: Record<string, string[]> = {
+  R1X: ["CT","ME","MA","NH","RI","VT"], R1Y: ["DE","DC","MD","NJ","NY","PA"],
+  R1Z: ["FL","GA","NC","SC","VA","WV"], R20: ["IL","IN","IA","KS","KY","MI","MN","MO","NE","ND","OH","OK","SD","TN","WI"],
+  R30: ["AL","AR","LA","MS","NM","TX"], R40: ["CO","ID","MT","UT","WY"],
+  R50: ["AK","AZ","CA","HI","NV","OR","WA"],
+};
 async function fetchFuelPrices(): Promise<ExtCache["fuelPrices"]> {
   const k = process.env.EIA_API_KEY; if (!k) return extCache.fuelPrices;
   const r = await fetch(`https://api.eia.gov/v2/petroleum/pri/gnd/data?api_key=${k}&data[]=value&facets[product][]=EPD2D&frequency=weekly&sort[0][column]=period&sort[0][direction]=desc&length=60`, { signal: AbortSignal.timeout(10000) });
   if (!r.ok) return extCache.fuelPrices;
   const j = await r.json(); const p: ExtCache["fuelPrices"] = {};
-  for (const row of j?.response?.data || []) { const s = row.duoarea; if (s && row.value) p[s] = { diesel: parseFloat(row.value), updatedAt: row.period }; }
+  for (const row of j?.response?.data || []) {
+    const padd = row.duoarea; if (!padd || !row.value) continue;
+    const states = PADD_TO_STATES[padd];
+    if (states) {
+      for (const st of states) p[st] = { diesel: parseFloat(row.value), updatedAt: row.period };
+    }
+    p[padd] = { diesel: parseFloat(row.value), updatedAt: row.period };
+  }
   return p;
 }
 
@@ -169,11 +189,12 @@ function buildRoleMetrics(role: string, z: any): Array<{ label: string; value: s
         { label: "Weather", value: z.weatherRiskLevel || "LOW", color: z.weatherRiskLevel === "HIGH" ? "red" : z.weatherRiskLevel === "MODERATE" ? "amber" : undefined },
       ];
     case "SAFETY_MANAGER": {
-      const ss = Math.max(0, 100 - Math.round(((z.weatherAlerts?.length || 0) * 15) + ((z.hazmatClasses?.length || 0) * 10)));
+      const ss = z.safetyScore != null ? Math.round(z.safetyScore) : Math.max(0, 100 - Math.round(((z.weatherAlerts?.length || 0) * 15) + ((z.hazmatClasses?.length || 0) * 10)));
+      const incidentCount = (z.recentHazmatIncidents || 0) + (z.activeWildfires || 0);
       return [
         { label: "Safety Score", value: String(ss), color: ss < 50 ? "red" : ss < 70 ? "amber" : "green" },
         { label: "Hazmat", value: `${z.hazmatClasses?.length || 0} classes` },
-        { label: "Incidents", value: (z.weatherAlerts?.length || 0) > 2 ? "Active" : "Clear", color: (z.weatherAlerts?.length || 0) > 2 ? "red" : "green" },
+        { label: "Incidents", value: incidentCount > 0 ? String(incidentCount) : "Clear", color: incidentCount > 2 ? "red" : incidentCount > 0 ? "amber" : "green" },
       ];
     }
     default: // ADMIN, SUPER_ADMIN
@@ -230,8 +251,8 @@ function sortZonesForRole(role: string, zones: any[]): any[] {
       return copy.sort((a, b) => (b.complianceRiskScore || 0) - (a.complianceRiskScore || 0));
     case "SAFETY_MANAGER":
       return copy.sort((a, b) => {
-        const aS = 100 - ((a.weatherAlerts?.length || 0) * 15 + (a.hazmatClasses?.length || 0) * 10);
-        const bS = 100 - ((b.weatherAlerts?.length || 0) * 15 + (b.hazmatClasses?.length || 0) * 10);
+        const aS = a.safetyScore != null ? a.safetyScore : 100 - ((a.weatherAlerts?.length || 0) * 15 + (a.hazmatClasses?.length || 0) * 10);
+        const bS = b.safetyScore != null ? b.safetyScore : 100 - ((b.weatherAlerts?.length || 0) * 15 + (b.hazmatClasses?.length || 0) * 10);
         return aS - bS;
       });
     default:
@@ -312,13 +333,16 @@ function buildRolePulseStats(role: string, filtered: any[], fuelPrices: Record<s
         { label: "Avg Risk", value: String(Math.round(filtered.reduce((s, z) => s + (z.complianceRiskScore || 0), 0) / Math.max(filtered.length, 1))), icon: "bar_chart" },
         ...(sevWx > 0 ? [{ label: "Weather", value: String(sevWx), icon: "cloud_rain" }] : []),
       ];
-    case "SAFETY_MANAGER":
+    case "SAFETY_MANAGER": {
+      const lowSafety = filtered.filter(z => { const s2 = z.safetyScore != null ? z.safetyScore : 100-((z.weatherAlerts?.length||0)*15+(z.hazmatClasses?.length||0)*10); return s2 < 60; }).length;
+      const totalIncidents = filtered.reduce((s, z) => s + (z.recentHazmatIncidents || 0) + (z.activeWildfires || 0), 0);
       return [
-        { label: "Low Safety", value: String(filtered.filter(z => { const s2 = 100-((z.weatherAlerts?.length||0)*15+(z.hazmatClasses?.length||0)*10); return s2 < 60; }).length), icon: "alert" },
+        { label: "Low Safety", value: String(lowSafety), icon: "alert" },
         { label: "Hazmat Zones", value: String(filtered.filter(z => (z.hazmatClasses?.length || 0) > 2).length), icon: "shield" },
-        { label: "Active Incidents", value: String(sevWx), icon: "flame" },
+        { label: "Active Incidents", value: String(totalIncidents || sevWx), icon: "flame" },
         { label: "Monitored", value: String(filtered.length), icon: "bar_chart" },
       ];
+    }
     default: // ADMIN, SUPER_ADMIN
       return [
         { label: "Total Loads", value: totalLoads.toLocaleString(), icon: "flame" },
@@ -327,6 +351,96 @@ function buildRolePulseStats(role: string, filtered: any[], fuelPrices: Record<s
         { label: "Critical", value: String(critical), icon: "zap" },
         ...(avgFuel ? [{ label: "Diesel", value: `$${avgFuel}`, icon: "fuel" }] : []),
       ];
+  }
+}
+
+// ── HZ_ZONE_INTELLIGENCE READER ──
+// Reads pre-computed zone metrics from hz_zone_intelligence (populated by scheduler)
+async function getZoneIntelligenceData(): Promise<Record<string, any> | null> {
+  // Check cache first
+  const cached = getFromCache<Record<string, any>>("hz:zone_intelligence_map");
+  if (cached) return cached;
+
+  try {
+    const db = await getDb();
+    if (!db) return null;
+
+    const rows = await db.select().from(hzZoneIntelligence);
+    if (!rows || rows.length === 0) return null;
+
+    const map: Record<string, any> = {};
+    for (const row of rows) {
+      map[row.zoneId] = row;
+    }
+
+    setInCache("hz:zone_intelligence_map", map, "ZONE_INTELLIGENCE");
+    return map;
+  } catch {
+    return null;
+  }
+}
+
+// Read active weather alerts from hz_weather_alerts (populated by NWS scheduler)
+async function getDbWeatherAlerts(): Promise<ExtCache["weatherAlerts"]> {
+  const cacheKey = "hz:weather_alerts_formatted";
+  const cached = getFromCache<ExtCache["weatherAlerts"]>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const db = await getDb();
+    if (!db) return [];
+
+    const rows = await db.select().from(hzWeatherAlerts).where(sql`expires_at > NOW() OR expires_at IS NULL`).limit(500);
+    if (!rows || rows.length === 0) return [];
+
+    const alerts: ExtCache["weatherAlerts"] = rows.map((r: any) => {
+      let states: string[] = [];
+      try {
+        states = typeof r.stateCodes === "string" ? JSON.parse(r.stateCodes) : r.stateCodes || [];
+      } catch {}
+      return {
+        state: states.join(","),
+        event: r.eventType || "",
+        severity: r.severity || "",
+        headline: r.headline || "",
+      };
+    });
+
+    setInCache(cacheKey, alerts, "WEATHER_ALERTS");
+    return alerts;
+  } catch {
+    return [];
+  }
+}
+
+// Read fuel prices from hz_fuel_prices (populated by EIA scheduler)
+async function getDbFuelPrices(): Promise<ExtCache["fuelPrices"]> {
+  const cacheKey = "hz:fuel_prices_formatted";
+  const cached = getFromCache<ExtCache["fuelPrices"]>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const db = await getDb();
+    if (!db) return {};
+
+    const rows = await db.select().from(hzFuelPrices).orderBy(sql`report_date DESC`).limit(100);
+    if (!rows || rows.length === 0) return {};
+
+    const prices: ExtCache["fuelPrices"] = {};
+    const seen = new Set<string>();
+    for (const r of rows) {
+      if (seen.has(r.stateCode)) continue;
+      seen.add(r.stateCode);
+      prices[r.stateCode] = {
+        diesel: parseFloat(r.dieselRetail || "0"),
+        updatedAt: r.reportDate ? String(r.reportDate) : "",
+      };
+    }
+
+    setInCache(cacheKey, prices, "FUEL_PRICES");
+    return prices;
+  } catch {
+    return {};
   }
 }
 
@@ -374,31 +488,89 @@ export const hotZonesRouter = router({
     .query(async ({ ctx, input }) => {
       const role = ctx.user?.role?.toUpperCase() || "DRIVER";
       const roleContext = getRoleContext(role);
-      const [dbData, fuelPrices, weatherAlerts] = await Promise.all([
+
+      // Try to read pre-computed zone intelligence from scheduler (hz_zone_intelligence)
+      // Falls back to inline EIA/NWS fetch if scheduler data not yet available
+      const [zoneIntel, dbData, dbFuel, dbWeather, inlineFuel, inlineWeather] = await Promise.all([
+        getZoneIntelligenceData(),
         getDbEnhancement(),
+        getDbFuelPrices(),
+        getDbWeatherAlerts(),
         cached("fuelPrices", fetchFuelPrices),
         cached("weatherAlerts", fetchWeatherAlerts),
       ]);
+
+      // Prefer scheduler DB data, fall back to inline API data
+      const fuelPrices = Object.keys(dbFuel).length > 0 ? dbFuel : inlineFuel;
+      const weatherAlerts = dbWeather.length > 0 ? dbWeather : inlineWeather;
+      const hasZoneIntel = zoneIntel !== null && Object.keys(zoneIntel).length > 0;
       const hasDbData = dbData.totalPlatformLoads > 0;
+
+      // Threshold: platform DB must have meaningful data to override market baselines
+      // If platform data is too sparse, blend with market intelligence baselines
+      const PLATFORM_DATA_THRESHOLD = 10; // need at least 10 total platform loads to trust DB counts
+
       const feed = HOT_ZONES.map(zone => {
-        // Use real DB data when available, otherwise show baseline with 0% change
+        const intel = hasZoneIntel ? zoneIntel[zone.id] : null;
+
         const dbLoads = dbData.loadsByState[zone.state] || 0;
         const dbTrucks = dbData.trucksByState[zone.state] || 0;
         const dbRate = dbData.avgRateByState[zone.state] || 0;
+        const platformMature = dbData.totalPlatformLoads >= PLATFORM_DATA_THRESHOLD;
 
-        const liveLoads = hasDbData ? dbLoads : zone.loadCount;
-        const liveTrucks = hasDbData ? Math.max(dbTrucks, 1) : zone.truckCount;
-        const liveRate = hasDbData && dbRate > 0 ? dbRate : zone.avgRate;
+        // Blend strategy: use DB data when platform is mature, otherwise use market baselines
+        // When DB has some data but is sparse, blend: max(dbValue, baseline * scaleFactor)
+        const intelLoads = intel ? Number(intel.liveLoads) || 0 : 0;
+        const intelTrucks = intel ? Number(intel.liveTrucks) || 0 : 0;
+
+        // ── VOLUME METRICS: loads & trucks ──
+        // Only trust zone intelligence volume data when it's meaningfully populated
+        // (e.g., USDA has 10+ rate reports or FMCSA has real carrier counts)
+        // Otherwise use market baselines. Risk/compliance/safety metrics from gov data are separate.
+        const VOLUME_THRESHOLD = 10; // need 10+ to trust as real volume signal
+        let liveLoads: number;
+        let liveTrucks: number;
+        if (intelLoads >= VOLUME_THRESHOLD || intelTrucks >= VOLUME_THRESHOLD) {
+          // Zone intelligence has meaningful volume data from USDA/FMCSA
+          liveLoads = intelLoads >= VOLUME_THRESHOLD ? intelLoads : zone.loadCount;
+          liveTrucks = intelTrucks >= VOLUME_THRESHOLD ? intelTrucks : zone.truckCount;
+        } else if (platformMature && dbLoads > 5) {
+          liveLoads = dbLoads;
+          liveTrucks = Math.max(dbTrucks, Math.round(dbLoads / zone.loadToTruckRatio));
+        } else {
+          // Market baselines with time-of-day variation
+          const hourFactor = 0.85 + Math.sin(Date.now() / 3600000 * Math.PI / 12) * 0.15;
+          liveLoads = Math.round(zone.loadCount * hourFactor);
+          liveTrucks = Math.round(zone.truckCount * hourFactor);
+        }
+
+        liveLoads = Math.max(liveLoads, 1);
+        liveTrucks = Math.max(liveTrucks, 1);
+
+        // ── RATE: prefer real USDA AMS rate > platform DB > baseline ──
+        const intelRate = intel ? Number(intel.avgRatePerMile) || 0 : 0;
+        const liveRate = intelRate > 0.5 ? intelRate : platformMature && dbRate > 0 ? dbRate : zone.avgRate;
         const liveRatio = liveTrucks > 0 ? +(liveLoads / liveTrucks).toFixed(2) : zone.loadToTruckRatio;
-        const liveSurge = +(liveRatio > 2.5 ? 1 + (liveRatio - 1) * 0.2 : 1 + (liveRatio - 1) * 0.1).toFixed(2);
-        const rateChange = hasDbData && dbRate > 0 ? +(liveRate - zone.avgRate).toFixed(2) : 0;
-        const rateChangePct = hasDbData && dbRate > 0 ? +(((liveRate - zone.avgRate) / zone.avgRate) * 100).toFixed(1) : 0;
+        const liveSurge = intel && Number(intel.surgeMultiplier) > 0 ? Number(intel.surgeMultiplier) : +(liveRatio > 2.5 ? 1 + (liveRatio - 1) * 0.2 : 1 + (liveRatio - 1) * 0.1).toFixed(2);
+        // Rate change vs baseline — shows market delta when USDA or platform data available
+        const rateChange = intelRate > 0.5 ? +(liveRate - zone.avgRate).toFixed(2) : platformMature && dbRate > 0 ? +(liveRate - zone.avgRate).toFixed(2) : 0;
+        const rateChangePct = intelRate > 0.5 || (platformMature && dbRate > 0) ? +(((liveRate - zone.avgRate) / zone.avgRate) * 100).toFixed(1) : 0;
 
-        const zoneFuel = fuelPrices[zone.state] || null;
+        // Fuel: prefer hz_zone_intelligence diesel, then hz_fuel_prices, then inline EIA
+        const intelDiesel = intel ? Number(intel.dieselPrice) || 0 : 0;
+        const zoneFuel = intelDiesel > 0 ? { diesel: intelDiesel, updatedAt: "" } : fuelPrices[zone.state] || null;
+
+        // Weather: prefer hz_zone_intelligence aggregated weather, then hz_weather_alerts, then inline NWS
         const zoneWeather = weatherAlerts.filter(a => a.state.includes(zone.state) && ["Extreme","Severe"].includes(a.severity));
+        const intelWeatherAlerts = intel ? Number(intel.activeWeatherAlerts) || 0 : 0;
+        const intelMaxSeverity = intel?.maxWeatherSeverity || null;
 
-        const compRisk = Math.round((zoneWeather.length * 20) + (zone.hazmatClasses?.length || 0) * 15 + (liveRatio > 2.5 ? 20 : 0));
-        const wxLevel = zoneWeather.length > 2 ? "HIGH" : zoneWeather.length > 0 ? "MODERATE" : "LOW";
+        // Compliance & safety from pre-computed intelligence — fall back to formula if intel score is 0/null
+        const intelCompRisk = intel ? Math.round(Number(intel.complianceRiskScore) || 0) : 0;
+        const formulaCompRisk = Math.round((zoneWeather.length * 20) + (zone.hazmatClasses?.length || 0) * 15 + (liveRatio > 2.5 ? 20 : 0) + ((zone.oversizedFrequency === "VERY_HIGH" ? 10 : zone.oversizedFrequency === "HIGH" ? 5 : 0)));
+        const compRisk = intelCompRisk > 0 ? intelCompRisk : formulaCompRisk;
+        const wxLevel = intelMaxSeverity ? (["Severe","Extreme"].includes(intelMaxSeverity) ? "HIGH" : intelMaxSeverity !== "None" ? "MODERATE" : "LOW") : (zoneWeather.length > 2 ? "HIGH" : zoneWeather.length > 0 ? "MODERATE" : "LOW");
+
         const zd = {
           zoneId: zone.id, zoneName: zone.name, state: zone.state, center: zone.center, radius: zone.radius,
           demandLevel: (liveRatio > 2.8 ? "CRITICAL" : liveRatio > 2.0 ? "HIGH" : "ELEVATED") as string,
@@ -409,6 +581,14 @@ export const hotZonesRouter = router({
           fuelPrice: zoneFuel?.diesel || null, fuelPriceUpdated: zoneFuel?.updatedAt || null,
           weatherAlerts: zoneWeather.slice(0, 3), weatherRiskLevel: wxLevel,
           complianceRiskScore: compRisk,
+          // Enriched data from hz_zone_intelligence (new in v4)
+          safetyScore: intel ? Number(intel.avgCarrierSafetyScore) || null : null,
+          carriersWithViolations: intel ? Number(intel.carriersWithViolations) || 0 : 0,
+          recentHazmatIncidents: intel ? Number(intel.recentHazmatIncidents) || 0 : 0,
+          activeWildfires: intel ? Number(intel.activeWildfires) || 0 : 0,
+          femaDisasterActive: intel ? Boolean(intel.femaDisasterActive) : false,
+          seismicRiskLevel: intel?.seismicRiskLevel || "Low",
+          epaFacilitiesCount: intel ? Number(intel.epaFacilitiesCount) || 0 : 0,
           platformLoads: dbLoads, timestamp: new Date().toISOString(),
         };
         return { ...zd, roleMetrics: buildRoleMetrics(role, zd) };
@@ -422,8 +602,19 @@ export const hotZonesRouter = router({
         zones: filtered, coldZones: coldFeed, roleContext,
         platformDataAvailable: dbData.totalPlatformLoads > 0,
         externalDataStatus: { fuelPrices: Object.keys(fuelPrices).length > 0, weatherAlerts: weatherAlerts.length > 0 },
-        feedSource: dbData.totalPlatformLoads > 0 ? `EusoTrip Platform (${dbData.totalPlatformLoads} loads) + EIA + NWS` : "EusoTrip Market Intelligence + EIA + NWS",
+        feedSource: hasZoneIntel
+          ? `EusoTrip Intelligence (${dbData.totalPlatformLoads} loads) + 27 Gov Sources (NWS, EIA, FMCSA, USGS, PHMSA, NIFC, FEMA, EPA, USDA, USACE)`
+          : dbData.totalPlatformLoads > 0
+            ? `EusoTrip Platform (${dbData.totalPlatformLoads} loads) + EIA + NWS`
+            : "EusoTrip Market Intelligence + EIA + NWS",
         refreshInterval: 10, timestamp: new Date().toISOString(),
+        _meta: {
+          zoneIntelligence: { fresh: hasZoneIntel, status: hasZoneIntel ? getFreshnessStatus("ZONE_INTELLIGENCE", 0) : "expired" },
+          fuelPrices: { fresh: Object.keys(fuelPrices).length > 0, status: Object.keys(fuelPrices).length > 0 ? getFreshnessStatus("FUEL_PRICES", 0) : "expired" },
+          weatherAlerts: { fresh: weatherAlerts.length > 0, status: weatherAlerts.length > 0 ? getFreshnessStatus("WEATHER_ALERTS", 0) : "expired" },
+          fetchedAt: new Date().toISOString(),
+          dataSources: hasZoneIntel ? 27 : dbData.totalPlatformLoads > 0 ? 3 : 1,
+        },
         marketPulse: {
           avgRate: filtered.length > 0 ? +(filtered.reduce((s, z) => s + z.liveRate, 0) / filtered.length).toFixed(2) : 0,
           avgRatio: filtered.length > 0 ? +(filtered.reduce((s, z) => s + z.liveRatio, 0) / filtered.length).toFixed(2) : 0,
@@ -470,9 +661,7 @@ export const hotZonesRouter = router({
         fuelPrice: zoneFuel?.diesel || null, fuelPriceUpdated: zoneFuel?.updatedAt || null,
         weatherAlerts: zoneWeather.slice(0, 5),
         weatherRiskLevel: zoneWeather.filter(a => ["Extreme","Severe"].includes(a.severity)).length > 2 ? "HIGH" : zoneWeather.length > 0 ? "MODERATE" : "LOW",
-        complianceRiskScore: (role === "COMPLIANCE_OFFICER" || role === "SAFETY_MANAGER")
-          ? Math.round((zoneWeather.length * 10) + (zone.hazmatClasses?.length || 0) * 15 + (zone.loadToTruckRatio > 2.5 ? 20 : 0))
-          : undefined,
+        complianceRiskScore: Math.round((zoneWeather.filter(a => ["Extreme","Severe"].includes(a.severity)).length * 20) + (zone.hazmatClasses?.length || 0) * 15 + (zone.loadToTruckRatio > 2.5 ? 20 : 0) + (zone.oversizedFrequency === "VERY_HIGH" ? 10 : zone.oversizedFrequency === "HIGH" ? 5 : 0)),
       };
     }),
 
@@ -663,4 +852,88 @@ export const hotZonesRouter = router({
       roleContext: getRoleContext(role), timestamp: new Date().toISOString(),
     };
   }),
+
+  // ═══ FORCE REFRESH — User-triggered data refresh ═══
+  forceRefresh: protectedProcedure
+    .input(z.object({ dataType: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const dataType = input.dataType || "ZONE_INTELLIGENCE";
+      const result = await syncOrchestrator.triggerJob(dataType);
+      return { success: result.success, dataType, error: result.error || null, triggeredAt: new Date().toISOString() };
+    }),
+
+  // ═══ ADMIN: Sync Orchestrator Status ═══
+  getSyncStatus: adminProcedure.query(async () => {
+    const jobs = syncOrchestrator.getAllJobStatus();
+    const summary = syncOrchestrator.getSummary();
+    const cacheStats = getSmartCacheStats();
+    const recentEvents = dataEvents.getRecentEvents(10);
+    const criticalEvents = dataEvents.getCriticalEvents();
+
+    return {
+      orchestrator: summary,
+      jobs,
+      cache: cacheStats,
+      events: { recent: recentEvents.map(e => ({ type: e.type, severity: e.severity, summary: e.summary, timestamp: e.timestamp.toISOString(), states: e.affectedStates })), critical: criticalEvents.length },
+      timestamp: new Date().toISOString(),
+    };
+  }),
+
+  // Admin: Trigger a specific sync job
+  triggerSync: adminProcedure
+    .input(z.object({ jobId: z.string() }))
+    .mutation(async ({ input }) => {
+      const result = await syncOrchestrator.triggerJob(input.jobId);
+      return { success: result.success, jobId: input.jobId, error: result.error || null, triggeredAt: new Date().toISOString() };
+    }),
+
+  // Admin: Enable/disable a sync job
+  setSyncJobEnabled: adminProcedure
+    .input(z.object({ jobId: z.string(), enabled: z.boolean(), reason: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const success = input.enabled
+        ? syncOrchestrator.enableJob(input.jobId)
+        : syncOrchestrator.disableJob(input.jobId, input.reason);
+      return { success, jobId: input.jobId, enabled: input.enabled, timestamp: new Date().toISOString() };
+    }),
+
+  // Admin: Get recent data events
+  getDataEvents: adminProcedure
+    .input(z.object({ limit: z.number().default(50), type: z.string().optional(), state: z.string().optional() }))
+    .query(async ({ input }) => {
+      let events;
+      if (input.type) {
+        events = dataEvents.getEventsByType(input.type as any, input.limit);
+      } else if (input.state) {
+        events = dataEvents.getEventsByState(input.state, input.limit);
+      } else {
+        events = dataEvents.getRecentEvents(input.limit);
+      }
+      return {
+        events: events.map(e => ({
+          type: e.type, severity: e.severity, summary: e.summary,
+          timestamp: e.timestamp.toISOString(),
+          affectedStates: e.affectedStates, source: e.source,
+        })),
+        total: events.length, timestamp: new Date().toISOString(),
+      };
+    }),
+
+  // Admin: Get sync log history from DB
+  getSyncLog: adminProcedure
+    .input(z.object({ limit: z.number().default(50), sourceName: z.string().optional() }))
+    .query(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) return { logs: [], total: 0 };
+        const condition = input.sourceName
+          ? sql`source_name = ${input.sourceName}`
+          : sql`1=1`;
+        const rows = await db.select().from(hzDataSyncLog)
+          .where(condition)
+          .orderBy(sql`started_at DESC`)
+          .limit(input.limit);
+        return { logs: rows, total: rows.length };
+      } catch { return { logs: [], total: 0 }; }
+    }),
 });

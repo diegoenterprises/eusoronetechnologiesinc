@@ -259,43 +259,4 @@ export function NotificationBell({
   );
 }
 
-export function getSampleNotifications(): Notification[] {
-  return [
-    {
-      id: "n1", type: "bid", title: "New Bid Received",
-      message: "ABC Transport submitted a bid of $2,800 for LOAD-45901",
-      timestamp: new Date(Date.now() - 300000), read: false, priority: "high",
-      actionLabel: "View Bid", actionUrl: "/loads/45901/bids"
-    },
-    {
-      id: "n2", type: "load", title: "Load Assigned",
-      message: "You've been assigned to LOAD-45902. Pickup at 6:00 AM tomorrow.",
-      timestamp: new Date(Date.now() - 1800000), read: false, priority: "normal",
-      actionLabel: "View Load"
-    },
-    {
-      id: "n3", type: "alert", title: "HOS Warning",
-      message: "Driver John Smith has less than 2 hours driving time remaining.",
-      timestamp: new Date(Date.now() - 3600000), read: false, priority: "urgent"
-    },
-    {
-      id: "n4", type: "payment", title: "Payment Received",
-      message: "Payment of $4,200 received for LOAD-45898.",
-      timestamp: new Date(Date.now() - 7200000), read: true, priority: "normal"
-    },
-    {
-      id: "n5", type: "compliance", title: "Document Expiring",
-      message: "CDL for Robert Johnson expires in 30 days.",
-      timestamp: new Date(Date.now() - 86400000), read: true, priority: "high",
-      actionLabel: "Review"
-    },
-    {
-      id: "n6", type: "message", title: "New Message",
-      message: "Shell Oil: Load is ready for pickup at Gate 3.",
-      timestamp: new Date(Date.now() - 3600000 * 2), read: true, priority: "normal",
-      actionLabel: "Reply"
-    },
-  ];
-}
-
 export default NotificationCenter;

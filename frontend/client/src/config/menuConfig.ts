@@ -225,6 +225,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "View & sign shipper agreements"
     },
     { 
+      icon: "FileText", 
+      label: "Documents", 
+      path: "/documents", 
+      badge: 0,
+      description: "Compliance documents, permits & certifications"
+    },
+    { 
       icon: "BarChart3", 
       label: "Analytics", 
       path: "/analytics", 
@@ -346,6 +353,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/agreements", 
       badge: 0,
       description: "Manage shipper & catalyst contracts"
+    },
+    { 
+      icon: "FileText", 
+      label: "Documents", 
+      path: "/documents", 
+      badge: 0,
+      description: "Authority docs, surety bond & compliance"
     },
     { 
       icon: "DollarSign", 
@@ -604,6 +618,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Dispatch service agreements"
     },
     { 
+      icon: "FileText", 
+      label: "Documents", 
+      path: "/documents", 
+      badge: 0,
+      description: "Compliance documents & certifications"
+    },
+    { 
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
@@ -720,6 +741,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Escort service agreements"
     },
     { 
+      icon: "FileText", 
+      label: "Documents", 
+      path: "/documents", 
+      badge: 0,
+      description: "License, certifications & insurance docs"
+    },
+    { 
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
@@ -789,6 +817,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "AlertTriangle", label: "Chargebacks", path: "/factoring/chargebacks", badge: 0, description: "Chargeback management" },
     { icon: "Users", label: "Debtors", path: "/factoring/debtors", badge: 0, description: "Debtor accounts" },
     { icon: "TrendingUp", label: "Reports", path: "/factoring/reports", badge: 0, description: "Factoring reports" },
+    { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "EIN, W-9, NDA & compliance docs" },
     { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, demand heatmaps & surge pricing" },
     { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Messaging" },
     { icon: "Wallet", label: "Wallet", path: "/wallet", badge: 0, description: "EusoWallet" },
@@ -860,6 +889,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/agreements", 
       badge: 0,
       description: "Terminal access & service agreements"
+    },
+    { 
+      icon: "FileText", 
+      label: "Documents", 
+      path: "/documents", 
+      badge: 0,
+      description: "EPA permits, compliance docs & certifications"
     },
     { 
       icon: "BarChart3", 
@@ -1078,6 +1114,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/hazmat", 
       badge: 0,
       description: "Hazardous materials safety"
+    },
+    { 
+      icon: "FileText", 
+      label: "Documents", 
+      path: "/documents", 
+      badge: 0,
+      description: "Safety certifications & compliance docs"
     },
     { 
       icon: "TrendingUp", 
@@ -1323,7 +1366,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
 const ALWAYS_ACCESSIBLE = new Set([
   "/", "/profile", "/settings", "/messages", "/news", "/support",
   "/company-channels", "/the-haul", "/notifications", "/company",
-  "/leaderboard", "/rewards", "/missions",
+  "/leaderboard", "/rewards", "/missions", "/documents",
 ]);
 
 const ALWAYS_ACCESSIBLE_PREFIXES = ["/admin", "/super-admin", "/factoring"];

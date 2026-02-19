@@ -608,7 +608,610 @@ export const hazmatRouter = router({
       };
     }),
 
-  // 15. getIncidentHistory — Past hazmat incidents for a company/driver
+  // 15. validatePackaging — 49 CFR 173 packaging compliance validation
+  validatePackaging: protectedProcedure
+    .input(z.object({
+      hazmatClass: z.string(),
+      unNumber: z.string().optional(),
+      packingGroup: z.enum(["I", "II", "III"]).optional(),
+      packagingType: z.string(),
+      quantity: z.number(),
+      quantityUnit: z.enum(["lbs", "kg", "gal", "L"]).default("lbs"),
+    }))
+    .query(async ({ input }) => {
+      // 49 CFR 173 authorized packagings by hazmat class and packing group
+      const AUTHORIZED_PACKAGINGS: Record<string, Record<string, { allowed: string[]; maxQuantity: Record<string, number>; specialProvisions: string[] }>> = {
+        "1.1": { "II": { allowed: ["1A2", "1B2", "4C1", "4C2", "4D", "4F"], maxQuantity: { lbs: 66, kg: 30, gal: 0, L: 0 }, specialProvisions: ["Must meet 49 CFR 173.60 compatibility requirements", "New and reused packagings per 173.28"] } },
+        "1.4": { "II": { allowed: ["1A2", "1B2", "4C1", "4C2", "4D", "4F", "4G"], maxQuantity: { lbs: 66, kg: 30, gal: 0, L: 0 }, specialProvisions: ["Compatibility group S — limited quantities per 173.63"] } },
+        "2.1": { "": { allowed: ["CYL-DOT3AA", "CYL-DOT3AL", "CYL-DOT3E", "CYL-DOT39", "MC-331"], maxQuantity: { lbs: 0, kg: 0, gal: 11600, L: 43906 }, specialProvisions: ["Cylinders per 49 CFR 173.301", "Cargo tanks per 49 CFR 173.315"] } },
+        "2.2": { "": { allowed: ["CYL-DOT3AA", "CYL-DOT3AL", "CYL-DOT3E", "CYL-DOT39", "MC-331", "MC-338"], maxQuantity: { lbs: 0, kg: 0, gal: 11600, L: 43906 }, specialProvisions: ["Same as 2.1 plus cryogenic per 173.316"] } },
+        "2.3": { "": { allowed: ["CYL-DOT3AA", "CYL-DOT3AL"], maxQuantity: { lbs: 0, kg: 0, gal: 300, L: 1136 }, specialProvisions: ["Poison gas — limited cylinder sizes", "Must have gas-tight valve protection"] } },
+        "3": {
+          "I": { allowed: ["1A1", "1B1", "1N1", "1H1", "MC-306", "MC-307"], maxQuantity: { lbs: 0, kg: 0, gal: 9200, L: 34826 }, specialProvisions: ["Packing Group I — highest danger", "Single packagings only for <=30L per 173.202"] },
+          "II": { allowed: ["1A1", "1B1", "1N1", "1H1", "1H2", "3A1", "3H1", "MC-306", "MC-307"], maxQuantity: { lbs: 0, kg: 0, gal: 9200, L: 34826 }, specialProvisions: ["Inner packagings <=5L in combination per 173.202"] },
+          "III": { allowed: ["1A1", "1A2", "1B1", "1B2", "1N1", "1N2", "1H1", "1H2", "3A1", "3A2", "3H1", "3H2", "MC-306", "MC-307", "MC-312", "JERRYCAN", "IBC"], maxQuantity: { lbs: 0, kg: 0, gal: 9200, L: 34826 }, specialProvisions: ["Widest range of packagings allowed", "IBCs per 173.242"] },
+        },
+        "4.1": { "I": { allowed: ["1A2", "1B2", "4C1", "4C2", "4D", "4F"], maxQuantity: { lbs: 55, kg: 25, gal: 0, L: 0 }, specialProvisions: ["Keep away from heat/flame"] }, "II": { allowed: ["1A2", "1B2", "4C1", "4C2", "4D", "4F", "4G", "IBC"], maxQuantity: { lbs: 882, kg: 400, gal: 0, L: 0 }, specialProvisions: ["IBCs allowed for PG II per 173.212"] }, "III": { allowed: ["1A2", "1B2", "4C1", "4C2", "4D", "4F", "4G", "IBC", "BULK_BAG"], maxQuantity: { lbs: 882, kg: 400, gal: 0, L: 0 }, specialProvisions: ["Bulk packaging per 173.240"] } },
+        "4.2": { "I": { allowed: ["1A2", "1B2"], maxQuantity: { lbs: 33, kg: 15, gal: 0, L: 0 }, specialProvisions: ["Must be hermetically sealed", "No air contact"] }, "II": { allowed: ["1A2", "1B2", "4C1"], maxQuantity: { lbs: 110, kg: 50, gal: 0, L: 0 }, specialProvisions: ["Fill with inert gas"] }, "III": { allowed: ["1A2", "1B2", "4C1", "4C2", "4D", "IBC"], maxQuantity: { lbs: 882, kg: 400, gal: 0, L: 0 }, specialProvisions: ["IBCs allowed for PG III"] } },
+        "4.3": { "I": { allowed: ["1A1", "1B1"], maxQuantity: { lbs: 0, kg: 0, gal: 2.6, L: 10 }, specialProvisions: ["Waterproof packaging only", "No water contact"] }, "II": { allowed: ["1A1", "1A2", "1B1", "1B2"], maxQuantity: { lbs: 110, kg: 50, gal: 7, L: 25 }, specialProvisions: ["Waterproof inner packaging"] }, "III": { allowed: ["1A1", "1A2", "1B1", "1B2", "4C1", "4C2", "IBC"], maxQuantity: { lbs: 882, kg: 400, gal: 66, L: 250 }, specialProvisions: ["IBCs per 173.242"] } },
+        "5.1": { "I": { allowed: ["1A1", "1B1", "1N1", "1H1"], maxQuantity: { lbs: 55, kg: 25, gal: 2.6, L: 10 }, specialProvisions: ["Keep from combustibles", "UN-rated packagings only"] }, "II": { allowed: ["1A1", "1A2", "1B1", "1B2", "1N1", "1H1", "MC-307"], maxQuantity: { lbs: 882, kg: 400, gal: 66, L: 250 }, specialProvisions: ["Separate from combustible materials"] }, "III": { allowed: ["1A1", "1A2", "1B1", "1B2", "1N1", "1N2", "1H1", "1H2", "IBC", "MC-307"], maxQuantity: { lbs: 882, kg: 400, gal: 66, L: 250 }, specialProvisions: ["IBCs allowed per 173.242"] } },
+        "5.2": { "I": { allowed: ["1A1", "1B1"], maxQuantity: { lbs: 22, kg: 10, gal: 2.6, L: 10 }, specialProvisions: ["Temperature control may be required", "Type B-F per 173.225"] }, "II": { allowed: ["1A1", "1A2", "1B1", "1B2", "1H1"], maxQuantity: { lbs: 110, kg: 50, gal: 7, L: 25 }, specialProvisions: ["Type B-F designation per 173.225"] } },
+        "6.1": { "I": { allowed: ["1A1", "1B1", "1N1", "MC-306", "MC-307", "MC-312"], maxQuantity: { lbs: 55, kg: 25, gal: 2.6, L: 10 }, specialProvisions: ["Poison — requires POISON inhalation hazard label if Zone A/B"] }, "II": { allowed: ["1A1", "1A2", "1B1", "1B2", "1N1", "1H1", "MC-306", "MC-307", "MC-312"], maxQuantity: { lbs: 882, kg: 400, gal: 66, L: 250 }, specialProvisions: ["Poison label required"] }, "III": { allowed: ["1A1", "1A2", "1B1", "1B2", "1N1", "1N2", "1H1", "1H2", "IBC", "MC-306", "MC-307", "MC-312"], maxQuantity: { lbs: 882, kg: 400, gal: 66, L: 250 }, specialProvisions: ["IBC per 173.242"] } },
+        "7": { "": { allowed: ["TYPE-A", "TYPE-B(U)", "TYPE-B(M)", "INDUSTRIAL-IP1", "INDUSTRIAL-IP2", "INDUSTRIAL-IP3"], maxQuantity: { lbs: 0, kg: 0, gal: 0, L: 0 }, specialProvisions: ["NRC/DOE approved packagings only", "Activity limits per 173.431-173.435", "Package design approved by competent authority"] } },
+        "8": {
+          "I": { allowed: ["1A1", "1B1", "1N1", "1H1", "MC-312"], maxQuantity: { lbs: 55, kg: 25, gal: 2.6, L: 10 }, specialProvisions: ["Corrosive-resistant inner packaging", "Corrosion rate criteria per 173.137"] },
+          "II": { allowed: ["1A1", "1A2", "1B1", "1B2", "1N1", "1H1", "MC-307", "MC-312"], maxQuantity: { lbs: 882, kg: 400, gal: 66, L: 250 }, specialProvisions: ["Corrosive-resistant packaging"] },
+          "III": { allowed: ["1A1", "1A2", "1B1", "1B2", "1N1", "1N2", "1H1", "1H2", "IBC", "MC-307", "MC-312"], maxQuantity: { lbs: 882, kg: 400, gal: 66, L: 250 }, specialProvisions: ["IBCs allowed per 173.242"] },
+        },
+        "9": { "III": { allowed: ["1A2", "1B2", "1H2", "4C1", "4C2", "4D", "4G", "IBC", "MC-306", "MC-307", "FLATBED", "DRY_VAN", "BULK_BAG"], maxQuantity: { lbs: 882, kg: 400, gal: 119, L: 450 }, specialProvisions: ["Widest range of packagings", "Many exceptions apply — consult 49 CFR 173.155"] } },
+      };
+
+      const pg = input.packingGroup || "";
+      const classData = AUTHORIZED_PACKAGINGS[input.hazmatClass];
+      if (!classData) {
+        return { valid: false, hazmatClass: input.hazmatClass, packingGroup: pg, packagingType: input.packagingType, errors: [`No packaging data found for hazmat class ${input.hazmatClass}`], warnings: [], authorizedPackagings: [], specialProvisions: [], regulation: "49 CFR 173" };
+      }
+
+      const pgData = classData[pg] || classData[""] || null;
+      if (!pgData) {
+        const availablePGs = Object.keys(classData).filter(k => k !== "");
+        return { valid: false, hazmatClass: input.hazmatClass, packingGroup: pg, packagingType: input.packagingType, errors: [`Packing Group ${pg || "(none)"} not valid for class ${input.hazmatClass}. Available: ${availablePGs.join(", ")}`], warnings: [], authorizedPackagings: classData[availablePGs[0]]?.allowed || [], specialProvisions: [], regulation: "49 CFR 173" };
+      }
+
+      const errors: string[] = [];
+      const warnings: string[] = [];
+      const pkgUpper = input.packagingType.toUpperCase().replace(/[\s-]/g, "");
+      const isAllowed = pgData.allowed.some(a => pkgUpper.includes(a.replace(/[\s-]/g, "").toUpperCase()));
+
+      if (!isAllowed) {
+        errors.push(`Packaging type '${input.packagingType}' is NOT authorized for Class ${input.hazmatClass} PG ${pg}. Authorized: ${pgData.allowed.join(", ")}`);
+      }
+
+      const maxQty = pgData.maxQuantity[input.quantityUnit] || 0;
+      if (maxQty > 0 && input.quantity > maxQty) {
+        errors.push(`Quantity ${input.quantity} ${input.quantityUnit} exceeds maximum ${maxQty} ${input.quantityUnit} for this packaging/class combination`);
+      }
+
+      if (input.hazmatClass.startsWith("4.2")) warnings.push("Spontaneously combustible — verify hermetic seal integrity before transport");
+      if (input.hazmatClass === "5.2") warnings.push("Organic peroxide — verify temperature control requirements per 49 CFR 173.225");
+      if (input.hazmatClass === "7") warnings.push("Radioactive — additional NRC/DOE approval required for Type B packages");
+      if (input.hazmatClass === "2.3") warnings.push("Poison gas — verify cylinder valve protection and gas-tight closure");
+
+      return {
+        valid: errors.length === 0,
+        hazmatClass: input.hazmatClass,
+        packingGroup: pg,
+        packagingType: input.packagingType,
+        quantity: input.quantity,
+        quantityUnit: input.quantityUnit,
+        errors,
+        warnings,
+        authorizedPackagings: pgData.allowed,
+        specialProvisions: pgData.specialProvisions,
+        maxQuantity: pgData.maxQuantity,
+        regulation: "49 CFR 173 — Shippers — General Requirements for Shipments and Packagings",
+      };
+    }),
+
+  // 16. calculateHazmatPremium — Rate premium calculation for hazmat loads
+  calculateHazmatPremium: protectedProcedure
+    .input(z.object({
+      hazmatClass: z.string(),
+      packingGroup: z.enum(["I", "II", "III"]).optional(),
+      baseRate: z.number(),
+      distance: z.number(),
+      weight: z.number(),
+      originState: z.string(),
+      destinationState: z.string(),
+      requiresPlacards: z.boolean().default(true),
+      requiresEscort: z.boolean().default(false),
+    }))
+    .query(async ({ input }) => {
+      // Class-based risk multipliers (higher = more premium)
+      const CLASS_RISK_MULTIPLIERS: Record<string, number> = {
+        "1.1": 0.45, "1.2": 0.40, "1.3": 0.35, "1.4": 0.20, "1.5": 0.15, "1.6": 0.10,
+        "2.1": 0.30, "2.2": 0.10, "2.3": 0.40,
+        "3": 0.25, "4.1": 0.20, "4.2": 0.30, "4.3": 0.35,
+        "5.1": 0.25, "5.2": 0.35, "6.1": 0.30, "6.2": 0.20,
+        "7": 0.50, "8": 0.25, "9": 0.10,
+      };
+
+      // Packing group multipliers
+      const PG_MULTIPLIERS: Record<string, number> = { "I": 1.3, "II": 1.0, "III": 0.8 };
+
+      // Base class premium
+      const classMultiplier = CLASS_RISK_MULTIPLIERS[input.hazmatClass] || 0.15;
+      const pgMultiplier = PG_MULTIPLIERS[input.packingGroup || "II"] || 1.0;
+
+      // Insurance surcharge per mile (hazmat insurance is ~3-5x general)
+      const insuranceSurchargePerMile = classMultiplier > 0.3 ? 0.35 : classMultiplier > 0.2 ? 0.20 : 0.10;
+
+      // Permit/compliance surcharge (flat per load)
+      const permitSurcharge = 75; // average state permit + HMSP cost amortized per load
+
+      // Escort surcharge
+      const escortSurcharge = input.requiresEscort ? input.distance * 2.50 : 0;
+
+      // Placard/signage surcharge
+      const placardSurcharge = input.requiresPlacards ? 25 : 0;
+
+      // Calculate premiums
+      const classPremium = input.baseRate * classMultiplier * pgMultiplier;
+      const insurancePremium = input.distance * insuranceSurchargePerMile;
+      const totalPremium = classPremium + insurancePremium + permitSurcharge + escortSurcharge + placardSurcharge;
+      const recommendedRate = input.baseRate + totalPremium;
+      const premiumPercentage = Math.round((totalPremium / input.baseRate) * 100);
+
+      return {
+        baseRate: input.baseRate,
+        hazmatClass: input.hazmatClass,
+        packingGroup: input.packingGroup || "II",
+        breakdown: {
+          classPremium: Math.round(classPremium * 100) / 100,
+          insurancePremium: Math.round(insurancePremium * 100) / 100,
+          permitSurcharge,
+          escortSurcharge: Math.round(escortSurcharge * 100) / 100,
+          placardSurcharge,
+        },
+        totalPremium: Math.round(totalPremium * 100) / 100,
+        recommendedRate: Math.round(recommendedRate * 100) / 100,
+        premiumPercentage,
+        riskLevel: classMultiplier >= 0.35 ? "HIGH" as const : classMultiplier >= 0.20 ? "MEDIUM" as const : "LOW" as const,
+        note: `Hazmat Class ${input.hazmatClass} loads typically command ${premiumPercentage}% premium over general freight rates. Factors: class risk (${Math.round(classMultiplier * 100)}%), PG ${input.packingGroup || "II"} modifier, insurance surcharge ($${insuranceSurchargePerMile}/mi), permits ($${permitSurcharge} flat).`,
+      };
+    }),
+
+  // 17. getHazmatRoute — Google Maps Directions with hazmat restriction avoidance
+  getHazmatRoute: protectedProcedure
+    .input(z.object({
+      origin: z.object({ lat: z.number(), lng: z.number(), address: z.string().optional() }),
+      destination: z.object({ lat: z.number(), lng: z.number(), address: z.string().optional() }),
+      hazmatClass: z.string(),
+      unNumber: z.string().optional(),
+      isTIH: z.boolean().optional(),
+      weight: z.number().optional(),
+      departureTime: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const GOOGLE_MAPS_KEY = process.env.GOOGLE_MAPS_API_KEY || "";
+
+      // Determine avoidance flags based on hazmat class
+      const nc = normalizeClass(input.hazmatClass);
+      const avoidTunnels = ["1", "2.1", "2.3", "3", "4.2", "4.3", "5.1", "5.2", "6.1", "7"].includes(nc) || ["1", "2.1", "2.3", "3", "4.2", "4.3", "5.1", "5.2", "6.1", "7"].includes(input.hazmatClass);
+      const avoidFerries = true; // All hazmat should avoid ferries where possible
+      const avoidHighways = false; // Hazmat should USE highways (49 CFR 397.9 — prefer bypass routes over populated areas)
+
+      // Known tunnel/bridge restrictions — waypoints to avoid
+      const AVOID_WAYPOINTS: Array<{ lat: number; lng: number; name: string; reason: string }> = [];
+      if (avoidTunnels) {
+        // Lincoln/Holland Tunnel area (NYC)
+        AVOID_WAYPOINTS.push({ lat: 40.7588, lng: -74.0024, name: "Lincoln Tunnel", reason: "Tunnel Category E — Class " + input.hazmatClass + " prohibited" });
+        AVOID_WAYPOINTS.push({ lat: 40.7264, lng: -74.0114, name: "Holland Tunnel", reason: "Tunnel Category E — Class " + input.hazmatClass + " prohibited" });
+        // Baltimore tunnels
+        AVOID_WAYPOINTS.push({ lat: 39.2641, lng: -76.5796, name: "Baltimore Harbor Tunnel", reason: "Tunnel Category C — hazmat restrictions" });
+        AVOID_WAYPOINTS.push({ lat: 39.2695, lng: -76.5838, name: "Fort McHenry Tunnel", reason: "Tunnel Category C — hazmat restrictions" });
+        // Eisenhower Tunnel CO
+        AVOID_WAYPOINTS.push({ lat: 39.6811, lng: -105.9170, name: "Eisenhower Tunnel", reason: "CDOT hazmat escort required" });
+        // Hampton Roads VA
+        AVOID_WAYPOINTS.push({ lat: 37.0156, lng: -76.3233, name: "Hampton Roads Bridge-Tunnel", reason: "Tunnel Category C" });
+        // Ted Williams Tunnel MA
+        AVOID_WAYPOINTS.push({ lat: 42.3541, lng: -71.0188, name: "Ted Williams Tunnel", reason: "Tunnel Category D — flammable/toxic prohibited" });
+      }
+
+      // Build Google Maps Directions request
+      const avoid: string[] = [];
+      if (avoidTunnels) avoid.push("tolls"); // Many restricted tunnels are toll facilities
+      if (avoidFerries) avoid.push("ferries");
+
+      let googleRoute = null;
+      let alternateRoutes: any[] = [];
+
+      if (GOOGLE_MAPS_KEY) {
+        try {
+          const originStr = `${input.origin.lat},${input.origin.lng}`;
+          const destStr = `${input.destination.lat},${input.destination.lng}`;
+          const avoidStr = avoid.length > 0 ? `&avoid=${avoid.join("|")}` : "";
+          const depTime = input.departureTime ? `&departure_time=${Math.floor(new Date(input.departureTime).getTime() / 1000)}` : "&departure_time=now";
+          const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originStr}&destination=${destStr}${avoidStr}${depTime}&alternatives=true&key=${GOOGLE_MAPS_KEY}`;
+
+          const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
+          if (resp.ok) {
+            const data = await resp.json() as any;
+            if (data.routes?.length > 0) {
+              // Primary route (with avoidance)
+              const primary = data.routes[0];
+              const leg = primary.legs?.[0];
+              googleRoute = {
+                distance: leg?.distance?.text || "",
+                distanceMeters: leg?.distance?.value || 0,
+                duration: leg?.duration?.text || "",
+                durationSeconds: leg?.duration?.value || 0,
+                startAddress: leg?.start_address || input.origin.address || "",
+                endAddress: leg?.end_address || input.destination.address || "",
+                summary: primary.summary || "",
+                warnings: primary.warnings || [],
+                polyline: primary.overview_polyline?.points || "",
+                steps: (leg?.steps || []).slice(0, 50).map((s: any) => ({
+                  instruction: s.html_instructions?.replace(/<[^>]*>/g, "") || "",
+                  distance: s.distance?.text || "",
+                  duration: s.duration?.text || "",
+                  maneuver: s.maneuver || null,
+                })),
+              };
+
+              // Alternate routes
+              alternateRoutes = data.routes.slice(1, 3).map((r: any) => {
+                const altLeg = r.legs?.[0];
+                return {
+                  summary: r.summary || "",
+                  distance: altLeg?.distance?.text || "",
+                  distanceMeters: altLeg?.distance?.value || 0,
+                  duration: altLeg?.duration?.text || "",
+                  durationSeconds: altLeg?.duration?.value || 0,
+                  polyline: r.overview_polyline?.points || "",
+                };
+              });
+            }
+          }
+        } catch (err) {
+          console.warn("[Hazmat] Google Maps route fetch error:", (err as Error).message);
+        }
+      }
+
+      // Check if route passes near any restricted waypoints
+      const routeWarnings: Array<{ name: string; reason: string; severity: string }> = [];
+      if (googleRoute && AVOID_WAYPOINTS.length > 0) {
+        // Simple proximity check: if route summary mentions restricted areas
+        const summary = (googleRoute.summary || "").toLowerCase();
+        for (const wp of AVOID_WAYPOINTS) {
+          if (summary.includes("tunnel") || summary.includes("bridge")) {
+            routeWarnings.push({ name: wp.name, reason: wp.reason, severity: "warning" });
+          }
+        }
+      }
+
+      // Time-of-day warnings
+      const now = input.departureTime ? new Date(input.departureTime) : new Date();
+      const hour = now.getHours();
+      if ((hour >= 0 && hour < 6) || (hour >= 7 && hour < 9) || (hour >= 16 && hour < 19)) {
+        routeWarnings.push({
+          name: "Rush Hour / Night Travel Advisory",
+          reason: `Departure at ${hour}:00 — many metro areas restrict hazmat during peak hours (NYC, Chicago, Houston). Verify local ordinances.`,
+          severity: "advisory",
+        });
+      }
+
+      return {
+        hazmatClass: input.hazmatClass,
+        route: googleRoute,
+        alternateRoutes,
+        avoidance: { tunnels: avoidTunnels, ferries: avoidFerries, flags: avoid },
+        restrictedWaypoints: AVOID_WAYPOINTS,
+        routeWarnings,
+        googleMapsConfigured: !!GOOGLE_MAPS_KEY,
+        setupInstructions: GOOGLE_MAPS_KEY ? null : "Set GOOGLE_MAPS_API_KEY environment variable to enable live routing. Enable Directions API in Google Cloud Console.",
+        regulation: "49 CFR 397 — Transportation of Hazardous Materials; Driving and Parking Rules",
+      };
+    }),
+
+  // 18. getHazmatTrainingCompliance — 49 CFR 172.704 training compliance checker
+  getHazmatTrainingCompliance: protectedProcedure
+    .input(z.object({
+      driverId: z.number().optional(),
+      companyId: z.number().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const companyId = input?.companyId || ctx.user?.companyId || 0;
+
+      // 49 CFR 172.704 required training categories for hazmat employees
+      const REQUIRED_TRAINING: Array<{
+        id: string;
+        title: string;
+        cfr: string;
+        description: string;
+        recurrenceYears: number;
+        requiredFor: string[];
+      }> = [
+        {
+          id: "general_awareness",
+          title: "General Awareness / Familiarization",
+          cfr: "49 CFR 172.704(a)(1)",
+          description: "Familiarize employee with hazmat regulations, recognize/identify hazardous materials, understand DOT hazmat table (49 CFR 172.101)",
+          recurrenceYears: 3,
+          requiredFor: ["driver", "loader", "unloader", "packager", "shipper"],
+        },
+        {
+          id: "function_specific",
+          title: "Function-Specific Training",
+          cfr: "49 CFR 172.704(a)(2)",
+          description: "Detailed training specific to the employee's job function — e.g., loading/unloading procedures, vehicle operation, emergency procedures for the specific materials handled",
+          recurrenceYears: 3,
+          requiredFor: ["driver", "loader", "unloader", "packager"],
+        },
+        {
+          id: "safety_training",
+          title: "Safety Training",
+          cfr: "49 CFR 172.704(a)(3)",
+          description: "Emergency response information, measures to protect from hazmat exposure, spill/leak procedures, PPE requirements, vehicle/equipment safety procedures",
+          recurrenceYears: 3,
+          requiredFor: ["driver", "loader", "unloader", "packager", "shipper"],
+        },
+        {
+          id: "security_awareness",
+          title: "Security Awareness Training",
+          cfr: "49 CFR 172.704(a)(4)",
+          description: "Awareness of security risks and methods to enhance transportation security — recognize suspicious activities, report security concerns",
+          recurrenceYears: 3,
+          requiredFor: ["driver", "loader", "unloader", "packager", "shipper"],
+        },
+        {
+          id: "in_depth_security",
+          title: "In-Depth Security Training",
+          cfr: "49 CFR 172.704(a)(5)",
+          description: "Required for employees involved with materials requiring a security plan (49 CFR 172.800) — company security plan details, security procedures, en-route security, cyber security awareness",
+          recurrenceYears: 3,
+          requiredFor: ["driver", "shipper"],
+        },
+        {
+          id: "modal_specific",
+          title: "Modal-Specific Training (Highway)",
+          cfr: "49 CFR 177",
+          description: "Requirements specific to highway transport: loading/unloading rules, segregation/separation (177.848), routing rules (49 CFR 397), parking rules, attendance requirements",
+          recurrenceYears: 3,
+          requiredFor: ["driver"],
+        },
+      ];
+
+      // Check driver training records from DB
+      let driverRecords: Array<{ courseName: string; completedAt: Date | null; expiresAt: Date | null; status: string | null }> = [];
+      if (db && input?.driverId) {
+        try {
+          const { trainingRecords } = await import("../../drizzle/schema");
+          const rows = await db.select({
+            courseName: trainingRecords.courseName,
+            completedAt: trainingRecords.completedAt,
+            expiresAt: trainingRecords.expiresAt,
+            status: trainingRecords.status,
+          }).from(trainingRecords).where(eq(trainingRecords.userId, input.driverId));
+          driverRecords = rows;
+        } catch { /* no training records table or query failed */ }
+      }
+
+      const now = new Date();
+      const threeYearsAgo = new Date(now.getFullYear() - 3, now.getMonth(), now.getDate());
+
+      // Evaluate compliance for each required training
+      const compliance = REQUIRED_TRAINING.map(req => {
+        const matchingRecords = driverRecords.filter(r =>
+          r.courseName.toLowerCase().includes(req.id.replace(/_/g, " ")) ||
+          r.courseName.toLowerCase().includes(req.title.toLowerCase().substring(0, 20))
+        );
+
+        const latestCompleted = matchingRecords
+          .filter(r => r.status === "completed" && r.completedAt)
+          .sort((a, b) => (b.completedAt?.getTime() || 0) - (a.completedAt?.getTime() || 0))[0];
+
+        const isCompleted = !!latestCompleted;
+        const completedDate = latestCompleted?.completedAt || null;
+        const isExpired = completedDate ? completedDate < threeYearsAgo : false;
+        const expiresDate = completedDate ? new Date(completedDate.getFullYear() + req.recurrenceYears, completedDate.getMonth(), completedDate.getDate()) : null;
+        const daysUntilExpiry = expiresDate ? Math.ceil((expiresDate.getTime() - now.getTime()) / 86400000) : null;
+
+        let status: "compliant" | "expiring_soon" | "expired" | "not_completed" = "not_completed";
+        if (isCompleted && !isExpired) {
+          status = daysUntilExpiry !== null && daysUntilExpiry <= 90 ? "expiring_soon" : "compliant";
+        } else if (isCompleted && isExpired) {
+          status = "expired";
+        }
+
+        return {
+          ...req,
+          status,
+          completedDate: completedDate?.toISOString().split("T")[0] || null,
+          expiresDate: expiresDate?.toISOString().split("T")[0] || null,
+          daysUntilExpiry,
+          needsRecurrentTraining: isExpired,
+        };
+      });
+
+      const compliant = compliance.filter(c => c.status === "compliant").length;
+      const expiringSoon = compliance.filter(c => c.status === "expiring_soon").length;
+      const expired = compliance.filter(c => c.status === "expired").length;
+      const notCompleted = compliance.filter(c => c.status === "not_completed").length;
+      const overallCompliant = compliant + expiringSoon === REQUIRED_TRAINING.length;
+
+      return {
+        driverId: input?.driverId || null,
+        companyId,
+        regulation: "49 CFR 172.704 — Training Requirements for Hazmat Employees",
+        requiredTraining: compliance,
+        summary: {
+          totalRequired: REQUIRED_TRAINING.length,
+          compliant,
+          expiringSoon,
+          expired,
+          notCompleted,
+          overallCompliant,
+          compliancePercentage: Math.round((compliant / REQUIRED_TRAINING.length) * 100),
+        },
+        notes: [
+          "Initial training must be completed within 90 days of employment (49 CFR 172.704(c)(1))",
+          "Recurrent training required every 3 years from date of previous training (49 CFR 172.704(c)(2))",
+          "Employee may perform hazmat functions during initial 90-day training period only under direct supervision of a trained employee",
+          "Training records must be retained for 3 years after the most recent training date (49 CFR 172.704(d))",
+          "Records must include: employee name, completion date, training materials description, name and address of trainer, certification of completion",
+        ],
+      };
+    }),
+
+  // 19. getSecurityPlanStatus — 49 CFR 172.800 security plan assessment
+  getSecurityPlanStatus: protectedProcedure
+    .input(z.object({
+      companyId: z.number().optional(),
+      hazmatClasses: z.array(z.string()).optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const companyId = input?.companyId || ctx.user?.companyId || 0;
+      const classes = input?.hazmatClasses || [];
+
+      // Materials requiring a security plan (49 CFR 172.800(b))
+      const SECURITY_PLAN_TRIGGERS: Array<{
+        id: string;
+        category: string;
+        threshold: string;
+        examples: string[];
+        hazmatClasses: string[];
+      }> = [
+        {
+          id: "hc_class7",
+          category: "Radioactive Materials — Highway Route Controlled Quantities",
+          threshold: "Any quantity meeting 49 CFR 173.403 definition",
+          examples: ["Spent nuclear fuel", "High-level radioactive waste", "Plutonium"],
+          hazmatClasses: ["7"],
+        },
+        {
+          id: "hc_explosives",
+          category: "Explosives — Division 1.1, 1.2, 1.3",
+          threshold: "Any quantity in a motor vehicle, rail car, or freight container",
+          examples: ["Dynamite", "Detonators", "Propellant explosives", "Display fireworks"],
+          hazmatClasses: ["1.1", "1.2", "1.3"],
+        },
+        {
+          id: "hc_poison_inhalation",
+          category: "Poison Inhalation Hazard (PIH) Materials",
+          threshold: "Bulk quantity (>119 gallons liquid, >882 lbs solid, >1000 L gas)",
+          examples: ["Chlorine", "Anhydrous ammonia", "Hydrogen fluoride", "Sulfur dioxide"],
+          hazmatClasses: ["2.3", "6.1"],
+        },
+        {
+          id: "hc_flammable_gas",
+          category: "Flammable Gas — Bulk",
+          threshold: "3,500 gallons or more in a single packaging",
+          examples: ["Propane MC-331", "LNG MC-338", "Butane"],
+          hazmatClasses: ["2.1"],
+        },
+        {
+          id: "hc_oxidizer",
+          category: "Oxidizer / Organic Peroxide — Bulk",
+          threshold: "3,500 gallons or more",
+          examples: ["Hydrogen peroxide >60%", "Ammonium nitrate fertilizer"],
+          hazmatClasses: ["5.1", "5.2"],
+        },
+        {
+          id: "hc_flammable_liquid",
+          category: "Flammable Liquid — Bulk",
+          threshold: "3,500 gallons or more",
+          examples: ["Gasoline MC-306", "Crude oil DOT-407", "Ethanol"],
+          hazmatClasses: ["3"],
+        },
+        {
+          id: "hc_corrosive",
+          category: "Corrosive Materials — Bulk",
+          threshold: "3,500 gallons or more",
+          examples: ["Sulfuric acid", "Hydrochloric acid", "Sodium hydroxide"],
+          hazmatClasses: ["8"],
+        },
+        {
+          id: "hc_select_agents",
+          category: "Select Agents and Toxins (CDC/USDA)",
+          threshold: "Any quantity listed in 42 CFR 73",
+          examples: ["Ebola virus", "Botulinum toxin", "Ricin", "Anthrax"],
+          hazmatClasses: ["6.2"],
+        },
+      ];
+
+      // Check if company's materials trigger security plan requirement
+      const triggeredCategories = classes.length > 0
+        ? SECURITY_PLAN_TRIGGERS.filter(t => t.hazmatClasses.some(tc => classes.includes(tc)))
+        : [];
+
+      const requiresSecurityPlan = triggeredCategories.length > 0;
+
+      // Security plan required elements (49 CFR 172.802)
+      const PLAN_ELEMENTS: Array<{
+        id: string;
+        title: string;
+        cfr: string;
+        description: string;
+        checkItems: string[];
+      }> = [
+        {
+          id: "personnel_security",
+          title: "Personnel Security",
+          cfr: "49 CFR 172.802(a)",
+          description: "Measures to confirm background and employment history of employees with access to hazmat",
+          checkItems: [
+            "Background checks for all hazmat employees",
+            "Employment verification procedures",
+            "Access controls to hazmat storage/handling areas",
+            "Identification badge requirements",
+            "Visitor escort policies in hazmat areas",
+          ],
+        },
+        {
+          id: "unauthorized_access",
+          title: "Unauthorized Access Prevention",
+          cfr: "49 CFR 172.802(b)",
+          description: "Measures to prevent unauthorized access to hazmat or transport vehicles",
+          checkItems: [
+            "Vehicle security when unattended (locks, seals, immobilizers)",
+            "Secure parking procedures for hazmat loads",
+            "Cargo area locking mechanisms",
+            "GPS tracking on hazmat vehicles",
+            "En-route security procedures (no unnecessary stops)",
+            "Tamper-evident seals on containers",
+          ],
+        },
+        {
+          id: "en_route_security",
+          title: "En-Route Security",
+          cfr: "49 CFR 172.802(c)",
+          description: "Measures to address en-route transportation security",
+          checkItems: [
+            "Approved route planning avoiding high-risk areas",
+            "Regular check-in schedule with dispatch",
+            "Driver communication devices (cell phone, satellite)",
+            "Procedures for stops and rest breaks",
+            "Incident reporting chain of command",
+            "GPS monitoring with geofence alerts",
+          ],
+        },
+      ];
+
+      return {
+        companyId,
+        regulation: "49 CFR 172.800-802 — Security Plans for Hazardous Materials",
+        requiresSecurityPlan,
+        triggeredBy: triggeredCategories,
+        allTriggerCategories: SECURITY_PLAN_TRIGGERS,
+        planElements: requiresSecurityPlan ? PLAN_ELEMENTS : [],
+        assessmentChecklist: requiresSecurityPlan ? [
+          { step: 1, action: "Identify which materials trigger the security plan requirement", status: triggeredCategories.length > 0 ? "done" : "pending" },
+          { step: 2, action: "Develop written security plan covering all 49 CFR 172.802 elements", status: "needs_review" },
+          { step: 3, action: "Train all hazmat employees on the security plan (49 CFR 172.704(a)(5))", status: "needs_review" },
+          { step: 4, action: "Implement personnel security measures — background checks, access controls", status: "needs_review" },
+          { step: 5, action: "Implement unauthorized access prevention — vehicle locks, seals, GPS", status: "needs_review" },
+          { step: 6, action: "Implement en-route security — approved routes, check-in schedules, geofencing", status: "needs_review" },
+          { step: 7, action: "Review and update plan annually or when operations change", status: "needs_review" },
+          { step: 8, action: "Retain plan copy at principal place of business", status: "needs_review" },
+        ] : [],
+        notes: requiresSecurityPlan ? [
+          "Security plan must be in writing and carried on-board each vehicle transporting affected materials",
+          "Plan must be reviewed and updated at least annually",
+          "All hazmat employees must receive in-depth security training (49 CFR 172.704(a)(5))",
+          "Plan must address personnel security, unauthorized access, and en-route security at minimum",
+          "Failure to maintain a security plan is a violation subject to civil penalties up to $81,993 per violation",
+          "Companies transporting select agents must also comply with CDC/USDA regulations (42 CFR 73)",
+        ] : [
+          "Based on the hazmat classes provided, a security plan is NOT currently required under 49 CFR 172.800",
+          "If you transport bulk quantities (≥3,500 gal) of flammable gas, flammable liquid, oxidizers, or corrosives, a plan IS required",
+          "If you transport ANY quantity of Div 1.1/1.2/1.3 explosives, PIH materials, radioactive HRCQ, or select agents, a plan IS required",
+        ],
+      };
+    }),
+
+  // 20. getIncidentHistory — Past hazmat incidents for a company/driver
   getIncidentHistory: protectedProcedure
     .input(z.object({ companyId: z.number().optional(), driverId: z.number().optional(), limit: z.number().optional() }).optional())
     .query(async ({ ctx, input }) => {

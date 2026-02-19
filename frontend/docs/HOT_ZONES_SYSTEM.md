@@ -477,5 +477,67 @@ Each role has a default set of active layers. Users can toggle layers on/off.
 
 ---
 
+## Route Intelligence — Crowd-Sourced LIDAR System
+
+Every driver on EusoTrip is a mapping sensor. Raw GPS pings from `location_history` are processed every 5 minutes into actionable route intelligence.
+
+### Database Tables (4)
+| Table | Purpose |
+|-------|---------|
+| `hz_route_intelligence` | Zone-to-zone corridor stats (avg speed, congestion, reliability) |
+| `hz_grid_heat` | 0.05-degree spatial grid heatmap (driver density, avg speed, moving %) |
+| `hz_lane_learning` | Per-lane real performance (rates, transit times, dwell, on-time %) |
+| `hz_driver_route_reports` | Individual completed trip reports from drivers |
+
+### Data Flow
+```
+Driver GPS Pings (location_history)
+       │
+       ▼ every 5 min (scheduler)
+┌──────────────────────────────┐
+│  routeIntelligence.ts        │
+│  ├── computeGridHeat()       │ → hz_grid_heat
+│  └── computeLaneLearning()   │ → hz_lane_learning
+└──────────────────────────────┘
+       │
+       ▼ on DELIVERED transition
+┌──────────────────────────────┐
+│  loadLifecycle.ts            │
+│  └── auto route report from  │ → hz_driver_route_reports
+│      driver GPS trail        │
+└──────────────────────────────┘
+       │
+       ▼ zone aggregator (5 min)
+┌──────────────────────────────┐
+│  zoneAggregator.ts v4.0      │
+│  └── crowdDriverDensity      │ → hz_zone_intelligence
+│      crowdAvgSpeed            │   (complianceFactors JSON)
+│      crowdGridCells           │
+│      crowdRouteReports        │
+│      crowdTotalMiles          │
+│      crowdLanesLearned        │
+└──────────────────────────────┘
+```
+
+### Telemetry Router Procedures (6)
+| Procedure | Type | Description |
+|-----------|------|-------------|
+| `getGridHeat` | query | Crowd-sourced density heatmap for HotZoneMap |
+| `getLaneIntelligence` | query | Lane performance with hazmat/state filters |
+| `reportRouteComplete` | mutation | Manual trip submission from drivers |
+| `getCorridorStats` | query | Zone-to-zone aggregate intelligence |
+| `getMyMappingStats` | query | Individual driver contribution stats |
+| `getMappingIntelligenceSummary` | query | Platform-wide mapping metrics |
+
+### HotZoneMap LIDAR Layer
+Toggle: **LIDAR** button in the bottom-right toggle bar. When active:
+- Green glow rings per zone — intensity scales with driver density
+- Animated dashed orbit ring around each zone
+- Data panel at med/hi zoom: pings, avg speed, learned lanes, route reports
+- Tooltip: LIDAR metrics when hovering zones
+- Legend: green glow dot labeled "LIDAR"
+
+---
+
 *Built by Eusorone Technologies Inc. — EusoTrip Platform*
 *Last updated: February 2026*

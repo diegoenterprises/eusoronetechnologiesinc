@@ -24,7 +24,8 @@ import {
 import { storagePut, storageGet } from "../storage";
 import { encrypt, decrypt, hashForIndex } from "../_core/encryption";
 import { documentTypesSeed } from "../seeds/documentTypesSeed";
-import { documentRequirementsSeed } from "../seeds/documentRequirementsSeed";
+import { documentRequirementsSeed, TRAILER_TYPE_CONDITIONS } from "../seeds/documentRequirementsSeed";
+import { stateRequirementsSeed } from "../seeds/stateRequirementsSeed";
 
 // ============================================================================
 // HELPER: Resolve numeric userId from auth context
@@ -102,7 +103,36 @@ async function calculateDocumentAwareness(userId: number, userRole: string): Pro
   const allTypes = await db.select().from(documentTypes);
   const typeMap = new Map(allTypes.map((t) => [t.id, t]));
 
-  // 4. Build status for each required document
+  // 3b. Resolve active condition flags from user metadata (trailer types, endorsements)
+  //     Reads registration metadata → equipmentTypes (array of trailer type IDs)
+  //     and hazmatEndorsed/tankerEndorsed booleans.
+  const activeConditions = new Set<string>();
+  try {
+    const [userRow] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
+    if (userRow?.metadata) {
+      const meta = typeof userRow.metadata === "string" ? JSON.parse(userRow.metadata) : userRow.metadata;
+      const reg = meta?.registration || {};
+
+      // Resolve from equipmentTypes array (catalyst/O-O registration stores trailer type IDs)
+      const trailerTypes: string[] = reg.equipmentTypes || reg.catalystType || [];
+      for (const tt of trailerTypes) {
+        const conditions = TRAILER_TYPE_CONDITIONS[tt] || [];
+        for (const c of conditions) activeConditions.add(c);
+      }
+
+      // Also check explicit boolean flags from registration
+      if (reg.hazmatEndorsed || reg.hazmatEndorsement || meta?.complianceIds?.dotHazmatPermit) {
+        activeConditions.add("HAZMAT");
+      }
+      if (reg.tankerEndorsed || reg.tankerEndorsement) {
+        activeConditions.add("TANKER");
+      }
+    }
+  } catch (e) {
+    console.warn("[DocumentCenter] Could not parse user metadata for conditions:", e);
+  }
+
+  // 4. Build status for each required document — filter conditionals
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
   const required: any[] = [];
@@ -110,6 +140,14 @@ async function calculateDocumentAwareness(userId: number, userRole: string): Pro
 
   for (const req of roleReqs) {
     if (addedDocs.has(req.documentTypeId)) continue;
+
+    // Skip conditional requirements whose condition is not met
+    if (req.conditionType && req.conditionValue != null) {
+      const conditionMet = activeConditions.has(req.conditionType);
+      const expectedValue = req.conditionValue === true || req.conditionValue === "true" || req.conditionValue === 1;
+      if (conditionMet !== expectedValue) continue;
+    }
+
     addedDocs.add(req.documentTypeId);
 
     const docType = typeMap.get(req.documentTypeId);
@@ -169,7 +207,7 @@ async function calculateDocumentAwareness(userId: number, userRole: string): Pro
       rejectionReason: uploaded?.rejectionReason || null,
       actionRequired,
       actionUrl: `/documents/upload/${req.documentTypeId}`,
-      downloadTemplateUrl: docType?.downloadUrl || null,
+      downloadTemplateUrl: docType?.downloadUrl || docType?.sourceUrl || null,
     });
   }
 
@@ -1131,7 +1169,7 @@ export const documentCenterRouter = router({
   // SEED — Initialize document types & requirements
   // =========================================================================
 
-  seedDocumentTypes: auditedAdminProcedure.mutation(async () => {
+  seedDocumentTypes: auditedProtectedProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
@@ -1164,8 +1202,20 @@ export const documentCenterRouter = router({
         }).onDuplicateKeyUpdate({
           set: {
             name: seed.name,
+            shortName: seed.shortName || null,
             description: seed.description || null,
+            formNumber: seed.formNumber || null,
+            issuingAuthority: seed.issuingAuthority || null,
+            regulatoryReference: seed.regulatoryReference || null,
+            sourceUrl: seed.sourceUrl || null,
+            downloadUrl: seed.downloadUrl || null,
+            instructionsUrl: (seed as any).instructionsUrl || null,
+            hasExpiration: seed.hasExpiration ?? false,
+            typicalValidityDays: seed.typicalValidityDays || null,
+            expirationWarningDays: seed.expirationWarningDays || 30,
+            verificationLevel: seed.verificationLevel || "L1_SYSTEM",
             sortOrder: seed.sortOrder || 100,
+            isActive: true,
           },
         });
         inserted++;
@@ -1177,7 +1227,7 @@ export const documentCenterRouter = router({
     return { success: true, inserted, total: documentTypesSeed.length };
   }),
 
-  seedDocumentRequirements: auditedAdminProcedure.mutation(async () => {
+  seedDocumentRequirements: auditedProtectedProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
@@ -1203,5 +1253,42 @@ export const documentCenterRouter = router({
     }
 
     return { success: true, inserted, total: documentRequirementsSeed.length };
+  }),
+
+  seedStateRequirements: auditedProtectedProcedure.mutation(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+    let inserted = 0;
+    for (const seed of stateRequirementsSeed) {
+      try {
+        await db.insert(stateDocRequirements).values({
+          stateCode: seed.stateCode,
+          stateName: seed.stateName,
+          documentTypeId: seed.documentTypeId,
+          stateFormNumber: seed.stateFormNumber || null,
+          stateFormName: seed.stateFormName || null,
+          stateIssuingAgency: seed.stateIssuingAgency,
+          statePortalUrl: seed.statePortalUrl || null,
+          stateFormUrl: seed.stateFormUrl || null,
+          stateInstructionsUrl: seed.stateInstructionsUrl || null,
+          isRequired: seed.isRequired ?? true,
+          requiredForRoles: seed.requiredForRoles || null,
+          conditions: seed.conditions || null,
+          filingFee: seed.filingFee || null,
+          renewalFee: seed.renewalFee || null,
+          lateFee: seed.lateFee || null,
+          validityPeriod: seed.validityPeriod || null,
+          renewalWindow: seed.renewalWindow || null,
+          notes: seed.notes || null,
+        });
+        inserted++;
+      } catch (e: any) {
+        if (e.message?.includes("Duplicate")) continue;
+        console.error(`[Seed] Failed to insert state req ${seed.stateCode}/${seed.documentTypeId}:`, e.message);
+      }
+    }
+
+    return { success: true, inserted, total: stateRequirementsSeed.length };
   }),
 });

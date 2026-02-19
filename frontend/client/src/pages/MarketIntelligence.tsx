@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import { toast } from "sonner";
 
 export default function MarketIntelligence() {
   const { theme } = useTheme();
@@ -26,11 +27,14 @@ export default function MarketIntelligence() {
   const [category, setCategory] = useState("ALL");
   const [search, setSearch] = useState("");
   const [expandedSym, setExpandedSym] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshResults, setRefreshResults] = useState<any[] | null>(null);
+  const [showSources, setShowSources] = useState(false);
 
-  const intelQ = (trpc as any).marketPricing?.getMarketIntelligence?.useQuery?.({}) || { data: null, isLoading: false };
-  const commoditiesQ = (trpc as any).marketPricing?.getCommodities?.useQuery?.({ category: category === "ALL" ? undefined : category, search: search || undefined }) || { data: null, isLoading: false };
-  const indicesQ = (trpc as any).marketPricing?.getIndices?.useQuery?.({}) || { data: null, isLoading: false };
-  const lanesQ = (trpc as any).marketPricing?.getLaneBenchmarks?.useQuery?.({ limit: 10 }) || { data: null, isLoading: false };
+  const intelQ = (trpc as any).marketPricing?.getMarketIntelligence?.useQuery?.({}, { refetchInterval: 30_000, refetchIntervalInBackground: false }) || { data: null, isLoading: false };
+  const commoditiesQ = (trpc as any).marketPricing?.getCommodities?.useQuery?.({ category: category === "ALL" ? undefined : category, search: search || undefined }, { refetchInterval: 30_000, refetchIntervalInBackground: false }) || { data: null, isLoading: false };
+  const indicesQ = (trpc as any).marketPricing?.getIndices?.useQuery?.({}, { refetchInterval: 30_000, refetchIntervalInBackground: false }) || { data: null, isLoading: false };
+  const lanesQ = (trpc as any).marketPricing?.getLaneBenchmarks?.useQuery?.({ limit: 10 }, { refetchInterval: 60_000, refetchIntervalInBackground: false }) || { data: null, isLoading: false };
 
   const intel = intelQ.data;
   const cData = commoditiesQ.data;
@@ -56,7 +60,35 @@ export default function MarketIntelligence() {
     }
   };
 
-  const refetchAll = () => { intelQ.refetch?.(); commoditiesQ.refetch?.(); indicesQ.refetch?.(); lanesQ.refetch?.(); };
+  // Force refresh mutation — busts all server caches, triggers market + hot zones data sync
+  const forceRefreshMutation = (trpc as any).marketPricing?.forceRefreshAll?.useMutation?.({
+    onSuccess: (result: any) => {
+      intelQ.refetch?.(); commoditiesQ.refetch?.(); indicesQ.refetch?.(); lanesQ.refetch?.();
+      setRefreshResults(result.results || []);
+      setShowSources(true);
+      const cats = new Set((result.results || []).map((r: any) => r.category));
+      toast.success(`Refreshed ${result.refreshed}/${result.total} data sources across ${cats.size} categories`, {
+        description: `Market + Hot Zones + ${cats.size} gov feeds synced`,
+      });
+      setIsRefreshing(false);
+    },
+    onError: (err: any) => {
+      intelQ.refetch?.(); commoditiesQ.refetch?.(); indicesQ.refetch?.(); lanesQ.refetch?.();
+      toast.error("Refresh error", { description: err.message });
+      setIsRefreshing(false);
+    },
+  });
+
+  const refetchAll = () => {
+    setIsRefreshing(true);
+    if (forceRefreshMutation?.mutate) {
+      forceRefreshMutation.mutate({});
+    } else {
+      intelQ.refetch?.(); commoditiesQ.refetch?.(); indicesQ.refetch?.(); lanesQ.refetch?.();
+      toast.success("Data refreshed");
+      setIsRefreshing(false);
+    }
+  };
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1400px] mx-auto">
@@ -66,13 +98,39 @@ export default function MarketIntelligence() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Market Intelligence
           </h1>
-          <p className={mt}>
+          <div className="flex items-center gap-2.5 mt-1">
             {cData?.isLiveData ? (
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" /> Live: {cData?.source}</span>
+              <>
+                {/* Gradient live indicator — animated spinning ring */}
+                <div className="relative w-5 h-5 flex-shrink-0">
+                  <div className="absolute inset-0 rounded-full animate-spin" style={{ background: "conic-gradient(from 0deg, #1473FF, #BE01FF, #1473FF)", animationDuration: "2.5s" }} />
+                  <div className={cn("absolute inset-[2px] rounded-full", isLight ? "bg-white" : "bg-slate-800/90")} />
+                  <div className="absolute inset-[4px] rounded-full bg-gradient-to-br from-[#1473FF] to-[#BE01FF] animate-pulse" style={{ animationDuration: "1.8s" }} />
+                  <div className="absolute inset-[5px] rounded-full bg-white/30 animate-ping" style={{ animationDuration: "3s" }} />
+                </div>
+                <span className={cn("text-sm font-medium", isLight ? "text-slate-600" : "text-slate-300")}>
+                  Live Data
+                  <span className={cn("ml-1.5 text-xs font-normal", isLight ? "text-slate-400" : "text-slate-500")}>
+                    {cData?.source} · Auto-refresh 30s
+                  </span>
+                </span>
+                {cData?.lastUpdated && (
+                  <span className={cn("text-[10px] ml-1", isLight ? "text-slate-300" : "text-slate-600")}>
+                    {new Date(cData.lastUpdated).toLocaleTimeString()}
+                  </span>
+                )}
+              </>
             ) : (
-              <span>Seed data — configure API keys for live prices</span>
+              <>
+                {/* Inactive indicator */}
+                <div className="relative w-5 h-5 flex-shrink-0">
+                  <div className="absolute inset-0 rounded-full border-2 border-dashed border-slate-400/30 animate-spin" style={{ animationDuration: "8s" }} />
+                  <div className={cn("absolute inset-[3px] rounded-full", isLight ? "bg-slate-200" : "bg-slate-700")} />
+                </div>
+                <span className={cn("text-sm", isLight ? "text-slate-400" : "text-slate-500")}>Seed data — configure API keys for live prices</span>
+              </>
             )}
-          </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
@@ -88,11 +146,48 @@ export default function MarketIntelligence() {
               {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" className={cn("rounded-xl h-9", isLight ? "border-slate-200" : "border-slate-700")} onClick={refetchAll}>
-            <RefreshCw className="w-4 h-4" />
+          <Button variant="outline" size="sm" className={cn("rounded-xl h-9", isRefreshing ? "opacity-60 cursor-wait" : "", isLight ? "border-slate-200" : "border-slate-700")} onClick={refetchAll} disabled={isRefreshing}>
+            <RefreshCw className={cn("w-4 h-4", isRefreshing ? "animate-spin" : "")} />
           </Button>
         </div>
       </div>
+
+      {/* Data Source Status Panel — shows after refresh */}
+      {showSources && refreshResults && refreshResults.length > 0 && (
+        <Card className={cn("rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-slate-700/50")}>
+          <CardHeader className="pb-2 px-4 pt-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className={cn("text-sm font-semibold flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
+                <Activity className="w-4 h-4 text-purple-400" />
+                {refreshResults.filter((r: any) => r.success).length}/{refreshResults.length} Data Sources Synced
+                <span className="text-[10px] font-normal text-slate-400 ml-1">
+                  ({new Set(refreshResults.map((r: any) => r.category)).size} categories)
+                </span>
+              </CardTitle>
+              <button onClick={() => setShowSources(false)} className={cn("text-xs px-2 py-1 rounded-lg", isLight ? "text-slate-400 hover:bg-slate-100" : "text-slate-500 hover:bg-slate-700/30")}>
+                Dismiss
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-3 pt-0">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-1.5">
+              {refreshResults.map((r: any, i: number) => (
+                <div key={i} className={cn("flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px]", r.success ? (isLight ? "bg-green-50 text-green-700" : "bg-green-500/10 text-green-400") : (isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400"))}>
+                  <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", r.success ? "bg-green-400" : "bg-red-400")} />
+                  <span className="truncate font-medium">{r.label || r.source}</span>
+                </div>
+              ))}
+            </div>
+            {refreshResults.some((r: any) => !r.success) && (
+              <div className={cn("mt-2 pt-2 border-t text-[10px]", isLight ? "border-slate-200 text-slate-400" : "border-slate-700/30 text-slate-500")}>
+                {refreshResults.filter((r: any) => !r.success).map((r: any, i: number) => (
+                  <div key={i} className="flex gap-1"><span className="text-red-400 font-medium">{r.label}:</span> {r.error?.slice(0, 80)}</div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Market Breadth + Key Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

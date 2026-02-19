@@ -265,4 +265,209 @@ export const appointmentsRouter = router({
     if (db) await db.update(appointments).set({ status: "completed" as any }).where(eq(appointments.id, parseInt(input.appointmentId, 10)));
     return { success: true, appointmentId: input.appointmentId, completedAt: new Date().toISOString() };
   }),
+
+  /**
+   * Get hazmat-certified dock bays for a facility
+   * Returns bays with their certification level, compatible hazmat classes,
+   * decon equipment, and current availability.
+   */
+  getHazmatBays: protectedProcedure
+    .input(z.object({
+      facilityId: z.string().optional(),
+      hazmatClass: z.string().optional(),
+      date: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      // Hazmat bay certification data — in production this comes from a facility_bays table
+      // For now, return configurable bay definitions per facility
+      const HAZMAT_BAY_TYPES: Record<string, {
+        certLevel: string;
+        allowedClasses: string[];
+        equipment: string[];
+        deconCapable: boolean;
+        maxWeight: number;
+        specialFeatures: string[];
+      }> = {
+        "HAZMAT_A": {
+          certLevel: "Class A — Full Hazmat",
+          allowedClasses: ["1.1","1.2","1.3","1.4","2.1","2.2","2.3","3","4.1","4.2","4.3","5.1","5.2","6.1","6.2","7","8","9"],
+          equipment: ["Explosion-proof lighting", "Grounding straps", "Vapor recovery system", "Emergency shower/eyewash", "Spill containment berms", "Fire suppression (foam)"],
+          deconCapable: true,
+          maxWeight: 80000,
+          specialFeatures: ["Full containment slab", "Vapor monitoring", "Emergency shutoff", "Dedicated drainage to holding tank"],
+        },
+        "HAZMAT_B": {
+          certLevel: "Class B — Flammable/Corrosive",
+          allowedClasses: ["2.1","2.2","3","4.1","5.1","6.1","8","9"],
+          equipment: ["Grounding straps", "Spill containment", "Fire extinguishers (ABC)", "Emergency shower/eyewash"],
+          deconCapable: true,
+          maxWeight: 80000,
+          specialFeatures: ["Containment slab", "Grounding point", "Chemical drain"],
+        },
+        "HAZMAT_C": {
+          certLevel: "Class C — General Hazmat",
+          allowedClasses: ["4.1","5.1","6.1","8","9"],
+          equipment: ["Spill kit", "Fire extinguishers (ABC)", "PPE station"],
+          deconCapable: false,
+          maxWeight: 80000,
+          specialFeatures: ["Standard dock with spill containment"],
+        },
+        "TANKER": {
+          certLevel: "Tanker Bay — Liquid Loading/Unloading",
+          allowedClasses: ["3","5.1","6.1","8","9"],
+          equipment: ["Loading arms", "Vapor recovery", "Grounding system", "Flow meters", "Emergency shutoff valves"],
+          deconCapable: true,
+          maxWeight: 80000,
+          specialFeatures: ["Liquid containment basin", "Tank truck connections", "Pressure monitoring"],
+        },
+        "CRYO": {
+          certLevel: "Cryogenic Bay — LNG/LOX/LN2",
+          allowedClasses: ["2.1","2.2"],
+          equipment: ["Cryogenic transfer arms", "Oxygen deficiency monitors", "Thermal protection barriers", "Emergency vent stack"],
+          deconCapable: false,
+          maxWeight: 80000,
+          specialFeatures: ["Cryogenic rated connections", "Vent stack", "Wind sock", "Exclusion zone markings"],
+        },
+      };
+
+      // Generate sample bays for the facility
+      const bayTypes = Object.entries(HAZMAT_BAY_TYPES);
+      const bays = bayTypes.map(([typeId, config], idx) => {
+        const isCompatible = !input.hazmatClass || config.allowedClasses.includes(input.hazmatClass);
+        return {
+          bayId: `BAY-${typeId}-${idx + 1}`,
+          bayNumber: idx + 1,
+          type: typeId,
+          certLevel: config.certLevel,
+          allowedClasses: config.allowedClasses,
+          equipment: config.equipment,
+          deconCapable: config.deconCapable,
+          maxWeight: config.maxWeight,
+          specialFeatures: config.specialFeatures,
+          compatible: isCompatible,
+          status: "available" as const,
+          nextAvailable: new Date().toISOString(),
+        };
+      });
+
+      const compatible = bays.filter(b => b.compatible);
+
+      return {
+        facilityId: input.facilityId || "default",
+        bays,
+        compatibleBays: compatible,
+        totalBays: bays.length,
+        availableForClass: input.hazmatClass ? compatible.length : bays.length,
+        recommendation: input.hazmatClass
+          ? compatible.length > 0
+            ? `${compatible.length} bay(s) certified for Class ${input.hazmatClass}. Recommended: ${compatible[0].bayId} (${compatible[0].certLevel})`
+            : `No bays certified for Class ${input.hazmatClass} at this facility. Contact facility management.`
+          : "Specify hazmat class to see compatible bays.",
+      };
+    }),
+
+  /**
+   * Assign a hazmat-certified bay to an appointment
+   * Validates bay compatibility with load hazmat class and schedules decon if needed
+   */
+  assignHazmatBay: protectedProcedure
+    .input(z.object({
+      appointmentId: z.string(),
+      bayId: z.string(),
+      hazmatClass: z.string(),
+      requiresDecon: z.boolean().default(false),
+      deconType: z.enum(["standard_wash", "chemical_decon", "vapor_purge", "cryogenic_warmup", "full_decon"]).optional(),
+      previousProduct: z.string().optional(),
+      nextProduct: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+
+      // Decon time estimates by type (minutes)
+      const DECON_TIMES: Record<string, number> = {
+        "standard_wash": 45,
+        "chemical_decon": 90,
+        "vapor_purge": 60,
+        "cryogenic_warmup": 120,
+        "full_decon": 180,
+      };
+
+      const deconMinutes = input.deconType ? (DECON_TIMES[input.deconType] || 60) : 0;
+
+      // Update appointment with bay assignment
+      if (db) {
+        try {
+          await db.update(appointments).set({
+            dockNumber: input.bayId,
+          }).where(eq(appointments.id, parseInt(input.appointmentId, 10)));
+        } catch (e) { console.warn("[Appointments] Bay assignment DB update failed:", e); }
+      }
+
+      return {
+        success: true,
+        appointmentId: input.appointmentId,
+        bayId: input.bayId,
+        hazmatClass: input.hazmatClass,
+        assignedAt: new Date().toISOString(),
+        assignedBy: ctx.user?.id,
+        decon: input.requiresDecon ? {
+          required: true,
+          type: input.deconType || "standard_wash",
+          estimatedMinutes: deconMinutes,
+          previousProduct: input.previousProduct || null,
+          nextProduct: input.nextProduct || null,
+          scheduledStart: new Date().toISOString(),
+          estimatedCompletion: new Date(Date.now() + deconMinutes * 60000).toISOString(),
+          checklist: [
+            "Drain all residual product",
+            "Disconnect loading arms and secure valves",
+            input.deconType === "chemical_decon" ? "Apply neutralizing agent per SDS" : "Pressure wash interior",
+            input.deconType === "vapor_purge" ? "Purge with nitrogen until LEL < 10%" : "Rinse with clean water",
+            "Inspect interior for residue",
+            "Document decon with photos",
+            "Issue washout certificate",
+            "Verify bay ready for next load",
+          ],
+        } : { required: false },
+        safetyReminders: [
+          `Class ${input.hazmatClass} — verify placards displayed`,
+          "Confirm grounding straps connected before transfer",
+          "Emergency shutoff locations briefed to driver",
+          "PPE requirements verified per SDS",
+          "Spill kit location confirmed",
+        ],
+      };
+    }),
+
+  /**
+   * Get decontamination schedule for a facility
+   */
+  getDeconSchedule: protectedProcedure
+    .input(z.object({
+      facilityId: z.string().optional(),
+      date: z.string().optional(),
+      bayId: z.string().optional(),
+    }))
+    .query(async () => {
+      // In production, this reads from a decon_schedule table
+      // For now, return the structure and schedule format
+      return {
+        schedule: [],
+        deconTypes: [
+          { id: "standard_wash", name: "Standard Wash", avgMinutes: 45, description: "Hot water pressure wash for general cargo residue" },
+          { id: "chemical_decon", name: "Chemical Decontamination", avgMinutes: 90, description: "Neutralizing agent wash for corrosive/toxic residue (Class 6.1, 8)" },
+          { id: "vapor_purge", name: "Vapor Purge", avgMinutes: 60, description: "Nitrogen purge to LEL < 10% for flammable vapor removal (Class 2.1, 3)" },
+          { id: "cryogenic_warmup", name: "Cryogenic Warmup", avgMinutes: 120, description: "Controlled temperature increase for cryogenic tanks (MC-338)" },
+          { id: "full_decon", name: "Full Decontamination", avgMinutes: 180, description: "Complete multi-stage decon for product changeover or contamination event" },
+        ],
+        crossContaminationRules: [
+          { from: "Food Grade", to: "Chemical", requiresDecon: "full_decon", note: "FDA FSMA requires full decon when switching from food to chemical" },
+          { from: "Chemical", to: "Food Grade", requiresDecon: "full_decon", note: "FDA FSMA — triple wash + inspection + certificate required" },
+          { from: "Flammable (Class 3)", to: "Oxidizer (Class 5.1)", requiresDecon: "vapor_purge", note: "49 CFR 177.848 — incompatible materials, complete vapor removal required" },
+          { from: "Corrosive (Class 8)", to: "Any", requiresDecon: "chemical_decon", note: "Neutralize corrosive residue before loading different product" },
+          { from: "Poison (Class 6.1)", to: "Food Grade", requiresDecon: "full_decon", note: "NEVER load food after poison without full decon + third-party verification" },
+        ],
+        regulation: "49 CFR 173.29 — Empty packagings; 21 CFR 1.908 — FSMA Sanitary Transportation",
+      };
+    }),
 });

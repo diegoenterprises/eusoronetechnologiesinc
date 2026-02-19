@@ -12,109 +12,35 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Truck, Clock, MapPin, Navigation, Phone, FileText,
   Camera, CheckCircle, AlertTriangle, DollarSign, Fuel,
-  Thermometer, Package, ChevronRight, Play, Pause, Square
+  Thermometer, Package, ChevronRight, Play, Pause, Square, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
-interface CurrentLoad {
-  id: string;
-  loadNumber: string;
-  status: "assigned" | "en_route_pickup" | "at_pickup" | "loading" | "en_route_delivery" | "at_delivery" | "unloading";
-  shipper: string;
-  commodity: string;
-  hazmatClass: string;
-  unNumber: string;
-  origin: {
-    name: string;
-    address: string;
-    city: string;
-    state: string;
-  };
-  destination: {
-    name: string;
-    address: string;
-    city: string;
-    state: string;
-  };
-  pickupTime: string;
-  deliveryTime: string;
-  rate: number;
-  miles: number;
-  specialInstructions?: string;
-}
-
-interface DriverStats {
-  hosRemaining: {
-    driving: number;
-    onDuty: number;
-    cycle: number;
-  };
-  currentStatus: "driving" | "on_duty" | "off_duty" | "sleeper";
-  statusSince: string;
-  breakRequired: boolean;
-  breakDueIn?: number;
-  earnings: {
-    today: number;
-    week: number;
-    month: number;
-  };
-  milesThisWeek: number;
-}
-
-const MOCK_LOAD: CurrentLoad = {
-  id: "l1",
-  loadNumber: "LOAD-45901",
-  status: "en_route_delivery",
-  shipper: "Shell Oil Company",
-  commodity: "Gasoline",
-  hazmatClass: "3",
-  unNumber: "UN1203",
-  origin: {
-    name: "Shell Houston Terminal",
-    address: "1234 Industrial Blvd",
-    city: "Houston",
-    state: "TX",
-  },
-  destination: {
-    name: "Dallas Distribution Center",
-    address: "5678 Commerce St",
-    city: "Dallas",
-    state: "TX",
-  },
-  pickupTime: "08:00 AM",
-  deliveryTime: "4:00 PM",
-  rate: 850,
-  miles: 250,
-  specialInstructions: "Check in at gate 3. Unload at rack 12.",
+// Cargo type display labels including non-hazmat tanker types
+const CARGO_LABELS: Record<string, string> = {
+  liquid: "Liquid", gas: "Gas", chemicals: "Chemicals", petroleum: "Petroleum",
+  hazmat: "Hazmat", general: "General", refrigerated: "Refrigerated", oversized: "Oversized",
+  food_grade: "Food-Grade Liquid", water: "Water",
 };
 
-const MOCK_STATS: DriverStats = {
-  hosRemaining: {
-    driving: 510, // 8h 30m in minutes
-    onDuty: 720, // 12h
-    cycle: 3600, // 60h
-  },
-  currentStatus: "driving",
-  statusSince: "08:15 AM",
-  breakRequired: false,
-  breakDueIn: 180, // 3 hours
-  earnings: {
-    today: 850,
-    week: 3400,
-    month: 12500,
-  },
-  milesThisWeek: 1250,
-};
-
-const STATUS_LABELS = {
+const STATUS_LABELS: Record<string, string> = {
+  draft: "Draft",
+  posted: "Posted",
+  bidding: "Bidding",
   assigned: "Assigned",
   en_route_pickup: "En Route to Pickup",
   at_pickup: "At Pickup",
   loading: "Loading",
+  in_transit: "In Transit",
   en_route_delivery: "En Route to Delivery",
   at_delivery: "At Delivery",
   unloading: "Unloading",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+  disputed: "Disputed",
 };
 
 const STATUS_COLORS = {
@@ -131,31 +57,66 @@ function formatMinutes(mins: number): string {
 }
 
 interface DriverDashboardProps {
-  driverName: string;
-  vehicleNumber: string;
+  driverName?: string;
+  vehicleNumber?: string;
 }
 
 export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardProps) {
-  const [currentLoad] = useState<CurrentLoad | null>(MOCK_LOAD);
-  const [stats] = useState<DriverStats>(MOCK_STATS);
-  const [dutyStatus, setDutyStatus] = useState<DriverStats["currentStatus"]>(stats.currentStatus);
+  const { user } = useAuth();
+  const name = driverName || user?.name || 'Driver';
 
-  const handleStatusChange = (newStatus: DriverStats["currentStatus"]) => {
+  // Real tRPC queries
+  const currentLoadQuery = trpc.drivers.getCurrentLoad.useQuery();
+  const dashStatsQuery = trpc.drivers.getDashboardStats.useQuery();
+  const hosQuery = trpc.drivers.getHOSStatus.useQuery();
+  const updateStatusMut = trpc.dispatch.updateLoadStatus.useMutation();
+
+  const currentLoad = currentLoadQuery.data || null;
+  const dashStats = dashStatsQuery.data;
+  const hosData = hosQuery.data;
+
+  // Derive HOS in minutes for display
+  const hosRemaining = {
+    driving: Math.round((hosData?.hoursAvailable?.driving || hosData?.driving || 11) * 60),
+    onDuty: Math.round((hosData?.hoursAvailable?.onDuty || hosData?.onDuty || 14) * 60),
+    cycle: Math.round((hosData?.hoursAvailable?.cycle || hosData?.cycle || 70) * 60),
+  };
+  const breakDueIn = hosData?.nextBreakRequired ? Math.max(0, Math.round((new Date(hosData.nextBreakRequired).getTime() - Date.now()) / 60000)) : undefined;
+
+  const [dutyStatus, setDutyStatus] = useState<"driving" | "on_duty" | "off_duty" | "sleeper">("off_duty");
+
+  const handleStatusChange = (newStatus: "driving" | "on_duty" | "off_duty" | "sleeper") => {
     setDutyStatus(newStatus);
     toast.success(`Status changed to ${newStatus.replace("_", " ")}`);
+  };
+
+  const handleLoadStatusUpdate = (status: string) => {
+    if (!currentLoad) return;
+    updateStatusMut.mutate(
+      { loadId: currentLoad.id, status: status as any },
+      {
+        onSuccess: () => {
+          toast.success(`Load status updated to ${status.replace(/_/g, ' ')}`);
+          currentLoadQuery.refetch();
+        },
+        onError: (e) => toast.error(`Failed: ${e.message}`),
+      }
+    );
   };
 
   const handleAction = (action: string) => {
     toast.success(`${action} recorded`);
   };
 
+  const isLoading = currentLoadQuery.isLoading || dashStatsQuery.isLoading;
+
   return (
     <div className="p-4 space-y-4 max-w-lg mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">{driverName}</h1>
-          <p className="text-sm text-slate-400">Unit #{vehicleNumber}</p>
+          <h1 className="text-xl font-bold text-white">{name}</h1>
+          <p className="text-sm text-slate-400">{vehicleNumber ? `Unit #${vehicleNumber}` : dashStats?.currentStatus === 'on_load' ? 'On Load' : 'Available'}</p>
         </div>
         <div className="flex items-center gap-2">
           <div className={cn("w-3 h-3 rounded-full animate-pulse", STATUS_COLORS[dutyStatus].bg)} />
@@ -170,9 +131,7 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-slate-400">Hours of Service</span>
-            <Badge variant="outline" className="text-xs text-slate-400">
-              Since {stats.statusSince}
-            </Badge>
+            {hosQuery.isLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-500" />}
           </div>
 
           <div className="space-y-3">
@@ -180,12 +139,12 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
             <div>
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-slate-400">Driving</span>
-                <span className={stats.hosRemaining.driving > 120 ? "text-green-400" : "text-yellow-400"}>
-                  {formatMinutes(stats.hosRemaining.driving)} left
+                <span className={hosRemaining.driving > 120 ? "text-green-400" : "text-yellow-400"}>
+                  {formatMinutes(hosRemaining.driving)} left
                 </span>
               </div>
               <Progress 
-                value={(stats.hosRemaining.driving / 660) * 100} 
+                value={(hosRemaining.driving / 660) * 100} 
                 className="h-2 bg-slate-700"
               />
             </div>
@@ -194,10 +153,10 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
             <div>
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-slate-400">On-Duty</span>
-                <span className="text-blue-400">{formatMinutes(stats.hosRemaining.onDuty)} left</span>
+                <span className="text-blue-400">{formatMinutes(hosRemaining.onDuty)} left</span>
               </div>
               <Progress 
-                value={(stats.hosRemaining.onDuty / 840) * 100} 
+                value={(hosRemaining.onDuty / 840) * 100} 
                 className="h-2 bg-slate-700"
               />
             </div>
@@ -206,21 +165,21 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
             <div>
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-slate-400">70-Hour Cycle</span>
-                <span className="text-purple-400">{formatMinutes(stats.hosRemaining.cycle)} left</span>
+                <span className="text-purple-400">{formatMinutes(hosRemaining.cycle)} left</span>
               </div>
               <Progress 
-                value={(stats.hosRemaining.cycle / 4200) * 100} 
+                value={(hosRemaining.cycle / 4200) * 100} 
                 className="h-2 bg-slate-700"
               />
             </div>
           </div>
 
           {/* Break Warning */}
-          {stats.breakDueIn && stats.breakDueIn < 240 && (
+          {breakDueIn !== undefined && breakDueIn < 240 && (
             <div className="mt-3 p-2 rounded bg-yellow-500/10 border border-yellow-500/30 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-yellow-400" />
               <span className="text-xs text-yellow-300">
-                30-min break required in {formatMinutes(stats.breakDueIn)}
+                30-min break required in {formatMinutes(breakDueIn)}
               </span>
             </div>
           )}
@@ -265,16 +224,28 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Commodity */}
-            <div className="flex items-center gap-3 p-3 rounded bg-orange-500/10 border border-orange-500/20">
-              <AlertTriangle className="w-5 h-5 text-orange-400" />
-              <div>
-                <p className="text-sm text-white font-medium">{currentLoad.commodity}</p>
-                <p className="text-xs text-orange-400">
-                  Class {currentLoad.hazmatClass} • {currentLoad.unNumber}
-                </p>
+            {/* Commodity — hazmat vs non-hazmat display */}
+            {currentLoad.hazmatClass ? (
+              <div className="flex items-center gap-3 p-3 rounded bg-orange-500/10 border border-orange-500/20">
+                <AlertTriangle className="w-5 h-5 text-orange-400" />
+                <div>
+                  <p className="text-sm text-white font-medium">{currentLoad.commodity}</p>
+                  <p className="text-xs text-orange-400">
+                    Class {currentLoad.hazmatClass} • {currentLoad.unNumber || 'N/A'}
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center gap-3 p-3 rounded bg-cyan-500/10 border border-cyan-500/20">
+                <Package className="w-5 h-5 text-cyan-400" />
+                <div>
+                  <p className="text-sm text-white font-medium">{currentLoad.commodity}</p>
+                  <p className="text-xs text-cyan-400">
+                    {(CARGO_LABELS[currentLoad.cargoType || ''] || currentLoad.cargoType || 'General Freight')}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Route */}
             <div className="space-y-3">
@@ -283,16 +254,18 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
                   <div className="w-2 h-2 rounded-full bg-green-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs text-slate-400">Pickup • {currentLoad.pickupTime}</p>
+                  <p className="text-xs text-slate-400">Pickup{currentLoad.pickupDate ? ` • ${new Date(currentLoad.pickupDate).toLocaleString()}` : ''}</p>
                   <p className="text-sm text-white">{currentLoad.origin.name}</p>
                   <p className="text-xs text-slate-500">
                     {currentLoad.origin.city}, {currentLoad.origin.state}
                   </p>
                 </div>
-                <Badge variant="outline" className="text-green-400 border-green-500/30">
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Complete
-                </Badge>
+                {['loading', 'in_transit', 'en_route_delivery', 'at_delivery', 'unloading', 'delivered'].includes(currentLoad.status) && (
+                  <Badge variant="outline" className="text-green-400 border-green-500/30">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Complete
+                  </Badge>
+                )}
               </div>
 
               <div className="ml-3 border-l-2 border-dashed border-slate-600 h-4" />
@@ -302,7 +275,7 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
                   <MapPin className="w-3 h-3 text-blue-400" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs text-slate-400">Delivery • {currentLoad.deliveryTime}</p>
+                  <p className="text-xs text-slate-400">Delivery{currentLoad.deliveryDate ? ` • ${new Date(currentLoad.deliveryDate).toLocaleString()}` : ''}</p>
                   <p className="text-sm text-white">{currentLoad.destination.name}</p>
                   <p className="text-xs text-slate-500">
                     {currentLoad.destination.city}, {currentLoad.destination.state}
@@ -331,34 +304,108 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
               </Button>
             </div>
 
-            {/* Quick Actions */}
+            {/* Load Status Progression Actions — Trailer-type-aware */}
+            {(() => {
+              const eq = (currentLoad.equipmentType || currentLoad.cargoType || "").toLowerCase();
+              const isHaz = !!(currentLoad.hazmatClass || currentLoad.unNumber);
+              const isRfr = eq.includes("reefer") || eq.includes("refrigerat");
+              const isFlat = eq.includes("flatbed");
+              const isTnk = eq.includes("tank") || eq.includes("tanker");
+              const isBulk = eq.includes("hopper") || eq.includes("bulk") || eq.includes("pneumatic");
+              const isFood = eq.includes("food") || (currentLoad.commodity || "").toLowerCase().match(/milk|juice|oil|wine|sugar|edible/);
+              const isWater = eq.includes("water");
+
+              // Trailer-specific labels per status
+              const labels: Record<string, { label: string; hint?: string }> = {
+                at_pickup: { label: "Start Loading" },
+                loading: { label: "Loading Complete — Depart" },
+                unloading: { label: "Unloading Complete — Delivered" },
+              };
+              if (isHaz) {
+                labels.at_pickup = { label: "Begin Hazmat Loading", hint: "Verify placards, seal integrity, emergency packet" };
+                labels.loading = { label: "Verify Seals & Depart", hint: "Confirm seal numbers, check for leaks" };
+                labels.unloading = { label: "Hazmat Unload Complete", hint: "Verify all product discharged, retain papers" };
+              } else if (isRfr) {
+                labels.at_pickup = { label: "Begin Temp-Controlled Loading", hint: "Record pre-load temp (FSMA)" };
+                labels.loading = { label: "Confirm Temp & Depart", hint: "Record post-load temp, verify door seals" };
+                labels.unloading = { label: "Reefer Unload Complete", hint: "Record final temp, retain temp log" };
+              } else if (isFlat) {
+                labels.at_pickup = { label: "Begin Flatbed Loading", hint: "Position per 49 CFR 393.100" };
+                labels.loading = { label: "Securement Complete — Depart", hint: "Verify tiedowns (1/10ft + 2 min)" };
+                labels.unloading = { label: "Flatbed Unload Complete" };
+              } else if (isTnk) {
+                labels.at_pickup = { label: "Begin Tanker Loading", hint: "Ground trailer, connect loading arms" };
+                labels.loading = { label: "Seal & Depart", hint: "Record gauge, seal valves, check leaks" };
+                labels.unloading = { label: "Tanker Discharge Complete", hint: "Verify full discharge, drain lines" };
+              } else if (isFood) {
+                labels.at_pickup = { label: "Begin Food-Grade Loading", hint: "Present wash ticket (FSMA)" };
+                labels.loading = { label: "Seal & Depart", hint: "Apply tamper-evident seals" };
+                labels.unloading = { label: "Food-Grade Discharge Complete", hint: "Verify product quality" };
+              } else if (isWater) {
+                labels.at_pickup = { label: "Begin Water Loading", hint: "Verify source quality, connect sanitary hoses" };
+                labels.loading = { label: "Seal & Depart", hint: "Seal fill ports, record volume" };
+                labels.unloading = { label: "Water Discharge Complete", hint: "Verify delivery volume" };
+              } else if (isBulk) {
+                labels.at_pickup = { label: "Begin Pneumatic Loading", hint: "Connect pneumatic lines, verify grade" };
+                labels.loading = { label: "Seal & Depart", hint: "Verify weight, seal hopper gates" };
+                labels.unloading = { label: "Pneumatic Discharge Complete", hint: "Verify complete discharge" };
+              }
+
+              const hint = labels[currentLoad.status]?.hint;
+              return (
+                <div className="space-y-2">
+                  {hint && (
+                    <div className="flex items-start gap-2 p-2 rounded bg-amber-500/10 border border-amber-500/20">
+                      <AlertTriangle className="w-3 h-3 text-amber-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-amber-300/90 leading-relaxed">{hint}</p>
+                    </div>
+                  )}
+                  <div className="flex gap-2 flex-wrap">
+                    {currentLoad.status === 'assigned' && (
+                      <Button size="sm" className="flex-1 bg-blue-600" onClick={() => handleLoadStatusUpdate('en_route_pickup')}>
+                        <Navigation className="w-3 h-3 mr-1" />En Route to Pickup
+                      </Button>
+                    )}
+                    {currentLoad.status === 'en_route_pickup' && (
+                      <Button size="sm" className="flex-1 bg-blue-600" onClick={() => handleLoadStatusUpdate('at_pickup')}>
+                        <MapPin className="w-3 h-3 mr-1" />Arrived at Pickup
+                      </Button>
+                    )}
+                    {currentLoad.status === 'at_pickup' && (
+                      <Button size="sm" className="flex-1 bg-blue-600" onClick={() => handleLoadStatusUpdate('loading')}>
+                        <Package className="w-3 h-3 mr-1" />{labels.at_pickup?.label || "Start Loading"}
+                      </Button>
+                    )}
+                    {currentLoad.status === 'loading' && (
+                      <Button size="sm" className="flex-1 bg-green-600" onClick={() => handleLoadStatusUpdate('in_transit')}>
+                        <Truck className="w-3 h-3 mr-1" />{labels.loading?.label || "Loading Complete — Depart"}
+                      </Button>
+                    )}
+                    {(currentLoad.status === 'in_transit' || (currentLoad.status as string) === 'en_route_delivery') && (
+                      <Button size="sm" className="flex-1 bg-blue-600" onClick={() => handleLoadStatusUpdate('at_delivery')}>
+                        <MapPin className="w-3 h-3 mr-1" />Arrived at Delivery
+                      </Button>
+                    )}
+                    {currentLoad.status === 'at_delivery' && (
+                      <Button size="sm" className="flex-1 bg-blue-600" onClick={() => handleLoadStatusUpdate('unloading')}>
+                        <Package className="w-3 h-3 mr-1" />Start Unloading
+                      </Button>
+                    )}
+                    {currentLoad.status === 'unloading' && (
+                      <Button size="sm" className="flex-1 bg-green-600" onClick={() => handleLoadStatusUpdate('delivered')}>
+                        <CheckCircle className="w-3 h-3 mr-1" />{labels.unloading?.label || "Unloading Complete — Delivered"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
             <div className="flex gap-2">
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="flex-1 border-slate-600"
-                onClick={() => handleAction("Arrived at Delivery")}
-              >
-                <MapPin className="w-3 h-3 mr-1" />
-                Arrived
+              <Button size="sm" variant="outline" className="flex-1 border-slate-600" onClick={() => handleAction("Photo uploaded")}>
+                <Camera className="w-3 h-3 mr-1" />Photo
               </Button>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="flex-1 border-slate-600"
-                onClick={() => handleAction("Photo uploaded")}
-              >
-                <Camera className="w-3 h-3 mr-1" />
-                Photo
-              </Button>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="flex-1 border-slate-600"
-                onClick={() => handleAction("Documents")}
-              >
-                <FileText className="w-3 h-3 mr-1" />
-                Docs
+              <Button size="sm" variant="outline" className="flex-1 border-slate-600" onClick={() => handleAction("Documents")}>
+                <FileText className="w-3 h-3 mr-1" />Docs
               </Button>
             </div>
           </CardContent>
@@ -374,21 +421,21 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-xs text-slate-400">Today</p>
-              <p className="text-lg font-bold text-green-400">${stats.earnings.today}</p>
-            </div>
-            <div>
               <p className="text-xs text-slate-400">This Week</p>
-              <p className="text-lg font-bold text-white">${stats.earnings.week.toLocaleString()}</p>
+              <p className="text-lg font-bold text-green-400">${(dashStats?.weeklyEarnings || dashStats?.earningsThisWeek || 0).toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-400">This Month</p>
-              <p className="text-lg font-bold text-white">${stats.earnings.month.toLocaleString()}</p>
+              <p className="text-xs text-slate-400">Loads</p>
+              <p className="text-lg font-bold text-white">{dashStats?.loadsCompleted || 0}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Safety</p>
+              <p className="text-lg font-bold text-white">{dashStats?.safetyScore || 0}</p>
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-700 flex items-center justify-between text-xs">
             <span className="text-slate-400">Miles this week</span>
-            <span className="text-white">{stats.milesThisWeek.toLocaleString()} mi</span>
+            <span className="text-white">{(dashStats?.weeklyMiles || dashStats?.milesThisWeek || 0).toLocaleString()} mi</span>
           </div>
         </CardContent>
       </Card>

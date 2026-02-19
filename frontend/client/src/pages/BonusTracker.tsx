@@ -32,14 +32,7 @@ type BonusItem = {
   expiresAt?: string;
 };
 
-const SAMPLE_BONUSES: BonusItem[] = [
-  { id: "1", name: "First 10 Loads", description: "Complete your first 10 deliveries", amount: 500, progress: 0, target: 10, status: "active", category: "milestone" },
-  { id: "2", name: "Safety Champion", description: "30 consecutive days with zero incidents", amount: 250, progress: 0, target: 30, status: "active", category: "safety" },
-  { id: "3", name: "Hazmat Premium", description: "Complete 5 hazmat loads this month", amount: 300, progress: 0, target: 5, status: "active", category: "performance" },
-  { id: "4", name: "Refer a Driver", description: "$200 for each driver referral who completes onboarding", amount: 200, progress: 0, target: 1, status: "active", category: "referral" },
-  { id: "5", name: "Peak Season Bonus", description: "Extra $0.05/mile during Q4 peak season", amount: 0, progress: 0, target: 1, status: "active", category: "seasonal" },
-  { id: "6", name: "On-Time Delivery Streak", description: "15 consecutive on-time deliveries", amount: 150, progress: 0, target: 15, status: "active", category: "performance" },
-];
+// No sample data — all bonus data comes from real tRPC queries
 
 const CATEGORY_CONFIG: Record<string, { icon: React.ReactNode; color: string; bg: string; label: string }> = {
   milestone: { icon: <Target className="w-4 h-4" />, color: "text-blue-400", bg: "bg-blue-500/15", label: "Milestone" },
@@ -63,9 +56,9 @@ export default function BonusTracker() {
   const profile = profileQuery.data;
   const isLoading = rewardsQuery.isLoading;
 
-  // Merge real data with sample structure
+  // Real data only — no fallback to sample data
   const bonuses: BonusItem[] = Array.isArray(rewardsData?.bonuses) ? rewardsData.bonuses :
-    Array.isArray(rewardsData) ? rewardsData : SAMPLE_BONUSES;
+    Array.isArray(rewardsData) ? rewardsData : [];
 
   const totalEarned = bonuses.filter((b) => b.status === "earned").reduce((sum, b) => sum + b.amount, 0);
   const totalAvailable = bonuses.filter((b) => b.status === "active").reduce((sum, b) => sum + b.amount, 0);

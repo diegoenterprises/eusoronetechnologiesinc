@@ -22,7 +22,7 @@ import { fetchMarketSnapshot, type MarketSnapshot, searchCommodityPriceAPI, sear
 let _liveSnapshot: MarketSnapshot | null = null;
 let _liveSnapshotAt = 0;
 async function getLiveSnapshot(): Promise<MarketSnapshot | null> {
-  if (_liveSnapshot && Date.now() - _liveSnapshotAt < 90 * 1000) return _liveSnapshot;
+  if (_liveSnapshot && Date.now() - _liveSnapshotAt < 30 * 1000) return _liveSnapshot;
   try {
     _liveSnapshot = await fetchMarketSnapshot();
     _liveSnapshotAt = Date.now();
@@ -921,6 +921,83 @@ export const marketPricingRouter = router({
       lastUpdated: snap?.fetchedAt || new Date().toISOString(),
       isLiveData: snap?.isLiveData || false,
       source: snap?.source || "Seed Data",
+    };
+  }),
+
+  // ═══ FORCE REFRESH ALL — Trigger ALL 24+ sync jobs + bust market caches ═══
+  forceRefreshAll: protectedProcedure.mutation(async () => {
+    const results: Array<{ source: string; label: string; success: boolean; error?: string; category: string }> = [];
+
+    // 1. Bust market snapshot cache — forces fresh API calls on next query
+    _liveSnapshot = null;
+    _liveSnapshotAt = 0;
+    _historicalPrices = {};
+    _historicalAt = 0;
+    results.push({ source: "market_snapshot_cache", label: "Market Cache Bust", success: true, category: "Market" });
+
+    // 2. Force re-fetch a fresh market snapshot right now
+    try {
+      const freshSnap = await fetchMarketSnapshot();
+      if (freshSnap) {
+        _liveSnapshot = freshSnap;
+        _liveSnapshotAt = Date.now();
+        results.push({ source: "market_snapshot_live", label: "Market Snapshot (FRED/EIA/Yahoo)", success: true, category: "Market" });
+      } else {
+        results.push({ source: "market_snapshot_live", label: "Market Snapshot (FRED/EIA/Yahoo)", success: false, error: "No data returned", category: "Market" });
+      }
+    } catch (err) {
+      results.push({ source: "market_snapshot_live", label: "Market Snapshot (FRED/EIA/Yahoo)", success: false, error: (err as Error).message, category: "Market" });
+    }
+
+    // 3. Trigger ALL registered sync jobs from the orchestrator (24 jobs)
+    try {
+      const { syncOrchestrator } = await import("../services/sync/syncOrchestrator");
+      const allJobs = syncOrchestrator.getAllJobStatus();
+
+      // Run all jobs concurrently in batches of 6 to avoid overwhelming APIs
+      const jobIds = allJobs.map(j => j.id);
+      const batchSize = 6;
+      for (let i = 0; i < jobIds.length; i += batchSize) {
+        const batch = jobIds.slice(i, i + batchSize);
+        const batchResults = await Promise.allSettled(
+          batch.map(async (jobId) => {
+            const job = allJobs.find(j => j.id === jobId)!;
+            const cat = job.dataType === "WEATHER_ALERTS" ? "Weather" :
+              job.dataType === "FUEL_PRICES" || job.dataType === "CRUDE_PRICES" ? "Energy" :
+              job.dataType === "CARRIER_SAFETY" ? "FMCSA" :
+              job.dataType === "HAZMAT_INCIDENTS" ? "Hazmat" :
+              job.dataType === "WILDFIRES" || job.dataType === "FEMA_DISASTERS" ? "Emergency" :
+              job.dataType === "SEISMIC_EVENTS" ? "Seismic" :
+              job.dataType === "ROAD_CONDITIONS" || job.dataType === "TRUCK_PARKING" ? "Infrastructure" :
+              job.dataType === "SPILL_REPORTS" ? "Environmental" :
+              job.dataType === "ZONE_INTELLIGENCE" ? "Intelligence" :
+              job.dataType === "REGULATIONS" ? "Regulatory" :
+              job.dataType === "PRODUCTION_DATA" ? "Production" :
+              job.dataType === "LOCK_STATUS" ? "Waterways" : "Other";
+            try {
+              const r = await syncOrchestrator.triggerJob(jobId);
+              return { source: jobId, label: job.label, success: r.success, error: r.error, category: cat };
+            } catch (err) {
+              return { source: jobId, label: job.label, success: false, error: (err as Error).message, category: cat };
+            }
+          })
+        );
+        for (const r of batchResults) {
+          if (r.status === "fulfilled") results.push(r.value);
+          else results.push({ source: "unknown", label: "Unknown", success: false, error: r.reason?.message || "Batch error", category: "Other" });
+        }
+      }
+    } catch (err) {
+      results.push({ source: "sync_orchestrator", label: "Sync Orchestrator", success: false, error: (err as Error).message, category: "System" });
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    return {
+      success: successCount > 0,
+      refreshed: successCount,
+      total: results.length,
+      results,
+      timestamp: new Date().toISOString(),
     };
   }),
 });

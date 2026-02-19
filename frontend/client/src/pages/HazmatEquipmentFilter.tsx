@@ -12,10 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   Search, Truck, CheckCircle, Filter, Settings,
-  Shield, AlertTriangle, Calendar, MapPin, Gauge
+  Shield, AlertTriangle, Calendar, MapPin, Gauge, Loader2
 } from "lucide-react";
 
 type Equipment = {
@@ -32,14 +33,7 @@ type Equipment = {
   available: boolean;
 };
 
-const SAMPLE_EQUIPMENT: Equipment[] = [
-  { id: "e1", unitNumber: "TK-4501", type: "Cargo Tank", spec: "DOT-406", capacity: "9,200 gal", products: ["Crude Oil", "Diesel", "Gasoline"], inspectionStatus: "current", lastInspection: "2025-11-15", nextInspection: "2026-11-15", location: "Houston, TX", available: true },
-  { id: "e2", unitNumber: "TK-4502", type: "Cargo Tank", spec: "DOT-407", capacity: "6,500 gal", products: ["Hydrochloric Acid", "Sulfuric Acid", "Caustic Soda"], inspectionStatus: "current", lastInspection: "2025-10-20", nextInspection: "2026-10-20", location: "Midland, TX", available: true },
-  { id: "e3", unitNumber: "TK-4503", type: "Cargo Tank", spec: "DOT-412", capacity: "5,000 gal", products: ["Anhydrous Ammonia", "Chlorine"], inspectionStatus: "due_soon", lastInspection: "2025-06-01", nextInspection: "2026-06-01", location: "Corpus Christi, TX", available: false },
-  { id: "e4", unitNumber: "CR-2201", type: "Cryogenic Tank", spec: "MC-338", capacity: "11,500 gal", products: ["LNG", "LOX", "LN2", "LAR"], inspectionStatus: "current", lastInspection: "2025-12-10", nextInspection: "2030-12-10", location: "Beaumont, TX", available: true },
-  { id: "e5", unitNumber: "FB-3301", type: "Flatbed", spec: "N/A", capacity: "48,000 lbs", products: ["Hazmat Drums", "IBCs", "Cylinders"], inspectionStatus: "current", lastInspection: "2026-01-05", nextInspection: "2027-01-05", location: "San Antonio, TX", available: true },
-  { id: "e6", unitNumber: "TK-4504", type: "Cargo Tank", spec: "DOT-406", capacity: "9,200 gal", products: ["Crude Oil", "Condensate", "Produced Water"], inspectionStatus: "overdue", lastInspection: "2024-08-15", nextInspection: "2025-08-15", location: "Odessa, TX", available: false },
-];
+// No sample data — all equipment data comes from real tRPC queries
 
 const INSP_CFG: Record<string, { label: string; color: string; bg: string }> = {
   current: { label: "Current", color: "text-green-500", bg: "bg-green-500/15" },
@@ -55,7 +49,9 @@ export default function HazmatEquipmentFilter() {
   const [availableOnly, setAvailableOnly] = useState(false);
   const [currentOnly, setCurrentOnly] = useState(false);
 
-  const equipment = SAMPLE_EQUIPMENT;
+  const equipQuery = (trpc as any).equipment?.list?.useQuery?.() || { data: null, isLoading: false };
+  const rawEquip: any[] = Array.isArray(equipQuery.data) ? equipQuery.data : [];
+  const equipment: Equipment[] = rawEquip;
 
   const filtered = useMemo(() => {
     let result = equipment;

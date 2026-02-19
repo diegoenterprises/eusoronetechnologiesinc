@@ -34,13 +34,7 @@ type DriverResult = {
   experience: string;
 };
 
-const SAMPLE_DRIVERS: DriverResult[] = [
-  { id: "d1", name: "James Walker", hazmatEndorsement: true, tankerEndorsement: true, twicCard: true, cdlClass: "A", safetyScore: 98, milesAway: 15, status: "available", equipment: "Tanker", experience: "8 yrs" },
-  { id: "d2", name: "Maria Rodriguez", hazmatEndorsement: true, tankerEndorsement: true, twicCard: false, cdlClass: "A", safetyScore: 95, milesAway: 42, status: "available", equipment: "Tanker", experience: "5 yrs" },
-  { id: "d3", name: "Robert Chen", hazmatEndorsement: true, tankerEndorsement: false, twicCard: true, cdlClass: "A", safetyScore: 92, milesAway: 78, status: "en_route", equipment: "Flatbed", experience: "12 yrs" },
-  { id: "d4", name: "Sarah Johnson", hazmatEndorsement: true, tankerEndorsement: true, twicCard: true, cdlClass: "A", safetyScore: 97, milesAway: 120, status: "available", equipment: "Tanker", experience: "6 yrs" },
-  { id: "d5", name: "David Williams", hazmatEndorsement: true, tankerEndorsement: false, twicCard: false, cdlClass: "B", safetyScore: 88, milesAway: 200, status: "off_duty", equipment: "Dry Van", experience: "3 yrs" },
-];
+// No sample data — all driver data comes from real tRPC queries
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
   available: { label: "Available", color: "text-green-500", bg: "bg-green-500/15" },
@@ -62,7 +56,7 @@ export default function HazmatDriverFilter() {
     { data: null, isLoading: false, refetch: () => {} };
 
   const rawDrivers: any[] = Array.isArray(driversQuery.data) ? driversQuery.data : [];
-  const drivers: DriverResult[] = rawDrivers.length > 0 ? rawDrivers : SAMPLE_DRIVERS;
+  const drivers: DriverResult[] = rawDrivers;
   const isLoading = driversQuery.isLoading;
 
   const filtered = useMemo(() => {

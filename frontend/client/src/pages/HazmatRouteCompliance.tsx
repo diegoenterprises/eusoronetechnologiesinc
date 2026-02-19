@@ -13,11 +13,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
 import {
   Navigation, CheckCircle, AlertTriangle, XCircle, Shield,
-  MapPin, Clock, Truck, ChevronRight, RefreshCw, Send
+  MapPin, Clock, Truck, ChevronRight, RefreshCw, Send, Loader2
 } from "lucide-react";
 
 type ComplianceCheck = {
@@ -28,20 +29,7 @@ type ComplianceCheck = {
   detail: string;
 };
 
-const SAMPLE_CHECKS: ComplianceCheck[] = [
-  { id: "c1", category: "Route Designation", item: "NRHM preferred route verified", status: "pass", detail: "Route follows state-designated NRHM preferred route through all jurisdictions." },
-  { id: "c2", category: "Route Designation", item: "Shortest practical distance analysis", status: "pass", detail: "Route is within 5% of shortest distance between origin and destination using preferred routes." },
-  { id: "c3", category: "Tunnel Restrictions", item: "No prohibited tunnel crossings", status: "pass", detail: "Route avoids all Category E tunnels. No tunnel restrictions apply to this hazard class." },
-  { id: "c4", category: "Tunnel Restrictions", item: "Tunnel category compatibility", status: "pass", detail: "Hazard class 3 (Flammable Liquid) is permitted through Category C tunnels on this route." },
-  { id: "c5", category: "Bridge/Weight Limits", item: "Bridge weight limits verified", status: "warning", detail: "US-59 bridge at mile marker 412 has posted limit of 80,000 lbs. Verify loaded weight." },
-  { id: "c6", category: "Bridge/Weight Limits", item: "Height clearances adequate", status: "pass", detail: "All bridge clearances exceed 14ft. No low-clearance structures on route." },
-  { id: "c7", category: "City/Local Restrictions", item: "Municipal hazmat ordinances checked", status: "pass", detail: "No local hazmat restrictions in cities along this route." },
-  { id: "c8", category: "City/Local Restrictions", item: "Time-of-day restrictions", status: "warning", detail: "Houston I-610 loop restricts bulk flammable 7-9 AM and 4-6 PM weekdays. Plan accordingly." },
-  { id: "c9", category: "Permits & Documentation", item: "State permits valid", status: "pass", detail: "TX and LA state hazmat operating permits are current and on file." },
-  { id: "c10", category: "Permits & Documentation", item: "Shipping papers match route", status: "pass", detail: "Emergency response information and 24-hour phone number verified on shipping papers." },
-  { id: "c11", category: "Emergency Preparedness", item: "ERG guide available", status: "pass", detail: "2024 ERG available in cab. Guide 128 applicable for UN1267 Petroleum crude oil." },
-  { id: "c12", category: "Emergency Preparedness", item: "Emergency contacts programmed", status: "pass", detail: "CHEMTREC, NRC, and carrier emergency numbers programmed in phone." },
-];
+// No sample data — compliance checks come from real tRPC queries
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   pass: { label: "Pass", color: "text-green-500", bg: "bg-green-500/15", icon: <CheckCircle className="w-4 h-4" /> },
@@ -55,12 +43,16 @@ export default function HazmatRouteCompliance() {
   const isLight = theme === "light";
   const [acknowledged, setAcknowledged] = useState(false);
 
-  const checks = SAMPLE_CHECKS;
-  const passCount = checks.filter((c) => c.status === "pass").length;
-  const warnCount = checks.filter((c) => c.status === "warning").length;
-  const failCount = checks.filter((c) => c.status === "fail").length;
+  // Real data from compliance/route checking endpoint
+  const complianceQuery = (trpc as any).compliance?.getRouteChecks?.useQuery?.() ||
+    (trpc as any).hazmat?.getRouteCompliance?.useQuery?.() ||
+    { data: null, isLoading: false };
+  const checks: ComplianceCheck[] = Array.isArray(complianceQuery.data) ? complianceQuery.data : [];
+  const passCount = checks.filter((c: ComplianceCheck) => c.status === "pass").length;
+  const warnCount = checks.filter((c: ComplianceCheck) => c.status === "warning").length;
+  const failCount = checks.filter((c: ComplianceCheck) => c.status === "fail").length;
   const overallPass = failCount === 0;
-  const categories = Array.from(new Set(checks.map((c) => c.category)));
+  const categories = Array.from(new Set(checks.map((c: ComplianceCheck) => c.category)));
 
   const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
 
@@ -125,8 +117,8 @@ export default function HazmatRouteCompliance() {
       </Card>
 
       {/* Compliance checks by category */}
-      {categories.map((cat) => {
-        const items = checks.filter((c) => c.category === cat);
+      {categories.map((cat: string) => {
+        const items = checks.filter((c: ComplianceCheck) => c.category === cat);
         return (
           <Card key={cat} className={cc}>
             <CardHeader className="pb-3">

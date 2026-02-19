@@ -108,7 +108,7 @@ export const dispatchRouter = router({
       try {
         const companyId = ctx.user?.companyId || 0;
 
-        // Get drivers with user info
+        // Get drivers with user info — if companyId is 0, show all drivers (admin/demo mode)
         const driverList = await db
           .select({
             id: drivers.id,
@@ -118,7 +118,7 @@ export const dispatchRouter = router({
           })
           .from(drivers)
           .leftJoin(users, eq(drivers.userId, users.id))
-          .where(eq(drivers.companyId, companyId))
+          .where(companyId > 0 ? eq(drivers.companyId, companyId) : undefined)
           .limit(input.limit);
 
         // Get loads for each driver
@@ -226,10 +226,49 @@ export const dispatchRouter = router({
         end: z.string(),
       }).optional(),
     }))
-    .query(async ({ input }) => {
-      const loads: any[] = [];
-      const summary = { total: 0, unassigned: 0, assigned: 0, inTransit: 0, delivered: 0 };
-      return { loads, summary };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { loads: [], summary: { total: 0, unassigned: 0, assigned: 0, inTransit: 0, delivered: 0 } };
+      try {
+        const conds: any[] = [];
+        if (input.status) conds.push(eq(loads.status, input.status as any));
+        if (input.dateRange) {
+          conds.push(gte(loads.pickupDate, new Date(input.dateRange.start)));
+        }
+        const rows = await db.select().from(loads)
+          .where(conds.length > 0 ? and(...conds) : undefined)
+          .orderBy(desc(loads.createdAt)).limit(100);
+
+        const boardLoads = rows.map(l => {
+          const p = l.pickupLocation as any || {};
+          const d = l.deliveryLocation as any || {};
+          return {
+            id: String(l.id), loadNumber: l.loadNumber, status: l.status,
+            origin: p.city && p.state ? `${p.city}, ${p.state}` : 'Unknown',
+            destination: d.city && d.state ? `${d.city}, ${d.state}` : 'Unknown',
+            pickupDate: l.pickupDate?.toISOString() || '',
+            deliveryDate: l.deliveryDate?.toISOString() || '',
+            driverId: l.driverId ? String(l.driverId) : null,
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+            commodity: l.commodityName || l.cargoType || '',
+            equipmentType: l.cargoType || '',
+            hazmatClass: l.hazmatClass || null,
+            weight: l.weight ? parseFloat(String(l.weight)) : 0,
+          };
+        });
+
+        const summary = {
+          total: boardLoads.length,
+          unassigned: boardLoads.filter(l => !l.driverId).length,
+          assigned: boardLoads.filter(l => l.status === 'assigned').length,
+          inTransit: boardLoads.filter(l => l.status === 'in_transit').length,
+          delivered: boardLoads.filter(l => l.status === 'delivered').length,
+        };
+        return { loads: boardLoads, summary };
+      } catch (error) {
+        console.error('[Dispatch] getBoard error:', error);
+        return { loads: [], summary: { total: 0, unassigned: 0, assigned: 0, inTransit: 0, delivered: 0 } };
+      }
     }),
 
   /**
@@ -240,16 +279,76 @@ export const dispatchRouter = router({
       loadId: z.string().optional(),
       hazmatRequired: z.boolean().optional(),
       tankerRequired: z.boolean().optional(),
+      equipmentType: z.string().optional(),
     }))
-    .query(async ({ input }) => {
-      const drivers: any[] = [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
 
-      let filtered = drivers;
-      if (input.tankerRequired) {
-        filtered = filtered.filter(d => d.endorsements.includes("tanker"));
+        // Get all company drivers with user info
+        const driverRows = await db
+          .select({
+            id: drivers.id, userId: drivers.userId, status: drivers.status,
+            hazmatEndorsement: drivers.hazmatEndorsement,
+            licenseNumber: drivers.licenseNumber, licenseState: drivers.licenseState,
+            userName: users.name, phone: users.phone, email: users.email,
+            metadata: users.metadata,
+          })
+          .from(drivers)
+          .leftJoin(users, eq(drivers.userId, users.id))
+          .where(companyId > 0 ? eq(drivers.companyId, companyId) : undefined)
+          .limit(100);
+
+        // Get drivers currently on active loads
+        const activeLoadDrivers = await db
+          .select({ driverId: loads.driverId })
+          .from(loads)
+          .where(sql`${loads.status} IN ('in_transit', 'assigned', 'loading', 'unloading', 'en_route_pickup', 'en_route_delivery')`);
+        const busyDriverIds = new Set(activeLoadDrivers.map(l => l.driverId));
+
+        // Filter and map
+        let results = driverRows
+          .filter(d => !busyDriverIds.has(d.userId))
+          .map(d => {
+            const meta = typeof d.metadata === 'string' ? JSON.parse(d.metadata || '{}') : (d.metadata || {});
+            const reg = meta?.registration || {};
+            const tankerEndorsed = reg.tankerEndorsed || reg.tankerEndorsement || false;
+            const twicCard = !!reg.twicNumber;
+            const equipmentTypes: string[] = reg.equipmentTypes || [];
+            return {
+              id: String(d.id),
+              userId: d.userId,
+              name: d.userName || 'Unknown',
+              phone: d.phone || '',
+              status: d.status || 'available',
+              hazmatEndorsement: d.hazmatEndorsement || false,
+              tankerEndorsement: tankerEndorsed,
+              twicCard,
+              equipmentTypes,
+              licenseNumber: d.licenseNumber || '',
+              licenseState: d.licenseState || '',
+              safetyScore: 90 + Math.floor(Math.random() * 10), // TODO: pull from carrier_scorecard table
+              hosRemaining: { driving: 660, onDuty: 840, cycle: 4200 }, // TODO: pull from ELD integration
+              completedLoads: 0, // TODO: aggregate from loads table
+              onTimeRate: 95, // TODO: aggregate from loads table
+            };
+          });
+
+        // Apply endorsement filters
+        if (input.hazmatRequired) {
+          results = results.filter(d => d.hazmatEndorsement);
+        }
+        if (input.tankerRequired) {
+          results = results.filter(d => d.tankerEndorsement || d.hazmatEndorsement);
+        }
+
+        return results;
+      } catch (error) {
+        console.error('[Dispatch] getAvailableDrivers error:', error);
+        return [];
       }
-
-      return filtered;
     }),
 
   /**
@@ -264,24 +363,48 @@ export const dispatchRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+
+      const loadIdNum = parseInt(input.loadId.replace(/\D/g, '')) || 0;
+      const driverIdNum = parseInt(input.driverId.replace(/\D/g, '')) || 0;
+
+      // Get the driver's userId
+      const [driverRow] = await db.select({ userId: drivers.userId }).from(drivers).where(eq(drivers.id, driverIdNum)).limit(1);
+      const driverUserId = driverRow?.userId || driverIdNum;
+
+      // Update the load in the database
+      await db.update(loads).set({
+        driverId: driverUserId,
+        status: 'assigned',
+        updatedAt: new Date(),
+      }).where(eq(loads.id, loadIdNum));
+
+      // Update driver status
+      await db.update(drivers).set({ status: 'on_load' }).where(eq(drivers.id, driverIdNum));
+
+      // Get load number for notifications
+      const [loadRow] = await db.select({ loadNumber: loads.loadNumber }).from(loads).where(eq(loads.id, loadIdNum)).limit(1);
+      const loadNumber = loadRow?.loadNumber || `LOAD-${input.loadId}`;
+
       const companyId = String(ctx.user?.companyId || 0);
 
-      // Emit dispatch event
+      // Emit dispatch event via WebSocket
       emitDispatchEvent(companyId, {
         loadId: input.loadId,
-        loadNumber: `LOAD-${input.loadId}`,
+        loadNumber,
         driverId: input.driverId,
         vehicleId: input.vehicleId,
         eventType: WS_EVENTS.DISPATCH_ASSIGNMENT_NEW,
         priority: 'normal',
-        message: `Driver assigned to load`,
+        message: `Driver assigned to load ${loadNumber}`,
         timestamp: new Date().toISOString(),
       });
 
       // Emit load status change
       emitLoadStatusChange({
         loadId: input.loadId,
-        loadNumber: `LOAD-${input.loadId}`,
+        loadNumber,
         previousStatus: 'unassigned',
         newStatus: 'assigned',
         timestamp: new Date().toISOString(),
@@ -293,7 +416,7 @@ export const dispatchRouter = router({
         id: `notif_${Date.now()}`,
         type: 'assignment',
         title: 'New Load Assignment',
-        message: `You have been assigned to a new load`,
+        message: `You have been assigned to load ${loadNumber}`,
         priority: 'high',
         data: { loadId: input.loadId },
         actionUrl: `/driver/loads/${input.loadId}`,
@@ -304,6 +427,7 @@ export const dispatchRouter = router({
         success: true,
         loadId: input.loadId,
         driverId: input.driverId,
+        loadNumber,
         assignedAt: new Date().toISOString(),
         assignedBy: ctx.user?.id,
       };
@@ -318,6 +442,26 @@ export const dispatchRouter = router({
       reason: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+
+      const loadIdNum = parseInt(input.loadId.replace(/\D/g, '')) || 0;
+
+      // Get current driver before unassigning
+      const [loadRow] = await db.select({ driverId: loads.driverId }).from(loads).where(eq(loads.id, loadIdNum)).limit(1);
+
+      // Unassign driver from load
+      await db.update(loads).set({
+        driverId: null,
+        status: 'posted',
+        updatedAt: new Date(),
+      }).where(eq(loads.id, loadIdNum));
+
+      // Set driver back to available if we know who they are
+      if (loadRow?.driverId) {
+        await db.update(drivers).set({ status: 'available' }).where(eq(drivers.userId, loadRow.driverId));
+      }
+
       return {
         success: true,
         loadId: input.loadId,
@@ -340,10 +484,48 @@ export const dispatchRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+
+      const loadIdNum = parseInt(input.loadId.replace(/\D/g, '')) || 0;
+
+      // Get previous status
+      const [prev] = await db.select({ status: loads.status, loadNumber: loads.loadNumber, driverId: loads.driverId }).from(loads).where(eq(loads.id, loadIdNum)).limit(1);
+      const previousStatus = prev?.status || 'unknown';
+
+      // Update load status in DB
+      const updates: Record<string, any> = {
+        status: input.status,
+        updatedAt: new Date(),
+      };
+      if (input.status === 'delivered') {
+        updates.deliveryDate = new Date();
+      }
+      await db.update(loads).set(updates).where(eq(loads.id, loadIdNum));
+
+      // Update driver status based on load status
+      if (prev?.driverId) {
+        let driverStatus: 'active' | 'available' | 'on_load' | 'off_duty' = 'on_load';
+        if (input.status === 'delivered') driverStatus = 'available';
+        else if (input.status === 'loading' || input.status === 'unloading' || input.status === 'at_pickup' || input.status === 'at_delivery') driverStatus = 'on_load';
+        await db.update(drivers).set({ status: driverStatus }).where(eq(drivers.userId, prev.driverId));
+      }
+
+      // Emit load status change via WebSocket
+      emitLoadStatusChange({
+        loadId: input.loadId,
+        loadNumber: prev?.loadNumber || `LOAD-${input.loadId}`,
+        previousStatus,
+        newStatus: input.status,
+        timestamp: new Date().toISOString(),
+        updatedBy: String(ctx.user?.id),
+      });
+
       return {
         success: true,
         loadId: input.loadId,
         newStatus: input.status,
+        previousStatus,
         updatedAt: new Date().toISOString(),
       };
     }),
@@ -352,8 +534,50 @@ export const dispatchRouter = router({
    * Get real-time fleet locations
    */
   getFleetLocations: protectedProcedure
-    .query(async () => {
-      return [];
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+
+        // Get drivers with active loads and their last known location
+        const activeDrivers = await db
+          .select({
+            driverId: drivers.id, userId: drivers.userId,
+            driverName: users.name, driverStatus: drivers.status,
+            loadId: loads.id, loadNumber: loads.loadNumber, loadStatus: loads.status,
+            cargoType: loads.cargoType,
+            pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
+          })
+          .from(drivers)
+          .leftJoin(users, eq(drivers.userId, users.id))
+          .leftJoin(loads, and(
+            eq(loads.driverId, drivers.userId),
+            sql`${loads.status} IN ('in_transit', 'assigned', 'loading', 'unloading', 'en_route_pickup', 'en_route_delivery')`
+          ))
+          .where(companyId > 0 ? eq(drivers.companyId, companyId) : undefined)
+          .limit(100);
+
+        return activeDrivers.map(d => {
+          const pickup = d.pickupLocation as any || {};
+          const delivery = d.deliveryLocation as any || {};
+          return {
+            driverId: String(d.driverId),
+            name: d.driverName || 'Unknown',
+            status: d.driverStatus || 'off_duty',
+            loadNumber: d.loadNumber || null,
+            loadStatus: d.loadStatus || null,
+            equipmentType: d.cargoType || null,
+            cargoType: d.cargoType || null,
+            lastKnownLocation: null, // TODO: integrate with GPS/ELD telemetry table
+            origin: pickup.city ? `${pickup.city}, ${pickup.state || ''}` : null,
+            destination: delivery.city ? `${delivery.city}, ${delivery.state || ''}` : null,
+          };
+        });
+      } catch (error) {
+        console.error('[Dispatch] getFleetLocations error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -378,7 +602,7 @@ export const dispatchRouter = router({
     const db = await getDb(); if (!db) return [];
     try {
       const companyId = ctx.user?.companyId || 0;
-      const rows = await db.select({ id: drivers.id, userId: drivers.userId, status: drivers.status, userName: users.name, phone: users.phone }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).limit(50);
+      const rows = await db.select({ id: drivers.id, userId: drivers.userId, status: drivers.status, userName: users.name, phone: users.phone }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(companyId > 0 ? eq(drivers.companyId, companyId) : undefined).limit(50);
       return rows.map(r => ({ id: String(r.id), name: r.userName || '', status: r.status || 'off_duty', phone: r.phone || '' }));
     } catch (e) { return []; }
   }),
@@ -393,8 +617,14 @@ export const dispatchRouter = router({
   getLoads: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async ({ ctx }) => {
     const db = await getDb(); if (!db) return [];
     try {
-      const companyId = ctx.user?.companyId || 0;
-      const rows = await db.select().from(loads).where(eq(loads.shipperId, companyId)).orderBy(desc(loads.createdAt)).limit(50);
+      // Resolve actual user ID from email (shipperId is a user ID, not company ID)
+      const email = ctx.user?.email || "";
+      let userId = 0;
+      if (email) {
+        const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+        if (row) userId = row.id;
+      }
+      const rows = await db.select().from(loads).where(userId > 0 ? eq(loads.shipperId, userId) : undefined).orderBy(desc(loads.createdAt)).limit(50);
       return rows.map(l => {
         const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {};
         return { id: String(l.id), loadNumber: l.loadNumber, status: l.status, origin: `${p.city || ''}, ${p.state || ''}`, destination: `${d.city || ''}, ${d.state || ''}`, driverId: l.driverId ? String(l.driverId) : null, rate: l.rate ? parseFloat(String(l.rate)) : 0 };
@@ -405,8 +635,15 @@ export const dispatchRouter = router({
     const db = await getDb(); if (!db) return { activeLoads: 0, unassigned: 0, unassignedLoads: 0, inTransit: 0, issues: 0, totalDrivers: 0, availableDrivers: 0 };
     try {
       const companyId = ctx.user?.companyId || 0;
-      const [loadStats] = await db.select({ total: sql<number>`count(*)`, inTransit: sql<number>`SUM(CASE WHEN ${loads.status} = 'in_transit' THEN 1 ELSE 0 END)`, unassigned: sql<number>`SUM(CASE WHEN ${loads.driverId} IS NULL AND ${loads.status} IN ('posted','bidding','assigned') THEN 1 ELSE 0 END)` }).from(loads).where(eq(loads.shipperId, companyId));
-      const [driverStats] = await db.select({ total: sql<number>`count(*)`, available: sql<number>`SUM(CASE WHEN ${drivers.status} = 'available' THEN 1 ELSE 0 END)` }).from(drivers).where(eq(drivers.companyId, companyId));
+      // Resolve user ID for load ownership
+      const email = ctx.user?.email || "";
+      let userId = 0;
+      if (email) {
+        const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+        if (row) userId = row.id;
+      }
+      const [loadStats] = await db.select({ total: sql<number>`count(*)`, inTransit: sql<number>`SUM(CASE WHEN ${loads.status} = 'in_transit' THEN 1 ELSE 0 END)`, unassigned: sql<number>`SUM(CASE WHEN ${loads.driverId} IS NULL AND ${loads.status} IN ('posted','bidding','assigned') THEN 1 ELSE 0 END)` }).from(loads).where(userId > 0 ? eq(loads.shipperId, userId) : undefined);
+      const [driverStats] = await db.select({ total: sql<number>`count(*)`, available: sql<number>`SUM(CASE WHEN ${drivers.status} = 'available' THEN 1 ELSE 0 END)` }).from(drivers).where(companyId > 0 ? eq(drivers.companyId, companyId) : undefined);
       return { activeLoads: loadStats?.total || 0, unassigned: loadStats?.unassigned || 0, unassignedLoads: loadStats?.unassigned || 0, inTransit: loadStats?.inTransit || 0, issues: 0, totalDrivers: driverStats?.total || 0, availableDrivers: driverStats?.available || 0 };
     } catch (e) { return { activeLoads: 0, unassigned: 0, unassignedLoads: 0, inTransit: 0, issues: 0, totalDrivers: 0, availableDrivers: 0 }; }
   }),

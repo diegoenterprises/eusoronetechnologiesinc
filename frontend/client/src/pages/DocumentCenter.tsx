@@ -1,10 +1,11 @@
 /**
- * DOCUMENT CENTER — Smart Compliance-Aware Document Management
+ * DOCUMENT CENTER v2.0 — Fused Smart Compliance + AI Digitization
  * Role-based requirements, expiration tracking, compliance scoring,
- * document upload with versioning, admin verification workflow.
+ * Gemini AI document classification, drag-drop multi-file upload,
+ * document preview, organization by category, auto-seed on first visit.
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,9 +19,10 @@ import {
   FileText, Search, Upload, Download, Trash2, Eye, X,
   CheckCircle, Clock, AlertTriangle, Shield, ShieldCheck,
   XCircle, ArrowUpCircle, RefreshCw, ExternalLink,
-  ChevronDown, ChevronRight, Filter, Loader2,
+  ChevronDown, ChevronRight, Filter, Loader2, Sparkles,
   FolderOpen, CreditCard, Truck, Users, Scale, Briefcase,
-  GraduationCap, ScrollText, MapPin, Building2, Lock
+  GraduationCap, ScrollText, MapPin, Building2, Lock, File,
+  LayoutGrid, List as ListIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -103,171 +105,326 @@ function ComplianceRing({ score, size = 120 }: { score: number; size?: number })
   );
 }
 
-// ── Upload Modal ──
+// ── Auto-detect category from filename ──
+const AUTO_DETECT_RULES: { pattern: RegExp; category: string }[] = [
+  { pattern: /insur|liabil|cargo\s*ins|workers?\s*comp|bipd|certificate\s*of\s*ins/i, category: "INS" },
+  { pattern: /bol|bill\s*of\s*lading|pod|proof\s*of\s*delivery|rate\s*con|delivery\s*receipt|run\s*ticket|waybill|manifest|dispatch/i, category: "OPS" },
+  { pattern: /permit|authority|mc\s*auth|dot\s*auth|oversize|hazmat\s*perm|operating\s*auth/i, category: "AUT" },
+  { pattern: /cdl|medical\s*card|drug\s*test|training|dot\s*physical|ifta|safety\s*cert|hazmat\s*end/i, category: "CDL" },
+  { pattern: /invoice|receipt|payment|factoring|settlement|remittance/i, category: "TAX" },
+  { pattern: /contract|agreement|lease|broker|shipper|terms/i, category: "LEG" },
+  { pattern: /w-?9|ein|articles?\s*of\s*inc|business\s*lic|tax\s*id|corp/i, category: "COM" },
+  { pattern: /registration|inspection|maintenance|tire|vin|title|vehicle/i, category: "VEH" },
+];
+function detectCategoryFromName(filename: string): string {
+  for (const rule of AUTO_DETECT_RULES) {
+    if (rule.pattern.test(filename)) return rule.category;
+  }
+  return "";
+}
+
+// ── Upload Modal — Drag-drop, multi-file, Smart Digitize (Gemini AI) ──
 function UploadModal({
   onClose,
   documentTypes,
   onUpload,
   uploading,
+  onUploaded,
 }: {
   onClose: () => void;
   documentTypes: any[];
   onUpload: (data: any) => void;
   uploading: boolean;
+  onUploaded: () => void;
 }) {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  const [selectedType, setSelectedType] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [docNumber, setDocNumber] = useState("");
-  const [issuedBy, setIssuedBy] = useState("");
-  const [issuedByState, setIssuedByState] = useState("");
-  const [issuedDate, setIssuedDate] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [files, setFiles] = useState<{ file: File; docTypeId: string; docNumber: string; issuedBy: string; state: string; issuedDate: string; expiresAt: string }[]>([]);
   const [converting, setConverting] = useState(false);
+  const [digitizing, setDigitizing] = useState(false);
+  const [digitizeResults, setDigitizeResults] = useState<any[]>([]);
+  const digitizeMutation = (trpc as any).documents?.digitize?.useMutation?.() || null;
 
-  const selectedDocType = documentTypes.find((t: any) => t.id === selectedType);
+  const addFiles = useCallback((fileList: FileList | File[]) => {
+    const arr = Array.from(fileList).map(f => {
+      const detected = detectCategoryFromName(f.name);
+      const matchedType = detected ? documentTypes.find((t: any) => t.category === detected) : null;
+      return {
+        file: f,
+        docTypeId: matchedType?.id || "",
+        docNumber: "",
+        issuedBy: "",
+        state: "",
+        issuedDate: "",
+        expiresAt: "",
+      };
+    });
+    setFiles(prev => [...prev, ...arr]);
+    setDigitizeResults([]);
+  }, [documentTypes]);
 
-  const handleSubmit = useCallback(async () => {
-    if (!file || !selectedType) {
-      toast.error("Select a document type and file");
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+  }, [addFiles]);
+
+  const removeFile = (idx: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== idx));
+    setDigitizeResults(prev => prev.filter((_, i) => i !== idx));
+  };
+  const updateFile = (idx: number, patch: Partial<typeof files[0]>) =>
+    setFiles(prev => prev.map((f, i) => i === idx ? { ...f, ...patch } : f));
+
+  const readFileAsBase64 = (file: File): Promise<string> =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+
+  // Standard upload
+  const handleUpload = async () => {
+    const valid = files.filter(f => f.docTypeId && f.file);
+    if (!valid.length) {
+      toast.error("Select a document type for each file");
       return;
     }
     setConverting(true);
     try {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = (reader.result as string).split(",")[1];
+      for (const entry of valid) {
+        const base64Full = await readFileAsBase64(entry.file);
+        const base64 = base64Full.split(",")[1] || base64Full;
         onUpload({
-          documentTypeId: selectedType,
-          fileName: file.name,
+          documentTypeId: entry.docTypeId,
+          fileName: entry.file.name,
           fileBase64: base64,
-          mimeType: file.type,
-          documentNumber: docNumber || undefined,
-          issuedBy: issuedBy || undefined,
-          issuedByState: issuedByState || undefined,
-          issuedDate: issuedDate || undefined,
-          expiresAt: expiresAt || undefined,
+          mimeType: entry.file.type,
+          documentNumber: entry.docNumber || undefined,
+          issuedBy: entry.issuedBy || undefined,
+          issuedByState: entry.state || undefined,
+          issuedDate: entry.issuedDate || undefined,
+          expiresAt: entry.expiresAt || undefined,
         });
-      };
-      reader.readAsDataURL(file);
-    } catch {
-      toast.error("Failed to read file");
+      }
+    } catch (err) {
+      console.error("Upload failed:", err);
+      toast.error("Upload failed");
+    } finally {
       setConverting(false);
     }
-  }, [file, selectedType, docNumber, issuedBy, issuedByState, issuedDate, expiresAt, onUpload]);
+  };
+
+  // Smart Digitize: Gemini AI reads the document, classifies it, extracts fields
+  const handleDigitize = async () => {
+    if (!files.length || !digitizeMutation) {
+      toast.error("Smart Digitize requires files to analyze");
+      return;
+    }
+    setDigitizing(true);
+    const results: any[] = [];
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const entry = files[i];
+        const base64 = await readFileAsBase64(entry.file);
+        const result = await digitizeMutation.mutateAsync({
+          fileData: base64,
+          filename: entry.file.name,
+          autoSave: true,
+        });
+        results.push(result);
+        if (result.classification) {
+          const aiCat = result.classification.category;
+          const matchedType = documentTypes.find((t: any) =>
+            t.category === aiCat || t.name?.toLowerCase().includes(aiCat?.toLowerCase())
+          );
+          updateFile(i, {
+            docTypeId: matchedType?.id || entry.docTypeId,
+            expiresAt: result.classification.suggestedExpiryDate || entry.expiresAt,
+          });
+        }
+      }
+      setDigitizeResults(results);
+      onUploaded();
+      toast.success("AI analysis complete - documents classified and saved");
+    } catch (err) {
+      console.error("Digitize failed:", err);
+      toast.error("Smart Digitize failed");
+    } finally {
+      setDigitizing(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <Card className={cn("w-full max-w-lg max-h-[90vh] overflow-y-auto", isLight ? "bg-white border-slate-200" : "bg-slate-900 border-slate-700/50")}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className={cn("text-lg", isLight ? "text-slate-900" : "text-white")}>Upload Document</CardTitle>
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0"><X className="w-4 h-4" /></Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <div
+        className={cn("w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col", isLight ? "bg-white border border-slate-200" : "bg-slate-900 border border-slate-700")}
+        style={{ maxHeight: "85vh" }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className={cn("flex items-center justify-between p-5 border-b shrink-0", isLight ? "border-slate-200" : "border-slate-800")}>
           <div>
-            <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>Document Type *</label>
-            <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className={cn("h-10", isLight ? "bg-white border-slate-300" : "bg-slate-800 border-slate-600")}>
-                <SelectValue placeholder="Select document type..." />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {documentTypes.map((t: any) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    <span className="flex items-center gap-2">
-                      {CATEGORY_ICONS[t.category] || <FileText className="w-3 h-3" />}
-                      <span>{t.name}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedDocType?.description && (
-              <p className="text-xs text-slate-400 mt-1">{selectedDocType.description}</p>
+            <h2 className={cn("text-lg font-semibold", isLight ? "text-slate-900" : "text-white")}>Upload Documents</h2>
+            <p className={cn("text-sm mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>Drag files or browse. Use Smart Digitize for AI-powered classification.</p>
+          </div>
+          <button onClick={onClose} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100 text-slate-500" : "hover:bg-slate-800 text-slate-400 hover:text-white")}>
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="p-5 overflow-y-auto flex-1">
+          {/* Drop zone */}
+          <div
+            className={cn(
+              "border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer",
+              isDragging
+                ? "border-blue-400 bg-blue-500/10"
+                : isLight ? "border-slate-300 hover:border-blue-400 bg-slate-50" : "border-slate-700 hover:border-slate-500 bg-slate-800/30"
             )}
+            onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className={cn("w-10 h-10 mx-auto mb-3", isDragging ? "text-blue-400" : "text-slate-400")} />
+            <p className={cn("font-medium", isLight ? "text-slate-700" : "text-white")}>
+              {isDragging ? "Drop files here" : "Drag & drop files here"}
+            </p>
+            <p className={cn("text-sm mt-1", isLight ? "text-slate-400" : "text-slate-500")}>or click to browse - PDF, JPG, PNG, DOCX | Max 10MB</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.csv,.tiff,.heic"
+              className="hidden"
+              onChange={e => e.target.files && addFiles(e.target.files)}
+            />
           </div>
 
-          <div>
-            <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>File *</label>
-            <div
-              className={cn(
-                "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors",
-                file ? "border-green-500/40 bg-green-500/5" : isLight ? "border-slate-300 hover:border-blue-400 bg-slate-50" : "border-slate-600 hover:border-blue-500 bg-slate-800/50"
-              )}
-              onClick={() => document.getElementById("doc-file-input")?.click()}
-            >
-              {file ? (
-                <div className="flex items-center justify-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-400" />
-                  <span className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{file.name}</span>
-                  <span className="text-xs text-slate-400">({(file.size / 1024).toFixed(0)} KB)</span>
-                </div>
-              ) : (
-                <>
-                  <Upload className="w-8 h-8 mx-auto text-slate-400 mb-2" />
-                  <p className={cn("text-sm font-medium", isLight ? "text-slate-600" : "text-slate-300")}>Click to select file</p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Accepted: {selectedDocType?.acceptedFileTypes || "pdf, jpg, jpeg, png"} | Max {selectedDocType?.maxFileSizeMb || 10}MB
-                  </p>
-                </>
-              )}
-              <input
-                id="doc-file-input"
-                type="file"
-                className="hidden"
-                accept={selectedDocType?.acceptedFileTypes?.split(",").map((t: string) => `.${t.trim()}`).join(",") || ".pdf,.jpg,.jpeg,.png"}
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-              />
-            </div>
-          </div>
+          {/* File list */}
+          {files.length > 0 && (
+            <div className="mt-4 space-y-3">
+              {files.map((entry, idx) => {
+                const aiResult = digitizeResults[idx];
+                return (
+                  <div key={idx} className={cn("rounded-xl overflow-hidden border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
+                    <div className="flex items-start gap-3 p-3">
+                      <div className={cn("p-2 rounded-lg shrink-0", isLight ? "bg-blue-50" : "bg-blue-500/15")}>
+                        <File className="w-4 h-4 text-blue-400" />
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <p className={cn("text-sm font-medium truncate", isLight ? "text-slate-800" : "text-white")}>{entry.file.name}</p>
+                        <p className={cn("text-[11px]", isLight ? "text-slate-400" : "text-slate-500")}>{(entry.file.size / 1024).toFixed(0)} KB</p>
+                        {/* Document type selector */}
+                        <Select value={entry.docTypeId} onValueChange={(v) => updateFile(idx, { docTypeId: v })}>
+                          <SelectTrigger className={cn("h-8 text-xs", isLight ? "bg-white border-slate-300" : "bg-slate-700 border-slate-600")}>
+                            <SelectValue placeholder="Select document type..." />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60">
+                            {documentTypes.map((t: any) => (
+                              <SelectItem key={t.id} value={t.id}>
+                                <span className="flex items-center gap-2">
+                                  {CATEGORY_ICONS[t.category] || <FileText className="w-3 h-3" />}
+                                  <span>{t.name}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {/* Compact metadata row */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <Input value={entry.docNumber} onChange={(e) => updateFile(idx, { docNumber: e.target.value })} placeholder="Doc #" className={cn("h-7 text-xs", isLight ? "" : "bg-slate-700 border-slate-600")} />
+                          <Input value={entry.state} onChange={(e) => updateFile(idx, { state: e.target.value.toUpperCase().slice(0, 2) })} placeholder="ST" maxLength={2} className={cn("h-7 text-xs", isLight ? "" : "bg-slate-700 border-slate-600")} />
+                          <Input type="date" value={entry.expiresAt} onChange={(e) => updateFile(idx, { expiresAt: e.target.value })} className={cn("h-7 text-xs", isLight ? "" : "bg-slate-700 border-slate-600")} />
+                        </div>
+                      </div>
+                      <button onClick={() => removeFile(idx)} className="p-1 text-slate-500 hover:text-red-400 shrink-0">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>Document Number</label>
-              <Input value={docNumber} onChange={(e) => setDocNumber(e.target.value)} placeholder="e.g. CDL number" className={cn("h-9", isLight ? "" : "bg-slate-800 border-slate-600")} />
+                    {/* AI Classification Result */}
+                    {aiResult && (
+                      <div className="px-3 pb-3">
+                        <div className={cn("rounded-lg p-3 space-y-2 border", isLight ? "bg-purple-50 border-purple-200" : "bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/20")}>
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                            <span className="text-[11px] text-purple-400 font-medium uppercase tracking-wider">AI Classification</span>
+                            <span className="text-[10px] text-slate-500 ml-auto">{aiResult.classification?.confidence}% confidence</span>
+                          </div>
+                          <p className={cn("text-sm", isLight ? "text-slate-700" : "text-white")}>{aiResult.classification?.summary}</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            <Badge className="bg-purple-500/15 text-purple-400 border-0 text-[10px]">
+                              {aiResult.classification?.category}
+                            </Badge>
+                            {aiResult.ocr?.lineCount && (
+                              <Badge className="bg-slate-500/15 text-slate-400 border-0 text-[10px]">
+                                {aiResult.ocr.lineCount} lines extracted
+                              </Badge>
+                            )}
+                          </div>
+                          {aiResult.classification?.extractedFields && Object.keys(aiResult.classification.extractedFields).length > 0 && (
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1">
+                              {Object.entries(aiResult.classification.extractedFields).slice(0, 6).map(([key, val]) => (
+                                <div key={key} className="flex justify-between text-[11px]">
+                                  <span className="text-slate-500">{key}</span>
+                                  <span className={cn("font-medium truncate ml-2", isLight ? "text-slate-700" : "text-slate-300")}>{String(val)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {aiResult.savedId && (
+                            <p className="text-[10px] text-green-400 font-medium">Saved to document center</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            <div>
-              <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>Issued By</label>
-              <Input value={issuedBy} onChange={(e) => setIssuedBy(e.target.value)} placeholder="e.g. State DMV" className={cn("h-9", isLight ? "" : "bg-slate-800 border-slate-600")} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>State</label>
-              <Input value={issuedByState} onChange={(e) => setIssuedByState(e.target.value.toUpperCase().slice(0, 2))} placeholder="TX" maxLength={2} className={cn("h-9", isLight ? "" : "bg-slate-800 border-slate-600")} />
-            </div>
-            <div>
-              <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>Issued Date</label>
-              <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} className={cn("h-9", isLight ? "" : "bg-slate-800 border-slate-600")} />
-            </div>
-            <div>
-              <label className={cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-700" : "text-slate-300")}>Expiration</label>
-              <Input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} className={cn("h-9", isLight ? "" : "bg-slate-800 border-slate-600")} />
-            </div>
-          </div>
-
-          {selectedDocType?.downloadUrl && (
-            <a href={selectedDocType.downloadUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300">
-              <ExternalLink className="w-3 h-3" /> Download blank form from {selectedDocType.issuingAuthority || "official source"}
-            </a>
           )}
+        </div>
 
-          <div className="flex gap-3 pt-2">
-            <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
+        {/* Footer */}
+        <div className={cn("flex items-center justify-between p-5 border-t shrink-0", isLight ? "border-slate-200" : "border-slate-800")}>
+          <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{files.length} file{files.length !== 1 ? "s" : ""} selected</p>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={onClose} className={isLight ? "text-slate-600" : "text-slate-400"}>Cancel</Button>
+            {digitizeMutation && (
+              <Button
+                disabled={!files.length || uploading || digitizing || converting}
+                onClick={handleDigitize}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+              >
+                {digitizing ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Analyzing...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Smart Digitize
+                  </span>
+                )}
+              </Button>
+            )}
             <Button
-              onClick={handleSubmit}
-              disabled={!file || !selectedType || uploading || converting}
-              className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 hover:opacity-90"
+              disabled={!files.length || !files.some(f => f.docTypeId) || uploading || digitizing || converting}
+              onClick={handleUpload}
+              className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 hover:opacity-90"
             >
-              {(uploading || converting) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Upload Document
+              {(uploading || converting) && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+              Upload
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
@@ -281,6 +438,8 @@ export default function DocumentCenter() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [showUpload, setShowUpload] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [autoSeeding, setAutoSeeding] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{ name: string; blobUrl: string; mime: string } | null>(null);
 
   // ── Data queries ──
   const centerQuery = (trpc as any).documentCenter.getDocumentCenter.useQuery(undefined, {
@@ -310,21 +469,29 @@ export default function DocumentCenter() {
   });
 
   const seedTypesMut = (trpc as any).documentCenter.seedDocumentTypes.useMutation({
-    onSuccess: (d: any) => {
-      toast.success(`Seeded ${d.inserted} document types`);
+    onSuccess: () => {
       docTypesQuery.refetch();
-      centerQuery.refetch();
+      seedReqsMut.mutate();
     },
-    onError: (err: any) => toast.error(err.message || "Seed failed"),
+    onError: () => setAutoSeeding(false),
   });
 
   const seedReqsMut = (trpc as any).documentCenter.seedDocumentRequirements.useMutation({
-    onSuccess: (d: any) => {
-      toast.success(`Seeded ${d.inserted} requirements`);
+    onSuccess: () => {
       centerQuery.refetch();
+      setAutoSeeding(false);
     },
-    onError: (err: any) => toast.error(err.message || "Seed failed"),
+    onError: () => setAutoSeeding(false),
   });
+
+  // ── Auto-seed on first visit if no documents/requirements exist ──
+  const needsSeedCheck = !centerQuery.isLoading && (centerQuery.data?.documents?.all || []).length === 0;
+  useEffect(() => {
+    if (needsSeedCheck && !autoSeeding && !seedTypesMut.isPending && !seedReqsMut.isPending) {
+      setAutoSeeding(true);
+      seedTypesMut.mutate();
+    }
+  }, [needsSeedCheck]);
 
   // ── Derived data ──
   const data = centerQuery.data;
@@ -432,34 +599,15 @@ export default function DocumentCenter() {
         </div>
       </div>
 
-      {/* Seed Banner */}
+      {/* Auto-seeding indicator (replaces old manual seed buttons) */}
       {needsSeed && (
         <Card className={cn("border-dashed border-2", isLight ? "border-blue-300 bg-blue-50" : "border-blue-500/30 bg-blue-500/5")}>
           <CardContent className="py-8 text-center">
-            <Shield className={cn("w-12 h-12 mx-auto mb-3", isLight ? "text-blue-500" : "text-blue-400")} />
-            <h3 className={cn("text-lg font-bold mb-2", isLight ? "text-slate-900" : "text-white")}>Initialize Document Center</h3>
-            <p className={cn("text-sm mb-4 max-w-md mx-auto", isLight ? "text-slate-600" : "text-slate-400")}>
-              Seed the database with 80+ federal document types and role-based requirements to enable smart compliance tracking.
+            <Loader2 className={cn("w-10 h-10 mx-auto mb-3 animate-spin", isLight ? "text-blue-500" : "text-blue-400")} />
+            <h3 className={cn("text-lg font-bold mb-2", isLight ? "text-slate-900" : "text-white")}>Setting Up Your Document Center</h3>
+            <p className={cn("text-sm max-w-md mx-auto", isLight ? "text-slate-600" : "text-slate-400")}>
+              Loading 80+ federal document types and role-based compliance requirements. This only happens once...
             </p>
-            <div className="flex items-center justify-center gap-3">
-              <Button
-                onClick={() => seedTypesMut.mutate()}
-                disabled={seedTypesMut.isPending}
-                className="gap-1.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0"
-              >
-                {seedTypesMut.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                Seed Document Types
-              </Button>
-              <Button
-                onClick={() => seedReqsMut.mutate()}
-                disabled={seedReqsMut.isPending}
-                variant="outline"
-                className="gap-1.5"
-              >
-                {seedReqsMut.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                Seed Requirements
-              </Button>
-            </div>
           </CardContent>
         </Card>
       )}
@@ -682,22 +830,42 @@ export default function DocumentCenter() {
                             )}
                           >
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className={cn(
-                                "p-2.5 rounded-xl flex-shrink-0",
-                                doc.status === "VERIFIED" ? "bg-green-500/10" :
-                                doc.status === "EXPIRED" || doc.status === "REJECTED" ? "bg-red-500/10" :
-                                doc.status === "EXPIRING_SOON" ? "bg-yellow-500/10" :
-                                doc.status === "NOT_UPLOADED" ? "bg-slate-500/10" :
-                                "bg-blue-500/10"
-                              )}>
-                                {doc.status === "VERIFIED" ? <CheckCircle className="w-4 h-4 text-green-400" /> :
-                                 doc.status === "EXPIRED" ? <XCircle className="w-4 h-4 text-red-400" /> :
-                                 doc.status === "REJECTED" ? <XCircle className="w-4 h-4 text-red-400" /> :
-                                 doc.status === "EXPIRING_SOON" ? <Clock className="w-4 h-4 text-yellow-400" /> :
-                                 doc.status === "NOT_UPLOADED" ? <ArrowUpCircle className="w-4 h-4 text-slate-400" /> :
-                                 doc.status === "PENDING_REVIEW" ? <Clock className="w-4 h-4 text-blue-400" /> :
-                                 <FileText className="w-4 h-4 text-slate-400" />}
-                              </div>
+                              {doc.downloadTemplateUrl ? (
+                                <a
+                                  href={doc.downloadTemplateUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  title={`Download ${doc.documentTypeName} form`}
+                                  className={cn(
+                                    "p-2.5 rounded-xl flex-shrink-0 cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-blue-500/40",
+                                    doc.status === "VERIFIED" ? "bg-green-500/10 hover:bg-green-500/20" :
+                                    doc.status === "EXPIRED" || doc.status === "REJECTED" ? "bg-red-500/10 hover:bg-red-500/20" :
+                                    doc.status === "EXPIRING_SOON" ? "bg-yellow-500/10 hover:bg-yellow-500/20" :
+                                    doc.status === "NOT_UPLOADED" ? "bg-slate-500/10 hover:bg-blue-500/15" :
+                                    "bg-blue-500/10 hover:bg-blue-500/20"
+                                  )}
+                                  onClick={(e) => { e.stopPropagation(); }}
+                                >
+                                  <Download className="w-4 h-4 text-blue-400" />
+                                </a>
+                              ) : (
+                                <div className={cn(
+                                  "p-2.5 rounded-xl flex-shrink-0",
+                                  doc.status === "VERIFIED" ? "bg-green-500/10" :
+                                  doc.status === "EXPIRED" || doc.status === "REJECTED" ? "bg-red-500/10" :
+                                  doc.status === "EXPIRING_SOON" ? "bg-yellow-500/10" :
+                                  doc.status === "NOT_UPLOADED" ? "bg-slate-500/10" :
+                                  "bg-blue-500/10"
+                                )}>
+                                  {doc.status === "VERIFIED" ? <CheckCircle className="w-4 h-4 text-green-400" /> :
+                                   doc.status === "EXPIRED" ? <XCircle className="w-4 h-4 text-red-400" /> :
+                                   doc.status === "REJECTED" ? <XCircle className="w-4 h-4 text-red-400" /> :
+                                   doc.status === "EXPIRING_SOON" ? <Clock className="w-4 h-4 text-yellow-400" /> :
+                                   doc.status === "NOT_UPLOADED" ? <ArrowUpCircle className="w-4 h-4 text-slate-400" /> :
+                                   doc.status === "PENDING_REVIEW" ? <Clock className="w-4 h-4 text-blue-400" /> :
+                                   <FileText className="w-4 h-4 text-slate-400" />}
+                                </div>
+                              )}
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <p className={cn("text-sm font-semibold truncate", isLight ? "text-slate-800" : "text-white")}>{doc.documentTypeName}</p>
@@ -792,7 +960,45 @@ export default function DocumentCenter() {
           documentTypes={docTypesQuery.data || []}
           onUpload={(d) => uploadMut.mutate(d)}
           uploading={uploadMut.isPending}
+          onUploaded={() => centerQuery.refetch()}
         />
+      )}
+
+      {/* Document Preview Modal */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => { if (previewDoc?.blobUrl) URL.revokeObjectURL(previewDoc.blobUrl); setPreviewDoc(null); }}>
+          <div className={cn("rounded-2xl w-full max-w-4xl mx-4 shadow-2xl flex flex-col border", isLight ? "bg-white border-slate-200" : "bg-slate-900 border-slate-700")} style={{ height: '85vh' }} onClick={e => e.stopPropagation()}>
+            <div className={cn("flex items-center justify-between p-4 border-b shrink-0", isLight ? "border-slate-200" : "border-slate-800")}>
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 rounded-lg bg-blue-500/15">
+                  <FileText className="w-5 h-5 text-blue-400" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className={cn("font-semibold truncate", isLight ? "text-slate-900" : "text-white")}>{previewDoc.name}</h3>
+                  <p className="text-xs text-slate-500">{previewDoc.mime || 'Document'}</p>
+                </div>
+              </div>
+              <button onClick={() => { if (previewDoc?.blobUrl) URL.revokeObjectURL(previewDoc.blobUrl); setPreviewDoc(null); }} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100 text-slate-500" : "hover:bg-slate-800 text-slate-400 hover:text-white")}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className={cn("flex-1 overflow-auto rounded-b-2xl", isLight ? "bg-slate-50" : "bg-slate-950")}>
+              {previewDoc.mime === 'application/pdf' ? (
+                <iframe src={previewDoc.blobUrl} className="w-full h-full border-0" title={previewDoc.name} />
+              ) : previewDoc.mime?.startsWith('image/') ? (
+                <div className="flex items-center justify-center p-8 h-full overflow-auto">
+                  <img src={previewDoc.blobUrl} alt={previewDoc.name} className="max-w-full max-h-full object-contain rounded-lg" />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                  <FileText className="w-16 h-16 text-slate-600 mb-4" />
+                  <p className={cn("text-lg font-medium", isLight ? "text-slate-800" : "text-white")}>Preview not available</p>
+                  <p className="text-slate-500 text-sm mt-1">This file type cannot be previewed inline.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -7,9 +7,31 @@ import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { auditedProtectedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { loads, companies, vehicles, bids } from "../../drizzle/schema";
+import { loads, companies, vehicles, bids, drivers } from "../../drizzle/schema";
 
-const equipmentTypeSchema = z.enum(["tanker", "dry_van", "flatbed", "reefer", "step_deck", "lowboy"]);
+const equipmentTypeSchema = z.enum(["tanker", "dry_van", "flatbed", "reefer", "step_deck", "lowboy", "gas_tank", "cryogenic", "hazmat_van", "bulk_hopper", "food_grade_tank", "water_tank"]);
+
+// Hazmat class → required endorsement/authorization mapping
+const HAZMAT_CLASS_REQUIREMENTS: Record<string, { endorsement: string; trailerTypes: string[]; insuranceMinimum: number }> = {
+  "1.1": { endorsement: "H", trailerTypes: ["DRY_VAN", "FLATBED"], insuranceMinimum: 5000000 },
+  "1.2": { endorsement: "H", trailerTypes: ["DRY_VAN", "FLATBED"], insuranceMinimum: 5000000 },
+  "1.3": { endorsement: "H", trailerTypes: ["DRY_VAN", "FLATBED"], insuranceMinimum: 5000000 },
+  "1.4": { endorsement: "H", trailerTypes: ["DRY_VAN", "FLATBED"], insuranceMinimum: 1000000 },
+  "2.1": { endorsement: "HN", trailerTypes: ["MC-331"], insuranceMinimum: 5000000 },
+  "2.2": { endorsement: "N", trailerTypes: ["MC-331", "MC-338"], insuranceMinimum: 1000000 },
+  "2.3": { endorsement: "HN", trailerTypes: ["MC-331"], insuranceMinimum: 5000000 },
+  "3": { endorsement: "HN", trailerTypes: ["MC-306", "MC-307"], insuranceMinimum: 5000000 },
+  "4.1": { endorsement: "H", trailerTypes: ["DRY_VAN", "MC-307"], insuranceMinimum: 1000000 },
+  "4.2": { endorsement: "H", trailerTypes: ["DRY_VAN"], insuranceMinimum: 1000000 },
+  "4.3": { endorsement: "H", trailerTypes: ["DRY_VAN"], insuranceMinimum: 5000000 },
+  "5.1": { endorsement: "H", trailerTypes: ["DRY_VAN", "MC-307", "HOPPER"], insuranceMinimum: 1000000 },
+  "5.2": { endorsement: "H", trailerTypes: ["DRY_VAN"], insuranceMinimum: 1000000 },
+  "6.1": { endorsement: "H", trailerTypes: ["DRY_VAN", "MC-306", "MC-307", "MC-312"], insuranceMinimum: 5000000 },
+  "6.2": { endorsement: "H", trailerTypes: ["DRY_VAN"], insuranceMinimum: 1000000 },
+  "7": { endorsement: "H", trailerTypes: ["DRY_VAN", "FLATBED"], insuranceMinimum: 5000000 },
+  "8": { endorsement: "HN", trailerTypes: ["MC-312", "MC-307", "DRY_VAN"], insuranceMinimum: 5000000 },
+  "9": { endorsement: "H", trailerTypes: ["DRY_VAN", "MC-306", "FLATBED"], insuranceMinimum: 1000000 },
+};
 
 export const loadBoardRouter = router({
   /**
@@ -33,6 +55,8 @@ export const loadBoardRouter = router({
       minRate: z.number().optional(),
       maxWeight: z.number().optional(),
       hazmat: z.boolean().optional(),
+      hazmatClass: z.string().optional(),
+      unNumber: z.string().optional(),
       limit: z.number().default(50),
       offset: z.number().default(0),
       sortBy: z.enum(["rate", "distance", "pickup_date", "posted_date"]).default("posted_date"),
@@ -40,13 +64,34 @@ export const loadBoardRouter = router({
     .query(async ({ input }) => {
       const db = await getDb(); if (!db) return { loads: [], total: 0, marketStats: { avgRate: 0, totalLoads: 0, loadToTruckRatio: 0 } };
       try {
-        const rows = await db.select().from(loads).where(sql`${loads.status} IN ('posted', 'available')`).orderBy(desc(loads.createdAt)).limit(input.limit);
-        const [stats] = await db.select({ count: sql<number>`count(*)`, avgRate: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(sql`${loads.status} IN ('posted', 'available')`);
+        const conditions = [sql`${loads.status} IN ('posted', 'available')`];
+        if (input.hazmat === true) conditions.push(sql`${loads.hazmatClass} IS NOT NULL AND ${loads.hazmatClass} != ''`);
+        if (input.hazmat === false) conditions.push(sql`(${loads.hazmatClass} IS NULL OR ${loads.hazmatClass} = '')`);
+        if (input.hazmatClass) conditions.push(sql`${loads.hazmatClass} = ${input.hazmatClass}`);
+        if (input.unNumber) conditions.push(sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.specialInstructions}, '$.unNumber')) = ${input.unNumber}`);
+        const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
+        const rows = await db.select().from(loads).where(whereClause!).orderBy(desc(loads.createdAt)).limit(input.limit).offset(input.offset);
+        const [stats] = await db.select({ count: sql<number>`count(*)`, avgRate: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(whereClause!);
         return {
           loads: rows.map(l => {
             const pickup = l.pickupLocation as any || {};
             const delivery = l.deliveryLocation as any || {};
-            return { id: String(l.id), loadNumber: l.loadNumber, status: l.status, origin: { city: pickup.city || '', state: pickup.state || '' }, destination: { city: delivery.city || '', state: delivery.state || '' }, rate: l.rate ? parseFloat(String(l.rate)) : 0, distance: l.distance ? parseFloat(String(l.distance)) : 0, weight: l.weight ? parseFloat(String(l.weight)) : 0, equipmentType: l.cargoType || '', hazmat: !!l.hazmatClass, postedAt: l.createdAt?.toISOString() || '' };
+            const si = typeof l.specialInstructions === 'string' ? (() => { try { return JSON.parse(l.specialInstructions); } catch { return {}; } })() : (l.specialInstructions || {});
+            return {
+              id: String(l.id), loadNumber: l.loadNumber, status: l.status,
+              origin: { city: pickup.city || '', state: pickup.state || '' },
+              destination: { city: delivery.city || '', state: delivery.state || '' },
+              rate: l.rate ? parseFloat(String(l.rate)) : 0,
+              distance: l.distance ? parseFloat(String(l.distance)) : 0,
+              weight: l.weight ? parseFloat(String(l.weight)) : 0,
+              equipmentType: l.cargoType || '',
+              hazmat: !!l.hazmatClass,
+              hazmatClass: l.hazmatClass || null,
+              unNumber: (si as any)?.unNumber || null,
+              packingGroup: (si as any)?.packingGroup || null,
+              properShippingName: (si as any)?.properShippingName || null,
+              postedAt: l.createdAt?.toISOString() || '',
+            };
           }),
           total: stats?.count || 0,
           marketStats: { avgRate: Math.round(stats?.avgRate || 0), totalLoads: stats?.count || 0, loadToTruckRatio: 0 },
@@ -104,20 +149,36 @@ export const loadBoardRouter = router({
       weight: z.number(),
       equipmentType: equipmentTypeSchema,
       hazmat: z.boolean().default(false),
+      hazmatClass: z.string().optional(),
+      unNumber: z.string().optional(),
+      packingGroup: z.enum(["I", "II", "III"]).optional(),
+      properShippingName: z.string().optional(),
       rate: z.number(),
       expiresIn: z.number().default(24),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const isHazmat = input.hazmat || !!input.hazmatClass;
+      if (isHazmat && input.hazmatClass) {
+        const classReqs = HAZMAT_CLASS_REQUIREMENTS[input.hazmatClass];
+        if (!classReqs) console.warn(`[LoadBoard] Unknown hazmat class: ${input.hazmatClass}`);
+      }
+      const hazmatMeta = isHazmat ? JSON.stringify({
+        unNumber: input.unNumber || null,
+        packingGroup: input.packingGroup || null,
+        properShippingName: input.properShippingName || null,
+      }) : null;
       const loadNumber = `LB-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
       const [result] = await db.insert(loads).values({
         shipperId: ctx.user?.id || 0,
         loadNumber,
         status: "posted",
-        cargoType: input.hazmat ? "hazmat" as const : "general" as const,
+        cargoType: isHazmat ? "hazmat" as const : "general" as const,
+        hazmatClass: isHazmat ? (input.hazmatClass || "9") : null,
         commodityName: input.commodity,
         weight: String(input.weight),
         rate: String(input.rate),
+        specialInstructions: hazmatMeta,
         pickupLocation: { address: input.origin.address, city: input.origin.city, state: input.origin.state, zipCode: input.origin.zip, lat: 0, lng: 0 },
         deliveryLocation: { address: input.destination.address, city: input.destination.city, state: input.destination.state, zipCode: input.destination.zip, lat: 0, lng: 0 },
         pickupDate: new Date(input.pickupDate),
@@ -142,6 +203,7 @@ export const loadBoardRouter = router({
       vehicleId: z.string(),
       driverId: z.string(),
       agreedRate: z.number().optional(),
+      skipHazmatCheck: z.boolean().default(false),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
@@ -149,6 +211,64 @@ export const loadBoardRouter = router({
       const [load] = await db.select().from(loads).where(eq(loads.id, loadId)).limit(1);
       if (!load) throw new Error("Load not found");
       if (load.status !== "posted" && load.status !== "bidding") throw new Error("Load is no longer available");
+
+      // --- HAZMAT PRE-BOOKING VERIFICATION ---
+      const hazmatWarnings: string[] = [];
+      if (load.hazmatClass && !input.skipHazmatCheck) {
+        const classReqs = HAZMAT_CLASS_REQUIREMENTS[load.hazmatClass];
+        // 1. Verify driver has required endorsement
+        if (input.driverId) {
+          try {
+            const dId = parseInt(input.driverId);
+            const [driver] = await db.select().from(drivers).where(eq(drivers.id, dId)).limit(1);
+            if (driver) {
+              const reqEndorsement = classReqs?.endorsement || 'H';
+              const hasH = !!driver.hazmatEndorsement;
+              // Tanker endorsement: inferred from hazmatEndorsement + tanker equipment assignment
+              // (drivers table doesn't store N separately — treat tanker-endorsed if hazmat-endorsed for now)
+              const hasN = hasH;
+              if (reqEndorsement.includes('H') && !hasH) hazmatWarnings.push(`Driver missing CDL-H (Hazmat) endorsement required for Class ${load.hazmatClass}`);
+              if (reqEndorsement === 'HN' && !hasH) hazmatWarnings.push(`Driver missing CDL-HN (Hazmat+Tanker) endorsement required for Class ${load.hazmatClass}`);
+              if (reqEndorsement === 'N' && !hasN) hazmatWarnings.push(`Driver missing CDL-N (Tanker) endorsement required for Class ${load.hazmatClass}`);
+              // Check hazmat endorsement expiry
+              if (hasH && driver.hazmatExpiry && new Date(driver.hazmatExpiry) < new Date()) {
+                hazmatWarnings.push(`Driver's hazmat endorsement expired on ${driver.hazmatExpiry.toISOString().split('T')[0]}`);
+              }
+              // Check medical card expiry
+              if (driver.medicalCardExpiry && new Date(driver.medicalCardExpiry) < new Date()) {
+                hazmatWarnings.push(`Driver's medical certificate expired on ${driver.medicalCardExpiry.toISOString().split('T')[0]}`);
+              }
+            }
+          } catch (e) { console.warn('[LoadBoard] Driver endorsement check failed:', e); }
+        }
+        // 2. Verify vehicle/trailer compatibility
+        if (input.vehicleId && classReqs) {
+          try {
+            const vId = parseInt(input.vehicleId);
+            const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, vId)).limit(1);
+            if (vehicle) {
+              const vType = ((vehicle as any).trailerType || (vehicle as any).vehicleType || '').toUpperCase();
+              const allowed = classReqs.trailerTypes.map(t => t.toUpperCase());
+              if (vType && !allowed.some(a => vType.includes(a))) {
+                hazmatWarnings.push(`Vehicle trailer type '${vType}' may not be authorized for Hazmat Class ${load.hazmatClass}. Allowed: ${allowed.join(', ')}`);
+              }
+            }
+          } catch (e) { console.warn('[LoadBoard] Vehicle compat check failed:', e); }
+        }
+        // If blocking warnings exist, return them instead of booking
+        if (hazmatWarnings.length > 0) {
+          return {
+            bookingId: null,
+            loadId: input.loadId,
+            status: "hazmat_verification_failed",
+            hazmatWarnings,
+            bookedBy: ctx.user?.id,
+            bookedAt: new Date().toISOString(),
+            confirmationNumber: null,
+          };
+        }
+      }
+
       await db.update(loads).set({
         status: "assigned",
         catalystId: ctx.user?.id || 0,
@@ -161,6 +281,7 @@ export const loadBoardRouter = router({
         bookingId: String(loadId),
         loadId: input.loadId,
         status: "assigned",
+        hazmatWarnings: [],
         bookedBy: ctx.user?.id,
         bookedAt: new Date().toISOString(),
         confirmationNumber,

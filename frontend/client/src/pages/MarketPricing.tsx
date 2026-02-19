@@ -9,6 +9,7 @@ import {
   X, ExternalLink, Loader2, Globe, Database, Zap,
 } from "lucide-react";
 import HotZones from "./HotZones";
+import { toast } from "sonner";
 
 // ── CATEGORY CONFIG ──
 const CATEGORIES: Record<string, { label: string; icon: typeof Flame; color: string }> = {
@@ -71,6 +72,7 @@ export default function MarketPricing() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedQuoteSymbol, setSelectedQuoteSymbol] = useState<string | null>(null);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Debounce search input for API calls (300ms)
@@ -93,7 +95,39 @@ export default function MarketPricing() {
     { refetchInterval: 15000 }
   );
 
-  const { data: intel } = trpc.marketPricing.getMarketIntelligence.useQuery(undefined, { refetchInterval: 30000 });
+  const { data: intel, refetch: refetchIntel } = trpc.marketPricing.getMarketIntelligence.useQuery(undefined, { refetchInterval: 30000 });
+
+  // Force refresh mutation — busts all server caches, triggers hot zones + market data sync
+  const forceRefreshMutation = (trpc as any).marketPricing?.forceRefreshAll?.useMutation?.({
+    onSuccess: (result: any) => {
+      // After server cache bust, refetch all client queries
+      refetch();
+      refetchIntel();
+      quoteQuery?.refetch?.();
+      toast.success(`Refreshed ${result.refreshed}/${result.total} data sources`, {
+        description: `Market + Hot Zones data updated`,
+      });
+      setIsRefreshing(false);
+    },
+    onError: (err: any) => {
+      toast.error("Refresh failed", { description: err.message });
+      setIsRefreshing(false);
+    },
+  });
+
+  const handleForceRefresh = () => {
+    setIsRefreshing(true);
+    if (forceRefreshMutation?.mutate) {
+      forceRefreshMutation.mutate({});
+    } else {
+      // Fallback: just refetch client queries
+      refetch();
+      refetchIntel();
+      quoteQuery?.refetch?.();
+      toast.success("Data refreshed");
+      setIsRefreshing(false);
+    }
+  };
 
   // Universal ticker search — calls searchCommodity which queries CommodityPriceAPI + local
   const searchQuery = (trpc as any).marketPricing?.searchCommodity?.useQuery?.(
@@ -202,9 +236,9 @@ export default function MarketPricing() {
                   </div>
                 )}
               </div>
-              <button onClick={() => refetch()}
-                className={`p-2 rounded-xl transition-all ${isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-white/[0.06] text-white/40 hover:bg-white/[0.1]"}`}>
-                <RefreshCw className="w-4 h-4" />
+              <button onClick={handleForceRefresh} disabled={isRefreshing}
+                className={`p-2 rounded-xl transition-all ${isRefreshing ? "opacity-60 cursor-wait" : ""} ${isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-white/[0.06] text-white/40 hover:bg-white/[0.1]"}`}>
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
               </button>
             </div>
           </div>

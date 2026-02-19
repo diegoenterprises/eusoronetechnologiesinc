@@ -18,7 +18,7 @@ import { router, auditedProtectedProcedure as protectedProcedure } from "../_cor
 import { feeCalculator } from "../services/feeCalculator";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 // ── LOAD STATES ──
 const LOAD_STATES = [
@@ -145,7 +145,7 @@ export const loadLifecycleRouter = router({
         podSigned: z.boolean().optional(),
       }).optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { loadId, currentState, nextState, location, targetLocation, metadata, complianceChecks } = input;
 
       // 1. Validate transition
@@ -255,6 +255,61 @@ export const loadLifecycleRouter = router({
           }
         } catch (feeErr) {
           console.warn(`[LoadLifecycle] Financial hook error for load ${loadId}:`, (feeErr as Error).message);
+        }
+      }
+
+      // 4. Route Intelligence hook — auto-generate route report on DELIVERED
+      if (nextUpper === "DELIVERED") {
+        try {
+          const db2 = await getDb();
+          if (db2) {
+            const numId = Number(loadId) || 0;
+            const trail = numId > 0
+              ? await db2.execute(sql`
+                  SELECT latitude, longitude, speed, device_timestamp
+                  FROM location_history
+                  WHERE load_id = ${numId}
+                  ORDER BY device_timestamp ASC
+                  LIMIT 2000
+                `)
+              : null;
+            const pts = trail ? (trail as any)[0] || [] : [];
+            if (pts.length >= 2) {
+              const first = pts[0];
+              const last = pts[pts.length - 1];
+              const speeds = pts.filter((p: any) => p.speed).map((p: any) => Number(p.speed));
+              const avgSpd = speeds.length > 0 ? speeds.reduce((a: number, b: number) => a + b, 0) / speeds.length : null;
+              const maxSpd = speeds.length > 0 ? Math.max(...speeds) : null;
+              const startTime = new Date(first.device_timestamp);
+              const endTime = new Date(last.device_timestamp);
+              const transitMins = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
+              // Haversine distance
+              const toRad = (d: number) => d * Math.PI / 180;
+              const R = 3959;
+              const dLat = toRad(Number(last.latitude) - Number(first.latitude));
+              const dLng = toRad(Number(last.longitude) - Number(first.longitude));
+              const a2 = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(Number(first.latitude))) * Math.cos(toRad(Number(last.latitude))) * Math.sin(dLng / 2) ** 2;
+              const dist = R * 2 * Math.atan2(Math.sqrt(a2), Math.sqrt(1 - a2));
+
+              await db2.execute(sql`
+                INSERT INTO hz_driver_route_reports
+                (driver_id, load_id, origin_lat, origin_lng, dest_lat, dest_lng,
+                 distance_miles, transit_minutes, avg_speed_mph, max_speed_mph,
+                 stop_count, is_hazmat, started_at, completed_at)
+                VALUES (${Number(ctx.user?.id) || 0}, ${numId},
+                        ${Number(first.latitude)}, ${Number(first.longitude)},
+                        ${Number(last.latitude)}, ${Number(last.longitude)},
+                        ${dist.toFixed(2)}, ${transitMins},
+                        ${avgSpd?.toFixed(2) || null}, ${maxSpd?.toFixed(2) || null},
+                        ${pts.filter((p: any, i: number) => i > 0 && Number(p.speed || 0) < 2).length},
+                        0,
+                        ${startTime.toISOString()}, ${endTime.toISOString()})
+              `);
+              console.log(`[LoadLifecycle] Route intelligence: auto-reported ${pts.length} GPS points, ${dist.toFixed(1)}mi for load ${loadId}`);
+            }
+          }
+        } catch (riErr) {
+          console.warn(`[LoadLifecycle] Route intelligence hook error for load ${loadId}:`, (riErr as Error).message);
         }
       }
 

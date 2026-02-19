@@ -423,38 +423,4 @@ export function DriverAssignment({ load, availableDrivers, onAssign, onCancel }:
   );
 }
 
-export function getSampleDrivers(): Driver[] {
-  return [
-    {
-      id: "d1", name: "John Smith", phone: "(555) 123-4567", status: "available",
-      currentLocation: { city: "Houston", state: "TX" }, distanceToPickup: 15,
-      vehicle: { unitNumber: "TRK-101", type: "Peterbilt 389" },
-      trailer: { unitNumber: "TRL-201", type: "MC-306" },
-      hosRemaining: { driving: 510, onDuty: 720, cycle: 3600 },
-      safetyScore: 95, hazmatEndorsement: true, twicCard: true,
-      completedLoads: 847, onTimeRate: 98,
-      aiMatchScore: 96, aiReason: "Closest to pickup, excellent safety record, all required certifications"
-    },
-    {
-      id: "d2", name: "Maria Garcia", phone: "(555) 234-5678", status: "off_duty",
-      currentLocation: { city: "Dallas", state: "TX" }, distanceToPickup: 250,
-      vehicle: { unitNumber: "TRK-205", type: "Kenworth T680" },
-      trailer: { unitNumber: "TRL-310", type: "MC-306" },
-      hosRemaining: { driving: 660, onDuty: 840, cycle: 4200 },
-      safetyScore: 92, hazmatEndorsement: true, twicCard: true,
-      completedLoads: 623, onTimeRate: 96,
-      aiMatchScore: 82, aiReason: "Full HOS available, strong safety score"
-    },
-    {
-      id: "d3", name: "Robert Johnson", phone: "(555) 345-6789", status: "available",
-      currentLocation: { city: "San Antonio", state: "TX" }, distanceToPickup: 200,
-      vehicle: { unitNumber: "TRK-312", type: "Freightliner Cascadia" },
-      hosRemaining: { driving: 420, onDuty: 600, cycle: 3000 },
-      safetyScore: 78, hazmatEndorsement: true, twicCard: false,
-      completedLoads: 412, onTimeRate: 91,
-      aiMatchScore: 65, aiReason: "Available but limited HOS"
-    },
-  ];
-}
-
 export default DriverAssignment;

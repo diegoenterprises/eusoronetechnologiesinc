@@ -382,6 +382,8 @@ export default function MyLoads() {
                             : load.equipmentType === "dry-van" || load.equipmentType === "dry_van" ? "Dry Van"
                             : load.equipmentType === "hopper" ? "Dry Bulk / Hopper"
                             : load.equipmentType === "cryogenic" ? "Cryogenic Tank"
+                            : load.equipmentType === "food_grade_tank" ? "Food-Grade Liquid Tank"
+                            : load.equipmentType === "water_tank" ? "Water Tank"
                             : "Semi Truck"}
                         </span>
                         <span className="text-slate-400 text-xs">|</span>

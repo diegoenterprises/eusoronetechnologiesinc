@@ -15,7 +15,7 @@ import { z } from "zod";
 // TYPE DEFINITIONS
 // ============================================================================
 
-export type BOLType = "straight" | "order" | "hazmat" | "tanker";
+export type BOLType = "straight" | "order" | "hazmat" | "tanker" | "food_grade";
 export type BOLStatus = "draft" | "pending_signature" | "signed" | "completed" | "void";
 
 export interface BOLParty {
@@ -40,6 +40,23 @@ export interface BOLItem {
   unNumber?: string;
   packingGroup?: string;
   properShippingName?: string;
+}
+
+export interface TankerInfo {
+  productType: string;
+  productName: string;
+  quantityGallons: number;
+  specificGravity?: number;
+  temperature?: number;
+  temperatureUnit?: "F" | "C";
+  isFoodGrade: boolean;
+  sanitationCertRequired: boolean;
+  kosherCertRequired?: boolean;
+  organicCertRequired?: boolean;
+  previousLoad?: string;
+  washoutRequired: boolean;
+  washoutType?: "rinse" | "chemical" | "kosher" | "full_sanitation";
+  sealNumber?: string;
 }
 
 export interface HazmatInfo {
@@ -82,6 +99,9 @@ export interface BOLDocument {
   
   // Hazmat info (if applicable)
   hazmat?: HazmatInfo[];
+  
+  // Tanker info (non-hazmat liquid loads: food-grade, water, etc.)
+  tankerInfo?: TankerInfo;
   
   // Charges
   freightCharges: "prepaid" | "collect" | "third_party";
@@ -126,6 +146,8 @@ export interface BOLGenerationInput {
   
   items: BOLItem[];
   hazmat?: HazmatInfo[];
+  tankerInfo?: TankerInfo;
+  trailerType?: string;
   
   shipDate: string;
   freightCharges: "prepaid" | "collect" | "third_party";
@@ -160,7 +182,9 @@ class BOLService {
   async createBOL(input: BOLGenerationInput): Promise<BOLDocument> {
     const bolNumber = this.generateBOLNumber();
     const hasHazmat = input.hazmat && input.hazmat.length > 0;
-    const type = input.type || (hasHazmat ? "hazmat" : "straight");
+    const isTankerLoad = ["food_grade_tank", "water_tank", "liquid_tank", "gas_tank", "cryogenic"].includes(input.trailerType || "");
+    const isFoodGrade = input.trailerType === "food_grade_tank";
+    const type = input.type || (hasHazmat ? "hazmat" : isFoodGrade ? "food_grade" : isTankerLoad && !hasHazmat ? "tanker" : "straight");
 
     // Calculate totals
     const totalWeight = input.items.reduce((sum, item) => sum + item.weight, 0);
@@ -181,6 +205,7 @@ class BOLService {
       totalWeight,
       totalPieces,
       hazmat: input.hazmat,
+      tankerInfo: input.tankerInfo,
       freightCharges: input.freightCharges,
       poNumber: input.poNumber,
       specialInstructions: input.specialInstructions,
@@ -192,6 +217,11 @@ class BOLService {
     // Validate hazmat BOL has required fields
     if (type === "hazmat" && hasHazmat) {
       this.validateHazmatBOL(bol);
+    }
+
+    // Validate tanker/food-grade BOL has required fields
+    if ((type === "tanker" || type === "food_grade") && bol.tankerInfo) {
+      this.validateTankerBOL(bol);
     }
 
     return bol;
@@ -211,6 +241,20 @@ class BOLService {
       if (!haz.packingGroup) throw new Error("Packing group is required");
       if (!haz.properShippingName) throw new Error("Proper shipping name is required");
       if (!haz.emergencyPhone) throw new Error("24-hour emergency phone is required");
+    }
+  }
+
+  /**
+   * Validate tanker/food-grade BOL has all required fields
+   */
+  private validateTankerBOL(bol: BOLDocument): void {
+    if (!bol.tankerInfo) {
+      throw new Error("Tanker BOL requires tanker information");
+    }
+    if (!bol.tankerInfo.productName) throw new Error("Product name is required for tanker loads");
+    if (!bol.tankerInfo.quantityGallons || bol.tankerInfo.quantityGallons <= 0) throw new Error("Quantity in gallons is required");
+    if (bol.tankerInfo.isFoodGrade && bol.tankerInfo.washoutRequired && !bol.tankerInfo.washoutType) {
+      throw new Error("Washout type is required for food-grade loads requiring washout");
     }
   }
 

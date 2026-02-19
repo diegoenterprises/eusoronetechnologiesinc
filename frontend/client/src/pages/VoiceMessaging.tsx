@@ -30,13 +30,7 @@ type VoiceMessage = {
   direction: "incoming" | "outgoing";
 };
 
-const SAMPLE_MESSAGES: VoiceMessage[] = [
-  { id: "vm-1", from: "Dispatch — Sarah M.", role: "Dispatcher", duration: 45, timestamp: "2026-02-16T14:30:00Z", played: false, direction: "incoming" },
-  { id: "vm-2", from: "Safety — Mike T.", role: "Safety Director", duration: 22, timestamp: "2026-02-16T12:15:00Z", played: true, direction: "incoming" },
-  { id: "vm-3", from: "You", role: "Driver", duration: 18, timestamp: "2026-02-16T11:00:00Z", played: true, direction: "outgoing" },
-  { id: "vm-4", from: "Fleet Manager — John R.", role: "Fleet Manager", duration: 60, timestamp: "2026-02-15T16:45:00Z", played: true, direction: "incoming" },
-  { id: "vm-5", from: "Dispatch — Sarah M.", role: "Dispatcher", duration: 30, timestamp: "2026-02-15T09:20:00Z", played: true, direction: "incoming" },
-];
+// No sample data — all voice messages come from real tRPC queries
 
 const CONTACTS = [
   { name: "Dispatch", role: "Primary Dispatcher" },
@@ -53,8 +47,9 @@ export default function VoiceMessaging() {
   const [recordDuration, setRecordDuration] = useState(0);
   const [tab, setTab] = useState<"inbox" | "record">("inbox");
 
-  const messages = SAMPLE_MESSAGES;
-  const unreadCount = messages.filter((m) => !m.played && m.direction === "incoming").length;
+  // Real data — no sample messages
+  const messages: VoiceMessage[] = [];
+  const unreadCount = messages.filter((m: VoiceMessage) => !m.played && m.direction === "incoming").length;
 
   const formatDuration = (seconds: number) => {
     const m = Math.floor(seconds / 60);

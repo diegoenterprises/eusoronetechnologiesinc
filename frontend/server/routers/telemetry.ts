@@ -149,4 +149,187 @@ export const telemetryRouter = router({
     const seen = new Set();
     return locs.filter(l => { if (seen.has(l.userId)) return false; seen.add(l.userId); return true; }).map(l => ({ userId: l.userId, name: l.name || "Driver", lat: Number(l.lat), lng: Number(l.lng), distanceMiles: Math.sqrt(Math.pow((Number(l.lat) - input.lat) * 69, 2) + Math.pow((Number(l.lng) - input.lng) * 69 * Math.cos(input.lat * Math.PI / 180), 2)) }));
   }),
+
+  // ═══ ROUTE INTELLIGENCE ("In-House LIDAR") ═══
+
+  // Grid heat — crowd-sourced driver density heatmap for HotZoneMap
+  getGridHeat: protectedProcedure.input(z.object({
+    hours: z.number().min(1).max(72).default(6),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const since = new Date(Date.now() - input.hours * 3600000);
+      const rows = await db.execute(sql`
+        SELECT grid_lat as lat, grid_lng as lng,
+               SUM(ping_count) as density,
+               AVG(avg_speed_mph) as avgSpeed,
+               MAX(unique_drivers) as drivers
+        FROM hz_grid_heat
+        WHERE period_start >= ${since}
+        GROUP BY grid_lat, grid_lng
+        HAVING density > 2
+        ORDER BY density DESC
+        LIMIT 500
+      `);
+      return ((rows as any)[0] || []).map((r: any) => ({
+        lat: Number(r.lat), lng: Number(r.lng),
+        density: Number(r.density), avgSpeed: Number(r.avgSpeed || 0), drivers: Number(r.drivers || 0),
+      }));
+    } catch { return []; }
+  }),
+
+  // Lane intelligence — crowd-sourced lane performance metrics
+  getLaneIntelligence: protectedProcedure.input(z.object({
+    originState: z.string().length(2).optional(),
+    destState: z.string().length(2).optional(),
+    hazmatOnly: z.boolean().default(false),
+    limit: z.number().min(1).max(100).default(50),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const conditions: string[] = ["trip_count >= 1"];
+      if (input.originState) conditions.push(`origin_state = '${input.originState}'`);
+      if (input.destState) conditions.push(`dest_state = '${input.destState}'`);
+      if (input.hazmatOnly) conditions.push("is_hazmat = 1");
+      const rows = await db.execute(sql.raw(`
+        SELECT origin_city, origin_state, dest_city, dest_state,
+               is_hazmat, trip_count, avg_rate_per_mile, avg_total_rate,
+               avg_distance_miles, avg_transit_hours, on_time_pct,
+               avg_dwell_mins_pickup, avg_dwell_mins_delivery,
+               best_day_of_week, best_hour_depart, last_trip_at
+        FROM hz_lane_learning
+        WHERE ${conditions.join(" AND ")}
+        ORDER BY trip_count DESC
+        LIMIT ${input.limit}
+      `));
+      return (rows as any)[0] || [];
+    } catch { return []; }
+  }),
+
+  // Report completed route — driver submits trip data for ML learning
+  reportRouteComplete: protectedProcedure.input(z.object({
+    loadId: z.number().optional(),
+    originLat: z.number(), originLng: z.number(),
+    destLat: z.number(), destLng: z.number(),
+    originCity: z.string().optional(), originState: z.string().optional(),
+    destCity: z.string().optional(), destState: z.string().optional(),
+    distanceMiles: z.number().optional(),
+    transitMinutes: z.number().optional(),
+    avgSpeedMph: z.number().optional(),
+    maxSpeedMph: z.number().optional(),
+    stopCount: z.number().default(0),
+    fuelStops: z.number().default(0),
+    isHazmat: z.boolean().default(false),
+    equipmentType: z.string().optional(),
+    weatherConditions: z.string().optional(),
+    roadQualityScore: z.number().min(1).max(5).optional(),
+    congestionScore: z.number().min(1).max(5).optional(),
+    routePolyline: z.string().optional(),
+    startedAt: z.string(),
+    completedAt: z.string(),
+  })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database unavailable");
+    const driverId = Number(ctx.user?.id) || 0;
+    try {
+      await db.execute(sql`
+        INSERT INTO hz_driver_route_reports
+        (driver_id, load_id, origin_lat, origin_lng, dest_lat, dest_lng,
+         origin_city, origin_state, dest_city, dest_state,
+         distance_miles, transit_minutes, avg_speed_mph, max_speed_mph,
+         stop_count, fuel_stops, is_hazmat, equipment_type,
+         weather_conditions, road_quality_score, congestion_score,
+         route_polyline, started_at, completed_at)
+        VALUES (${driverId}, ${input.loadId || null},
+                ${input.originLat}, ${input.originLng}, ${input.destLat}, ${input.destLng},
+                ${input.originCity || null}, ${input.originState || null},
+                ${input.destCity || null}, ${input.destState || null},
+                ${input.distanceMiles || null}, ${input.transitMinutes || null},
+                ${input.avgSpeedMph || null}, ${input.maxSpeedMph || null},
+                ${input.stopCount}, ${input.fuelStops},
+                ${input.isHazmat ? 1 : 0}, ${input.equipmentType || null},
+                ${input.weatherConditions || null}, ${input.roadQualityScore || null},
+                ${input.congestionScore || null}, ${input.routePolyline || null},
+                ${input.startedAt}, ${input.completedAt})
+      `);
+      return { success: true };
+    } catch (err) {
+      console.error("[Telemetry] Route report error:", err);
+      return { success: false };
+    }
+  }),
+
+  // Corridor stats — zone-to-zone aggregate intelligence
+  getCorridorStats: protectedProcedure.input(z.object({
+    limit: z.number().min(1).max(100).default(25),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const rows = await db.execute(sql`
+        SELECT origin_zone, dest_zone, corridor_name,
+               avg_speed_mph, avg_travel_time_mins, avg_distance_miles,
+               trip_count, unique_drivers, congestion_score, reliability_score,
+               hazmat_trip_count, last_trip_at
+        FROM hz_route_intelligence
+        WHERE trip_count >= 1
+        ORDER BY trip_count DESC
+        LIMIT ${input.limit}
+      `);
+      return (rows as any)[0] || [];
+    } catch { return []; }
+  }),
+
+  // Driver mapping stats — how much data this driver has contributed
+  getMyMappingStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { totalPings: 0, totalRoutes: 0, totalMiles: 0, avgRoadQuality: 0, firstPing: null, lastPing: null };
+    const driverId = Number(ctx.user?.id) || 0;
+    try {
+      const [pingStats] = await db.execute(sql`
+        SELECT COUNT(*) as total, MIN(server_timestamp) as firstPing, MAX(server_timestamp) as lastPing
+        FROM location_history WHERE user_id = ${driverId}
+      `);
+      const [routeStats] = await db.execute(sql`
+        SELECT COUNT(*) as routes, SUM(distance_miles) as miles, AVG(road_quality_score) as avgQuality
+        FROM hz_driver_route_reports WHERE driver_id = ${driverId}
+      `);
+      const ps = (pingStats as any)[0] || {};
+      const rs = (routeStats as any)[0] || {};
+      return {
+        totalPings: Number(ps.total || 0),
+        totalRoutes: Number(rs.routes || 0),
+        totalMiles: Math.round(Number(rs.miles || 0)),
+        avgRoadQuality: Number(rs.avgQuality || 0),
+        firstPing: ps.firstPing,
+        lastPing: ps.lastPing,
+      };
+    } catch { return { totalPings: 0, totalRoutes: 0, totalMiles: 0, avgRoadQuality: 0, firstPing: null, lastPing: null }; }
+  }),
+
+  // Platform-wide mapping intelligence summary
+  getMappingIntelligenceSummary: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalPings: 0, uniqueDrivers: 0, gridCells: 0, learnedLanes: 0, routeReports: 0, totalMilesMapped: 0 };
+    try {
+      const [pings] = await db.execute(sql`SELECT COUNT(*) as cnt, COUNT(DISTINCT user_id) as drivers FROM location_history`);
+      const [grid] = await db.execute(sql`SELECT COUNT(DISTINCT CONCAT(grid_lat, ',', grid_lng)) as cells FROM hz_grid_heat`);
+      const [lanes] = await db.execute(sql`SELECT COUNT(*) as cnt FROM hz_lane_learning WHERE trip_count >= 1`);
+      const [routes] = await db.execute(sql`SELECT COUNT(*) as cnt, SUM(distance_miles) as miles FROM hz_driver_route_reports`);
+      const p = (pings as any)[0] || {};
+      const g = (grid as any)[0] || {};
+      const l = (lanes as any)[0] || {};
+      const r = (routes as any)[0] || {};
+      return {
+        totalPings: Number(p.cnt || 0),
+        uniqueDrivers: Number(p.drivers || 0),
+        gridCells: Number(g.cells || 0),
+        learnedLanes: Number(l.cnt || 0),
+        routeReports: Number(r.cnt || 0),
+        totalMilesMapped: Math.round(Number(r.miles || 0)),
+      };
+    } catch { return { totalPings: 0, uniqueDrivers: 0, gridCells: 0, learnedLanes: 0, routeReports: 0, totalMilesMapped: 0 }; }
+  }),
 });

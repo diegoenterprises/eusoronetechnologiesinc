@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import HotZoneMap from "@/components/HotZoneMap";
 import {
@@ -100,6 +101,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [equipFilter, setEquipFilter] = useState<string>("");
   const [showLayers, setShowLayers] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, refetch } = trpc.hotZones.getRateFeed.useQuery(
@@ -111,6 +113,31 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
   const coldZones = data?.coldZones || [];
   const roleCtx = data?.roleContext;
   const pulse = data?.marketPulse;
+
+  // Force refresh mutation — triggers server-side hot zones + market data sync
+  const forceRefreshMutation = (trpc as any).hotZones?.forceRefresh?.useMutation?.({
+    onSuccess: () => {
+      refetch();
+      toast.success("Hot Zones data refreshed", { description: "All zone intelligence sources updated" });
+      setIsRefreshing(false);
+    },
+    onError: (err: any) => {
+      refetch();
+      toast.error("Refresh error", { description: err.message });
+      setIsRefreshing(false);
+    },
+  });
+
+  const handleForceRefresh = () => {
+    setIsRefreshing(true);
+    if (forceRefreshMutation?.mutate) {
+      forceRefreshMutation.mutate({ dataType: "ZONE_INTELLIGENCE" });
+    } else {
+      refetch();
+      toast.success("Data refreshed");
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (roleCtx?.defaultLayers && activeLayers.length === 0) {
@@ -172,9 +199,29 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                   {activeLayers.length}
                 </span>
               </button>
-              <button onClick={() => refetch()}
-                className={`p-2 rounded-xl transition-all ${isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-white/[0.06] text-white/40 hover:bg-white/[0.1]"}`}>
-                <RefreshCw className="w-4 h-4" />
+              {/* Equipment Filter */}
+              <div className="relative">
+                <select
+                  value={equipFilter}
+                  onChange={(e) => setEquipFilter(e.target.value)}
+                  className={`appearance-none pl-7 pr-6 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all outline-none ${
+                    equipFilter
+                      ? "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 text-white border border-[#1473FF]/30"
+                      : isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-transparent" : "bg-white/[0.06] text-white/60 hover:bg-white/[0.1] border border-transparent"
+                  }`}
+                >
+                  <option value="">All Equipment</option>
+                  <option value="DRY_VAN">Dry Van</option>
+                  <option value="REEFER">Reefer</option>
+                  <option value="FLATBED">Flatbed</option>
+                  <option value="TANKER">Tanker</option>
+                  <option value="HAZMAT">Hazmat</option>
+                </select>
+                <Filter className={`absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none ${equipFilter ? "text-[#1473FF]" : isLight ? "text-slate-400" : "text-white/40"}`} />
+              </div>
+              <button onClick={handleForceRefresh} disabled={isRefreshing}
+                className={`p-2 rounded-xl transition-all ${isRefreshing ? "opacity-60 cursor-wait" : ""} ${isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-white/[0.06] text-white/40 hover:bg-white/[0.1]"}`}>
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
               </button>
             </div>
           </div>
@@ -323,7 +370,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
 
                     {/* Equipment pills */}
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {(zone.topEquipment || []).map(eq => (
+                      {(zone.topEquipment || []).map((eq: string) => (
                         <span key={eq} className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.06] text-white/40"}`}>
                           {eq.replace("_", " ")}
                         </span>
@@ -348,7 +395,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                             <div>
                               <div className={`text-[10px] uppercase tracking-wider mb-1.5 ${isLight ? "text-slate-400" : "text-white/30"}`}>Why it's hot</div>
                               <div className="space-y-1">
-                                {(zone.reasons || []).map((r, i) => (
+                                {(zone.reasons || []).map((r: string, i: number) => (
                                   <div key={i} className={`flex items-center gap-2 text-xs ${isLight ? "text-slate-600" : "text-white/60"}`}>
                                     <div className="w-1 h-1 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" />
                                     {r}
@@ -360,7 +407,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                             {(zone.weatherAlerts || []).length > 0 && (
                               <div>
                                 <div className={`text-[10px] uppercase tracking-wider mb-1.5 ${isLight ? "text-slate-400" : "text-white/30"}`}>Weather Alerts</div>
-                                {(zone.weatherAlerts || []).map((a, i) => (
+                                {(zone.weatherAlerts || []).map((a: { severity: string; event: string }, i: number) => (
                                   <div key={i} className={`flex items-center gap-2 text-xs ${a.severity === "Extreme" ? "text-red-400" : "text-amber-400"}`}>
                                     <CloudRain className="w-3 h-3 flex-shrink-0" />
                                     <span className="truncate">{a.event}</span>
@@ -372,7 +419,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                             {(zone.hazmatClasses?.length || 0) > 0 && (
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className={`text-[10px] uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>Hazmat:</span>
-                                {zone.hazmatClasses?.map(c => (
+                                {zone.hazmatClasses?.map((c: string) => (
                                   <span key={c} className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${isLight ? "bg-red-50 text-red-500" : "bg-red-500/10 text-red-400"}`}>
                                     Class {c}
                                   </span>
@@ -385,6 +432,44 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                                 Compliance Risk Score: <span className={`font-semibold ${zone.complianceRiskScore > 50 ? "text-red-400" : "text-amber-400"}`}>{zone.complianceRiskScore}</span>
                               </div>
                             )}
+                            {/* Enriched intelligence from 25 data sources */}
+                            <div className="flex flex-wrap gap-2">
+                              {zone.safetyScore != null && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${zone.safetyScore > 70 ? isLight ? "bg-cyan-50 text-cyan-600" : "bg-cyan-500/10 text-cyan-400" : zone.safetyScore > 40 ? isLight ? "bg-amber-50 text-amber-600" : "bg-amber-500/10 text-amber-400" : isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400"}`}>
+                                  <Shield className="w-3 h-3" /> Safety {Math.round(zone.safetyScore)}
+                                </span>
+                              )}
+                              {(zone.recentHazmatIncidents || 0) > 0 && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-purple-50 text-purple-600" : "bg-purple-500/10 text-purple-400"}`}>
+                                  <AlertTriangle className="w-3 h-3" /> {zone.recentHazmatIncidents} Hazmat Incident{zone.recentHazmatIncidents !== 1 ? "s" : ""}
+                                </span>
+                              )}
+                              {(zone.activeWildfires || 0) > 0 && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-orange-50 text-orange-600" : "bg-orange-500/10 text-orange-400"}`}>
+                                  <Flame className="w-3 h-3" /> {zone.activeWildfires} Wildfire{zone.activeWildfires !== 1 ? "s" : ""}
+                                </span>
+                              )}
+                              {zone.femaDisasterActive && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400"}`}>
+                                  <AlertTriangle className="w-3 h-3" /> FEMA Disaster
+                                </span>
+                              )}
+                              {zone.seismicRiskLevel && zone.seismicRiskLevel !== "Low" && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${zone.seismicRiskLevel === "High" ? isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400" : isLight ? "bg-amber-50 text-amber-600" : "bg-amber-500/10 text-amber-400"}`}>
+                                  Seismic: {zone.seismicRiskLevel}
+                                </span>
+                              )}
+                              {(zone.epaFacilitiesCount || 0) > 0 && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-emerald-50 text-emerald-600" : "bg-emerald-500/10 text-emerald-400"}`}>
+                                  {zone.epaFacilitiesCount} EPA Facilities
+                                </span>
+                              )}
+                              {(zone.carriersWithViolations || 0) > 0 && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400"}`}>
+                                  {zone.carriersWithViolations} Carrier Violation{zone.carriersWithViolations !== 1 ? "s" : ""}
+                                </span>
+                              )}
+                            </div>
                             {/* Role actions */}
                             {roleCtx?.zoneActions && (
                               <div className="flex flex-wrap gap-2 pt-1">
@@ -393,15 +478,46 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       const route = ACTION_ROUTES[action];
-                                      if (route) {
-                                        const q = new URLSearchParams();
-                                        if (zone.zoneName) q.set("zone", zone.zoneName);
-                                        if (zone.state) q.set("state", zone.state);
-                                        if (zone.center?.lat) q.set("lat", String(zone.center.lat));
-                                        if (zone.center?.lng) q.set("lng", String(zone.center.lng));
-                                        const qs = q.toString();
-                                        navigate(qs ? `${route}?${qs}` : route);
+                                      if (!route) return;
+                                      const q = new URLSearchParams();
+                                      // Core zone context — always passed
+                                      if (zone.zoneName) q.set("zone", zone.zoneName);
+                                      if (zone.state) q.set("state", zone.state);
+                                      if (zone.center?.lat) q.set("lat", String(zone.center.lat));
+                                      if (zone.center?.lng) q.set("lng", String(zone.center.lng));
+                                      // Action-specific enrichment
+                                      if (action === "post_load" || action === "post_counter") {
+                                        // Pre-fill origin city for load creation
+                                        if (zone.zoneName) q.set("origin", `${zone.zoneName}, ${zone.state || ""}`);
+                                        if (zone.liveRate) q.set("suggestedRate", String(zone.liveRate));
+                                        if (zone.topEquipment?.[0]) q.set("equipment", zone.topEquipment[0]);
                                       }
+                                      if (action === "set_rate_alert" || action === "set_demand_alert") {
+                                        if (zone.liveRate) q.set("currentRate", String(zone.liveRate));
+                                        if (zone.demandLevel) q.set("demandLevel", zone.demandLevel);
+                                        q.set("alertType", action === "set_rate_alert" ? "rate" : "demand");
+                                      }
+                                      if (action === "view_catalysts" || action === "find_catalysts") {
+                                        if (zone.topEquipment?.length) q.set("equipment", zone.topEquipment.join(","));
+                                        if (zone.liveRate) q.set("maxRate", String(Math.round(Number(zone.liveRate) * 1.15)));
+                                      }
+                                      if (action === "view_loads" || action === "accept_load") {
+                                        if (zone.topEquipment?.length) q.set("equipment", zone.topEquipment.join(","));
+                                        if (zone.demandLevel) q.set("demand", zone.demandLevel);
+                                      }
+                                      if (action === "navigate_zone" || action === "find_fuel") {
+                                        if (zone.fuelPrice) q.set("fuelPrice", String(zone.fuelPrice));
+                                      }
+                                      if (action === "assign_driver" || action === "reposition_fleet") {
+                                        q.set("demandLevel", zone.demandLevel || "");
+                                        if (zone.liveLoads) q.set("openLoads", String(zone.liveLoads));
+                                      }
+                                      const qs = q.toString();
+                                      const shortZone = zone.zoneName?.split("/")[0]?.split(",")[0]?.trim() || zone.state || "zone";
+                                      toast.info(`${action.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}`, {
+                                        description: `${shortZone} · $${zone.liveRate}/mi · ${zone.demandLevel}`,
+                                      });
+                                      navigate(qs ? `${route}?${qs}` : route);
                                     }}
                                     className="px-3 py-1.5 rounded-xl text-[11px] font-medium bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-sm shadow-[#1473FF]/20 hover:shadow-md hover:shadow-[#1473FF]/30 transition-all">
                                     {action.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
