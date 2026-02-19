@@ -22,6 +22,7 @@ import {
   ChevronLeft, ChevronRight, RefreshCw
 } from "lucide-react";
 import { useLocation } from "wouter";
+import LoadCargoAnimation from "@/components/LoadCargoAnimation";
 
 type EquipFilter = "all" | "tanker" | "flatbed" | "dry_van" | "reefer" | "hopper" | "cryogenic" | "hazmat";
 
@@ -325,30 +326,58 @@ export default function FindLoads() {
                     </div>
                   </div>
 
+                  {/* Animated Cargo Graphic */}
+                  <div className={cn("mx-5 mb-2 rounded-xl overflow-hidden", isLight ? "bg-slate-50/60" : "bg-slate-900/30")}>
+                    <LoadCargoAnimation
+                      equipmentType={load.equipmentType}
+                      cargoType={load.cargoType}
+                      compartments={1}
+                      height={110}
+                      isLight={isLight}
+                    />
+                  </div>
+
                   {/* Route Visualization */}
                   <div className={cn("px-5 py-4 mx-5 mb-3 rounded-xl", isLight ? "bg-slate-50" : "bg-slate-900/40")}>
                     <div className="flex items-center justify-between">
+                      {/* Origin */}
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1473FF]/15 to-[#BE01FF]/15 flex items-center justify-center">
-                          <MapPin className="w-4 h-4 text-[#1473FF]" />
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1473FF] to-[#4A90FF] flex items-center justify-center">
+                          <MapPin className="w-4 h-4 text-white" />
                         </div>
-                        <p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{originCity}{originState ? `, ${originState}` : ""}</p>
+                        <div>
+                          <p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{originCity}{originState ? `, ${originState}` : ""}</p>
+                        </div>
                       </div>
+
+                      {/* Dashed Route Line — gradient blue to purple */}
                       <div className="flex-1 mx-4 flex items-center">
-                        <svg className="flex-1 h-[3px]" preserveAspectRatio="none">
-                          <defs><linearGradient id={`routeGrad-${load.id}`} x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#1473FF" /><stop offset="100%" stopColor="#BE01FF" /></linearGradient></defs>
-                          <line x1="0" y1="1.5" x2="100%" y2="1.5" stroke={`url(#routeGrad-${load.id})`} strokeWidth="3" strokeDasharray="8 5" />
-                        </svg>
-                        <Navigation className="w-4 h-4 mx-1 rotate-90 text-purple-400" />
-                        <svg className="flex-1 h-[3px]" preserveAspectRatio="none">
-                          <use href={`#routeGrad-${load.id}`} />
-                          <line x1="0" y1="1.5" x2="100%" y2="1.5" stroke={`url(#routeGrad-${load.id})`} strokeWidth="3" strokeDasharray="8 5" />
-                        </svg>
+                        <div
+                          className="flex-1 h-[2px] rounded-full"
+                          style={{
+                            background: 'linear-gradient(to right, #1473FF, #BE01FF)',
+                            WebkitMaskImage: 'repeating-linear-gradient(to right, black 0 8px, transparent 8px 14px)',
+                            maskImage: 'repeating-linear-gradient(to right, black 0 8px, transparent 8px 14px)',
+                          }}
+                        />
+                        <Navigation className="w-4 h-4 mx-1 rotate-90 text-[#8B5CF6]" />
+                        <div
+                          className="flex-1 h-[2px] rounded-full"
+                          style={{
+                            background: 'linear-gradient(to right, #6C47FF, #BE01FF)',
+                            WebkitMaskImage: 'repeating-linear-gradient(to right, black 0 8px, transparent 8px 14px)',
+                            maskImage: 'repeating-linear-gradient(to right, black 0 8px, transparent 8px 14px)',
+                          }}
+                        />
                       </div>
+
+                      {/* Destination */}
                       <div className="flex items-center gap-2">
-                        <p className={cn("text-sm font-semibold text-right", isLight ? "text-slate-800" : "text-white")}>{destCity}{destState ? `, ${destState}` : ""}</p>
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#BE01FF]/15 to-[#1473FF]/15 flex items-center justify-center">
-                          <Building2 className="w-4 h-4 text-[#BE01FF]" />
+                        <div>
+                          <p className={cn("text-sm font-semibold text-right", isLight ? "text-slate-800" : "text-white")}>{destCity}{destState ? `, ${destState}` : ""}</p>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#BE01FF] flex items-center justify-center">
+                          <Building2 className="w-4 h-4 text-white" />
                         </div>
                       </div>
                     </div>
