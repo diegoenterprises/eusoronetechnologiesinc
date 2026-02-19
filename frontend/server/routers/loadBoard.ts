@@ -17,7 +17,7 @@ import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { auditedProtectedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { loads, companies, vehicles, bids, drivers } from "../../drizzle/schema";
+import { loads, companies, vehicles, bids, drivers, loadBids, bidAutoAcceptRules, negotiations, negotiationMessages, laneContracts, agreements } from "../../drizzle/schema";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPREHENSIVE TRAILER TYPE SYSTEM
@@ -1707,5 +1707,777 @@ export const loadBoardRouter = router({
         totalClasses: Object.keys(HAZMAT_CLASS_REQUIREMENTS).length,
         totalTrailerTypes: Object.keys(TRAILER_TYPES).length,
       };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ENHANCED BIDDING — loadBids table with multi-round counter-offers,
+  // auto-accept rules, and equipment/hazmat qualification checks
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * SUBMIT ENHANCED BID — Multi-round bidding with hazmat qualification pre-check
+   * Uses loadBids table (not simple bids). Checks auto-accept rules.
+   */
+  submitEnhancedBid: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      bidAmount: z.number(),
+      rateType: z.enum(["flat", "per_mile", "per_hour", "per_ton", "percentage"]).default("flat"),
+      equipmentType: z.string().optional(),
+      estimatedPickup: z.string().optional(),
+      estimatedDelivery: z.string().optional(),
+      transitTimeDays: z.number().optional(),
+      fuelSurchargeIncluded: z.boolean().default(false),
+      accessorialsIncluded: z.array(z.string()).optional(),
+      conditions: z.string().optional(),
+      parentBidId: z.number().optional(),
+      agreementId: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = ctx.user?.id || 0;
+
+      // 1. Fetch the load to check hazmat requirements
+      const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId)).limit(1);
+      if (!load) throw new Error("Load not found");
+      if (!["posted", "bidding"].includes(load.status as string)) throw new Error("Load is no longer accepting bids");
+
+      const hazmatWarnings: string[] = [];
+      const isHazmat = !!load.hazmatClass;
+
+      // 2. If hazmat, verify bidder's company qualifications
+      if (isHazmat) {
+        const classReqs = HAZMAT_CLASS_REQUIREMENTS[load.hazmatClass!];
+        // Get bidder's company
+        const [driver] = await db.select().from(drivers).where(eq(drivers.userId, userId)).limit(1);
+        if (driver) {
+          if (!driver.hazmatEndorsement) hazmatWarnings.push(`Missing CDL-${classReqs?.endorsement || 'H'} endorsement for Class ${load.hazmatClass}`);
+          if (driver.hazmatExpiry && new Date(driver.hazmatExpiry) < new Date()) hazmatWarnings.push("Hazmat endorsement expired");
+          if (driver.companyId) {
+            const [co] = await db.select().from(companies).where(eq(companies.id, driver.companyId)).limit(1);
+            if (co) {
+              if (!co.hazmatLicense) hazmatWarnings.push("Company missing HMSP registration");
+              if (co.hazmatExpiry && new Date(co.hazmatExpiry) < new Date()) hazmatWarnings.push("Company HMSP expired");
+              let insAmount = 0;
+              if (co.insurancePolicy) {
+                try { const ins = typeof co.insurancePolicy === 'string' ? JSON.parse(co.insurancePolicy) : co.insurancePolicy; insAmount = (ins as any)?.amount || (ins as any)?.limit || 0; } catch { insAmount = 0; }
+              }
+              if (classReqs && insAmount < classReqs.insuranceMinimum) {
+                hazmatWarnings.push(`Insurance $${(insAmount / 1000000).toFixed(1)}M below required $${(classReqs.insuranceMinimum / 1000000).toFixed(1)}M`);
+              }
+            }
+          }
+        }
+      }
+
+      // 3. Determine bid round
+      let bidRound = 1;
+      if (input.parentBidId) {
+        const [parent] = await db.select({ round: loadBids.bidRound }).from(loadBids).where(eq(loadBids.id, input.parentBidId)).limit(1);
+        bidRound = (parent?.round || 0) + 1;
+      }
+
+      // 4. Get bidder's company ID
+      let bidderCompanyId: number | null = null;
+      const [drvRecord] = await db.select({ companyId: drivers.companyId }).from(drivers).where(eq(drivers.userId, userId)).limit(1);
+      bidderCompanyId = drvRecord?.companyId || null;
+
+      // 5. Insert the enhanced bid
+      const [result] = await db.insert(loadBids).values({
+        loadId: input.loadId,
+        bidderUserId: userId,
+        bidderCompanyId,
+        bidderRole: "catalyst",
+        bidAmount: String(input.bidAmount),
+        rateType: input.rateType,
+        parentBidId: input.parentBidId || null,
+        bidRound,
+        equipmentType: input.equipmentType || null,
+        estimatedPickup: input.estimatedPickup ? new Date(input.estimatedPickup) : null,
+        estimatedDelivery: input.estimatedDelivery ? new Date(input.estimatedDelivery) : null,
+        transitTimeDays: input.transitTimeDays || null,
+        fuelSurchargeIncluded: input.fuelSurchargeIncluded,
+        accessorialsIncluded: input.accessorialsIncluded || null,
+        conditions: input.conditions || null,
+        agreementId: input.agreementId || null,
+        status: "pending",
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      }).$returningId();
+
+      // 6. Update load status to bidding
+      if (load.status === "posted") {
+        await db.update(loads).set({ status: "bidding" }).where(eq(loads.id, input.loadId));
+      }
+
+      // 7. Check auto-accept rules
+      let autoAccepted = false;
+      try {
+        const rules = await db.select().from(bidAutoAcceptRules)
+          .where(and(
+            sql`${bidAutoAcceptRules.isActive} = 1`,
+            sql`${bidAutoAcceptRules.userId} = ${load.shipperId} OR ${bidAutoAcceptRules.companyId} IN (SELECT companyId FROM drivers WHERE userId = ${load.shipperId})`,
+          ))
+          .limit(10);
+
+        for (const rule of rules) {
+          let matches = true;
+          if (rule.maxRate && parseFloat(String(rule.maxRate)) < input.bidAmount) matches = false;
+          if (rule.requiredHazmat && !isHazmat) matches = false;
+          if (rule.maxTransitDays && input.transitTimeDays && input.transitTimeDays > rule.maxTransitDays) matches = false;
+          if (rule.requiredEquipmentTypes && input.equipmentType) {
+            const reqTypes = rule.requiredEquipmentTypes as string[];
+            if (!reqTypes.includes(input.equipmentType)) matches = false;
+          }
+
+          if (matches && hazmatWarnings.length === 0) {
+            // Auto-accept this bid
+            await db.update(loadBids).set({
+              status: "auto_accepted",
+              isAutoAccepted: true,
+              respondedAt: new Date(),
+              respondedBy: load.shipperId,
+            }).where(eq(loadBids.id, result.id));
+
+            await db.update(loads).set({
+              status: "assigned",
+              catalystId: userId,
+            }).where(eq(loads.id, input.loadId));
+
+            await db.update(bidAutoAcceptRules).set({
+              totalAutoAccepted: sql`${bidAutoAcceptRules.totalAutoAccepted} + 1`,
+            }).where(eq(bidAutoAcceptRules.id, rule.id));
+
+            autoAccepted = true;
+            break;
+          }
+        }
+      } catch (e) { console.warn('[LoadBoard] Auto-accept check failed:', e); }
+
+      return {
+        bidId: result.id,
+        loadId: input.loadId,
+        bidAmount: input.bidAmount,
+        bidRound,
+        status: autoAccepted ? "auto_accepted" : "pending",
+        autoAccepted,
+        hazmatWarnings,
+        isHazmat,
+        hazmatClass: load.hazmatClass || null,
+        submittedBy: userId,
+        submittedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      };
+    }),
+
+  /**
+   * GET BIDS FOR LOAD — Full bid history with counter-offer chains
+   */
+  getBidsForLoad: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      includeWithdrawn: z.boolean().default(false),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) return { bids: [], total: 0 };
+      try {
+        const conditions = [eq(loadBids.loadId, input.loadId)];
+        if (!input.includeWithdrawn) {
+          conditions.push(sql`${loadBids.status} != 'withdrawn'`);
+        }
+
+        const rows = await db.select().from(loadBids)
+          .where(and(...conditions))
+          .orderBy(desc(loadBids.createdAt))
+          .limit(100);
+
+        // Enrich with bidder info
+        const enriched = await Promise.all(rows.map(async (bid) => {
+          let bidderName = '';
+          let companyName = '';
+          let hazmatAuthorized = false;
+          if (bid.bidderCompanyId) {
+            const [co] = await db.select({ name: companies.name, hazmatLicense: companies.hazmatLicense })
+              .from(companies).where(eq(companies.id, bid.bidderCompanyId)).limit(1);
+            companyName = co?.name || '';
+            hazmatAuthorized = !!co?.hazmatLicense;
+          }
+          return {
+            id: bid.id,
+            bidAmount: parseFloat(String(bid.bidAmount)),
+            rateType: bid.rateType,
+            bidRound: bid.bidRound,
+            parentBidId: bid.parentBidId,
+            status: bid.status,
+            bidderRole: bid.bidderRole,
+            bidderUserId: bid.bidderUserId,
+            bidderCompanyId: bid.bidderCompanyId,
+            bidderName,
+            companyName,
+            hazmatAuthorized,
+            equipmentType: bid.equipmentType,
+            transitTimeDays: bid.transitTimeDays,
+            fuelSurchargeIncluded: bid.fuelSurchargeIncluded,
+            accessorialsIncluded: bid.accessorialsIncluded,
+            conditions: bid.conditions,
+            isAutoAccepted: bid.isAutoAccepted,
+            expiresAt: bid.expiresAt?.toISOString() || null,
+            respondedAt: bid.respondedAt?.toISOString() || null,
+            createdAt: bid.createdAt?.toISOString() || '',
+          };
+        }));
+
+        return { bids: enriched, total: enriched.length };
+      } catch (e) { console.error('[LoadBoard] getBidsForLoad error:', e); return { bids: [], total: 0 }; }
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NEGOTIATION THREADS — Thread-based rate negotiation using
+  // negotiations + negotiationMessages tables
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * CREATE NEGOTIATION — Start a rate negotiation thread for a load
+   */
+  createNegotiation: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      respondentUserId: z.number(),
+      subject: z.string(),
+      description: z.string().optional(),
+      initialOffer: z.number(),
+      rateType: z.string().default("flat"),
+      negotiationType: z.enum(["load_rate", "lane_rate", "contract_terms", "fuel_surcharge", "accessorial_rates", "volume_commitment", "payment_terms", "general"]).default("load_rate"),
+      responseDeadlineHours: z.number().default(48),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = ctx.user?.id || 0;
+
+      // Get company IDs
+      let initiatorCompanyId: number | null = null;
+      let respondentCompanyId: number | null = null;
+      const [initDrv] = await db.select({ companyId: drivers.companyId }).from(drivers).where(eq(drivers.userId, userId)).limit(1);
+      initiatorCompanyId = initDrv?.companyId || null;
+      const [respDrv] = await db.select({ companyId: drivers.companyId }).from(drivers).where(eq(drivers.userId, input.respondentUserId)).limit(1);
+      respondentCompanyId = respDrv?.companyId || null;
+
+      const negNumber = `NEG-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
+      const deadline = new Date(Date.now() + input.responseDeadlineHours * 60 * 60 * 1000);
+
+      const [negResult] = await db.insert(negotiations).values({
+        negotiationNumber: negNumber,
+        negotiationType: input.negotiationType,
+        loadId: input.loadId,
+        initiatorUserId: userId,
+        initiatorCompanyId,
+        respondentUserId: input.respondentUserId,
+        respondentCompanyId,
+        subject: input.subject,
+        description: input.description || null,
+        currentOffer: {
+          amount: input.initialOffer,
+          rateType: input.rateType,
+          proposedBy: userId,
+          proposedAt: new Date().toISOString(),
+        },
+        totalRounds: 1,
+        status: "awaiting_response",
+        responseDeadline: deadline,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      }).$returningId();
+
+      // Insert the initial offer message
+      await db.insert(negotiationMessages).values({
+        negotiationId: negResult.id,
+        senderUserId: userId,
+        round: 1,
+        messageType: "initial_offer",
+        content: input.description || `Initial offer: $${input.initialOffer}`,
+        offerAmount: String(input.initialOffer),
+        offerRateType: input.rateType,
+      });
+
+      return {
+        negotiationId: negResult.id,
+        negotiationNumber: negNumber,
+        loadId: input.loadId,
+        initialOffer: input.initialOffer,
+        status: "awaiting_response",
+        responseDeadline: deadline.toISOString(),
+        createdBy: userId,
+        createdAt: new Date().toISOString(),
+      };
+    }),
+
+  /**
+   * GET NEGOTIATION THREAD — Full thread with all messages/offers
+   */
+  getNegotiationThread: protectedProcedure
+    .input(z.object({ negotiationId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) return null;
+      try {
+        const [neg] = await db.select().from(negotiations).where(eq(negotiations.id, input.negotiationId)).limit(1);
+        if (!neg) return null;
+
+        const messages = await db.select().from(negotiationMessages)
+          .where(eq(negotiationMessages.negotiationId, input.negotiationId))
+          .orderBy(negotiationMessages.round, negotiationMessages.createdAt);
+
+        // Get load info if load-based negotiation
+        let loadInfo = null;
+        if (neg.loadId) {
+          const [load] = await db.select().from(loads).where(eq(loads.id, neg.loadId)).limit(1);
+          if (load) {
+            const pickup = load.pickupLocation as any || {};
+            const delivery = load.deliveryLocation as any || {};
+            loadInfo = {
+              id: load.id,
+              loadNumber: load.loadNumber,
+              origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : '',
+              destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : '',
+              rate: load.rate ? parseFloat(String(load.rate)) : 0,
+              hazmatClass: load.hazmatClass,
+            };
+          }
+        }
+
+        return {
+          id: neg.id,
+          negotiationNumber: neg.negotiationNumber,
+          negotiationType: neg.negotiationType,
+          subject: neg.subject,
+          description: neg.description,
+          status: neg.status,
+          outcome: neg.outcome,
+          currentOffer: neg.currentOffer,
+          totalRounds: neg.totalRounds,
+          initiatorUserId: neg.initiatorUserId,
+          respondentUserId: neg.respondentUserId,
+          responseDeadline: neg.responseDeadline?.toISOString() || null,
+          expiresAt: neg.expiresAt?.toISOString() || null,
+          resolvedAt: neg.resolvedAt?.toISOString() || null,
+          loadInfo,
+          messages: messages.map(m => ({
+            id: m.id,
+            round: m.round,
+            messageType: m.messageType,
+            content: m.content,
+            offerAmount: m.offerAmount ? parseFloat(String(m.offerAmount)) : null,
+            offerRateType: m.offerRateType,
+            offerTerms: m.offerTerms,
+            senderUserId: m.senderUserId,
+            isRead: m.isRead,
+            createdAt: m.createdAt?.toISOString() || '',
+          })),
+          createdAt: neg.createdAt?.toISOString() || '',
+        };
+      } catch (e) { console.error('[LoadBoard] getNegotiationThread error:', e); return null; }
+    }),
+
+  /**
+   * RESPOND TO NEGOTIATION — Counter-offer, accept, or reject
+   */
+  respondToNegotiation: protectedProcedure
+    .input(z.object({
+      negotiationId: z.number(),
+      action: z.enum(["counter_offer", "accept", "reject", "withdraw"]),
+      counterAmount: z.number().optional(),
+      counterRateType: z.string().optional(),
+      counterTerms: z.record(z.string(), z.unknown()).optional(),
+      message: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = ctx.user?.id || 0;
+
+      const [neg] = await db.select().from(negotiations).where(eq(negotiations.id, input.negotiationId)).limit(1);
+      if (!neg) throw new Error("Negotiation not found");
+      if (["agreed", "rejected", "expired", "cancelled"].includes(neg.status as string)) throw new Error("Negotiation is already closed");
+
+      const newRound = (neg.totalRounds || 0) + 1;
+
+      if (input.action === "accept") {
+        await db.update(negotiations).set({
+          status: "agreed",
+          outcome: "accepted",
+          agreedTerms: neg.currentOffer,
+          resolvedAt: new Date(),
+          totalRounds: newRound,
+        }).where(eq(negotiations.id, input.negotiationId));
+
+        await db.insert(negotiationMessages).values({
+          negotiationId: input.negotiationId,
+          senderUserId: userId,
+          round: newRound,
+          messageType: "accept",
+          content: input.message || "Offer accepted",
+        });
+
+        // If load-based, auto-assign the load
+        if (neg.loadId) {
+          const assignTo = userId === neg.initiatorUserId ? neg.respondentUserId : neg.initiatorUserId;
+          const offer = neg.currentOffer as any;
+          await db.update(loads).set({
+            status: "assigned",
+            catalystId: assignTo,
+            rate: offer?.amount ? String(offer.amount) : undefined,
+          }).where(eq(loads.id, neg.loadId));
+        }
+
+        return { negotiationId: input.negotiationId, action: "accepted", round: newRound, resolvedAt: new Date().toISOString() };
+      }
+
+      if (input.action === "reject") {
+        await db.update(negotiations).set({
+          status: "rejected",
+          outcome: "rejected",
+          resolvedAt: new Date(),
+          totalRounds: newRound,
+        }).where(eq(negotiations.id, input.negotiationId));
+
+        await db.insert(negotiationMessages).values({
+          negotiationId: input.negotiationId,
+          senderUserId: userId,
+          round: newRound,
+          messageType: "reject",
+          content: input.message || "Offer rejected",
+        });
+
+        return { negotiationId: input.negotiationId, action: "rejected", round: newRound, resolvedAt: new Date().toISOString() };
+      }
+
+      if (input.action === "counter_offer") {
+        if (!input.counterAmount) throw new Error("Counter amount required for counter offer");
+
+        const newOffer = {
+          amount: input.counterAmount,
+          rateType: input.counterRateType || "flat",
+          terms: input.counterTerms || {},
+          proposedBy: userId,
+          proposedAt: new Date().toISOString(),
+        };
+
+        await db.update(negotiations).set({
+          status: "counter_offered",
+          currentOffer: newOffer,
+          totalRounds: newRound,
+          responseDeadline: new Date(Date.now() + 48 * 60 * 60 * 1000),
+        }).where(eq(negotiations.id, input.negotiationId));
+
+        await db.insert(negotiationMessages).values({
+          negotiationId: input.negotiationId,
+          senderUserId: userId,
+          round: newRound,
+          messageType: "counter_offer",
+          content: input.message || `Counter offer: $${input.counterAmount}`,
+          offerAmount: String(input.counterAmount),
+          offerRateType: input.counterRateType || "flat",
+          offerTerms: input.counterTerms || null,
+        });
+
+        return { negotiationId: input.negotiationId, action: "counter_offered", counterAmount: input.counterAmount, round: newRound };
+      }
+
+      // Withdraw
+      await db.update(negotiations).set({
+        status: "cancelled",
+        outcome: "cancelled",
+        resolvedAt: new Date(),
+      }).where(eq(negotiations.id, input.negotiationId));
+
+      await db.insert(negotiationMessages).values({
+        negotiationId: input.negotiationId,
+        senderUserId: userId,
+        round: newRound,
+        messageType: "withdraw",
+        content: input.message || "Negotiation withdrawn",
+      });
+
+      return { negotiationId: input.negotiationId, action: "withdrawn", round: newRound };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LANE CONTRACTS — Contracted lane rates that boost matching scores
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * GET LANE CONTRACT RATES — Look up contracted rates for a lane
+   */
+  getLaneContractRates: protectedProcedure
+    .input(z.object({
+      originState: z.string(),
+      destinationState: z.string(),
+      originCity: z.string().optional(),
+      destinationCity: z.string().optional(),
+      equipmentType: z.string().optional(),
+      hazmatRequired: z.boolean().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { contracts: [], total: 0 };
+      try {
+        const userId = ctx.user?.id || 0;
+        const conditions = [
+          eq(laneContracts.status, "active"),
+          eq(laneContracts.originState, input.originState),
+          eq(laneContracts.destinationState, input.destinationState),
+          sql`${laneContracts.expirationDate} > NOW()`,
+        ];
+        if (input.originCity) conditions.push(eq(laneContracts.originCity, input.originCity));
+        if (input.destinationCity) conditions.push(eq(laneContracts.destinationCity, input.destinationCity));
+        if (input.hazmatRequired !== undefined) conditions.push(eq(laneContracts.hazmatRequired, input.hazmatRequired));
+
+        const rows = await db.select().from(laneContracts)
+          .where(and(...conditions))
+          .orderBy(desc(laneContracts.totalLoadsBooked))
+          .limit(20);
+
+        return {
+          contracts: rows.map(c => ({
+            id: c.id,
+            lane: `${c.originCity}, ${c.originState} → ${c.destinationCity}, ${c.destinationState}`,
+            contractedRate: parseFloat(String(c.contractedRate)),
+            rateType: c.rateType,
+            equipmentType: c.equipmentType,
+            hazmatRequired: c.hazmatRequired,
+            volumeCommitment: c.volumeCommitment,
+            volumeFulfilled: c.volumeFulfilled,
+            volumePeriod: c.volumePeriod,
+            estimatedMiles: c.estimatedMiles ? parseFloat(String(c.estimatedMiles)) : null,
+            totalLoadsBooked: c.totalLoadsBooked,
+            onTimePercentage: c.onTimePercentage ? parseFloat(String(c.onTimePercentage)) : null,
+            effectiveDate: c.effectiveDate?.toISOString() || '',
+            expirationDate: c.expirationDate?.toISOString() || '',
+            shipperId: c.shipperId,
+            catalystId: c.catalystId,
+            brokerId: c.brokerId,
+          })),
+          total: rows.length,
+        };
+      } catch (e) { console.error('[LoadBoard] getLaneContractRates error:', e); return { contracts: [], total: 0 }; }
+    }),
+
+  /**
+   * ENHANCED MATCH — Upgraded matchLoadsToCarrier that also boosts scores for:
+   * - Active lane contracts on the load's lane
+   * - Active master service agreements (MSAs) between shipper and carrier
+   * - Counter-offer history (repeat business)
+   */
+  enhancedMatchLoadsToCarrier: protectedProcedure
+    .input(z.object({
+      carrierId: z.number().optional(),
+      driverId: z.number().optional(),
+      vehicleId: z.number().optional(),
+      preferredOriginStates: z.array(z.string()).optional(),
+      preferredDestStates: z.array(z.string()).optional(),
+      maxWeight: z.number().optional(),
+      includeHazmat: z.boolean().default(true),
+      includeGeneral: z.boolean().default(true),
+      limit: z.number().default(50),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { matches: [], total: 0, matchCriteria: {}, contractedLanes: 0, activeMSAs: 0 };
+      try {
+        // 1. Gather carrier/driver/vehicle profile (same as matchLoadsToCarrier)
+        let hasHazmatEndorsement = false;
+        let hasTankerEndorsement = false;
+        let hazmatExpired = false;
+        let carrierHazmatAuth = false;
+        let carrierInsuranceAmount = 0;
+        let trailerType = '';
+        let carrierCompanyId: number | null = null;
+
+        if (input.driverId) {
+          const [drv] = await db.select().from(drivers).where(eq(drivers.id, input.driverId)).limit(1);
+          if (drv) {
+            hasHazmatEndorsement = !!drv.hazmatEndorsement;
+            hasTankerEndorsement = hasHazmatEndorsement;
+            if (drv.hazmatExpiry && new Date(drv.hazmatExpiry) < new Date()) hazmatExpired = true;
+            carrierCompanyId = drv.companyId;
+          }
+        }
+
+        if (input.carrierId) {
+          const [co] = await db.select().from(companies).where(eq(companies.id, input.carrierId)).limit(1);
+          if (co) {
+            carrierHazmatAuth = !!co.hazmatLicense;
+            if (co.hazmatExpiry && new Date(co.hazmatExpiry) < new Date()) carrierHazmatAuth = false;
+            carrierCompanyId = co.id;
+            if (co.insurancePolicy) {
+              try { const ins = typeof co.insurancePolicy === 'string' ? JSON.parse(co.insurancePolicy) : co.insurancePolicy; carrierInsuranceAmount = (ins as any)?.amount || (ins as any)?.limit || 1000000; } catch { carrierInsuranceAmount = 1000000; }
+            }
+          }
+        }
+
+        if (input.vehicleId) {
+          const [veh] = await db.select().from(vehicles).where(eq(vehicles.id, input.vehicleId)).limit(1);
+          if (veh) trailerType = ((veh as any).trailerType || (veh as any).vehicleType || '').toUpperCase();
+        }
+
+        // 2. Fetch active lane contracts for this carrier
+        let carrierLaneContracts: Array<{ originState: string; destState: string; rate: number }> = [];
+        if (carrierCompanyId) {
+          const lanes = await db.select({
+            originState: laneContracts.originState,
+            destinationState: laneContracts.destinationState,
+            contractedRate: laneContracts.contractedRate,
+          }).from(laneContracts)
+            .where(and(
+              eq(laneContracts.status, "active"),
+              sql`${laneContracts.expirationDate} > NOW()`,
+              sql`${laneContracts.catalystCompanyId} = ${carrierCompanyId} OR ${laneContracts.catalystId} IN (SELECT userId FROM drivers WHERE companyId = ${carrierCompanyId})`,
+            ))
+            .limit(100);
+          carrierLaneContracts = lanes.map(l => ({
+            originState: l.originState,
+            destState: l.destinationState,
+            rate: parseFloat(String(l.contractedRate)),
+          }));
+        }
+
+        // 3. Fetch active MSAs for this carrier
+        let activeMSAShipperIds: number[] = [];
+        if (carrierCompanyId) {
+          try {
+            const msas = await db.select({
+              partyAId: sql<number>`COALESCE(${agreements.partyAUserId}, 0)`,
+              partyBId: sql<number>`COALESCE(${agreements.partyBUserId}, 0)`,
+            }).from(agreements)
+              .where(and(
+                eq(agreements.status, "active" as any),
+                sql`${agreements.expirationDate} > NOW()`,
+                sql`${agreements.partyACompanyId} = ${carrierCompanyId} OR ${agreements.partyBCompanyId} = ${carrierCompanyId}`,
+              ))
+              .limit(50);
+            for (const m of msas) {
+              if (m.partyAId) activeMSAShipperIds.push(m.partyAId);
+              if (m.partyBId) activeMSAShipperIds.push(m.partyBId);
+            }
+          } catch (e) { console.warn('[LoadBoard] MSA lookup failed:', e); }
+        }
+
+        // 4. Fetch available loads
+        const availableLoads = await db.select().from(loads)
+          .where(sql`${loads.status} IN ('posted', 'available', 'bidding')`)
+          .orderBy(desc(loads.createdAt))
+          .limit(200);
+
+        // 5. Score each load (same base logic + lane contract + MSA boost)
+        const matches: Array<{
+          loadId: string; loadNumber: string; score: number; matchReasons: string[]; warnings: string[];
+          origin: string; destination: string; rate: number; distance: number; weight: number;
+          hazmat: boolean; hazmatClass: string | null; equipmentType: string;
+          laneContracted: boolean; contractedRate: number | null; msaActive: boolean;
+          postedAt: string;
+        }> = [];
+
+        for (const load of availableLoads) {
+          const reasons: string[] = [];
+          const warnings: string[] = [];
+          let score = 50;
+          const pickup = load.pickupLocation as any || {};
+          const delivery = load.deliveryLocation as any || {};
+          const isHazmat = !!load.hazmatClass;
+          const loadWeight = load.weight ? parseFloat(String(load.weight)) : 0;
+          const originState = (pickup.state || '').toUpperCase();
+          const destState = (delivery.state || '').toUpperCase();
+
+          if (isHazmat && !input.includeHazmat) continue;
+          if (!isHazmat && !input.includeGeneral) continue;
+          if (input.maxWeight && loadWeight > input.maxWeight) continue;
+
+          // Hazmat checks (same as matchLoadsToCarrier)
+          if (isHazmat) {
+            const classReqs = HAZMAT_CLASS_REQUIREMENTS[load.hazmatClass!];
+            if (!hasHazmatEndorsement || hazmatExpired) { warnings.push(`Requires ${classReqs?.endorsement || 'H'} endorsement`); score -= 40; }
+            else { reasons.push(`Driver has ${classReqs?.endorsement || 'H'} endorsement`); score += 15; }
+            if (!carrierHazmatAuth) { warnings.push('Carrier missing HMSP'); score -= 30; }
+            else { reasons.push('Carrier HMSP authorized'); score += 10; }
+            if (classReqs && carrierInsuranceAmount < classReqs.insuranceMinimum) { warnings.push(`Insurance below $${(classReqs.insuranceMinimum / 1000000).toFixed(1)}M minimum`); score -= 20; }
+            else if (classReqs) { reasons.push('Insurance meets minimum'); score += 5; }
+            if (trailerType && classReqs) {
+              const allowed = classReqs.trailerTypes.map(t => t.toUpperCase());
+              if (allowed.some(a => trailerType.includes(a))) { reasons.push(`${trailerType} compatible`); score += 10; }
+              else { warnings.push(`${trailerType} not approved for Class ${load.hazmatClass}`); score -= 15; }
+            }
+            if (hasHazmatEndorsement && carrierHazmatAuth) score += 10;
+          } else {
+            reasons.push('General freight'); score += 5;
+          }
+
+          // Lane preference
+          if (input.preferredOriginStates?.length) {
+            if (input.preferredOriginStates.map(s => s.toUpperCase()).includes(originState)) { reasons.push(`Preferred origin: ${originState}`); score += 15; }
+          }
+          if (input.preferredDestStates?.length) {
+            if (input.preferredDestStates.map(s => s.toUpperCase()).includes(destState)) { reasons.push(`Preferred dest: ${destState}`); score += 10; }
+          }
+
+          // ★ LANE CONTRACT BOOST — carrier has an active contract on this lane
+          let laneContracted = false;
+          let contractedRate: number | null = null;
+          const laneMatch = carrierLaneContracts.find(lc =>
+            lc.originState.toUpperCase() === originState && lc.destState.toUpperCase() === destState
+          );
+          if (laneMatch) {
+            laneContracted = true;
+            contractedRate = laneMatch.rate;
+            reasons.push(`Lane contracted at $${laneMatch.rate.toLocaleString()}`);
+            score += 20;
+          }
+
+          // ★ MSA BOOST — carrier has an active agreement with this shipper
+          let msaActive = false;
+          if (load.shipperId && activeMSAShipperIds.includes(load.shipperId)) {
+            msaActive = true;
+            reasons.push('Active MSA with shipper');
+            score += 15;
+          }
+
+          const rate = load.rate ? parseFloat(String(load.rate)) : 0;
+          if (rate > 3000) { reasons.push('High-value load'); score += 5; }
+
+          if (score <= 0) continue;
+
+          matches.push({
+            loadId: String(load.id),
+            loadNumber: load.loadNumber || `LOAD-${load.id}`,
+            score: Math.min(100, Math.max(0, score)),
+            matchReasons: reasons,
+            warnings,
+            origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : originState,
+            destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : destState,
+            rate,
+            distance: load.distance ? parseFloat(String(load.distance)) : 0,
+            weight: loadWeight,
+            hazmat: isHazmat,
+            hazmatClass: load.hazmatClass || null,
+            equipmentType: load.cargoType || '',
+            laneContracted,
+            contractedRate,
+            msaActive,
+            postedAt: load.createdAt?.toISOString() || '',
+          });
+        }
+
+        matches.sort((a, b) => b.score - a.score);
+
+        return {
+          matches: matches.slice(0, input.limit),
+          total: matches.length,
+          matchCriteria: {
+            hasHazmatEndorsement, hasTankerEndorsement, carrierHazmatAuth, carrierInsuranceAmount,
+            trailerType: trailerType || null,
+            preferredOriginStates: input.preferredOriginStates || [],
+            preferredDestStates: input.preferredDestStates || [],
+          },
+          contractedLanes: carrierLaneContracts.length,
+          activeMSAs: activeMSAShipperIds.length,
+        };
+      } catch (e) {
+        console.error('[LoadBoard] enhancedMatchLoadsToCarrier error:', e);
+        return { matches: [], total: 0, matchCriteria: {}, contractedLanes: 0, activeMSAs: 0 };
+      }
     }),
 });
