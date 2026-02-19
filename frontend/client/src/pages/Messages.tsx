@@ -640,8 +640,10 @@ export default function Messages() {
                       setAiRepliesLoading(true);
                       try {
                         const result = await (trpc as any).esang.smartReplies.mutate({ messages: msgs });
-                        setSmartReplies(result.replies || []);
-                      } catch { toast.error("Smart replies unavailable"); }
+                        const replies = result?.replies || [];
+                        if (replies.length > 0) setSmartReplies(replies);
+                        else setSmartReplies(["Got it, thanks!", "I'll follow up shortly.", "Can you provide more details?"]);
+                      } catch { setSmartReplies(["Got it, thanks!", "I'll follow up shortly.", "Can you provide more details?"]); }
                       setAiRepliesLoading(false);
                     }}
                     disabled={aiRepliesLoading}

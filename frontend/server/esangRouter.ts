@@ -372,9 +372,14 @@ export const esangRouter = router({
   smartReplies: protectedProcedure.input(z.object({
     messages: z.array(z.object({ sender: z.string(), text: z.string() })).min(1),
   })).mutation(async ({ ctx, input }) => {
-    return esangAI.generateSmartReplies({
-      messages: input.messages, userRole: ctx.user.role || "USER", userName: ctx.user.name || "User",
-    });
+    try {
+      return await esangAI.generateSmartReplies({
+        messages: input.messages, userRole: ctx.user.role || "USER", userName: ctx.user.name || "User",
+      });
+    } catch (e) {
+      console.error("[ESANG] smartReplies error:", e);
+      return { replies: [], sentiment: "neutral", summary: "" };
+    }
   }),
 
   generateMissions: protectedProcedure.input(z.object({
