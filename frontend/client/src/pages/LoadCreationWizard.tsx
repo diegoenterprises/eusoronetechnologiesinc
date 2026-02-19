@@ -455,6 +455,21 @@ export default function LoadCreationWizard() {
   const dynamicTrailerTypesQuery = (trpc as any).loadBoard.getTrailerTypes.useQuery({ category: "all" });
   const dynamicHazmatClassesQuery = (trpc as any).loadBoard.getHazmatClassRequirements.useQuery({});
 
+  // Hot Zones-powered instant rate intelligence (fires on Step 6 when origin/dest available)
+  const originParts = (formData.origin || "").split(",").map((s: string) => s.trim());
+  const destParts = (formData.destination || "").split(",").map((s: string) => s.trim());
+  const hzQuoteQuery = (trpc as any).quotes.getInstant.useQuery(
+    {
+      origin: { city: originParts[0] || "", state: originParts[1] || "", lat: formData.originLat || undefined, lng: formData.originLng || undefined },
+      destination: { city: destParts[0] || "", state: destParts[1] || "", lat: formData.destLat || undefined, lng: formData.destLng || undefined },
+      equipmentType: selectedTrailer?.equipment === "tank" ? "tanker" : selectedTrailer?.equipment || "dry_van",
+      hazmat: !!(selectedTrailer?.hazmat && formData.hazmatClass),
+      hazmatClass: formData.hazmatClass || undefined,
+      pickupDate: formData.pickupDate || new Date().toISOString(),
+    },
+    { enabled: rs >= 6 && !!originParts[0] && !!destParts[0], staleTime: 120_000 }
+  );
+
   const updateField = (field: string, value: any) => setFormData((prev: any) => ({ ...prev, [field]: value }));
 
   const getMaterialType = () => selectedTrailer?.animType || "liquid";
@@ -1303,13 +1318,13 @@ export default function LoadCreationWizard() {
                 </div>
               )}
 
-              {/* ESANG AI Rate Intelligence */}
+              {/* ESANG AI Rate Intelligence — Powered by Hot Zones */}
               {formData.distance && (formData.rate || formData.ratePerMile) && (() => {
-                const baseRate = selectedTrailer?.hazmat ? 4.20 : selectedTrailer?.equipment === "reefer" ? 3.10 : selectedTrailer?.equipment === "flatbed" ? 2.90 : 2.50;
-                const distFactor = formData.distance < 200 ? 1.25 : formData.distance < 500 ? 1.0 : 0.85;
-                const marketRPM = Math.round(baseRate * distFactor * 100) / 100;
-                const marketLow = Math.round(marketRPM * 0.75 * 100) / 100;
-                const marketHigh = Math.round(marketRPM * 1.30 * 100) / 100;
+                const hz = hzQuoteQuery.data;
+                const hzRate = hz?.pricing?.ratePerMile || 0;
+                const marketRPM = hzRate > 0 ? hzRate : (selectedTrailer?.hazmat ? 4.20 : selectedTrailer?.equipment === "reefer" ? 3.10 : selectedTrailer?.equipment === "flatbed" ? 2.90 : 2.50) * (formData.distance < 200 ? 1.25 : formData.distance < 500 ? 1.0 : 0.85);
+                const marketLow = hz?.marketComparison ? Math.round((hz.marketComparison.low / Math.max(formData.distance, 1)) * 100) / 100 : Math.round(marketRPM * 0.85 * 100) / 100;
+                const marketHigh = hz?.marketComparison ? Math.round((hz.marketComparison.high / Math.max(formData.distance, 1)) * 100) / 100 : Math.round(marketRPM * 1.18 * 100) / 100;
                 const userRPM = Number(formData.ratePerMile || (Number(formData.rate) / formData.distance).toFixed(2));
                 const marketTotal = Math.round(marketRPM * formData.distance);
 
@@ -1327,11 +1342,15 @@ export default function LoadCreationWizard() {
 
                 const pastelRatingColor = ratio < 0.80 ? "#f87171" : ratio < 0.95 ? "#fbbf24" : ratio <= 1.10 ? "#6ee7b7" : ratio <= 1.25 ? "#fbbf24" : "#f87171";
 
+                const intel = hz?.intelligence;
+                const demandColor = (d: string) => d === "VERY_HIGH" ? "text-red-400" : d === "HIGH" ? "text-orange-400" : d === "MODERATE" ? "text-yellow-400" : "text-slate-400";
+
                 return (
                   <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-purple-500/20 shadow-sm dark:shadow-none">
                     <div className="flex items-center gap-2 mb-4">
                       <EsangIcon className="w-4 h-4 text-purple-500 dark:text-purple-400" />
                       <span className="text-sm font-bold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent">ESANG AI Rate Intelligence</span>
+                      {hzRate > 0 && <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-[8px] px-1.5 py-0 ml-auto">HOT ZONES</Badge>}
                     </div>
 
                     <div className="flex flex-col items-center">
@@ -1365,6 +1384,27 @@ export default function LoadCreationWizard() {
                       </div>
                     </div>
 
+                    {/* Hot Zone demand + surge badges */}
+                    {intel && (intel.originZone || intel.destZone || intel.originSurge > 1.05) && (
+                      <div className="flex flex-wrap gap-1.5 mt-3 justify-center">
+                        {intel.originZone && (
+                          <span className={cn("text-[10px] px-2 py-0.5 rounded-full bg-slate-800/50 border border-slate-700/30", demandColor(intel.originDemand))}>
+                            {intel.originZone}: {intel.originDemand.replace("_", " ")}
+                          </span>
+                        )}
+                        {intel.destZone && (
+                          <span className={cn("text-[10px] px-2 py-0.5 rounded-full bg-slate-800/50 border border-slate-700/30", demandColor(intel.destDemand))}>
+                            {intel.destZone}: {intel.destDemand.replace("_", " ")}
+                          </span>
+                        )}
+                        {(intel.originSurge > 1.05 || intel.destSurge > 1.05) && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                            Surge +{Math.round(((intel.originSurge + intel.destSurge) / 2 - 1) * 100)}%
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex justify-between mt-4 px-2">
                       <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
                         ratio < 0.80 ? "border-red-300 dark:border-red-500/50 bg-red-50 dark:bg-red-500/15 text-red-500 dark:text-red-400" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
@@ -1384,14 +1424,27 @@ export default function LoadCreationWizard() {
                       <div className="flex items-center gap-2 mb-2">
                         <EsangIcon className="w-3 h-3 text-purple-500 dark:text-purple-400" />
                         <span className="text-[11px] font-bold text-purple-600 dark:text-purple-300">ESANG Recommendation</span>
+                        {hz?.pricing?.fuelPricePerGal && <span className="text-[9px] text-slate-500 ml-auto">Diesel: ${hz.pricing.fuelPricePerGal}/gal</span>}
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-center">
                         <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market Low</p><p className="text-slate-700 dark:text-slate-300 text-xs font-bold">${marketLow}/mi</p></div>
-                        <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market Avg</p><p className="text-emerald-600 dark:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xs font-bold">${marketRPM}/mi</p></div>
+                        <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market Avg</p><p className="text-emerald-600 dark:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xs font-bold">${Math.round(marketRPM * 100) / 100}/mi</p></div>
                         <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market High</p><p className="text-slate-700 dark:text-slate-300 text-xs font-bold">${marketHigh}/mi</p></div>
                       </div>
                       <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 text-center">Suggested total: <span className="text-purple-600 dark:text-purple-300 font-bold">${marketTotal.toLocaleString()}</span> for {formData.distance} mi</p>
+                      {intel?.laneAvgRate && (
+                        <p className="text-[10px] text-cyan-400 mt-1 text-center">Lane history: ${intel.laneAvgRate}/mi {intel.laneOnTimePercent ? `(${intel.laneOnTimePercent}% on-time)` : ""}</p>
+                      )}
                     </div>
+
+                    {/* Weather alerts */}
+                    {intel?.weatherAlerts?.length > 0 && (
+                      <div className="mt-3 p-2 rounded-lg bg-amber-500/5 border border-amber-500/15">
+                        {intel.weatherAlerts.map((a: string, i: number) => (
+                          <p key={i} className="text-[10px] text-amber-400 leading-tight">{a}</p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
