@@ -5053,6 +5053,7 @@ export const documentRequirements = mysqlTable(
       "DRIVER", "OWNER_OPERATOR", "CARRIER", "FLEET_MANAGER", "DISPATCHER",
       "SHIPPER", "BROKER", "COMPLIANCE_OFFICER", "SAFETY_MANAGER",
       "LUMPER", "FACTORING_COMPANY", "ADMIN", "SUPER_ADMIN",
+      "CATALYST", "ESCORT", "DISPATCH", "TERMINAL_MANAGER", "FACTORING",
     ]).notNull(),
     requiredForEmploymentType: mysqlEnum("requiredForEmploymentType", [
       "W2_EMPLOYEE", "1099_CONTRACTOR", "OWNER_OPERATOR", "COMPANY_OWNER",
