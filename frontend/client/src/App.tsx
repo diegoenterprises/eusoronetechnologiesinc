@@ -440,6 +440,7 @@ function Router() {
       <Route path={"/bids/submit/:loadId"} component={guard(CARR, <CatalystBidSubmission />)} />
       <Route path={"/bids/:bidId"} component={guard(CARR, <BidDetails />)} />
       <Route path={"/contract/sign/:loadId"} component={guard(CARR, <ContractSigning />)} />
+      <Route path={"/loads/assigned"} component={guard([...CARR, "DRIVER", "DISPATCH", "ESCORT"], <AssignedLoadsPage />)} />
       <Route path={"/loads/transit"} component={guard([...CARR, "DRIVER"], <InTransitPage />)} />
       <Route path={"/loads/:loadId/bids"} component={guard(LOAD, <LoadBids />)} />
       <Route path={"/load/:loadId"} component={guard(LOAD, <LoadDetails />)} />
