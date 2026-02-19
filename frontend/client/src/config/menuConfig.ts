@@ -327,13 +327,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Active and pending bids"
     },
     { 
-      icon: "Package", 
-      label: "Load Board", 
-      path: "/load-board", 
-      badge: 0,
-      description: "Full marketplace load board"
-    },
-    { 
       icon: "CheckCircle", 
       label: "My Loads", 
       path: "/loads", 
@@ -383,13 +376,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Authority docs, surety bond & compliance"
     },
     { 
-      icon: "DollarSign", 
-      label: "Commission", 
-      path: "/commission", 
-      badge: 0,
-      description: "Revenue tracking"
-    },
-    { 
       icon: "BarChart3", 
       label: "Analytics", 
       path: "/analytics", 
@@ -408,7 +394,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet", 
       path: "/wallet", 
       badge: 0,
-      description: "Account balance"
+      description: "Balance, commission, payments & revenue"
     },
     { 
       icon: "Radio", 
@@ -611,18 +597,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Post a new load to the board"
     },
     { 
-      icon: "Package", 
-      label: "Load Board", 
-      path: "/load-board", 
-      badge: 0,
-      description: "Full marketplace load board"
-    },
-    { 
       icon: "Search", 
       label: "Find Loads", 
       path: "/marketplace", 
       badge: 0,
-      description: "Search available loads"
+      description: "Search available loads & AI-matched opportunities"
     },
     { 
       icon: "Scale", 
@@ -630,13 +609,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/bids", 
       badge: 0,
       description: "Active and pending bids"
-    },
-    { 
-      icon: "Search", 
-      label: "Matched Loads", 
-      path: "/matched-loads", 
-      badge: 0,
-      description: "AI-matched opportunities"
     },
     { 
       icon: "BarChart3", 
@@ -776,18 +748,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Escort personnel"
     },
     { 
-      icon: "MapPin", 
-      label: "Tracking", 
-      path: "/tracking", 
-      badge: 0,
-      description: "Real-time convoy tracking"
-    },
-    { 
       icon: "Navigation", 
-      label: "Live GPS", 
+      label: "Live Tracking", 
       path: "/live-tracking", 
       badge: 0,
-      description: "Your live GPS position"
+      description: "Real-time convoy tracking & GPS position"
     },
     { 
       icon: "AlertTriangle", 
@@ -897,7 +862,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "EIN, W-9, NDA & compliance docs" },
     { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, demand heatmaps & surge pricing" },
     { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Messaging" },
-    { icon: "Wallet", label: "Wallet", path: "/wallet", badge: 0, description: "EusoWallet" },
+    { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Funding disbursements, collections & payments" },
     { icon: "Settings", label: "Settings", path: "/factoring/settings", badge: 0, description: "Account settings" },
     { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
   ],
@@ -1010,6 +975,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Communication"
     },
     { 
+      icon: "Wallet", 
+      label: "EusoWallet", 
+      path: "/wallet", 
+      badge: 0,
+      description: "Facility payments, invoices & escrow"
+    },
+    { 
       icon: "Settings", 
       label: "Settings", 
       path: "/settings", 
@@ -1110,6 +1082,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/messages", 
       badge: 0,
       description: "Communication"
+    },
+    { 
+      icon: "Wallet", 
+      label: "EusoWallet", 
+      path: "/wallet", 
+      badge: 0,
+      description: "Account balance & payments"
     },
     { 
       icon: "Settings", 
@@ -1221,6 +1200,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Communication"
     },
     { 
+      icon: "Wallet", 
+      label: "EusoWallet", 
+      path: "/wallet", 
+      badge: 0,
+      description: "Account balance & payments"
+    },
+    { 
       icon: "Settings", 
       label: "Settings", 
       path: "/settings", 
@@ -1303,10 +1289,10 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
     { 
       icon: "DollarSign", 
-      label: "Payments", 
+      label: "Payments & Fees", 
       path: "/admin/payments", 
       badge: 0,
-      description: "Payment processing"
+      description: "Payment processing, platform fees & revenue"
     },
     { 
       icon: "AlertTriangle", 
@@ -1335,13 +1321,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/market-pricing", 
       badge: 0,
       description: "Freight rates, demand heatmaps & surge pricing"
-    },
-    { 
-      icon: "Percent", 
-      label: "Platform Fees", 
-      path: "/admin/platform-fees", 
-      badge: 0,
-      description: "Fee configuration and revenue"
     },
     { 
       icon: "Settings", 
