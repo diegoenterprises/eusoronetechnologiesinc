@@ -40,6 +40,7 @@ import FinancialSummaryCard from "@/components/financial/FinancialSummaryCard";
 import { useLoadSocket } from "@/hooks/useLoadSocket";
 import ApprovalGateCard, { ApprovalBadge } from "@/components/load/ApprovalGateCard";
 import GuardChecklist from "@/components/load/GuardChecklist";
+import ConvoySyncDashboard from "@/components/convoy/ConvoySyncDashboard";
 
 const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
 const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
@@ -105,6 +106,11 @@ export default function LoadDetails() {
     undefined,
     { enabled: isDispatchOrAdmin }
   );
+  const convoyQuery = (trpc as any).convoy.getConvoy.useQuery(
+    { loadId: Number(loadId) || 0 },
+    { enabled: !!loadId && !!load && isInExecution }
+  );
+  const convoyData = convoyQuery.data as any;
 
   const availableTransitions = (transitionsQuery.data || []) as any[];
   const stateHistory = (stateHistoryQuery.data || []) as any[];
@@ -525,6 +531,23 @@ export default function LoadDetails() {
             )}
           </div>
         </div>
+      )}
+
+      {/* ═══════════ CONVOY SYNC DASHBOARD ═══════════ */}
+      {convoyData && (
+        <ConvoySyncDashboard
+          convoy={{
+            id: convoyData.id,
+            loadId: convoyData.loadId,
+            loadNumber: load.loadNumber,
+            status: convoyData.status,
+            primaryDriverName: convoyData.loadVehicle?.name,
+            escortDriverName: convoyData.lead?.name,
+            leadDistance: convoyData.currentLeadDistance,
+            rearDistance: convoyData.currentRearDistance,
+            formationTime: convoyData.startedAt,
+          }}
+        />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
