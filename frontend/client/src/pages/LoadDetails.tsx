@@ -1,10 +1,18 @@
 /**
- * LOAD DETAILS PAGE
- * 100% Dynamic - No mock data
- * Theme-aware | Brand gradient | Catalyst Place Bid CTA | Shipper design standard
+ * LOAD DETAILS PAGE — State Machine v2.0
+ *
+ * Unified load detail view integrating all lifecycle components:
+ * - LoadStatusBadge (Lucide icons, pulse animation)
+ * - LoadProgressTimeline (horizontal journey visualization)
+ * - StatePanel (context-aware content per lifecycle phase)
+ * - PrimaryActionButton (role-aware state transitions)
+ * - DetentionTimer (real-time financial countdowns)
+ * - FinancialSummaryCard (full financial breakdown)
+ *
+ * Theme-aware | Brand gradient | Role-aware actions | Trailer-type compliance
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +21,7 @@ import { trpc } from "@/lib/trpc";
 import {
   Package, MapPin, Truck, DollarSign, Calendar, ArrowLeft,
   Phone, Navigation, Clock, User, AlertTriangle, CheckCircle, Shield,
-  Building2, Gavel, Droplets, FlaskConical, FileText, Loader2, PlayCircle
+  Building2, Scale, FileText, Loader2, ChevronRight, Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -23,19 +31,31 @@ import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 import LoadStatusTimeline from "@/components/tracking/LoadStatusTimeline";
 import { useAuth } from "@/_core/hooks/useAuth";
 
+import LoadStatusBadge from "@/components/load/LoadStatusBadge";
+import LoadProgressTimeline from "@/components/load/LoadProgressTimeline";
+import StatePanel from "@/components/load/StatePanel";
+import PrimaryActionButton from "@/components/load/PrimaryActionButton";
+import DetentionTimer from "@/components/financial/DetentionTimer";
+import FinancialSummaryCard from "@/components/financial/FinancialSummaryCard";
+
 const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
 const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
 function isSpectraQualified(cargoType?: string, commodity?: string, hazmatClass?: string): boolean {
-  // Primary check: cargoType from DB must be a qualifying type
   if (cargoType && SPECTRA_CARGO_TYPES.includes(cargoType)) return true;
-  // Secondary: hazmat class 2 (gases) or 3 (flammable liquids)
   if (["2", "3"].includes(hazmatClass || "")) return true;
-  // Tertiary: commodity keyword match (only if cargoType isn't explicitly non-qualifying)
   if (cargoType && ["refrigerated", "oversized", "general"].includes(cargoType)) return false;
   const c = (commodity || "").toLowerCase();
   if (SPECTRA_KEYWORDS.some(k => c.includes(k))) return true;
   return false;
 }
+
+// States considered "active" (en route, at facility, loading/unloading)
+const EXECUTION_STATES = new Set([
+  "en_route_pickup", "at_pickup", "pickup_checkin", "loading", "loading_exception", "loaded",
+  "in_transit", "transit_hold", "transit_exception",
+  "at_delivery", "delivery_checkin", "unloading", "unloading_exception", "unloaded",
+]);
+const FINANCIAL_STATES = new Set(["invoiced", "disputed", "paid", "complete"]);
 
 export default function LoadDetails() {
   const [, setLocation] = useLocation();
@@ -47,18 +67,86 @@ export default function LoadDetails() {
   const { user: authUser } = useAuth();
   const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId });
   const load = loadQuery.data;
-  // Hide Place Bid if current user is the load owner (shipper)
+  // ── Role & permission checks ──
   const isLoadOwner = load?.shipperId && authUser?.id && Number(load.shipperId) === Number(authUser.id);
   const userRole = (authUser?.role || "").toUpperCase();
   const isShipper = isLoadOwner || userRole === "SHIPPER";
   const canBid = !isLoadOwner && ["CATALYST", "BROKER", "DISPATCH"].includes(userRole);
   const isAssignedCatalyst = load?.catalystId && authUser?.id && Number(load.catalystId) === Number(authUser.id);
+  const isAssignedDriver = load?.driverId && authUser?.id && Number(load.driverId) === Number(authUser.id);
   const isDispatchOrAdmin = ["DISPATCH", "ADMIN", "SUPER_ADMIN"].includes(userRole);
-  const canUpdateStatus = isAssignedCatalyst || isDispatchOrAdmin;
+  const canUpdateStatus = isAssignedCatalyst || isAssignedDriver || isDispatchOrAdmin;
+  const isInExecution = EXECUTION_STATES.has(load?.status || "");
+  const isInFinancial = FINANCIAL_STATES.has(load?.status || "");
 
-  // Load status progression mutation (catalyst/driver/dispatch/admin use)
-  const updateStatusMutation = (trpc as any).bids.updateLoadStatus.useMutation({
-    onSuccess: (data: any) => { toast.success(`Load status updated to ${data.status.replace(/_/g, ' ')}`); loadQuery.refetch(); },
+  // ── Lifecycle State Machine queries ──
+  const transitionsQuery = (trpc as any).loadLifecycle.getAvailableTransitions.useQuery(
+    { loadId },
+    { enabled: !!loadId && !!load && canUpdateStatus }
+  );
+  const stateHistoryQuery = (trpc as any).loadLifecycle.getStateHistory.useQuery(
+    { loadId },
+    { enabled: !!loadId && !!load }
+  );
+  const activeTimersQuery = (trpc as any).loadLifecycle.getActiveTimers.useQuery(
+    { loadId },
+    { enabled: !!loadId && !!load && isInExecution }
+  );
+  const financialSummaryQuery = (trpc as any).loadLifecycle.getFinancialSummary.useQuery(
+    { loadId },
+    { enabled: !!loadId && !!load && (isInExecution || isInFinancial || load?.status === "delivered") }
+  );
+
+  const availableTransitions = (transitionsQuery.data || []) as any[];
+  const stateHistory = (stateHistoryQuery.data || []) as any[];
+  const activeTimers = (activeTimersQuery.data || []) as any[];
+  const financialSummary = financialSummaryQuery.data as any;
+
+  // Build timeline data from state history
+  const timelineTimestamps = useMemo(() => {
+    const ts: Record<string, string> = {};
+    for (const h of stateHistory) {
+      ts[h.toState] = h.createdAt;
+    }
+    return ts;
+  }, [stateHistory]);
+  const timelineActors = useMemo(() => {
+    const a: Record<string, string> = {};
+    for (const h of stateHistory) {
+      a[h.toState] = h.actorName;
+    }
+    return a;
+  }, [stateHistory]);
+
+  // ── Lifecycle transition mutation (v2 — typed transition IDs) ──
+  const executeTransitionMutation = (trpc as any).loadLifecycle.executeTransition.useMutation({
+    onSuccess: (data: any) => {
+      if (data.success) {
+        toast.success(`Transitioned to ${(data.newState || "").replace(/_/g, " ")}`);
+        loadQuery.refetch();
+        transitionsQuery.refetch();
+        stateHistoryQuery.refetch();
+        activeTimersQuery.refetch();
+        financialSummaryQuery.refetch();
+      } else {
+        toast.error("Transition failed", { description: data.error || data.errors?.join(", ") });
+      }
+    },
+    onError: (err: any) => toast.error("Transition error", { description: err.message }),
+  });
+
+  // ── Legacy v1 mutation (backward compat for simple status updates) ──
+  const updateStatusMutation = (trpc as any).loadLifecycle.transitionState.useMutation({
+    onSuccess: (data: any) => {
+      if (data.success) {
+        toast.success(`Status updated to ${(data.newState || "").replace(/_/g, " ")}`);
+        loadQuery.refetch();
+        transitionsQuery.refetch();
+        stateHistoryQuery.refetch();
+      } else {
+        toast.error("Update failed", { description: data.error });
+      }
+    },
     onError: (err: any) => toast.error("Failed to update status", { description: err.message }),
   });
 
@@ -192,25 +280,17 @@ export default function LoadDetails() {
     onSuccess: () => { bidsQuery.refetch(); },
   });
 
-  const getStatusBadge = (status: string) => {
-    const m: Record<string, string> = {
-      posted: "bg-yellow-500/15 text-yellow-500 border-yellow-500/30",
-      assigned: "bg-blue-500/15 text-blue-500 border-blue-500/30",
-      in_transit: "bg-cyan-500/15 text-cyan-500 border-cyan-500/30",
-      delivered: "bg-green-500/15 text-green-500 border-green-500/30",
-    };
-    const label = status?.replace("_", " ").toUpperCase() || "UNKNOWN";
-    return <Badge className={cn("border text-xs font-bold", m[status] || "bg-slate-500/15 text-slate-400 border-slate-500/30")}>{label}</Badge>;
-  };
+  // ── Primary transition (first executable transition for PrimaryActionButton) ──
+  const primaryTransition = availableTransitions.find((t: any) => t.canExecute);
 
   if (loadQuery.isLoading) {
     return (
       <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
         <Skeleton className={cn("h-10 w-64 rounded-xl", isLight ? "bg-slate-200" : "")} />
         <Skeleton className={cn("h-4 w-96 rounded-xl", isLight ? "bg-slate-200" : "")} />
-        <Skeleton className={cn("h-28 w-full rounded-2xl", isLight ? "bg-slate-200" : "")} />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Skeleton className={cn("h-64 w-full rounded-2xl", isLight ? "bg-slate-200" : "")} />
+        <Skeleton className={cn("h-20 w-full rounded-2xl", isLight ? "bg-slate-200" : "")} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className={cn("h-64 w-full rounded-2xl lg:col-span-2", isLight ? "bg-slate-200" : "")} />
           <Skeleton className={cn("h-64 w-full rounded-2xl", isLight ? "bg-slate-200" : "")} />
         </div>
       </div>
@@ -247,10 +327,23 @@ export default function LoadDetails() {
   const cellCls = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
   const valCls = cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white");
 
-  return (
-    <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
+  // Shape load data for StatePanel
+  const statePanelLoad = {
+    id: loadId,
+    loadNumber: load.loadNumber,
+    origin: load.origin || load.pickupLocation,
+    destination: load.destination || load.deliveryLocation,
+    rate, weight: Number(load.weight) || 0, distance,
+    hazmatClass: load.hazmatClass,
+    carrierName: load.catalystName || undefined,
+    driverName: load.driverName || undefined,
+    pickupDate: load.pickupDate,
+  };
 
-      {/* ── Header ── */}
+  return (
+    <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto pb-28">
+
+      {/* ═══════════ HEADER ═══════════ */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" className={cn("rounded-xl", isLight ? "text-slate-500 hover:text-slate-800 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-slate-800")} onClick={() => window.history.back()}>
@@ -261,10 +354,10 @@ export default function LoadDetails() {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
                 {load.loadNumber || `Load #${String(load.id).slice(0, 8)}`}
               </h1>
-              {getStatusBadge(load.status)}
+              <LoadStatusBadge state={load.status} size="md" />
             </div>
             <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
-              {originCity} → {destCity} · {distance} mi
+              {originCity} → {destCity}{distance > 0 ? ` · ${distance} mi` : ""}
             </p>
           </div>
         </div>
@@ -272,17 +365,17 @@ export default function LoadDetails() {
           <Button variant="outline" className={cn("rounded-xl text-sm", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-800/50 border-slate-700/50 hover:bg-slate-700")} onClick={() => setLocation("/messages")}>
             <Phone className="w-4 h-4 mr-2" />Contact
           </Button>
-          {load.status === "posted" && (isLoadOwner || userRole === "SHIPPER") && (
+          {(load.status === "posted" || load.status === "bidding") && (isLoadOwner || userRole === "SHIPPER") && (
             <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm" onClick={() => setLocation(`/loads/${loadId}/bids`)}>
-              <Gavel className="w-4 h-4 mr-2" />Review Bids
+              <Scale className="w-4 h-4 mr-2" />Review Bids
             </Button>
           )}
-          {load.status === "posted" && canBid && (
+          {(load.status === "posted" || load.status === "bidding") && canBid && (
             <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm" onClick={() => setLocation(`/bids/submit/${loadId}`)}>
-              <Gavel className="w-4 h-4 mr-2" />Place Bid
+              <Scale className="w-4 h-4 mr-2" />Place Bid
             </Button>
           )}
-          {(load.status === "assigned" || load.status === "in_transit") && (
+          {isInExecution && (
             <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-xl text-white text-sm" onClick={() => setLocation("/tracking")}>
               <Navigation className="w-4 h-4 mr-2" />Track
             </Button>
@@ -317,6 +410,64 @@ export default function LoadDetails() {
           </div>
         </div>
       </div>
+
+      {/* ═══════════ LIFECYCLE JOURNEY ═══════════ */}
+      <Card className={cardCls}>
+        <CardContent className="p-5">
+          <LoadProgressTimeline
+            currentState={load.status}
+            stateHistory={stateHistory}
+            variant="horizontal"
+            compact={false}
+          />
+        </CardContent>
+      </Card>
+
+      {/* ═══════════ STATE CONTEXT + ACTIVE TIMERS ═══════════ */}
+      {(isInExecution || canUpdateStatus) && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <StatePanel
+              currentState={load.status}
+              load={statePanelLoad}
+              activeTimers={activeTimers}
+            />
+            {/* Trailer-type compliance hint */}
+            {STATUS_CHAIN[load.status]?.hint && (
+              <div className={cn("flex items-start gap-2.5 p-4 rounded-xl border", isLight ? "bg-amber-50 border-amber-200" : "bg-amber-500/10 border-amber-500/20")}>
+                <Info className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className={cn("text-xs font-semibold mb-1", isLight ? "text-amber-700" : "text-amber-300")}>
+                    {isHazmatLoad ? "Hazmat Compliance" : isTankerLoad ? "Tanker Procedure" : isReeferLoad ? "Temperature Protocol" : "Compliance"}
+                  </p>
+                  <p className={cn("text-xs leading-relaxed", isLight ? "text-amber-700/80" : "text-amber-300/80")}>{STATUS_CHAIN[load.status].hint}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Active financial timers */}
+          <div className="space-y-4">
+            {activeTimers.length > 0 ? activeTimers.map((timer: any, i: number) => (
+              <DetentionTimer
+                key={i}
+                type={timer.type}
+                status={timer.status}
+                startedAt={timer.startedAt}
+                freeTimeMinutes={timer.freeTimeMinutes || 120}
+                hourlyRate={timer.hourlyRate}
+                currentCharge={timer.currentCharge}
+              />
+            )) : (
+              <Card className={cardCls}>
+                <CardContent className="p-4 text-center">
+                  <Clock className={cn("w-8 h-8 mx-auto mb-2", isLight ? "text-slate-300" : "text-slate-600")} />
+                  <p className="text-xs text-slate-400">No active timers</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
@@ -531,7 +682,7 @@ export default function LoadDetails() {
         <Card className={cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
           <CardHeader>
             <CardTitle className={cn("flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
-              <Gavel className="w-5 h-5 text-purple-400" />
+              <Scale className="w-5 h-5 text-purple-400" />
               Incoming Bids
               {pendingBids.length > 0 && (
                 <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-xs ml-2">
@@ -611,103 +762,32 @@ export default function LoadDetails() {
         </Card>
       )}
 
-      {/* ── Read-Only Status Chain for Shipper/Broker (see where load is in lifecycle) ── */}
-      {!canUpdateStatus && ['assigned','en_route_pickup','at_pickup','loading','in_transit','at_delivery','unloading'].includes(load.status) && (
-        <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
-          <div className={cn("bg-gradient-to-r px-6 py-4", isLight ? "from-blue-50 to-purple-50" : "from-[#1473FF]/10 to-[#BE01FF]/10")}>
-            <div className="flex items-center gap-2">
-              <Navigation className="w-5 h-5 text-blue-500" />
-              <p className={cn("font-bold", isLight ? "text-slate-800" : "text-white")}>Load Progress</p>
-            </div>
-            <p className={cn("text-xs mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Current lifecycle stage of this shipment</p>
-          </div>
-          <CardContent className="p-6">
-            <div className="flex flex-wrap items-center gap-2">
-              {['assigned', 'en_route_pickup', 'at_pickup', 'loading', 'in_transit', 'at_delivery', 'unloading', 'delivered'].map((s, idx, arr) => {
-                const isCurrent = load.status === s;
-                const isPast = arr.indexOf(load.status) > idx;
-                return (
-                  <React.Fragment key={s}>
-                    <div className={cn(
-                      "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
-                      isCurrent ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent" :
-                      isPast ? (isLight ? "bg-green-50 text-green-600 border-green-200" : "bg-green-500/15 text-green-400 border-green-500/30") :
-                      isLight ? "bg-slate-100 text-slate-400 border-slate-200" : "bg-slate-800 text-slate-500 border-slate-700"
-                    )}>
-                      {s.replace(/_/g, ' ')}
-                    </div>
-                    {idx < arr.length - 1 && <span className="text-slate-400 text-xs">&rarr;</span>}
-                  </React.Fragment>
-                );
-              })}
-            </div>
-            {STATUS_CHAIN[load.status]?.hint && (
-              <div className={cn("flex items-start gap-2.5 p-3 rounded-xl mt-4 border", isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/10 border-blue-500/20")}>
-                <Shield className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                <p className={cn("text-xs leading-relaxed", isLight ? "text-blue-700" : "text-blue-300/90")}>{STATUS_CHAIN[load.status].hint}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* ═══════════ FINANCIAL SUMMARY ═══════════ */}
+      {financialSummary && (isInFinancial || load.status === "delivered" || financialSummary.totalAccessorials > 0) && (
+        <FinancialSummaryCard
+          loadId={loadId}
+          lineHaul={financialSummary.lineHaul}
+          distance={financialSummary.distance || distance}
+          fuelSurcharge={financialSummary.fuelSurcharge}
+          hazmatSurcharge={financialSummary.hazmatSurcharge}
+          detentionCharges={financialSummary.detentionCharges}
+          demurrageCharges={financialSummary.demurrageCharges}
+          layoverCharges={financialSummary.layoverCharges}
+          totalAccessorials={financialSummary.totalAccessorials}
+          totalCharges={financialSummary.totalCharges}
+          activeTimers={financialSummary.activeTimers}
+          timerHistory={financialSummary.timerHistory}
+          currency={financialSummary.currency}
+        />
       )}
 
-      {/* ── Load Status Progression (catalyst/dispatch/admin can update) ── */}
-      {canUpdateStatus && STATUS_CHAIN[load.status] && (
-        <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-slate-200 shadow-md" : "bg-slate-800/60 border-slate-700/50")}>
-          <div className={cn("bg-gradient-to-r px-6 py-4", isLight ? "from-blue-50 to-purple-50" : "from-[#1473FF]/10 to-[#BE01FF]/10")}>
-            <div className="flex items-center gap-2">
-              <PlayCircle className="w-5 h-5 text-blue-500" />
-              <p className={cn("font-bold", isLight ? "text-slate-800" : "text-white")}>Load Status Update</p>
-            </div>
-            <p className={cn("text-xs mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Progress this load through the transportation lifecycle</p>
-          </div>
-          <CardContent className="p-6">
-            {/* Status timeline */}
-            <div className="flex flex-wrap items-center gap-2 mb-5">
-              {['assigned', 'en_route_pickup', 'at_pickup', 'loading', 'in_transit', 'at_delivery', 'unloading', 'delivered'].map((s, idx, arr) => {
-                const isCurrent = load.status === s;
-                const isPast = arr.indexOf(load.status) > idx;
-                return (
-                  <React.Fragment key={s}>
-                    <div className={cn(
-                      "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
-                      isCurrent ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent" :
-                      isPast ? (isLight ? "bg-green-50 text-green-600 border-green-200" : "bg-green-500/15 text-green-400 border-green-500/30") :
-                      isLight ? "bg-slate-100 text-slate-400 border-slate-200" : "bg-slate-800 text-slate-500 border-slate-700"
-                    )}>
-                      {s.replace(/_/g, ' ')}
-                    </div>
-                    {idx < arr.length - 1 && <span className="text-slate-400 text-xs">→</span>}
-                  </React.Fragment>
-                );
-              })}
-            </div>
-            {/* Compliance hint — trailer-type-specific procedural guidance */}
-            {STATUS_CHAIN[load.status]?.hint && (
-              <div className={cn("flex items-start gap-2.5 p-3 rounded-xl mb-4 border", isLight ? "bg-amber-50 border-amber-200" : "bg-amber-500/10 border-amber-500/20")}>
-                <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <p className={cn("text-xs leading-relaxed", isLight ? "text-amber-700" : "text-amber-300/90")}>{STATUS_CHAIN[load.status].hint}</p>
-              </div>
-            )}
-            <Button
-              className={cn("w-full rounded-xl font-bold h-12 text-base bg-gradient-to-r text-white", STATUS_CHAIN[load.status].color)}
-              onClick={() => updateStatusMutation.mutate({ loadId: String(load.id), status: STATUS_CHAIN[load.status].next })}
-              disabled={updateStatusMutation.isPending}
-            >
-              {updateStatusMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : STATUS_CHAIN[load.status].icon}
-              <span className="ml-2">{STATUS_CHAIN[load.status].label}</span>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── Geotag Event Timeline (visible to ALL user types) ── */}
-      {load?.id && ['assigned','en_route_pickup','at_pickup','loading','in_transit','at_delivery','unloading','delivered'].includes(load.status) && (
+      {/* ═══════════ GEOTAG EVENT TIMELINE ═══════════ */}
+      {load?.id && (isInExecution || load.status === "delivered" || load.status === "pod_pending") && (
         <LoadStatusTimeline loadId={Number(load.id)} />
       )}
 
-      {/* ── Load Delivered Confirmation ── */}
-      {canUpdateStatus && load.status === 'delivered' && (
+      {/* ═══════════ DELIVERED CONFIRMATION ═══════════ */}
+      {load.status === "delivered" && (
         <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-green-50 border-green-200" : "bg-green-500/10 border-green-500/30")}>
           <CardContent className="p-6 text-center">
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
@@ -725,16 +805,53 @@ export default function LoadDetails() {
         </Card>
       )}
 
-      {/* ── Bottom Place Bid CTA (for posted loads — catalysts only, not load owner) ── */}
-      {load.status === "posted" && canBid && (
+      {/* ═══════════ BOTTOM BID CTA (posted loads, bidder roles) ═══════════ */}
+      {(load.status === "posted" || load.status === "bidding") && canBid && (
         <div className={cn("rounded-2xl border p-6 flex flex-col sm:flex-row items-center justify-between gap-4", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
           <div>
             <p className={cn("font-bold text-lg", isLight ? "text-slate-800" : "text-white")}>Ready to haul this load?</p>
             <p className="text-sm text-slate-400">Submit a competitive bid and get assigned.</p>
           </div>
           <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold px-8 h-12 text-base" onClick={() => setLocation(`/bids/submit/${loadId}`)}>
-            <Gavel className="w-5 h-5 mr-2" />Place Bid Now
+            <Scale className="w-5 h-5 mr-2" />Place Bid Now
           </Button>
+        </div>
+      )}
+
+      {/* ═══════════ PRIMARY ACTION BUTTON (fixed bottom) ═══════════ */}
+      {canUpdateStatus && primaryTransition && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none">
+          <div className="max-w-[1100px] mx-auto pointer-events-auto">
+            <PrimaryActionButton
+              action={primaryTransition.uiAction || {
+                component: "button",
+                location: "bottom",
+                label: `Advance to ${(primaryTransition.toMeta?.displayName || primaryTransition.to || "").replace(/_/g, " ")}`,
+                icon: primaryTransition.toMeta?.icon || "ChevronRight",
+                variant: "primary",
+                requiresConfirmation: true,
+                confirmationMessage: `Transition load to ${primaryTransition.toMeta?.displayName || primaryTransition.to}?`,
+              }}
+              transitionId={primaryTransition.transitionId}
+              loading={executeTransitionMutation.isPending}
+              onExecute={(tId) => {
+                executeTransitionMutation.mutate({
+                  loadId,
+                  transitionId: tId,
+                });
+              }}
+            />
+            {/* Blocked transitions info */}
+            {availableTransitions.filter((t: any) => !t.canExecute).length > 0 && (
+              <div className="mt-2 text-center">
+                <p className="text-[10px] text-slate-500">
+                  {availableTransitions.filter((t: any) => !t.canExecute).length} transition(s) blocked — {
+                    availableTransitions.filter((t: any) => !t.canExecute).flatMap((t: any) => t.blockedReasons).slice(0, 2).join(", ")
+                  }
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
