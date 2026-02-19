@@ -32,6 +32,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import ZeunBreakdownReport from "./pages/ZeunBreakdownReport";
 import ZeunMaintenanceTracker from "./pages/ZeunMaintenanceTracker";
 import ZeunProviderNetwork from "./pages/ZeunProviderNetwork";
+import ActiveTrip from "./pages/ActiveTrip";
 import MyLoadsPage from "./pages/MyLoads";
 import PlatformLoadsOversight from "./pages/PlatformLoadsOversight";
 import PlatformAgreementsOversight from "./pages/PlatformAgreementsOversight";
@@ -754,6 +755,11 @@ function Router() {
       <Route path={"/zeun/breakdown"} component={guard(ALL, <ZeunBreakdownReport />)} />
       <Route path={"/zeun/maintenance"} component={guard(ALL, <ZeunMaintenanceTracker />)} />
       <Route path={"/zeun/providers"} component={guard(ALL, <ZeunProviderNetwork />)} />
+
+      {/* ============================================ */}
+      {/* ACTIVE TRIP — Driver's real-time command center */}
+      {/* ============================================ */}
+      <Route path={"/active-trip"} component={guard(ALL, <ActiveTrip />)} />
 
       {/* ============================================ */}
       {/* FALLBACK */}

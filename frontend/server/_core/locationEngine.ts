@@ -682,6 +682,37 @@ export async function processGeofenceEvent(event: GeofenceEventData): Promise<Tr
           { type: "compliance", target: "system", data: { event: "STATE_CROSSING", fromState: event.fromState, toState: event.toState, loadId: event.loadId } },
           { type: "gamification", target: "driver", data: { counter: "STATES_CROSSED", driverId: event.driverId } },
         );
+
+        // Interstate Compliance Engine — check permits, weight-distance tax, CARB, IFTA
+        try {
+          const { handleStateCrossing } = await import("../services/interstateCompliance");
+          const [loadRow] = await db.select({ weight: loads.weight, cargoType: loads.cargoType })
+            .from(loads).where(eq(loads.id, event.loadId)).limit(1);
+          const complianceAlerts = await handleStateCrossing({
+            loadId: event.loadId,
+            driverId: event.driverId,
+            vehicleId: event.vehicleId,
+            fromState: event.fromState,
+            toState: event.toState,
+            lat: event.location.lat,
+            lng: event.location.lng,
+            weight: Number(loadRow?.weight) || 0,
+            isHazmat: loadRow?.cargoType === "hazmat" || loadRow?.cargoType === "chemicals" || loadRow?.cargoType === "petroleum",
+            isOversized: loadRow?.cargoType === "oversized",
+          });
+          // Push compliance notifications to driver
+          for (const alert of complianceAlerts) {
+            if (alert.status === "warning" || alert.status === "fail") {
+              triggers.push({
+                type: "notification",
+                target: "driver",
+                data: { event: "COMPLIANCE_ALERT", label: alert.label, detail: alert.detail, status: alert.status, stateCode: event.toState },
+              });
+            }
+          }
+        } catch (e) {
+          console.error("[LocationEngine] Interstate compliance check failed:", e);
+        }
       }
       break;
 

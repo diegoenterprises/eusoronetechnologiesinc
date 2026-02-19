@@ -58,6 +58,7 @@ import {
   Clock,
   ClipboardCheck,
   Calendar,
+  Siren,
   Calculator,
   GraduationCap,
   Activity,
@@ -151,6 +152,7 @@ const iconMap: Record<string, React.ReactNode> = {
   UserCheck: <UserCheck size={20} />,
   Radio: <Radio size={20} />,
   Percent: <Percent size={20} />,
+  Siren: <Siren size={20} />,
 };
 
 // --- Notification Bell Component ---

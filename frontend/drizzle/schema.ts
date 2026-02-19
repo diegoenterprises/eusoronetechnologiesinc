@@ -6012,3 +6012,119 @@ export const hzDriverRouteReports = mysqlTable("hz_driver_route_reports", {
 export type HzDriverRouteReport = typeof hzDriverRouteReports.$inferSelect;
 export type InsertHzDriverRouteReport = typeof hzDriverRouteReports.$inferInsert;
 
+// ============================================================================
+// SOS EMERGENCY ALERTS
+// ============================================================================
+
+export const sosAlerts = mysqlTable(
+  "sos_alerts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("load_id").notNull(),
+    driverId: int("driver_id").notNull(),
+    vehicleId: int("vehicle_id"),
+    alertType: mysqlEnum("alert_type", ["medical", "mechanical", "hazmat_spill", "accident", "threat", "weather", "other"]).notNull(),
+    severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).notNull().default("high"),
+    status: mysqlEnum("status", ["active", "acknowledged", "responding", "resolved", "false_alarm"]).notNull().default("active"),
+    latitude: decimal("latitude", { precision: 10, scale: 8 }).notNull(),
+    longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
+    description: text("description"),
+    stateCode: varchar("state_code", { length: 2 }),
+    nearestMileMarker: varchar("nearest_mile_marker", { length: 20 }),
+    acknowledgedBy: int("acknowledged_by"),
+    acknowledgedAt: timestamp("acknowledged_at"),
+    resolvedBy: int("resolved_by"),
+    resolvedAt: timestamp("resolved_at"),
+    resolutionNotes: text("resolution_notes"),
+    notifiedUsers: json("notified_users").$type<number[]>(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    loadIdx: index("idx_sos_load").on(table.loadId),
+    driverIdx: index("idx_sos_driver").on(table.driverId),
+    statusIdx: index("idx_sos_status").on(table.status),
+    createdIdx: index("idx_sos_created").on(table.createdAt),
+  })
+);
+
+export type SosAlert = typeof sosAlerts.$inferSelect;
+export type InsertSosAlert = typeof sosAlerts.$inferInsert;
+
+// ============================================================================
+// TRIP COMPLIANCE EVENTS
+// ============================================================================
+
+export const tripComplianceEvents = mysqlTable(
+  "trip_compliance_events",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("load_id").notNull(),
+    driverId: int("driver_id").notNull(),
+    vehicleId: int("vehicle_id"),
+    eventType: mysqlEnum("event_type", [
+      "state_entry", "state_exit",
+      "permit_valid", "permit_missing", "permit_expired",
+      "weight_tax_required", "weight_tax_filed",
+      "ifta_mile_logged",
+      "carb_required", "carb_valid", "carb_missing",
+      "hazmat_zone_entry", "hazmat_zone_exit",
+      "oversize_permit_required", "oversize_permit_valid", "oversize_permit_missing",
+      "document_expiring", "document_expired",
+      "weigh_station_approach", "port_of_entry",
+      "fuel_purchase", "toll_crossing",
+    ]).notNull(),
+    stateCode: varchar("state_code", { length: 2 }),
+    fromState: varchar("from_state", { length: 2 }),
+    toState: varchar("to_state", { length: 2 }),
+    latitude: decimal("latitude", { precision: 10, scale: 8 }),
+    longitude: decimal("longitude", { precision: 11, scale: 8 }),
+    details: json("details").$type<Record<string, any>>(),
+    isBlocking: tinyint("is_blocking").default(0),
+    requiresAction: tinyint("requires_action").default(0),
+    actionTaken: tinyint("action_taken").default(0),
+    actionDescription: text("action_description"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    loadIdx: index("idx_tce_load").on(table.loadId),
+    driverIdx: index("idx_tce_driver").on(table.driverId),
+    typeIdx: index("idx_tce_type").on(table.eventType),
+    stateIdx: index("idx_tce_state").on(table.stateCode),
+    createdIdx: index("idx_tce_created").on(table.createdAt),
+  })
+);
+
+export type TripComplianceEvent = typeof tripComplianceEvents.$inferSelect;
+export type InsertTripComplianceEvent = typeof tripComplianceEvents.$inferInsert;
+
+// ============================================================================
+// TRIP STATE MILES (IFTA aggregation per load per state)
+// ============================================================================
+
+export const tripStateMiles = mysqlTable(
+  "trip_state_miles",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("load_id").notNull(),
+    vehicleId: int("vehicle_id"),
+    stateCode: varchar("state_code", { length: 2 }).notNull(),
+    miles: decimal("miles", { precision: 8, scale: 2 }).notNull().default("0"),
+    fuelGallons: decimal("fuel_gallons", { precision: 8, scale: 2 }).default("0"),
+    entryTime: timestamp("entry_time"),
+    exitTime: timestamp("exit_time"),
+    tollCost: decimal("toll_cost", { precision: 8, scale: 2 }).default("0"),
+    weightTaxApplicable: tinyint("weight_tax_applicable").default(0),
+    weightTaxAmount: decimal("weight_tax_amount", { precision: 8, scale: 2 }).default("0"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    loadIdx: index("idx_tsm_load").on(table.loadId),
+    stateIdx: index("idx_tsm_state").on(table.stateCode),
+    vehicleIdx: index("idx_tsm_vehicle").on(table.vehicleId),
+  })
+);
+
+export type TripStateMiles = typeof tripStateMiles.$inferSelect;
+export type InsertTripStateMiles = typeof tripStateMiles.$inferInsert;
+

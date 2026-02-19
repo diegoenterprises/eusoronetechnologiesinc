@@ -211,6 +211,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Real-time fleet GPS tracking"
     },
     { 
+      icon: "Siren", 
+      label: "Active Trip", 
+      path: "/active-trip", 
+      badge: 0,
+      description: "Real-time trip dashboard, SOS, state compliance & ZEUN"
+    },
+    { 
       icon: "Shield", 
       label: "Operating Authority", 
       path: "/authority", 
@@ -506,6 +513,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/live-tracking", 
       badge: 0,
       description: "GPS navigation, route compliance & tracking"
+    },
+    { 
+      icon: "Siren", 
+      label: "Active Trip", 
+      path: "/active-trip", 
+      badge: 0,
+      description: "Real-time trip dashboard, SOS, state compliance & ZEUN"
     },
     { 
       icon: "Wallet", 

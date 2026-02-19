@@ -159,6 +159,7 @@ import { carrierScorecardRouter } from "./routers/carrierScorecard";
 import { truckPostingRouter } from "./routers/truckPosting";
 import { documentCenterRouter } from "./routers/documentCenter";
 import { trailerRegulatoryRouter } from "./routers/trailerRegulatory";
+import { interstateRouter } from "./routers/interstate";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -996,6 +997,9 @@ export const appRouter = router({
 
   // Trailer Regulatory — Product lists, cargo securement, FSMA, oversize/overweight, food-grade
   trailerRegulatory: trailerRegulatoryRouter,
+
+  // Interstate Compliance Engine + SOS Emergency System
+  interstate: interstateRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,
