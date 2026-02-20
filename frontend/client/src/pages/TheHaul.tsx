@@ -44,6 +44,7 @@ export default function TheHaul() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [activeTab, setActiveTab] = useState("lobby");
+  const [lbScope, setLbScope] = useState<"own" | "all">("own");
   const [chatInput, setChatInput] = useState("");
   const [showRules, setShowRules] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -57,7 +58,7 @@ export default function TheHaul() {
   const cratesQ = (trpc as any).gamification?.getCrates?.useQuery?.() || { data: null };
   const seasonQ = (trpc as any).gamification?.getCurrentSeason?.useQuery?.() || { data: null };
   const statsQ = (trpc as any).gamification?.getStats?.useQuery?.() || { data: null };
-  const leaderboardQ = (trpc as any).gamification?.getLeaderboard?.useQuery?.({ period: "month", category: "points", limit: 20 }) || { data: null, isLoading: false };
+  const leaderboardQ = (trpc as any).gamification?.getLeaderboard?.useQuery?.({ period: "month", category: "points", limit: 20, roleFilter: lbScope }) || { data: null, isLoading: false };
 
   const postMut = (trpc as any).gamification?.postLobbyMessage?.useMutation?.({
     onSuccess: (d: any) => { if (d?.success) { setChatInput(""); lobbyQ.refetch?.(); } else if (d?.error) toast.error(d.error); },
@@ -100,12 +101,16 @@ export default function TheHaul() {
   const msgs = lobbyQ.data?.messages || [];
   const dbM = missionsQ.data || { active: [], completed: [], available: [] };
   const aiM = aiMissionsQ.data || [];
-  // Deduplicate: getMissions and getAIMissions can both return wk_* weekly missions
+  // Deduplicate by mission name — universal missions (Community Voice, Profile Complete, etc.)
+  // get seeded per-role with different DB IDs, so dedup by name not id
+  const seenNames = new Set<string>();
   const seenIds = new Set<number | string>();
   const allAvail = [...(dbM.available || []), ...aiM, ...aiGenMissions].filter(m => {
-    const key = m.id;
-    if (seenIds.has(key)) return false;
-    seenIds.add(key);
+    const nameKey = (m.name || "").trim().toLowerCase();
+    const idKey = m.id;
+    if (seenNames.has(nameKey) || seenIds.has(idKey)) return false;
+    seenNames.add(nameKey);
+    seenIds.add(idKey);
     return true;
   });
   const activeM = dbM.active || [];
@@ -295,7 +300,7 @@ export default function TheHaul() {
 
         {/* LEADERBOARD */}
         <TabsContent value="leaderboard" className="space-y-4 mt-4">
-          <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><Trophy className="w-5 h-5 text-yellow-400" />Platform Leaderboard</CardTitle></CardHeader>
+          <Card className={cc}><CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><Trophy className="w-5 h-5 text-yellow-400" />{lbScope === "own" ? `${(leaderboardQ.data?.role || "DRIVER").replace(/_/g, " ")} Leaderboard` : "Platform Leaderboard"}</CardTitle><div className="flex gap-1">{(["own", "all"] as const).map(s => (<button key={s} onClick={() => setLbScope(s)} className={cn("px-3 py-1 rounded-lg text-xs font-medium transition-all", lbScope === s ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-700/50 text-slate-400 hover:bg-slate-600/50")}>{s === "own" ? "My Role" : "All Roles"}</button>))}</div></div></CardHeader>
             <CardContent>
               {profile ? (
                 <div className={cn("p-4 rounded-xl border mb-4", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-slate-700/50")}>

@@ -255,12 +255,14 @@ export const gamificationRouter = router({
       period: z.enum(["week", "month", "quarter", "year", "all"]).default("month"),
       category: z.enum(["points", "loads", "miles", "safety", "rating"]).default("points"),
       limit: z.number().default(20),
+      roleFilter: z.enum(["own", "all"]).default("own"),
     }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       const userId = Number(ctx.user?.id) || 0;
+      const myRole = ((ctx.user as any)?.role || "DRIVER").toUpperCase();
 
-      if (!db) return { period: input.period, category: input.category, leaders: [], myRank: 0, totalParticipants: 0 };
+      if (!db) return { period: input.period, category: input.category, role: myRole, leaders: [], myRank: 0, totalParticipants: 0 };
 
       try {
         const allProfiles = await db.select({
@@ -271,22 +273,32 @@ export const gamificationRouter = router({
           stats: gamificationProfiles.stats,
         }).from(gamificationProfiles);
 
-        // Sort by XP descending
-        allProfiles.sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0));
-
-        // Get user info for top N
-        const topN = allProfiles.slice(0, input.limit);
-        const userIds = topN.map(p => p.userId);
-
+        // Build user map for ALL profile users so we can filter by role
+        const allUserIds = allProfiles.map(p => p.userId);
         let userMap: Map<number, { name: string; role: string }> = new Map();
-        if (userIds.length > 0) {
+        if (allUserIds.length > 0) {
           const userRows = await db.select({ id: users.id, name: users.name, role: users.role })
             .from(users)
-            .where(sql`id IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})`);
+            .where(sql`id IN (${sql.join(allUserIds.map(id => sql`${id}`), sql`, `)})`);
           for (const u of userRows) {
-            userMap.set(u.id, { name: u.name || "User", role: u.role || "DRIVER" });
+            userMap.set(u.id, { name: u.name || "User", role: (u.role || "DRIVER").toUpperCase() });
           }
         }
+
+        // Filter profiles by role (default: same role as current user)
+        let filteredProfiles = allProfiles;
+        if (input.roleFilter === "own") {
+          filteredProfiles = allProfiles.filter(p => {
+            const u = userMap.get(p.userId);
+            return u && u.role === myRole;
+          });
+        }
+
+        // Sort by XP descending
+        filteredProfiles.sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0));
+
+        // Get top N
+        const topN = filteredProfiles.slice(0, input.limit);
 
         const leaders = topN.map((p, i) => {
           const u = userMap.get(p.userId);
@@ -302,18 +314,19 @@ export const gamificationRouter = router({
           };
         });
 
-        const myRank = allProfiles.findIndex(p => p.userId === userId) + 1;
+        const myRank = filteredProfiles.findIndex(p => p.userId === userId) + 1;
 
         return {
           period: input.period,
           category: input.category,
+          role: myRole,
           leaders,
-          myRank: myRank || allProfiles.length + 1,
-          totalParticipants: allProfiles.length,
+          myRank: myRank || filteredProfiles.length + 1,
+          totalParticipants: filteredProfiles.length,
         };
       } catch (err) {
         console.error("[TheHaul] getLeaderboard error:", err);
-        return { period: input.period, category: input.category, leaders: [], myRank: 0, totalParticipants: 0 };
+        return { period: input.period, category: input.category, role: myRole, leaders: [], myRank: 0, totalParticipants: 0 };
       }
     }),
 
