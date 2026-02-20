@@ -17,7 +17,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Users, Search, CheckCircle, Clock, Plus, Phone, Mail,
   Link2, Copy, Shield, ShieldCheck, X, Trash2, ChevronDown,
-  MapPin, KeyRound, Fuel, Building2, Warehouse, Pencil
+  MapPin, KeyRound, Fuel, Building2, Warehouse, Pencil, Send
 } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -67,6 +67,7 @@ export default function TerminalStaff() {
   const [newCode, setNewCode] = useState<{ staffId: number; code: string } | null>(null);
   const [editingStaff, setEditingStaff] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>(null);
+  const [sentToStaff, setSentToStaff] = useState<number | null>(null);
 
   // Form state — includes location fields for shipper/marketer
   const [form, setForm] = useState({
@@ -113,6 +114,13 @@ export default function TerminalStaff() {
 
   const revokeLinkMutation = (trpc as any).terminals.revokeAccessLink.useMutation({
     onSuccess: () => { utils.terminals.getStaffAccessLinks.invalidate(); },
+  });
+
+  const sendLinkMutation = (trpc as any).terminals.sendAccessLink.useMutation({
+    onSuccess: (_data: any, variables: any) => {
+      setSentToStaff(variables.staffId);
+      setTimeout(() => setSentToStaff(null), 3000);
+    },
   });
 
   const stats = statsQuery.data;
@@ -540,10 +548,18 @@ export default function TerminalStaff() {
                       </div>
                       <div className="flex items-center gap-2">
                         {link ? (
-                          <Button size="sm" variant="outline" onClick={() => copyLink(link.token, staff.id)}
-                            className={`rounded-lg text-xs ${copiedToken === staff.id ? "bg-green-600/20 border-green-600/50 text-green-400" : "bg-cyan-600/10 border-cyan-600/30 text-cyan-400"}`}>
-                            {copiedToken === staff.id ? <><CheckCircle className="w-3 h-3 mr-1" />Copied</> : <><Copy className="w-3 h-3 mr-1" />Copy Link</>}
-                          </Button>
+                          <>
+                            <Button size="sm" variant="outline" onClick={() => copyLink(link.token, staff.id)}
+                              className={`rounded-lg text-xs ${copiedToken === staff.id ? "bg-green-600/20 border-green-600/50 text-green-400" : "bg-cyan-600/10 border-cyan-600/30 text-cyan-400"}`}>
+                              {copiedToken === staff.id ? <><CheckCircle className="w-3 h-3 mr-1" />Copied</> : <><Copy className="w-3 h-3 mr-1" />Copy Link</>}
+                            </Button>
+                            <Button size="sm" variant="outline"
+                              onClick={() => sendLinkMutation.mutate({ staffId: staff.id })}
+                              disabled={sendLinkMutation.isPending || sentToStaff === staff.id}
+                              className={`rounded-lg text-xs ${sentToStaff === staff.id ? "bg-green-600/20 border-green-600/50 text-green-400" : "bg-emerald-600/10 border-emerald-600/30 text-emerald-400"}`}>
+                              {sentToStaff === staff.id ? <><CheckCircle className="w-3 h-3 mr-1" />Sent</> : sendLinkMutation.isPending ? <><Send className="w-3 h-3 mr-1 animate-pulse" />Sending...</> : <><Send className="w-3 h-3 mr-1" />Send</>}
+                            </Button>
+                          </>
                         ) : (
                           <Button size="sm" variant="outline" onClick={() => genLinkMutation.mutate({ staffId: staff.id })}
                             disabled={genLinkMutation.isPending}

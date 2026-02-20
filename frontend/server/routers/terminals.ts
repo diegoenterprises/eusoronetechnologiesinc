@@ -947,6 +947,100 @@ export const terminalsRouter = router({
     }),
 
   /**
+   * Send access link + code to staff via email and/or SMS
+   */
+  sendAccessLink: protectedProcedure
+    .input(z.object({ staffId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const { terminalStaff, staffAccessTokens } = await import("../../drizzle/schema");
+      const companyId = ctx.user?.companyId || 0;
+
+      // Get staff member
+      const [staff] = await db.select().from(terminalStaff)
+        .where(and(eq(terminalStaff.id, input.staffId), eq(terminalStaff.companyId, companyId)))
+        .limit(1);
+      if (!staff) throw new Error("Staff member not found");
+
+      // Get active link
+      const now = new Date();
+      const [link] = await db.select({
+        token: staffAccessTokens.token,
+        accessCode: staffAccessTokens.accessCode,
+        expiresAt: staffAccessTokens.expiresAt,
+      })
+        .from(staffAccessTokens)
+        .where(and(
+          eq(staffAccessTokens.staffId, input.staffId),
+          eq(staffAccessTokens.isRevoked, false),
+          gte(staffAccessTokens.expiresAt, now),
+        ))
+        .limit(1);
+      if (!link) throw new Error("No active access link found. Generate a link first.");
+
+      const appUrl = process.env.APP_URL || "https://eusotrip.com";
+      const accessUrl = `${appUrl}/validate/${link.token}`;
+      const expiresLabel = link.expiresAt ? new Date(link.expiresAt).toLocaleString("en-US", { timeZone: "America/Chicago" }) : "24 hours";
+      let emailSent = false;
+      let smsSent = false;
+
+      // Send email if staff has one
+      if (staff.email) {
+        try {
+          const { emailService } = await import("../_core/email");
+          await emailService.send({
+            to: staff.email,
+            subject: "Your EusoTrip Access Link",
+            html: `
+              <!DOCTYPE html><html><head><style>
+                body{font-family:Arial,sans-serif;line-height:1.6;color:#333}
+                .container{max-width:600px;margin:0 auto;padding:20px}
+                .header{background:linear-gradient(135deg,#06b6d4 0%,#10b981 100%);color:white;padding:30px;text-align:center;border-radius:8px 8px 0 0}
+                .content{background:#f9f9f9;padding:30px;border-radius:0 0 8px 8px}
+                .code{font-size:32px;font-weight:bold;letter-spacing:8px;color:#06b6d4;text-align:center;padding:20px;background:#e0f2fe;border-radius:8px;margin:16px 0}
+                .button{display:inline-block;background:#06b6d4;color:white;padding:12px 30px;text-decoration:none;border-radius:6px;margin:20px 0}
+                .footer{text-align:center;margin-top:20px;color:#666;font-size:12px}
+              </style></head><body>
+              <div class="container">
+                <div class="header"><h1>Access Controller Link</h1></div>
+                <div class="content">
+                  <p>Hello ${staff.name},</p>
+                  <p>You have been assigned as an access controller. Use the link below to validate arriving drivers:</p>
+                  <p style="text-align:center"><a href="${accessUrl}" class="button">Open Access Portal</a></p>
+                  <p>Your 6-digit access code:</p>
+                  <div class="code">${link.accessCode}</div>
+                  <p style="font-size:13px;color:#666">You will need this code to authenticate when you open the link.</p>
+                  <p style="font-size:12px;color:#999">Link expires: ${expiresLabel} CT</p>
+                  <p style="font-size:12px;color:#999">If you did not expect this, contact your manager.</p>
+                </div>
+                <div class="footer"><p>EusoTrip - Logistics Platform</p></div>
+              </div></body></html>`,
+            text: `EusoTrip Access Link\n\nHello ${staff.name},\n\nOpen this link to validate arriving drivers:\n${accessUrl}\n\nYour access code: ${link.accessCode}\n\nExpires: ${expiresLabel} CT`,
+          });
+          emailSent = true;
+        } catch (e) { console.error("[sendAccessLink] email error:", e); }
+      }
+
+      // Send SMS if staff has phone
+      if (staff.phone) {
+        try {
+          const { sendSms } = await import("../services/eusosms");
+          await sendSms({
+            to: staff.phone,
+            message: `EusoTrip Access: Your code is ${link.accessCode}. Open your access portal: ${accessUrl} (expires ${expiresLabel} CT)`,
+          });
+          smsSent = true;
+        } catch (e) { console.error("[sendAccessLink] sms error:", e); }
+      }
+
+      if (!staff.email && !staff.phone) {
+        throw new Error("Staff member has no email or phone number. Add contact info first.");
+      }
+
+      return { success: true, emailSent, smsSent, staffName: staff.name };
+    }),
+
+  /**
    * Get products for TankInventory page
    */
   getProducts: protectedProcedure
