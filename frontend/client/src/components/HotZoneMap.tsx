@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ZoomIn, ZoomOut, Maximize2, Crosshair, Layers,
   TrendingUp, Truck, Flame, X, Navigation, MapPin,
+  Droplet, Radio, AlertTriangle, CloudRain, Factory,
+  Anchor, Biohazard, Fuel, Shield,
 } from "lucide-react";
 
 interface HotZoneMapProps {
@@ -13,6 +15,7 @@ interface HotZoneMapProps {
   onSelectZone: (id: string | null) => void;
   isLight: boolean;
   activeLayers: string[];
+  intel?: any;
 }
 
 // Projection: lng/lat → SVG coordinates fitted to state outline anchor points
@@ -575,7 +578,7 @@ const CITIES: { n: string; lat: number; lng: number; tier: number; st: string }[
   { n:"Camden", lat:39.93, lng:-75.12, tier:3, st:"NJ" },
 ];
 
-export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, onSelectZone, isLight, activeLayers }: HotZoneMapProps) {
+export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, onSelectZone, isLight, activeLayers, intel }: HotZoneMapProps) {
   const cRef = useRef<HTMLDivElement>(null);
   const [vb, setVb] = useState({ x: 0, y: 0, w: 800, h: 380 });
   const [panning, setPanning] = useState(false);
@@ -587,6 +590,17 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
   const [showInfra, setShowInfra] = useState(true);
   const [showHazmat, setShowHazmat] = useState(true);
   const [showLidar, setShowLidar] = useState(false);
+  // Live data layer toggles (from getMapIntelligence)
+  const [showQuakes, setShowQuakes] = useState(false);
+  const [showFires, setShowFires] = useState(false);
+  const [showWeather, setShowWeather] = useState(false);
+  const [showSpills, setShowSpills] = useState(false);
+  const [showEpa, setShowEpa] = useState(false);
+  const [showFema, setShowFema] = useState(false);
+  const [showLocks, setShowLocks] = useState(false);
+  const [showEmissions, setShowEmissions] = useState(false);
+  const [showFuelMap, setShowFuelMap] = useState(false);
+  const [intelTip, setIntelTip] = useState<{ px: number; py: number; data: any; type: string } | null>(null);
 
   const zoomPct = useMemo(() => Math.round((800 / vb.w) * 100), [vb.w]);
   const detail = vb.w <= 250 ? "hi" : vb.w <= 450 ? "med" : "lo";
@@ -688,6 +702,12 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
     setHovered(z.zoneId);
   }, []);
 
+  const showIntelTip = useCallback((e: React.MouseEvent, data: any, type: string) => {
+    if (!cRef.current) return;
+    const r = cRef.current.getBoundingClientRect();
+    setIntelTip({ px: e.clientX - r.left, py: e.clientY - r.top - 12, data, type });
+  }, []);
+
   // scale helper for zoom-dependent sizes
   const s = useCallback((base: number) => Math.max(base * 0.4, base * (800 / vb.w) * 0.5), [vb.w]);
 
@@ -723,7 +743,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
         onPointerDown={onPD}
         onPointerMove={onPM}
         onPointerUp={onPU}
-        onPointerLeave={() => { onPU(); setTip(null); setHovered(null); }}
+        onPointerLeave={() => { onPU(); setTip(null); setHovered(null); setIntelTip(null); }}
       >
         <svg viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
           <defs>
@@ -926,6 +946,259 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
             );
           })}
 
+          {/* ═══════════════════════════════════════════════════════════ */}
+          {/* LIVE DATA OVERLAYS — Real-time government data sources     */}
+          {/* ═══════════════════════════════════════════════════════════ */}
+
+          {/* FUEL PRICE STATE FILLS (EIA) — choropleth by diesel cost */}
+          {showFuelMap && (intel?.fuelByState || []).length > 0 && (() => {
+            const prices = intel.fuelByState as { state: string; diesel: number; change: number }[];
+            const min = Math.min(...prices.map(p => p.diesel));
+            const max = Math.max(...prices.map(p => p.diesel));
+            const range = max - min || 1;
+            const stateMap: Record<string, typeof prices[0]> = {};
+            prices.forEach(p => { stateMap[p.state] = p; });
+            return STATES.map(st => {
+              const fp = stateMap[st.id];
+              if (!fp) return null;
+              const t = (fp.diesel - min) / range;
+              const r = Math.round(200 + t * 55);
+              const g = Math.round(200 - t * 160);
+              const b = Math.round(50 - t * 30);
+              return (
+                <path key={`fuel-${st.id}`} d={st.d}
+                  fill={`rgb(${r},${g},${b})`} opacity={0.35}
+                  className="pointer-events-none" />
+              );
+            });
+          })()}
+
+          {/* FEMA DISASTER STATE HIGHLIGHTS */}
+          {showFema && (intel?.femaDisasters || []).length > 0 && (() => {
+            const femaStates = new Set((intel.femaDisasters as any[]).map(d => d.state));
+            return STATES.filter(st => femaStates.has(st.id)).map(st => (
+              <path key={`fema-${st.id}`} d={st.d}
+                fill="#DC2626" opacity={0.15} stroke="#DC2626" strokeWidth={s(1.2)}
+                strokeDasharray={`${s(3)} ${s(2)}`} className="pointer-events-none">
+                <animate attributeName="opacity" values="0.1;0.2;0.1" dur="2.5s" repeatCount="indefinite" />
+              </path>
+            ));
+          })()}
+
+          {/* WEATHER ALERT STATE HIGHLIGHTS (NWS) */}
+          {showWeather && (intel?.weatherAlerts || []).length > 0 && (() => {
+            const sevMap: Record<string, string> = {};
+            for (const wa of (intel.weatherAlerts as any[])) {
+              for (const st of (wa.states || [])) {
+                const cur = sevMap[st];
+                if (!cur || wa.severity === "Extreme" || (wa.severity === "Severe" && cur !== "Extreme")) {
+                  sevMap[st] = wa.severity;
+                }
+              }
+            }
+            return STATES.filter(st => sevMap[st.id]).map(st => {
+              const sev = sevMap[st.id];
+              const col = sev === "Extreme" ? "#DC2626" : sev === "Severe" ? "#F59E0B" : "#3B82F6";
+              return (
+                <path key={`wx-${st.id}`} d={st.d}
+                  fill={col} opacity={sev === "Extreme" ? 0.2 : 0.12}
+                  className="pointer-events-none">
+                  {sev === "Extreme" && <animate attributeName="opacity" values="0.15;0.25;0.15" dur="1.8s" repeatCount="indefinite" />}
+                </path>
+              );
+            });
+          })()}
+
+          {/* EARTHQUAKE MARKERS (USGS) */}
+          {showQuakes && (intel?.earthquakes || []).map((eq: any) => {
+            const [ex, ey] = proj(eq.lng, eq.lat);
+            const mag = eq.mag || 0;
+            const r2 = s(Math.max(2, mag * 2));
+            const col = mag >= 5 ? "#DC2626" : mag >= 4 ? "#F59E0B" : "#22D3EE";
+            return (
+              <g key={`eq-${eq.id}`} className="cursor-pointer"
+                onMouseMove={(e) => showIntelTip(e, eq, "earthquake")}
+                onMouseLeave={() => setIntelTip(null)}>
+                <circle cx={ex} cy={ey} r={r2 * 2.5} fill={col} opacity={0.12}>
+                  <animate attributeName="r" values={`${r2*2};${r2*3};${r2*2}`} dur="2s" repeatCount="indefinite" />
+                </circle>
+                <circle cx={ex} cy={ey} r={r2} fill={col} opacity={0.75} stroke="white" strokeWidth={s(0.3)} />
+                {detail !== "lo" && mag >= 4 && (
+                  <text x={ex} y={ey - r2 - s(2)} textAnchor="middle" fontSize={s(3.5)} fill={col} fontWeight="700" className="select-none pointer-events-none">
+                    M{mag.toFixed(1)}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+
+          {/* WILDFIRE MARKERS (NIFC) */}
+          {showFires && (intel?.wildfires || []).map((wf: any) => {
+            const [fx, fy] = proj(wf.lng, wf.lat);
+            const acres = wf.acres || 0;
+            const r2 = s(Math.max(2.5, Math.min(8, Math.sqrt(acres) / 30)));
+            const contained = wf.contained || 0;
+            const col = contained > 80 ? "#F59E0B" : contained > 50 ? "#F97316" : "#EF4444";
+            return (
+              <g key={`wf-${wf.id}`} className="cursor-pointer"
+                onMouseMove={(e) => showIntelTip(e, wf, "wildfire")}
+                onMouseLeave={() => setIntelTip(null)}>
+                <circle cx={fx} cy={fy} r={r2 * 2} fill={col} opacity={0.15}>
+                  {contained < 50 && <animate attributeName="opacity" values="0.1;0.25;0.1" dur="1.5s" repeatCount="indefinite" />}
+                </circle>
+                <polygon
+                  points={`${fx},${fy - r2} ${fx + r2 * 0.7},${fy + r2 * 0.5} ${fx - r2 * 0.7},${fy + r2 * 0.5}`}
+                  fill={col} opacity={0.85} stroke="white" strokeWidth={s(0.2)} />
+                {detail !== "lo" && acres >= 1000 && (
+                  <text x={fx} y={fy + r2 + s(5)} textAnchor="middle" fontSize={s(3)} fill={col} fontWeight="600" className="select-none pointer-events-none">
+                    {acres >= 10000 ? `${(acres/1000).toFixed(0)}k ac` : `${acres.toLocaleString()} ac`}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+
+          {/* HAZMAT INCIDENT MARKERS (PHMSA/NRC) */}
+          {showSpills && (intel?.hazmatIncidents || []).map((hm: any) => {
+            const [hx, hy] = proj(hm.lng, hm.lat);
+            const hasCasualties = (hm.fatalities || 0) > 0 || (hm.injuries || 0) > 0;
+            const col = hasCasualties ? "#DC2626" : "#7C3AED";
+            return (
+              <g key={`hm-${hm.id}`} className="cursor-pointer"
+                onMouseMove={(e) => showIntelTip(e, hm, "hazmat")}
+                onMouseLeave={() => setIntelTip(null)}>
+                <polygon
+                  points={`${hx},${hy - s(3)} ${hx + s(2.5)},${hy} ${hx},${hy + s(3)} ${hx - s(2.5)},${hy}`}
+                  fill={col} opacity={0.75} stroke="white" strokeWidth={s(0.2)} />
+                {hasCasualties && (
+                  <circle cx={hx + s(2.5)} cy={hy - s(2.5)} r={s(1.5)} fill="#DC2626" opacity={0.9} />
+                )}
+              </g>
+            );
+          })}
+
+          {/* EPA FACILITY MARKERS (TRI + ECHO) */}
+          {showEpa && (intel?.epaFacilities || []).map((ep: any) => {
+            const [ex2, ey2] = proj(ep.lng, ep.lat);
+            const col = ep.compliance === "Violation" ? "#EF4444" : ep.tri ? "#10B981" : "#6B7280";
+            return (
+              <g key={`epa-${ep.id}`} className="cursor-pointer"
+                onMouseMove={(e) => showIntelTip(e, ep, "epa")}
+                onMouseLeave={() => setIntelTip(null)}>
+                <rect x={ex2 - s(2)} y={ey2 - s(2)} width={s(4)} height={s(4)} rx={s(0.6)}
+                  fill={col} opacity={0.65} stroke="white" strokeWidth={s(0.2)} />
+                {ep.compliance === "Violation" && detail !== "lo" && (
+                  <text x={ex2} y={ey2 + s(0.8)} textAnchor="middle" fontSize={s(2)} fill="white" fontWeight="700" className="select-none pointer-events-none">!</text>
+                )}
+              </g>
+            );
+          })}
+
+          {/* LOCK & WATERWAY MARKERS (USACE) */}
+          {showLocks && (intel?.locks || []).map((lk: any) => {
+            const [lx, ly] = proj(lk.lng, lk.lat);
+            const col = lk.status === "Closed" ? "#DC2626" : lk.status === "Restricted" ? "#F59E0B" : "#0EA5E9";
+            return (
+              <g key={`lk-${lk.id}`} className="cursor-pointer"
+                onMouseMove={(e) => showIntelTip(e, lk, "lock")}
+                onMouseLeave={() => setIntelTip(null)}>
+                <circle cx={lx} cy={ly} r={s(3)} fill={col} opacity={0.7} stroke="white" strokeWidth={s(0.3)} />
+                <text x={lx} y={ly + s(1)} textAnchor="middle" fontSize={s(2.2)} fill="white" fontWeight="700" className="select-none pointer-events-none">L</text>
+                {lk.status !== "Open" && detail !== "lo" && (
+                  <text x={lx} y={ly + s(6)} textAnchor="middle" fontSize={s(2.5)} fill={col} fontWeight="600" className="select-none pointer-events-none">
+                    {lk.status}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+
+          {/* EMISSIONS FACILITY MARKERS (CAMPD) */}
+          {showEmissions && (intel?.emissions || []).map((em: any) => {
+            const [emx, emy] = proj(em.lng, em.lat);
+            const co2k = (em.co2 || 0) / 1000;
+            const col = co2k > 5000 ? "#DC2626" : co2k > 1000 ? "#F59E0B" : "#6B7280";
+            return (
+              <g key={`em-${em.id}`} className="cursor-pointer"
+                onMouseMove={(e) => showIntelTip(e, em, "emission")}
+                onMouseLeave={() => setIntelTip(null)}>
+                <circle cx={emx} cy={emy} r={s(Math.max(1.5, Math.min(4, co2k / 2000)))} fill={col} opacity={0.5} />
+                <circle cx={emx} cy={emy} r={s(1)} fill={col} opacity={0.8} />
+              </g>
+            );
+          })}
+
+          {/* FEMA DISASTER LABELS (on state centers) */}
+          {showFema && detail !== "lo" && (intel?.femaDisasters || []).length > 0 && (() => {
+            const byState: Record<string, any[]> = {};
+            for (const d of (intel.femaDisasters as any[])) {
+              if (!byState[d.state]) byState[d.state] = [];
+              byState[d.state].push(d);
+            }
+            return STATE_CENTERS.filter(sc => byState[sc.id]).map(sc => {
+              const disasters = byState[sc.id];
+              const [cx2, cy2] = proj(sc.lng, sc.lat);
+              return (
+                <g key={`fema-lbl-${sc.id}`} className="select-none pointer-events-none">
+                  <rect x={cx2 - s(14)} y={cy2 + s(8)} width={s(28)} height={s(8)} rx={s(2)}
+                    fill={isLight ? "#FEE2E2" : "#7F1D1D"} opacity={0.9} stroke="#DC2626" strokeWidth={s(0.4)} />
+                  <text x={cx2} y={cy2 + s(13.5)} textAnchor="middle" fontSize={s(3.5)} fill="#EF4444" fontWeight="700">
+                    FEMA {disasters.length > 1 ? `x${disasters.length}` : disasters[0].type?.slice(0, 12) || ""}
+                  </text>
+                </g>
+              );
+            });
+          })()}
+
+          {/* WEATHER ALERT COUNT LABELS (on state centers) */}
+          {showWeather && detail !== "lo" && (intel?.weatherAlerts || []).length > 0 && (() => {
+            const byState: Record<string, { count: number; maxSev: string }> = {};
+            for (const wa of (intel.weatherAlerts as any[])) {
+              for (const st of (wa.states || [])) {
+                if (!byState[st]) byState[st] = { count: 0, maxSev: "Minor" };
+                byState[st].count++;
+                if (wa.severity === "Extreme") byState[st].maxSev = "Extreme";
+                else if (wa.severity === "Severe" && byState[st].maxSev !== "Extreme") byState[st].maxSev = "Severe";
+              }
+            }
+            return STATE_CENTERS.filter(sc => byState[sc.id] && byState[sc.id].count > 0).map(sc => {
+              const info = byState[sc.id];
+              const [cx2, cy2] = proj(sc.lng, sc.lat);
+              const col = info.maxSev === "Extreme" ? "#DC2626" : info.maxSev === "Severe" ? "#F59E0B" : "#3B82F6";
+              return (
+                <g key={`wx-lbl-${sc.id}`} className="select-none pointer-events-none">
+                  <circle cx={cx2 + s(12)} cy={cy2 - s(6)} r={s(4)} fill={col} opacity={0.8} />
+                  <text x={cx2 + s(12)} y={cy2 - s(4)} textAnchor="middle" fontSize={s(3)} fill="white" fontWeight="700">
+                    {info.count}
+                  </text>
+                </g>
+              );
+            });
+          })()}
+
+          {/* FUEL PRICE LABELS (on state centers when fuel map active) */}
+          {showFuelMap && detail !== "lo" && (intel?.fuelByState || []).length > 0 && (() => {
+            const byState: Record<string, any> = {};
+            for (const fp of (intel.fuelByState as any[])) byState[fp.state] = fp;
+            return STATE_CENTERS.filter(sc => byState[sc.id]).map(sc => {
+              const fp = byState[sc.id];
+              const [cx2, cy2] = proj(sc.lng, sc.lat);
+              const chgCol = fp.change > 0 ? "#EF4444" : fp.change < 0 ? "#22C55E" : (isLight ? "#64748b" : "#94a3b8");
+              return (
+                <g key={`fp-${sc.id}`} className="select-none pointer-events-none">
+                  <text x={cx2} y={cy2 + s(4)} textAnchor="middle" fontSize={s(detail === "hi" ? 5 : 4)} fill={isLight ? "#92400E" : "#FCD34D"} fontWeight="700" opacity={0.85}>
+                    ${fp.diesel.toFixed(2)}
+                  </text>
+                  {detail === "hi" && fp.change !== 0 && (
+                    <text x={cx2} y={cy2 + s(9)} textAnchor="middle" fontSize={s(3)} fill={chgCol} fontWeight="600" opacity={0.7}>
+                      {fp.change > 0 ? "+" : ""}{fp.change.toFixed(2)}
+                    </text>
+                  )}
+                </g>
+              );
+            });
+          })()}
+
           {/* Cold zones */}
           {coldZones.map((cz: any) => {
             const [cx, cy] = proj(cz.center?.lng || -95, cz.center?.lat || 38);
@@ -1087,7 +1360,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                     <circle cx={zx - r - s(6)} cy={zy + r + s(4)} r={s(4.5)} fill="#F97316" opacity={0.85}>
                       <animate attributeName="opacity" values="0.7;1;0.7" dur="1.5s" repeatCount="indefinite" />
                     </circle>
-                    <text x={zx - r - s(6)} y={zy + r + s(6.2)} textAnchor="middle" fontSize={s(4.5)} fill="white" fontWeight="700">🔥</text>
+                    <text x={zx - r - s(6)} y={zy + r + s(6.2)} textAnchor="middle" fontSize={s(3.5)} fill="white" fontWeight="700">F</text>
                     {detail !== "lo" && (
                       <text x={zx - r - s(6)} y={zy + r + s(12)} textAnchor="middle" fontSize={s(3.5)} fill="#FB923C" fontWeight="600">
                         {z.activeWildfires} fire{z.activeWildfires !== 1 ? "s" : ""}
@@ -1303,6 +1576,106 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
           )}
         </AnimatePresence>
 
+        {/* ── INTEL TOOLTIP (live data layers) ── */}
+        <AnimatePresence>
+          {intelTip && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className={`absolute z-50 pointer-events-none rounded-xl border px-3 py-2.5 shadow-2xl ${
+                isLight ? "bg-white/95 border-slate-200 shadow-slate-200/50" : "bg-[#12122a]/95 border-white/10 shadow-black/40"
+              }`}
+              style={{ left: Math.min(intelTip.px, (cRef.current?.clientWidth || 600) - 220), top: Math.max(8, intelTip.py - 70), minWidth: 170, backdropFilter: "blur(12px)" }}
+            >
+              {intelTip.type === "earthquake" && (
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-cyan-400" />
+                    <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>M{intelTip.data.mag?.toFixed(1)} Earthquake</span>
+                  </div>
+                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                    <div>{intelTip.data.place}</div>
+                    <div>Depth: {intelTip.data.depth?.toFixed(1)} km</div>
+                    {intelTip.data.alert && <div className="font-semibold text-amber-400">Alert: {intelTip.data.alert}</div>}
+                  </div>
+                </div>
+              )}
+              {intelTip.type === "wildfire" && (
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-orange-500" />
+                    <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{intelTip.data.name}</span>
+                  </div>
+                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                    <div>{intelTip.data.state} · {intelTip.data.status}</div>
+                    <div>{(intelTip.data.acres || 0).toLocaleString()} acres · {intelTip.data.contained || 0}% contained</div>
+                    {intelTip.data.personnel && <div>{intelTip.data.personnel} personnel</div>}
+                    {intelTip.data.evacuation && <div className="font-semibold text-red-400">Evacuations ordered</div>}
+                  </div>
+                </div>
+              )}
+              {intelTip.type === "hazmat" && (
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-purple-500" />
+                    <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>Hazmat Incident</span>
+                  </div>
+                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                    <div>{intelTip.data.city}, {intelTip.data.state} · {intelTip.data.mode}</div>
+                    {intelTip.data.name && <div>Material: {intelTip.data.name}</div>}
+                    {intelTip.data.class && <div>Class: {intelTip.data.class}</div>}
+                    {intelTip.data.qty > 0 && <div>Released: {intelTip.data.qty.toLocaleString()} {intelTip.data.unit}</div>}
+                    {(intelTip.data.fatalities > 0 || intelTip.data.injuries > 0) && (
+                      <div className="font-semibold text-red-400">{intelTip.data.fatalities} fatal · {intelTip.data.injuries} injured</div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {intelTip.type === "epa" && (
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className={`w-2 h-2 rounded-full ${intelTip.data.compliance === "Violation" ? "bg-red-500" : "bg-emerald-500"}`} />
+                    <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{intelTip.data.name?.slice(0, 30)}</span>
+                  </div>
+                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                    <div>{intelTip.data.state} · {intelTip.data.sector?.slice(0, 25)}</div>
+                    <div>Status: <span className={intelTip.data.compliance === "Violation" ? "text-red-400 font-semibold" : "text-emerald-400"}>{intelTip.data.compliance}</span></div>
+                    {intelTip.data.releases > 0 && <div>Releases: {intelTip.data.releases.toLocaleString()} lbs</div>}
+                    {intelTip.data.penalties > 0 && <div>Penalties: ${intelTip.data.penalties.toLocaleString()}</div>}
+                  </div>
+                </div>
+              )}
+              {intelTip.type === "lock" && (
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className={`w-2 h-2 rounded-full ${intelTip.data.status === "Closed" ? "bg-red-500" : intelTip.data.status === "Restricted" ? "bg-amber-500" : "bg-sky-500"}`} />
+                    <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{intelTip.data.name}</span>
+                  </div>
+                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                    <div>{intelTip.data.river} · {intelTip.data.state}</div>
+                    <div>Status: <span className={intelTip.data.status === "Closed" ? "text-red-400 font-semibold" : ""}>{intelTip.data.status}</span></div>
+                    {intelTip.data.reason && <div>{intelTip.data.reason}</div>}
+                    {intelTip.data.queueHrs > 0 && <div>Queue: {intelTip.data.queueHrs}h</div>}
+                  </div>
+                </div>
+              )}
+              {intelTip.type === "emission" && (
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{intelTip.data.name?.slice(0, 30)}</span>
+                  </div>
+                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                    <div>{intelTip.data.state} · {intelTip.data.category?.slice(0, 25)}</div>
+                    {intelTip.data.co2 > 0 && <div>CO2: {(intelTip.data.co2 / 1000).toFixed(0)}k tons</div>}
+                    {intelTip.data.nox > 0 && <div>NOx: {intelTip.data.nox.toFixed(0)} tons</div>}
+                    {intelTip.data.so2 > 0 && <div>SO2: {intelTip.data.so2.toFixed(0)} tons</div>}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* ── ZOOM CONTROLS ── */}
         <div className={`absolute top-3 right-3 flex flex-col gap-1 ${isLight ? "" : ""}`}>
           {[
@@ -1327,19 +1700,29 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
         </div>
 
         {/* ── MAP LAYER TOGGLES ── */}
-        <div className={`absolute bottom-3 right-3 flex items-center gap-1.5`}>
+        <div className={`absolute bottom-3 right-3 flex items-center gap-1 flex-wrap justify-end max-w-[520px]`}>
           {[
-            { label: "Highways", on: showHwy, toggle: () => setShowHwy(p => !p) },
-            { label: "Cities", on: showCities, toggle: () => setShowCities(p => !p) },
-            { label: "Infra", on: showInfra, toggle: () => setShowInfra(p => !p) },
-            { label: "Hazmat", on: showHazmat, toggle: () => setShowHazmat(p => !p) },
-            { label: "LIDAR", on: showLidar, toggle: () => setShowLidar(p => !p) },
-          ].map(({ label, on, toggle }) => (
+            { label: "Highways", on: showHwy, toggle: () => setShowHwy(p => !p), color: "" },
+            { label: "Cities", on: showCities, toggle: () => setShowCities(p => !p), color: "" },
+            { label: "Infra", on: showInfra, toggle: () => setShowInfra(p => !p), color: "" },
+            { label: "Hazmat", on: showHazmat, toggle: () => setShowHazmat(p => !p), color: "#F97316" },
+            { label: "LIDAR", on: showLidar, toggle: () => setShowLidar(p => !p), color: "#00FF88" },
+            { label: "Quakes", on: showQuakes, toggle: () => setShowQuakes(p => !p), color: "#22D3EE" },
+            { label: "Fires", on: showFires, toggle: () => setShowFires(p => !p), color: "#EF4444" },
+            { label: "Weather", on: showWeather, toggle: () => setShowWeather(p => !p), color: "#3B82F6" },
+            { label: "Spills", on: showSpills, toggle: () => setShowSpills(p => !p), color: "#7C3AED" },
+            { label: "EPA", on: showEpa, toggle: () => setShowEpa(p => !p), color: "#10B981" },
+            { label: "FEMA", on: showFema, toggle: () => setShowFema(p => !p), color: "#DC2626" },
+            { label: "Locks", on: showLocks, toggle: () => setShowLocks(p => !p), color: "#0EA5E9" },
+            { label: "CO2", on: showEmissions, toggle: () => setShowEmissions(p => !p), color: "#F59E0B" },
+            { label: "Fuel$", on: showFuelMap, toggle: () => setShowFuelMap(p => !p), color: "#D97706" },
+          ].map(({ label, on, toggle, color }) => (
             <button key={label} onClick={toggle}
               className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${on
-                ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-sm"
+                ? color ? "" : "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-sm"
                 : isLight ? "bg-white/80 text-slate-400 border border-slate-200/60" : "bg-white/[0.06] text-white/30 border border-white/[0.06]"
-              }`}>
+              }`}
+              style={on && color ? { backgroundColor: color + "22", color, border: `1px solid ${color}44` } : {}}>
               {label}
             </button>
           ))}
@@ -1376,6 +1759,20 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
           <div className="flex items-center gap-1"><div className="w-3 h-0.5 bg-orange-400 opacity-50" style={{ borderTop:"1px dashed" }} />Hazmat</div>
           <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-pink-400 opacity-60" />Refinery</div>
           {showLidar && <><div className={`w-px h-3 ${isLight ? "bg-slate-300" : "bg-white/10"}`} /><div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ background: "#00FF88", boxShadow: "0 0 4px #00FF88" }} />LIDAR</div></>}
+          {(showQuakes || showFires || showSpills || showEpa || showLocks || showEmissions || showWeather || showFema || showFuelMap) && (
+            <>
+              <div className={`w-px h-3 ${isLight ? "bg-slate-300" : "bg-white/10"}`} />
+              {showQuakes && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-cyan-400 opacity-75" />Quake</div>}
+              {showFires && <div className="flex items-center gap-1"><div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-orange-500 opacity-85" />Fire</div>}
+              {showWeather && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-blue-500 opacity-50" />NWS</div>}
+              {showSpills && <div className="flex items-center gap-1"><div className="w-2 h-2 rotate-45 bg-purple-500 opacity-75" />Spill</div>}
+              {showEpa && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-emerald-500 opacity-65" />EPA</div>}
+              {showFema && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-red-500 opacity-50" style={{ border: "1px dashed #DC2626" }} />FEMA</div>}
+              {showLocks && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-sky-500 opacity-70" />Lock</div>}
+              {showEmissions && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-500 opacity-50" />CO2</div>}
+              {showFuelMap && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm opacity-70" style={{ background: "linear-gradient(135deg, #C8C832, #FF2820)" }} />Fuel$</div>}
+            </>
+          )}
         </div>
 
         {/* ── MINIMAP ── */}
@@ -1391,9 +1788,9 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
           </div>
         )}
 
-        {/* ── INSTRUCTIONS ── */}
-        <div className={`absolute bottom-3 right-3 text-[9px] ${isLight ? "text-slate-400" : "text-white/20"}`}>
-          Scroll to zoom · Drag to pan · Click zone to focus
+        {/* ── INSTRUCTIONS (top-right below zoom controls) ── */}
+        <div className={`absolute top-[120px] right-3 text-[8px] text-right ${isLight ? "text-slate-400" : "text-white/15"}`}>
+          Scroll to zoom<br/>Drag to pan<br/>Click zone to focus
         </div>
       </div>
     </div>

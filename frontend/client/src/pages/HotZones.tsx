@@ -109,6 +109,11 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
     { refetchInterval: 10000 }
   );
 
+  const { data: mapIntel } = trpc.hotZones.getMapIntelligence.useQuery(
+    undefined,
+    { refetchInterval: 60000, staleTime: 30000 }
+  );
+
   const zones = data?.zones || [];
   const coldZones = data?.coldZones || [];
   const roleCtx = data?.roleContext;
@@ -298,6 +303,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
             onSelectZone={setSelectedZone}
             isLight={isLight}
             activeLayers={activeLayers}
+            intel={mapIntel}
           />
         </div>
       )}
