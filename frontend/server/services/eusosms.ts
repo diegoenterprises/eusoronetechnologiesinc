@@ -1,7 +1,8 @@
 /**
  * EUSOSMS - IN-HOUSE SMS GATEWAY
  * 
- * Replaces: Twilio, Nexmo, Plivo
+ * Uses Azure Communication Services SMS
+ * Same connection string as the email service (AZURE_EMAIL_CONNECTION_STRING)
  * 
  * Features:
  * - SMS sending and receiving
@@ -14,6 +15,32 @@
 import { getDb } from "../db";
 import { smsMessages, smsOptOuts } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
+
+const ACS_CONNECTION_STRING = process.env.AZURE_EMAIL_CONNECTION_STRING || "";
+const ACS_SMS_FROM = process.env.ACS_SMS_FROM_NUMBER || "";
+
+let smsClient: any = null;
+let smsConfigured = false;
+let smsInitPromise: Promise<void> | null = null;
+
+async function initSmsClient() {
+  if (!ACS_CONNECTION_STRING || !ACS_SMS_FROM) {
+    if (!ACS_SMS_FROM) console.warn("[EusoSMS] ACS_SMS_FROM_NUMBER not set — SMS will be logged only");
+    if (!ACS_CONNECTION_STRING) console.warn("[EusoSMS] AZURE_EMAIL_CONNECTION_STRING not set — SMS will be logged only");
+    return;
+  }
+  try {
+    const { SmsClient } = await import("@azure/communication-sms");
+    smsClient = new SmsClient(ACS_CONNECTION_STRING);
+    smsConfigured = true;
+    console.log("[EusoSMS] Azure Communication Services SMS configured, from:", ACS_SMS_FROM);
+  } catch (err) {
+    console.warn("[EusoSMS] @azure/communication-sms not available — SMS will be logged only");
+  }
+}
+
+// Lazy init on first import
+smsInitPromise = initSmsClient();
 
 export interface SendSmsParams {
   to: string;
@@ -33,6 +60,8 @@ export interface SmsStatus {
  * Send an SMS message
  */
 export async function sendSms(params: SendSmsParams): Promise<{ id: number; status: string }> {
+  if (smsInitPromise) await smsInitPromise;
+
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -53,11 +82,13 @@ export async function sendSms(params: SendSmsParams): Promise<{ id: number; stat
     throw new Error("Invalid phone number format");
   }
 
+  const fromNumber = ACS_SMS_FROM || "+10000000000";
+
   // Insert SMS record
   const [result] = await db
     .insert(smsMessages)
     .values({
-      from: "+1234567890", // TODO: Get from configuration
+      from: fromNumber,
       to: cleanNumber,
       message: params.message,
       status: "QUEUED",
@@ -67,20 +98,37 @@ export async function sendSms(params: SendSmsParams): Promise<{ id: number; stat
     })
     .$returningId();
 
-  // TODO: Integrate with actual SMS gateway (SMPP, catalyst API, etc.)
-  // For now, mark as sent immediately
-  await db
-    .update(smsMessages)
-    .set({
-      status: "SENT",
-      sentAt: new Date(),
-    })
-    .where(eq(smsMessages.id, result.id));
-
-  return {
-    id: result.id,
-    status: "SENT",
-  };
+  // Actually send via Azure Communication Services SMS
+  if (smsConfigured && smsClient) {
+    try {
+      const sendResults = await smsClient.send({
+        from: fromNumber,
+        to: [cleanNumber],
+        message: params.message,
+      });
+      const sr = sendResults[0];
+      if (sr?.successful) {
+        await db.update(smsMessages).set({ status: "SENT", sentAt: new Date() }).where(eq(smsMessages.id, result.id));
+        console.log("[EusoSMS] Sent to:", cleanNumber, "MessageId:", sr.messageId);
+        return { id: result.id, status: "SENT" };
+      } else {
+        const errMsg = sr?.errorMessage || "Unknown ACS error";
+        await db.update(smsMessages).set({ status: "FAILED", errorMessage: errMsg }).where(eq(smsMessages.id, result.id));
+        console.error("[EusoSMS] Failed to send to:", cleanNumber, "Error:", errMsg);
+        return { id: result.id, status: "FAILED" };
+      }
+    } catch (err: any) {
+      const errMsg = err?.message || "ACS SMS exception";
+      await db.update(smsMessages).set({ status: "FAILED", errorMessage: errMsg }).where(eq(smsMessages.id, result.id));
+      console.error("[EusoSMS] Exception sending to:", cleanNumber, err);
+      return { id: result.id, status: "FAILED" };
+    }
+  } else {
+    // Not configured — log and mark as sent for dev/testing
+    console.log("[EusoSMS] Would send SMS to:", cleanNumber, "Message:", params.message.slice(0, 80) + "...");
+    await db.update(smsMessages).set({ status: "SENT", sentAt: new Date() }).where(eq(smsMessages.id, result.id));
+    return { id: result.id, status: "SENT" };
+  }
 }
 
 /**
