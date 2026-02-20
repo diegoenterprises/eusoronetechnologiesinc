@@ -1699,33 +1699,53 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
           {zoomPct}%
         </div>
 
-        {/* ── MAP LAYER TOGGLES ── */}
-        <div className={`absolute bottom-3 right-3 flex items-center gap-1 flex-wrap justify-end max-w-[520px]`}>
-          {[
-            { label: "Highways", on: showHwy, toggle: () => setShowHwy(p => !p), color: "" },
-            { label: "Cities", on: showCities, toggle: () => setShowCities(p => !p), color: "" },
-            { label: "Infra", on: showInfra, toggle: () => setShowInfra(p => !p), color: "" },
-            { label: "Hazmat", on: showHazmat, toggle: () => setShowHazmat(p => !p), color: "#F97316" },
-            { label: "LIDAR", on: showLidar, toggle: () => setShowLidar(p => !p), color: "#00FF88" },
-            { label: "Quakes", on: showQuakes, toggle: () => setShowQuakes(p => !p), color: "#22D3EE" },
-            { label: "Fires", on: showFires, toggle: () => setShowFires(p => !p), color: "#EF4444" },
-            { label: "Weather", on: showWeather, toggle: () => setShowWeather(p => !p), color: "#3B82F6" },
-            { label: "Spills", on: showSpills, toggle: () => setShowSpills(p => !p), color: "#7C3AED" },
-            { label: "EPA", on: showEpa, toggle: () => setShowEpa(p => !p), color: "#10B981" },
-            { label: "FEMA", on: showFema, toggle: () => setShowFema(p => !p), color: "#DC2626" },
-            { label: "Locks", on: showLocks, toggle: () => setShowLocks(p => !p), color: "#0EA5E9" },
-            { label: "CO2", on: showEmissions, toggle: () => setShowEmissions(p => !p), color: "#F59E0B" },
-            { label: "Fuel$", on: showFuelMap, toggle: () => setShowFuelMap(p => !p), color: "#D97706" },
-          ].map(({ label, on, toggle, color }) => (
-            <button key={label} onClick={toggle}
-              className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${on
-                ? color ? "" : "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-sm"
-                : isLight ? "bg-white/80 text-slate-400 border border-slate-200/60" : "bg-white/[0.06] text-white/30 border border-white/[0.06]"
-              }`}
-              style={on && color ? { backgroundColor: color + "22", color, border: `1px solid ${color}44` } : {}}>
-              {label}
-            </button>
-          ))}
+        {/* ── MAP LAYER TOGGLES — two rows: base layers + intel layers ── */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-10">
+          {/* Row 1: Intel data layers */}
+          <div className={`flex items-center gap-0.5 px-2 py-1 rounded-lg backdrop-blur-md ${
+            isLight ? "bg-white/90 border border-slate-200/60" : "bg-white/[0.06] border border-white/[0.04]"
+          }`}>
+            {[
+              { label: "Quakes", on: showQuakes, toggle: () => setShowQuakes(p => !p), color: "#22D3EE" },
+              { label: "Fires", on: showFires, toggle: () => setShowFires(p => !p), color: "#EF4444" },
+              { label: "Weather", on: showWeather, toggle: () => setShowWeather(p => !p), color: "#3B82F6" },
+              { label: "Spills", on: showSpills, toggle: () => setShowSpills(p => !p), color: "#7C3AED" },
+              { label: "EPA", on: showEpa, toggle: () => setShowEpa(p => !p), color: "#10B981" },
+              { label: "FEMA", on: showFema, toggle: () => setShowFema(p => !p), color: "#DC2626" },
+              { label: "Locks", on: showLocks, toggle: () => setShowLocks(p => !p), color: "#0EA5E9" },
+              { label: "CO2", on: showEmissions, toggle: () => setShowEmissions(p => !p), color: "#F59E0B" },
+              { label: "Fuel$", on: showFuelMap, toggle: () => setShowFuelMap(p => !p), color: "#D97706" },
+            ].map(({ label, on, toggle, color }) => (
+              <button key={label} onClick={toggle}
+                className={`px-1.5 py-0.5 rounded text-[9px] font-semibold transition-all leading-tight ${
+                  on ? "" : isLight ? "text-slate-400 hover:text-slate-600" : "text-white/25 hover:text-white/50"
+                }`}
+                style={on ? { backgroundColor: color + "22", color, border: `1px solid ${color}55` } : {}}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {/* Row 2: Base map layers */}
+          <div className={`flex items-center gap-0.5 px-2 py-1 rounded-lg backdrop-blur-md ${
+            isLight ? "bg-white/90 border border-slate-200/60" : "bg-white/[0.06] border border-white/[0.04]"
+          }`}>
+            {[
+              { label: "Highways", on: showHwy, toggle: () => setShowHwy(p => !p), color: "" },
+              { label: "Cities", on: showCities, toggle: () => setShowCities(p => !p), color: "" },
+              { label: "Infra", on: showInfra, toggle: () => setShowInfra(p => !p), color: "" },
+              { label: "Hazmat", on: showHazmat, toggle: () => setShowHazmat(p => !p), color: "#F97316" },
+              { label: "LIDAR", on: showLidar, toggle: () => setShowLidar(p => !p), color: "#00FF88" },
+            ].map(({ label, on, toggle, color }) => (
+              <button key={label} onClick={toggle}
+                className={`px-1.5 py-0.5 rounded text-[9px] font-semibold transition-all leading-tight ${on
+                  ? color ? "" : "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white"
+                  : isLight ? "text-slate-400 hover:text-slate-600" : "text-white/25 hover:text-white/50"
+                }`}
+                style={on && color ? { backgroundColor: color + "22", color, border: `1px solid ${color}55` } : {}}>
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ── ROLE BADGE + SUBTITLE ── */}
@@ -1741,38 +1761,14 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
         </div>
 
         {/* ── LEGEND ── */}
-        <div className={`absolute bottom-3 left-3 flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg backdrop-blur-md text-[9px] font-medium ${
+        <div className={`absolute bottom-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-lg backdrop-blur-md text-[8px] font-medium ${
           isLight ? "bg-white/90 text-slate-500 border border-slate-200/60" : "bg-white/[0.08] text-white/40 border border-white/[0.06]"
         }`}>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ background: rv.critColor }} />Critical</div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ background: rv.highColor }} />High</div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ background: rv.elevColor }} />Elevated</div>
-          <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-blue-400 opacity-50" />Cold</div>
-          <div className={`w-px h-3 ${isLight ? "bg-slate-300" : "bg-white/10"}`} />
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-sky-500 opacity-70" />Port</div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rotate-45 bg-amber-400 opacity-70" />Border</div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-violet-500 opacity-60" />Intermodal</div>
-          <div className={`w-px h-3 ${isLight ? "bg-slate-300" : "bg-white/10"}`} />
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-red-500 opacity-65" style={{ clipPath:"polygon(50% 0%,100% 35%,100% 100%,0% 100%,0% 35%)" }} />Weigh</div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500 opacity-60" />Truck Stop</div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-amber-500 opacity-50" />Dist Hub</div>
-          <div className="flex items-center gap-1"><div className="w-3 h-0.5 bg-orange-400 opacity-50" style={{ borderTop:"1px dashed" }} />Hazmat</div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-pink-400 opacity-60" />Refinery</div>
-          {showLidar && <><div className={`w-px h-3 ${isLight ? "bg-slate-300" : "bg-white/10"}`} /><div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ background: "#00FF88", boxShadow: "0 0 4px #00FF88" }} />LIDAR</div></>}
-          {(showQuakes || showFires || showSpills || showEpa || showLocks || showEmissions || showWeather || showFema || showFuelMap) && (
-            <>
-              <div className={`w-px h-3 ${isLight ? "bg-slate-300" : "bg-white/10"}`} />
-              {showQuakes && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-cyan-400 opacity-75" />Quake</div>}
-              {showFires && <div className="flex items-center gap-1"><div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-orange-500 opacity-85" />Fire</div>}
-              {showWeather && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-blue-500 opacity-50" />NWS</div>}
-              {showSpills && <div className="flex items-center gap-1"><div className="w-2 h-2 rotate-45 bg-purple-500 opacity-75" />Spill</div>}
-              {showEpa && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-emerald-500 opacity-65" />EPA</div>}
-              {showFema && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-red-500 opacity-50" style={{ border: "1px dashed #DC2626" }} />FEMA</div>}
-              {showLocks && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-sky-500 opacity-70" />Lock</div>}
-              {showEmissions && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-500 opacity-50" />CO2</div>}
-              {showFuelMap && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm opacity-70" style={{ background: "linear-gradient(135deg, #C8C832, #FF2820)" }} />Fuel$</div>}
-            </>
-          )}
+          <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full" style={{ background: rv.critColor }} />Crit</div>
+          <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full" style={{ background: rv.highColor }} />High</div>
+          <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full" style={{ background: rv.elevColor }} />Elev</div>
+          <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full bg-blue-400 opacity-50" />Cold</div>
+          {showLidar && <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full" style={{ background: "#00FF88", boxShadow: "0 0 3px #00FF88" }} />LIDAR</div>}
         </div>
 
         {/* ── MINIMAP ── */}

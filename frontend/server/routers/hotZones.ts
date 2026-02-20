@@ -939,25 +939,25 @@ export const hotZonesRouter = router({
       // 1. EARTHQUAKES (USGS) — last 7 days, magnitude >= 2.5
       if (allLayers || wantedLayers.includes("earthquakes")) {
         try {
-          const rows: any[] = await db.execute(
+          const [rows] = await db.execute(
             sql`SELECT event_id, latitude, longitude, magnitude, magnitude_type, place_description, event_time, alert_level, depth_km
                 FROM hz_seismic_events
                 WHERE event_time > DATE_SUB(NOW(), INTERVAL 7 DAY)
                   AND CAST(magnitude AS DECIMAL(4,2)) >= 2.5
                 ORDER BY event_time DESC LIMIT 200`
-          );
-          result.earthquakes = rows.map((r: any) => ({
+          ) as any;
+          result.earthquakes = (rows || []).map((r: any) => ({
             id: r.event_id, lat: Number(r.latitude), lng: Number(r.longitude),
             mag: Number(r.magnitude), place: r.place_description,
             time: r.event_time, alert: r.alert_level, depth: Number(r.depth_km),
           }));
-        } catch { result.earthquakes = []; }
+        } catch (e) { console.error("[MapIntel] earthquakes:", e); result.earthquakes = []; }
       }
 
       // 2. WILDFIRES (NIFC) — active + contained
       if (allLayers || wantedLayers.includes("wildfires")) {
         try {
-          const rows: any[] = await db.execute(
+          const [rows] = await db.execute(
             sql`SELECT incident_id, incident_name, state_code, latitude, longitude,
                        acres_burned, percent_contained, fire_status, total_personnel,
                        evacuations_ordered
@@ -965,29 +965,29 @@ export const hotZonesRouter = router({
                 WHERE fire_status IN ('Active', 'Contained')
                   AND latitude IS NOT NULL AND longitude IS NOT NULL
                 ORDER BY CAST(acres_burned AS DECIMAL(12,2)) DESC LIMIT 150`
-          );
-          result.wildfires = rows.map((r: any) => ({
+          ) as any;
+          result.wildfires = (rows || []).map((r: any) => ({
             id: r.incident_id, name: r.incident_name, state: r.state_code,
             lat: Number(r.latitude), lng: Number(r.longitude),
             acres: Number(r.acres_burned), contained: Number(r.percent_contained),
             status: r.fire_status, personnel: r.total_personnel,
             evacuation: !!r.evacuations_ordered,
           }));
-        } catch { result.wildfires = []; }
+        } catch (e) { console.error("[MapIntel] wildfires:", e); result.wildfires = []; }
       }
 
       // 3. WEATHER ALERTS (NWS) — active alerts
       if (allLayers || wantedLayers.includes("weather")) {
         try {
-          const rows: any[] = await db.execute(
+          const [rows] = await db.execute(
             sql`SELECT id, state_codes, event_type, severity, urgency, headline, geometry
                 FROM hz_weather_alerts
                 WHERE (expires_at > NOW() OR expires_at IS NULL)
                   AND status = 'Actual'
                 ORDER BY FIELD(severity, 'Extreme', 'Severe', 'Moderate', 'Minor', 'Unknown') ASC
                 LIMIT 300`
-          );
-          result.weatherAlerts = rows.map((r: any) => {
+          ) as any;
+          result.weatherAlerts = (rows || []).map((r: any) => {
             let states: string[] = [];
             try { states = typeof r.state_codes === "string" ? JSON.parse(r.state_codes) : (r.state_codes || []); } catch {}
             return {
@@ -995,13 +995,13 @@ export const hotZonesRouter = router({
               urgency: r.urgency, headline: r.headline,
             };
           });
-        } catch { result.weatherAlerts = []; }
+        } catch (e) { console.error("[MapIntel] weather:", e); result.weatherAlerts = []; }
       }
 
       // 4. HAZMAT INCIDENTS (PHMSA + NRC) — last year, with geo
       if (allLayers || wantedLayers.includes("hazmat")) {
         try {
-          const rows: any[] = await db.execute(
+          const [rows] = await db.execute(
             sql`SELECT report_number, state_code, city, latitude, longitude,
                        incident_date, mode, hazmat_class, hazmat_name,
                        fatalities, injuries, quantity_released, quantity_unit
@@ -1009,8 +1009,8 @@ export const hotZonesRouter = router({
                 WHERE latitude IS NOT NULL AND longitude IS NOT NULL
                   AND incident_date > DATE_SUB(NOW(), INTERVAL 1 YEAR)
                 ORDER BY incident_date DESC LIMIT 300`
-          );
-          result.hazmatIncidents = rows.map((r: any) => ({
+          ) as any;
+          result.hazmatIncidents = (rows || []).map((r: any) => ({
             id: r.report_number, state: r.state_code, city: r.city,
             lat: Number(r.latitude), lng: Number(r.longitude),
             date: r.incident_date, mode: r.mode,
@@ -1018,13 +1018,13 @@ export const hotZonesRouter = router({
             fatalities: r.fatalities, injuries: r.injuries,
             qty: Number(r.quantity_released), unit: r.quantity_unit,
           }));
-        } catch { result.hazmatIncidents = []; }
+        } catch (e) { console.error("[MapIntel] hazmat:", e); result.hazmatIncidents = []; }
       }
 
       // 5. EPA FACILITIES (TRI + ECHO) — with violations or high releases
       if (allLayers || wantedLayers.includes("epa")) {
         try {
-          const rows: any[] = await db.execute(
+          const [rows] = await db.execute(
             sql`SELECT registry_id, facility_name, state_code, latitude, longitude,
                        industry_sector, compliance_status, total_releases_lbs,
                        formal_enforcement_actions, penalties_last_5yr, tri_facility
@@ -1033,78 +1033,78 @@ export const hotZonesRouter = router({
                   AND (compliance_status = 'Violation' OR tri_facility = 1
                        OR CAST(total_releases_lbs AS DECIMAL(15,2)) > 10000)
                 ORDER BY CAST(total_releases_lbs AS DECIMAL(15,2)) DESC LIMIT 200`
-          );
-          result.epaFacilities = rows.map((r: any) => ({
+          ) as any;
+          result.epaFacilities = (rows || []).map((r: any) => ({
             id: r.registry_id, name: r.facility_name, state: r.state_code,
             lat: Number(r.latitude), lng: Number(r.longitude),
             sector: r.industry_sector, compliance: r.compliance_status,
             releases: Number(r.total_releases_lbs), enforcement: r.formal_enforcement_actions,
             penalties: Number(r.penalties_last_5yr), tri: !!r.tri_facility,
           }));
-        } catch { result.epaFacilities = []; }
+        } catch (e) { console.error("[MapIntel] epa:", e); result.epaFacilities = []; }
       }
 
       // 6. FEMA DISASTERS — active (no closeout date), last 2 years
       if (allLayers || wantedLayers.includes("fema")) {
         try {
-          const rows: any[] = await db.execute(
+          const [rows] = await db.execute(
             sql`SELECT disaster_number, state_code, designated_area, declaration_date,
                        incident_type, declaration_type, total_obligated_amount
                 FROM hz_fema_disasters
                 WHERE closeout_date IS NULL
                   AND declaration_date > DATE_SUB(NOW(), INTERVAL 2 YEAR)
                 ORDER BY declaration_date DESC LIMIT 100`
-          );
-          result.femaDisasters = rows.map((r: any) => ({
+          ) as any;
+          result.femaDisasters = (rows || []).map((r: any) => ({
             id: r.disaster_number, state: r.state_code, area: r.designated_area,
             date: r.declaration_date, type: r.incident_type,
             declType: r.declaration_type, amount: Number(r.total_obligated_amount),
           }));
-        } catch { result.femaDisasters = []; }
+        } catch (e) { console.error("[MapIntel] fema:", e); result.femaDisasters = []; }
       }
 
       // 7. LOCKS & WATERWAYS (USACE) — closed or restricted
       if (allLayers || wantedLayers.includes("locks")) {
         try {
-          const rows: any[] = await db.execute(
+          const [rows] = await db.execute(
             sql`SELECT lock_id, lock_name, river_name, state_code, latitude, longitude,
                        operational_status, closure_reason, queue_time_hours
                 FROM hz_lock_status
                 WHERE latitude IS NOT NULL AND longitude IS NOT NULL
                 LIMIT 100`
-          );
-          result.locks = rows.map((r: any) => ({
+          ) as any;
+          result.locks = (rows || []).map((r: any) => ({
             id: r.lock_id, name: r.lock_name, river: r.river_name,
             state: r.state_code, lat: Number(r.latitude), lng: Number(r.longitude),
             status: r.operational_status, reason: r.closure_reason,
             queueHrs: Number(r.queue_time_hours),
           }));
-        } catch { result.locks = []; }
+        } catch (e) { console.error("[MapIntel] locks:", e); result.locks = []; }
       }
 
       // 8. EMISSIONS (CAMPD) — top emitters with geo
       if (allLayers || wantedLayers.includes("emissions")) {
         try {
-          const rows: any[] = await db.execute(
+          const [rows] = await db.execute(
             sql`SELECT facility_id, facility_name, state_code, latitude, longitude,
                        so2_tons, nox_tons, co2_tons, source_category, operating_hours
                 FROM hz_emissions
                 WHERE latitude IS NOT NULL AND longitude IS NOT NULL
                 ORDER BY CAST(co2_tons AS DECIMAL(15,2)) DESC LIMIT 150`
-          );
-          result.emissions = rows.map((r: any) => ({
+          ) as any;
+          result.emissions = (rows || []).map((r: any) => ({
             id: r.facility_id, name: r.facility_name, state: r.state_code,
             lat: Number(r.latitude), lng: Number(r.longitude),
             so2: Number(r.so2_tons), nox: Number(r.nox_tons), co2: Number(r.co2_tons),
             category: r.source_category, hours: r.operating_hours,
           }));
-        } catch { result.emissions = []; }
+        } catch (e) { console.error("[MapIntel] emissions:", e); result.emissions = []; }
       }
 
       // 9. RCRA HAZARDOUS WASTE HANDLERS — violations + TSDFs
       if (allLayers || wantedLayers.includes("rcra")) {
         try {
-          const rows: any[] = await db.execute(
+          const [rows] = await db.execute(
             sql`SELECT handler_id, handler_name, state_code, latitude, longitude,
                        handler_type, compliance_status, violations_count,
                        penalties_total, industry_sector
@@ -1113,28 +1113,28 @@ export const hotZonesRouter = router({
                   AND (compliance_status = 'Violation' OR handler_type = 'TSDF'
                        OR violations_count > 0)
                 ORDER BY violations_count DESC LIMIT 200`
-          );
-          result.rcraHandlers = rows.map((r: any) => ({
+          ) as any;
+          result.rcraHandlers = (rows || []).map((r: any) => ({
             id: r.handler_id, name: r.handler_name, state: r.state_code,
             lat: Number(r.latitude), lng: Number(r.longitude),
             type: r.handler_type, compliance: r.compliance_status,
             violations: r.violations_count, penalties: Number(r.penalties_total),
             sector: r.industry_sector,
           }));
-        } catch { result.rcraHandlers = []; }
+        } catch (e) { console.error("[MapIntel] rcra:", e); result.rcraHandlers = []; }
       }
 
       // 10. FUEL PRICES BY STATE (EIA) — latest per state
       if (allLayers || wantedLayers.includes("fuel")) {
         try {
-          const rows: any[] = await db.execute(
+          const [rows] = await db.execute(
             sql`SELECT state_code, diesel_retail, diesel_change_1w, report_date
                 FROM hz_fuel_prices
                 WHERE diesel_retail IS NOT NULL
                 ORDER BY report_date DESC LIMIT 60`
-          );
+          ) as any;
           const byState: Record<string, any> = {};
-          for (const r of rows) {
+          for (const r of (rows || [])) {
             if (!byState[r.state_code]) {
               byState[r.state_code] = {
                 state: r.state_code,
@@ -1145,13 +1145,13 @@ export const hotZonesRouter = router({
             }
           }
           result.fuelByState = Object.values(byState);
-        } catch { result.fuelByState = []; }
+        } catch (e) { console.error("[MapIntel] fuel:", e); result.fuelByState = []; }
       }
 
       // 11. CARRIER SAFETY BY STATE (FMCSA) — aggregate per state
       if (allLayers || wantedLayers.includes("carriers")) {
         try {
-          const rows: any[] = await db.execute(
+          const [rows] = await db.execute(
             sql`SELECT physical_state as state,
                        COUNT(*) as total,
                        COUNT(CASE WHEN safety_rating IN ('Conditional','Unsatisfactory') THEN 1 END) as violations,
@@ -1160,15 +1160,19 @@ export const hotZonesRouter = router({
                 FROM hz_carrier_safety
                 WHERE physical_state IS NOT NULL
                 GROUP BY physical_state`
-          );
-          result.carriersByState = rows.map((r: any) => ({
+          ) as any;
+          result.carriersByState = (rows || []).map((r: any) => ({
             state: r.state, total: Number(r.total),
             violations: Number(r.violations),
             avgUnsafe: Number(r.avg_unsafe),
             hazmatCarriers: Number(r.hazmat_carriers),
           }));
-        } catch { result.carriersByState = []; }
+        } catch (e) { console.error("[MapIntel] carriers:", e); result.carriersByState = []; }
       }
+
+      // Log summary of data counts for debugging
+      const counts = Object.entries(result).filter(([k]) => k !== "timestamp").map(([k, v]) => `${k}:${Array.isArray(v) ? v.length : "?"}`)
+      console.log(`[MapIntel] ${counts.join(", ")}`);
 
       return result;
     }),
