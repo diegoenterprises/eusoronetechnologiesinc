@@ -831,6 +831,11 @@ export const terminalsRouter = router({
       canApproveAccess: z.boolean().optional(),
       canDispenseProduct: z.boolean().optional(),
       status: z.enum(["on_duty", "off_duty", "break"]).optional(),
+      locationType: z.enum(["terminal", "warehouse", "dock", "yard", "cold_storage", "distribution_center", "port", "rail_yard", "pickup_point"]).optional(),
+      locationName: z.string().optional(),
+      locationAddress: z.string().optional(),
+      locationLat: z.number().nullable().optional(),
+      locationLng: z.number().nullable().optional(),
     }))
     .mutation(async ({ input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
@@ -845,6 +850,11 @@ export const terminalsRouter = router({
       if (input.canApproveAccess !== undefined) updates.canApproveAccess = input.canApproveAccess;
       if (input.canDispenseProduct !== undefined) updates.canDispenseProduct = input.canDispenseProduct;
       if (input.status !== undefined) updates.status = input.status;
+      if (input.locationType !== undefined) updates.locationType = input.locationType;
+      if (input.locationName !== undefined) updates.locationName = input.locationName || null;
+      if (input.locationAddress !== undefined) updates.locationAddress = input.locationAddress || null;
+      if (input.locationLat !== undefined) updates.locationLat = input.locationLat != null ? String(input.locationLat) : null;
+      if (input.locationLng !== undefined) updates.locationLng = input.locationLng != null ? String(input.locationLng) : null;
       if (Object.keys(updates).length > 0) {
         await db.update(terminalStaff).set(updates).where(eq(terminalStaff.id, input.id));
       }

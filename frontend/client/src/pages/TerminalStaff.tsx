@@ -17,7 +17,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Users, Search, CheckCircle, Clock, Plus, Phone, Mail,
   Link2, Copy, Shield, ShieldCheck, X, Trash2, ChevronDown,
-  MapPin, KeyRound, Fuel, Building2, Warehouse
+  MapPin, KeyRound, Fuel, Building2, Warehouse, Pencil
 } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -65,6 +65,8 @@ export default function TerminalStaff() {
   const [showAdd, setShowAdd] = useState(false);
   const [copiedToken, setCopiedToken] = useState<number | null>(null);
   const [newCode, setNewCode] = useState<{ staffId: number; code: string } | null>(null);
+  const [editingStaff, setEditingStaff] = useState<any>(null);
+  const [editForm, setEditForm] = useState<any>(null);
 
   // Form state — includes location fields for shipper/marketer
   const [form, setForm] = useState({
@@ -96,7 +98,10 @@ export default function TerminalStaff() {
   });
 
   const updateMutation = (trpc as any).terminals.updateStaff.useMutation({
-    onSuccess: () => { utils.terminals.getStaff.invalidate(); utils.terminals.getStaffStats.invalidate(); },
+    onSuccess: () => {
+      utils.terminals.getStaff.invalidate(); utils.terminals.getStaffStats.invalidate();
+      if (editingStaff) { setEditingStaff(null); setEditForm(null); }
+    },
   });
 
   const genLinkMutation = (trpc as any).terminals.generateAccessLink.useMutation({
@@ -113,6 +118,49 @@ export default function TerminalStaff() {
   const stats = statsQuery.data;
   const staffList = Array.isArray(staffQuery.data) ? staffQuery.data : [];
   const activeLinks = Array.isArray(linksQuery.data) ? linksQuery.data : [];
+
+  const openEdit = (staff: any) => {
+    setEditingStaff(staff);
+    setEditForm({
+      name: staff.name || "",
+      phone: staff.phone || "",
+      email: staff.email || "",
+      staffRole: staff.staffRole || "gate_controller",
+      assignedZone: staff.assignedZone || "",
+      shift: staff.shift || "day",
+      canApproveAccess: staff.canApproveAccess ?? true,
+      canDispenseProduct: staff.canDispenseProduct ?? false,
+      locationType: staff.locationType || "terminal",
+      locationName: staff.locationName || "",
+      locationAddress: staff.locationAddress || "",
+      locationLat: staff.locationLat != null ? String(staff.locationLat) : "",
+      locationLng: staff.locationLng != null ? String(staff.locationLng) : "",
+    });
+  };
+
+  const handleEdit = () => {
+    if (!editingStaff || !editForm) return;
+    const payload: any = { id: editingStaff.id };
+    if (editForm.name !== editingStaff.name) payload.name = editForm.name;
+    if (editForm.phone !== (editingStaff.phone || "")) payload.phone = editForm.phone;
+    if (editForm.email !== (editingStaff.email || "")) payload.email = editForm.email;
+    if (editForm.staffRole !== editingStaff.staffRole) payload.staffRole = editForm.staffRole;
+    if (editForm.assignedZone !== (editingStaff.assignedZone || "")) payload.assignedZone = editForm.assignedZone;
+    if (editForm.shift !== (editingStaff.shift || "day")) payload.shift = editForm.shift;
+    if (editForm.canApproveAccess !== editingStaff.canApproveAccess) payload.canApproveAccess = editForm.canApproveAccess;
+    if (editForm.canDispenseProduct !== editingStaff.canDispenseProduct) payload.canDispenseProduct = editForm.canDispenseProduct;
+    if (editForm.locationType !== (editingStaff.locationType || "terminal")) payload.locationType = editForm.locationType;
+    if (editForm.locationName !== (editingStaff.locationName || "")) payload.locationName = editForm.locationName;
+    if (editForm.locationAddress !== (editingStaff.locationAddress || "")) payload.locationAddress = editForm.locationAddress;
+    const newLat = editForm.locationLat ? parseFloat(editForm.locationLat) : null;
+    const oldLat = editingStaff.locationLat != null ? Number(editingStaff.locationLat) : null;
+    if (newLat !== oldLat) payload.locationLat = newLat;
+    const newLng = editForm.locationLng ? parseFloat(editForm.locationLng) : null;
+    const oldLng = editingStaff.locationLng != null ? Number(editingStaff.locationLng) : null;
+    if (newLng !== oldLng) payload.locationLng = newLng;
+    if (Object.keys(payload).length > 1) updateMutation.mutate(payload);
+    else { setEditingStaff(null); setEditForm(null); }
+  };
 
   const handleAdd = () => {
     if (!form.name.trim()) return;
@@ -318,6 +366,129 @@ export default function TerminalStaff() {
         </div>
       )}
 
+      {/* Edit Staff Modal */}
+      {editingStaff && editForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setEditingStaff(null); setEditForm(null); }}>
+          <Card className="bg-slate-900 border-slate-700 rounded-2xl w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e: any) => e.stopPropagation()}>
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-white text-lg flex items-center gap-2"><Pencil className="w-5 h-5 text-cyan-400" />Edit Staff</CardTitle>
+                <Button size="sm" variant="ghost" onClick={() => { setEditingStaff(null); setEditForm(null); }} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></Button>
+              </div>
+              <p className="text-slate-400 text-xs">Update details for {editingStaff.name}</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Location section — Shipper/Marketer only */}
+              {isShipper && (
+                <div className="bg-slate-800/30 rounded-xl p-4 space-y-3 border border-slate-700/30">
+                  <p className="text-xs font-semibold text-cyan-400 flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5" />Pickup Location</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Location Type</label>
+                      <select value={editForm.locationType} onChange={(e: any) => setEditForm({ ...editForm, locationType: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
+                        <option value="warehouse">Warehouse</option>
+                        <option value="dock">Dock</option>
+                        <option value="yard">Yard</option>
+                        <option value="cold_storage">Cold Storage</option>
+                        <option value="distribution_center">Distribution Center</option>
+                        <option value="port">Port</option>
+                        <option value="rail_yard">Rail Yard</option>
+                        <option value="pickup_point">Pickup Point</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Location Name</label>
+                      <Input value={editForm.locationName} onChange={(e: any) => setEditForm({ ...editForm, locationName: e.target.value })} placeholder="Main Warehouse, Dock B..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-xs text-slate-400 mb-1 block">Address</label>
+                      <Input value={editForm.locationAddress} onChange={(e: any) => setEditForm({ ...editForm, locationAddress: e.target.value })} placeholder="123 Industrial Blvd, Houston, TX 77001" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Latitude (for geofence)</label>
+                      <Input type="number" step="any" value={editForm.locationLat} onChange={(e: any) => setEditForm({ ...editForm, locationLat: e.target.value })} placeholder="29.7604" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Longitude (for geofence)</label>
+                      <Input type="number" step="any" value={editForm.locationLng} onChange={(e: any) => setEditForm({ ...editForm, locationLng: e.target.value })} placeholder="-95.3698" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-600">Lat/Lng enables geofence verification — staff must be within 500m of this location</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Full Name *</label>
+                  <Input value={editForm.name} onChange={(e: any) => setEditForm({ ...editForm, name: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Phone</label>
+                  <Input value={editForm.phone} onChange={(e: any) => setEditForm({ ...editForm, phone: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Email</label>
+                  <Input value={editForm.email} onChange={(e: any) => setEditForm({ ...editForm, email: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Role</label>
+                  <select value={editForm.staffRole} onChange={(e: any) => setEditForm({ ...editForm, staffRole: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
+                    {isShipper ? (
+                      <>
+                        <option value="dock_manager">Dock Manager</option>
+                        <option value="warehouse_lead">Warehouse Lead</option>
+                        <option value="receiving_clerk">Receiving Clerk</option>
+                        <option value="yard_marshal">Yard Marshal</option>
+                        <option value="gate_controller">Gate Controller</option>
+                        <option value="safety_officer">Safety Officer</option>
+                        <option value="shift_lead">Shift Lead</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="gate_controller">Gate Controller</option>
+                        <option value="rack_supervisor">Rack Supervisor</option>
+                        <option value="bay_operator">Bay Operator</option>
+                        <option value="safety_officer">Safety Officer</option>
+                        <option value="shift_lead">Shift Lead</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">{isShipper ? "Assigned Area" : "Assigned Zone"}</label>
+                  <Input value={editForm.assignedZone} onChange={(e: any) => setEditForm({ ...editForm, assignedZone: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Shift</label>
+                  <select value={editForm.shift} onChange={(e: any) => setEditForm({ ...editForm, shift: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
+                    <option value="day">Day</option>
+                    <option value="night">Night</option>
+                    <option value="swing">Swing</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-6 pt-1">
+                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                  <input type="checkbox" checked={editForm.canApproveAccess} onChange={(e: any) => setEditForm({ ...editForm, canApproveAccess: e.target.checked })} className="rounded border-slate-600 bg-slate-800" />
+                  Can approve geofence access
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                  <input type="checkbox" checked={editForm.canDispenseProduct} onChange={(e: any) => setEditForm({ ...editForm, canDispenseProduct: e.target.checked })} className="rounded border-slate-600 bg-slate-800" />
+                  {isShipper ? "Can authorize release" : "Can authorize dispensing"}
+                </label>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => { setEditingStaff(null); setEditForm(null); }} className="bg-slate-800/50 border-slate-700/50 rounded-lg">Cancel</Button>
+                <Button onClick={handleEdit} disabled={!editForm.name?.trim() || updateMutation.isPending}
+                  className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
+                  {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Staff List */}
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
@@ -380,6 +551,10 @@ export default function TerminalStaff() {
                             <Link2 className="w-3 h-3 mr-1" />{genLinkMutation.isPending ? "..." : "Generate Link"}
                           </Button>
                         )}
+                        <Button size="sm" variant="ghost" onClick={() => openEdit(staff)}
+                          className="text-slate-500 hover:text-cyan-400">
+                          <Pencil className="w-4 h-4" />
+                        </Button>
                         <Button size="sm" variant="ghost" onClick={() => { if (confirm(`Remove ${staff.name}?`)) removeMutation.mutate({ id: staff.id }); }}
                           className="text-slate-500 hover:text-red-400">
                           <Trash2 className="w-4 h-4" />
