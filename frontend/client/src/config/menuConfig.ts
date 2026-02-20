@@ -913,10 +913,10 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
     { 
       icon: "Building2", 
-      label: "Facility", 
+      label: "Terminal Profile", 
       path: "/facility", 
       badge: 0,
-      description: "Facility management"
+      description: "Terminal identity, compliance & operations"
     },
     { 
       icon: "Users", 
@@ -963,9 +963,9 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { 
       icon: "AlertTriangle", 
       label: "Compliance", 
-      path: "/compliance", 
+      path: "/facility?tab=compliance", 
       badge: 0,
-      description: "Regulatory compliance"
+      description: "Facility regulatory compliance"
     },
     { 
       icon: "PenTool", 

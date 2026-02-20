@@ -1,571 +1,515 @@
 /**
- * FACILITY MANAGEMENT PAGE
- * TRILLION DOLLAR CODE STANDARD - NO PLACEHOLDERS
+ * TERMINAL PROFILE PAGE
+ * The terminal's identity page for counterparties (shippers, catalysts, brokers).
  * 
- * Terminal facility operations and management.
- * Features:
- * - Facility overview dashboard
- * - Incoming/outgoing shipments tracking
- * - Bay and dock management
- * - Staff scheduling
- * - Equipment status
- * - Safety compliance
+ * Tabs: Overview | Compliance | Operations | Partnerships
+ * - Overview: Terminal identity, location, contact, edit capability
+ * - Compliance: Facility-specific compliance (EPA, OSHA, safety certs)
+ * - Operations: Capacity, throughput, docks/racks, 30-day stats
+ * - Partnerships: Active counterparties with access levels
  */
 
 import { useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Building2,
-  TruckIcon,
-  Users,
-  Package,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  MapPin,
-  Activity,
-  BarChart3,
-  Calendar,
-  Thermometer,
-  RefreshCw,
+  Building2, Users, MapPin, CheckCircle, Shield, ShieldCheck,
+  Activity, Droplets, Gauge, Edit, Save, X, Globe, Phone, Mail,
+  Handshake, FileCheck, AlertTriangle, Container, Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { useSearchParams } from "wouter";
 
-interface FacilityStats {
-  activeShipments: number;
-  incomingToday: number;
-  outgoingToday: number;
-  availableBays: number;
-  totalBays: number;
-  staffOnDuty: number;
-  safetyIncidents: number;
-}
+const TERMINAL_TYPE_LABELS: Record<string, string> = {
+  refinery: "Refinery", storage: "Storage Facility", rack: "Rack Terminal",
+  pipeline: "Pipeline Hub", blending: "Blending Facility", distribution: "Distribution Center",
+  marine: "Marine Terminal", rail: "Rail Terminal",
+};
 
-interface Shipment {
-  id: string;
-  type: "incoming" | "outgoing";
-  catalyst: string;
-  driver: string;
-  commodity: string;
-  quantity: number;
-  scheduledTime: Date;
-  status: "scheduled" | "in_progress" | "completed" | "delayed";
-  bay?: string;
-}
+const PARTNER_TYPE_COLORS: Record<string, string> = {
+  shipper: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  marketer: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+  broker: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  transporter: "bg-green-500/20 text-green-400 border-green-500/30",
+};
 
-interface Bay {
-  id: string;
-  number: number;
-  status: "available" | "occupied" | "maintenance";
-  currentShipment?: string;
-  type: "loading" | "unloading";
-  equipment: string[];
-}
+const ACCESS_COLORS: Record<string, string> = {
+  full: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  limited: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  scheduled: "bg-slate-500/20 text-slate-400 border-slate-500/30",
+};
 
-interface StaffMember {
-  id: string;
-  name: string;
-  role: string;
-  shift: string;
-  status: "active" | "break" | "offline";
-  tasksCompleted: number;
-}
+const FACILITY_COMPLIANCE = [
+  { name: "EPA Air Quality Permit (Title V)", group: "Environmental", critical: true },
+  { name: "SPCC Plan (Spill Prevention)", group: "Environmental", critical: true },
+  { name: "Stormwater Pollution Prevention Plan", group: "Environmental", critical: false },
+  { name: "OSHA Process Safety Management (PSM)", group: "Safety", critical: true },
+  { name: "Risk Management Plan (RMP)", group: "Safety", critical: true },
+  { name: "Emergency Response Plan", group: "Safety", critical: true },
+  { name: "Fire Prevention Plan", group: "Safety", critical: false },
+  { name: "API 653 Tank Inspection", group: "Operations", critical: true },
+  { name: "API 570 Piping Inspection", group: "Operations", critical: false },
+  { name: "Calibration Certificates (Meters)", group: "Operations", critical: true },
+  { name: "DOT 49 CFR Loading/Unloading Compliance", group: "Regulatory", critical: true },
+  { name: "State Fire Marshal Permit", group: "Regulatory", critical: false },
+  { name: "TCEQ / State Environmental Permit", group: "Regulatory", critical: true },
+  { name: "Business Continuity Plan", group: "Administrative", critical: false },
+  { name: "Workers' Compensation Insurance", group: "Administrative", critical: true },
+  { name: "General Liability Insurance", group: "Administrative", critical: true },
+];
 
 export default function FacilityPage() {
-  const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get?.("tab") || (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null) || "overview";
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
 
-  // tRPC queries for facility data
-  const statsQuery = (trpc as any).terminals.getStats.useQuery();
-  const shipmentsQuery = (trpc as any).terminals.getShipments.useQuery({ date: selectedDate.toISOString() });
-  const baysQuery = (trpc as any).terminals.getBays.useQuery();
-  const staffQuery = (trpc as any).terminals.getStaff.useQuery({ search: '' });
+  const utils = (trpc as any).useUtils();
+  const profileQuery = (trpc as any).terminals.getTerminalProfile.useQuery();
+  const complianceQuery = (trpc as any).documentCenter?.getMyComplianceProfile?.useQuery?.() || { data: null, isLoading: false };
 
-  if (statsQuery.isLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-12 w-64" />
-        <div className="grid grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <Skeleton key={i} className="h-24" />)}
-        </div>
-        <Skeleton className="h-96" />
-      </div>
-    );
-  }
+  const updateMutation = (trpc as any).terminals.updateTerminalProfile.useMutation({
+    onSuccess: () => {
+      toast.success("Terminal profile updated");
+      utils.terminals.getTerminalProfile.invalidate();
+      setIsEditing(false);
+      setEditForm(null);
+    },
+    onError: (e: any) => toast.error("Failed to update", { description: e.message }),
+  });
 
-  if (statsQuery.isError) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <p className="text-red-400 mb-4">Failed to load facility data</p>
-        <Button onClick={() => statsQuery.refetch()} variant="outline">
-          <RefreshCw size={16} className="mr-2" /> Retry
-        </Button>
-      </div>
-    );
-  }
+  const data = profileQuery.data;
+  const t = data?.terminal;
+  const company = data?.company;
 
-  const stats: FacilityStats = statsQuery.data || {
-    activeShipments: 0,
-    incomingToday: 0,
-    outgoingToday: 0,
-    availableBays: 0,
-    totalBays: 0,
-    staffOnDuty: 0,
-    safetyIncidents: 0,
-  };
-
-  const shipments: Shipment[] = (shipmentsQuery.data || []).map((s: any) => ({
-    id: String(s.id),
-    type: s.type || 'incoming',
-    catalyst: s.catalyst || '',
-    driver: s.driver || '',
-    commodity: s.commodity || '',
-    quantity: s.weight || 0,
-    scheduledTime: new Date(s.scheduledTime || Date.now()),
-    status: s.status || 'scheduled',
-    bay: s.bay,
-  }));
-
-  const bays: Bay[] = (baysQuery.data || []).map((b: any) => ({
-    id: String(b.id),
-    number: b.number || 0,
-    status: b.status || 'available',
-    currentShipment: b.currentShipment,
-    type: b.type || 'loading',
-    equipment: b.equipment || [],
-  }));
-
-  const staff: StaffMember[] = (staffQuery.data || []).map((s: any) => ({
-    id: String(s.id),
-    name: s.name || '',
-    role: s.role || '',
-    shift: s.shift || 'Day',
-    status: s.status || 'active',
-    tasksCompleted: s.tasksCompleted || 0,
-  }));
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "scheduled":
-      case "available":
-      case "active":
-        return "border-blue-600 text-blue-400 bg-blue-600/10";
-      case "in_progress":
-        return "border-yellow-600 text-yellow-400 bg-yellow-600/10";
-      case "completed":
-        return "border-green-600 text-green-400 bg-green-600/10";
-      case "delayed":
-      case "maintenance":
-        return "border-red-600 text-red-400 bg-red-600/10";
-      case "occupied":
-        return "border-orange-600 text-orange-400 bg-orange-600/10";
-      case "break":
-      case "offline":
-        return "border-gray-600 text-slate-400 bg-gray-600/10";
-      default:
-        return "border-gray-600 text-slate-400 bg-gray-600/10";
-    }
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
+  const startEdit = () => {
+    setEditForm({
+      name: t?.name || "",
+      code: t?.code || "",
+      address: t?.address || "",
+      city: t?.city || "",
+      state: t?.state || "",
+      terminalType: t?.terminalType || "storage",
+      throughputCapacity: t?.throughputCapacity || 0,
+      throughputUnit: t?.throughputUnit || "bbl/day",
+      dockCount: t?.dockCount || 0,
+      tankCount: t?.tankCount || 0,
+      latitude: t?.latitude != null ? String(t.latitude) : "",
+      longitude: t?.longitude != null ? String(t.longitude) : "",
     });
+    setIsEditing(true);
   };
+
+  const handleSave = () => {
+    if (!editForm) return;
+    const payload: any = {};
+    if (editForm.name) payload.name = editForm.name;
+    if (editForm.code !== undefined) payload.code = editForm.code;
+    if (editForm.address !== undefined) payload.address = editForm.address;
+    if (editForm.city !== undefined) payload.city = editForm.city;
+    if (editForm.state !== undefined) payload.state = editForm.state;
+    if (editForm.terminalType) payload.terminalType = editForm.terminalType;
+    if (editForm.throughputCapacity !== undefined) payload.throughputCapacity = Number(editForm.throughputCapacity) || 0;
+    if (editForm.throughputUnit) payload.throughputUnit = editForm.throughputUnit;
+    if (editForm.dockCount !== undefined) payload.dockCount = Number(editForm.dockCount) || 0;
+    if (editForm.tankCount !== undefined) payload.tankCount = Number(editForm.tankCount) || 0;
+    payload.latitude = editForm.latitude ? parseFloat(editForm.latitude) : null;
+    payload.longitude = editForm.longitude ? parseFloat(editForm.longitude) : null;
+    updateMutation.mutate(payload);
+  };
+
+  if (profileQuery.isLoading) {
+    return (
+      <div className="p-4 md:p-6 space-y-6">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid grid-cols-4 gap-4">{[1,2,3,4].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>
+        <Skeleton className="h-96 rounded-xl" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mb-2">
-              Facility Management
-            </h1>
-            <p className="text-slate-400">
-              Terminal operations and shipment coordination
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              className="border-gray-600 text-slate-300 hover:bg-gray-700"
-            >
-              <Calendar className="mr-2" size={18} />
-              Schedule
-            </Button>
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
-              <AlertTriangle className="mr-2" size={18} />
-              Report Incident
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
+            Terminal Profile
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">
+            {t ? `${t.name}${t.code ? ` (${t.code})` : ""}` : "Your facility identity for counterparties"}
+          </p>
+        </div>
+        {!isEditing ? (
+          <Button onClick={startEdit} className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
+            <Edit className="w-4 h-4 mr-2" />Edit Profile
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { setIsEditing(false); setEditForm(null); }} className="rounded-lg"><X className="w-4 h-4 mr-1" />Cancel</Button>
+            <Button onClick={handleSave} disabled={updateMutation.isPending} className="bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-lg">
+              <Save className="w-4 h-4 mr-1" />{updateMutation.isPending ? "Saving..." : "Save"}
             </Button>
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Stats Dashboard */}
-        <div className="grid grid-cols-4 gap-4">
-          <Card className="bg-gray-900 border-gray-700 p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-600/20 rounded-lg">
-                <Activity className="text-blue-400" size={24} />
-              </div>
-              <div>
-                <p className="text-slate-400 text-sm">Active Shipments</p>
-                <p className="text-2xl font-bold text-white">
-                  {stats.activeShipments}
-                </p>
-              </div>
+      {/* Identity Banner */}
+      <Card className="bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border-cyan-500/30 rounded-xl overflow-hidden">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-6">
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 shrink-0">
+              <Building2 className="w-10 h-10 text-cyan-400" />
             </div>
-          </Card>
-
-          <Card className="bg-gray-900 border-gray-700 p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-600/20 rounded-lg">
-                <TruckIcon className="text-green-400" size={24} />
-              </div>
-              <div>
-                <p className="text-slate-400 text-sm">Incoming Today</p>
-                <p className="text-2xl font-bold text-white">
-                  {stats.incomingToday}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="bg-gray-900 border-gray-700 p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-600/20 rounded-lg">
-                <Package className="text-purple-400" size={24} />
-              </div>
-              <div>
-                <p className="text-slate-400 text-sm">Outgoing Today</p>
-                <p className="text-2xl font-bold text-white">
-                  {stats.outgoingToday}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="bg-gray-900 border-gray-700 p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-yellow-600/20 rounded-lg">
-                <Building2 className="text-yellow-400" size={24} />
-              </div>
-              <div>
-                <p className="text-slate-400 text-sm">Available Bays</p>
-                <p className="text-2xl font-bold text-white">
-                  {stats.availableBays}/{stats.totalBays}
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Additional Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-gray-900 border-gray-700 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-blue-600/20 rounded-lg">
-                  <Users className="text-blue-400" size={24} />
+            <div className="flex-1 min-w-0">
+              {isEditing ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div><label className="text-xs text-slate-400 mb-1 block">Name *</label><Input value={editForm.name} onChange={(e: any) => setEditForm({ ...editForm, name: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" /></div>
+                  <div><label className="text-xs text-slate-400 mb-1 block">Code</label><Input value={editForm.code} onChange={(e: any) => setEditForm({ ...editForm, code: e.target.value })} placeholder="HTN-01" className="bg-slate-800/50 border-slate-700/50 rounded-lg" /></div>
+                  <div><label className="text-xs text-slate-400 mb-1 block">Type</label>
+                    <select value={editForm.terminalType} onChange={(e: any) => setEditForm({ ...editForm, terminalType: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
+                      {Object.entries(TERMINAL_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    </select>
+                  </div>
+                  <div><label className="text-xs text-slate-400 mb-1 block">Status</label><Badge className="mt-1 bg-emerald-500/20 text-emerald-400 border-emerald-500/30">{t?.status || "active"}</Badge></div>
                 </div>
-                <div>
-                  <p className="text-slate-400 text-sm">Staff On Duty</p>
-                  <p className="text-2xl font-bold text-white">
-                    {stats.staffOnDuty}
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-gray-600 text-slate-300 hover:bg-gray-700"
-              >
-                View Schedule
-              </Button>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold text-white">{t?.name || "No Terminal Registered"}</h2>
+                  <div className="flex items-center gap-3 mt-2 flex-wrap">
+                    {t?.code && <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">{t.code}</Badge>}
+                    {t?.terminalType && <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">{TERMINAL_TYPE_LABELS[t.terminalType] || t.terminalType}</Badge>}
+                    <Badge className={cn("border", t?.status === "active" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-red-500/20 text-red-400 border-red-500/30")}>
+                      {(t?.status || "active").toUpperCase()}
+                    </Badge>
+                  </div>
+                </>
+              )}
             </div>
-          </Card>
+          </div>
+        </CardContent>
+      </Card>
 
-          <Card className="bg-gray-900 border-gray-700 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-green-600/20 rounded-lg">
-                  <CheckCircle className="text-green-400" size={24} />
-                </div>
-                <div>
-                  <p className="text-slate-400 text-sm">Safety Incidents (30d)</p>
-                  <p className="text-2xl font-bold text-white">
-                    {stats.safetyIncidents}
-                  </p>
-                </div>
-              </div>
-              <Badge variant="outline" className="border-green-600 text-green-400 bg-green-600/10">
-                EXCELLENT
-              </Badge>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-cyan-500/20"><Activity className="w-6 h-6 text-cyan-400" /></div>
+              <div><p className="text-2xl font-bold text-cyan-400">{data?.stats?.appointmentsLast30 || 0}</p><p className="text-xs text-slate-400">Appts (30d)</p></div>
             </div>
-          </Card>
-        </div>
-
-        {/* Tabs */}
-        <Tabs defaultValue="shipments" className="space-y-4">
-          <TabsList className="bg-gray-900 border-gray-700">
-            <TabsTrigger value="shipments">Active Shipments</TabsTrigger>
-            <TabsTrigger value="bays">Bay Status</TabsTrigger>
-            <TabsTrigger value="staff">Staff</TabsTrigger>
-          </TabsList>
-
-          {/* Shipments Tab */}
-          <TabsContent value="shipments" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white">
-                Today's Shipments
-              </h3>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-gray-600 text-slate-300 hover:bg-gray-700"
-                >
-                  Incoming
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-gray-600 text-slate-300 hover:bg-gray-700"
-                >
-                  Outgoing
-                </Button>
-              </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-emerald-500/20"><CheckCircle className="w-6 h-6 text-emerald-400" /></div>
+              <div><p className="text-2xl font-bold text-emerald-400">{data?.stats?.completionRate || 0}%</p><p className="text-xs text-slate-400">Completion Rate</p></div>
             </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-blue-500/20"><Users className="w-6 h-6 text-blue-400" /></div>
+              <div><p className="text-2xl font-bold text-blue-400">{data?.staffCount || 0}</p><p className="text-xs text-slate-400">Active Staff</p></div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-purple-500/20"><Handshake className="w-6 h-6 text-purple-400" /></div>
+              <div><p className="text-2xl font-bold text-purple-400">{data?.partners?.length || 0}</p><p className="text-xs text-slate-400">Partnerships</p></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-            <div className="space-y-3">
-              {shipments.map((shipment: any) => (
-                <Card
-                  key={shipment.id}
-                  className="bg-gray-900 border-gray-700 p-6"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Badge
-                          variant="outline"
-                          className={getStatusColor(shipment.status)}
-                        >
-                          {shipment.status.replace("_", " ").toUpperCase()}
-                        </Badge>
-                        <Badge
-                          variant="outline"
-                          className={
-                            shipment.type === "incoming"
-                              ? "border-green-600 text-green-400 bg-green-600/10"
-                              : "border-purple-600 text-purple-400 bg-purple-600/10"
-                          }
-                        >
-                          {shipment.type.toUpperCase()}
-                        </Badge>
-                        <span className="text-slate-400 text-sm">
-                          {shipment.id}
-                        </span>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-1">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-slate-700 rounded-md">Overview</TabsTrigger>
+          <TabsTrigger value="compliance" className="data-[state=active]:bg-slate-700 rounded-md">Compliance</TabsTrigger>
+          <TabsTrigger value="operations" className="data-[state=active]:bg-slate-700 rounded-md">Operations</TabsTrigger>
+          <TabsTrigger value="partnerships" className="data-[state=active]:bg-slate-700 rounded-md">Partnerships</TabsTrigger>
+        </TabsList>
+
+        {/* OVERVIEW TAB */}
+        <TabsContent value="overview" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Location & Address */}
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+              <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><MapPin className="w-5 h-5 text-cyan-400" />Location</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <div><label className="text-xs text-slate-400 mb-1 block">Address</label><Input value={editForm.address} onChange={(e: any) => setEditForm({ ...editForm, address: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" /></div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><label className="text-xs text-slate-400 mb-1 block">City</label><Input value={editForm.city} onChange={(e: any) => setEditForm({ ...editForm, city: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" /></div>
+                      <div><label className="text-xs text-slate-400 mb-1 block">State</label><Input value={editForm.state} onChange={(e: any) => setEditForm({ ...editForm, state: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" /></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><label className="text-xs text-slate-400 mb-1 block">Latitude</label><Input type="number" step="any" value={editForm.latitude} onChange={(e: any) => setEditForm({ ...editForm, latitude: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" /></div>
+                      <div><label className="text-xs text-slate-400 mb-1 block">Longitude</label><Input type="number" step="any" value={editForm.longitude} onChange={(e: any) => setEditForm({ ...editForm, longitude: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" /></div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-lg bg-slate-700/30">
+                      <p className="text-xs text-slate-500 mb-1">Address</p>
+                      <p className="text-white text-sm">{t?.address || "Not set"}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">City</p><p className="text-white text-sm">{t?.city || "---"}</p></div>
+                      <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">State</p><p className="text-white text-sm">{t?.state || "---"}</p></div>
+                    </div>
+                    {(t?.latitude || t?.longitude) && (
+                      <div className="p-3 rounded-lg bg-slate-700/30">
+                        <p className="text-xs text-slate-500 mb-1">Coordinates</p>
+                        <p className="text-white text-sm font-mono">{t?.latitude?.toFixed(6)}, {t?.longitude?.toFixed(6)}</p>
                       </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-                      <div className="grid grid-cols-2 gap-4 mb-3">
-                        <div>
-                          <p className="text-slate-400 text-sm mb-1">Catalyst</p>
-                          <p className="text-white font-semibold">
-                            {shipment.catalyst}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400 text-sm mb-1">Driver</p>
-                          <p className="text-white font-semibold">
-                            {shipment.driver}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400 text-sm mb-1">Commodity</p>
-                          <p className="text-white font-semibold">
-                            {shipment.commodity}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400 text-sm mb-1">Quantity</p>
-                          <p className="text-white font-semibold">
-                            {((shipment as any).weight || shipment.quantity || 0).toLocaleString()} gal
-                          </p>
-                        </div>
+            {/* Contact & Company Info */}
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+              <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Building2 className="w-5 h-5 text-purple-400" />Company</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="p-3 rounded-lg bg-slate-700/30">
+                  <p className="text-xs text-slate-500 mb-1">Company Name</p>
+                  <p className="text-white text-sm font-semibold">{company?.name || "---"}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {company?.phone && (
+                    <div className="p-3 rounded-lg bg-slate-700/30 flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-slate-500" />
+                      <div><p className="text-xs text-slate-500">Phone</p><p className="text-white text-sm">{company.phone}</p></div>
+                    </div>
+                  )}
+                  {company?.email && (
+                    <div className="p-3 rounded-lg bg-slate-700/30 flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-slate-500" />
+                      <div><p className="text-xs text-slate-500">Email</p><p className="text-white text-sm truncate">{company.email}</p></div>
+                    </div>
+                  )}
+                </div>
+                {company?.website && (
+                  <div className="p-3 rounded-lg bg-slate-700/30 flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-slate-500" />
+                    <div><p className="text-xs text-slate-500">Website</p><p className="text-cyan-400 text-sm">{company.website}</p></div>
+                  </div>
+                )}
+                <div className="p-3 rounded-lg bg-slate-700/30">
+                  <p className="text-xs text-slate-500 mb-1">Products Handled</p>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {(t?.productsHandled || []).length > 0 ? (t?.productsHandled || []).map((p: string) => (
+                      <Badge key={p} className="bg-cyan-500/15 text-cyan-400 border-cyan-500/30 text-[10px]">{p}</Badge>
+                    )) : <span className="text-slate-500 text-xs">No products configured</span>}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* COMPLIANCE TAB */}
+        <TabsContent value="compliance" className="mt-6 space-y-6">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-white text-lg flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-emerald-400" />Facility Compliance Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-slate-400 mb-4">Terminal-specific regulatory requirements. Upload documents in the Documents section to mark items as compliant.</p>
+              {(() => {
+                const groups = FACILITY_COMPLIANCE.reduce((acc: any, item) => {
+                  if (!acc[item.group]) acc[item.group] = [];
+                  acc[item.group].push(item);
+                  return acc;
+                }, {} as Record<string, typeof FACILITY_COMPLIANCE>);
+
+                // Check against uploaded company docs
+                const uploadedDocs = (complianceQuery.data?.requirements || []).filter((r: any) => r.docStatus === "UPLOADED" || r.docStatus === "VERIFIED").map((r: any) => r.name?.toLowerCase());
+                const totalItems = FACILITY_COMPLIANCE.length;
+                const matchedItems = FACILITY_COMPLIANCE.filter(fc => uploadedDocs?.some((d: string) => d?.includes(fc.name.toLowerCase().split("(")[0].trim().slice(0, 15)))).length;
+                const complianceScore = totalItems > 0 ? Math.round((matchedItems / totalItems) * 100) : 0;
+
+                return (
+                  <>
+                    <div className="flex items-center gap-4 mb-6 p-4 rounded-xl bg-slate-700/30">
+                      <div className="text-center">
+                        <p className={cn("text-3xl font-bold", complianceScore >= 80 ? "text-emerald-400" : complianceScore >= 50 ? "text-amber-400" : "text-red-400")}>{complianceScore}%</p>
+                        <p className="text-[10px] text-slate-500">COMPLIANCE</p>
                       </div>
+                      <div className="flex-1">
+                        <Progress value={complianceScore} className="h-2.5" />
+                        <p className="text-xs text-slate-500 mt-1">{matchedItems} of {totalItems} requirements verified</p>
+                      </div>
+                    </div>
 
-                      <div className="flex items-center gap-6 text-sm text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <Clock size={16} />
-                          <span>
-                            Scheduled: {formatTime(shipment.scheduledTime)}
-                          </span>
-                        </div>
-                        {shipment.bay && (
-                          <div className="flex items-center gap-2">
-                            <MapPin size={16} />
-                            <span>{shipment.bay}</span>
+                    <div className="space-y-4">
+                      {Object.entries(groups).map(([group, items]: any) => (
+                        <div key={group}>
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{group}</p>
+                          <div className="space-y-1.5">
+                            {items.map((item: any) => {
+                              const matched = uploadedDocs?.some((d: string) => d?.includes(item.name.toLowerCase().split("(")[0].trim().slice(0, 15)));
+                              return (
+                                <div key={item.name} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-700/20 hover:bg-slate-700/40 transition-colors">
+                                  <div className="flex items-center gap-2.5">
+                                    {matched ? <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertTriangle className={cn("w-4 h-4 shrink-0", item.critical ? "text-red-400" : "text-amber-400")} />}
+                                    <span className="text-sm text-white">{item.name}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {item.critical && <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-[9px]">CRITICAL</Badge>}
+                                    <Badge className={cn("text-[9px] border", matched ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-slate-500/15 text-slate-400 border-slate-500/30")}>
+                                      {matched ? "VERIFIED" : "PENDING"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* OPERATIONS TAB */}
+        <TabsContent value="operations" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+              <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Gauge className="w-5 h-5 text-cyan-400" />Capacity</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><label className="text-xs text-slate-400 mb-1 block">Throughput Capacity</label><Input type="number" value={editForm.throughputCapacity} onChange={(e: any) => setEditForm({ ...editForm, throughputCapacity: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" /></div>
+                      <div><label className="text-xs text-slate-400 mb-1 block">Unit</label>
+                        <select value={editForm.throughputUnit} onChange={(e: any) => setEditForm({ ...editForm, throughputUnit: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
+                          <option value="bbl/day">bbl/day</option><option value="gal/day">gal/day</option><option value="tons/day">tons/day</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><label className="text-xs text-slate-400 mb-1 block">Docks / Racks</label><Input type="number" value={editForm.dockCount} onChange={(e: any) => setEditForm({ ...editForm, dockCount: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" /></div>
+                      <div><label className="text-xs text-slate-400 mb-1 block">Tanks</label><Input type="number" value={editForm.tankCount} onChange={(e: any) => setEditForm({ ...editForm, tankCount: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" /></div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="p-4 rounded-lg bg-slate-700/30">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Droplets className="w-5 h-5 text-cyan-400" />
+                        <p className="text-white font-semibold">Throughput</p>
+                      </div>
+                      <p className="text-2xl font-bold text-cyan-400">{t?.throughputCapacity ? Number(t.throughputCapacity).toLocaleString() : "---"} <span className="text-sm text-slate-400 font-normal">{t?.throughputUnit || "bbl/day"}</span></p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-4 rounded-lg bg-slate-700/30 text-center">
+                        <Container className="w-6 h-6 text-purple-400 mx-auto mb-1" />
+                        <p className="text-2xl font-bold text-purple-400">{t?.dockCount || 0}</p>
+                        <p className="text-xs text-slate-500">Docks / Racks</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-slate-700/30 text-center">
+                        <Layers className="w-6 h-6 text-amber-400 mx-auto mb-1" />
+                        <p className="text-2xl font-bold text-amber-400">{t?.tankCount || 0}</p>
+                        <p className="text-xs text-slate-500">Tanks</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+              <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Activity className="w-5 h-5 text-green-400" />30-Day Performance</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-3 rounded-lg bg-slate-700/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-slate-400">Appointments Completed</span>
+                    <span className="text-sm font-bold text-emerald-400">{data?.stats?.completedLast30 || 0} / {data?.stats?.appointmentsLast30 || 0}</span>
+                  </div>
+                  <Progress value={data?.stats?.completionRate || 0} className="h-2" />
+                </div>
+                <div className="p-3 rounded-lg bg-slate-700/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-slate-400">Active Staff</span>
+                    <span className="text-sm font-bold text-blue-400">{data?.staffCount || 0}</span>
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg bg-slate-700/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-slate-400">Active Partnerships</span>
+                    <span className="text-sm font-bold text-purple-400">{(data?.partners || []).filter((p: any) => p.status === "active").length}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* PARTNERSHIPS TAB */}
+        <TabsContent value="partnerships" className="mt-6">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-white text-lg flex items-center gap-2"><Handshake className="w-5 h-5 text-purple-400" />Active Partnerships</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(data?.partners || []).length === 0 ? (
+                <div className="text-center py-16">
+                  <Handshake className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400 text-sm">No partnerships yet</p>
+                  <p className="text-slate-500 text-xs mt-1">Partners added via the Supply Chain page will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(data?.partners || []).map((p: any) => (
+                    <div key={p.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className={cn("p-2.5 rounded-xl", p.partnerType === "shipper" ? "bg-blue-500/15" : p.partnerType === "marketer" ? "bg-purple-500/15" : p.partnerType === "broker" ? "bg-amber-500/15" : "bg-green-500/15")}>
+                          <Building2 className={cn("w-5 h-5", p.partnerType === "shipper" ? "text-blue-400" : p.partnerType === "marketer" ? "text-purple-400" : p.partnerType === "broker" ? "text-amber-400" : "text-green-400")} />
+                        </div>
+                        <div>
+                          <p className="text-white font-semibold">{p.companyName || `Company #${p.companyId}`}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge className={cn("text-[9px] border", PARTNER_TYPE_COLORS[p.partnerType] || "bg-slate-500/20 text-slate-400")}>{(p.partnerType || "partner").toUpperCase()}</Badge>
+                            <Badge className={cn("text-[9px] border", p.status === "active" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-amber-500/15 text-amber-400 border-amber-500/30")}>{(p.status || "pending").toUpperCase()}</Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge className={cn("text-[9px] border", ACCESS_COLORS[p.rackAccessLevel] || ACCESS_COLORS.scheduled)}>
+                          {(p.rackAccessLevel || "scheduled").toUpperCase()} ACCESS
+                        </Badge>
+                        {p.monthlyVolumeCommitment > 0 && (
+                          <p className="text-xs text-slate-500 mt-1">{Number(p.monthlyVolumeCommitment).toLocaleString()} bbl/mo</p>
                         )}
                       </div>
                     </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-blue-600 text-blue-400 hover:bg-blue-600/10"
-                    >
-                      Manage
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* Bays Tab */}
-          <TabsContent value="bays" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white">Bay Status</h3>
-              <Button
-                variant="outline"
-                className="border-gray-600 text-slate-300 hover:bg-gray-700"
-              >
-                <Activity className="mr-2" size={18} />
-                Live View
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {bays.map((bay: any) => (
-                <Card
-                  key={bay.id}
-                  className="bg-gray-900 border-gray-700 p-6"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <h4 className="text-xl font-bold text-white">
-                          Bay {bay.number}
-                        </h4>
-                        <Badge
-                          variant="outline"
-                          className={getStatusColor(bay.status)}
-                        >
-                          {bay.status.toUpperCase()}
-                        </Badge>
-                      </div>
-                      <p className="text-slate-400 text-sm">
-                        Type: {bay.type.charAt(0).toUpperCase() + bay.type.slice(1)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {bay.currentShipment && (
-                    <div className="mb-4 p-3 bg-gray-800 rounded">
-                      <p className="text-slate-400 text-xs mb-1">
-                        Current Shipment
-                      </p>
-                      <p className="text-white font-semibold">
-                        {bay.currentShipment}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="mb-4">
-                    <p className="text-slate-400 text-sm mb-2">Equipment</p>
-                    <div className="flex flex-wrap gap-2">
-                      {bay.equipment.map((eq: any) => (
-                        <Badge
-                          key={eq}
-                          variant="outline"
-                          className="border-gray-600 text-slate-300 bg-gray-800"
-                        >
-                          {eq}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-gray-600 text-slate-300 hover:bg-gray-700"
-                    disabled={bay.status === "maintenance"}
-                  >
-                    {bay.status === "available"
-                      ? "Assign Shipment"
-                      : bay.status === "occupied"
-                      ? "View Details"
-                      : "Under Maintenance"}
-                  </Button>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* Staff Tab */}
-          <TabsContent value="staff" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white">Staff On Duty</h3>
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
-                <Users className="mr-2" size={18} />
-                Manage Schedule
-              </Button>
-            </div>
-
-            <div className="space-y-3">
-              {staff.map((member: any) => (
-                <Card
-                  key={member.id}
-                  className="bg-gray-900 border-gray-700 p-6"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-blue-600/20 rounded-lg">
-                        <Users className="text-blue-400" size={24} />
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-white mb-1">
-                          {member.name}
-                        </h4>
-                        <p className="text-slate-400 text-sm">{member.role}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className="text-slate-400 text-sm mb-1">Shift</p>
-                        <p className="text-white font-semibold">{member.shift}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-slate-400 text-sm mb-1">Tasks</p>
-                        <p className="text-white font-semibold">
-                          {member.tasksCompleted}
-                        </p>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className={getStatusColor(member.status)}
-                      >
-                        {member.status.toUpperCase()}
-                      </Badge>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

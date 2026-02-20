@@ -1225,6 +1225,154 @@ export const terminalsRouter = router({
   submitEIAReport: protectedProcedure.input(z.object({ period: z.string(), data: z.any().optional() })).mutation(async ({ input }) => ({ success: true, reportId: "eia_123", submittedAt: new Date().toISOString() })),
 
   /**
+   * Get full terminal profile for the logged-in company
+   */
+  getTerminalProfile: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return null;
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const { terminalStaff, terminalPartners, companies } = await import("../../drizzle/schema");
+
+      // Get first terminal for this company
+      const [terminal] = await db.select().from(terminals).where(eq(terminals.companyId, companyId)).limit(1);
+
+      // Get company info
+      const [company] = await db.select({ name: companies.name, state: companies.state, phone: companies.phone, email: companies.email, website: companies.website, logo: companies.logo }).from(companies).where(eq(companies.id, companyId)).limit(1);
+
+      // Get staff count
+      const [staffCount] = await db.select({ count: sql<number>`count(*)` }).from(terminalStaff).where(and(eq(terminalStaff.companyId, companyId), eq(terminalStaff.isActive, true)));
+
+      // Get partnerships
+      let partners: any[] = [];
+      if (terminal) {
+        const partnerRows = await db.select({
+          id: terminalPartners.id,
+          companyId: terminalPartners.companyId,
+          partnerType: terminalPartners.partnerType,
+          status: terminalPartners.status,
+          rackAccessLevel: terminalPartners.rackAccessLevel,
+          monthlyVolumeCommitment: terminalPartners.monthlyVolumeCommitment,
+          productTypes: terminalPartners.productTypes,
+          startDate: terminalPartners.startDate,
+          companyName: companies.name,
+        })
+          .from(terminalPartners)
+          .leftJoin(companies, eq(terminalPartners.companyId, companies.id))
+          .where(eq(terminalPartners.terminalId, terminal.id))
+          .orderBy(desc(terminalPartners.createdAt))
+          .limit(50);
+        partners = partnerRows.map(p => ({
+          ...p,
+          startDate: p.startDate?.toISOString() || null,
+          monthlyVolumeCommitment: p.monthlyVolumeCommitment ? Number(p.monthlyVolumeCommitment) : 0,
+        }));
+      }
+
+      // Get appointment stats (30 days)
+      const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const [apptStats] = await db.select({
+        total: sql<number>`count(*)`,
+        completed: sql<number>`sum(case when status='completed' then 1 else 0 end)`,
+      }).from(appointments).where(gte(appointments.scheduledAt, thirtyDaysAgo));
+
+      return {
+        terminal: terminal ? {
+          id: terminal.id,
+          name: terminal.name,
+          code: terminal.code,
+          address: terminal.address,
+          city: terminal.city,
+          state: terminal.state,
+          terminalType: terminal.terminalType,
+          productsHandled: terminal.productsHandled || [],
+          throughputCapacity: terminal.throughputCapacity ? Number(terminal.throughputCapacity) : 0,
+          throughputUnit: terminal.throughputUnit || "bbl/day",
+          dockCount: terminal.dockCount || 0,
+          tankCount: terminal.tankCount || 0,
+          latitude: terminal.latitude ? Number(terminal.latitude) : null,
+          longitude: terminal.longitude ? Number(terminal.longitude) : null,
+          status: terminal.status,
+        } : null,
+        company: company || null,
+        staffCount: staffCount?.count || 0,
+        partners,
+        stats: {
+          appointmentsLast30: apptStats?.total || 0,
+          completedLast30: apptStats?.completed || 0,
+          completionRate: apptStats?.total ? Math.round(((apptStats?.completed || 0) / apptStats.total) * 100) : 0,
+        },
+      };
+    } catch (e) { console.error('[Terminals] getTerminalProfile error:', e); return null; }
+  }),
+
+  /**
+   * Update terminal profile
+   */
+  updateTerminalProfile: protectedProcedure
+    .input(z.object({
+      name: z.string().optional(),
+      code: z.string().optional(),
+      address: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
+      terminalType: z.enum(["refinery", "storage", "rack", "pipeline", "blending", "distribution", "marine", "rail"]).optional(),
+      productsHandled: z.array(z.string()).optional(),
+      throughputCapacity: z.number().optional(),
+      throughputUnit: z.string().optional(),
+      dockCount: z.number().optional(),
+      tankCount: z.number().optional(),
+      latitude: z.number().nullable().optional(),
+      longitude: z.number().nullable().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+
+      // Find or create terminal
+      let [terminal] = await db.select({ id: terminals.id }).from(terminals).where(eq(terminals.companyId, companyId)).limit(1);
+      if (!terminal) {
+        const [result] = await db.insert(terminals).values({
+          companyId,
+          name: input.name || "My Terminal",
+          code: input.code || null,
+          address: input.address || null,
+          city: input.city || null,
+          state: input.state || null,
+          terminalType: input.terminalType || "storage",
+          productsHandled: input.productsHandled || [],
+          throughputCapacity: input.throughputCapacity ? String(input.throughputCapacity) : null,
+          throughputUnit: input.throughputUnit || "bbl/day",
+          dockCount: input.dockCount || 0,
+          tankCount: input.tankCount || 0,
+          latitude: input.latitude != null ? String(input.latitude) : null,
+          longitude: input.longitude != null ? String(input.longitude) : null,
+        } as any).$returningId();
+        return { success: true, id: result.id, created: true };
+      }
+
+      const updates: Record<string, any> = {};
+      if (input.name !== undefined) updates.name = input.name;
+      if (input.code !== undefined) updates.code = input.code;
+      if (input.address !== undefined) updates.address = input.address;
+      if (input.city !== undefined) updates.city = input.city;
+      if (input.state !== undefined) updates.state = input.state;
+      if (input.terminalType !== undefined) updates.terminalType = input.terminalType;
+      if (input.productsHandled !== undefined) updates.productsHandled = input.productsHandled;
+      if (input.throughputCapacity !== undefined) updates.throughputCapacity = input.throughputCapacity ? String(input.throughputCapacity) : null;
+      if (input.throughputUnit !== undefined) updates.throughputUnit = input.throughputUnit;
+      if (input.dockCount !== undefined) updates.dockCount = input.dockCount;
+      if (input.tankCount !== undefined) updates.tankCount = input.tankCount;
+      if (input.latitude !== undefined) updates.latitude = input.latitude != null ? String(input.latitude) : null;
+      if (input.longitude !== undefined) updates.longitude = input.longitude != null ? String(input.longitude) : null;
+
+      if (Object.keys(updates).length > 0) {
+        await db.update(terminals).set(updates).where(eq(terminals.id, terminal.id));
+      }
+      return { success: true, id: terminal.id, created: false };
+    }),
+
+  /**
    * Get facility stats for Facility page
    */
   getStats: protectedProcedure.query(async () => {
