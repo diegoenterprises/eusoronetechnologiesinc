@@ -9,6 +9,7 @@ import {
   X, ExternalLink, Loader2, Globe, Database, Zap,
 } from "lucide-react";
 import HotZones from "./HotZones";
+import MarketIntelligence2026 from "./MarketIntelligence2026";
 import { toast } from "sonner";
 
 // ── CATEGORY CONFIG ──
@@ -65,7 +66,7 @@ function fmtChange(val: number | string | undefined, pct: number | string | unde
 export default function MarketPricing() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  const [activeView, setActiveView] = useState<"rates" | "hotzones">("rates");
+  const [activeView, setActiveView] = useState<"rates" | "hotzones" | "intel2026">("rates");
   const [activeCategory, setActiveCategory] = useState("All Markets");
   const [search, setSearch] = useState("");
   const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
@@ -278,6 +279,14 @@ export default function MarketPricing() {
               }`}>
               <MapPin className="w-3.5 h-3.5" /> Hot Zones
             </button>
+            <button onClick={() => setActiveView("intel2026")}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeView === "intel2026"
+                  ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-[#1473FF]/25"
+                  : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-white/[0.06] text-white/40 hover:bg-white/[0.1]"
+              }`}>
+              <Zap className="w-3.5 h-3.5" /> 2026 Freight Intel
+            </button>
           </div>
 
           {/* Category tabs (only for rates view) */}
@@ -366,6 +375,13 @@ export default function MarketPricing() {
 
       {/* ── HOT ZONES VIEW ── */}
       {activeView === "hotzones" && <HotZones embedded />}
+
+      {/* ── 2026 FREIGHT INTEL VIEW ── */}
+      {activeView === "intel2026" && (
+        <div className="max-w-[1600px] mx-auto px-6 py-6">
+          <MarketIntelligence2026 embedded />
+        </div>
+      )}
 
       {/* ── RATES MAIN BODY ── */}
       {activeView === "rates" && (
@@ -457,9 +473,17 @@ export default function MarketPricing() {
                                   </div>
                                 ))}
                               </div>
-                              <div className={`flex items-center gap-2 mt-3 text-[10px] ${isLight ? "text-slate-400" : "text-white/20"}`}>
-                                <Activity className="w-3 h-3" />
-                                {intel?.source || source}
+                              <div className={`flex items-center justify-between mt-3`}>
+                                <div className={`flex items-center gap-2 text-[10px] ${isLight ? "text-slate-400" : "text-white/20"}`}>
+                                  <Activity className="w-3 h-3" />
+                                  {intel?.source || source}
+                                </div>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setSelectedQuoteSymbol(c.symbol); }}
+                                  className="text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white hover:shadow-lg hover:shadow-[#1473FF]/20 transition-all"
+                                >
+                                  View Full Quote
+                                </button>
                               </div>
                             </div>
                           </motion.div>

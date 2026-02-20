@@ -1166,6 +1166,123 @@ export const hotZonesRouter = router({
       return result;
     }),
 
+  // ═══════════════════════════════════════════════════════════════
+  // ROUTE INTELLIGENCE — Corridor-specific intel for a load's route
+  // Used on LoadDetails to show weather, fuel, hazmat, seismic data
+  // for origin/destination states and along the corridor
+  // ═══════════════════════════════════════════════════════════════
+  getRouteIntelligence: protectedProcedure
+    .input(z.object({
+      originState: z.string().min(2).max(2),
+      destState: z.string().min(2).max(2),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const { originState, destState } = input;
+      const states = [originState.toUpperCase(), destState.toUpperCase()];
+      const empty = { weatherAlerts: [], fuelPrices: [], hazmatIncidents: 0, wildfires: 0, earthquakes: 0, femaDisasters: [], carrierSafety: null, emissions: null, timestamp: new Date().toISOString() };
+      if (!db) return empty;
+
+      const result: any = { ...empty };
+
+      try {
+        // Weather alerts for route states
+        const [wxRows] = await db.execute(
+          sql`SELECT id, state_codes, event_type, severity, urgency, headline
+              FROM hz_weather_alerts
+              WHERE (JSON_CONTAINS(state_codes, JSON_QUOTE(${states[0]})) OR JSON_CONTAINS(state_codes, JSON_QUOTE(${states[1]})))
+              ORDER BY FIELD(severity, 'Extreme', 'Severe', 'Moderate', 'Minor') ASC
+              LIMIT 20`
+        ) as any;
+        result.weatherAlerts = (wxRows || []).map((r: any) => {
+          let st: string[] = [];
+          try { st = typeof r.state_codes === "string" ? JSON.parse(r.state_codes) : (r.state_codes || []); } catch {}
+          return { id: r.id, states: st, event: r.event_type, severity: r.severity, headline: r.headline };
+        });
+      } catch (e) { console.error("[RouteIntel] weather:", e); }
+
+      try {
+        // Fuel prices for route states
+        const [fuelRows] = await db.execute(
+          sql`SELECT state_code, retail_price, change_from_prior_week
+              FROM hz_fuel_prices
+              WHERE state_code IN (${states[0]}, ${states[1]})
+              ORDER BY price_date DESC
+              LIMIT 10`
+        ) as any;
+        const seen = new Set<string>();
+        result.fuelPrices = (fuelRows || []).filter((r: any) => {
+          if (seen.has(r.state_code)) return false;
+          seen.add(r.state_code);
+          return true;
+        }).map((r: any) => ({
+          state: r.state_code, price: Number(r.retail_price), change: Number(r.change_from_prior_week || 0),
+        }));
+      } catch (e) { console.error("[RouteIntel] fuel:", e); }
+
+      try {
+        // Hazmat incident count in route states (last 90 days)
+        const [hmRows] = await db.execute(
+          sql`SELECT COUNT(*) as cnt FROM hz_hazmat_incidents
+              WHERE state_code IN (${states[0]}, ${states[1]})
+              AND incident_date >= DATE_SUB(NOW(), INTERVAL 90 DAY)`
+        ) as any;
+        result.hazmatIncidents = Number(hmRows?.[0]?.cnt || 0);
+      } catch (e) { console.error("[RouteIntel] hazmat:", e); }
+
+      try {
+        // Active wildfires in route states
+        const [wfRows] = await db.execute(
+          sql`SELECT COUNT(*) as cnt FROM hz_wildfires
+              WHERE state_code IN (${states[0]}, ${states[1]})`
+        ) as any;
+        result.wildfires = Number(wfRows?.[0]?.cnt || 0);
+      } catch (e) { console.error("[RouteIntel] wildfires:", e); }
+
+      try {
+        // Recent earthquakes in route states (approximated by nearby coords)
+        const [eqRows] = await db.execute(
+          sql`SELECT COUNT(*) as cnt FROM hz_seismic_events
+              WHERE magnitude >= 2.5
+              AND event_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)`
+        ) as any;
+        result.earthquakes = Number(eqRows?.[0]?.cnt || 0);
+      } catch (e) { console.error("[RouteIntel] earthquakes:", e); }
+
+      try {
+        // FEMA disaster declarations in route states
+        const [femaRows] = await db.execute(
+          sql`SELECT state_code, disaster_type, title, declaration_date
+              FROM hz_fema_disasters
+              WHERE state_code IN (${states[0]}, ${states[1]})
+              ORDER BY declaration_date DESC
+              LIMIT 5`
+        ) as any;
+        result.femaDisasters = (femaRows || []).map((r: any) => ({
+          state: r.state_code, type: r.disaster_type, title: r.title, date: r.declaration_date,
+        }));
+      } catch (e) { console.error("[RouteIntel] fema:", e); }
+
+      try {
+        // Carrier safety summary for route states
+        const [csRows] = await db.execute(
+          sql`SELECT physical_state as state,
+                     COUNT(*) as total,
+                     COUNT(CASE WHEN safety_rating IN ('Conditional','Unsatisfactory') THEN 1 END) as violations,
+                     COUNT(CASE WHEN hazmat_authority = 1 THEN 1 END) as hazmat_carriers
+              FROM hz_carrier_safety
+              WHERE physical_state IN (${states[0]}, ${states[1]})
+              GROUP BY physical_state`
+        ) as any;
+        result.carrierSafety = (csRows || []).map((r: any) => ({
+          state: r.state, total: Number(r.total), violations: Number(r.violations), hazmatCarriers: Number(r.hazmat_carriers),
+        }));
+      } catch (e) { console.error("[RouteIntel] carriers:", e); }
+
+      result.timestamp = new Date().toISOString();
+      return result;
+    }),
+
   // Admin: Get sync log history from DB
   getSyncLog: adminProcedure
     .input(z.object({ limit: z.number().default(50), sourceName: z.string().optional() }))

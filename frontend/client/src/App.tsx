@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import type { UserRole } from "./hooks/useRoleAccess";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import AccessValidation from "./pages/AccessValidation";
 import ShipmentPage from "./pages/Shipment";
 import JobsPage from "./pages/Jobs";
 import MessagesPage from "./pages/Messages";
@@ -33,6 +34,7 @@ import ZeunBreakdownReport from "./pages/ZeunBreakdownReport";
 import ZeunMaintenanceTracker from "./pages/ZeunMaintenanceTracker";
 import ZeunProviderNetwork from "./pages/ZeunProviderNetwork";
 import ActiveTrip from "./pages/ActiveTrip";
+import MarketIntelligence2026 from "./pages/MarketIntelligence2026";
 import MyLoadsPage from "./pages/MyLoads";
 import PlatformLoadsOversight from "./pages/PlatformLoadsOversight";
 import PlatformAgreementsOversight from "./pages/PlatformAgreementsOversight";
@@ -155,6 +157,8 @@ import DriverScorecard from "./pages/DriverScorecard";
 import Rewards from "./pages/Rewards";
 import ClearinghouseDashboard from "./pages/ClearinghouseDashboard";
 import TerminalSCADA from "./pages/TerminalSCADA";
+import TerminalPartners from "./pages/TerminalPartners";
+import MyTerminals from "./pages/MyTerminals";
 import Leaderboard from "./pages/Leaderboard";
 import DriverOnboarding from "./pages/DriverOnboarding";
 import AccidentReport from "./pages/AccidentReport";
@@ -373,6 +377,7 @@ function Router() {
       <Route path={"/register/safety"} component={RegisterSafety} />
       <Route path={"/terms-of-service"} component={TermsOfService} />
       <Route path={"/privacy-policy"} component={PrivacyPolicy} />
+      <Route path={"/validate/:token"} component={AccessValidation} />
 
       {/* ============================================ */}
       {/* SHARED ROUTES (All Authenticated Users) */}
@@ -403,6 +408,7 @@ function Router() {
       <Route path={"/ratings"} component={guard(ALL, <RatingsReviews />)} />
       <Route path={"/claims"} component={guard(ALL, <ClaimsPage />)} />
       <Route path={"/market-pricing"} component={guard(ALL, <MarketPricing />)} />
+      <Route path={"/market-intelligence"} component={guard(ALL, <MarketIntelligence2026 />)} />
       <Route path={"/authority"} component={guard([...CARR, ...DRIV, ...BROK, ...DISP, ...ESCT], <OperatingAuthority />)} />
       {/* Gold Standard: Shared auth, settings & cross-role compliance */}
       <Route path={"/settings/change-password"} component={guard(ALL, <ChangePasswordPage />)} />
@@ -606,7 +612,7 @@ function Router() {
       <Route path={"/facility"} component={guard([...TERM, ...SHIP], <FacilityPage />)} />
       <Route path={"/incoming"} component={guard(TERM, <IncomingShipments />)} />
       <Route path={"/outgoing"} component={guard(TERM, <OutgoingShipments />)} />
-      <Route path={"/staff"} component={guard(TERM, <TerminalStaff />)} />
+      <Route path={"/staff"} component={guard([...TERM, ...SHIP, ...BROK], <TerminalStaff />)} />
       <Route path={"/operations"} component={guard(TERM, <TerminalOperations />)} />
       <Route path={"/terminal/scheduling"} component={guard(TERM, <TerminalScheduling />)} />
       <Route path={"/terminal/scada"} component={guard(TERM, <TerminalSCADA />)} />
@@ -615,6 +621,8 @@ function Router() {
       <Route path={"/loading-bays"} component={guard(TERM, <LoadingBays />)} />
       <Route path={"/terminal-inventory"} component={guard(TERM, <TerminalInventory />)} />
       <Route path={"/bol"} component={guard(TERM, <BOLGeneration />)} />
+      <Route path={"/supply-chain"} component={guard(TERM, <TerminalPartners />)} />
+      <Route path={"/my-terminals"} component={guard([...SHIP, ...CARR, ...BROK], <MyTerminals />)} />
       <Route path={"/spectra-match"} component={guard(TERM, <SpectraMatch />)} />
       <Route path={"/detention"} component={guard([...TERM, ...CARR, ...SHIP], <DetentionTrackingPage />)} />
       <Route path={"/euso-ticket"} component={guard(TERM, <EusoTicket />)} />

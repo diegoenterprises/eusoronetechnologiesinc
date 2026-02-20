@@ -686,12 +686,34 @@ Include guide number, hazard class, isolation distances, fire/spill response, fi
     loadDetails: { origin: string; destination: string; miles: number; cargoType: string },
     bidAmount: number
   ): Promise<ESANGResponse> {
+    // ML Engine fusion — enrich prompt with trained predictions
+    let mlContext = "";
+    try {
+      const { mlEngine } = await import("../services/mlEngine");
+      if (mlEngine.isReady()) {
+        const oState = (loadDetails.origin || "").split(",").pop()?.trim().toUpperCase().substring(0, 2) || "";
+        const dState = (loadDetails.destination || "").split(",").pop()?.trim().toUpperCase().substring(0, 2) || "";
+        if (oState && dState && loadDetails.miles > 0) {
+          const pred = mlEngine.predictRate({ originState: oState, destState: dState, distance: loadDetails.miles, cargoType: loadDetails.cargoType });
+          const opt = mlEngine.optimizeBid({ originState: oState, destState: dState, distance: loadDetails.miles, postedRate: bidAmount, cargoType: loadDetails.cargoType });
+          mlContext = `\n\nML ENGINE DATA (trained on ${pred.basedOnSamples} samples):
+- Predicted Spot Rate: $${pred.predictedSpotRate} ($${(pred.predictedSpotRate / loadDetails.miles).toFixed(2)}/mi)
+- Predicted Contract Rate: $${pred.predictedContractRate}
+- Market Condition: ${pred.marketCondition}
+- ML Confidence: ${pred.confidence}%
+- Price Range: $${pred.priceRange.low} - $${pred.priceRange.high}
+- Optimal Bid: $${opt.suggestedBid} (${opt.winProbability}% win probability)
+Use this ML data to ground your analysis in real market data.`;
+        }
+      }
+    } catch { /* ML not ready */ }
+
     const prompt = `Analyze this bid for fairness:
 Route: ${loadDetails.origin} → ${loadDetails.destination}
 Distance: ${loadDetails.miles} miles
 Cargo Type: ${loadDetails.cargoType}
 Bid Amount: $${bidAmount}
-Rate per Mile: $${(bidAmount / loadDetails.miles).toFixed(2)}
+Rate per Mile: $${(bidAmount / loadDetails.miles).toFixed(2)}${mlContext}
 
 Provide:
 1. Market rate comparison (is this fair?)
@@ -1384,17 +1406,51 @@ Enhance each clause with specific, legally-precise language incorporating all th
   async analyzeRate(request: {
     origin: string; destination: string; cargoType: string; proposedRate: number;
     distance?: number; hazmat?: boolean; weight?: number; equipmentType?: string;
-  }): Promise<{ fairnessScore: number; recommendation: string; reasoning: string; marketEstimate: { low: number; mid: number; high: number }; factors: Array<{ name: string; impact: string; score: number }>; counterOffer?: number }> {
-    const prompt = `Analyze freight rate: ${request.origin} to ${request.destination}, ${request.cargoType}${request.hazmat?" HAZMAT":""},${request.distance?` ${request.distance}mi,`:""} proposed $${request.proposedRate}. JSON: {"fairnessScore":0-100,"recommendation":"accept|negotiate|reject","reasoning":"string","marketEstimate":{"low":number,"mid":number,"high":number},"factors":[{"name":"string","impact":"positive|negative|neutral","score":number}],"counterOffer":number_or_null}`;
+  }): Promise<{ fairnessScore: number; recommendation: string; reasoning: string; marketEstimate: { low: number; mid: number; high: number }; factors: Array<{ name: string; impact: string; score: number }>; counterOffer?: number; mlEnhanced?: boolean }> {
+    // ── ML Engine fusion — get trained predictions to enhance Gemini analysis ──
+    let mlContext = "";
+    let mlPred: any = null;
     try {
-      if (!this.apiKey) { const d = request.distance||500; const rpm = request.proposedRate/d; return { fairnessScore: rpm>2?70:40, recommendation: rpm>2?"accept":"negotiate", reasoning: "Offline", marketEstimate: { low: d*1.8, mid: d*2.5, high: d*3.2 }, factors: [] }; }
+      const { mlEngine } = await import("../services/mlEngine");
+      if (mlEngine.isReady()) {
+        const oState = (request.origin || "").split(",").pop()?.trim().toUpperCase().substring(0, 2) || "";
+        const dState = (request.destination || "").split(",").pop()?.trim().toUpperCase().substring(0, 2) || "";
+        if (oState && dState) {
+          mlPred = mlEngine.predictRate({ originState: oState, destState: dState, distance: request.distance || 0, weight: request.weight, equipmentType: request.equipmentType, cargoType: request.cargoType });
+          mlContext = ` ML ENGINE DATA: Spot=$${mlPred.predictedSpotRate}, Contract=$${mlPred.predictedContractRate}, Market=${mlPred.marketCondition}, Confidence=${mlPred.confidence}%, Range=$${mlPred.priceRange.low}-$${mlPred.priceRange.high}.`;
+        }
+      }
+    } catch { /* ML not ready */ }
+
+    const prompt = `Analyze freight rate: ${request.origin} to ${request.destination}, ${request.cargoType}${request.hazmat?" HAZMAT":""},${request.distance?` ${request.distance}mi,`:""} proposed $${request.proposedRate}.${mlContext} JSON: {"fairnessScore":0-100,"recommendation":"accept|negotiate|reject","reasoning":"string","marketEstimate":{"low":number,"mid":number,"high":number},"factors":[{"name":"string","impact":"positive|negative|neutral","score":number}],"counterOffer":number_or_null}`;
+    try {
+      if (!this.apiKey) {
+        // Use ML predictions as intelligent fallback when no API key
+        if (mlPred) {
+          const rpm = request.proposedRate / Math.max(request.distance || 500, 1);
+          const mlRpm = mlPred.predictedSpotRate / Math.max(request.distance || 500, 1);
+          const ratio = rpm / Math.max(mlRpm, 0.01);
+          const score = ratio >= 0.85 && ratio <= 1.15 ? 85 : ratio >= 0.70 && ratio <= 1.30 ? 65 : 35;
+          return {
+            fairnessScore: score, mlEnhanced: true,
+            recommendation: score >= 80 ? "accept" : score >= 55 ? "negotiate" : "reject",
+            reasoning: `ML Engine: ${mlPred.marketCondition} market. Predicted spot $${mlPred.predictedSpotRate}, your rate $${request.proposedRate}. ${mlPred.recommendation}`,
+            marketEstimate: { low: mlPred.priceRange.low, mid: mlPred.predictedSpotRate, high: mlPred.priceRange.high },
+            factors: mlPred.factors.map((f: any) => ({ name: f.name, impact: f.direction === "up" ? "negative" : f.direction === "down" ? "positive" : "neutral", score: f.impact })),
+            counterOffer: score < 80 ? mlPred.predictedSpotRate : undefined,
+          };
+        }
+        const d = request.distance||500; const rpm = request.proposedRate/d; return { fairnessScore: rpm>2?70:40, recommendation: rpm>2?"accept":"negotiate", reasoning: "Offline", marketEstimate: { low: d*1.8, mid: d*2.5, high: d*3.2 }, factors: [] };
+      }
       const resp = await gemFetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI freight rate analyst. US market knowledge. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 2048 } }),
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI freight rate analyst. US market knowledge. You have access to ML Engine trained on real load data. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 2048 } }),
       });
       if (!resp.ok) throw new Error("API error");
       const d = await resp.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      return JSON.parse((t.match(/\{[\s\S]*\}/) || [t])[0]);
+      const result = JSON.parse((t.match(/\{[\s\S]*\}/) || [t])[0]);
+      result.mlEnhanced = !!mlPred;
+      return result;
     } catch { return { fairnessScore: 50, recommendation: "negotiate", reasoning: "Unavailable", marketEstimate: { low: 0, mid: 0, high: 0 }, factors: [] }; }
   }
 

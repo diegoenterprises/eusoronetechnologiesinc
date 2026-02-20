@@ -3,9 +3,9 @@
  * Generates 10+ rotating missions per role every week.
  * Seeds into DB missions table. Connects to loads, HOS, safety.
  */
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "../db";
-import { missions } from "../../drizzle/schema";
+import { missions, missionProgress } from "../../drizzle/schema";
 
 interface MT { name:string; desc:string; cat:"deliveries"|"earnings"|"safety"|"efficiency"|"social"|"special"|"onboarding"; tt:"count"|"amount"|"distance"|"streak"|"rating"|"time"; tv:number; tu?:string; rt:"miles"|"xp"|"crate"|"priority_perk"|"fee_reduction"|"cash"; rv:number; xp:number; roles:string[]; tp:"weekly"|"daily"; }
 
@@ -197,6 +197,107 @@ export async function generateWeeklyMissions(): Promise<number> {
     console.log(`[MissionGenerator] Week ${weekNum}: created ${created} missions, deactivated expired.`);
   } catch (err) {
     console.error("[MissionGenerator] Error:", err);
+  }
+
+  return created;
+}
+
+/**
+ * Force-rotate missions for a specific role (or all roles).
+ * Unlike generateWeeklyMissions which is idempotent,
+ * this deactivates current missions and picks a fresh set using a random seed.
+ * Preserves any missions that a user has already started (in_progress).
+ */
+export async function forceRotateMissions(forRole?: string): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const { start, end } = getWeekBounds();
+  const weekNum = weekSeed();
+  const rotateSeed = Date.now(); // random seed based on current timestamp
+  const roles = forRole ? [forRole.toUpperCase()] : ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "ESCORT"];
+  let created = 0;
+
+  try {
+    for (const role of roles) {
+      // Find current week's missions for this role
+      const currentMissions = await db.select({ id: missions.id, code: missions.code })
+        .from(missions)
+        .where(sql`isActive = TRUE AND code LIKE ${`wk_${weekNum}_${role.toLowerCase()}_%`}`);
+
+      // Check which ones have in-progress user progress (don't touch those)
+      const inProgressMissionIds = new Set<number>();
+      if (currentMissions.length > 0) {
+        const missionIds = currentMissions.map(m => m.id);
+        for (const mid of missionIds) {
+          const [prog] = await db.select({ id: missionProgress.id })
+            .from(missionProgress)
+            .where(and(eq(missionProgress.missionId, mid), eq(missionProgress.status, "in_progress")))
+            .limit(1);
+          if (prog) inProgressMissionIds.add(mid);
+        }
+      }
+
+      // Deactivate missions that are NOT in-progress
+      for (const m of currentMissions) {
+        if (!inProgressMissionIds.has(m.id)) {
+          await db.update(missions).set({ isActive: false }).where(eq(missions.id, m.id));
+        }
+      }
+
+      // Pick new missions with the random seed
+      const roleTemplates = ALL_TEMPLATES.filter(t => t.roles.includes(role));
+      const universal = ALL_TEMPLATES.filter(t => t.roles.length > 3);
+      const roleOnly = roleTemplates.filter(t => t.roles.length <= 3);
+      const shuffledRole = seededShuffle(roleOnly, rotateSeed + role.charCodeAt(0));
+      const shuffledUniv = seededShuffle(universal, rotateSeed + 999);
+      const count = 10;
+      const roleCount = Math.min(shuffledRole.length, count - 2);
+      const univCount = count - roleCount;
+      const picks = [...shuffledRole.slice(0, roleCount), ...shuffledUniv.slice(0, univCount)];
+
+      // Filter out any missions that are still active (in-progress by users)
+      const activeNames = new Set<string>();
+      for (const m of currentMissions) {
+        if (inProgressMissionIds.has(m.id)) {
+          // Look up the name from current DB row
+          const [row] = await db.select({ name: missions.name }).from(missions).where(eq(missions.id, m.id)).limit(1);
+          if (row) activeNames.add(row.name);
+        }
+      }
+
+      let slotIdx = 0;
+      for (const t of picks) {
+        if (activeNames.has(t.name)) continue; // skip if user is working on this one
+        const code = `wk_${weekNum}_${role.toLowerCase()}_r${rotateSeed}_${slotIdx}`;
+
+        await db.insert(missions).values({
+          code,
+          name: t.name,
+          description: t.desc.replace("{t}", String(t.tv)),
+          type: t.tp,
+          category: t.cat,
+          targetType: t.tt,
+          targetValue: t.tv.toString(),
+          targetUnit: t.tu || null,
+          rewardType: t.rt,
+          rewardValue: t.rv.toString(),
+          xpReward: t.xp,
+          applicableRoles: t.roles,
+          startsAt: start,
+          endsAt: end,
+          isActive: true,
+          sortOrder: slotIdx,
+        });
+        created++;
+        slotIdx++;
+        if (slotIdx >= count) break;
+      }
+    }
+
+    console.log(`[MissionGenerator] Force-rotated: created ${created} new missions for roles: ${roles.join(", ")}`);
+  } catch (err) {
+    console.error("[MissionGenerator] Force-rotate error:", err);
   }
 
   return created;

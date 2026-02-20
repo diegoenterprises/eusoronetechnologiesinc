@@ -706,31 +706,219 @@ export const terminalsRouter = router({
     }),
 
   /**
-   * Get staff for TerminalStaff page
+   * Get staff (access controllers) for TerminalStaff page
    */
   getStaff: protectedProcedure
     .input(z.object({ search: z.string().optional() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) return [];
       try {
-        const rows = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, isActive: users.isActive }).from(users).where(eq(users.role, 'TERMINAL' as any)).limit(50);
-        let result = rows.map(u => ({ id: String(u.id), name: u.name || '', email: u.email || '', role: u.role, status: u.isActive ? 'on_duty' : 'off_duty' }));
-        if (input.search) { const q = input.search.toLowerCase(); result = result.filter(s => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)); }
+        const { terminalStaff } = await import("../../drizzle/schema");
+        const companyId = ctx.user?.companyId || 0;
+        const rows = await db.select().from(terminalStaff)
+          .where(and(eq(terminalStaff.companyId, companyId), eq(terminalStaff.isActive, true)))
+          .orderBy(desc(terminalStaff.createdAt))
+          .limit(100);
+        let result = rows.map(s => ({
+          id: s.id,
+          name: s.name,
+          phone: s.phone || "",
+          email: s.email || "",
+          staffRole: s.staffRole,
+          assignedZone: s.assignedZone || "",
+          shift: s.shift || "day",
+          canApproveAccess: s.canApproveAccess,
+          canDispenseProduct: s.canDispenseProduct,
+          status: s.status || "off_duty",
+          terminalId: s.terminalId,
+          createdAt: s.createdAt?.toISOString() || null,
+        }));
+        if (input.search) {
+          const q = input.search.toLowerCase();
+          result = result.filter(s => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || s.assignedZone.toLowerCase().includes(q));
+        }
         return result;
-      } catch (e) { return []; }
+      } catch (e) { console.error("[Terminals] getStaff error:", e); return []; }
     }),
 
   /**
    * Get staff stats for TerminalStaff page
    */
   getStaffStats: protectedProcedure
-    .query(async () => {
+    .query(async ({ ctx }) => {
       const db = await getDb(); if (!db) return { total: 0, onDuty: 0, offDuty: 0, onBreak: 0, supervisors: 0 };
       try {
-        const [total] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.role, 'TERMINAL' as any));
-        const [active] = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(eq(users.role, 'TERMINAL' as any), eq(users.isActive, true)));
-        return { total: total?.count || 0, onDuty: active?.count || 0, offDuty: (total?.count || 0) - (active?.count || 0), onBreak: 0, supervisors: 0 };
-      } catch (e) { return { total: 0, onDuty: 0, offDuty: 0, onBreak: 0, supervisors: 0 }; }
+        const { terminalStaff } = await import("../../drizzle/schema");
+        const companyId = ctx.user?.companyId || 0;
+        const active = eq(terminalStaff.isActive, true);
+        const company = eq(terminalStaff.companyId, companyId);
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(terminalStaff).where(and(company, active));
+        const [onDuty] = await db.select({ count: sql<number>`count(*)` }).from(terminalStaff).where(and(company, active, eq(terminalStaff.status, "on_duty")));
+        const [onBreak] = await db.select({ count: sql<number>`count(*)` }).from(terminalStaff).where(and(company, active, eq(terminalStaff.status, "break")));
+        const [supervisors] = await db.select({ count: sql<number>`count(*)` }).from(terminalStaff).where(and(company, active, eq(terminalStaff.staffRole, "shift_lead")));
+        const t = total?.count || 0;
+        const d = onDuty?.count || 0;
+        const b = onBreak?.count || 0;
+        return { total: t, onDuty: d, offDuty: t - d - b, onBreak: b, supervisors: supervisors?.count || 0 };
+      } catch (e) { console.error("[Terminals] getStaffStats error:", e); return { total: 0, onDuty: 0, offDuty: 0, onBreak: 0, supervisors: 0 }; }
+    }),
+
+  /**
+   * Add a new staff member (access controller)
+   */
+  addStaff: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      phone: z.string().optional(),
+      email: z.string().optional(),
+      staffRole: z.enum(["gate_controller", "rack_supervisor", "bay_operator", "safety_officer", "shift_lead"]),
+      assignedZone: z.string().optional(),
+      shift: z.enum(["day", "night", "swing"]).optional(),
+      canApproveAccess: z.boolean().optional(),
+      canDispenseProduct: z.boolean().optional(),
+      terminalId: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const { terminalStaff } = await import("../../drizzle/schema");
+      const companyId = ctx.user?.companyId || 0;
+      const userId = typeof ctx.user?.id === "number" ? ctx.user.id : parseInt(String(ctx.user?.id), 10) || 0;
+      const [result] = await db.insert(terminalStaff).values({
+        companyId,
+        terminalId: input.terminalId || null,
+        name: input.name,
+        phone: input.phone || null,
+        email: input.email || null,
+        staffRole: input.staffRole,
+        assignedZone: input.assignedZone || null,
+        shift: input.shift || "day",
+        canApproveAccess: input.canApproveAccess ?? true,
+        canDispenseProduct: input.canDispenseProduct ?? false,
+        status: "off_duty",
+        isActive: true,
+        createdBy: userId,
+      }).$returningId();
+      return { success: true, id: result.id };
+    }),
+
+  /**
+   * Update a staff member
+   */
+  updateStaff: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      phone: z.string().optional(),
+      email: z.string().optional(),
+      staffRole: z.enum(["gate_controller", "rack_supervisor", "bay_operator", "safety_officer", "shift_lead"]).optional(),
+      assignedZone: z.string().optional(),
+      shift: z.enum(["day", "night", "swing"]).optional(),
+      canApproveAccess: z.boolean().optional(),
+      canDispenseProduct: z.boolean().optional(),
+      status: z.enum(["on_duty", "off_duty", "break"]).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const { terminalStaff } = await import("../../drizzle/schema");
+      const updates: Record<string, any> = {};
+      if (input.name !== undefined) updates.name = input.name;
+      if (input.phone !== undefined) updates.phone = input.phone;
+      if (input.email !== undefined) updates.email = input.email;
+      if (input.staffRole !== undefined) updates.staffRole = input.staffRole;
+      if (input.assignedZone !== undefined) updates.assignedZone = input.assignedZone;
+      if (input.shift !== undefined) updates.shift = input.shift;
+      if (input.canApproveAccess !== undefined) updates.canApproveAccess = input.canApproveAccess;
+      if (input.canDispenseProduct !== undefined) updates.canDispenseProduct = input.canDispenseProduct;
+      if (input.status !== undefined) updates.status = input.status;
+      if (Object.keys(updates).length > 0) {
+        await db.update(terminalStaff).set(updates).where(eq(terminalStaff.id, input.id));
+      }
+      return { success: true };
+    }),
+
+  /**
+   * Remove (deactivate) a staff member
+   */
+  removeStaff: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const { terminalStaff } = await import("../../drizzle/schema");
+      await db.update(terminalStaff).set({ isActive: false }).where(eq(terminalStaff.id, input.id));
+      return { success: true };
+    }),
+
+  /**
+   * Generate a 24-hour access validation link for a staff member
+   */
+  generateAccessLink: protectedProcedure
+    .input(z.object({ staffId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const { staffAccessTokens } = await import("../../drizzle/schema");
+      const crypto = await import("crypto");
+      const token = crypto.randomBytes(32).toString("hex");
+      const accessCode = String(crypto.randomInt(100000, 999999)); // 6-digit code
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      const userId = typeof ctx.user?.id === "number" ? ctx.user.id : parseInt(String(ctx.user?.id), 10) || 0;
+      await db.insert(staffAccessTokens).values({
+        staffId: input.staffId,
+        token,
+        accessCode,
+        codeAttempts: 0,
+        expiresAt,
+        createdBy: userId,
+        isRevoked: false,
+      });
+      return { success: true, token, accessCode, expiresAt: expiresAt.toISOString() };
+    }),
+
+  /**
+   * Get active access links for all staff
+   */
+  getStaffAccessLinks: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const { staffAccessTokens, terminalStaff } = await import("../../drizzle/schema");
+        const companyId = ctx.user?.companyId || 0;
+        const now = new Date();
+        const rows = await db
+          .select({
+            tokenId: staffAccessTokens.id,
+            staffId: staffAccessTokens.staffId,
+            token: staffAccessTokens.token,
+            accessCode: staffAccessTokens.accessCode,
+            expiresAt: staffAccessTokens.expiresAt,
+            isRevoked: staffAccessTokens.isRevoked,
+            staffName: terminalStaff.name,
+            staffRole: terminalStaff.staffRole,
+          })
+          .from(staffAccessTokens)
+          .leftJoin(terminalStaff, eq(staffAccessTokens.staffId, terminalStaff.id))
+          .where(and(
+            eq(terminalStaff.companyId, companyId),
+            eq(staffAccessTokens.isRevoked, false),
+            gte(staffAccessTokens.expiresAt, now),
+          ))
+          .orderBy(desc(staffAccessTokens.createdAt));
+        return rows.map(r => ({
+          ...r,
+          expiresAt: r.expiresAt?.toISOString() || null,
+        }));
+      } catch (e) { return []; }
+    }),
+
+  /**
+   * Revoke an access link
+   */
+  revokeAccessLink: protectedProcedure
+    .input(z.object({ tokenId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const { staffAccessTokens } = await import("../../drizzle/schema");
+      await db.update(staffAccessTokens).set({ isRevoked: true }).where(eq(staffAccessTokens.id, input.tokenId));
+      return { success: true };
     }),
 
   /**

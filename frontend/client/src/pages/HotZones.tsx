@@ -352,7 +352,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                       </div>
                       <div className="text-right ml-3 flex-shrink-0">
                         <div className={`text-lg font-bold tabular-nums ${isLight ? "text-slate-900" : "text-white"}`}>
-                          ${zone.liveRate}
+                          ${Number(zone.liveRate).toFixed(2)}
                           <span className={`text-xs font-normal ${isLight ? "text-slate-400" : "text-white/30"}`}>/mi</span>
                         </div>
                         <div className={`flex items-center justify-end gap-0.5 text-xs font-medium tabular-nums ${zone.rateChange >= 0 ? "text-emerald-500" : "text-red-400"}`}>
@@ -521,7 +521,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                                       const qs = q.toString();
                                       const shortZone = zone.zoneName?.split("/")[0]?.split(",")[0]?.trim() || zone.state || "zone";
                                       toast.info(`${action.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}`, {
-                                        description: `${shortZone} · $${zone.liveRate}/mi · ${zone.demandLevel}`,
+                                        description: `${shortZone} · $${Number(zone.liveRate).toFixed(2)}/mi · ${zone.demandLevel}`,
                                       });
                                       navigate(qs ? `${route}?${qs}` : route);
                                     }}
@@ -560,7 +560,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
               {coldZones.map((cz: any) => (
                 <div key={cz.id} className={`px-3 py-2 rounded-xl text-xs ${isLight ? "bg-blue-50/50 text-slate-500 border border-blue-100" : "bg-blue-500/[0.04] text-white/30 border border-blue-500/10"}`}>
                   <span className="font-medium">{cz.name}</span>
-                  <span className={`ml-2 tabular-nums ${isLight ? "text-blue-500" : "text-blue-400/60"}`}>${cz.liveRate}/mi</span>
+                  <span className={`ml-2 tabular-nums ${isLight ? "text-blue-500" : "text-blue-400/60"}`}>${Number(cz.liveRate).toFixed(2)}/mi</span>
                   <span className="ml-1 opacity-60">· {cz.reason}</span>
                 </div>
               ))}

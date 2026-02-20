@@ -129,23 +129,52 @@ export const esangRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const marketRate = (input.miles || 250) * 2.50;
+      const miles = input.miles || 250;
+      let marketRPM = 2.50;
+      let mlEnhanced = false;
+      let mlFactors: any[] = [];
+      let mlMarketCondition = "";
+      let mlRecommendation = "";
+
+      // ── ML Engine fusion — use trained model for market rate ──
+      try {
+        const { mlEngine } = await import("./services/mlEngine");
+        if (mlEngine.isReady()) {
+          const oState = (input.origin || "").split(",").pop()?.trim().toUpperCase().substring(0, 2) || "";
+          const dState = (input.destination || "").split(",").pop()?.trim().toUpperCase().substring(0, 2) || "";
+          if (oState && dState && miles > 0) {
+            const pred = mlEngine.predictRate({ originState: oState, destState: dState, distance: miles, cargoType: input.cargoType });
+            if (pred.confidence > 20) {
+              marketRPM = pred.predictedSpotRate / Math.max(miles, 1);
+              mlEnhanced = true;
+              mlMarketCondition = pred.marketCondition;
+              mlRecommendation = pred.recommendation;
+              mlFactors = (pred.factors || []).map((f: any) => ({ name: f.name, impact: f.direction === "up" ? "negative" : f.direction === "down" ? "positive" : "neutral", description: `${f.direction === "up" ? "+" : f.direction === "down" ? "-" : ""}${f.impact}%` }));
+            }
+          }
+        }
+      } catch { /* ML not ready */ }
+
+      const marketRate = Math.round(miles * marketRPM);
       const difference = input.bidAmount - marketRate;
-      const fairnessScore = Math.max(0, Math.min(100, 100 - Math.abs(difference / marketRate) * 100));
+      const fairnessScore = Math.max(0, Math.min(100, 100 - Math.abs(difference / Math.max(marketRate, 1)) * 100));
       return {
         fairnessScore,
         marketRate,
         marketAverage: marketRate,
         difference,
         recommendation: fairnessScore >= 80 ? "accept" : fairnessScore >= 60 ? "negotiate" : "reject",
-        reasoning: `Based on current market conditions for this lane, the bid is ${fairnessScore >= 80 ? "competitive" : "below market rate"}.`,
-        analysis: `Bid of $${input.bidAmount} for ${input.miles || 250} miles ($${(input.bidAmount / (input.miles || 250)).toFixed(2)}/mile). Market rate: $${marketRate.toFixed(2)}`,
-        ratePerMile: input.bidAmount / (input.miles || 250),
-        marketRatePerMile: 2.50,
-        factors: [
-          { name: "Distance", impact: "neutral", description: `${input.miles || 250} miles` },
+        reasoning: mlEnhanced
+          ? `ML Engine (${mlMarketCondition} market): ${mlRecommendation}. Bid $${input.bidAmount} vs ML-predicted market $${marketRate}.`
+          : `Based on current market conditions for this lane, the bid is ${fairnessScore >= 80 ? "competitive" : "below market rate"}.`,
+        analysis: `Bid of $${input.bidAmount} for ${miles} miles ($${(input.bidAmount / miles).toFixed(2)}/mile). Market rate: $${marketRate.toFixed(2)}${mlEnhanced ? " (ML-enhanced)" : ""}`,
+        ratePerMile: input.bidAmount / miles,
+        marketRatePerMile: Math.round(marketRPM * 100) / 100,
+        mlEnhanced,
+        factors: mlFactors.length > 0 ? mlFactors : [
+          { name: "Distance", impact: "neutral", description: `${miles} miles` },
           { name: "Market Rate", impact: difference >= 0 ? "positive" : "negative", description: `$${marketRate.toFixed(2)}` },
-          { name: "Rate per Mile", impact: "neutral", description: `$${(input.bidAmount / (input.miles || 250)).toFixed(2)}/mile` },
+          { name: "Rate per Mile", impact: "neutral", description: `$${(input.bidAmount / miles).toFixed(2)}/mile` },
         ],
       };
     }),
@@ -264,7 +293,32 @@ export const esangRouter = router({
     }),
 
   // Additional ESANG AI procedures
-  analyzeBidFairness: protectedProcedure.input(z.object({ loadId: z.string(), bidAmount: z.number() })).mutation(async ({ input }) => ({ fair: true, marketRate: input.bidAmount * 1.05, recommendation: "Competitive bid" })),
+  analyzeBidFairness: protectedProcedure.input(z.object({ loadId: z.string(), bidAmount: z.number() })).mutation(async ({ input }) => {
+    // Try to get load details for ML analysis
+    let mlResult: any = null;
+    try {
+      const { mlEngine } = await import("./services/mlEngine");
+      const db = await import("./db").then(m => m.getDb());
+      if (db && mlEngine.isReady()) {
+        const { loads } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const [load] = await db.select().from(loads).where(eq(loads.id, parseInt(input.loadId) || 0)).limit(1);
+        if (load) {
+          const p = load.pickupLocation as any; const d = load.deliveryLocation as any;
+          const oState = (p?.state || "").toUpperCase().substring(0, 2);
+          const dState = (d?.state || "").toUpperCase().substring(0, 2);
+          const dist = Number(load.distance) || 500;
+          if (oState && dState) {
+            const pred = mlEngine.predictRate({ originState: oState, destState: dState, distance: dist, weight: Number(load.weight) || undefined, equipmentType: (load as any).equipmentType, cargoType: (load as any).cargoType });
+            const ratio = input.bidAmount / Math.max(pred.predictedSpotRate, 1);
+            const fair = ratio >= 0.80 && ratio <= 1.20;
+            mlResult = { fair, marketRate: pred.predictedSpotRate, recommendation: fair ? `Competitive bid (${pred.marketCondition} market)` : ratio < 0.80 ? `Below market — ML suggests $${pred.predictedSpotRate}` : `Above market — ML suggests $${pred.predictedSpotRate}`, mlEnhanced: true, confidence: pred.confidence, marketCondition: pred.marketCondition };
+          }
+        }
+      }
+    } catch { /* ML not available */ }
+    return mlResult || { fair: true, marketRate: input.bidAmount * 1.05, recommendation: "Competitive bid", mlEnhanced: false };
+  }),
   classifyHazmat: protectedProcedure.input(z.object({ productName: z.string() })).mutation(async ({ input }) => {
     const un = await getUNForProduct(input.productName);
     if (un) {

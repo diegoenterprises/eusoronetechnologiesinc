@@ -76,7 +76,7 @@ const PAGE_ACCESS: RoleAccessConfig = {
   "/facility": ["TERMINAL_MANAGER", "SHIPPER", "ADMIN", "SUPER_ADMIN"],
   "/incoming": ["TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/outgoing": ["TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
-  "/staff": ["TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/staff": ["TERMINAL_MANAGER", "SHIPPER", "BROKER", "ADMIN", "SUPER_ADMIN"],
   "/operations": ["TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/compliance": ["TERMINAL_MANAGER", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   

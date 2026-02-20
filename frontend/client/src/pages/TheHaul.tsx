@@ -85,6 +85,16 @@ export default function TheHaul() {
     },
   }) || { mutate: () => {}, isPending: false };
 
+  const refreshMut = (trpc as any).gamification?.refreshMissions?.useMutation?.({
+    onSuccess: (d: any) => {
+      missionsQ.refetch?.();
+      aiMissionsQ.refetch?.();
+      if (d?.created > 0) toast.success(`${d.created} new missions rotated in!`);
+      else toast.success("Missions refreshed");
+    },
+    onError: () => toast.error("Could not rotate missions"),
+  }) || { mutateAsync: async () => ({ created: 0 }), isPending: false };
+
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [lobbyQ.data?.messages]);
   useEffect(() => { const iv = setInterval(() => lobbyQ.refetch?.(), 10000); return () => clearInterval(iv); }, []);
   // Auto-refetch missions & profile when on the missions tab to show progress updates
@@ -136,7 +146,7 @@ export default function TheHaul() {
           variant="outline"
           size="sm"
           className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-600/50 hover:bg-slate-700")}
-          disabled={aiGenLoading}
+          disabled={aiGenLoading || refreshMut.isPending}
           onClick={async () => {
             setAiGenLoading(true);
             try {
@@ -154,18 +164,14 @@ export default function TheHaul() {
                 setAiGenMissions(generated);
                 toast.success(`ESANG AI generated ${generated.length} personalized missions!`);
               } else {
-                // Gemini returned empty — refresh DB missions instead
-                await missionsQ.refetch?.();
-                await aiMissionsQ.refetch?.();
-                toast.success("Missions refreshed from weekly rotation");
+                // Gemini returned empty — force-rotate DB missions
+                await refreshMut.mutateAsync({});
               }
             } catch {
-              // Gemini API unavailable — refresh DB-seeded missions as fallback
+              // Gemini API unavailable — force-rotate DB missions as fallback
               try {
-                await missionsQ.refetch?.();
-                await aiMissionsQ.refetch?.();
-                toast.success("Missions refreshed from weekly rotation");
-              } catch { toast.error("Could not load missions — check connection"); }
+                await refreshMut.mutateAsync({});
+              } catch { /* onError handler in the hook shows the toast */ }
             }
             setAiGenLoading(false);
           }}

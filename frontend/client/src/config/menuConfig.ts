@@ -74,6 +74,20 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Routes, tracking & catalyst coordination"
     },
     { 
+      icon: "Building2", 
+      label: "My Terminals", 
+      path: "/my-terminals", 
+      badge: 0,
+      description: "Terminal rack access, partnerships & supply chain"
+    },
+    { 
+      icon: "Shield", 
+      label: "Staff", 
+      path: "/staff", 
+      badge: 0,
+      description: "Pickup location access controllers"
+    },
+    { 
       icon: "Users", 
       label: "Catalysts", 
       path: "/catalysts", 
@@ -134,7 +148,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Market Intelligence", 
       path: "/market-pricing", 
       badge: 0,
-      description: "Freight rates, demand heatmaps & surge pricing"
+      description: "Rates, commodities, hot zones & 2026 freight intelligence"
     },
     { 
       icon: "Truck", 
@@ -271,7 +285,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Market Intelligence", 
       path: "/market-pricing", 
       badge: 0,
-      description: "Freight rates, demand heatmaps & surge pricing"
+      description: "Rates, commodities, hot zones & 2026 freight intelligence"
     },
     { 
       icon: "Truck", 
@@ -415,7 +429,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Market Intelligence", 
       path: "/market-pricing", 
       badge: 0,
-      description: "Freight rates, demand heatmaps & surge pricing"
+      description: "Rates, commodities, hot zones & 2026 freight intelligence"
     },
     { 
       icon: "Truck", 
@@ -554,7 +568,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Market Intelligence", 
       path: "/market-pricing", 
       badge: 0,
-      description: "Freight rates, demand heatmaps & surge pricing"
+      description: "Rates, commodities, hot zones & 2026 freight intelligence"
     },
     { 
       icon: "Truck", 
@@ -905,6 +919,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Facility management"
     },
     { 
+      icon: "Users", 
+      label: "Supply Chain", 
+      path: "/supply-chain", 
+      badge: 0,
+      description: "Shippers, marketers, brokers & transporter partnerships"
+    },
+    { 
       icon: "Truck", 
       label: "Incoming", 
       path: "/incoming", 
@@ -930,7 +951,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Staff", 
       path: "/staff", 
       badge: 0,
-      description: "Terminal staff"
+      description: "Access controllers & validation links"
     },
     { 
       icon: "CheckCircle", 

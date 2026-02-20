@@ -63,6 +63,8 @@ export default function CatalystBidSubmission() {
   const [notes, setNotes] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
+  const [bidStrategy, setBidStrategy] = useState<"AGGRESSIVE" | "COMPETITIVE" | "PREMIUM">("COMPETITIVE");
+
   const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId! }, { enabled: !!loadId });
   const driversQuery = (trpc as any).drivers.getAvailable.useQuery();
   const fleetQuery = (trpc as any).fleet?.getVehicles?.useQuery?.() || { data: [], isLoading: false };
@@ -84,6 +86,18 @@ export default function CatalystBidSubmission() {
     if (!amt || !distance) return "0.00";
     return (amt / distance).toFixed(2);
   }, [bidAmount, distance]);
+
+  // ML Bid Optimizer — suggests optimal bid amount based on lane history
+  const mlOriginState = ((load?.pickupLocation as any)?.state || "").toUpperCase().substring(0, 2);
+  const mlDestState = ((load?.deliveryLocation as any)?.state || "").toUpperCase().substring(0, 2);
+  const mlBidOptimizer = (trpc as any).ml?.optimizeBid?.useQuery?.(
+    { originState: mlOriginState, destState: mlDestState, distance, postedRate: targetRate || undefined, cargoType: load?.cargoType || "general", equipmentType: load?.equipmentType || "dry_van", strategy: bidStrategy },
+    { enabled: !!load && distance > 0 && !!mlOriginState && !!mlDestState, staleTime: 120_000 }
+  ) || { data: null };
+  const mlETA = (trpc as any).ml?.predictETA?.useQuery?.(
+    { originState: mlOriginState, destState: mlDestState, distance, equipmentType: load?.equipmentType || "dry_van", cargoType: load?.cargoType || "general" },
+    { enabled: !!load && distance > 0 && !!mlOriginState && !!mlDestState, staleTime: 120_000 }
+  ) || { data: null };
 
   // ESANG AI Rate Intelligence calculations
   const rateIntel = useMemo(() => {
@@ -312,6 +326,61 @@ export default function CatalystBidSubmission() {
                   Rate Per Mile ($/mi)
                 </button>
               </div>
+
+              {/* ML Bid Optimizer */}
+              {mlBidOptimizer.data && distance > 0 && (
+                <div className={cn("p-4 rounded-xl border", isLight ? "bg-purple-50 border-purple-200" : "bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/20")}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Shield className="w-4 h-4 text-purple-400" />
+                    <span className={cn("text-xs font-bold uppercase tracking-wider", isLight ? "text-purple-600" : "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent")}>ML Bid Optimizer</span>
+                    <span className={cn("ml-auto text-[10px]", isLight ? "text-slate-500" : "text-slate-500")}>{mlBidOptimizer.data.winProbability}% win probability</span>
+                  </div>
+                  <div className="flex items-center gap-1 mb-3">
+                    {(["AGGRESSIVE", "COMPETITIVE", "PREMIUM"] as const).map(s => (
+                      <button key={s} onClick={() => setBidStrategy(s)}
+                        className={cn("px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all", bidStrategy === s ? "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white shadow" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800/50 text-slate-400 hover:bg-slate-700/50")}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mb-3">
+                    <div className="text-center">
+                      <p className={cn("text-[10px] uppercase", isLight ? "text-slate-500" : "text-slate-500")}>Suggested Bid</p>
+                      <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${mlBidOptimizer.data.suggestedBid.toLocaleString()}</p>
+                      <p className={cn("text-[10px]", isLight ? "text-slate-500" : "text-slate-500")}>${mlBidOptimizer.data.bidPerMile}/mi</p>
+                    </div>
+                    <div className="text-center">
+                      <p className={cn("text-[10px] uppercase", isLight ? "text-slate-500" : "text-slate-500")}>Market Avg</p>
+                      <p className={cn("text-lg font-bold", isLight ? "text-slate-600" : "text-slate-300")}>${mlBidOptimizer.data.marketAvg.toLocaleString()}</p>
+                      <p className={cn("text-[10px]", isLight ? "text-slate-500" : "text-slate-500")}>${(mlBidOptimizer.data.marketAvg / Math.max(distance, 1)).toFixed(2)}/mi</p>
+                    </div>
+                    <div className="text-center">
+                      <p className={cn("text-[10px] uppercase", isLight ? "text-slate-500" : "text-slate-500")}>Win Prob</p>
+                      <p className={`text-lg font-bold ${mlBidOptimizer.data.winProbability >= 60 ? "text-green-400" : mlBidOptimizer.data.winProbability >= 35 ? "text-yellow-400" : "text-red-400"}`}>{mlBidOptimizer.data.winProbability}%</p>
+                      <p className={cn("text-[10px]", isLight ? "text-slate-500" : "text-slate-500")}>{mlBidOptimizer.data.strategy}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => { setBidAmount(String(mlBidOptimizer.data.suggestedBid)); setRatePerMileInput(String(mlBidOptimizer.data.bidPerMile)); }}
+                    className="w-full px-3 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white hover:opacity-90 transition-opacity">
+                    Use Suggested Bid: ${mlBidOptimizer.data.suggestedBid.toLocaleString()}
+                  </button>
+                  <p className={cn("text-[10px] mt-2 italic", isLight ? "text-slate-500" : "text-slate-500")}>{mlBidOptimizer.data.reasoning}</p>
+                </div>
+              )}
+
+              {/* ML ETA Prediction */}
+              {mlETA.data && distance > 0 && (
+                <div className={cn("p-3 rounded-lg flex items-center gap-4", isLight ? "bg-slate-50 border border-slate-200" : "bg-slate-800/50 border border-slate-700/30")}>
+                  <Clock className="w-5 h-5 text-blue-400 shrink-0" />
+                  <div className="flex-1">
+                    <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>ML Transit Estimate</p>
+                    <p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{mlETA.data.estimatedDays} days ({mlETA.data.estimatedHours}h)</p>
+                  </div>
+                  <div className={cn("px-2 py-1 rounded text-[10px] font-bold", mlETA.data.riskLevel === "HIGH" ? "bg-red-500/20 text-red-400" : mlETA.data.riskLevel === "MODERATE" ? "bg-amber-500/20 text-amber-400" : "bg-green-500/20 text-green-400")}>
+                    {mlETA.data.riskLevel}
+                  </div>
+                </div>
+              )}
 
               {rateMode === "total" ? (
                 <div>

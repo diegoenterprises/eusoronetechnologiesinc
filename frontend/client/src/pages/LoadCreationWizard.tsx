@@ -19,7 +19,7 @@ import {
   ArrowRight, ArrowLeft, AlertTriangle, Info, Search,
   Droplets, Wind, Box, Thermometer, Snowflake,
   Scale, Link2, Plus, Trash2, Calculator,
-  GlassWater, MilkOff
+  GlassWater, MilkOff, Clock, Zap
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
@@ -80,6 +80,96 @@ function getClassesForTrailer(id: string) {
   if (id === "liquid_tank") return HAZMAT_CLASSES.filter(c => ["3", "5.1", "5.2", "6.1", "8"].includes(c.id));
   if (id === "gas_tank" || id === "cryogenic") return HAZMAT_CLASSES.filter(c => c.id.startsWith("2"));
   return HAZMAT_CLASSES;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PRODUCT DENSITY TABLE — lbs per gallon for auto-weight calc
+// Sources: NIST, DOT hazmat tables, industry standards
+// ═══════════════════════════════════════════════════════════════
+const PRODUCT_DENSITY: Record<string, { lbsPerGal: number; label: string }> = {
+  // Petroleum
+  "gasoline": { lbsPerGal: 6.1, label: "Gasoline" },
+  "diesel": { lbsPerGal: 7.1, label: "Diesel #2" },
+  "diesel fuel": { lbsPerGal: 7.1, label: "Diesel #2" },
+  "crude oil": { lbsPerGal: 7.2, label: "Crude Oil" },
+  "jet fuel": { lbsPerGal: 6.7, label: "Jet-A" },
+  "kerosene": { lbsPerGal: 6.7, label: "Kerosene" },
+  "heating oil": { lbsPerGal: 7.1, label: "Heating Oil" },
+  "fuel oil": { lbsPerGal: 7.9, label: "Fuel Oil #6" },
+  "ethanol": { lbsPerGal: 6.6, label: "Ethanol" },
+  "biodiesel": { lbsPerGal: 7.3, label: "Biodiesel B100" },
+  "asphalt": { lbsPerGal: 8.6, label: "Liquid Asphalt" },
+  "naphtha": { lbsPerGal: 5.8, label: "Naphtha" },
+  "toluene": { lbsPerGal: 7.2, label: "Toluene" },
+  "xylene": { lbsPerGal: 7.2, label: "Xylene" },
+  "benzene": { lbsPerGal: 7.3, label: "Benzene" },
+  "methanol": { lbsPerGal: 6.6, label: "Methanol" },
+  // Chemicals
+  "sulfuric acid": { lbsPerGal: 15.3, label: "Sulfuric Acid" },
+  "hydrochloric acid": { lbsPerGal: 9.9, label: "Hydrochloric Acid" },
+  "phosphoric acid": { lbsPerGal: 14.1, label: "Phosphoric Acid" },
+  "sodium hydroxide": { lbsPerGal: 13.4, label: "Caustic Soda 50%" },
+  "caustic soda": { lbsPerGal: 13.4, label: "Caustic Soda 50%" },
+  "ammonia": { lbsPerGal: 5.15, label: "Anhydrous Ammonia" },
+  "chlorine": { lbsPerGal: 12.1, label: "Liquid Chlorine" },
+  "hydrogen peroxide": { lbsPerGal: 11.2, label: "H2O2 50%" },
+  "acetone": { lbsPerGal: 6.6, label: "Acetone" },
+  "isopropanol": { lbsPerGal: 6.5, label: "Isopropyl Alcohol" },
+  // Gases (liquid form)
+  "propane": { lbsPerGal: 4.2, label: "Propane (LPG)" },
+  "butane": { lbsPerGal: 4.9, label: "Butane" },
+  "lng": { lbsPerGal: 3.5, label: "LNG" },
+  "liquid nitrogen": { lbsPerGal: 6.7, label: "Liquid Nitrogen" },
+  "liquid oxygen": { lbsPerGal: 9.5, label: "Liquid Oxygen" },
+  "liquid hydrogen": { lbsPerGal: 0.6, label: "Liquid Hydrogen" },
+  "liquid co2": { lbsPerGal: 8.5, label: "Liquid CO2" },
+  "liquid argon": { lbsPerGal: 11.6, label: "Liquid Argon" },
+  // Food-grade liquids
+  "water": { lbsPerGal: 8.34, label: "Water" },
+  "milk": { lbsPerGal: 8.6, label: "Whole Milk" },
+  "juice": { lbsPerGal: 8.8, label: "Fruit Juice" },
+  "orange juice": { lbsPerGal: 8.8, label: "Orange Juice" },
+  "wine": { lbsPerGal: 8.4, label: "Wine" },
+  "beer": { lbsPerGal: 8.5, label: "Beer" },
+  "cooking oil": { lbsPerGal: 7.7, label: "Cooking Oil" },
+  "vegetable oil": { lbsPerGal: 7.7, label: "Vegetable Oil" },
+  "soybean oil": { lbsPerGal: 7.7, label: "Soybean Oil" },
+  "palm oil": { lbsPerGal: 7.6, label: "Palm Oil" },
+  "corn syrup": { lbsPerGal: 11.7, label: "Corn Syrup" },
+  "liquid sugar": { lbsPerGal: 11.1, label: "Liquid Sugar" },
+  "molasses": { lbsPerGal: 11.7, label: "Molasses" },
+  "cream": { lbsPerGal: 8.4, label: "Heavy Cream" },
+  "vinegar": { lbsPerGal: 8.4, label: "Vinegar" },
+};
+
+// Unit conversion factors to lbs
+const UNIT_WEIGHT_FACTORS: Record<string, number> = {
+  "Pallets": 1500,       // avg pallet weight lbs
+  "Units": 50,           // avg unit weight
+  "Cases": 30,           // avg case weight
+  "Boxes": 25,           // avg box weight
+  "Pieces": 2000,        // avg piece weight (flatbed)
+  "Bundles": 3000,       // avg bundle weight (lumber)
+  "Linear Feet": 300,    // avg lbs per linear foot
+  "Tons": 2000,          // 1 ton = 2000 lbs
+  "Drums": 600,          // avg drum weight (55 gal liquid)
+  "Cubic Yards": 2700,   // avg lbs per cubic yard (dry bulk)
+  "Cubic Feet": 80,      // avg lbs per cubic foot
+  "Cubic Meters": 2800,  // avg lbs per cubic meter
+  "Barrels": 300,        // avg barrel weight (42 gal * ~7.1)
+  "PSI Units": 0,        // no direct weight conversion
+};
+
+function lookupDensity(productName: string): { lbsPerGal: number; label: string } | null {
+  if (!productName) return null;
+  const key = productName.toLowerCase().trim();
+  // Exact match
+  if (PRODUCT_DENSITY[key]) return PRODUCT_DENSITY[key];
+  // Partial match
+  for (const [k, v] of Object.entries(PRODUCT_DENSITY)) {
+    if (key.includes(k) || k.includes(key)) return v;
+  }
+  return null;
 }
 
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
@@ -470,6 +560,23 @@ export default function LoadCreationWizard() {
     },
     { enabled: rs >= 6 && !!originParts[0] && !!destParts[0], staleTime: 120_000 }
   );
+
+  // ML Engine — rate prediction + ETA + anomaly detection
+  const mlOriginState = (originParts[1] || originParts[0] || "").replace(/\s+/g, "").substring(0, 2).toUpperCase();
+  const mlDestState = (destParts[1] || destParts[0] || "").replace(/\s+/g, "").substring(0, 2).toUpperCase();
+  const mlEquipment = selectedTrailer?.equipment === "tank" ? "tanker" : selectedTrailer?.equipment || "dry_van";
+  const mlRatePrediction = (trpc as any).ml?.predictRate?.useQuery?.(
+    { originState: mlOriginState, destState: mlDestState, distance: formData.distance || 0, weight: Number(formData.weight) || undefined, equipmentType: mlEquipment, cargoType: selectedTrailer?.hazmat ? "hazmat" : "general" },
+    { enabled: rs >= 6 && !!mlOriginState && !!mlDestState && (formData.distance || 0) > 0, staleTime: 120_000 }
+  ) || { data: null };
+  const mlETA = (trpc as any).ml?.predictETA?.useQuery?.(
+    { originState: mlOriginState, destState: mlDestState, distance: formData.distance || 0, equipmentType: mlEquipment, cargoType: selectedTrailer?.hazmat ? "hazmat" : "general", pickupDate: formData.pickupDate },
+    { enabled: rs >= 5 && !!mlOriginState && !!mlDestState && (formData.distance || 0) > 0, staleTime: 120_000 }
+  ) || { data: null };
+  const mlAnomalies = (trpc as any).ml?.detectAnomalies?.useQuery?.(
+    { rate: Number(formData.rate) || undefined, distance: formData.distance || undefined, originState: mlOriginState || undefined, destState: mlDestState || undefined, weight: Number(formData.weight) || undefined },
+    { enabled: rs >= 6 && !!Number(formData.rate) && (formData.distance || 0) > 0, staleTime: 60_000 }
+  ) || { data: null };
 
   const updateField = (field: string, value: any) => setFormData((prev: any) => ({ ...prev, [field]: value }));
 
@@ -894,21 +1001,57 @@ export default function LoadCreationWizard() {
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-slate-400 mb-1 block">Weight</label>
-                  <div className="flex gap-2">
-                    <Input type="number" value={formData.weight || ""} onChange={(e: any) => updateField("weight", e.target.value)} placeholder="42000" className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
-                    <Select value={formData.weightUnit || "lbs"} onValueChange={(v: any) => updateField("weightUnit", v)}>
-                      <SelectTrigger className="w-24 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
-                      <SelectContent><SelectItem value="lbs">lbs</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="tons">tons</SelectItem></SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
                   <label className="text-sm text-slate-400 mb-1 block">Quantity</label>
                   <div className="flex gap-2">
-                    <Input type="number" value={formData.quantity || ""} onChange={(e: any) => updateField("quantity", e.target.value)}
+                    <Input type="number" value={formData.quantity || ""} onChange={(e: any) => {
+                      const qty = e.target.value;
+                      updateField("quantity", qty);
+                      // Auto-calculate weight from quantity + product density
+                      const qtyNum = Number(qty) || 0;
+                      if (qtyNum > 0) {
+                        const unit = formData.quantityUnit || currentUnit;
+                        if (unit === "Gallons" || unit === "Barrels" || unit === "Liters") {
+                          const density = lookupDensity(formData.productName || "");
+                          if (density) {
+                            let gallons = qtyNum;
+                            if (unit === "Barrels") gallons = qtyNum * 42;
+                            if (unit === "Liters") gallons = qtyNum * 0.2642;
+                            const calcWeight = Math.round(gallons * density.lbsPerGal);
+                            updateField("weight", String(calcWeight));
+                            updateField("weightAutoCalc", true);
+                            updateField("weightSource", `${density.label} @ ${density.lbsPerGal} lbs/gal`);
+                          }
+                        } else if (UNIT_WEIGHT_FACTORS[unit] && UNIT_WEIGHT_FACTORS[unit] > 0) {
+                          const calcWeight = Math.round(qtyNum * UNIT_WEIGHT_FACTORS[unit]);
+                          updateField("weight", String(calcWeight));
+                          updateField("weightAutoCalc", true);
+                          updateField("weightSource", `Est. ${UNIT_WEIGHT_FACTORS[unit].toLocaleString()} lbs/${unit.toLowerCase().replace(/s$/, "")}`);
+                        }
+                      }
+                    }}
                       placeholder={getPlaceholder(formData.trailerType || "")} className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
-                    <Select value={currentUnit} onValueChange={(v: any) => updateField("quantityUnit", v)}>
+                    <Select value={currentUnit} onValueChange={(v: any) => {
+                      updateField("quantityUnit", v);
+                      // Recalculate weight when unit changes
+                      const qtyNum = Number(formData.quantity) || 0;
+                      if (qtyNum > 0) {
+                        if (v === "Gallons" || v === "Barrels" || v === "Liters") {
+                          const density = lookupDensity(formData.productName || "");
+                          if (density) {
+                            let gallons = qtyNum;
+                            if (v === "Barrels") gallons = qtyNum * 42;
+                            if (v === "Liters") gallons = qtyNum * 0.2642;
+                            updateField("weight", String(Math.round(gallons * density.lbsPerGal)));
+                            updateField("weightAutoCalc", true);
+                            updateField("weightSource", `${density.label} @ ${density.lbsPerGal} lbs/gal`);
+                          }
+                        } else if (UNIT_WEIGHT_FACTORS[v] && UNIT_WEIGHT_FACTORS[v] > 0) {
+                          updateField("weight", String(Math.round(qtyNum * UNIT_WEIGHT_FACTORS[v])));
+                          updateField("weightAutoCalc", true);
+                          updateField("weightSource", `Est. ${UNIT_WEIGHT_FACTORS[v].toLocaleString()} lbs/${v.toLowerCase().replace(/s$/, "")}`);
+                        }
+                      }
+                    }}>
                       <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {quantityUnits.map((u: string) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
@@ -916,7 +1059,53 @@ export default function LoadCreationWizard() {
                     </Select>
                   </div>
                 </div>
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block flex items-center gap-1.5">
+                    Weight
+                    {formData.weightAutoCalc && <Calculator className="w-3 h-3 text-cyan-400" />}
+                  </label>
+                  <div className="flex gap-2">
+                    <Input type="number" value={formData.weight || ""} onChange={(e: any) => {
+                      updateField("weight", e.target.value);
+                      updateField("weightAutoCalc", false);
+                      updateField("weightSource", "");
+                    }} placeholder="42000" className={`bg-slate-700/50 border-slate-600/50 rounded-lg flex-1 ${formData.weightAutoCalc ? "ring-1 ring-cyan-500/30" : ""}`} />
+                    <Select value={formData.weightUnit || "lbs"} onValueChange={(v: any) => updateField("weightUnit", v)}>
+                      <SelectTrigger className="w-24 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="lbs">lbs</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="tons">tons</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
+
+              {/* Auto-calc explanation + weight validation */}
+              {formData.weightAutoCalc && formData.weightSource && (
+                <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center gap-2">
+                  <Calculator className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-cyan-400 text-xs font-medium">Weight auto-calculated</p>
+                    <p className="text-slate-400 text-[10px]">{Number(formData.quantity).toLocaleString()} {currentUnit} x {formData.weightSource} = {Number(formData.weight).toLocaleString()} lbs</p>
+                  </div>
+                </div>
+              )}
+              {formData.weight && Number(formData.weight) > 80000 && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-red-400 text-xs font-medium">Exceeds federal weight limit</p>
+                    <p className="text-slate-400 text-[10px]">Max legal GVWR: 80,000 lbs (cargo typically 44,000-48,000 lbs after tractor + trailer weight). Consider splitting across multiple trucks.</p>
+                  </div>
+                </div>
+              )}
+              {formData.weight && Number(formData.weight) > 44000 && Number(formData.weight) <= 80000 && !isLiquidOrGas && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+                  <Scale className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-amber-400 text-xs font-medium">Heavy load — verify axle weights</p>
+                    <p className="text-slate-400 text-[10px]">{Number(formData.weight).toLocaleString()} lbs cargo + ~35,000 lbs tractor/trailer = ~{(Number(formData.weight) + 35000).toLocaleString()} lbs GVWR. Check state-specific bridge and axle limits.</p>
+                  </div>
+                </div>
+              )}
 
               {/* Compartment selector — ONLY for tanker types */}
               {isTanker && (
@@ -1282,6 +1471,54 @@ export default function LoadCreationWizard() {
                 </button>
               </div>
 
+              {/* ML Rate Prediction — Smart Suggestion */}
+              {mlRatePrediction.data && formData.distance > 0 && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="w-4 h-4 text-purple-400" />
+                    <span className="text-xs font-bold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent uppercase tracking-wider">ML Rate Prediction</span>
+                    <span className="ml-auto text-[10px] text-slate-500">{mlRatePrediction.data.confidence}% confidence{mlRatePrediction.data.basedOnSamples > 0 ? ` / ${mlRatePrediction.data.basedOnSamples} samples` : ""}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mb-3">
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-500 uppercase">Spot Rate</p>
+                      <p className="text-white text-lg font-bold">${mlRatePrediction.data.predictedSpotRate.toLocaleString()}</p>
+                      <p className="text-[10px] text-slate-500">${(mlRatePrediction.data.predictedSpotRate / formData.distance).toFixed(2)}/mi</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-500 uppercase">Contract Rate</p>
+                      <p className="text-slate-300 text-lg font-bold">${mlRatePrediction.data.predictedContractRate.toLocaleString()}</p>
+                      <p className="text-[10px] text-slate-500">${(mlRatePrediction.data.predictedContractRate / formData.distance).toFixed(2)}/mi</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-500 uppercase">Market</p>
+                      <p className={`text-lg font-bold ${mlRatePrediction.data.marketCondition === "SELLER" ? "text-red-400" : mlRatePrediction.data.marketCondition === "BUYER" ? "text-green-400" : "text-yellow-400"}`}>{mlRatePrediction.data.marketCondition}</p>
+                      <p className="text-[10px] text-slate-500">${mlRatePrediction.data.priceRange.low.toLocaleString()} - ${mlRatePrediction.data.priceRange.high.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  {mlRatePrediction.data.factors.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {mlRatePrediction.data.factors.map((f: any, i: number) => (
+                        <span key={i} className={`text-[10px] px-2 py-0.5 rounded-full border ${f.direction === "up" ? "border-red-500/30 text-red-400 bg-red-500/10" : f.direction === "down" ? "border-green-500/30 text-green-400 bg-green-500/10" : "border-slate-500/30 text-slate-400 bg-slate-500/10"}`}>
+                          {f.name}: {f.direction === "up" ? "+" : f.direction === "down" ? "" : ""}{f.impact}%
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <button onClick={() => { updateField("rate", String(mlRatePrediction.data.predictedSpotRate)); updateField("ratePerMile", (mlRatePrediction.data.predictedSpotRate / formData.distance).toFixed(2)); }}
+                      className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white hover:opacity-90 transition-opacity">
+                      Use Spot Rate
+                    </button>
+                    <button onClick={() => { updateField("rate", String(mlRatePrediction.data.predictedContractRate)); updateField("ratePerMile", (mlRatePrediction.data.predictedContractRate / formData.distance).toFixed(2)); }}
+                      className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold border border-purple-500/30 text-purple-300 hover:bg-purple-500/10 transition-colors">
+                      Use Contract Rate
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-2 italic">{mlRatePrediction.data.recommendation}</p>
+                </div>
+              )}
+
               {rateMode === "total" ? (
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Total Rate ($)</label>
@@ -1319,6 +1556,39 @@ export default function LoadCreationWizard() {
                 </div>
               )}
 
+              {/* ML Anomaly Alerts */}
+              {mlAnomalies.data && Array.isArray(mlAnomalies.data) && mlAnomalies.data.length > 0 && (
+                <div className="space-y-2">
+                  {mlAnomalies.data.map((a: any, i: number) => (
+                    <div key={i} className={`p-3 rounded-lg border flex items-start gap-2 ${a.severity === "CRITICAL" ? "border-red-500/30 bg-red-500/10" : a.severity === "WARNING" ? "border-amber-500/30 bg-amber-500/10" : "border-blue-500/30 bg-blue-500/10"}`}>
+                      <AlertTriangle className={`w-4 h-4 mt-0.5 shrink-0 ${a.severity === "CRITICAL" ? "text-red-400" : a.severity === "WARNING" ? "text-amber-400" : "text-blue-400"}`} />
+                      <div>
+                        <p className={`text-xs font-semibold ${a.severity === "CRITICAL" ? "text-red-300" : a.severity === "WARNING" ? "text-amber-300" : "text-blue-300"}`}>{a.message}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{a.suggestedAction}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ML ETA Prediction */}
+              {mlETA.data && formData.distance > 0 && (
+                <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/30 flex items-center gap-4">
+                  <Clock className="w-5 h-5 text-blue-400 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-xs text-slate-400">ML-Predicted Transit Time</p>
+                    <p className="text-white text-sm font-semibold">{mlETA.data.estimatedDays} days ({mlETA.data.estimatedHours}h)</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-slate-500">Range</p>
+                    <p className="text-xs text-slate-400">{Math.round(mlETA.data.range.bestCase)}h - {Math.round(mlETA.data.range.worstCase)}h</p>
+                  </div>
+                  <div className={`px-2 py-1 rounded text-[10px] font-bold ${mlETA.data.riskLevel === "HIGH" ? "bg-red-500/20 text-red-400" : mlETA.data.riskLevel === "MODERATE" ? "bg-amber-500/20 text-amber-400" : "bg-green-500/20 text-green-400"}`}>
+                    {mlETA.data.riskLevel}
+                  </div>
+                </div>
+              )}
+
               {/* ESANG AI Rate Intelligence — Powered by Hot Zones */}
               {formData.distance && (formData.rate || formData.ratePerMile) && (() => {
                 const hz = hzQuoteQuery.data;
@@ -1352,6 +1622,7 @@ export default function LoadCreationWizard() {
                       <EsangIcon className="w-4 h-4 text-purple-500 dark:text-purple-400" />
                       <span className="text-sm font-bold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent">ESANG AI Rate Intelligence</span>
                       {hzRate > 0 && <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-[8px] px-1.5 py-0 ml-auto">HOT ZONES</Badge>}
+                      {hz?.ml && <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0 text-[8px] px-1.5 py-0">ML ENGINE</Badge>}
                     </div>
 
                     <div className="flex flex-col items-center">
@@ -1435,6 +1706,16 @@ export default function LoadCreationWizard() {
                       <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 text-center">Suggested total: <span className="text-purple-600 dark:text-purple-300 font-bold">${marketTotal.toLocaleString()}</span> for {formData.distance} mi</p>
                       {intel?.laneAvgRate && (
                         <p className="text-[10px] text-cyan-400 mt-1 text-center">Lane history: ${intel.laneAvgRate}/mi {intel.laneOnTimePercent ? `(${intel.laneOnTimePercent}% on-time)` : ""}</p>
+                      )}
+                      {hz?.ml && (
+                        <div className="mt-2 pt-2 border-t border-dashed border-slate-200 dark:border-slate-700/30">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-purple-400 font-semibold">ML Spot: ${hz.ml.spotRate?.toLocaleString()}</span>
+                            <span className="text-[10px] text-slate-400">{hz.ml.confidence}% conf</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${hz.ml.marketCondition === "SELLER" ? "bg-red-500/15 text-red-400" : hz.ml.marketCondition === "BUYER" ? "bg-green-500/15 text-green-400" : "bg-yellow-500/15 text-yellow-400"}`}>{hz.ml.marketCondition}</span>
+                          </div>
+                          {hz.ml.eta && <p className="text-[10px] text-slate-400 mt-0.5 text-center">ML Transit: {hz.ml.eta.days}d ({hz.ml.eta.hours}h) / {hz.ml.eta.riskLevel} risk</p>}
+                        </div>
                       )}
                     </div>
 

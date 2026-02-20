@@ -1,5 +1,5 @@
 ---
-description: Deploy EusoTrip to Azure App Service (eusotrip.com)
+description: Deploy EusoTrip to Azure App Service (eusotrip.com & eusorone.com)
 ---
 
 ## Prerequisites
@@ -40,10 +40,10 @@ az webapp config appsettings set --resource-group eusotrip-prod --name eusotrip-
 az webapp restart --resource-group eusotrip-prod --name eusotrip-app
 ```
 
-7. Verify deployment (wait ~20s for cold start)
+7. Verify deployment on both domains (wait ~20s for cold start)
 // turbo
 ```bash
-sleep 20 && curl -s -o /dev/null -w "HTTP %{http_code}" https://eusotrip.com/
+sleep 20 && echo "eusotrip.com: $(curl -s -o /dev/null -w '%{http_code}' https://eusotrip.com/)" && echo "eusorone.com (redirect): $(curl -s -o /dev/null -w '%{http_code}' https://eusorone.com/)" && echo "eusorone.com (final): $(curl -s -o /dev/null -w '%{http_code}' --resolve eusorone.com:443:20.42.128.96 -L https://eusorone.com/)"
 ```
 
 ## Key Details
@@ -51,5 +51,5 @@ sleep 20 && curl -s -o /dev/null -w "HTTP %{http_code}" https://eusotrip.com/
 - **App Name:** `eusotrip-app`
 - **Storage Account:** `eusotripdeploy`
 - **Container:** `deployments`
-- **Custom Domain:** `eusotrip.com`
+- **Custom Domains:** `eusotrip.com` (primary), `eusorone.com` (redirects to eusotrip.com via 301)
 - **Deploy Method:** `WEBSITE_RUN_FROM_PACKAGE` pointing to blob SAS URL

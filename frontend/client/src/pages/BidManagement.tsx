@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Gavel, DollarSign, CheckCircle, XCircle, Clock,
-  TrendingUp, Package, Search, Navigation, MapPin, Building2, Eye, FileText
+  TrendingUp, Package, Search, Navigation, MapPin, Building2, Eye, FileText, Shield
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
@@ -49,6 +49,12 @@ export default function BidManagement() {
   });
 
   const analyzeMutation = (trpc as any).esang.analyzeBidFairness.useMutation();
+
+  // ML Engine — demand forecast for market intelligence
+  const mlDemand = (trpc as any).ml?.forecastDemand?.useQuery?.(
+    {},
+    { staleTime: 120_000 }
+  ) || { data: null };
 
   const stats = statsQuery.data as any;
 
@@ -117,6 +123,28 @@ export default function BidManagement() {
         ))}
       </div>
 
+      {/* ── ESANG AI Market Intelligence ── */}
+      {mlDemand.data && mlDemand.data.topLanes?.length > 0 && (
+        <div className={cn("rounded-xl border p-3", isLight ? "bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200" : "bg-gradient-to-r from-purple-500/5 to-blue-500/5 border-purple-500/20")}>
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="w-3.5 h-3.5 text-purple-400" />
+            <span className={cn("text-[10px] font-bold uppercase tracking-wider", isLight ? "text-purple-600" : "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent")}>ESANG AI Bid Intelligence</span>
+            <span className={cn("ml-auto text-[10px]", isLight ? "text-slate-500" : "text-slate-500")}>
+              Trend: <span className={mlDemand.data.trend === "RISING" ? "text-green-400 font-bold" : mlDemand.data.trend === "DECLINING" ? "text-red-400 font-bold" : "text-slate-400 font-bold"}>{mlDemand.data.trend}</span>
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {mlDemand.data.topLanes.slice(0, 5).map((lane: any, i: number) => (
+              <span key={i} className={cn("text-[10px] px-2 py-1 rounded-lg border", isLight ? "bg-white border-slate-200 text-slate-600" : "bg-slate-800/50 border-slate-700/30 text-slate-300")}>
+                <span className="font-bold">{lane.lane}</span>
+                <span className="text-slate-400 ml-1">{lane.volume} loads</span>
+                <span className={`ml-1 ${lane.trend === "RISING" ? "text-green-400" : lane.trend === "DECLINING" ? "text-red-400" : "text-slate-400"}`}>{lane.trend === "RISING" ? "+" : lane.trend === "DECLINING" ? "-" : "="}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Quick Bid on Available Loads ── */}
       {((availableLoadsQuery.data as any)?.loads?.length ?? 0) > 0 && (
         <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-blue-200 shadow-sm" : "bg-slate-800/60 border-blue-500/30")}>
@@ -128,7 +156,7 @@ export default function BidManagement() {
             {(availableLoadsQuery.data as any)?.loads?.map((load: any) => (
               <div key={load.id} className={cn("p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3", cellCls)}>
                 <div className="flex-1">
-                  <p className={cn("font-bold text-sm", isLight ? "text-slate-800" : "text-white")}>#{load.loadNumber} — {load.origin} → {load.destination}</p>
+                  <p className={cn("font-bold text-sm", isLight ? "text-slate-800" : "text-white")}>#{load.loadNumber} — {typeof load.origin === "object" ? `${load.origin?.city || ""}, ${load.origin?.state || ""}` : load.origin} → {typeof load.destination === "object" ? `${load.destination?.city || ""}, ${load.destination?.state || ""}` : load.destination}</p>
                   <p className="text-xs text-slate-400 mt-0.5">{load.product} · {load.distance} mi · Target: ${load.targetRate}</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -213,9 +241,9 @@ export default function BidManagement() {
                       </div>
                       <div className="flex items-center gap-1 text-sm text-slate-400">
                         <MapPin className="w-3 h-3" />
-                        <span>{bid.origin}</span>
+                        <span>{typeof bid.origin === "object" ? `${bid.origin?.city || ""}, ${bid.origin?.state || ""}` : bid.origin}</span>
                         <Navigation className="w-3 h-3 mx-1 rotate-90" />
-                        <span>{bid.destination}</span>
+                        <span>{typeof bid.destination === "object" ? `${bid.destination?.city || ""}, ${bid.destination?.state || ""}` : bid.destination}</span>
                       </div>
                       <p className="text-xs text-slate-400 mt-1">Submitted: {bid.submittedAt}</p>
                     </div>

@@ -25,6 +25,8 @@ export type Resource =
   | "MESSAGE" | "CONVERSATION" | "NOTIFICATION"
   // Documents
   | "DOCUMENT" | "AGREEMENT"
+  // Terminal / Supply Chain
+  | "TERMINAL_PARTNER" | "SUPPLY_CHAIN_CONFIG"
   // System
   | "SYSTEM_CONFIG" | "API_KEY" | "ENCRYPTION_KEY" | "PLATFORM_FEES"
   // Gamification

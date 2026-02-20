@@ -11,6 +11,7 @@ import { router, auditedOperationsProcedure, auditedAdminProcedure, sensitiveDat
 import { getDb } from "../db";
 import { users, drivers, loads, vehicles, inspections, documents, certifications } from "../../drizzle/schema";
 import { eq, and, desc, sql, count, avg, gte, or, like } from "drizzle-orm";
+import { getHOSSummary, changeDutyStatus } from "../services/hosEngine";
 
 const driverStatusSchema = z.enum(["active", "inactive", "suspended", "available", "off_duty", "on_load"]);
 const dutyStatusSchema = z.enum(["off_duty", "sleeper", "driving", "on_duty"]);
@@ -1143,20 +1144,31 @@ export const driversRouter = router({
     } catch (e) { console.error('[Drivers] getCompletedTrips error:', e); return []; }
   }),
 
-  // HOS
-  getHOSAvailability: auditedOperationsProcedure.query(async () => ({ canDrive: true, canAccept: true, drivingRemaining: "6h 30m", dutyRemaining: "8h 00m", onDutyRemaining: "8h 00m", cycleRemaining: "34h 00m" })),
-  getMyHOS: auditedOperationsProcedure.query(async () => ({ 
-    status: "off_duty", currentStatus: "off_duty",
-    driving: 0, onDuty: 0, cycle: 0,
-    drivingRemaining: "11h 00m", onDutyRemaining: "14h 00m", cycleRemaining: "70h 00m",
-    breakRemaining: "0h 00m", drivingToday: 0, onDutyToday: 0, cycleUsed: 0,
-    hoursAvailable: { driving: 11, onDuty: 14, cycle: 70 },
-    violations: [], lastBreak: null, nextBreakRequired: null,
-    breakRequired: false, breakDueIn: "",
-    drivingHours: 0, onDutyHours: 0, cycleHours: 0, todayLog: [],
-  })),
-  startDriving: auditedOperationsProcedure.mutation(async () => ({ success: true, startedAt: new Date().toISOString() })),
-  stopDriving: auditedOperationsProcedure.mutation(async () => ({ success: true, stoppedAt: new Date().toISOString() })),
+  // HOS — Real tracking via hosEngine
+  getHOSAvailability: auditedOperationsProcedure.query(async ({ ctx }) => {
+    const userId = Number(ctx.user?.id) || 0;
+    const summary = getHOSSummary(userId);
+    return { canDrive: summary.canDrive, canAccept: summary.canAcceptLoad, drivingRemaining: summary.drivingRemaining, dutyRemaining: summary.onDutyRemaining, onDutyRemaining: summary.onDutyRemaining, cycleRemaining: summary.cycleRemaining };
+  }),
+  getMyHOS: auditedOperationsProcedure.query(async ({ ctx }) => {
+    const userId = Number(ctx.user?.id) || 0;
+    return getHOSSummary(userId);
+  }),
+  startDriving: auditedOperationsProcedure.mutation(async ({ ctx }) => {
+    const userId = Number(ctx.user?.id) || 0;
+    const summary = changeDutyStatus(userId, "driving");
+    if (!summary.canDrive && summary.status === "driving") {
+      // Revert — shouldn't have started
+      changeDutyStatus(userId, "on_duty");
+      return { success: false, message: "Cannot start driving: " + (summary.violations[0]?.description || "HOS limits exceeded") };
+    }
+    return { success: true, startedAt: new Date().toISOString(), hos: summary };
+  }),
+  stopDriving: auditedOperationsProcedure.mutation(async ({ ctx }) => {
+    const userId = Number(ctx.user?.id) || 0;
+    const summary = changeDutyStatus(userId, "on_duty");
+    return { success: true, stoppedAt: new Date().toISOString(), hos: summary };
+  }),
 
   // Onboarding
   getOnboarding: auditedOperationsProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async ({ ctx }) => {

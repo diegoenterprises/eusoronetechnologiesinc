@@ -26,6 +26,8 @@ import { encrypt, decrypt, hashForIndex } from "../_core/encryption";
 import { documentTypesSeed } from "../seeds/documentTypesSeed";
 import { documentRequirementsSeed, TRAILER_TYPE_CONDITIONS } from "../seeds/documentRequirementsSeed";
 import { stateRequirementsSeed } from "../seeds/stateRequirementsSeed";
+import { resolveCompanyCompliance, resolveDriverCompliance } from "../services/complianceEngine";
+import { companies } from "../../drizzle/schema";
 
 // ============================================================================
 // HELPER: Resolve numeric userId from auth context
@@ -889,6 +891,319 @@ export const documentCenterRouter = router({
       await calculateDocumentAwareness(userId, userRole);
 
       return { success: true };
+    }),
+
+  // =========================================================================
+  // SMART COMPLIANCE ENGINE — State-Aware Document Resolution
+  // =========================================================================
+
+  /**
+   * Get the full compliance profile for the current user's company.
+   * Resolves all required documents based on:
+   *  - Company registered state (from DOT/MC authority)
+   *  - Role (CATALYST, SHIPPER, BROKER)
+   *  - Operations (hazmat, tanker, oversize)
+   *  - Equipment types in fleet
+   *  - Operating states
+   * Also cross-references with uploaded documents to show completion status.
+   */
+  getMyComplianceProfile: auditedProtectedProcedure
+    .input(z.object({
+      operatingStates: z.array(z.string()).optional(),
+      equipmentTypes: z.array(z.string()).optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = await resolveUserId(ctx);
+      const role = ctx.user?.role || "CATALYST";
+
+      // Resolve company profile from DB
+      let companyState = "";
+      let dotNumber = "";
+      let mcNumber = "";
+      let hazmatAuthorized = false;
+      let tankerEndorsed = false;
+      let oversizeOps = false;
+      let hasBrokerAuthority = false;
+      let companyId = 0;
+      let equipmentTypes: string[] = input?.equipmentTypes || [];
+      let operatingStates: string[] = input?.operatingStates || [];
+
+      if (db) {
+        // Get user's company
+        const [user] = await db.select({ companyId: users.companyId, metadata: users.metadata })
+          .from(users).where(eq(users.id, userId)).limit(1);
+
+        if (user?.companyId) {
+          companyId = user.companyId;
+          const [company] = await db.select().from(companies).where(eq(companies.id, user.companyId)).limit(1);
+          if (company) {
+            companyState = company.state || "";
+            dotNumber = company.dotNumber || "";
+            mcNumber = company.mcNumber || "";
+          }
+
+          // Parse registration metadata for ops details
+          try {
+            const meta = typeof user.metadata === "string" ? JSON.parse(user.metadata) : user.metadata;
+            if (meta?.registration) {
+              const reg = meta.registration;
+              if (reg.hazmatEndorsed) hazmatAuthorized = true;
+              if (reg.tankerEndorsed) tankerEndorsed = true;
+              if (reg.equipmentTypes?.length) equipmentTypes = Array.from(new Set([...equipmentTypes, ...reg.equipmentTypes]));
+              if (reg.processAgentStates?.length) operatingStates = Array.from(new Set([...operatingStates, ...reg.processAgentStates]));
+              if (reg.hazmatClasses?.length) hazmatAuthorized = true;
+            }
+            if (meta?.complianceIds?.dotHazmatPermit) hazmatAuthorized = true;
+          } catch {}
+
+          // Get user's operating states from DB
+          try {
+            const dbStates = await db.select({ stateCode: userOperatingStates.stateCode })
+              .from(userOperatingStates).where(eq(userOperatingStates.userId, userId));
+            const dbStateCodes = dbStates.map(s => s.stateCode);
+            operatingStates = Array.from(new Set([...operatingStates, ...dbStateCodes]));
+          } catch {}
+        }
+      }
+
+      // Resolve compliance requirements
+      const profile = resolveCompanyCompliance({
+        companyId,
+        state: companyState,
+        dotNumber,
+        mcNumber,
+        role,
+        hazmatAuthorized,
+        tankerEndorsed,
+        oversizeOps,
+        equipmentTypes,
+        operatingStates,
+        hasBrokerAuthority,
+      });
+
+      // Cross-reference with uploaded documents to show completion
+      let uploadedMap = new Map<string, any>();
+      if (db) {
+        try {
+          const uploaded = await db.select({
+            documentTypeId: userDocuments.documentTypeId,
+            status: userDocuments.status,
+            expiresAt: userDocuments.expiresAt,
+            uploadedAt: userDocuments.uploadedAt,
+            verifiedAt: userDocuments.verifiedAt,
+            fileName: userDocuments.fileName,
+          }).from(userDocuments).where(
+            and(eq(userDocuments.userId, userId), isNull(userDocuments.deletedAt), isNull(userDocuments.supersededAt))
+          );
+          for (const doc of uploaded) {
+            uploadedMap.set(doc.documentTypeId, doc);
+          }
+        } catch {}
+      }
+
+      // Enrich requirements with upload status
+      const enriched = profile.requirements.map(req => {
+        const uploaded = uploadedMap.get(req.documentTypeId);
+        const now = new Date();
+        let docStatus: "MISSING" | "UPLOADED" | "VERIFIED" | "EXPIRED" | "EXPIRING_SOON" | "REJECTED" | "PENDING_REVIEW" = "MISSING";
+
+        if (uploaded) {
+          const status = (uploaded.status || "").toUpperCase();
+          if (status === "VERIFIED" || status === "APPROVED") {
+            if (uploaded.expiresAt && new Date(uploaded.expiresAt) < now) {
+              docStatus = "EXPIRED";
+            } else if (uploaded.expiresAt && req.expirationWarningDays) {
+              const warningDate = new Date(uploaded.expiresAt);
+              warningDate.setDate(warningDate.getDate() - req.expirationWarningDays);
+              docStatus = now > warningDate ? "EXPIRING_SOON" : "VERIFIED";
+            } else {
+              docStatus = "VERIFIED";
+            }
+          } else if (status === "REJECTED") {
+            docStatus = "REJECTED";
+          } else if (status.includes("PENDING") || status.includes("REVIEW")) {
+            docStatus = "PENDING_REVIEW";
+          } else {
+            docStatus = "UPLOADED";
+          }
+        }
+
+        return {
+          ...req,
+          docStatus,
+          uploadedAt: uploaded?.uploadedAt?.toISOString() || null,
+          expiresAt: uploaded?.expiresAt || null,
+          fileName: uploaded?.fileName || null,
+        };
+      });
+
+      const totalMissing = enriched.filter(r => r.docStatus === "MISSING").length;
+      const totalVerified = enriched.filter(r => r.docStatus === "VERIFIED").length;
+      const totalExpired = enriched.filter(r => r.docStatus === "EXPIRED").length;
+      const totalExpiring = enriched.filter(r => r.docStatus === "EXPIRING_SOON").length;
+      const totalPending = enriched.filter(r => r.docStatus === "PENDING_REVIEW" || r.docStatus === "UPLOADED").length;
+      const totalRejected = enriched.filter(r => r.docStatus === "REJECTED").length;
+
+      const criticalMissing = enriched.filter(r => r.docStatus === "MISSING" && r.priority === "CRITICAL").length;
+      const complianceScore = profile.summary.total > 0
+        ? Math.round(((totalVerified) / profile.summary.total) * 100)
+        : 0;
+
+      return {
+        ...profile,
+        requirements: enriched,
+        complianceScore,
+        canOperate: criticalMissing === 0 && totalExpired === 0,
+        documentStatus: {
+          totalMissing,
+          totalVerified,
+          totalExpired,
+          totalExpiring,
+          totalPending,
+          totalRejected,
+          criticalMissing,
+        },
+      };
+    }),
+
+  /**
+   * Get the compliance profile for a specific driver.
+   * Resolves all required documents based on CDL state, endorsements, etc.
+   */
+  getDriverComplianceProfile: auditedProtectedProcedure
+    .input(z.object({
+      driverId: z.number().optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = input?.driverId || await resolveUserId(ctx);
+      const role = ctx.user?.role || "DRIVER";
+
+      let cdlState = "";
+      let companyState = "";
+      let companyId: number | undefined;
+      let endorsements: string[] = [];
+      let hazmatEndorsed = false;
+      let tankerEndorsed = false;
+      let twicCard = false;
+      let employmentType = "W2";
+
+      if (db) {
+        const [user] = await db.select({ companyId: users.companyId, metadata: users.metadata })
+          .from(users).where(eq(users.id, userId)).limit(1);
+
+        if (user?.companyId) {
+          companyId = user.companyId;
+          const [company] = await db.select().from(companies).where(eq(companies.id, user.companyId)).limit(1);
+          if (company) companyState = company.state || "";
+        }
+
+        try {
+          const meta = typeof user?.metadata === "string" ? JSON.parse(user.metadata) : user?.metadata;
+          if (meta?.registration) {
+            const reg = meta.registration;
+            cdlState = reg.cdlState || companyState;
+            if (reg.cdlEndorsements?.length) endorsements = reg.cdlEndorsements;
+            if (reg.hazmatEndorsement) hazmatEndorsed = true;
+            if (reg.tankerEndorsement) tankerEndorsed = true;
+            if (reg.twicCard) twicCard = true;
+            if (reg.employmentType === "1099") employmentType = "1099";
+          }
+        } catch {}
+      }
+
+      if (!cdlState) cdlState = companyState;
+
+      const profile = resolveDriverCompliance({
+        userId,
+        companyId,
+        cdlState,
+        companyState,
+        role: (role as string) === "OWNER_OPERATOR" ? "OWNER_OPERATOR" : "DRIVER",
+        endorsements,
+        hazmatEndorsed,
+        tankerEndorsed,
+        twicCard,
+        employmentType,
+      });
+
+      // Cross-reference with uploaded documents
+      let uploadedMap = new Map<string, any>();
+      if (db) {
+        try {
+          const uploaded = await db.select({
+            documentTypeId: userDocuments.documentTypeId,
+            status: userDocuments.status,
+            expiresAt: userDocuments.expiresAt,
+            uploadedAt: userDocuments.uploadedAt,
+            fileName: userDocuments.fileName,
+          }).from(userDocuments).where(
+            and(eq(userDocuments.userId, userId), isNull(userDocuments.deletedAt), isNull(userDocuments.supersededAt))
+          );
+          for (const doc of uploaded) {
+            uploadedMap.set(doc.documentTypeId, doc);
+          }
+        } catch {}
+      }
+
+      const enriched = profile.requirements.map(req => {
+        const uploaded = uploadedMap.get(req.documentTypeId);
+        const now = new Date();
+        let docStatus: "MISSING" | "UPLOADED" | "VERIFIED" | "EXPIRED" | "EXPIRING_SOON" | "REJECTED" | "PENDING_REVIEW" = "MISSING";
+
+        if (uploaded) {
+          const status = (uploaded.status || "").toUpperCase();
+          if (status === "VERIFIED" || status === "APPROVED") {
+            if (uploaded.expiresAt && new Date(uploaded.expiresAt) < now) {
+              docStatus = "EXPIRED";
+            } else if (uploaded.expiresAt && req.expirationWarningDays) {
+              const warningDate = new Date(uploaded.expiresAt);
+              warningDate.setDate(warningDate.getDate() - req.expirationWarningDays);
+              docStatus = now > warningDate ? "EXPIRING_SOON" : "VERIFIED";
+            } else {
+              docStatus = "VERIFIED";
+            }
+          } else if (status === "REJECTED") {
+            docStatus = "REJECTED";
+          } else if (status.includes("PENDING") || status.includes("REVIEW")) {
+            docStatus = "PENDING_REVIEW";
+          } else {
+            docStatus = "UPLOADED";
+          }
+        }
+
+        return {
+          ...req,
+          docStatus,
+          uploadedAt: uploaded?.uploadedAt?.toISOString() || null,
+          expiresAt: uploaded?.expiresAt || null,
+          fileName: uploaded?.fileName || null,
+        };
+      });
+
+      const totalMissing = enriched.filter(r => r.docStatus === "MISSING").length;
+      const totalVerified = enriched.filter(r => r.docStatus === "VERIFIED").length;
+      const criticalMissing = enriched.filter(r => r.docStatus === "MISSING" && r.priority === "CRITICAL").length;
+      const complianceScore = profile.summary.total > 0
+        ? Math.round(((totalVerified) / profile.summary.total) * 100)
+        : 0;
+
+      return {
+        ...profile,
+        requirements: enriched,
+        complianceScore,
+        canOperate: criticalMissing === 0,
+        documentStatus: {
+          totalMissing,
+          totalVerified,
+          totalExpired: enriched.filter(r => r.docStatus === "EXPIRED").length,
+          totalExpiring: enriched.filter(r => r.docStatus === "EXPIRING_SOON").length,
+          totalPending: enriched.filter(r => r.docStatus === "PENDING_REVIEW" || r.docStatus === "UPLOADED").length,
+          totalRejected: enriched.filter(r => r.docStatus === "REJECTED").length,
+          criticalMissing,
+        },
+      };
     }),
 
   // =========================================================================

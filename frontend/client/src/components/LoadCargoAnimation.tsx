@@ -48,7 +48,7 @@ export default function LoadCargoAnimation({
     const et = (equipmentType || "").toLowerCase();
     const ct = (cargoType || "").toLowerCase();
 
-    if (et.includes("liquid") || et === "tank" || et === "food_grade_tank" || et === "water_tank" || ct === "petroleum" || ct === "chemicals" || ct === "milk" || ct === "water" || ct === "juice" || ct === "oil") return "liquid";
+    if (et.includes("liquid") || et === "tank" || et === "food_grade_tank" || et === "water_tank" || ct === "petroleum" || ct === "chemicals" || ct === "hazmat" || ct === "liquid" || ct === "milk" || ct === "water" || ct === "juice" || ct === "oil") return "liquid";
     if (et.includes("gas") || et === "tanker" || ct === "gas" || ct === "lpg" || ct === "lng") return "gas";
     if (et === "flatbed") return "flatbed";
     if (et === "reefer" || ct === "refrigerated" || ct === "frozen") return "reefer";

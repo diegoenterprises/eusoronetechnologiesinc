@@ -22,7 +22,7 @@ import {
   Radio, Fuel, Scale, FileText, ChevronRight, Activity,
   Siren, CheckCircle2, Clock, Zap, ArrowRight, Globe,
   Wrench, Heart, Flame, Car, CloudLightning, HelpCircle,
-  X, Loader2, RefreshCw,
+  X, Loader2, RefreshCw, Target, Award, Coffee, Gauge,
 } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════
@@ -404,6 +404,202 @@ function ActiveSOSBanner({ loadId }: { loadId: number }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// MISSION PROGRESS INDICATOR — Jony Ive-inspired minimal design
+// Subtle, elegant, purposeful. Shows when an active trip matches
+// a mission the driver has accepted. Frosted glass + thin ring.
+// ═══════════════════════════════════════════════════════════════
+
+function MissionProgressIndicator({ loadId }: { loadId: number }) {
+  const { data: missions } = (trpc as any).gamification?.getActiveTripMissions?.useQuery?.(
+    { loadId },
+    { refetchInterval: 30000, retry: false }
+  ) || { data: null };
+
+  if (!missions || missions.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      {missions.map((m: any) => {
+        const pct = m.targetValue > 0 ? Math.min(100, (m.currentProgress / m.targetValue) * 100) : 0;
+        const circumference = 2 * Math.PI * 18;
+        const strokeDash = (pct / 100) * circumference;
+
+        return (
+          <div
+            key={m.missionId}
+            className="rounded-2xl border border-white/[0.08] p-4"
+            style={{
+              background: "linear-gradient(135deg, rgba(20,115,255,0.06) 0%, rgba(190,1,255,0.06) 100%)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+            }}
+          >
+            <div className="flex items-center gap-3.5">
+              {/* Circular progress ring — the Ive signature element */}
+              <div className="relative w-11 h-11 flex-shrink-0">
+                <svg viewBox="0 0 40 40" className="w-11 h-11 -rotate-90">
+                  {/* Track */}
+                  <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2.5" />
+                  {/* Progress arc */}
+                  <circle
+                    cx="20" cy="20" r="18" fill="none"
+                    stroke="url(#missionGrad)"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeDasharray={`${strokeDash} ${circumference - strokeDash}`}
+                    style={{ transition: "stroke-dasharray 1s cubic-bezier(0.4, 0, 0.2, 1)" }}
+                  />
+                  <defs>
+                    <linearGradient id="missionGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#1473FF" />
+                      <stop offset="100%" stopColor="#BE01FF" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Target className="w-4 h-4 text-[#1473FF]" />
+                </div>
+              </div>
+
+              {/* Mission info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[13px] font-semibold text-white tracking-tight truncate">{m.missionName}</p>
+                  <Award className="w-3 h-3 text-[#BE01FF] flex-shrink-0" />
+                </div>
+                <p className="text-[11px] text-zinc-500 leading-tight mt-0.5 truncate">{m.matchReason}</p>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <div className="flex-1 h-[3px] rounded-full bg-white/[0.06] overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${pct}%`,
+                        background: "linear-gradient(90deg, #1473FF, #BE01FF)",
+                        transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
+                      }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-500 tabular-nums flex-shrink-0">
+                    {m.currentProgress}/{m.targetValue}
+                  </span>
+                  <span className="text-[10px] font-medium text-[#BE01FF] flex-shrink-0">
+                    +{m.xpReward} XP
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HOS COMPACT GAUGES — Minimal in-trip HOS awareness
+// Three thin arc gauges: Drive | Duty | Cycle
+// Break warning if approaching 8h threshold
+// ═══════════════════════════════════════════════════════════════
+
+function HOSCompactPanel() {
+  const { data: hos } = (trpc as any).drivers?.getMyHOS?.useQuery?.(undefined, {
+    refetchInterval: 60000,
+  }) || { data: null };
+
+  if (!hos) return null;
+
+  const gauges = [
+    { label: "Drive", used: hos.drivingHours || 0, max: 11, color: "#10b981" },
+    { label: "Duty", used: hos.onDutyHours || 0, max: 14, color: "#3b82f6" },
+    { label: "Cycle", used: hos.cycleHours || 0, max: 70, color: "#8b5cf6" },
+  ];
+
+  const hasViolation = (hos.violations || []).some((v: any) => v.severity === "violation");
+  const hasWarning = hos.breakRequired || (hos.violations || []).some((v: any) => v.severity === "warning");
+
+  return (
+    <div className="rounded-2xl border border-zinc-800 p-4"
+      style={{
+        background: hasViolation
+          ? "linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.03) 100%)"
+          : hasWarning
+          ? "linear-gradient(135deg, rgba(245,158,11,0.06) 0%, rgba(245,158,11,0.02) 100%)"
+          : "rgba(24,24,27,0.6)",
+      }}
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <Gauge className="w-4 h-4 text-zinc-400" />
+        <span className="text-zinc-300 font-medium text-sm">HOS Status</span>
+        {hos.status && (
+          <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium ${
+            hos.status === "driving" ? "bg-emerald-500/20 text-emerald-300" :
+            hos.status === "on_duty" ? "bg-blue-500/20 text-blue-300" :
+            hos.status === "sleeper" ? "bg-purple-500/20 text-purple-300" :
+            "bg-zinc-700/50 text-zinc-400"
+          }`}>
+            {(hos.status || "off_duty").replace(/_/g, " ").toUpperCase()}
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        {gauges.map((g) => {
+          const pct = Math.min(100, (g.used / g.max) * 100);
+          const remaining = Math.max(0, g.max - g.used);
+          const isLow = remaining <= (g.max * 0.15);
+          return (
+            <div key={g.label} className="text-center">
+              <div className="relative w-14 h-14 mx-auto">
+                <svg viewBox="0 0 44 44" className="w-14 h-14 -rotate-90">
+                  <circle cx="22" cy="22" r="19" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
+                  <circle
+                    cx="22" cy="22" r="19" fill="none"
+                    stroke={isLow ? "#ef4444" : g.color}
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeDasharray={`${(pct / 100) * 119.4} ${119.4 - (pct / 100) * 119.4}`}
+                    opacity={0.8}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className={`text-[11px] font-bold tabular-nums ${isLow ? "text-red-400" : "text-white"}`}>
+                    {remaining.toFixed(remaining < 10 ? 1 : 0)}
+                  </span>
+                </div>
+              </div>
+              <p className="text-[10px] text-zinc-500 mt-1">{g.label}</p>
+              <p className="text-[9px] text-zinc-600">{g.used.toFixed(1)}h/{g.max}h</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Break warning */}
+      {hos.breakRequired && (
+        <div className="mt-3 flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <Coffee className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <div>
+            <p className="text-amber-300 text-xs font-medium">30-min break required</p>
+            <p className="text-amber-400/60 text-[10px]">49 CFR 395.3(a)(3)(ii)</p>
+          </div>
+        </div>
+      )}
+
+      {/* Active violations */}
+      {hasViolation && (
+        <div className="mt-2 flex items-center gap-2 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20">
+          <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
+          <div>
+            <p className="text-red-300 text-xs font-medium">HOS Violation Active</p>
+            <p className="text-red-400/60 text-[10px]">{(hos.violations || [])[0]?.description}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN ACTIVE TRIP DASHBOARD
 // ═══════════════════════════════════════════════════════════════
 
@@ -527,6 +723,12 @@ export default function ActiveTrip() {
 
       {/* SOS Emergency Button */}
       <SOSButton loadId={activeLoad.id} onAlert={() => refetchTrip()} />
+
+      {/* Mission Progress — Jony Ive-inspired frosted glass indicator */}
+      <MissionProgressIndicator loadId={activeLoad.id} />
+
+      {/* HOS Compact Gauges — Real-time driving/duty/cycle awareness */}
+      <HOSCompactPanel />
 
       {/* State Crossing Tracker */}
       {tripData && (

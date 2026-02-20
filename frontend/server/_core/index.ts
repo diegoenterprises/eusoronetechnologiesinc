@@ -14,6 +14,7 @@ import { securityHeaders, httpsRedirect, sanitizeRequest } from "./security";
 import { validateEncryption } from "./encryption";
 import { pciRequestGuard } from "./pciCompliance";
 import { recordAuditEvent, AuditCategory, AuditAction } from "./auditService";
+import { apiRateLimiter, authRateLimiter } from "./rateLimiting";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -65,6 +66,23 @@ async function startServer() {
   // SECURITY LAYER 4: PCI-DSS request guard (blocks raw card data to server)
   // =========================================================================
   app.use(pciRequestGuard());
+
+  // =========================================================================
+  // SECURITY LAYER 5: Rate limiting (DDoS / brute-force protection)
+  // =========================================================================
+  app.use("/api/trpc", apiRateLimiter);
+  app.use("/api/auth", authRateLimiter);
+
+  // =========================================================================
+  // DOMAIN REDIRECT: eusorone.com → eusotrip.com (301 permanent)
+  // =========================================================================
+  app.use((req, res, next) => {
+    const host = (req.headers.host || "").toLowerCase().replace(/:\d+$/, "");
+    if (host === "eusorone.com" || host === "www.eusorone.com") {
+      return res.redirect(301, `https://eusotrip.com${req.originalUrl}`);
+    }
+    next();
+  });
 
   // Cookie parser — required for session cookie auth (app_session_id)
   app.use(cookieParser());
@@ -153,6 +171,248 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // =========================================================================
+  // PUBLIC ACCESS VALIDATION API — Lightweight 24h token-based endpoints
+  // Staff access controllers use these via their validation link (no login).
+  // The token in the URL is the authentication mechanism.
+  // =========================================================================
+
+  // Step 1: Validate token exists + check if code is already verified
+  app.get("/api/access/validate/:token", async (req, res) => {
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) return res.status(503).json({ error: "Service unavailable" });
+
+      const { staffAccessTokens, terminalStaff, terminals } = await import("../../drizzle/schema");
+      const { eq, and } = await import("drizzle-orm");
+      const now = new Date();
+
+      const [tokenRow] = await db.select({
+        tokenId: staffAccessTokens.id,
+        staffId: staffAccessTokens.staffId,
+        expiresAt: staffAccessTokens.expiresAt,
+        isRevoked: staffAccessTokens.isRevoked,
+        codeVerifiedAt: staffAccessTokens.codeVerifiedAt,
+        codeAttempts: staffAccessTokens.codeAttempts,
+      }).from(staffAccessTokens)
+        .where(and(eq(staffAccessTokens.token, req.params.token), eq(staffAccessTokens.isRevoked, false)))
+        .limit(1);
+
+      if (!tokenRow) return res.status(404).json({ error: "Invalid or expired link" });
+      if (tokenRow.expiresAt && tokenRow.expiresAt < now) return res.status(410).json({ error: "Link expired" });
+      if ((tokenRow.codeAttempts || 0) >= 5) return res.status(423).json({ error: "Too many code attempts. Link locked." });
+
+      const [staff] = await db.select({
+        id: terminalStaff.id,
+        name: terminalStaff.name,
+        staffRole: terminalStaff.staffRole,
+        assignedZone: terminalStaff.assignedZone,
+        canApproveAccess: terminalStaff.canApproveAccess,
+        canDispenseProduct: terminalStaff.canDispenseProduct,
+        companyId: terminalStaff.companyId,
+        terminalId: terminalStaff.terminalId,
+      }).from(terminalStaff).where(eq(terminalStaff.id, tokenRow.staffId)).limit(1);
+
+      if (!staff) return res.status(404).json({ error: "Staff member not found" });
+
+      let terminalName = null;
+      let terminalLat = null;
+      let terminalLng = null;
+      if (staff.terminalId) {
+        const [t] = await db.select({ name: terminals.name, code: terminals.code, lat: terminals.latitude, lng: terminals.longitude })
+          .from(terminals).where(eq(terminals.id, staff.terminalId)).limit(1);
+        if (t) {
+          terminalName = `${t.name} (${t.code || ""})`;
+          terminalLat = t.lat ? Number(t.lat) : null;
+          terminalLng = t.lng ? Number(t.lng) : null;
+        }
+      }
+
+      res.json({
+        valid: true,
+        requiresCode: !tokenRow.codeVerifiedAt,
+        codeVerified: !!tokenRow.codeVerifiedAt,
+        staff: { ...staff, terminalName, terminalLat, terminalLng },
+        expiresAt: tokenRow.expiresAt?.toISOString(),
+      });
+    } catch (err: any) {
+      console.error("[AccessValidation] validate error:", err);
+      res.status(500).json({ error: "Validation failed" });
+    }
+  });
+
+  // Step 2: Verify the 6-digit access code (must pass before any other action)
+  app.post("/api/access/verify-code/:token", async (req, res) => {
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) return res.status(503).json({ error: "Service unavailable" });
+
+      const { staffAccessTokens } = await import("../../drizzle/schema");
+      const { eq, and, sql } = await import("drizzle-orm");
+
+      const [tokenRow] = await db.select({
+        id: staffAccessTokens.id,
+        accessCode: staffAccessTokens.accessCode,
+        codeAttempts: staffAccessTokens.codeAttempts,
+        codeVerifiedAt: staffAccessTokens.codeVerifiedAt,
+        expiresAt: staffAccessTokens.expiresAt,
+      }).from(staffAccessTokens)
+        .where(and(eq(staffAccessTokens.token, req.params.token), eq(staffAccessTokens.isRevoked, false)))
+        .limit(1);
+
+      if (!tokenRow) return res.status(404).json({ error: "Invalid link" });
+      if (tokenRow.expiresAt && tokenRow.expiresAt < new Date()) return res.status(410).json({ error: "Link expired" });
+      if ((tokenRow.codeAttempts || 0) >= 5) return res.status(423).json({ error: "Too many attempts. Link locked. Contact your manager." });
+
+      const { code } = req.body || {};
+      if (!code || typeof code !== "string" || code.length !== 6) {
+        return res.status(400).json({ error: "Enter a 6-digit code" });
+      }
+
+      // Increment attempts
+      await db.update(staffAccessTokens)
+        .set({ codeAttempts: (tokenRow.codeAttempts || 0) + 1 })
+        .where(eq(staffAccessTokens.id, tokenRow.id));
+
+      if (code !== tokenRow.accessCode) {
+        const remaining = 4 - (tokenRow.codeAttempts || 0);
+        return res.status(401).json({ error: `Incorrect code. ${remaining > 0 ? remaining : 0} attempts remaining.` });
+      }
+
+      // Code correct — mark as verified with timestamp
+      const now = new Date();
+      await db.update(staffAccessTokens)
+        .set({ codeVerifiedAt: now })
+        .where(eq(staffAccessTokens.id, tokenRow.id));
+
+      res.json({ success: true, codeVerifiedAt: now.toISOString() });
+    } catch (err: any) {
+      console.error("[AccessValidation] verify-code error:", err);
+      res.status(500).json({ error: "Code verification failed" });
+    }
+  });
+
+  // Step 3: Look up a load by ID (requires verified code)
+  app.get("/api/access/lookup/:token/:loadId", async (req, res) => {
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) return res.status(503).json({ error: "Service unavailable" });
+
+      const { staffAccessTokens, loads, users, companies } = await import("../../drizzle/schema");
+      const { eq, and } = await import("drizzle-orm");
+
+      const [tokenRow] = await db.select({
+        staffId: staffAccessTokens.staffId,
+        expiresAt: staffAccessTokens.expiresAt,
+        codeVerifiedAt: staffAccessTokens.codeVerifiedAt,
+      }).from(staffAccessTokens)
+        .where(and(eq(staffAccessTokens.token, req.params.token), eq(staffAccessTokens.isRevoked, false)))
+        .limit(1);
+
+      if (!tokenRow || (tokenRow.expiresAt && tokenRow.expiresAt < new Date())) {
+        return res.status(403).json({ error: "Invalid or expired token" });
+      }
+      if (!tokenRow.codeVerifiedAt) {
+        return res.status(403).json({ error: "Access code not verified" });
+      }
+
+      const loadId = parseInt(req.params.loadId, 10);
+      if (isNaN(loadId)) return res.status(400).json({ error: "Invalid load ID" });
+
+      const [load] = await db.select({
+        id: loads.id,
+        referenceNumber: loads.referenceNumber,
+        status: loads.status,
+        pickupCity: loads.pickupCity,
+        pickupState: loads.pickupState,
+        deliveryCity: loads.deliveryCity,
+        deliveryState: loads.deliveryState,
+        cargoType: loads.cargoType,
+        equipmentType: loads.equipmentType,
+        weight: loads.weight,
+        driverId: loads.driverId,
+        shipperId: loads.shipperId,
+      }).from(loads).where(eq(loads.id, loadId)).limit(1);
+
+      if (!load) return res.status(404).json({ error: "Load not found" });
+
+      let driverInfo = null;
+      if (load.driverId) {
+        const [driver] = await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, load.driverId)).limit(1);
+        driverInfo = driver || null;
+      }
+
+      let shipperInfo = null;
+      if (load.shipperId) {
+        const [shipper] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, load.shipperId)).limit(1);
+        shipperInfo = shipper || null;
+      }
+
+      res.json({ load, driver: driverInfo, shipper: shipperInfo });
+    } catch (err: any) {
+      console.error("[AccessValidation] lookup error:", err);
+      res.status(500).json({ error: "Lookup failed" });
+    }
+  });
+
+  // Step 4: Record an access decision with full audit trail (location + timestamps)
+  app.post("/api/access/decide/:token", async (req, res) => {
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) return res.status(503).json({ error: "Service unavailable" });
+
+      const { staffAccessTokens, accessValidations } = await import("../../drizzle/schema");
+      const { eq, and } = await import("drizzle-orm");
+
+      const [tokenRow] = await db.select({
+        id: staffAccessTokens.id,
+        staffId: staffAccessTokens.staffId,
+        expiresAt: staffAccessTokens.expiresAt,
+        codeVerifiedAt: staffAccessTokens.codeVerifiedAt,
+      }).from(staffAccessTokens)
+        .where(and(eq(staffAccessTokens.token, req.params.token), eq(staffAccessTokens.isRevoked, false)))
+        .limit(1);
+
+      if (!tokenRow || (tokenRow.expiresAt && tokenRow.expiresAt < new Date())) {
+        return res.status(403).json({ error: "Invalid or expired token" });
+      }
+      if (!tokenRow.codeVerifiedAt) {
+        return res.status(403).json({ error: "Access code not verified" });
+      }
+
+      const { loadId, driverId, decision, denyReason, staffLat, staffLng, geofenceDistanceMeters, locationVerifiedAt } = req.body || {};
+      if (!decision || !["approved", "denied"].includes(decision)) {
+        return res.status(400).json({ error: "Invalid decision" });
+      }
+
+      const now = new Date();
+      const [result] = await db.insert(accessValidations).values({
+        staffId: tokenRow.staffId,
+        tokenId: tokenRow.id,
+        loadId: loadId ? parseInt(String(loadId), 10) : null,
+        driverId: driverId ? parseInt(String(driverId), 10) : null,
+        decision,
+        denyReason: decision === "denied" ? (denyReason || null) : null,
+        staffLat: staffLat ? String(staffLat) : null,
+        staffLng: staffLng ? String(staffLng) : null,
+        geofenceDistanceMeters: geofenceDistanceMeters ? parseInt(String(geofenceDistanceMeters), 10) : null,
+        locationVerifiedAt: locationVerifiedAt ? new Date(locationVerifiedAt) : null,
+        codeVerifiedAt: tokenRow.codeVerifiedAt,
+        scannedData: { ...req.body, decidedAt: now.toISOString(), ip: req.ip },
+        validatedAt: now,
+      }).$returningId();
+
+      res.json({ success: true, validationId: result.id, decision, timestamp: now.toISOString() });
+    } catch (err: any) {
+      console.error("[AccessValidation] decide error:", err);
+      res.status(500).json({ error: "Decision recording failed" });
+    }
+  });
 
   // =========================================================================
   // SECURITY LAYER 5: AES-256 encryption self-test at startup
@@ -288,6 +548,15 @@ async function startServer() {
         preWarmCache();
       } catch {}
     }, 5000);
+
+    // ML Engine — self-training models (rate prediction, carrier match, ETA, demand, anomaly, etc.)
+    setTimeout(async () => {
+      try {
+        const { mlEngine } = await import("../services/mlEngine");
+        await mlEngine.initialize();
+        console.log("[MLEngine] Self-training ML engine initialized");
+      } catch (e) { console.warn("[MLEngine] Init deferred:", (e as any)?.message); }
+    }, 15000);
 
     // Auto-seed Document Center types & requirements on startup
     setTimeout(async () => {

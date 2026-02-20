@@ -19,7 +19,7 @@ import {
   Search, MapPin, Package, Truck, Eye,
   Navigation, Building2, Droplets, FlaskConical,
   AlertTriangle, Gavel, SlidersHorizontal,
-  ChevronLeft, ChevronRight, RefreshCw
+  ChevronLeft, ChevronRight, RefreshCw, TrendingUp
 } from "lucide-react";
 import { useLocation } from "wouter";
 import LoadCargoAnimation from "@/components/LoadCargoAnimation";
@@ -62,6 +62,10 @@ export default function FindLoads() {
 
   const loadsQuery = (trpc as any).loadBoard.search.useQuery({ limit: 100 });
   const statsQuery = (trpc as any).loadBoard.getStats.useQuery();
+
+  // ML Engine — demand forecast + model status for market intelligence
+  const mlDemand = (trpc as any).ml?.forecastDemand?.useQuery?.({}) || { data: null };
+  const mlStatus = (trpc as any).ml?.getModelStatus?.useQuery?.() || { data: null };
 
   const allLoads = (loadsQuery.data as any)?.loads || [];
 
@@ -237,6 +241,28 @@ export default function FindLoads() {
         ))}
       </div>
 
+      {/* ── ML Demand Intelligence ── */}
+      {mlDemand.data && mlDemand.data.topLanes?.length > 0 && (
+        <div className={cn("rounded-xl border p-4", isLight ? "bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200" : "bg-gradient-to-r from-purple-500/5 to-blue-500/5 border-purple-500/20")}>
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp className="w-4 h-4 text-purple-400" />
+            <span className={cn("text-xs font-bold uppercase tracking-wider", isLight ? "text-purple-600" : "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent")}>ESANG AI Demand Intelligence</span>
+            {mlStatus.data && <span className={cn("ml-auto text-[10px]", isLight ? "text-slate-500" : "text-slate-500")}>{mlStatus.data.totalLoadsAnalyzed} loads analyzed / {mlStatus.data.totalLanes} lanes</span>}
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {mlDemand.data.topLanes.slice(0, 6).map((lane: any, i: number) => (
+              <div key={i} className={cn("flex-shrink-0 px-3 py-2 rounded-lg border text-center min-w-[100px]", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/40")}>
+                <p className={cn("text-xs font-bold", isLight ? "text-slate-700" : "text-white")}>{lane.lane}</p>
+                <p className={cn("text-[10px]", isLight ? "text-slate-500" : "text-slate-400")}>{lane.volume} loads</p>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${lane.trend === "RISING" ? "bg-green-500/15 text-green-500" : lane.trend === "DECLINING" ? "bg-red-500/15 text-red-500" : "bg-slate-500/15 text-slate-400"}`}>
+                  {lane.trend}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Load Cards ── */}
       {loadsQuery.isLoading ? (
         <div className="space-y-4">{[1, 2, 3].map((i: number) => <Skeleton key={i} className="h-52 w-full rounded-2xl" />)}</div>
@@ -272,14 +298,16 @@ export default function FindLoads() {
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         "w-10 h-10 rounded-xl flex items-center justify-center",
-                        load.cargoType === "petroleum" ? "bg-orange-500/15" :
-                        load.cargoType === "chemicals" ? "bg-purple-500/15" : "bg-blue-500/15"
+                        load.cargoType === "petroleum" || load.cargoType === "liquid" ? "bg-orange-500/15" :
+                        load.cargoType === "chemicals" || load.cargoType === "hazmat" ? "bg-purple-500/15" :
+                        load.cargoType === "gas" ? "bg-red-500/15" :
+                        load.cargoType === "refrigerated" ? "bg-cyan-500/15" : "bg-blue-500/15"
                       )}>
                         {getCargoIcon(load.cargoType)}
                       </div>
                       <div>
                         <p className={cn("font-bold text-sm", isLight ? "text-slate-800" : "text-white")}>
-                          {load.cargoType === "petroleum" ? "Petroleum Load" : load.cargoType === "chemicals" ? "Chemical Load" : "General Cargo"}
+                          {load.cargoType === "petroleum" ? "Petroleum Load" : load.cargoType === "chemicals" ? "Chemical Load" : load.cargoType === "hazmat" ? "Hazmat Load" : load.cargoType === "liquid" ? "Liquid Load" : load.cargoType === "gas" ? "Gas Load" : load.cargoType === "refrigerated" ? "Refrigerated Load" : load.cargoType === "oversized" ? "Oversized Load" : load.commodityName || "Cargo Load"}
                         </p>
                         <p className="text-xs text-slate-400">{load.pickupDate ? new Date(load.pickupDate).toLocaleDateString() : load.createdAt ? new Date(load.createdAt).toLocaleDateString() : "Pickup TBD"}</p>
                       </div>

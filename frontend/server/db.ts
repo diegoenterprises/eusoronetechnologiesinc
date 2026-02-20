@@ -222,6 +222,118 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
     await addColIfMissing("companies", "insurancePolicy", "VARCHAR(100) DEFAULT NULL");
     await addColIfMissing("companies", "insuranceExpiry", "TIMESTAMP NULL DEFAULT NULL");
 
+    // --- Supply Chain: companies classification ---
+    await addColIfMissing("companies", "supplyChainRole", "ENUM('PRODUCER','REFINER','MARKETER','WHOLESALER','RETAILER','TERMINAL_OPERATOR','TRANSPORTER') DEFAULT NULL");
+    await addColIfMissing("companies", "marketerType", "ENUM('branded','independent','used_oil') DEFAULT NULL");
+    await addColIfMissing("companies", "supplyChainMeta", "JSON DEFAULT NULL");
+
+    // --- Supply Chain: loads terminal FKs ---
+    await addColIfMissing("loads", "originTerminalId", "INT DEFAULT NULL");
+    await addColIfMissing("loads", "destinationTerminalId", "INT DEFAULT NULL");
+
+    // --- Supply Chain: terminals expansion ---
+    await addColIfMissing("terminals", "terminalType", "ENUM('refinery','storage','rack','pipeline','blending','distribution','marine','rail') DEFAULT 'storage'");
+    await addColIfMissing("terminals", "productsHandled", "JSON DEFAULT NULL");
+    await addColIfMissing("terminals", "throughputCapacity", "DECIMAL(12,2) DEFAULT NULL");
+    await addColIfMissing("terminals", "throughputUnit", "VARCHAR(20) DEFAULT 'bbl/day'");
+    await addColIfMissing("terminals", "latitude", "DECIMAL(10,7) DEFAULT NULL");
+    await addColIfMissing("terminals", "longitude", "DECIMAL(10,7) DEFAULT NULL");
+
+    // --- Supply Chain: terminal_partners junction table ---
+    await ensureTable("terminal_partners", `CREATE TABLE terminal_partners (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      terminalId INT NOT NULL,
+      companyId INT NOT NULL,
+      partnerType ENUM('shipper','marketer','broker','transporter') NOT NULL DEFAULT 'shipper',
+      status ENUM('active','pending','suspended','terminated') DEFAULT 'pending',
+      agreementId INT DEFAULT NULL,
+      rackAccessLevel ENUM('full','limited','scheduled') DEFAULT 'scheduled',
+      monthlyVolumeCommitment DECIMAL(12,2) DEFAULT NULL,
+      productTypes JSON DEFAULT NULL,
+      notes TEXT DEFAULT NULL,
+      startDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      endDate TIMESTAMP NULL DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+      INDEX tp_terminal_idx (terminalId),
+      INDEX tp_company_idx (companyId),
+      INDEX tp_type_idx (partnerType),
+      INDEX tp_status_idx (status),
+      UNIQUE KEY tp_unique (terminalId, companyId)
+    )`);
+
+    // --- Terminal Staff: access controllers (gate/rack/bay validators) ---
+    await ensureTable("terminal_staff", `CREATE TABLE terminal_staff (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      companyId INT NOT NULL,
+      terminalId INT DEFAULT NULL,
+      name VARCHAR(255) NOT NULL,
+      phone VARCHAR(30) DEFAULT NULL,
+      email VARCHAR(255) DEFAULT NULL,
+      staffRole ENUM('gate_controller','rack_supervisor','bay_operator','safety_officer','shift_lead') NOT NULL DEFAULT 'gate_controller',
+      assignedZone VARCHAR(100) DEFAULT NULL,
+      \`shift\` ENUM('day','night','swing') DEFAULT 'day',
+      canApproveAccess BOOLEAN DEFAULT TRUE,
+      canDispenseProduct BOOLEAN DEFAULT FALSE,
+      status ENUM('on_duty','off_duty','break') DEFAULT 'off_duty',
+      isActive BOOLEAN DEFAULT TRUE,
+      createdBy INT NOT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+      INDEX ts_company_idx (companyId),
+      INDEX ts_terminal_idx (terminalId),
+      INDEX ts_role_idx (staffRole),
+      INDEX ts_active_idx (isActive)
+    )`);
+
+    // --- Staff Access Tokens: 24h rotating validation links with 6-digit code ---
+    await ensureTable("staff_access_tokens", `CREATE TABLE staff_access_tokens (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      staffId INT NOT NULL,
+      token VARCHAR(64) NOT NULL,
+      accessCode VARCHAR(6) NOT NULL,
+      codeAttempts INT DEFAULT 0,
+      codeVerifiedAt TIMESTAMP NULL DEFAULT NULL,
+      expiresAt TIMESTAMP NOT NULL,
+      createdBy INT NOT NULL,
+      isRevoked BOOLEAN DEFAULT FALSE,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+      INDEX sat_token_idx (token),
+      INDEX sat_staff_idx (staffId),
+      INDEX sat_expiry_idx (expiresAt)
+    )`);
+    await addColIfMissing("staff_access_tokens", "accessCode", "VARCHAR(6) NOT NULL DEFAULT '000000'");
+    await addColIfMissing("staff_access_tokens", "codeAttempts", "INT DEFAULT 0");
+    await addColIfMissing("staff_access_tokens", "codeVerifiedAt", "TIMESTAMP NULL DEFAULT NULL");
+
+    // --- Access Validations: full audit trail of every driver arrival validation ---
+    await ensureTable("access_validations", `CREATE TABLE access_validations (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      staffId INT NOT NULL,
+      tokenId INT DEFAULT NULL,
+      loadId INT DEFAULT NULL,
+      driverId INT DEFAULT NULL,
+      decision ENUM('approved','denied','pending') NOT NULL DEFAULT 'pending',
+      denyReason TEXT DEFAULT NULL,
+      staffLat DECIMAL(10,7) DEFAULT NULL,
+      staffLng DECIMAL(10,7) DEFAULT NULL,
+      geofenceDistanceMeters INT DEFAULT NULL,
+      locationVerifiedAt TIMESTAMP NULL DEFAULT NULL,
+      codeVerifiedAt TIMESTAMP NULL DEFAULT NULL,
+      scannedData JSON DEFAULT NULL,
+      validatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+      INDEX av_staff_idx (staffId),
+      INDEX av_load_idx (loadId),
+      INDEX av_driver_idx (driverId),
+      INDEX av_decision_idx (decision)
+    )`);
+    await addColIfMissing("access_validations", "tokenId", "INT DEFAULT NULL");
+    await addColIfMissing("access_validations", "staffLat", "DECIMAL(10,7) DEFAULT NULL");
+    await addColIfMissing("access_validations", "staffLng", "DECIMAL(10,7) DEFAULT NULL");
+    await addColIfMissing("access_validations", "geofenceDistanceMeters", "INT DEFAULT NULL");
+    await addColIfMissing("access_validations", "locationVerifiedAt", "TIMESTAMP NULL DEFAULT NULL");
+    await addColIfMissing("access_validations", "codeVerifiedAt", "TIMESTAMP NULL DEFAULT NULL");
+
     console.log("[SchemaSync] Done.");
   } catch (err: any) {
     console.warn("[SchemaSync] Non-fatal error:", err?.message?.slice(0, 200));

@@ -117,6 +117,14 @@ export const encryptionRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
+      // Verify caller is a member of this channel (security: prevent cross-channel key injection)
+      const callerId = await resolveUserId(ctx.user);
+      if (!callerId) throw new Error("User not found");
+      const [callerMembership] = await db.execute(
+        sql`SELECT id FROM channel_members WHERE channelId = ${input.channelId} AND userId = ${callerId} LIMIT 1`
+      );
+      if (!callerMembership) throw new Error("Access denied: not a member of this channel");
+
       await db.execute(
         sql`UPDATE channel_members SET encryptedGroupKey = ${input.encryptedGroupKey} WHERE channelId = ${input.channelId} AND userId = ${input.memberId}`
       );
@@ -164,6 +172,12 @@ export const encryptionRouter = router({
 
       const userId = await resolveUserId(ctx.user);
       if (!userId) throw new Error("User not found");
+
+      // Verify caller is a member of this channel (security: prevent cross-channel key creator spoofing)
+      const [membership] = await db.execute(
+        sql`SELECT id FROM channel_members WHERE channelId = ${input.channelId} AND userId = ${userId} LIMIT 1`
+      );
+      if (!membership) throw new Error("Access denied: not a member of this channel");
 
       await db.execute(
         sql`UPDATE group_channels SET groupKeyCreatorId = ${userId} WHERE id = ${input.channelId}`

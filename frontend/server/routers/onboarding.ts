@@ -9,6 +9,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { users, companies, onboardingProgress, documents, userTraining, trainingModules } from "../../drizzle/schema";
+import { resolveCompanyCompliance, resolveDriverCompliance } from "../services/complianceEngine";
 
 export const onboardingRouter = router({
   /**
@@ -153,7 +154,8 @@ export const onboardingRouter = router({
     }),
 
   /**
-   * Get onboarding checklist (role-based requirements)
+   * Get onboarding checklist (smart compliance engine)
+   * Resolves requirements based on user's actual company state, role, ops
    */
   getChecklist: protectedProcedure
     .query(async ({ ctx }) => {
@@ -161,47 +163,79 @@ export const onboardingRouter = router({
       const userId = Number(ctx.user?.id) || 0;
       const role = ctx.user?.role || "DRIVER";
 
-      if (!db) {
-        return [];
-      }
+      if (!db) return [];
 
+      // Get user's uploaded documents
       const userDocs = await db.select()
         .from(documents)
         .where(eq(documents.userId, userId));
-
       const uploadedTypes = new Set(userDocs.map(d => d.type));
 
-      const checklistByRole: Record<string, { id: string; name: string; required: boolean }[]> = {
-        DRIVER: [
-          { id: "cdl", name: "CDL License", required: true },
-          { id: "medical", name: "Medical Certificate", required: true },
-          { id: "mvr", name: "Motor Vehicle Record", required: true },
-          { id: "drugtest", name: "Drug Test Results", required: true },
-          { id: "background", name: "Background Check", required: true },
-          { id: "hazmat_cert", name: "Hazmat Endorsement", required: false },
-          { id: "twic", name: "TWIC Card", required: false },
-        ],
-        CATALYST: [
-          { id: "usdot", name: "USDOT Registration", required: true },
-          { id: "mc_authority", name: "MC Authority", required: true },
-          { id: "insurance", name: "Insurance Certificate", required: true },
-          { id: "w9", name: "W-9 Form", required: true },
-          { id: "boc3", name: "BOC-3 Filing", required: true },
-        ],
-        SHIPPER: [
-          { id: "phmsa", name: "PHMSA Certificate", required: true },
-          { id: "insurance", name: "Insurance Certificate", required: true },
-          { id: "w9", name: "W-9 Form", required: true },
-          { id: "business_license", name: "Business License", required: true },
-        ],
-      };
+      // Resolve company/driver profile from DB
+      let companyState = "";
+      let companyId = 0;
+      let hazmatAuthorized = false;
+      let tankerEndorsed = false;
+      let cdlState = "";
+      let endorsements: string[] = [];
 
-      const checklist = checklistByRole[role] || checklistByRole.DRIVER;
+      const [user] = await db.select({ companyId: users.companyId, metadata: users.metadata })
+        .from(users).where(eq(users.id, userId)).limit(1);
 
-      return checklist.map(item => ({
-        ...item,
-        completed: uploadedTypes.has(item.id),
-      }));
+      if (user?.companyId) {
+        companyId = user.companyId;
+        const [company] = await db.select().from(companies).where(eq(companies.id, user.companyId)).limit(1);
+        if (company) companyState = company.state || "";
+      }
+
+      try {
+        const meta = typeof user?.metadata === "string" ? JSON.parse(user.metadata) : user?.metadata;
+        if (meta?.registration) {
+          const reg = meta.registration;
+          if (reg.hazmatEndorsed || reg.hazmatClasses?.length) hazmatAuthorized = true;
+          if (reg.tankerEndorsed) tankerEndorsed = true;
+          if (reg.cdlState) cdlState = reg.cdlState;
+          if (reg.cdlEndorsements) endorsements = reg.cdlEndorsements;
+          if (reg.hazmatEndorsement) hazmatAuthorized = true;
+          if (reg.tankerEndorsement) tankerEndorsed = true;
+        }
+      } catch {}
+
+      // Use the compliance engine to resolve requirements
+      let reqs: { documentTypeId: string; name: string; priority: string; status: string }[] = [];
+
+      if (role === "DRIVER") {
+        const profile = resolveDriverCompliance({
+          userId,
+          companyId: companyId || undefined,
+          cdlState: cdlState || companyState,
+          companyState,
+          role: "DRIVER",
+          endorsements,
+          hazmatEndorsed: hazmatAuthorized,
+          tankerEndorsed,
+        });
+        reqs = profile.requirements;
+      } else {
+        const profile = resolveCompanyCompliance({
+          companyId,
+          state: companyState,
+          role,
+          hazmatAuthorized,
+          tankerEndorsed,
+        });
+        reqs = profile.requirements;
+      }
+
+      // Map to checklist format — show CRITICAL and HIGH items
+      return reqs
+        .filter(r => r.priority === "CRITICAL" || r.priority === "HIGH")
+        .map(r => ({
+          id: r.documentTypeId,
+          name: r.name,
+          required: r.priority === "CRITICAL",
+          completed: uploadedTypes.has(r.documentTypeId),
+        }));
     }),
 
   /**
@@ -295,7 +329,8 @@ export const onboardingRouter = router({
     }),
 
   /**
-   * Get required documents based on role
+   * Get required documents based on role (smart compliance engine)
+   * Resolves all documents needed for onboarding based on company state, role, operations
    */
   getRequiredDocuments: protectedProcedure
     .query(async ({ ctx }) => {
@@ -308,44 +343,75 @@ export const onboardingRouter = router({
       const userDocs = await db.select()
         .from(documents)
         .where(eq(documents.userId, userId));
-
       const uploadedMap = new Map(userDocs.map(d => [d.type, d]));
 
-      const requiredDocs: Record<string, { type: string; name: string; description: string; required: boolean }[]> = {
-        DRIVER: [
-          { type: "cdl", name: "CDL License", description: "Commercial Driver License", required: true },
-          { type: "medical", name: "Medical Certificate", description: "DOT Medical Examiner Certificate", required: true },
-          { type: "hazmat_endorsement", name: "Hazmat Endorsement", description: "TSA-approved hazmat endorsement", required: false },
-          { type: "twic", name: "TWIC Card", description: "Transportation Worker Identification Credential", required: false },
-        ],
-        CATALYST: [
-          { type: "usdot", name: "USDOT Registration", description: "FMCSA USDOT Certificate", required: true },
-          { type: "mc_authority", name: "MC Authority", description: "Motor Catalyst Operating Authority", required: true },
-          { type: "insurance", name: "Insurance Certificate", description: "Liability and cargo insurance", required: true },
-          { type: "boc3", name: "BOC-3 Filing", description: "Designation of Process Agent", required: true },
-        ],
-        SHIPPER: [
-          { type: "phmsa", name: "PHMSA Certificate", description: "Hazmat Registration Certificate", required: true },
-          { type: "insurance", name: "Insurance Certificate", description: "General and pollution liability", required: true },
-          { type: "business_license", name: "Business License", description: "State business license", required: true },
-        ],
-      };
+      // Resolve company/driver profile
+      let companyState = "";
+      let companyId = 0;
+      let hazmatAuthorized = false;
+      let tankerEndorsed = false;
+      let cdlState = "";
+      let endorsements: string[] = [];
 
-      const docs = requiredDocs[role] || requiredDocs.DRIVER;
+      const [user] = await db.select({ companyId: users.companyId, metadata: users.metadata })
+        .from(users).where(eq(users.id, userId)).limit(1);
 
-      return docs.map(doc => {
-        const uploaded = uploadedMap.get(doc.type);
-        return {
-          id: doc.type,
-          type: doc.type,
-          name: doc.name,
-          description: doc.description,
-          required: doc.required,
-          uploaded: !!uploaded,
-          status: uploaded ? "uploaded" : "pending",
-          expirationDate: uploaded?.expiryDate?.toISOString().split("T")[0] || null,
-        };
-      });
+      if (user?.companyId) {
+        companyId = user.companyId;
+        const [company] = await db.select().from(companies).where(eq(companies.id, user.companyId)).limit(1);
+        if (company) companyState = company.state || "";
+      }
+
+      try {
+        const meta = typeof user?.metadata === "string" ? JSON.parse(user.metadata) : user?.metadata;
+        if (meta?.registration) {
+          const reg = meta.registration;
+          if (reg.hazmatEndorsed || reg.hazmatClasses?.length) hazmatAuthorized = true;
+          if (reg.tankerEndorsed) tankerEndorsed = true;
+          if (reg.cdlState) cdlState = reg.cdlState;
+          if (reg.cdlEndorsements) endorsements = reg.cdlEndorsements;
+          if (reg.hazmatEndorsement) hazmatAuthorized = true;
+          if (reg.tankerEndorsement) tankerEndorsed = true;
+        }
+      } catch {}
+
+      let reqs: any[] = [];
+      if (role === "DRIVER") {
+        const profile = resolveDriverCompliance({
+          userId, companyId: companyId || undefined,
+          cdlState: cdlState || companyState, companyState,
+          role: "DRIVER", endorsements,
+          hazmatEndorsed: hazmatAuthorized, tankerEndorsed,
+        });
+        reqs = profile.requirements;
+      } else {
+        const profile = resolveCompanyCompliance({
+          companyId, state: companyState, role,
+          hazmatAuthorized, tankerEndorsed,
+        });
+        reqs = profile.requirements;
+      }
+
+      return reqs
+        .filter((r: any) => r.priority === "CRITICAL" || r.priority === "HIGH")
+        .map((r: any) => {
+          const uploaded = uploadedMap.get(r.documentTypeId);
+          return {
+            id: r.documentTypeId,
+            type: r.documentTypeId,
+            name: r.name,
+            description: r.reason || r.description || "",
+            required: r.priority === "CRITICAL",
+            uploaded: !!uploaded,
+            status: uploaded ? "uploaded" : "pending",
+            expirationDate: uploaded?.expiryDate?.toISOString().split("T")[0] || null,
+            downloadUrl: r.downloadUrl || null,
+            sourceUrl: r.sourceUrl || null,
+            statePortalUrl: r.statePortalUrl || null,
+            group: r.group,
+            priority: r.priority,
+          };
+        });
     }),
 
   /**

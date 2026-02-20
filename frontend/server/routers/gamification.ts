@@ -24,8 +24,9 @@ import {
   leaderboards,
   rewards,
 } from "../../drizzle/schema";
-import { pickWeeklyMissions, getRewardsCatalogForRole, generateWeeklyMissions } from "../services/missionGenerator";
+import { pickWeeklyMissions, getRewardsCatalogForRole, generateWeeklyMissions, forceRotateMissions } from "../services/missionGenerator";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
+import { canDriverAcceptLoad } from "../services/hosEngine";
 
 export const gamificationRouter = router({
   create: protectedProcedure
@@ -694,6 +695,16 @@ export const gamificationRouter = router({
         .limit(1);
 
       if (!mission) throw new Error("Mission not found");
+
+      // HOS compliance guard — driving-related missions require sufficient HOS
+      const userRole = ((ctx.user as any)?.role || "DRIVER").toUpperCase();
+      const drivingCategories = ["deliveries", "efficiency", "earnings"];
+      if (userRole === "DRIVER" && drivingCategories.includes(mission.category || "")) {
+        const hosCheck = canDriverAcceptLoad(userId);
+        if (!hosCheck.allowed) {
+          return { success: false, message: `HOS compliance block: ${hosCheck.reason}. Rest before starting driving missions.` };
+        }
+      }
 
       // Check if already started
       const [existing] = await db.select()
@@ -1415,6 +1426,34 @@ export const gamificationRouter = router({
         } as any);
       } catch {}
       return { success: true, rewardId: input.rewardId, pointsSpent: totalCost, remainingPoints: (profile.totalXp || 0) - totalCost };
+    }),
+
+  /**
+   * Get missions that match the driver's current active load.
+   * Used by the Active Trip page to show mission progress indicators.
+   */
+  getActiveTripMissions: protectedProcedure
+    .input(z.object({ loadId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const userId = Number(ctx.user?.id) || 0;
+      const { getMatchingMissionsForLoad } = await import("../services/hosEngine");
+      return getMatchingMissionsForLoad(userId, input.loadId);
+    }),
+
+  /**
+   * Force-rotate missions for the user's role.
+   * Deactivates current week's non-in-progress missions and re-seeds fresh ones.
+   */
+  refreshMissions: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const userRole = ((ctx.user as any)?.role || "DRIVER").toUpperCase();
+      try {
+        const created = await forceRotateMissions(userRole);
+        return { success: true, created, message: `${created} new missions rotated in` };
+      } catch (err: any) {
+        console.error("[refreshMissions] Error:", err);
+        return { success: false, created: 0, message: "Failed to rotate missions" };
+      }
     }),
 
   /**

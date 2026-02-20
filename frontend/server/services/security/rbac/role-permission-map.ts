@@ -199,6 +199,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("READ", "ACHIEVEMENT", "OWN"),
     p("CREATE", "DETENTION_CHARGE", "COMPANY"),
     p("READ", "DETENTION_CHARGE", "COMPANY"),
+    // Supply Chain — view own terminal partnerships
+    p("READ", "TERMINAL_PARTNER", "LINKED"),
+    p("READ", "SUPPLY_CHAIN_CONFIG", "OWN"),
+    p("UPDATE", "SUPPLY_CHAIN_CONFIG", "OWN"),
   ],
 
   BROKER: [
@@ -239,6 +243,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("READ", "AUDIT_LOG", "COMPANY"),
     p("READ", "MISSION", "OWN"),
     p("READ", "ACHIEVEMENT", "OWN"),
+    // Supply Chain — view terminal partnerships
+    p("READ", "TERMINAL_PARTNER", "LINKED"),
   ],
 
   DISPATCH: [
@@ -322,6 +328,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("READ", "DETENTION_CHARGE", "COMPANY"),
     p("CREATE", "BOL", "COMPANY"),
     p("READ", "BOL", "COMPANY"),
+    // Supply Chain — Terminal Partner management
+    p("CREATE", "TERMINAL_PARTNER", "COMPANY"),
+    p("READ", "TERMINAL_PARTNER", "COMPANY"),
+    p("UPDATE", "TERMINAL_PARTNER", "COMPANY"),
+    p("DELETE", "TERMINAL_PARTNER", "COMPANY"),
+    p("READ", "SUPPLY_CHAIN_CONFIG", "COMPANY"),
+    p("UPDATE", "SUPPLY_CHAIN_CONFIG", "COMPANY"),
   ],
 
   COMPLIANCE_OFFICER: [
@@ -388,6 +401,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
         "MESSAGE", "CONVERSATION", "NOTIFICATION",
         "MISSION", "ACHIEVEMENT", "REWARD",
         "GEOFENCE", "FACTORING_ADVANCE",
+        "TERMINAL_PARTNER", "SUPPLY_CHAIN_CONFIG",
     ].flatMap(r => [
       p("CREATE", r as Resource, "PLATFORM"),
       p("READ", r as Resource, "PLATFORM"),
@@ -422,6 +436,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
         "MISSION", "ACHIEVEMENT", "REWARD",
         "GPS_BREADCRUMB", "GEOFENCE", "GEOTAG", "ROUTE",
         "FACTORING_ADVANCE",
+        "TERMINAL_PARTNER", "SUPPLY_CHAIN_CONFIG",
     ].flatMap(r => [
       p("CREATE", r as Resource, "PLATFORM"),
       p("READ", r as Resource, "PLATFORM"),

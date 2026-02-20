@@ -1,7 +1,8 @@
 /**
- * TERMINAL STAFF PAGE - TERMINAL MANAGER
- * 100% Dynamic - No mock data
- * UI Style: Gradient headers, stat cards with icons, rounded cards
+ * TERMINAL STAFF PAGE — Access Controllers
+ * Manages gate/rack/bay controllers who validate arriving drivers.
+ * Each controller gets a 24-hour access link (no login needed).
+ * 100% Dynamic — No mock data
  */
 
 import React, { useState } from "react";
@@ -12,119 +13,301 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  Users, Search, CheckCircle, Clock, Plus,
-  Phone, Mail
+  Users, Search, CheckCircle, Clock, Plus, Phone, Mail,
+  Link2, Copy, Shield, ShieldCheck, X, Trash2, ChevronDown,
+  MapPin, KeyRound, Fuel
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+
+const ROLE_LABELS: Record<string, string> = {
+  gate_controller: "Gate Controller",
+  rack_supervisor: "Rack Supervisor",
+  bay_operator: "Bay Operator",
+  safety_officer: "Safety Officer",
+  shift_lead: "Shift Lead",
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  gate_controller: "bg-orange-500/20 text-orange-400",
+  rack_supervisor: "bg-purple-500/20 text-purple-400",
+  bay_operator: "bg-blue-500/20 text-blue-400",
+  safety_officer: "bg-red-500/20 text-red-400",
+  shift_lead: "bg-emerald-500/20 text-emerald-400",
+};
 
 export default function TerminalStaff() {
   const [search, setSearch] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [copiedToken, setCopiedToken] = useState<number | null>(null);
+  const [newCode, setNewCode] = useState<{ staffId: number; code: string } | null>(null);
+
+  // Form state
+  const [form, setForm] = useState({
+    name: "", phone: "", email: "",
+    staffRole: "gate_controller" as string,
+    assignedZone: "", shift: "day" as string,
+    canApproveAccess: true, canDispenseProduct: false,
+  });
 
   const staffQuery = (trpc as any).terminals.getStaff.useQuery({ search });
   const statsQuery = (trpc as any).terminals.getStaffStats.useQuery();
+  const linksQuery = (trpc as any).terminals.getStaffAccessLinks.useQuery();
+  const utils = (trpc as any).useUtils();
+
+  const addMutation = (trpc as any).terminals.addStaff.useMutation({
+    onSuccess: () => {
+      utils.terminals.getStaff.invalidate();
+      utils.terminals.getStaffStats.invalidate();
+      setShowAdd(false);
+      setForm({ name: "", phone: "", email: "", staffRole: "gate_controller", assignedZone: "", shift: "day", canApproveAccess: true, canDispenseProduct: false });
+    },
+  });
+
+  const removeMutation = (trpc as any).terminals.removeStaff.useMutation({
+    onSuccess: () => { utils.terminals.getStaff.invalidate(); utils.terminals.getStaffStats.invalidate(); },
+  });
+
+  const updateMutation = (trpc as any).terminals.updateStaff.useMutation({
+    onSuccess: () => { utils.terminals.getStaff.invalidate(); utils.terminals.getStaffStats.invalidate(); },
+  });
+
+  const genLinkMutation = (trpc as any).terminals.generateAccessLink.useMutation({
+    onSuccess: (data: any) => {
+      utils.terminals.getStaffAccessLinks.invalidate();
+      if (data?.accessCode) setNewCode({ staffId: data.staffId || 0, code: data.accessCode });
+    },
+  });
+
+  const revokeLinkMutation = (trpc as any).terminals.revokeAccessLink.useMutation({
+    onSuccess: () => { utils.terminals.getStaffAccessLinks.invalidate(); },
+  });
 
   const stats = statsQuery.data;
+  const staffList = Array.isArray(staffQuery.data) ? staffQuery.data : [];
+  const activeLinks = Array.isArray(linksQuery.data) ? linksQuery.data : [];
+
+  const handleAdd = () => {
+    if (!form.name.trim()) return;
+    addMutation.mutate(form);
+  };
+
+  const copyLink = (token: string, staffId: number) => {
+    const url = `${window.location.origin}/validate/${token}`;
+    navigator.clipboard.writeText(url);
+    setCopiedToken(staffId);
+    setTimeout(() => setCopiedToken(null), 2000);
+  };
+
+  const cycleStatus = (staff: any) => {
+    const order = ["off_duty", "on_duty", "break"];
+    const next = order[(order.indexOf(staff.status) + 1) % order.length];
+    updateMutation.mutate({ id: staff.id, status: next });
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "on_duty": return <Badge className="bg-green-500/20 text-green-400 border-0"><CheckCircle className="w-3 h-3 mr-1" />On Duty</Badge>;
-      case "off_duty": return <Badge className="bg-slate-500/20 text-slate-400 border-0">Off Duty</Badge>;
-      case "break": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0"><Clock className="w-3 h-3 mr-1" />Break</Badge>;
+      case "on_duty": return <Badge className="bg-green-500/20 text-green-400 border-0 cursor-pointer"><CheckCircle className="w-3 h-3 mr-1" />On Duty</Badge>;
+      case "off_duty": return <Badge className="bg-slate-500/20 text-slate-400 border-0 cursor-pointer">Off Duty</Badge>;
+      case "break": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0 cursor-pointer"><Clock className="w-3 h-3 mr-1" />Break</Badge>;
       default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
     }
   };
 
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case "supervisor": return <Badge className="bg-purple-500/20 text-purple-400 border-0">Supervisor</Badge>;
-      case "forklift": return <Badge className="bg-blue-500/20 text-blue-400 border-0">Forklift</Badge>;
-      case "loader": return <Badge className="bg-cyan-500/20 text-cyan-400 border-0">Loader</Badge>;
-      case "gate": return <Badge className="bg-orange-500/20 text-orange-400 border-0">Gate</Badge>;
-      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{role}</Badge>;
-    }
-  };
+  const getStaffLink = (staffId: number) => activeLinks.find((l: any) => l.staffId === staffId);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Terminal Staff</h1>
-          <p className="text-slate-400 text-sm mt-1">Manage your terminal personnel</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Access Controllers</h1>
+          <p className="text-slate-400 text-sm mt-1">Gate, rack, and bay staff who validate arriving drivers</p>
         </div>
-        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
+        <Button onClick={() => setShowAdd(true)} className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
           <Plus className="w-4 h-4 mr-2" />Add Staff
         </Button>
       </div>
 
+      {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-cyan-500/20"><Users className="w-6 h-6 text-cyan-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-cyan-400">{stats?.total || 0}</p>}<p className="text-xs text-slate-400">Total</p></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-green-400">{stats?.onDuty || 0}</p>}<p className="text-xs text-slate-400">On Duty</p></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-yellow-500/20"><Clock className="w-6 h-6 text-yellow-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-yellow-400">{stats?.onBreak || 0}</p>}<p className="text-xs text-slate-400">On Break</p></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-purple-500/20"><Users className="w-6 h-6 text-purple-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-purple-400">{stats?.supervisors || 0}</p>}<p className="text-xs text-slate-400">Supervisors</p></div>
-            </div>
-          </CardContent>
-        </Card>
+        {[
+          { label: "Total", value: stats?.total || 0, color: "cyan", icon: Users },
+          { label: "On Duty", value: stats?.onDuty || 0, color: "green", icon: CheckCircle },
+          { label: "On Break", value: stats?.onBreak || 0, color: "yellow", icon: Clock },
+          { label: "Shift Leads", value: stats?.supervisors || 0, color: "purple", icon: ShieldCheck },
+        ].map(({ label, value, color, icon: Icon }) => (
+          <Card key={label} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-full bg-${color}-500/20`}><Icon className={`w-6 h-6 text-${color}-400`} /></div>
+                <div>
+                  {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className={`text-2xl font-bold text-${color}-400`}>{value}</p>}
+                  <p className="text-xs text-slate-400">{label}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
+      {/* Search */}
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search staff..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
+      {/* Add Staff Modal */}
+      {showAdd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowAdd(false)}>
+          <Card className="bg-slate-900 border-slate-700 rounded-2xl w-full max-w-lg mx-4 shadow-2xl" onClick={(e: any) => e.stopPropagation()}>
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Add Access Controller</CardTitle>
+                <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></Button>
+              </div>
+              <p className="text-slate-400 text-xs">This person will validate arriving drivers at your terminal or pickup location</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Full Name *</label>
+                  <Input value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} placeholder="John Smith" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Phone</label>
+                  <Input value={form.phone} onChange={(e: any) => setForm({ ...form, phone: e.target.value })} placeholder="(555) 123-4567" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Email</label>
+                  <Input value={form.email} onChange={(e: any) => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Role</label>
+                  <select value={form.staffRole} onChange={(e: any) => setForm({ ...form, staffRole: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
+                    <option value="gate_controller">Gate Controller</option>
+                    <option value="rack_supervisor">Rack Supervisor</option>
+                    <option value="bay_operator">Bay Operator</option>
+                    <option value="safety_officer">Safety Officer</option>
+                    <option value="shift_lead">Shift Lead</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Assigned Zone</label>
+                  <Input value={form.assignedZone} onChange={(e: any) => setForm({ ...form, assignedZone: e.target.value })} placeholder="Gate A, Rack 3, Bay 1-4..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Shift</label>
+                  <select value={form.shift} onChange={(e: any) => setForm({ ...form, shift: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
+                    <option value="day">Day</option>
+                    <option value="night">Night</option>
+                    <option value="swing">Swing</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-6 pt-1">
+                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                  <input type="checkbox" checked={form.canApproveAccess} onChange={(e: any) => setForm({ ...form, canApproveAccess: e.target.checked })} className="rounded border-slate-600 bg-slate-800" />
+                  Can approve geofence access
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                  <input type="checkbox" checked={form.canDispenseProduct} onChange={(e: any) => setForm({ ...form, canDispenseProduct: e.target.checked })} className="rounded border-slate-600 bg-slate-800" />
+                  Can authorize dispensing
+                </label>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => setShowAdd(false)} className="bg-slate-800/50 border-slate-700/50 rounded-lg">Cancel</Button>
+                <Button onClick={handleAdd} disabled={!form.name.trim() || addMutation.isPending}
+                  className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
+                  {addMutation.isPending ? "Adding..." : "Add Controller"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Staff List */}
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-        <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Users className="w-5 h-5 text-cyan-400" />Staff</CardTitle></CardHeader>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Access Controllers</CardTitle>
+        </CardHeader>
         <CardContent className="p-0">
           {staffQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
-          ) : !staffQuery.data || (Array.isArray(staffQuery.data) && staffQuery.data.length === 0) ? (
-            <div className="text-center py-16"><Users className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No staff found</p></div>
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: number) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
+          ) : staffList.length === 0 ? (
+            <div className="text-center py-16">
+              <Shield className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+              <p className="text-slate-400">No access controllers yet</p>
+              <p className="text-slate-500 text-xs mt-1">Add staff to manage who validates arriving drivers</p>
+            </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {(Array.isArray(staffQuery.data) ? staffQuery.data : []).map((staff: any) => (
-                <div key={staff.id} className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white text-lg">{staff.name?.charAt(0)}</div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="text-white font-bold">{staff.name}</p>
-                        {getRoleBadge(staff.role)}
-                        {getStatusBadge(staff.status)}
+              {staffList.map((staff: any) => {
+                const link = getStaffLink(staff.id);
+                return (
+                  <div key={staff.id} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white text-lg">
+                          {staff.name?.charAt(0)?.toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-white font-bold">{staff.name}</p>
+                            <Badge className={`${ROLE_COLORS[staff.staffRole] || "bg-slate-500/20 text-slate-400"} border-0 text-xs`}>
+                              {ROLE_LABELS[staff.staffRole] || staff.staffRole}
+                            </Badge>
+                            <span onClick={() => cycleStatus(staff)}>{getStatusBadge(staff.status)}</span>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-slate-500">
+                            {staff.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{staff.phone}</span>}
+                            {staff.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{staff.email}</span>}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                            <span>Shift: {staff.shift}</span>
+                            {staff.assignedZone && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{staff.assignedZone}</span>}
+                            {staff.canApproveAccess && <span className="flex items-center gap-1 text-green-500"><KeyRound className="w-3 h-3" />Access</span>}
+                            {staff.canDispenseProduct && <span className="flex items-center gap-1 text-blue-500"><Fuel className="w-3 h-3" />Dispense</span>}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-slate-500">
-                        <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{staff.phone}</span>
-                        <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{staff.email}</span>
+                      <div className="flex items-center gap-2">
+                        {link ? (
+                          <Button size="sm" variant="outline" onClick={() => copyLink(link.token, staff.id)}
+                            className={`rounded-lg text-xs ${copiedToken === staff.id ? "bg-green-600/20 border-green-600/50 text-green-400" : "bg-cyan-600/10 border-cyan-600/30 text-cyan-400"}`}>
+                            {copiedToken === staff.id ? <><CheckCircle className="w-3 h-3 mr-1" />Copied</> : <><Copy className="w-3 h-3 mr-1" />Copy Link</>}
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" onClick={() => genLinkMutation.mutate({ staffId: staff.id })}
+                            disabled={genLinkMutation.isPending}
+                            className="bg-cyan-600/10 border-cyan-600/30 text-cyan-400 rounded-lg text-xs">
+                            <Link2 className="w-3 h-3 mr-1" />{genLinkMutation.isPending ? "..." : "Generate Link"}
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" onClick={() => { if (confirm(`Remove ${staff.name}?`)) removeMutation.mutate({ id: staff.id }); }}
+                          className="text-slate-500 hover:text-red-400">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">Shift: {staff.shift} | Area: {staff.assignedArea}</p>
                     </div>
+                    {link && (
+                      <div className="mt-2 ml-16 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-slate-600 font-mono truncate max-w-[300px]">{window.location.origin}/validate/{link.token.slice(0, 12)}...</span>
+                          <Badge className="bg-green-500/10 text-green-500 border-0 text-[10px]">Active 24h</Badge>
+                          <button onClick={() => revokeLinkMutation.mutate({ tokenId: link.tokenId })} className="text-[10px] text-red-500 hover:underline ml-1">Revoke</button>
+                        </div>
+                        {link.accessCode && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-slate-500">Access Code:</span>
+                            <span className="text-sm font-mono font-bold text-cyan-400 tracking-widest bg-cyan-500/10 px-2 py-0.5 rounded">{link.accessCode}</span>
+                            <span className="text-[10px] text-slate-600">Share this code with the staff member</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg">View</Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

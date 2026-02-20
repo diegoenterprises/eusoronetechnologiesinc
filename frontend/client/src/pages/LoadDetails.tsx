@@ -22,6 +22,7 @@ import {
   Package, MapPin, Truck, DollarSign, Calendar, ArrowLeft,
   Phone, Navigation, Clock, User, AlertTriangle, CheckCircle, Shield,
   Building2, Scale, FileText, Loader2, ChevronRight, Info,
+  CloudRain, Flame, Fuel, Radio, Activity,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -112,6 +113,33 @@ export default function LoadDetails() {
     { enabled: !!loadId && !!load && isInExecution }
   );
   const convoyData = convoyQuery.data as any;
+
+  // ── Route Intelligence (HotZones corridor data) ──
+  const oState = load?.origin?.state || load?.pickupLocation?.state || "";
+  const dState = load?.destination?.state || load?.deliveryLocation?.state || "";
+  const routeIntelQuery = (trpc as any).hotZones?.getRouteIntelligence?.useQuery?.(
+    { originState: oState, destState: dState },
+    { enabled: !!load && oState.length === 2 && dState.length === 2, staleTime: 5 * 60 * 1000 }
+  );
+  const routeIntel = routeIntelQuery?.data;
+
+  // ── ML Engine Intelligence ──
+  const mlRatePrediction = (trpc as any).ml?.predictRate?.useQuery?.(
+    { originState: oState, destState: dState, distance: Number(load?.distance) || 0, weight: Number(load?.weight) || undefined, equipmentType: load?.equipmentType || "dry_van", cargoType: load?.cargoType || "general" },
+    { enabled: !!load && oState.length >= 2 && dState.length >= 2 && Number(load?.distance) > 0, staleTime: 120_000 }
+  ) || { data: null };
+  const mlETA = (trpc as any).ml?.predictETA?.useQuery?.(
+    { originState: oState, destState: dState, distance: Number(load?.distance) || 0, equipmentType: load?.equipmentType || "dry_van", cargoType: load?.cargoType || "general", pickupDate: load?.pickupDate },
+    { enabled: !!load && oState.length >= 2 && dState.length >= 2 && Number(load?.distance) > 0, staleTime: 120_000 }
+  ) || { data: null };
+  const mlAnomalies = (trpc as any).ml?.detectAnomalies?.useQuery?.(
+    { rate: Number(load?.rate) || undefined, distance: Number(load?.distance) || undefined, originState: oState || undefined, destState: dState || undefined, weight: Number(load?.weight) || undefined },
+    { enabled: !!load && Number(load?.rate) > 0 && Number(load?.distance) > 0, staleTime: 60_000 }
+  ) || { data: null };
+  const mlDynamicPrice = (trpc as any).ml?.getDynamicPrice?.useQuery?.(
+    { originState: oState, destState: dState, distance: Number(load?.distance) || 0, weight: Number(load?.weight) || undefined, equipmentType: load?.equipmentType || "dry_van", cargoType: load?.cargoType || "general" },
+    { enabled: !!load && oState.length >= 2 && dState.length >= 2 && Number(load?.distance) > 0, staleTime: 120_000 }
+  ) || { data: null };
 
   const availableTransitions = (transitionsQuery.data || []) as any[];
   const stateHistory = (stateHistoryQuery.data || []) as any[];
@@ -476,6 +504,76 @@ export default function LoadDetails() {
         </div>
       </div>
 
+      {/* ═══════════ ML INTELLIGENCE ═══════════ */}
+      {(mlRatePrediction.data || mlETA.data || (mlAnomalies.data && Array.isArray(mlAnomalies.data) && mlAnomalies.data.length > 0)) && (
+        <div className={cn("rounded-2xl border p-4 space-y-3", isLight ? "bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200" : "bg-gradient-to-r from-purple-500/5 to-blue-500/5 border-purple-500/20")}>
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-purple-400" />
+            <span className={cn("text-xs font-bold uppercase tracking-wider", isLight ? "text-purple-600" : "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent")}>ESANG AI Intelligence</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {mlRatePrediction.data && (
+              <div className={cn("p-3 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/40")}>
+                <p className="text-[10px] text-slate-400 uppercase mb-1">ML Rate Prediction</p>
+                <div className="flex items-baseline gap-2">
+                  <span className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${mlRatePrediction.data.predictedSpotRate.toLocaleString()}</span>
+                  <span className="text-[10px] text-slate-400">${(mlRatePrediction.data.predictedSpotRate / Math.max(distance, 1)).toFixed(2)}/mi</span>
+                </div>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${mlRatePrediction.data.marketCondition === "SELLER" ? "bg-red-500/15 text-red-400" : mlRatePrediction.data.marketCondition === "BUYER" ? "bg-green-500/15 text-green-400" : "bg-yellow-500/15 text-yellow-400"}`}>
+                    {mlRatePrediction.data.marketCondition}
+                  </span>
+                  <span className="text-[10px] text-slate-500">{mlRatePrediction.data.confidence}% conf</span>
+                </div>
+              </div>
+            )}
+            {mlETA.data && (
+              <div className={cn("p-3 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/40")}>
+                <p className="text-[10px] text-slate-400 uppercase mb-1">ML Transit Estimate</p>
+                <div className="flex items-baseline gap-2">
+                  <span className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{mlETA.data.estimatedDays}d</span>
+                  <span className="text-[10px] text-slate-400">{mlETA.data.estimatedHours}h</span>
+                </div>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${mlETA.data.riskLevel === "HIGH" ? "bg-red-500/15 text-red-400" : mlETA.data.riskLevel === "MODERATE" ? "bg-amber-500/15 text-amber-400" : "bg-green-500/15 text-green-400"}`}>
+                    {mlETA.data.riskLevel} RISK
+                  </span>
+                  <span className="text-[10px] text-slate-500">{Math.round(mlETA.data.range.bestCase)}h - {Math.round(mlETA.data.range.worstCase)}h</span>
+                </div>
+              </div>
+            )}
+            {mlDynamicPrice.data && (
+              <div className={cn("p-3 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/40")}>
+                <p className="text-[10px] text-slate-400 uppercase mb-1">Dynamic Pricing</p>
+                <div className="flex items-baseline gap-2">
+                  <span className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${mlDynamicPrice.data.recommendedRate.toLocaleString()}</span>
+                  <span className="text-[10px] text-slate-400">${mlDynamicPrice.data.ratePerMile}/mi</span>
+                </div>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${mlDynamicPrice.data.competitivePosition === "BELOW_MARKET" ? "bg-green-500/15 text-green-400" : mlDynamicPrice.data.competitivePosition === "ABOVE_MARKET" ? "bg-red-500/15 text-red-400" : "bg-blue-500/15 text-blue-400"}`}>
+                    {mlDynamicPrice.data.competitivePosition.replace(/_/g, " ")}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Anomaly Alerts */}
+          {mlAnomalies.data && Array.isArray(mlAnomalies.data) && mlAnomalies.data.length > 0 && (
+            <div className="space-y-2">
+              {mlAnomalies.data.map((a: any, i: number) => (
+                <div key={i} className={cn("p-2.5 rounded-lg border flex items-start gap-2", a.severity === "CRITICAL" ? (isLight ? "border-red-200 bg-red-50" : "border-red-500/30 bg-red-500/10") : a.severity === "WARNING" ? (isLight ? "border-amber-200 bg-amber-50" : "border-amber-500/30 bg-amber-500/10") : (isLight ? "border-blue-200 bg-blue-50" : "border-blue-500/30 bg-blue-500/10"))}>
+                  <AlertTriangle className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${a.severity === "CRITICAL" ? "text-red-400" : a.severity === "WARNING" ? "text-amber-400" : "text-blue-400"}`} />
+                  <div>
+                    <p className={cn("text-xs font-semibold", a.severity === "CRITICAL" ? (isLight ? "text-red-700" : "text-red-300") : a.severity === "WARNING" ? (isLight ? "text-amber-700" : "text-amber-300") : (isLight ? "text-blue-700" : "text-blue-300"))}>{a.message}</p>
+                    <p className={cn("text-[10px] mt-0.5", isLight ? "text-slate-500" : "text-slate-500")}>{a.suggestedAction}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ═══════════ LIFECYCLE JOURNEY ═══════════ */}
       <Card className={cardCls}>
         <CardContent className="p-5">
@@ -487,6 +585,45 @@ export default function LoadDetails() {
           />
         </CardContent>
       </Card>
+
+      {/* ═══════════ GATE ACCESS CARD (Driver/Catalyst — present to access controller) ═══════════ */}
+      {isInExecution && (isAssignedDriver || isAssignedCatalyst) && (
+        <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-cyan-200 shadow-md" : "bg-slate-800/60 border-cyan-500/30")}>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Shield className="w-5 h-5 text-cyan-400" />
+                  <span className={cn("text-xs font-bold uppercase tracking-wider", isLight ? "text-cyan-600" : "text-cyan-400")}>Gate Access Card</span>
+                </div>
+                <p className="text-[10px] text-slate-400">Present this Load ID to the gate controller at the terminal</p>
+              </div>
+              <div className="text-right">
+                <p className="text-4xl font-black tracking-wider bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
+                  {load.id}
+                </p>
+                <p className="text-[10px] text-slate-500 mt-1">LOAD ID</p>
+              </div>
+            </div>
+            <div className={cn("mt-3 p-3 rounded-xl flex items-center justify-between", isLight ? "bg-slate-50 border border-slate-200" : "bg-slate-900/50 border border-slate-700/30")}>
+              <div className="grid grid-cols-3 gap-4 w-full text-center">
+                <div>
+                  <p className="text-[10px] text-slate-400">Origin</p>
+                  <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{originCity}, {originState}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400">Destination</p>
+                  <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{destCity}, {destState}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400">Status</p>
+                  <p className={cn("text-xs font-medium capitalize", isLight ? "text-slate-700" : "text-slate-200")}>{(load.status || "").replace(/_/g, " ")}</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ═══════════ STATE CONTEXT + ACTIVE TIMERS ═══════════ */}
       {(isInExecution || canUpdateStatus) && (
@@ -597,6 +734,144 @@ export default function LoadDetails() {
             </div>
           </CardContent>
         </Card>
+
+        {/* ── Route Intelligence (HotZones Corridor Data) ── */}
+        {routeIntel && (
+          <Card className={cardCls}>
+            <CardHeader className="pb-3">
+              <CardTitle className={cn(titleCls, "flex items-center gap-2")}>
+                <Activity className="w-5 h-5 text-[#1473FF]" />
+                Route Intelligence
+                <span className="ml-auto flex items-center gap-1 text-[10px] text-emerald-500 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  LIVE
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-2", isLight ? "text-slate-400" : "text-slate-500")}>
+                {originState} to {destState} Corridor
+              </p>
+
+              {/* Weather Alerts */}
+              {(routeIntel.weatherAlerts || []).length > 0 && (
+                <div className={cn("p-3 rounded-xl border", isLight ? "bg-amber-50 border-amber-200" : "bg-amber-500/10 border-amber-500/20")}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <CloudRain className="w-4 h-4 text-amber-500" />
+                    <span className={cn("text-xs font-semibold", isLight ? "text-amber-700" : "text-amber-300")}>
+                      {routeIntel.weatherAlerts.length} Weather Alert{routeIntel.weatherAlerts.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {routeIntel.weatherAlerts.slice(0, 3).map((wa: any, i: number) => (
+                      <div key={wa.id || i} className="flex items-start gap-2">
+                        <div className={cn("w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0",
+                          wa.severity === "Extreme" ? "bg-red-500" : wa.severity === "Severe" ? "bg-orange-500" : "bg-amber-400"
+                        )} />
+                        <p className={cn("text-xs leading-snug", isLight ? "text-amber-700/80" : "text-amber-300/80")}>
+                          {wa.headline || `${wa.event} (${wa.severity})`}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Fuel + Hazmat + Fire + Seismic grid */}
+              <div className="grid grid-cols-2 gap-2">
+                {/* Fuel Prices */}
+                {(routeIntel.fuelPrices || []).length > 0 && (
+                  <div className={cellCls}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Fuel className="w-3.5 h-3.5 text-amber-500" />
+                      <span className="text-[10px] text-slate-400 uppercase">Diesel</span>
+                    </div>
+                    {routeIntel.fuelPrices.map((fp: any) => (
+                      <div key={fp.state} className="flex items-center justify-between">
+                        <span className={cn("text-xs", isLight ? "text-slate-600" : "text-slate-300")}>{fp.state}</span>
+                        <span className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>
+                          ${fp.price.toFixed(2)}
+                          {fp.change !== 0 && (
+                            <span className={cn("text-[10px] ml-1", fp.change > 0 ? "text-red-400" : "text-emerald-400")}>
+                              {fp.change > 0 ? "+" : ""}{fp.change.toFixed(2)}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Hazmat Incidents */}
+                <div className={cellCls}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Radio className="w-3.5 h-3.5 text-purple-500" />
+                    <span className="text-[10px] text-slate-400 uppercase">Hazmat (90d)</span>
+                  </div>
+                  <p className={cn("text-lg font-bold", routeIntel.hazmatIncidents > 5 ? "text-red-400" : isLight ? "text-slate-800" : "text-white")}>
+                    {routeIntel.hazmatIncidents}
+                  </p>
+                  <p className="text-[10px] text-slate-400">incidents on route</p>
+                </div>
+
+                {/* Wildfires */}
+                {routeIntel.wildfires > 0 && (
+                  <div className={cellCls}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Flame className="w-3.5 h-3.5 text-orange-500" />
+                      <span className="text-[10px] text-slate-400 uppercase">Wildfires</span>
+                    </div>
+                    <p className={cn("text-lg font-bold text-orange-400")}>{routeIntel.wildfires}</p>
+                    <p className="text-[10px] text-slate-400">active in corridor</p>
+                  </div>
+                )}
+
+                {/* Earthquakes */}
+                {routeIntel.earthquakes > 0 && (
+                  <div className={cellCls}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Activity className="w-3.5 h-3.5 text-cyan-500" />
+                      <span className="text-[10px] text-slate-400 uppercase">Seismic</span>
+                    </div>
+                    <p className={cn("text-lg font-bold text-cyan-400")}>{routeIntel.earthquakes}</p>
+                    <p className="text-[10px] text-slate-400">M2.5+ (30d)</p>
+                  </div>
+                )}
+              </div>
+
+              {/* FEMA Disasters */}
+              {(routeIntel.femaDisasters || []).length > 0 && (
+                <div className={cn("p-3 rounded-xl border", isLight ? "bg-red-50 border-red-200" : "bg-red-500/10 border-red-500/20")}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <span className={cn("text-xs font-semibold", isLight ? "text-red-700" : "text-red-300")}>
+                      FEMA Disaster Declarations
+                    </span>
+                  </div>
+                  {routeIntel.femaDisasters.slice(0, 2).map((d: any, i: number) => (
+                    <p key={i} className={cn("text-[11px] leading-snug", isLight ? "text-red-600/80" : "text-red-300/80")}>
+                      {d.state}: {d.title || d.type}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {/* No alerts — all clear */}
+              {(routeIntel.weatherAlerts || []).length === 0 && routeIntel.wildfires === 0 && (routeIntel.femaDisasters || []).length === 0 && (
+                <div className={cn("flex items-center gap-2 p-3 rounded-xl border", isLight ? "bg-emerald-50 border-emerald-200" : "bg-emerald-500/10 border-emerald-500/20")}>
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  <span className={cn("text-xs font-medium", isLight ? "text-emerald-700" : "text-emerald-300")}>
+                    No active weather, fire, or disaster alerts on this route
+                  </span>
+                </div>
+              )}
+
+              <p className="text-[9px] text-slate-400 mt-1">
+                Sources: NWS, EIA, PHMSA, NIFC, USGS, FEMA, FMCSA
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ── Load Information ── */}
         <Card className={cardCls}>

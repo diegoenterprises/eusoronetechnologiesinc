@@ -116,6 +116,18 @@ export const companies = mysqlTable(
     complianceStatus: mysqlEnum("complianceStatus", ["compliant", "pending", "expired", "non_compliant"])
       .default("pending")
       .notNull(),
+    supplyChainRole: mysqlEnum("supplyChainRole", [
+      "PRODUCER", "REFINER", "MARKETER", "WHOLESALER", "RETAILER", "TERMINAL_OPERATOR", "TRANSPORTER"
+    ]),
+    marketerType: mysqlEnum("marketerType", ["branded", "independent", "used_oil"]),
+    supplyChainMeta: json("supplyChainMeta").$type<{
+      productsHandled?: string[];
+      annualVolume?: number;
+      volumeUnit?: string;
+      customerTypes?: string[];
+      supplySource?: string;
+      distributionRegions?: string[];
+    }>(),
     stripeAccountId: varchar("stripeAccountId", { length: 255 }),
     isActive: boolean("isActive").default(true).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -126,6 +138,7 @@ export const companies = mysqlTable(
     dotIdx: index("dot_idx").on(table.dotNumber),
     mcIdx: index("mc_idx").on(table.mcNumber),
     complianceIdx: index("compliance_idx").on(table.complianceStatus),
+    supplyChainIdx: index("supply_chain_idx").on(table.supplyChainRole),
   })
 );
 
@@ -193,6 +206,8 @@ export const loads = mysqlTable(
     catalystId: int("catalystId"),
     driverId: int("driverId"),
     vehicleId: int("vehicleId"),
+    originTerminalId: int("originTerminalId"),
+    destinationTerminalId: int("destinationTerminalId"),
     loadNumber: varchar("loadNumber", { length: 50 }).notNull().unique(),
     status: mysqlEnum("status", [
       "draft", "posted", "bidding", "expired",
@@ -279,6 +294,8 @@ export const loads = mysqlTable(
     statusIdx: index("load_status_idx").on(table.status),
     loadNumberIdx: unique("load_number_unique").on(table.loadNumber),
     pickupDateIdx: index("pickup_date_idx").on(table.pickupDate),
+    originTerminalIdx: index("load_origin_terminal_idx").on(table.originTerminalId),
+    destTerminalIdx: index("load_dest_terminal_idx").on(table.destinationTerminalId),
   })
 );
 
@@ -829,15 +846,160 @@ export const terminals = mysqlTable(
     dockCount: int("dockCount").default(0),
     tankCount: int("tankCount").default(0),
     status: mysqlEnum("status", ["active", "inactive"]).default("active"),
+    terminalType: mysqlEnum("terminalType", [
+      "refinery", "storage", "rack", "pipeline", "blending", "distribution", "marine", "rail"
+    ]).default("storage"),
+    productsHandled: json("productsHandled").$type<string[]>(),
+    throughputCapacity: decimal("throughputCapacity", { precision: 12, scale: 2 }),
+    throughputUnit: varchar("throughputUnit", { length: 20 }).default("bbl/day"),
+    latitude: decimal("latitude", { precision: 10, scale: 7 }),
+    longitude: decimal("longitude", { precision: 10, scale: 7 }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   (table) => ({
     companyIdx: index("terminal_company_idx").on(table.companyId),
+    typeIdx: index("terminal_type_idx").on(table.terminalType),
   })
 );
 
 export type Terminal = typeof terminals.$inferSelect;
 export type InsertTerminal = typeof terminals.$inferInsert;
+
+// ============================================================================
+// TERMINAL PARTNERS (Supply Chain Junction)
+// Links terminals to their shipper/marketer/broker partners
+// ============================================================================
+
+export const terminalPartners = mysqlTable(
+  "terminal_partners",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    terminalId: int("terminalId").notNull(),
+    companyId: int("companyId").notNull(),
+    partnerType: mysqlEnum("partnerType", ["shipper", "marketer", "broker", "transporter"]).default("shipper").notNull(),
+    status: mysqlEnum("status", ["active", "pending", "suspended", "terminated"]).default("pending"),
+    agreementId: int("agreementId"),
+    rackAccessLevel: mysqlEnum("rackAccessLevel", ["full", "limited", "scheduled"]).default("scheduled"),
+    monthlyVolumeCommitment: decimal("monthlyVolumeCommitment", { precision: 12, scale: 2 }),
+    productTypes: json("productTypes").$type<string[]>(),
+    notes: text("notes"),
+    startDate: timestamp("startDate").defaultNow(),
+    endDate: timestamp("endDate"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    terminalIdx: index("tp_terminal_idx").on(table.terminalId),
+    companyIdx: index("tp_company_idx").on(table.companyId),
+    typeIdx: index("tp_type_idx").on(table.partnerType),
+    statusIdx: index("tp_status_idx").on(table.status),
+    uniquePartner: unique("tp_unique").on(table.terminalId, table.companyId),
+  })
+);
+
+export type TerminalPartner = typeof terminalPartners.$inferSelect;
+export type InsertTerminalPartner = typeof terminalPartners.$inferInsert;
+
+// ============================================================================
+// TERMINAL STAFF — Access Controllers
+// Gate/rack controllers who validate arriving drivers. NOT platform users.
+// Managed by Terminal Managers & Shippers/Marketers for their locations.
+// ============================================================================
+
+export const terminalStaff = mysqlTable(
+  "terminal_staff",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    terminalId: int("terminalId"),
+    name: varchar("name", { length: 255 }).notNull(),
+    phone: varchar("phone", { length: 30 }),
+    email: varchar("email", { length: 255 }),
+    staffRole: mysqlEnum("staffRole", [
+      "gate_controller", "rack_supervisor", "bay_operator",
+      "safety_officer", "shift_lead",
+    ]).default("gate_controller").notNull(),
+    assignedZone: varchar("assignedZone", { length: 100 }),
+    shift: mysqlEnum("shift", ["day", "night", "swing"]).default("day"),
+    canApproveAccess: boolean("canApproveAccess").default(true),
+    canDispenseProduct: boolean("canDispenseProduct").default(false),
+    status: mysqlEnum("status", ["on_duty", "off_duty", "break"]).default("off_duty"),
+    isActive: boolean("isActive").default(true),
+    createdBy: int("createdBy").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("ts_company_idx").on(table.companyId),
+    terminalIdx: index("ts_terminal_idx").on(table.terminalId),
+    roleIdx: index("ts_role_idx").on(table.staffRole),
+    activeIdx: index("ts_active_idx").on(table.isActive),
+  })
+);
+
+export type TerminalStaffMember = typeof terminalStaff.$inferSelect;
+export type InsertTerminalStaffMember = typeof terminalStaff.$inferInsert;
+
+// ============================================================================
+// STAFF ACCESS TOKENS — 24-hour rotating validation links
+// Each token gives a staff member a lightweight validation page (no login).
+// ============================================================================
+
+export const staffAccessTokens = mysqlTable(
+  "staff_access_tokens",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    staffId: int("staffId").notNull(),
+    token: varchar("token", { length: 64 }).notNull(),
+    accessCode: varchar("accessCode", { length: 6 }).notNull(),
+    codeAttempts: int("codeAttempts").default(0),
+    codeVerifiedAt: timestamp("codeVerifiedAt"),
+    expiresAt: timestamp("expiresAt").notNull(),
+    createdBy: int("createdBy").notNull(),
+    isRevoked: boolean("isRevoked").default(false),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    tokenIdx: index("sat_token_idx").on(table.token),
+    staffIdx: index("sat_staff_idx").on(table.staffId),
+    expiryIdx: index("sat_expiry_idx").on(table.expiresAt),
+  })
+);
+
+export type StaffAccessToken = typeof staffAccessTokens.$inferSelect;
+
+// ============================================================================
+// ACCESS VALIDATIONS — Log of every driver arrival validation
+// Records approve/deny decisions by access controllers.
+// ============================================================================
+
+export const accessValidations = mysqlTable(
+  "access_validations",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    staffId: int("staffId").notNull(),
+    tokenId: int("tokenId"),
+    loadId: int("loadId"),
+    driverId: int("driverId"),
+    decision: mysqlEnum("decision", ["approved", "denied", "pending"]).default("pending").notNull(),
+    denyReason: text("denyReason"),
+    staffLat: decimal("staffLat", { precision: 10, scale: 7 }),
+    staffLng: decimal("staffLng", { precision: 10, scale: 7 }),
+    geofenceDistanceMeters: int("geofenceDistanceMeters"),
+    locationVerifiedAt: timestamp("locationVerifiedAt"),
+    codeVerifiedAt: timestamp("codeVerifiedAt"),
+    scannedData: json("scannedData").$type<Record<string, any>>(),
+    validatedAt: timestamp("validatedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    staffIdx: index("av_staff_idx").on(table.staffId),
+    loadIdx: index("av_load_idx").on(table.loadId),
+    driverIdx: index("av_driver_idx").on(table.driverId),
+    decisionIdx: index("av_decision_idx").on(table.decision),
+  })
+);
+
+export type AccessValidation = typeof accessValidations.$inferSelect;
 
 // ============================================================================
 // INCIDENTS

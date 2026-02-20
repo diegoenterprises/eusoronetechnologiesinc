@@ -51,7 +51,7 @@ function getRoleViz(perspective: string | undefined): RoleViz {
       };
     case "spread_opportunity": // BROKER — sees margin, emerald tones
       return {
-        dotLabel: z => `+${((z.liveRate || 2) * (z.liveRatio || 1) * 0.15).toFixed(1)}`,
+        dotLabel: z => `+${((z.liveRate || 2) * (z.liveRatio || 1) * 0.15).toFixed(2)}`,
         sizeMetric: z => 7 + Math.min(7, ((z.liveRate || 2) * (z.liveRatio || 1) * 0.15) * 2),
         critColor: "#34D399", highColor: "#FBBF24", elevColor: "#818CF8",
         glowColor: "#34D399",
@@ -60,7 +60,7 @@ function getRoleViz(perspective: string | undefined): RoleViz {
       };
     case "driver_opportunity": // DRIVER — sees earnings, amber/orange tones
       return {
-        dotLabel: z => `$${Number(z.liveRate || 0).toFixed(1)}`,
+        dotLabel: z => `$${Number(z.liveRate || 0).toFixed(2)}`,
         sizeMetric: z => 7 + Math.min(7, (z.liveRate || 2) * 1.8),
         critColor: "#FBBF24", highColor: "#FB923C", elevColor: "#60A5FA",
         glowColor: "#FBBF24",
@@ -69,7 +69,7 @@ function getRoleViz(perspective: string | undefined): RoleViz {
       };
     case "oversized_demand": // ESCORT — sees oversized corridors, purple tones
       return {
-        dotLabel: z => z.oversizedFrequency === "VERY_HIGH" ? "OVS!" : z.oversizedFrequency === "HIGH" ? "OVS" : `$${Number(z.liveRate || 0).toFixed(1)}`,
+        dotLabel: z => z.oversizedFrequency === "VERY_HIGH" ? "OVS!" : z.oversizedFrequency === "HIGH" ? "OVS" : `$${Number(z.liveRate || 0).toFixed(2)}`,
         sizeMetric: z => z.oversizedFrequency === "VERY_HIGH" ? 14 : z.oversizedFrequency === "HIGH" ? 11 : 8,
         critColor: "#A78BFA", highColor: "#818CF8", elevColor: "#C4B5FD",
         glowColor: "#A78BFA",
@@ -96,7 +96,7 @@ function getRoleViz(perspective: string | undefined): RoleViz {
       };
     case "invoice_intelligence": // FACTORING — sees invoice volume, orange tones
       return {
-        dotLabel: z => `$${Number(z.liveRate || 0).toFixed(1)}`,
+        dotLabel: z => `$${Number(z.liveRate || 0).toFixed(2)}`,
         sizeMetric: z => 7 + Math.min(7, (z.liveLoads || 100) / 80),
         critColor: "#FB923C", highColor: "#FBBF24", elevColor: "#4ADE80",
         glowColor: "#FB923C",
@@ -583,6 +583,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
   const [vb, setVb] = useState({ x: 0, y: 0, w: 800, h: 380 });
   const [panning, setPanning] = useState(false);
   const [panOrigin, setPanOrigin] = useState({ mx: 0, my: 0, vx: 0, vy: 0 });
+  const rafRef = useRef<number>(0);
   const [hovered, setHovered] = useState<string | null>(null);
   const [tip, setTip] = useState<{ px: number; py: number; z: any } | null>(null);
   const [showHwy, setShowHwy] = useState(true);
@@ -686,10 +687,15 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
 
   const onPM = useCallback((e: React.PointerEvent) => {
     if (!panning || !cRef.current) return;
-    const r = cRef.current.getBoundingClientRect();
-    const dx = ((e.clientX - panOrigin.mx) / r.width) * vb.w;
-    const dy = ((e.clientY - panOrigin.my) / r.height) * vb.h;
-    setVb(p => ({ ...p, x: clamp(panOrigin.vx - dx, -100, 900), y: clamp(panOrigin.vy - dy, -50, 430) }));
+    const clientX = e.clientX, clientY = e.clientY;
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      if (!cRef.current) return;
+      const r = cRef.current.getBoundingClientRect();
+      const dx = ((clientX - panOrigin.mx) / r.width) * vb.w;
+      const dy = ((clientY - panOrigin.my) / r.height) * vb.h;
+      setVb(p => ({ ...p, x: clamp(panOrigin.vx - dx, -100, 900), y: clamp(panOrigin.vy - dy, -50, 430) }));
+    });
   }, [panning, panOrigin, vb.w, vb.h]);
 
   const onPU = useCallback(() => setPanning(false), []);
@@ -740,12 +746,13 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
         className={`relative w-full h-full rounded-2xl border overflow-hidden select-none ${panning ? "cursor-grabbing" : "cursor-grab"} ${
           isLight ? "bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50/30 border-slate-200/80" : "bg-gradient-to-br from-[#0a0a14] via-[#0e0e1c] to-[#0c1020] border-white/[0.06]"
         }`}
+        style={{ willChange: "transform", contain: "layout style paint" }}
         onPointerDown={onPD}
         onPointerMove={onPM}
         onPointerUp={onPU}
         onPointerLeave={() => { onPU(); setTip(null); setHovered(null); setIntelTip(null); }}
       >
-        <svg viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+        <svg viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet" style={{ willChange: "viewBox" }}>
           <defs>
             <radialGradient id="gz-crit"><stop offset="0%" stopColor={rv.critColor} stopOpacity="0.7" /><stop offset="35%" stopColor={rv.critColor} stopOpacity="0.35" /><stop offset="100%" stopColor={rv.critColor} stopOpacity="0" /></radialGradient>
             <radialGradient id="gz-high"><stop offset="0%" stopColor={rv.highColor} stopOpacity="0.55" /><stop offset="40%" stopColor={rv.highColor} stopOpacity="0.22" /><stop offset="100%" stopColor={rv.highColor} stopOpacity="0" /></radialGradient>

@@ -8,6 +8,7 @@ import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { auditedProtectedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, users } from "../../drizzle/schema";
+import { mlEngine } from "../services/mlEngine";
 
 // ── Equipment rate table (national avg $/mi, 2025-2026 USDA + DAT composite) ──
 const EQUIPMENT_RATES: Record<string, { base: number; label: string; hazmat: boolean }> = {
@@ -369,16 +370,47 @@ export const quotesRouter = router({
       const fuelSurcharge = Math.round(distance * Math.max(fuelSurchargePerMile, 0.20));
       const totalEstimate = linehaul + fuelSurcharge + hazmatFlatFee;
 
-      // Market comparison band (±15%)
-      const marketLow = Math.round(totalEstimate * 0.85);
-      const marketHigh = Math.round(totalEstimate * 1.18);
+      // ── 8. ML Engine fusion — enhance with trained model predictions ──
+      let mlPrediction: any = null;
+      let mlEta: any = null;
+      let mlAnomalies: any[] = [];
+      let mlDynamic: any = null;
+      const oSt = input.origin.state.toUpperCase().substring(0, 2);
+      const dSt = input.destination.state.toUpperCase().substring(0, 2);
+      try {
+        if (mlEngine.isReady()) {
+          const [pred, eta, anom, dyn] = await Promise.allSettled([
+            mlEngine.predictRate({ originState: oSt, destState: dSt, distance, weight: input.weight, equipmentType: input.equipmentType, cargoType: input.hazmat ? "hazmat" : "general" }),
+            mlEngine.predictETA({ originState: oSt, destState: dSt, distance, equipmentType: input.equipmentType, cargoType: input.hazmat ? "hazmat" : "general", pickupDate: input.pickupDate }),
+            mlEngine.detectAnomalies({ rate: totalEstimate, distance, originState: oSt, destState: dSt, weight: input.weight }),
+            mlEngine.getDynamicPrice({ originState: oSt, destState: dSt, distance, weight: input.weight, equipmentType: input.equipmentType, cargoType: input.hazmat ? "hazmat" : "general" }),
+          ]);
+          if (pred.status === "fulfilled") mlPrediction = pred.value;
+          if (eta.status === "fulfilled") mlEta = eta.value;
+          if (anom.status === "fulfilled" && Array.isArray(anom.value)) mlAnomalies = anom.value;
+          if (dyn.status === "fulfilled") mlDynamic = dyn.value;
+        }
+      } catch { /* ML not ready — proceed with static rates */ }
+
+      // If ML has trained data, blend ML prediction into market comparison
+      const mlSpot = mlPrediction?.predictedSpotRate || 0;
+      const mlContract = mlPrediction?.predictedContractRate || 0;
+      const mlConfidence = mlPrediction?.confidence || 0;
+
+      // Market comparison band — fuse ML if available (weighted blend)
+      const mlWeight = mlConfidence > 50 ? 0.4 : mlConfidence > 30 ? 0.2 : 0;
+      const blendedEstimate = mlSpot > 0 && mlWeight > 0
+        ? Math.round(totalEstimate * (1 - mlWeight) + mlSpot * mlWeight)
+        : totalEstimate;
+      const marketLow = Math.round(blendedEstimate * 0.85);
+      const marketHigh = Math.round(blendedEstimate * 1.18);
 
       return {
         quoteId: `EQ-${Date.now().toString(36).toUpperCase()}`,
         origin: input.origin,
         destination: input.destination,
         distance,
-        estimatedTransitTime: estimateTransitTime(distance),
+        estimatedTransitTime: mlEta ? `${mlEta.estimatedDays} day${mlEta.estimatedDays !== 1 ? "s" : ""} (${mlEta.estimatedHours}h)` : estimateTransitTime(distance),
         pricing: {
           ratePerMile: Math.round(ratePerMile * 100) / 100,
           linehaul,
@@ -387,14 +419,14 @@ export const quotesRouter = router({
           hazmatPremiumPerMile: Math.round(hazmatPremium * 100) / 100,
           hazmatFlatFee,
           hazmatClassLabel,
-          totalEstimate,
+          totalEstimate: blendedEstimate,
         },
         validUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         marketComparison: {
           low: marketLow,
-          average: totalEstimate,
+          average: blendedEstimate,
           high: marketHigh,
-          source: laneAvgRate ? "lane_learning" : "national_average",
+          source: mlConfidence > 30 ? "ml_engine+lane_learning" : laneAvgRate ? "lane_learning" : "national_average",
         },
         intelligence: {
           originZone: originZoneName || null,
@@ -408,6 +440,20 @@ export const quotesRouter = router({
           weatherAlerts,
           equipmentLabel: equip.label,
         },
+        // ML Engine predictions (available when engine is trained)
+        ml: mlPrediction ? {
+          spotRate: mlPrediction.predictedSpotRate,
+          contractRate: mlPrediction.predictedContractRate,
+          confidence: mlPrediction.confidence,
+          marketCondition: mlPrediction.marketCondition,
+          priceRange: mlPrediction.priceRange,
+          factors: mlPrediction.factors || [],
+          recommendation: mlPrediction.recommendation,
+          basedOnSamples: mlPrediction.basedOnSamples || 0,
+          eta: mlEta ? { days: mlEta.estimatedDays, hours: mlEta.estimatedHours, riskLevel: mlEta.riskLevel, range: mlEta.range } : null,
+          dynamicPrice: mlDynamic ? { recommended: mlDynamic.recommendedRate, ratePerMile: mlDynamic.ratePerMile, position: mlDynamic.competitivePosition, urgency: mlDynamic.urgencyMultiplier } : null,
+          anomalies: mlAnomalies.length > 0 ? mlAnomalies : null,
+        } : null,
       };
     }),
 

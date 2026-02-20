@@ -160,6 +160,9 @@ import { truckPostingRouter } from "./routers/truckPosting";
 import { documentCenterRouter } from "./routers/documentCenter";
 import { trailerRegulatoryRouter } from "./routers/trailerRegulatory";
 import { interstateRouter } from "./routers/interstate";
+import { marketIntelligenceRouter } from "./routers/marketIntelligence";
+import { mlRouter } from "./routers/ml";
+import { supplyChainRouter } from "./routers/supplyChain";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -611,8 +614,9 @@ export const appRouter = router({
   // Rate Calculator & Market Data
   rates: ratesRouter,
 
-  // Terminal Operations
+  // Terminal Operations & Supply Chain
   terminals: terminalsRouter,
+  supplyChain: supplyChainRouter,
 
   // Escort/Pilot Car Operations
   escorts: escortsRouter,
@@ -1000,6 +1004,12 @@ export const appRouter = router({
 
   // Interstate Compliance Engine + SOS Emergency System
   interstate: interstateRouter,
+
+  // Future-Ready 2026 Market Intelligence (Theft, Rates, Emissions, Resilience, Wellness, Tariffs)
+  marketIntelligence: marketIntelligenceRouter,
+
+  // ML Engine — Rate Prediction, Carrier Match, ETA, Demand, Anomaly, Pricing, Reliability, Churn, Bundles, Bids
+  ml: mlRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,

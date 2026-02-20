@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Shield, FileText, CheckCircle, XCircle, AlertTriangle, Plus, Search, Building2, Truck, ArrowRight, Clock, Handshake, Scale, Eye, ChevronRight, Zap, Lock, MapPin, ArrowUpRight, Users, Phone, Globe, Star, Loader2 } from "lucide-react";
+import { Shield, FileText, CheckCircle, XCircle, AlertTriangle, Plus, Search, Building2, Truck, ArrowRight, Clock, Handshake, Scale, Eye, ChevronRight, Zap, Lock, MapPin, ArrowUpRight, Users, Phone, Globe, Star, Loader2, Leaf, TrendingUp, BarChart3, Calendar, Activity, ShieldAlert, ShieldCheck, Wind, Flame, Heart, Target, Info, ArrowDownRight, Minus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 const LEASE_TYPE_LABEL: Record<string, { label: string; color: string; bg: string; desc: string }> = {
@@ -47,7 +47,7 @@ const VEHICLE_TYPES = [
 ];
 
 export default function OperatingAuthority() {
-  const [activeTab, setActiveTab] = useState<"overview" | "leases" | "equipment" | "browse">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "leases" | "equipment" | "browse" | "intelligence">("overview");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showAddVehicle, setShowAddVehicle] = useState(false);
   const [browseSearch, setBrowseSearch] = useState("");
@@ -60,6 +60,14 @@ export default function OperatingAuthority() {
   const leasesQuery = (trpc as any).authority?.getMyLeases?.useQuery?.();
   const statsQuery = (trpc as any).authority?.getLeaseStats?.useQuery?.();
   const equipmentQuery = (trpc as any).authority?.getEquipmentAuthority?.useQuery?.();
+
+  // 2026 Intelligence queries
+  const theftRisk = (trpc as any).marketIntelligence?.getTheftRisk?.useQuery?.({ originState: "TX", destinationState: "CA", commodity: "general", weight: 40000 }, { enabled: activeTab === "overview" || activeTab === "intelligence" });
+  const marketIntel = (trpc as any).marketIntelligence?.getMarketIntel?.useQuery?.({ originState: "TX", destinationState: "CA", equipmentType: "dry_van", distance: 1500 }, { enabled: activeTab === "intelligence" });
+  const emissions = (trpc as any).marketIntelligence?.getEmissions?.useQuery?.({ distanceMiles: 1500, weightLbs: 40000 }, { enabled: activeTab === "overview" || activeTab === "intelligence" || activeTab === "equipment" });
+  // Resilience removed — requires real user input, available on Market Intelligence > Resilience tab
+  const tariffs = (trpc as any).marketIntelligence?.getTariffImpact?.useQuery?.({ originCountry: "US", destCountry: "US", commodity: "general" }, { enabled: activeTab === "intelligence" });
+  const seasonalCal = (trpc as any).marketIntelligence?.getSeasonalCalendar?.useQuery?.(undefined, { enabled: activeTab === "intelligence" });
 
   const addVehicleMut = (trpc as any).authority?.addVehicle?.useMutation?.({
     onSuccess: (d: any) => { if (d?.success) { toast.success("Vehicle registered"); setShowAddVehicle(false); setVForm({ vin: "", make: "", model: "", year: new Date().getFullYear(), vehicleType: "tractor", licensePlate: "", capacity: "" }); equipmentQuery?.refetch?.(); } },
@@ -115,6 +123,7 @@ export default function OperatingAuthority() {
     { key: "leases", label: "Lease Agreements", icon: Handshake },
     { key: "equipment", label: "Equipment", icon: Truck },
     { key: "browse", label: "Find Authority", icon: Search },
+    { key: "intelligence", label: "2026 Intel", icon: Zap },
   ] as const;
 
   return (
@@ -314,6 +323,126 @@ export default function OperatingAuthority() {
               </CardContent>
             </Card>
           </div>
+
+          {/* ─── 2026 AUTHORITY INTELLIGENCE PANELS ─── */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Cargo Theft Risk for Operating Area */}
+            <Card className="bg-slate-800/50 border-slate-700/50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <ShieldAlert className="w-4 h-4 text-red-400" />
+                  <p className="text-white font-semibold text-sm">Cargo Theft Risk</p>
+                </div>
+                {theftRisk?.data ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 text-xs">Operating Area Risk</span>
+                      <Badge className={`border-0 text-[10px] ${theftRisk.data.riskLevel === "CRITICAL" ? "bg-red-500/20 text-red-400" : theftRisk.data.riskLevel === "HIGH" ? "bg-orange-500/20 text-orange-400" : theftRisk.data.riskLevel === "MODERATE" ? "bg-amber-500/20 text-amber-400" : "bg-emerald-500/20 text-emerald-400"}`}>
+                        {theftRisk.data.riskLevel}
+                      </Badge>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-slate-700 overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${theftRisk.data.overallScore > 60 ? "bg-red-500" : theftRisk.data.overallScore > 30 ? "bg-amber-500" : "bg-emerald-500"}`} style={{ width: `${theftRisk.data.overallScore}%` }} />
+                    </div>
+                    <p className="text-[10px] text-slate-500">Score: {theftRisk.data.overallScore}/100 — {theftRisk.data.recommendations?.[0] || "Monitor theft activity"}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {theftRisk.data.custodyChain?.filter((c: any) => c.required).slice(0, 3).map((c: any) => (
+                        <span key={c.step} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-400">{c.action}</span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <Skeleton className="h-20 w-full rounded-lg" />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 2027 EPA Fleet Readiness */}
+            <Card className="bg-slate-800/50 border-slate-700/50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Leaf className="w-4 h-4 text-emerald-400" />
+                  <p className="text-white font-semibold text-sm">2027 EPA Readiness</p>
+                </div>
+                {emissions?.data ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 text-xs">SmartWay Rating</span>
+                      <Badge className={`border-0 text-[10px] ${emissions.data.smartwayRating === "SUPERIOR" ? "bg-emerald-500/20 text-emerald-400" : emissions.data.smartwayRating === "GOOD" ? "bg-cyan-500/20 text-cyan-400" : "bg-amber-500/20 text-amber-400"}`}>
+                        {emissions.data.smartwayRating}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2 rounded-lg bg-slate-900/40 text-center">
+                        <p className="text-white text-sm font-bold">{emissions.data.co2Tons?.toFixed(1)}</p>
+                        <p className="text-[9px] text-slate-500">CO2 tons/load</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-slate-900/40 text-center">
+                        <p className="text-white text-sm font-bold">${emissions.data.carbonOffsetCost}</p>
+                        <p className="text-[9px] text-slate-500">Offset cost</p>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500">Intermodal could save {emissions.data.vsIntermodalPct}% emissions on long-haul lanes</p>
+                  </div>
+                ) : (
+                  <Skeleton className="h-20 w-full rounded-lg" />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Authority Health Summary */}
+            <Card className="bg-slate-800/50 border-slate-700/50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                  <p className="text-white font-semibold text-sm">Authority Health</p>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { label: "FMCSA Registration", status: authority?.ownAuthority ? "active" : "missing", icon: Shield },
+                    { label: "Insurance Coverage", status: authority?.ownAuthority?.insurancePolicy ? "active" : "missing", icon: FileText },
+                    { label: "BOC-3 Filing", status: authority?.ownAuthority?.dotNumber ? "active" : "missing", icon: Globe },
+                    { label: "UCR Registration", status: "review", icon: Scale },
+                    { label: "2027 EPA Compliance", status: "review", icon: Leaf },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-slate-900/30">
+                      <div className="flex items-center gap-2">
+                        <item.icon className="w-3 h-3 text-slate-500" />
+                        <span className="text-xs text-slate-300">{item.label}</span>
+                      </div>
+                      <div className={`w-2 h-2 rounded-full ${item.status === "active" ? "bg-emerald-400" : item.status === "missing" ? "bg-red-400" : "bg-amber-400"}`} />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 2026 Key Alerts Banner */}
+          <Card className="bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-amber-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-white font-semibold text-sm">2026 Authority Alerts</p>
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <Flame className="w-3 h-3 text-orange-400 flex-shrink-0" />
+                      <span><span className="text-amber-400 font-medium">EPA 2027:</span> New emission standards take effect — verify fleet compliance. Pre-buy window closing H2 2026.</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <ShieldAlert className="w-3 h-3 text-red-400 flex-shrink-0" />
+                      <span><span className="text-red-400 font-medium">Cargo Theft +29%:</span> Identity verification critical — deceptive pickups targeting carriers without strong vetting.</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <TrendingUp className="w-3 h-3 text-cyan-400 flex-shrink-0" />
+                      <span><span className="text-cyan-400 font-medium">Rate Outlook:</span> Market transitioning from soft to balanced — low single-digit rate increases expected through Q4.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -344,6 +473,61 @@ export default function OperatingAuthority() {
       {/* ─── EQUIPMENT TAB ─── */}
       {activeTab === "equipment" && (
         <div className="space-y-4">
+          {/* Fleet EPA Summary Banner */}
+          {equipment.length > 0 && (
+            <Card className="bg-gradient-to-r from-emerald-500/5 to-cyan-500/5 border-emerald-500/20">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                      <Leaf className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold text-sm">2027 EPA Fleet Readiness</p>
+                      <p className="text-slate-400 text-xs">New heavy-duty emission standards effective 2027 — verify all equipment compliance</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-emerald-400">
+                      {Math.round(equipment.filter((v: any) => (v.year || 0) >= 2021).length / Math.max(equipment.length, 1) * 100)}%
+                    </p>
+                    <p className="text-[10px] text-slate-500">Fleet compliant</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mt-3">
+                  <div className="p-2 rounded-lg bg-slate-900/40 text-center">
+                    <p className="text-white text-sm font-bold">{equipment.filter((v: any) => (v.year || 0) >= 2024).length}</p>
+                    <p className="text-[9px] text-emerald-400">2024+ (EPA Tier 4)</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900/40 text-center">
+                    <p className="text-white text-sm font-bold">{equipment.filter((v: any) => (v.year || 0) >= 2021 && (v.year || 0) < 2024).length}</p>
+                    <p className="text-[9px] text-amber-400">2021-2023 (Near compliant)</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900/40 text-center">
+                    <p className="text-white text-sm font-bold">{equipment.filter((v: any) => (v.year || 0) < 2021).length}</p>
+                    <p className="text-[9px] text-red-400">Pre-2021 (Action needed)</p>
+                  </div>
+                </div>
+                {emissions?.data && (
+                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-700/30">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                      <Wind className="w-3 h-3 text-emerald-400" />
+                      <span>Avg CO2/load: <span className="text-white font-medium">{emissions.data.co2Tons?.toFixed(2)} tons</span></span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                      <Leaf className="w-3 h-3 text-cyan-400" />
+                      <span>SmartWay: <span className="text-white font-medium">{emissions.data.smartwayRating}</span></span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                      <Activity className="w-3 h-3 text-blue-400" />
+                      <span>Intermodal saves <span className="text-emerald-400 font-medium">{emissions.data.vsIntermodalPct}%</span> CO2</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex items-center justify-between">
             <p className="text-white font-semibold text-sm">{equipment.length} Vehicle{equipment.length !== 1 ? "s" : ""} Registered</p>
             <Button className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl" size="sm" onClick={() => setShowAddVehicle(true)}>
@@ -357,7 +541,7 @@ export default function OperatingAuthority() {
               <CardContent className="py-16 text-center">
                 <Truck className="w-14 h-14 text-slate-600 mx-auto mb-4" />
                 <p className="text-white font-semibold text-lg">No Equipment Registered</p>
-                <p className="text-slate-500 text-sm mt-1">Register your fleet vehicles to track authority assignments and lease-on status.</p>
+                <p className="text-slate-500 text-sm mt-1">Register your fleet vehicles to track authority assignments, lease-on status, and 2027 EPA compliance.</p>
                 <Button className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl" onClick={() => setShowAddVehicle(true)}>
                   <Plus className="w-4 h-4 mr-2" />Register First Vehicle
                 </Button>
@@ -365,34 +549,41 @@ export default function OperatingAuthority() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {equipment.map((v: any) => (
-                <Card key={v.vehicleId} className="bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50 transition-colors">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${v.authoritySource === "leased" ? "bg-blue-500/20" : "bg-slate-700/50"}`}>
-                          <Truck className={`w-5 h-5 ${v.authoritySource === "leased" ? "text-blue-400" : "text-slate-400"}`} />
+              {equipment.map((v: any) => {
+                const yr = v.year || 0;
+                const epaStatus = yr >= 2024 ? "compliant" : yr >= 2021 ? "near" : "action";
+                return (
+                  <Card key={v.vehicleId} className="bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50 transition-colors">
+                    <div className={`h-0.5 ${epaStatus === "compliant" ? "bg-gradient-to-r from-emerald-500 to-teal-500" : epaStatus === "near" ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-red-500 to-orange-500"}`} />
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${v.authoritySource === "leased" ? "bg-blue-500/20" : "bg-slate-700/50"}`}>
+                            <Truck className={`w-5 h-5 ${v.authoritySource === "leased" ? "text-blue-400" : "text-slate-400"}`} />
+                          </div>
+                          <div>
+                            <p className="text-white font-medium text-sm">{v.year} {v.make} {v.model}</p>
+                            <p className="text-slate-500 text-xs">VIN: {v.vin?.slice(-6)} · {v.licensePlate || "No plate"}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-white font-medium text-sm">{v.year} {v.make} {v.model}</p>
-                          <p className="text-slate-500 text-xs">VIN: {v.vin?.slice(-6)} · {v.licensePlate || "No plate"}</p>
+                        <div className="flex items-center gap-2">
+                          <div className="text-right space-y-1">
+                            <Badge className={`border-0 text-xs ${v.authoritySource === "leased" ? "bg-blue-500/20 text-blue-400" : "bg-slate-600/30 text-slate-400"}`}>
+                              {v.authoritySource === "leased" ? `Leased · MC ${v.leaseMcNumber}` : "Own Authority"}
+                            </Badge>
+                            <Badge className={`border-0 text-[9px] block ${epaStatus === "compliant" ? "bg-emerald-500/20 text-emerald-400" : epaStatus === "near" ? "bg-amber-500/20 text-amber-400" : "bg-red-500/20 text-red-400"}`}>
+                              {epaStatus === "compliant" ? "EPA 2027 Ready" : epaStatus === "near" ? "Near Compliant" : "Pre-2021 — Upgrade"}
+                            </Badge>
+                          </div>
+                          <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8 p-0" onClick={() => { if (confirm("Remove this vehicle from your fleet?")) removeVehicleMut.mutate({ vehicleId: v.vehicleId }); }}>
+                            <XCircle className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-right">
-                          <Badge className={`border-0 text-xs ${v.authoritySource === "leased" ? "bg-blue-500/20 text-blue-400" : "bg-slate-600/30 text-slate-400"}`}>
-                            {v.authoritySource === "leased" ? `Leased · MC ${v.leaseMcNumber}` : "Own Authority"}
-                          </Badge>
-                          <p className="text-[10px] text-slate-600 mt-1 capitalize">{v.type?.replace(/_/g, " ")}</p>
-                        </div>
-                        <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8 p-0" onClick={() => { if (confirm("Remove this vehicle from your fleet?")) removeVehicleMut.mutate({ vehicleId: v.vehicleId }); }}>
-                          <XCircle className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
@@ -556,6 +747,41 @@ export default function OperatingAuthority() {
                       )}
                     </div>
 
+                    {/* 2026 Carrier Vetting Intelligence */}
+                    <div className="p-3 rounded-lg bg-slate-900/40 border border-slate-700/20 mb-3">
+                      <p className="text-[9px] text-slate-500 uppercase tracking-wider font-medium mb-2">2026 Carrier Intelligence</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <ShieldAlert className={`w-3.5 h-3.5 ${c.safetyRating === "Satisfactory" ? "text-emerald-400" : c.safetyRating === "Conditional" ? "text-amber-400" : c.safetyRating === "Unsatisfactory" ? "text-red-400" : "text-slate-500"}`} />
+                          <div>
+                            <p className="text-[9px] text-slate-500">Safety</p>
+                            <p className={`text-[10px] font-medium ${c.safetyRating === "Satisfactory" ? "text-emerald-400" : c.safetyRating === "Conditional" ? "text-amber-400" : c.safetyRating === "Unsatisfactory" ? "text-red-400" : "text-slate-400"}`}>{c.safetyRating || "Not Rated"}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Lock className={`w-3.5 h-3.5 ${c.bipdInsurance && c.cargoInsurance ? "text-emerald-400" : c.bipdInsurance || c.cargoInsurance ? "text-amber-400" : "text-red-400"}`} />
+                          <div>
+                            <p className="text-[9px] text-slate-500">Insurance</p>
+                            <p className={`text-[10px] font-medium ${c.bipdInsurance && c.cargoInsurance ? "text-emerald-400" : "text-amber-400"}`}>{c.bipdInsurance && c.cargoInsurance ? "Full Coverage" : c.bipdInsurance ? "BIPD Only" : "Incomplete"}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Target className={`w-3.5 h-3.5 ${c.fleetSize > 50 ? "text-emerald-400" : c.fleetSize > 10 ? "text-cyan-400" : "text-amber-400"}`} />
+                          <div>
+                            <p className="text-[9px] text-slate-500">Scale</p>
+                            <p className="text-[10px] font-medium text-slate-300">{c.fleetSize > 50 ? "Large Fleet" : c.fleetSize > 10 ? "Mid Fleet" : "Small Op"}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <ShieldCheck className={`w-3.5 h-3.5 ${c.allowedToOperate ? "text-emerald-400" : "text-red-400"}`} />
+                          <div>
+                            <p className="text-[9px] text-slate-500">Theft Risk</p>
+                            <p className="text-[10px] font-medium text-amber-400">Verify ID</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Contact & Location */}
                     <div className="flex items-center gap-4 text-xs text-slate-500">
                       {c.address && (
@@ -594,6 +820,217 @@ export default function OperatingAuthority() {
               </CardContent>
             </Card>
           ) : null}
+        </div>
+      )}
+
+      {/* ─── 2026 INTELLIGENCE TAB ─── */}
+      {activeTab === "intelligence" && (
+        <div className="space-y-5">
+          {/* Market Rate Intelligence */}
+          {marketIntel?.data && (
+            <Card className="bg-slate-800/50 border-slate-700/50">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-cyan-400" />
+                    <p className="text-white font-semibold">Market Rate Intelligence</p>
+                  </div>
+                  <Badge className={`border-0 text-xs ${marketIntel.data.currentPhase === "TIGHTENING" ? "bg-red-500/20 text-red-400" : marketIntel.data.currentPhase === "BALANCED" ? "bg-blue-500/20 text-blue-400" : "bg-emerald-500/20 text-emerald-400"}`}>
+                    {marketIntel.data.currentPhase}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <div className="p-3 rounded-xl bg-slate-900/50 text-center">
+                    <p className="text-[10px] text-slate-500 uppercase">Spot Rate</p>
+                    <p className="text-xl font-bold text-cyan-400">${marketIntel.data.laneIntel?.avgSpotRate}</p>
+                    <div className="flex items-center justify-center gap-1 mt-0.5">
+                      {marketIntel.data.spotRateTrend === "RISING" ? <ArrowUpRight className="w-3 h-3 text-red-400" /> : marketIntel.data.spotRateTrend === "DECLINING" ? <ArrowDownRight className="w-3 h-3 text-emerald-400" /> : <Minus className="w-3 h-3 text-slate-400" />}
+                      <span className="text-[10px] text-slate-500">{marketIntel.data.spotRateTrend}</span>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/50 text-center">
+                    <p className="text-[10px] text-slate-500 uppercase">Contract Rate</p>
+                    <p className="text-xl font-bold text-blue-400">${marketIntel.data.laneIntel?.avgContractRate}</p>
+                    <div className="flex items-center justify-center gap-1 mt-0.5">
+                      {marketIntel.data.contractRateTrend === "RISING" ? <ArrowUpRight className="w-3 h-3 text-red-400" /> : <Minus className="w-3 h-3 text-slate-400" />}
+                      <span className="text-[10px] text-slate-500">{marketIntel.data.contractRateTrend}</span>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/50 text-center">
+                    <p className="text-[10px] text-slate-500 uppercase">Demand</p>
+                    <p className="text-xl font-bold text-amber-400">{marketIntel.data.laneIntel?.demandIndex}</p>
+                    <p className="text-[10px] text-slate-500">/ 100</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/50 text-center">
+                    <p className="text-[10px] text-slate-500 uppercase">YoY Change</p>
+                    <p className="text-xl font-bold text-white">+{marketIntel.data.yearOverYearChange}%</p>
+                    <p className="text-[10px] text-slate-500">spot rates</p>
+                  </div>
+                </div>
+                {/* Quarterly Forecast */}
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  {marketIntel.data.quarterlyForecast?.map((q: any) => (
+                    <div key={q.quarter} className="p-2 rounded-lg bg-slate-900/30 text-center">
+                      <p className="text-[9px] text-slate-500 font-medium">{q.quarter}</p>
+                      <p className="text-xs font-bold text-white mt-0.5">+{q.spotChange}%</p>
+                      <Badge className={`border-0 text-[8px] mt-0.5 ${q.capacity === "SURPLUS" ? "bg-emerald-500/20 text-emerald-400" : q.capacity === "TIGHTENING" ? "bg-red-500/20 text-red-400" : "bg-blue-500/20 text-blue-400"}`}>{q.capacity}</Badge>
+                    </div>
+                  ))}
+                </div>
+                {/* Key Insights */}
+                <div className="space-y-1">
+                  {marketIntel.data.keyInsights?.slice(0, 3).map((k: string, i: number) => (
+                    <div key={i} className="flex items-start gap-2 text-[11px] text-slate-400">
+                      <Zap className="w-3 h-3 text-cyan-400 mt-0.5 flex-shrink-0" />
+                      <span>{k}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Cargo Theft Deep Dive */}
+            {theftRisk?.data && (
+              <Card className="bg-slate-800/50 border-slate-700/50">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <ShieldAlert className="w-5 h-5 text-red-400" />
+                      <p className="text-white font-semibold">Cargo Theft Risk</p>
+                    </div>
+                    <Badge className={`border-0 text-xs ${theftRisk.data.riskLevel === "CRITICAL" ? "bg-red-500/20 text-red-400" : theftRisk.data.riskLevel === "HIGH" ? "bg-orange-500/20 text-orange-400" : theftRisk.data.riskLevel === "MODERATE" ? "bg-amber-500/20 text-amber-400" : "bg-emerald-500/20 text-emerald-400"}`}>
+                      {theftRisk.data.riskLevel} — {theftRisk.data.overallScore}/100
+                    </Badge>
+                  </div>
+                  {theftRisk.data.factors?.map((f: any, i: number) => (
+                    <div key={i} className="mb-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-slate-400">{f.factor}</span>
+                        <span className="text-[10px] text-white font-medium">{Math.round(f.score)}</span>
+                      </div>
+                      <div className="w-full h-1 rounded-full bg-slate-700 overflow-hidden">
+                        <div className={`h-full rounded-full ${f.score > 60 ? "bg-red-400" : f.score > 30 ? "bg-amber-400" : "bg-emerald-400"}`} style={{ width: `${f.score}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                  <div className="mt-3 space-y-1">
+                    <p className="text-[10px] text-slate-500 uppercase font-medium">Custody Chain</p>
+                    {theftRisk.data.custodyChain?.filter((c: any) => c.required).map((c: any) => (
+                      <div key={c.step} className="flex items-center gap-2 text-[11px] text-slate-300">
+                        <CheckCircle className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                        <span>{c.action}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Resilience removed — requires real user input via Market Intelligence > Resilience tab */}
+          </div>
+
+          {/* Tariff & Trade Policy */}
+          {tariffs?.data && (
+            <Card className="bg-slate-800/50 border-slate-700/50">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-amber-400" />
+                    <p className="text-white font-semibold">Tariff & Trade Policy Impact</p>
+                  </div>
+                  <Badge className={`border-0 text-xs ${tariffs.data.affectedByTariffs ? "bg-amber-500/20 text-amber-400" : "bg-emerald-500/20 text-emerald-400"}`}>
+                    {tariffs.data.affectedByTariffs ? "Exposure Detected" : "No Direct Exposure"}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  {tariffs.data.tariffAlerts?.map((a: any, i: number) => (
+                    <div key={i} className="p-3 rounded-lg bg-slate-900/40 border border-slate-700/30">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-white font-semibold">{a.policy}</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{a.status}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400">{a.impact}</p>
+                      <p className="text-[10px] text-cyan-400 mt-1">{a.action}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Seasonal Disruption Calendar */}
+          {seasonalCal?.data && (
+            <Card className="bg-slate-800/50 border-slate-700/50">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Calendar className="w-5 h-5 text-blue-400" />
+                  <p className="text-white font-semibold">2026 Seasonal Disruption Calendar</p>
+                </div>
+                <div className="space-y-2">
+                  {seasonalCal.data.events?.slice(0, 8).map((e: any, i: number) => (
+                    <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-900/30 hover:bg-slate-900/50 transition-colors">
+                      <Badge className={`border-0 text-[9px] min-w-[48px] text-center ${e.impact === "HIGH" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>{e.impact}</Badge>
+                      <span className="text-[10px] text-slate-500 w-16 font-medium">{e.month}</span>
+                      <div className="flex-1">
+                        <p className="text-xs text-white font-medium">{e.event}</p>
+                        <p className="text-[10px] text-slate-400">{e.description}</p>
+                      </div>
+                      <span className="text-[10px] text-cyan-400 max-w-[140px] text-right">{e.action}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Emissions Summary for Authority */}
+          {emissions?.data && (
+            <Card className="bg-gradient-to-r from-emerald-500/5 to-cyan-500/5 border-emerald-500/20">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Leaf className="w-5 h-5 text-emerald-400" />
+                  <p className="text-white font-semibold">Emissions & 2027 EPA Readiness</p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <div className="p-3 rounded-xl bg-slate-900/50 text-center">
+                    <p className="text-[10px] text-slate-500">CO2/Load</p>
+                    <p className="text-lg font-bold text-emerald-400">{emissions.data.co2Tons?.toFixed(2)}</p>
+                    <p className="text-[9px] text-slate-500">metric tons</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/50 text-center">
+                    <p className="text-[10px] text-slate-500">Fuel/Load</p>
+                    <p className="text-lg font-bold text-blue-400">{emissions.data.fuelGallons?.toFixed(0)}</p>
+                    <p className="text-[9px] text-slate-500">gallons</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/50 text-center">
+                    <p className="text-[10px] text-slate-500">Fuel Cost</p>
+                    <p className="text-lg font-bold text-amber-400">${emissions.data.fuelCost}</p>
+                    <p className="text-[9px] text-slate-500">per load</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/50 text-center">
+                    <p className="text-[10px] text-slate-500">SmartWay</p>
+                    <p className={`text-lg font-bold ${emissions.data.smartwayRating === "SUPERIOR" ? "text-emerald-400" : emissions.data.smartwayRating === "GOOD" ? "text-cyan-400" : "text-amber-400"}`}>{emissions.data.smartwayRating}</p>
+                    <p className="text-[9px] text-slate-500">rating</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/50 text-center">
+                    <p className="text-[10px] text-slate-500">Carbon Offset</p>
+                    <p className="text-lg font-bold text-white">${emissions.data.carbonOffsetCost}</p>
+                    <p className="text-[9px] text-slate-500">per load</p>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1">
+                  {emissions.data.recommendations?.map((r: string, i: number) => (
+                    <div key={i} className="flex items-start gap-2 text-[10px] text-slate-400">
+                      <Leaf className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
+                      <span>{r}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 

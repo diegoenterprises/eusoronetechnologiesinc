@@ -58,6 +58,7 @@ export default function Wallet() {
   }) || { mutate: () => toast.error("AI insights not available"), isPending: false };
 
   const companyQuery = (trpc as any).companies?.getCompanyProfile?.useQuery?.() || { data: null };
+  const profileQuery = (trpc as any).users?.getProfile?.useQuery?.() || { data: null };
 
   const balanceQuery = (trpc as any).wallet.getBalance.useQuery();
   const transactionsQuery = (trpc as any).wallet.getTransactions.useQuery({ limit: 50 });
@@ -76,7 +77,19 @@ export default function Wallet() {
   const balance = balanceQuery.data;
   const transactions = transactionsQuery.data || [];
   const cards = cardsQuery.data || [];
-  const cardHolderName = user?.name || cards[0]?.cardholderName || companyQuery.data?.name || 'Account Holder';
+  const profile = profileQuery.data;
+  const cardHolderName = (() => {
+    if (profile?.firstName && profile?.lastName) return `${profile.firstName} ${profile.lastName}`;
+    if (profile?.firstName) return profile.firstName;
+    if (cards[0]?.cardholderName) return cards[0].cardholderName;
+    if (user?.name && user.name !== "User" && !["CATALYST","SHIPPER","BROKER","DRIVER","ADMIN","SUPER_ADMIN","Catalyst","Shipper","Broker","Driver"].includes(user.name)) return user.name;
+    if (companyQuery.data?.name) return companyQuery.data.name;
+    if (user?.email) {
+      const local = user.email.split("@")[0];
+      return local.split(/[._-]/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+    }
+    return "Account Holder";
+  })();
   const bankAccounts = bankQuery.data || [];
   const escrowHolds = escrowQuery.data || [];
 
