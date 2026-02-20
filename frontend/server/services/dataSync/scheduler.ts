@@ -30,6 +30,7 @@ import { computeZoneIntelligence } from "./zoneAggregator";
 import { monitorHMSPPermits } from "./hmspMonitor";
 import { computeRouteIntelligence } from "../routeIntelligence";
 import { logSync, generateSyncId } from "./syncLogger";
+import { seedMapData } from "./seedMapData";
 
 async function runSync(sourceName: string, syncFn: () => Promise<void>): Promise<void> {
   const syncId = generateSyncId();
@@ -223,6 +224,9 @@ export function initializeDataSyncScheduler(): void {
  */
 export async function runInitialSync(): Promise<void> {
   console.log("[DataSync] Running initial data sync — ALL 25 sources...");
+
+  // Wave 0: Seed baseline data for tables that have broken/unavailable APIs
+  await runSync("SEED_MAP_DATA", seedMapData);
 
   // Wave 1: Critical real-time data
   await Promise.allSettled([

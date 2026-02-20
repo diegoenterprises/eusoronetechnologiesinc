@@ -11,8 +11,14 @@ import { sql, eq } from "drizzle-orm";
 const EPA_BASE = "https://data.epa.gov/efservice";
 const ECHO_BASE = "https://echo.epa.gov/api";
 
-// Top 10 states for hazmat logistics
-const TARGET_STATES = ["TX", "LA", "CA", "PA", "OH", "IL", "NJ", "GA", "FL", "MI"];
+// All 50 states + DC for nationwide coverage
+const TARGET_STATES = [
+  "TX", "LA", "CA", "PA", "OH", "IL", "NJ", "GA", "FL", "MI",
+  "IN", "WV", "KY", "OK", "ND", "NY", "NC", "VA", "WA", "CO",
+  "AZ", "NV", "NM", "AL", "AR", "MS", "MO", "TN", "SC", "WI",
+  "MN", "IA", "KS", "NE", "OR", "UT", "CT", "MA", "MD", "DE",
+  "NH", "VT", "ME", "RI", "MT", "ID", "WY", "SD", "HI", "AK", "DC",
+];
 
 export async function fetchTRIFacilities(stateCode: string): Promise<void> {
   const db = await getDb();
@@ -32,37 +38,44 @@ export async function fetchTRIFacilities(stateCode: string): Promise<void> {
 
   if (!Array.isArray(facilities)) return;
 
+  let inserted = 0;
   for (const f of facilities.slice(0, 200)) {
     try {
+      const id = f.tri_facility_id || f.TRI_FACILITY_ID || `epa-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const name = f.facility_name || f.FACILITY_NAME || "Unknown";
+      const lat = f.latitude ?? f.LATITUDE;
+      const lng = f.longitude ?? f.LONGITUDE;
       await db
         .insert(hzEpaFacilities)
         .values({
-          registryId: f.TRI_FACILITY_ID || `epa-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          facilityName: f.FACILITY_NAME || "Unknown",
-          stateCode: f.STATE_ABBR || stateCode,
-          city: f.CITY_NAME || null,
-          county: f.COUNTY_NAME || null,
-          zipCode: f.ZIP_CODE || null,
-          latitude: f.LATITUDE ? String(f.LATITUDE) : null,
-          longitude: f.LONGITUDE ? String(f.LONGITUDE) : null,
-          industrySector: f.INDUSTRY_SECTOR || null,
-          naicsCodes: f.NAICS_CODES ? JSON.stringify(f.NAICS_CODES.split(",")) : null,
+          registryId: String(id).slice(0, 20),
+          facilityName: String(name).slice(0, 255),
+          stateCode: (f.state_abbr || f.STATE_ABBR || stateCode).slice(0, 2),
+          city: (f.city_name || f.CITY_NAME || null)?.slice(0, 100) || null,
+          county: (f.county_name || f.COUNTY_NAME || null)?.slice(0, 100) || null,
+          zipCode: (f.zip_code || f.ZIP_CODE || null)?.slice(0, 10) || null,
+          latitude: lat != null ? String(lat) : null,
+          longitude: lng != null ? String(lng) : null,
+          industrySector: (f.industry_sector || f.INDUSTRY_SECTOR || null)?.slice(0, 100) || null,
+          naicsCodes: f.naics_codes || f.NAICS_CODES ? JSON.stringify(String(f.naics_codes || f.NAICS_CODES).split(",")) : null,
           triFacility: true,
-          totalReleasesLbs: f.TOTAL_RELEASES ? String(f.TOTAL_RELEASES) : null,
-          airReleasesLbs: f.AIR_RELEASES ? String(f.AIR_RELEASES) : null,
-          waterReleasesLbs: f.WATER_RELEASES ? String(f.WATER_RELEASES) : null,
-          landReleasesLbs: f.LAND_RELEASES ? String(f.LAND_RELEASES) : null,
+          totalReleasesLbs: f.total_releases || f.TOTAL_RELEASES ? String(f.total_releases || f.TOTAL_RELEASES) : null,
+          airReleasesLbs: f.air_releases || f.AIR_RELEASES ? String(f.air_releases || f.AIR_RELEASES) : null,
+          waterReleasesLbs: f.water_releases || f.WATER_RELEASES ? String(f.water_releases || f.WATER_RELEASES) : null,
+          landReleasesLbs: f.land_releases || f.LAND_RELEASES ? String(f.land_releases || f.LAND_RELEASES) : null,
         })
         .onDuplicateKeyUpdate({
           set: {
-            totalReleasesLbs: f.TOTAL_RELEASES ? String(f.TOTAL_RELEASES) : null,
+            totalReleasesLbs: f.total_releases || f.TOTAL_RELEASES ? String(f.total_releases || f.TOTAL_RELEASES) : null,
             fetchedAt: new Date(),
           },
         });
-    } catch {
-      // Skip individual facility errors
+      inserted++;
+    } catch (e) {
+      console.error(`[EPA-TRI] Insert error:`, e instanceof Error ? e.message : e);
     }
   }
+  console.log(`[EPA-TRI] ${stateCode}: ${inserted}/${facilities.length} facilities inserted`);
 }
 
 export async function fetchECHOCompliance(stateCode: string): Promise<void> {

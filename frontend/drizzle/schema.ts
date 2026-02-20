@@ -5381,7 +5381,7 @@ export type InsertHzFuelPrice = typeof hzFuelPrices.$inferInsert;
 
 // -- WEATHER ALERTS (NWS) --
 export const hzWeatherAlerts = mysqlTable("hz_weather_alerts", {
-  id: varchar("id", { length: 64 }).primaryKey(),
+  id: varchar("id", { length: 255 }).primaryKey(),
   stateCodes: json("state_codes"),
   zoneIds: json("zone_ids"),
   affectedCounties: json("affected_counties"),
