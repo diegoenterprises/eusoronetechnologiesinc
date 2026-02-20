@@ -1,7 +1,8 @@
 /**
- * TERMINAL STAFF PAGE — Access Controllers
- * Manages gate/rack/bay controllers who validate arriving drivers.
- * Each controller gets a 24-hour access link (no login needed).
+ * ACCESS CONTROLLERS PAGE — Role-Aware
+ * Terminal Managers: oil terminal gate/rack/bay staff
+ * Shippers/Marketers: warehouse, dock, yard, cold storage, distribution center staff
+ * Each controller gets a 24-hour access link + 6-digit code + geofence (no login needed).
  * 100% Dynamic — No mock data
  */
 
@@ -12,10 +13,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Users, Search, CheckCircle, Clock, Plus, Phone, Mail,
   Link2, Copy, Shield, ShieldCheck, X, Trash2, ChevronDown,
-  MapPin, KeyRound, Fuel
+  MapPin, KeyRound, Fuel, Building2, Warehouse
 } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -24,6 +26,10 @@ const ROLE_LABELS: Record<string, string> = {
   bay_operator: "Bay Operator",
   safety_officer: "Safety Officer",
   shift_lead: "Shift Lead",
+  dock_manager: "Dock Manager",
+  warehouse_lead: "Warehouse Lead",
+  receiving_clerk: "Receiving Clerk",
+  yard_marshal: "Yard Marshal",
 };
 
 const ROLE_COLORS: Record<string, string> = {
@@ -32,20 +38,43 @@ const ROLE_COLORS: Record<string, string> = {
   bay_operator: "bg-blue-500/20 text-blue-400",
   safety_officer: "bg-red-500/20 text-red-400",
   shift_lead: "bg-emerald-500/20 text-emerald-400",
+  dock_manager: "bg-cyan-500/20 text-cyan-400",
+  warehouse_lead: "bg-amber-500/20 text-amber-400",
+  receiving_clerk: "bg-teal-500/20 text-teal-400",
+  yard_marshal: "bg-indigo-500/20 text-indigo-400",
+};
+
+const LOCATION_TYPE_LABELS: Record<string, string> = {
+  terminal: "Terminal",
+  warehouse: "Warehouse",
+  dock: "Dock",
+  yard: "Yard",
+  cold_storage: "Cold Storage",
+  distribution_center: "Distribution Center",
+  port: "Port",
+  rail_yard: "Rail Yard",
+  pickup_point: "Pickup Point",
 };
 
 export default function TerminalStaff() {
+  const { user: authUser } = useAuth();
+  const userRole = (authUser?.role || "").toUpperCase();
+  const isShipper = ["SHIPPER", "BROKER"].includes(userRole);
+
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [copiedToken, setCopiedToken] = useState<number | null>(null);
   const [newCode, setNewCode] = useState<{ staffId: number; code: string } | null>(null);
 
-  // Form state
+  // Form state — includes location fields for shipper/marketer
   const [form, setForm] = useState({
     name: "", phone: "", email: "",
-    staffRole: "gate_controller" as string,
+    staffRole: (isShipper ? "dock_manager" : "gate_controller") as string,
     assignedZone: "", shift: "day" as string,
     canApproveAccess: true, canDispenseProduct: false,
+    locationType: (isShipper ? "warehouse" : "terminal") as string,
+    locationName: "", locationAddress: "",
+    locationLat: "", locationLng: "",
   });
 
   const staffQuery = (trpc as any).terminals.getStaff.useQuery({ search });
@@ -58,7 +87,7 @@ export default function TerminalStaff() {
       utils.terminals.getStaff.invalidate();
       utils.terminals.getStaffStats.invalidate();
       setShowAdd(false);
-      setForm({ name: "", phone: "", email: "", staffRole: "gate_controller", assignedZone: "", shift: "day", canApproveAccess: true, canDispenseProduct: false });
+      setForm({ name: "", phone: "", email: "", staffRole: isShipper ? "dock_manager" : "gate_controller", assignedZone: "", shift: "day", canApproveAccess: true, canDispenseProduct: false, locationType: isShipper ? "warehouse" : "terminal", locationName: "", locationAddress: "", locationLat: "", locationLng: "" });
     },
   });
 
@@ -87,7 +116,14 @@ export default function TerminalStaff() {
 
   const handleAdd = () => {
     if (!form.name.trim()) return;
-    addMutation.mutate(form);
+    const payload: any = { ...form };
+    if (payload.locationLat) payload.locationLat = parseFloat(payload.locationLat);
+    else delete payload.locationLat;
+    if (payload.locationLng) payload.locationLng = parseFloat(payload.locationLng);
+    else delete payload.locationLng;
+    if (!payload.locationName) delete payload.locationName;
+    if (!payload.locationAddress) delete payload.locationAddress;
+    addMutation.mutate(payload);
   };
 
   const copyLink = (token: string, staffId: number) => {
@@ -119,8 +155,12 @@ export default function TerminalStaff() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Access Controllers</h1>
-          <p className="text-slate-400 text-sm mt-1">Gate, rack, and bay staff who validate arriving drivers</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
+            {isShipper ? "Pickup Location Staff" : "Access Controllers"}
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">
+            {isShipper ? "Dock, warehouse, and yard staff who validate arriving drivers at your locations" : "Gate, rack, and bay staff who validate arriving drivers"}
+          </p>
         </div>
         <Button onClick={() => setShowAdd(true)} className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
           <Plus className="w-4 h-4 mr-2" />Add Staff
@@ -164,9 +204,48 @@ export default function TerminalStaff() {
                 <CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Add Access Controller</CardTitle>
                 <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></Button>
               </div>
-              <p className="text-slate-400 text-xs">This person will validate arriving drivers at your terminal or pickup location</p>
+              <p className="text-slate-400 text-xs">{isShipper ? "This person will validate arriving drivers at your warehouse, dock, or pickup location" : "This person will validate arriving drivers at your terminal"}</p>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Location section — Shipper/Marketer only */}
+              {isShipper && (
+                <div className="bg-slate-800/30 rounded-xl p-4 space-y-3 border border-slate-700/30">
+                  <p className="text-xs font-semibold text-cyan-400 flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5" />Pickup Location</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Location Type</label>
+                      <select value={form.locationType} onChange={(e: any) => setForm({ ...form, locationType: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
+                        <option value="warehouse">Warehouse</option>
+                        <option value="dock">Dock</option>
+                        <option value="yard">Yard</option>
+                        <option value="cold_storage">Cold Storage</option>
+                        <option value="distribution_center">Distribution Center</option>
+                        <option value="port">Port</option>
+                        <option value="rail_yard">Rail Yard</option>
+                        <option value="pickup_point">Pickup Point</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Location Name</label>
+                      <Input value={form.locationName} onChange={(e: any) => setForm({ ...form, locationName: e.target.value })} placeholder="Main Warehouse, Dock B..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-xs text-slate-400 mb-1 block">Address</label>
+                      <Input value={form.locationAddress} onChange={(e: any) => setForm({ ...form, locationAddress: e.target.value })} placeholder="123 Industrial Blvd, Houston, TX 77001" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Latitude (for geofence)</label>
+                      <Input type="number" step="any" value={form.locationLat} onChange={(e: any) => setForm({ ...form, locationLat: e.target.value })} placeholder="29.7604" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Longitude (for geofence)</label>
+                      <Input type="number" step="any" value={form.locationLng} onChange={(e: any) => setForm({ ...form, locationLng: e.target.value })} placeholder="-95.3698" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-600">Lat/Lng enables geofence verification — staff must be within 500m of this location to validate arrivals</p>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Full Name *</label>
@@ -183,16 +262,30 @@ export default function TerminalStaff() {
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Role</label>
                   <select value={form.staffRole} onChange={(e: any) => setForm({ ...form, staffRole: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
-                    <option value="gate_controller">Gate Controller</option>
-                    <option value="rack_supervisor">Rack Supervisor</option>
-                    <option value="bay_operator">Bay Operator</option>
-                    <option value="safety_officer">Safety Officer</option>
-                    <option value="shift_lead">Shift Lead</option>
+                    {isShipper ? (
+                      <>
+                        <option value="dock_manager">Dock Manager</option>
+                        <option value="warehouse_lead">Warehouse Lead</option>
+                        <option value="receiving_clerk">Receiving Clerk</option>
+                        <option value="yard_marshal">Yard Marshal</option>
+                        <option value="gate_controller">Gate Controller</option>
+                        <option value="safety_officer">Safety Officer</option>
+                        <option value="shift_lead">Shift Lead</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="gate_controller">Gate Controller</option>
+                        <option value="rack_supervisor">Rack Supervisor</option>
+                        <option value="bay_operator">Bay Operator</option>
+                        <option value="safety_officer">Safety Officer</option>
+                        <option value="shift_lead">Shift Lead</option>
+                      </>
+                    )}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 mb-1 block">Assigned Zone</label>
-                  <Input value={form.assignedZone} onChange={(e: any) => setForm({ ...form, assignedZone: e.target.value })} placeholder="Gate A, Rack 3, Bay 1-4..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                  <label className="text-xs text-slate-400 mb-1 block">{isShipper ? "Assigned Area" : "Assigned Zone"}</label>
+                  <Input value={form.assignedZone} onChange={(e: any) => setForm({ ...form, assignedZone: e.target.value })} placeholder={isShipper ? "Dock A, Receiving Bay 2..." : "Gate A, Rack 3, Bay 1-4..."} className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Shift</label>
@@ -210,7 +303,7 @@ export default function TerminalStaff() {
                 </label>
                 <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
                   <input type="checkbox" checked={form.canDispenseProduct} onChange={(e: any) => setForm({ ...form, canDispenseProduct: e.target.checked })} className="rounded border-slate-600 bg-slate-800" />
-                  Can authorize dispensing
+                  {isShipper ? "Can authorize release" : "Can authorize dispensing"}
                 </label>
               </div>
               <div className="flex justify-end gap-3 pt-2">
@@ -262,11 +355,15 @@ export default function TerminalStaff() {
                             {staff.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{staff.phone}</span>}
                             {staff.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{staff.email}</span>}
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                          <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
                             <span>Shift: {staff.shift}</span>
                             {staff.assignedZone && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{staff.assignedZone}</span>}
                             {staff.canApproveAccess && <span className="flex items-center gap-1 text-green-500"><KeyRound className="w-3 h-3" />Access</span>}
-                            {staff.canDispenseProduct && <span className="flex items-center gap-1 text-blue-500"><Fuel className="w-3 h-3" />Dispense</span>}
+                            {staff.canDispenseProduct && <span className="flex items-center gap-1 text-blue-500"><Fuel className="w-3 h-3" />{isShipper ? "Release" : "Dispense"}</span>}
+                            {staff.locationType && staff.locationType !== "terminal" && (
+                              <span className="flex items-center gap-1 text-cyan-500"><Building2 className="w-3 h-3" />{LOCATION_TYPE_LABELS[staff.locationType] || staff.locationType}</span>
+                            )}
+                            {staff.locationName && <span className="text-slate-600">{staff.locationName}</span>}
                           </div>
                         </div>
                       </div>

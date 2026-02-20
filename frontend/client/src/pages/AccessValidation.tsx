@@ -25,6 +25,10 @@ const ROLE_LABELS: Record<string, string> = {
   bay_operator: "Bay Operator",
   safety_officer: "Safety Officer",
   shift_lead: "Shift Lead",
+  dock_manager: "Dock Manager",
+  warehouse_lead: "Warehouse Lead",
+  receiving_clerk: "Receiving Clerk",
+  yard_marshal: "Yard Marshal",
 };
 
 // Haversine distance in meters
@@ -48,6 +52,8 @@ interface StaffInfo {
   terminalName: string | null;
   terminalLat: number | null;
   terminalLng: number | null;
+  locationType: string | null;
+  locationName: string | null;
 }
 
 export default function AccessValidation() {
@@ -300,7 +306,7 @@ export default function AccessValidation() {
           <Navigation className="w-12 h-12 text-cyan-400 mx-auto mb-4" />
           <h1 className="text-xl font-bold text-white mb-1">Location Verification</h1>
           <p className="text-slate-400 text-sm mb-6">
-            Location services must be enabled to verify you are at the terminal or pickup location
+            Location services must be enabled to verify you are at the {staff?.locationType && staff.locationType !== "terminal" ? (staff.locationName || staff.locationType.replace(/_/g, " ")) : "terminal or pickup location"}
           </p>
 
           <button

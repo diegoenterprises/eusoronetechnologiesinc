@@ -915,9 +915,18 @@ export const terminalStaff = mysqlTable(
     name: varchar("name", { length: 255 }).notNull(),
     phone: varchar("phone", { length: 30 }),
     email: varchar("email", { length: 255 }),
+    locationType: mysqlEnum("locationType", [
+      "terminal", "warehouse", "dock", "yard", "cold_storage",
+      "distribution_center", "port", "rail_yard", "pickup_point",
+    ]).default("terminal"),
+    locationName: varchar("locationName", { length: 255 }),
+    locationAddress: varchar("locationAddress", { length: 500 }),
+    locationLat: decimal("locationLat", { precision: 10, scale: 7 }),
+    locationLng: decimal("locationLng", { precision: 10, scale: 7 }),
     staffRole: mysqlEnum("staffRole", [
       "gate_controller", "rack_supervisor", "bay_operator",
       "safety_officer", "shift_lead",
+      "dock_manager", "warehouse_lead", "receiving_clerk", "yard_marshal",
     ]).default("gate_controller").notNull(),
     assignedZone: varchar("assignedZone", { length: 100 }),
     shift: mysqlEnum("shift", ["day", "night", "swing"]).default("day"),

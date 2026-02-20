@@ -204,23 +204,18 @@ async function startServer() {
       if (tokenRow.expiresAt && tokenRow.expiresAt < now) return res.status(410).json({ error: "Link expired" });
       if ((tokenRow.codeAttempts || 0) >= 5) return res.status(423).json({ error: "Too many code attempts. Link locked." });
 
-      const [staff] = await db.select({
-        id: terminalStaff.id,
-        name: terminalStaff.name,
-        staffRole: terminalStaff.staffRole,
-        assignedZone: terminalStaff.assignedZone,
-        canApproveAccess: terminalStaff.canApproveAccess,
-        canDispenseProduct: terminalStaff.canDispenseProduct,
-        companyId: terminalStaff.companyId,
-        terminalId: terminalStaff.terminalId,
-      }).from(terminalStaff).where(eq(terminalStaff.id, tokenRow.staffId)).limit(1);
+      const staffRows = await db.select().from(terminalStaff).where(eq(terminalStaff.id, tokenRow.staffId)).limit(1);
+      const staff = staffRows[0];
 
       if (!staff) return res.status(404).json({ error: "Staff member not found" });
 
-      let terminalName = null;
-      let terminalLat = null;
-      let terminalLng = null;
+      // Resolve geofence location — either from terminal (oil) or from staff's own location (shipper/marketer)
+      let terminalName: string | null = null;
+      let terminalLat: number | null = null;
+      let terminalLng: number | null = null;
+
       if (staff.terminalId) {
+        // Terminal-based staff (oil products)
         const [t] = await db.select({ name: terminals.name, code: terminals.code, lat: terminals.latitude, lng: terminals.longitude })
           .from(terminals).where(eq(terminals.id, staff.terminalId)).limit(1);
         if (t) {
@@ -228,13 +223,31 @@ async function startServer() {
           terminalLat = t.lat ? Number(t.lat) : null;
           terminalLng = t.lng ? Number(t.lng) : null;
         }
+      } else {
+        // Shipper/Marketer location-based staff (all other product types)
+        const sAny = staff as any;
+        terminalName = sAny.locationName || null;
+        terminalLat = sAny.locationLat ? Number(sAny.locationLat) : null;
+        terminalLng = sAny.locationLng ? Number(sAny.locationLng) : null;
       }
 
       res.json({
         valid: true,
         requiresCode: !tokenRow.codeVerifiedAt,
         codeVerified: !!tokenRow.codeVerifiedAt,
-        staff: { ...staff, terminalName, terminalLat, terminalLng },
+        staff: {
+          id: staff.id,
+          name: staff.name,
+          staffRole: staff.staffRole,
+          assignedZone: staff.assignedZone,
+          canApproveAccess: staff.canApproveAccess,
+          canDispenseProduct: staff.canDispenseProduct,
+          terminalName,
+          terminalLat,
+          terminalLng,
+          locationType: (staff as any).locationType || "terminal",
+          locationName: (staff as any).locationName || null,
+        },
         expiresAt: tokenRow.expiresAt?.toISOString(),
       });
     } catch (err: any) {

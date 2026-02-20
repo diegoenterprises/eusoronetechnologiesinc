@@ -731,6 +731,11 @@ export const terminalsRouter = router({
           canDispenseProduct: s.canDispenseProduct,
           status: s.status || "off_duty",
           terminalId: s.terminalId,
+          locationType: (s as any).locationType || "terminal",
+          locationName: (s as any).locationName || "",
+          locationAddress: (s as any).locationAddress || "",
+          locationLat: (s as any).locationLat ? Number((s as any).locationLat) : null,
+          locationLng: (s as any).locationLng ? Number((s as any).locationLng) : null,
           createdAt: s.createdAt?.toISOString() || null,
         }));
         if (input.search) {
@@ -771,12 +776,17 @@ export const terminalsRouter = router({
       name: z.string().min(1),
       phone: z.string().optional(),
       email: z.string().optional(),
-      staffRole: z.enum(["gate_controller", "rack_supervisor", "bay_operator", "safety_officer", "shift_lead"]),
+      staffRole: z.enum(["gate_controller", "rack_supervisor", "bay_operator", "safety_officer", "shift_lead", "dock_manager", "warehouse_lead", "receiving_clerk", "yard_marshal"]),
       assignedZone: z.string().optional(),
       shift: z.enum(["day", "night", "swing"]).optional(),
       canApproveAccess: z.boolean().optional(),
       canDispenseProduct: z.boolean().optional(),
       terminalId: z.number().optional(),
+      locationType: z.enum(["terminal", "warehouse", "dock", "yard", "cold_storage", "distribution_center", "port", "rail_yard", "pickup_point"]).optional(),
+      locationName: z.string().optional(),
+      locationAddress: z.string().optional(),
+      locationLat: z.number().optional(),
+      locationLng: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
@@ -789,6 +799,11 @@ export const terminalsRouter = router({
         name: input.name,
         phone: input.phone || null,
         email: input.email || null,
+        locationType: input.locationType || (input.terminalId ? "terminal" : "pickup_point"),
+        locationName: input.locationName || null,
+        locationAddress: input.locationAddress || null,
+        locationLat: input.locationLat ? String(input.locationLat) : null,
+        locationLng: input.locationLng ? String(input.locationLng) : null,
         staffRole: input.staffRole,
         assignedZone: input.assignedZone || null,
         shift: input.shift || "day",
@@ -797,7 +812,7 @@ export const terminalsRouter = router({
         status: "off_duty",
         isActive: true,
         createdBy: userId,
-      }).$returningId();
+      } as any).$returningId();
       return { success: true, id: result.id };
     }),
 
@@ -810,7 +825,7 @@ export const terminalsRouter = router({
       name: z.string().optional(),
       phone: z.string().optional(),
       email: z.string().optional(),
-      staffRole: z.enum(["gate_controller", "rack_supervisor", "bay_operator", "safety_officer", "shift_lead"]).optional(),
+      staffRole: z.enum(["gate_controller", "rack_supervisor", "bay_operator", "safety_officer", "shift_lead", "dock_manager", "warehouse_lead", "receiving_clerk", "yard_marshal"]).optional(),
       assignedZone: z.string().optional(),
       shift: z.enum(["day", "night", "swing"]).optional(),
       canApproveAccess: z.boolean().optional(),

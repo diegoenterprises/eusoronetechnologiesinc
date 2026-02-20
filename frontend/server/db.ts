@@ -262,7 +262,7 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       UNIQUE KEY tp_unique (terminalId, companyId)
     )`);
 
-    // --- Terminal Staff: access controllers (gate/rack/bay validators) ---
+    // --- Terminal Staff: access controllers for ALL location types ---
     await ensureTable("terminal_staff", `CREATE TABLE terminal_staff (
       id INT AUTO_INCREMENT PRIMARY KEY,
       companyId INT NOT NULL,
@@ -270,7 +270,12 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       name VARCHAR(255) NOT NULL,
       phone VARCHAR(30) DEFAULT NULL,
       email VARCHAR(255) DEFAULT NULL,
-      staffRole ENUM('gate_controller','rack_supervisor','bay_operator','safety_officer','shift_lead') NOT NULL DEFAULT 'gate_controller',
+      locationType ENUM('terminal','warehouse','dock','yard','cold_storage','distribution_center','port','rail_yard','pickup_point') DEFAULT 'terminal',
+      locationName VARCHAR(255) DEFAULT NULL,
+      locationAddress VARCHAR(500) DEFAULT NULL,
+      locationLat DECIMAL(10,7) DEFAULT NULL,
+      locationLng DECIMAL(10,7) DEFAULT NULL,
+      staffRole ENUM('gate_controller','rack_supervisor','bay_operator','safety_officer','shift_lead','dock_manager','warehouse_lead','receiving_clerk','yard_marshal') NOT NULL DEFAULT 'gate_controller',
       assignedZone VARCHAR(100) DEFAULT NULL,
       \`shift\` ENUM('day','night','swing') DEFAULT 'day',
       canApproveAccess BOOLEAN DEFAULT TRUE,
@@ -285,6 +290,11 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX ts_role_idx (staffRole),
       INDEX ts_active_idx (isActive)
     )`);
+    await addColIfMissing("terminal_staff", "locationType", "ENUM('terminal','warehouse','dock','yard','cold_storage','distribution_center','port','rail_yard','pickup_point') DEFAULT 'terminal'");
+    await addColIfMissing("terminal_staff", "locationName", "VARCHAR(255) DEFAULT NULL");
+    await addColIfMissing("terminal_staff", "locationAddress", "VARCHAR(500) DEFAULT NULL");
+    await addColIfMissing("terminal_staff", "locationLat", "DECIMAL(10,7) DEFAULT NULL");
+    await addColIfMissing("terminal_staff", "locationLng", "DECIMAL(10,7) DEFAULT NULL");
 
     // --- Staff Access Tokens: 24h rotating validation links with 6-digit code ---
     await ensureTable("staff_access_tokens", `CREATE TABLE staff_access_tokens (
