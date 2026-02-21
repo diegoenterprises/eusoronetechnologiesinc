@@ -12,48 +12,39 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Building2, Users, MapPin, CheckCircle, ShieldCheck, Activity,
+  Building2, Users, MapPin, CheckCircle, Activity,
   Droplets, Gauge, Edit, Save, X, Globe, Phone, Mail, Handshake,
   AlertTriangle, Container, Layers, ArrowRight, Beaker, Target,
-  TrendingUp, BarChart3, CircleDot, Workflow,
+  TrendingUp, BarChart3, CircleDot, Workflow, FileText, Clock,
+  XCircle, Upload, Truck, Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import { EsangIcon } from "@/components/EsangIcon";
 import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+const STATUS_STYLE: Record<string, { icon: any; cls: string; label: string }> = {
+  VERIFIED:       { icon: CheckCircle,   cls: "text-emerald-400 bg-emerald-400/10", label: "Verified" },
+  UPLOADED:       { icon: Upload,        cls: "text-blue-400 bg-blue-400/10",       label: "Uploaded" },
+  PENDING_REVIEW: { icon: Clock,         cls: "text-amber-400 bg-amber-400/10",     label: "Pending" },
+  EXPIRING_SOON:  { icon: AlertTriangle, cls: "text-amber-400 bg-amber-400/10",     label: "Expiring" },
+  EXPIRED:        { icon: XCircle,       cls: "text-red-400 bg-red-400/10",         label: "Expired" },
+  REJECTED:       { icon: XCircle,       cls: "text-red-400 bg-red-400/10",         label: "Rejected" },
+  MISSING:        { icon: AlertTriangle, cls: "text-slate-500 bg-white/[0.03]",     label: "Missing" },
+};
 
 const TYPE_LABELS: Record<string, string> = {
   refinery: "Refinery", storage: "Storage Facility", rack: "Rack Terminal",
   pipeline: "Pipeline Hub", blending: "Blending Facility", distribution: "Distribution Center",
   marine: "Marine Terminal", rail: "Rail Terminal",
 };
-
-const COMPLIANCE_REQS = [
-  { name: "EPA Air Quality Permit (Title V)", g: "Environmental", c: true },
-  { name: "SPCC Plan (Spill Prevention)", g: "Environmental", c: true },
-  { name: "Stormwater Pollution Prevention Plan", g: "Environmental", c: false },
-  { name: "OSHA Process Safety Management", g: "Safety", c: true },
-  { name: "Risk Management Plan (RMP)", g: "Safety", c: true },
-  { name: "Emergency Response Plan", g: "Safety", c: true },
-  { name: "Fire Prevention Plan", g: "Safety", c: false },
-  { name: "API 653 Tank Inspection", g: "Inspection", c: true },
-  { name: "API 570 Piping Inspection", g: "Inspection", c: false },
-  { name: "Calibration Certificates (Meters)", g: "Inspection", c: true },
-  { name: "DOT 49 CFR Loading/Unloading", g: "Regulatory", c: true },
-  { name: "State Fire Marshal Permit", g: "Regulatory", c: false },
-  { name: "TCEQ / State Environmental Permit", g: "Regulatory", c: true },
-  { name: "Business Continuity Plan", g: "Insurance", c: false },
-  { name: "Workers' Compensation Insurance", g: "Insurance", c: true },
-  { name: "General Liability Insurance", g: "Insurance", c: true },
-];
 
 function Ring({ value, size = 88, stroke = 6, color = "#1473FF" }: { value: number; size?: number; stroke?: number; color?: string }) {
   const r = (size - stroke) / 2;
@@ -68,19 +59,23 @@ function Ring({ value, size = 88, stroke = 6, color = "#1473FF" }: { value: numb
 }
 
 export default function FacilityPage() {
+  const [, navigate] = useLocation();
   const tabFromUrl = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
   const [tab, setTab] = useState(tabFromUrl || "overview");
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<any>(null);
+  const [compFilter, setCompFilter] = useState<string>("all");
 
   const utils = (trpc as any).useUtils();
   const pq = (trpc as any).terminals.getTerminalProfile.useQuery();
-  const cq = (trpc as any).documentCenter?.getMyComplianceProfile?.useQuery?.() || { data: null };
+  const cq = (trpc as any).documentCenter?.getMyComplianceProfile?.useQuery?.() || { data: null, isLoading: false };
+  const stq = (trpc as any).terminals?.getStats?.useQuery?.() || { data: null };
+  const shipQ = (trpc as any).terminals?.getShipments?.useQuery?.({ date: new Date().toISOString().split("T")[0] }) || { data: null };
   const historyQ = (trpc as any).spectraMatch?.getHistory?.useQuery?.({ limit: 5 }) || { data: null };
   const learningQ = (trpc as any).spectraMatch?.getLearningStats?.useQuery?.() || { data: null };
 
   const saveMut = (trpc as any).terminals.updateTerminalProfile.useMutation({
-    onSuccess: () => { toast.success("Profile saved"); utils.terminals.getTerminalProfile.invalidate(); setEditing(false); },
+    onSuccess: () => { toast.success("Profile saved"); utils.terminals.getTerminalProfile.invalidate(); utils.terminals?.getStats?.invalidate?.(); setEditing(false); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -110,11 +105,19 @@ export default function FacilityPage() {
   const docks = t?.dockCount || 0;
   const tanks = t?.tankCount || 0;
   const unit = t?.throughputUnit || "bbl/day";
+  const infraNotConfigured = capacity === 0 && docks === 0 && tanks === 0;
 
-  // Compliance
-  const upDocs = (cq.data?.requirements || []).filter((r: any) => r.docStatus === "UPLOADED" || r.docStatus === "VERIFIED").map((r: any) => r.name?.toLowerCase());
-  const isVerified = (name: string) => upDocs?.some((d: string) => d?.includes(name.toLowerCase().split("(")[0].trim().slice(0, 15)));
-  const compScore = COMPLIANCE_REQS.length > 0 ? Math.round((COMPLIANCE_REQS.filter(r => isVerified(r.name)).length / COMPLIANCE_REQS.length) * 100) : 0;
+  // Compliance — REAL engine data
+  const compReqs = (cq.data?.requirements || []) as any[];
+  const compScore = cq.data?.complianceScore || 0;
+  const compStatus = cq.data?.documentStatus || {};
+  const canOperate = cq.data?.canOperate !== false;
+  const filteredReqs = compFilter === "all" ? compReqs : compReqs.filter((r: any) => r.docStatus === compFilter);
+  const filteredGroups = filteredReqs.reduce((a: any, r: any) => { (a[r.group] = a[r.group] || []).push(r); return a; }, {} as Record<string, any[]>);
+
+  // Operations — real stats
+  const opsStats = stq.data || {};
+  const shipments = (shipQ.data || []) as any[];
 
   // Cell style
   const cell = "rounded-2xl border border-white/[0.04] bg-white/[0.02]";
@@ -252,37 +255,83 @@ export default function FacilityPage() {
           </div>
         </TabsContent>
 
-        {/* ════════════════ COMPLIANCE ════════════════ */}
+        {/* ════════════════ COMPLIANCE (REAL ENGINE) ════════════════ */}
         <TabsContent value="compliance" className="mt-8 space-y-6">
-          {/* Score */}
-          <div className={cn("p-6 flex items-center gap-6", cell)}>
-            <div className="relative shrink-0">
-              <Ring value={compScore} size={80} stroke={5} color={compScore >= 80 ? "#34d399" : compScore >= 50 ? "#fbbf24" : "#f87171"} />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className={cn("text-lg font-bold", compScore >= 80 ? "text-emerald-400" : compScore >= 50 ? "text-amber-400" : "text-red-400")}>{compScore}%</span>
+          {/* Score + Status Banner */}
+          <div className={cn("p-6", cell)}>
+            <div className="flex items-center gap-6 flex-wrap">
+              <div className="relative shrink-0">
+                <Ring value={compScore} size={80} stroke={5} color={compScore >= 80 ? "#34d399" : compScore >= 50 ? "#fbbf24" : "#f87171"} />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className={cn("text-lg font-bold", compScore >= 80 ? "text-emerald-400" : compScore >= 50 ? "text-amber-400" : "text-red-400")}>{compScore}%</span>
+                </div>
               </div>
-            </div>
-            <div>
-              <p className="text-white font-medium">Facility Compliance</p>
-              <p className="text-xs text-slate-500 mt-0.5">{COMPLIANCE_REQS.filter(r => isVerified(r.name)).length} of {COMPLIANCE_REQS.length} requirements verified. Upload docs via Documents page.</p>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-white font-medium">Company Compliance</p>
+                  {!canOperate && <span className="text-[9px] text-red-400 bg-red-400/10 px-2 py-0.5 rounded-md font-semibold">BLOCKED</span>}
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {compReqs.length} requirements resolved based on your company profile, state, and operations.
+                </p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <span className="text-[10px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md">{compStatus.totalVerified || 0} Verified</span>
+                  <span className="text-[10px] text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-md">{compStatus.totalPending || 0} Pending</span>
+                  <span className="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md">{compStatus.totalExpiring || 0} Expiring</span>
+                  {(compStatus.totalExpired || 0) > 0 && <span className="text-[10px] text-red-400 bg-red-400/10 px-2 py-0.5 rounded-md">{compStatus.totalExpired} Expired</span>}
+                  <span className="text-[10px] text-slate-400 bg-white/[0.04] px-2 py-0.5 rounded-md">{compStatus.totalMissing || 0} Missing</span>
+                </div>
+              </div>
+              <Button size="sm" onClick={() => navigate("/documents")} className="rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-white border border-white/[0.08] shadow-none h-9 px-4 text-xs font-medium shrink-0">
+                <FileText className="w-3.5 h-3.5 mr-1.5" />Upload Documents
+              </Button>
             </div>
           </div>
-          {/* Groups */}
-          {Object.entries(COMPLIANCE_REQS.reduce((a: any, r) => { (a[r.g] = a[r.g] || []).push(r); return a; }, {} as Record<string, typeof COMPLIANCE_REQS>)).map(([g, items]: any) => (
-            <div key={g}>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2 pl-1">{g}</p>
+
+          {/* Filter tabs */}
+          <div className="flex gap-1.5 flex-wrap">
+            {[
+              { key: "all", label: `All ${compReqs.length}` },
+              { key: "MISSING", label: `Missing ${compStatus.totalMissing || 0}` },
+              { key: "EXPIRING_SOON", label: `Expiring ${compStatus.totalExpiring || 0}` },
+              { key: "VERIFIED", label: `Verified ${compStatus.totalVerified || 0}` },
+            ].map(f => (
+              <button key={f.key} onClick={() => setCompFilter(f.key)} className={cn(
+                "text-[10px] px-3 py-1.5 rounded-lg font-medium transition-colors",
+                compFilter === f.key ? "bg-[#1473FF]/15 text-[#1473FF]" : "bg-white/[0.03] text-slate-500 hover:text-slate-300"
+              )}>{f.label}</button>
+            ))}
+          </div>
+
+          {/* Grouped Requirements */}
+          {Object.keys(filteredGroups).length === 0 ? (
+            <div className={cn("p-8 text-center", cell)}>
+              <CheckCircle className="w-8 h-8 text-slate-700 mx-auto mb-2" />
+              <p className="text-xs text-slate-600">No requirements match this filter</p>
+            </div>
+          ) : Object.entries(filteredGroups).map(([group, items]: any) => (
+            <div key={group}>
+              <div className="flex items-center justify-between mb-2 pl-1">
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{group}</p>
+                <span className="text-[10px] text-slate-600">{items.length}</span>
+              </div>
               <div className={cn("divide-y divide-white/[0.03]", cell)}>
                 {items.map((r: any) => {
-                  const ok = isVerified(r.name);
+                  const st = STATUS_STYLE[r.docStatus] || STATUS_STYLE.MISSING;
+                  const Icon = st.icon;
                   return (
-                    <div key={r.name} className="flex items-center justify-between px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        {ok ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <AlertTriangle className={cn("w-4 h-4", r.c ? "text-red-400" : "text-slate-500")} />}
-                        <span className="text-[13px] text-white">{r.name}</span>
+                    <div key={`${r.documentTypeId}-${r.stateCode || ""}`} className="flex items-center justify-between px-4 py-3 gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Icon className={cn("w-4 h-4 shrink-0", st.cls.split(" ")[0])} />
+                        <div className="min-w-0">
+                          <p className="text-[13px] text-white truncate">{r.name}</p>
+                          {r.reason && <p className="text-[10px] text-slate-600 truncate mt-0.5">{r.reason}</p>}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {r.c && !ok && <span className="text-[9px] text-red-400 font-semibold">REQUIRED</span>}
-                        <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md", ok ? "text-emerald-400 bg-emerald-400/10" : "text-slate-500 bg-white/[0.03]")}>{ok ? "Verified" : "Pending"}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {r.priority === "CRITICAL" && r.docStatus === "MISSING" && <span className="text-[9px] text-red-400 font-semibold">CRITICAL</span>}
+                        {r.stateCode && <span className="text-[9px] text-slate-500 bg-white/[0.04] px-1.5 py-0.5 rounded font-mono">{r.stateCode}</span>}
+                        <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md", st.cls)}>{st.label}</span>
                       </div>
                     </div>
                   );
@@ -294,9 +343,34 @@ export default function FacilityPage() {
 
         {/* ════════════════ OPERATIONS ════════════════ */}
         <TabsContent value="operations" className="mt-8 space-y-6">
-          {/* Throughput Hero */}
+          {/* Setup prompt when not configured */}
+          {infraNotConfigured && !editing && (
+            <div className={cn("p-6 border-dashed border-amber-500/30", cell)}>
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                  <Gauge className="w-5 h-5 text-amber-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-medium">Configure your facility infrastructure</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Set your throughput capacity, number of loading docks/racks, and storage tanks so counterparties can see your capabilities.
+                  </p>
+                  <Button size="sm" onClick={startEdit} className="mt-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/20 shadow-none h-8 px-3 text-xs font-medium">
+                    <Edit className="w-3.5 h-3.5 mr-1.5" />Configure Infrastructure
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Infrastructure */}
           <div className={cn("p-6", cell)}>
-            <div className="flex items-center gap-2 mb-5"><Gauge className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-white">Throughput Capacity</span></div>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2"><Gauge className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-white">Infrastructure</span></div>
+              {!editing && !infraNotConfigured && (
+                <button onClick={startEdit} className="text-[10px] text-slate-500 hover:text-white transition-colors">Edit</button>
+              )}
+            </div>
             {editing ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Capacity</label><Input type="number" value={form.throughputCapacity} onChange={(e: any) => setForm({ ...form, throughputCapacity: e.target.value })} className={inp} /></div>
@@ -309,56 +383,91 @@ export default function FacilityPage() {
                 <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Tanks</label><Input type="number" value={form.tankCount} onChange={(e: any) => setForm({ ...form, tankCount: e.target.value })} className={inp} /></div>
               </div>
             ) : (
-              <div className="flex items-end gap-1">
-                <span className="text-4xl font-bold tracking-tight bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-                  {capacity > 0 ? capacity.toLocaleString() : "---"}
-                </span>
-                <span className="text-sm text-slate-500 mb-1 ml-1">{unit}</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{capacity > 0 ? capacity.toLocaleString() : "---"}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{unit}</p>
+                </div>
+                <div className="text-center">
+                  <Container className="w-5 h-5 text-[#1473FF] mx-auto mb-1" />
+                  <p className="text-xl font-bold text-white">{docks}</p>
+                  <p className="text-[10px] text-slate-500">Docks / Racks</p>
+                </div>
+                <div className="text-center">
+                  <Layers className="w-5 h-5 text-purple-400 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-white">{tanks}</p>
+                  <p className="text-[10px] text-slate-500">Storage Tanks</p>
+                </div>
+                <div className="text-center">
+                  <Users className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-white">{d?.staffCount || 0}</p>
+                  <p className="text-[10px] text-slate-500">Active Staff</p>
+                </div>
               </div>
             )}
           </div>
 
-          {/* Infrastructure Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <InfraCard icon={<Container className="w-5 h-5 text-[#1473FF]" />} value={docks} label="Loading Docks" sub="Racks & bays" />
-            <InfraCard icon={<Layers className="w-5 h-5 text-purple-400" />} value={tanks} label="Storage Tanks" sub="Bulk capacity" />
-            <InfraCard icon={<Users className="w-5 h-5 text-emerald-400" />} value={d?.staffCount || 0} label="Active Staff" sub="Gate controllers" />
-            <InfraCard icon={<ShieldCheck className="w-5 h-5 text-amber-400" />} value={`${compScore}%`} label="Compliance" sub="Facility score" />
-          </div>
-
-          {/* Product Mix & Performance */}
+          {/* Today's Activity + 30-Day Performance */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Product Mix */}
             <div className={cn("p-6", cell)}>
-              <div className="flex items-center gap-2 mb-4"><Droplets className="w-4 h-4 text-cyan-400" /><span className="text-sm font-medium text-white">Product Mix</span></div>
-              {products.length > 0 ? (
-                <div className="space-y-2">
-                  {products.map((p, i) => (
-                    <div key={p} className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ["#1473FF", "#BE01FF", "#06b6d4", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899"][i % 8] }} />
-                      <span className="text-sm text-slate-300 flex-1">{p}</span>
-                      <span className="text-xs text-slate-600">{Math.round(100 / products.length)}%</span>
+              <div className="flex items-center gap-2 mb-4"><Activity className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-white">Today's Activity</span></div>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <Stat value={opsStats.activeShipments || 0} label="Shipments" color="text-[#1473FF]" />
+                <Stat value={opsStats.incomingToday || 0} label="Incoming" color="text-emerald-400" />
+                <Stat value={opsStats.outgoingToday || 0} label="Outgoing" color="text-purple-400" />
+              </div>
+              {shipments.length > 0 ? (
+                <div className="space-y-2 pt-3 border-t border-white/[0.04]">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider">Recent</p>
+                  {shipments.slice(0, 5).map((s: any) => (
+                    <div key={s.id} className="flex items-center justify-between py-1.5">
+                      <div className="flex items-center gap-2">
+                        {s.type === "incoming" ? <Truck className="w-3.5 h-3.5 text-emerald-400" /> : <Package className="w-3.5 h-3.5 text-purple-400" />}
+                        <span className="text-xs text-slate-300">{s.type === "incoming" ? "Inbound" : "Outbound"}</span>
+                      </div>
+                      <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md",
+                        s.status === "completed" ? "text-emerald-400 bg-emerald-400/10" :
+                        s.status === "loading" ? "text-blue-400 bg-blue-400/10" :
+                        "text-slate-400 bg-white/[0.04]"
+                      )}>{s.status}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-600">No products configured. Edit profile to add.</p>
+                <div className="pt-3 border-t border-white/[0.04] text-center py-4">
+                  <p className="text-xs text-slate-600">No shipments today</p>
+                </div>
               )}
             </div>
 
-            {/* 30-Day Performance */}
             <div className={cn("p-6", cell)}>
               <div className="flex items-center gap-2 mb-4"><TrendingUp className="w-4 h-4 text-emerald-400" /><span className="text-sm font-medium text-white">30-Day Performance</span></div>
               <div className="space-y-4">
                 <PerfRow label="Appointments" current={stats.completedLast30 || 0} total={stats.appointmentsLast30 || 0} pct={stats.completionRate || 0} color="#1473FF" />
                 <PerfRow label="Partner Coverage" current={activePartners.length} total={partners.length || 1} pct={partners.length > 0 ? Math.round((activePartners.length / partners.length) * 100) : 0} color="#a855f7" />
+                <PerfRow label="Compliance" current={compStatus.totalVerified || 0} total={compReqs.length || 1} pct={compScore} color={compScore >= 80 ? "#34d399" : compScore >= 50 ? "#fbbf24" : "#f87171"} />
                 <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Total Volume Committed</span>
+                  <span className="text-xs text-slate-500">Volume Committed</span>
                   <span className="text-sm font-semibold text-white">{totalVolume > 0 ? `${totalVolume.toLocaleString()} bbl/mo` : "---"}</span>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Product Mix */}
+          {products.length > 0 && (
+            <div className={cn("p-6", cell)}>
+              <div className="flex items-center gap-2 mb-4"><Droplets className="w-4 h-4 text-cyan-400" /><span className="text-sm font-medium text-white">Product Mix</span></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {products.map((p, i) => (
+                  <div key={p} className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: ["#1473FF", "#BE01FF", "#06b6d4", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899"][i % 8] }} />
+                    <span className="text-sm text-slate-300 truncate">{p}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* ════════════════ SPECTRA-MATCH ════════════════ */}

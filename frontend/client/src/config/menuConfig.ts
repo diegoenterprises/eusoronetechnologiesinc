@@ -908,10 +908,12 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "PenTool", label: "Agreements", path: "/agreements", badge: 0, description: "Terminal access & service agreements" },
     { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Permits, compliance docs & certifications" },
     { icon: "BarChart3", label: "Reports", path: "/reports", badge: 0, description: "Operations reports" },
-    { icon: "TrendingUp", label: "Market Intel", path: "/market-pricing", badge: 0, description: "Freight rates & demand heatmaps" },
+    { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates & demand heatmaps" },
     { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Communication" },
     { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Payments, invoices & escrow" },
     { icon: "Settings", label: "Settings", path: "/settings", badge: 0, description: "Profile, preferences & security" },
+    { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+    { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
     { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
   ],
 
