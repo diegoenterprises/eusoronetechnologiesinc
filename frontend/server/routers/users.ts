@@ -627,6 +627,15 @@ export const usersRouter = router({
         const bcryptMod = await import("bcryptjs");
         const newHash = await bcryptMod.default.hash(input.newPassword, 12);
         await db.update(users).set({ passwordHash: newHash }).where(eq(users.id, userId));
+
+        // Notify user about password change
+        try {
+          const [u] = await db.select({ email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+          if (u?.email) {
+            const { notifyPasswordChanged } = await import("../services/notifications");
+            notifyPasswordChanged({ email: u.email, phone: u.phone || undefined, name: u.name || "" });
+          }
+        } catch {}
       }
 
       // 2FA toggle — store in metadata
@@ -635,6 +644,20 @@ export const usersRouter = router({
         try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch { meta = {}; }
         meta.twoFactorEnabled = input.twoFactorEnabled;
         await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
+
+        // Notify user about 2FA change
+        try {
+          const [u] = await db.select({ email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+          if (u?.email) {
+            if (input.twoFactorEnabled) {
+              const { notify2FAEnabled } = await import("../services/notifications");
+              notify2FAEnabled({ email: u.email, phone: u.phone || undefined, name: u.name || "" });
+            } else {
+              const { notify2FADisabled } = await import("../services/notifications");
+              notify2FADisabled({ email: u.email, phone: u.phone || undefined, name: u.name || "" });
+            }
+          }
+        } catch {}
       }
 
       return { success: true };

@@ -195,12 +195,76 @@ export const appRouter = router({
       } catch {}
       return opts.ctx.user;
     }),
-    login: publicProcedure.input(z.object({ email: z.string(), password: z.string() })).mutation(async ({ input, ctx }) => {
+    login: publicProcedure.input(z.object({
+      email: z.string(),
+      password: z.string(),
+      twoFactorCode: z.string().optional(),
+    })).mutation(async ({ input, ctx }) => {
       const { authService } = await import("./_core/auth");
       const result = await authService.loginWithCredentials(input.email, input.password);
       if (!result) {
         throw new Error("Invalid credentials");
       }
+
+      // Check if user has 2FA enabled
+      const { getDb } = await import("./db");
+      const { users } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+      if (db) {
+        const userId = Number(result.user.id);
+        if (!isNaN(userId)) {
+          const [dbUser] = await db.select({ metadata: users.metadata, phone: users.phone, name: users.name })
+            .from(users).where(eq(users.id, userId)).limit(1);
+          let meta: any = {};
+          try { meta = dbUser?.metadata ? JSON.parse(dbUser.metadata as string) : {}; } catch {}
+
+          if (meta.twoFactorEnabled) {
+            // 2FA is enabled — check if code was provided
+            if (!input.twoFactorCode) {
+              // Generate and send 2FA code
+              const code = String(Math.floor(100000 + Math.random() * 900000));
+              meta.twoFactorCode = code;
+              meta.twoFactorCodeExpiry = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
+              meta.twoFactorCodeAttempts = 0;
+              await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
+
+              const { notify2FACode } = await import("./services/notifications");
+              notify2FACode({ email: input.email, phone: dbUser?.phone || undefined, name: dbUser?.name || "", code });
+
+              return { success: false, requiresTwoFactor: true, message: "Verification code sent to your phone and email." } as any;
+            }
+
+            // Verify the 2FA code
+            if ((meta.twoFactorCodeAttempts || 0) >= 5) {
+              throw new Error("Too many failed attempts. Please try logging in again.");
+            }
+            if (meta.twoFactorCodeExpiry && new Date(meta.twoFactorCodeExpiry) < new Date()) {
+              throw new Error("Verification code has expired. Please try logging in again.");
+            }
+            if (meta.twoFactorCode !== input.twoFactorCode) {
+              meta.twoFactorCodeAttempts = (meta.twoFactorCodeAttempts || 0) + 1;
+              await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
+              throw new Error("Invalid verification code.");
+            }
+
+            // Code valid — clear it
+            delete meta.twoFactorCode;
+            delete meta.twoFactorCodeExpiry;
+            delete meta.twoFactorCodeAttempts;
+            await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
+          }
+
+          // Send login security alert (non-blocking)
+          try {
+            const ip = ctx.req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || ctx.req.socket?.remoteAddress || "";
+            const ua = ctx.req.headers["user-agent"] || "";
+            const { notifyNewLogin } = await import("./services/notifications");
+            notifyNewLogin({ email: input.email, phone: dbUser?.phone || undefined, name: dbUser?.name || "", ip, userAgent: ua });
+          } catch {}
+        }
+      }
+
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.cookie(COOKIE_NAME, result.token, { ...cookieOptions, maxAge: 365 * 24 * 60 * 60 * 1000 });
       return { success: true, user: result.user };
@@ -212,17 +276,131 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
-    // 2FA procedures
-    get: protectedProcedure.query(async () => ({ enabled: false, method: "authenticator" })),
-    setup: protectedProcedure.query(async () => ({ qrCode: "data:image/png;base64,abc123", secret: "ABCD1234EFGH5678", backupCodes: ["12345678", "87654321"] })),
-    enable: protectedProcedure.input(z.object({ code: z.string() })).mutation(async () => ({ success: true })),
-    disable: protectedProcedure.input(z.object({ code: z.string().optional() })).mutation(async () => ({ success: true })),
-    regenerateBackupCodes: protectedProcedure.input(z.object({}).optional()).mutation(async () => ({ success: true, backupCodes: ["11111111", "22222222", "33333333"] })),
-    changePassword: protectedProcedure.input(z.object({ currentPassword: z.string(), newPassword: z.string() })).mutation(async () => ({ success: true })),
-    get2FAStatus: protectedProcedure.query(async () => ({ enabled: false, method: "authenticator", backupCodesRemaining: 8, backupCodes: ["ABC123", "DEF456", "GHI789", "JKL012", "MNO345", "PQR678", "STU901", "VWX234"] })),
-    setup2FA: protectedProcedure.query(async () => ({ qrCode: "data:image/png;base64,abc123", secret: "ABCD1234EFGH5678", backupCodes: ["12345678", "87654321"] })),
-    enable2FA: protectedProcedure.input(z.object({ code: z.string() })).mutation(async () => ({ success: true })),
-    disable2FA: protectedProcedure.input(z.object({ code: z.string().optional() }).optional()).mutation(async () => ({ success: true })),
+    // 2FA procedures — real SMS-based implementation
+    get: protectedProcedure.query(async ({ ctx }) => {
+      const { getDb } = await import("./db");
+      const { users } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+      const userId = Number((ctx.user as any)?.id);
+      if (!db || !userId) return { enabled: false, method: "sms" };
+      const [u] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
+      let meta: any = {};
+      try { meta = u?.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
+      return { enabled: !!meta.twoFactorEnabled, method: "sms" };
+    }),
+    setup: protectedProcedure.query(async ({ ctx }) => {
+      // SMS-based 2FA — no QR code needed, just return method info
+      return { method: "sms", message: "2FA codes will be sent via SMS to your registered phone number." };
+    }),
+    enable: protectedProcedure.input(z.object({ code: z.string().optional() })).mutation(async ({ ctx }) => {
+      const { getDb } = await import("./db");
+      const { users } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+      const userId = Number((ctx.user as any)?.id);
+      if (!db || !userId) throw new Error("Database unavailable");
+      const [u] = await db.select({ metadata: users.metadata, email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+      if (!u?.phone) throw new Error("Add a phone number to your profile before enabling 2FA.");
+      let meta: any = {};
+      try { meta = u.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
+      meta.twoFactorEnabled = true;
+      await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
+      const { notify2FAEnabled } = await import("./services/notifications");
+      notify2FAEnabled({ email: u.email || "", phone: u.phone, name: u.name || "" });
+      return { success: true };
+    }),
+    disable: protectedProcedure.input(z.object({ code: z.string().optional() }).optional()).mutation(async ({ ctx }) => {
+      const { getDb } = await import("./db");
+      const { users } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+      const userId = Number((ctx.user as any)?.id);
+      if (!db || !userId) throw new Error("Database unavailable");
+      const [u] = await db.select({ metadata: users.metadata, email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+      let meta: any = {};
+      try { meta = u?.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
+      meta.twoFactorEnabled = false;
+      await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
+      const { notify2FADisabled } = await import("./services/notifications");
+      notify2FADisabled({ email: u?.email || "", phone: u?.phone || undefined, name: u?.name || "" });
+      return { success: true };
+    }),
+    regenerateBackupCodes: protectedProcedure.input(z.object({}).optional()).mutation(async () => {
+      // SMS-based 2FA doesn't use backup codes, but return empty for compat
+      return { success: true, backupCodes: [] };
+    }),
+    changePassword: protectedProcedure.input(z.object({ currentPassword: z.string(), newPassword: z.string() })).mutation(async ({ ctx, input }) => {
+      const { getDb } = await import("./db");
+      const { users } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const bcryptMod = await import("bcryptjs");
+      const db = await getDb();
+      const userId = Number((ctx.user as any)?.id);
+      if (!db || !userId) throw new Error("Database unavailable");
+      const [u] = await db.select({ passwordHash: users.passwordHash, email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+      if (!u) throw new Error("User not found");
+      if (u.passwordHash) {
+        const valid = await bcryptMod.default.compare(input.currentPassword, u.passwordHash);
+        if (!valid) throw new Error("Current password is incorrect");
+      }
+      const newHash = await bcryptMod.default.hash(input.newPassword, 12);
+      await db.update(users).set({ passwordHash: newHash }).where(eq(users.id, userId));
+      if (u.email) {
+        const { notifyPasswordChanged } = await import("./services/notifications");
+        notifyPasswordChanged({ email: u.email, phone: u.phone || undefined, name: u.name || "" });
+      }
+      return { success: true };
+    }),
+    get2FAStatus: protectedProcedure.query(async ({ ctx }) => {
+      const { getDb } = await import("./db");
+      const { users } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+      const userId = Number((ctx.user as any)?.id);
+      if (!db || !userId) return { enabled: false, method: "sms", backupCodesRemaining: 0, backupCodes: [] };
+      const [u] = await db.select({ metadata: users.metadata, phone: users.phone }).from(users).where(eq(users.id, userId)).limit(1);
+      let meta: any = {};
+      try { meta = u?.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
+      return { enabled: !!meta.twoFactorEnabled, method: "sms", hasPhone: !!u?.phone, backupCodesRemaining: 0, backupCodes: [] };
+    }),
+    setup2FA: protectedProcedure.query(async ({ ctx }) => {
+      return { method: "sms", message: "SMS-based 2FA. Codes sent to your registered phone number on each login." };
+    }),
+    enable2FA: protectedProcedure.input(z.object({ code: z.string().optional() })).mutation(async ({ ctx }) => {
+      // Delegate to auth.enable
+      const { getDb } = await import("./db");
+      const { users } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+      const userId = Number((ctx.user as any)?.id);
+      if (!db || !userId) throw new Error("Database unavailable");
+      const [u] = await db.select({ metadata: users.metadata, email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+      if (!u?.phone) throw new Error("Add a phone number to your profile before enabling 2FA.");
+      let meta: any = {};
+      try { meta = u.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
+      meta.twoFactorEnabled = true;
+      await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
+      const { notify2FAEnabled } = await import("./services/notifications");
+      notify2FAEnabled({ email: u.email || "", phone: u.phone, name: u.name || "" });
+      return { success: true };
+    }),
+    disable2FA: protectedProcedure.input(z.object({ code: z.string().optional() }).optional()).mutation(async ({ ctx }) => {
+      const { getDb } = await import("./db");
+      const { users } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+      const userId = Number((ctx.user as any)?.id);
+      if (!db || !userId) throw new Error("Database unavailable");
+      const [u] = await db.select({ metadata: users.metadata, email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+      let meta: any = {};
+      try { meta = u?.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
+      meta.twoFactorEnabled = false;
+      await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
+      const { notify2FADisabled } = await import("./services/notifications");
+      notify2FADisabled({ email: u?.email || "", phone: u?.phone || undefined, name: u?.name || "" });
+      return { success: true };
+    }),
 
     /**
      * auth.refreshToken
@@ -296,6 +474,14 @@ export const appRouter = router({
           isVerified: true,
           metadata: JSON.stringify(meta),
         }).where(eq(users.id, targetUser.id));
+
+        // Send verified confirmation email + SMS
+        try {
+          const [verifiedUser] = await db.select({ name: users.name, phone: users.phone })
+            .from(users).where(eq(users.id, targetUser.id)).limit(1);
+          const { notifyEmailVerified } = await import("./services/notifications");
+          notifyEmailVerified({ email: targetUser.email || "", phone: verifiedUser?.phone || undefined, name: verifiedUser?.name || "" });
+        } catch {}
 
         return { success: true, email: targetUser.email };
       }),
@@ -379,6 +565,15 @@ export const appRouter = router({
         const { emailService } = await import("./_core/email");
         await emailService.sendPasswordResetEmail(input.email, resetToken);
 
+        // SMS alert about reset request
+        try {
+          const [userPhone] = await db.select({ phone: users.phone }).from(users).where(eq(users.id, user.id)).limit(1);
+          if (userPhone?.phone) {
+            const { notifyPasswordResetRequested } = await import("./services/notifications");
+            notifyPasswordResetRequested({ email: input.email, phone: userPhone.phone, name: user.name || "", resetToken });
+          }
+        } catch {}
+
         return { success: true, message: "If that email exists, a password reset link has been sent." };
       }),
 
@@ -439,6 +634,16 @@ export const appRouter = router({
           passwordHash,
           metadata: JSON.stringify(meta),
         }).where(eq(users.id, targetUserId));
+
+        // Send confirmation email + SMS
+        try {
+          const [resetUser] = await db.select({ email: users.email, phone: users.phone, name: users.name })
+            .from(users).where(eq(users.id, targetUserId)).limit(1);
+          if (resetUser?.email) {
+            const { notifyPasswordResetComplete } = await import("./services/notifications");
+            notifyPasswordResetComplete({ email: resetUser.email, phone: resetUser.phone || undefined, name: resetUser.name || "" });
+          }
+        } catch {}
 
         return { success: true };
       }),

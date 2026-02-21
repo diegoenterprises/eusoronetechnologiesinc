@@ -12,6 +12,8 @@ import { users, companies, documents } from "../../drizzle/schema";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { initNewUserGamification } from "../services/missionGenerator";
+import { notifyRegistration } from "../services/notifications";
+import { emailService } from "../_core/email";
 
 const hazmatClassSchema = z.enum(["2", "3", "4", "5", "6", "7", "8", "9"]);
 
@@ -111,6 +113,40 @@ async function storeRegistrationMetadata(db: any, userId: number, data: {
 // Backward compat alias
 async function storeComplianceIds(db: any, userId: number, complianceIds: any) {
   await storeRegistrationMetadata(db, userId, { complianceIds });
+}
+
+/**
+ * Post-registration: generate verification token, store in metadata, and send email + SMS.
+ * Called by every registration mutation after user creation.
+ */
+async function sendPostRegistrationNotifications(db: any, params: {
+  userId: number;
+  email: string;
+  phone?: string;
+  name: string;
+  role: string;
+}) {
+  try {
+    const verification = emailService.generateVerificationToken(params.email, params.userId);
+    // Merge token into existing metadata
+    const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, params.userId)).limit(1);
+    let meta: any = {};
+    try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch {}
+    meta.verificationToken = verification.token;
+    meta.verificationExpiry = verification.expiresAt.toISOString();
+    await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, params.userId));
+
+    // Fire email + SMS (non-blocking)
+    notifyRegistration({
+      email: params.email,
+      phone: params.phone,
+      name: params.name,
+      role: params.role,
+      verificationToken: verification.token,
+    });
+  } catch (e) {
+    console.error("[Registration] Failed to send notifications:", e);
+  }
 }
 
 export const registrationRouter = router({
@@ -226,6 +262,7 @@ export const registrationRouter = router({
       });
 
       initNewUserGamification(userId).catch(() => {});
+      sendPostRegistrationNotifications(db, { userId, email: input.contactEmail, phone: input.contactPhone, name: input.contactName, role: "SHIPPER" }).catch(() => {});
 
       return {
         success: true,
@@ -367,6 +404,7 @@ export const registrationRouter = router({
       });
 
       initNewUserGamification(userId).catch(() => {});
+      sendPostRegistrationNotifications(db, { userId, email: input.contactEmail, phone: input.contactPhone, name: input.contactName, role: "CATALYST" }).catch(() => {});
 
       return {
         success: true,
@@ -493,6 +531,7 @@ export const registrationRouter = router({
       });
 
       initNewUserGamification(userId).catch(() => {});
+      sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: `${input.firstName} ${input.lastName}`, role: "DRIVER" }).catch(() => {});
 
       return {
         success: true,
@@ -588,6 +627,7 @@ export const registrationRouter = router({
         },
       });
       initNewUserGamification(userId).catch(() => {});
+      sendPostRegistrationNotifications(db, { userId, email: input.contactEmail, phone: input.contactPhone, name: input.contactName, role: "BROKER" }).catch(() => {});
       return { success: true, userId, companyId, verificationRequired: true };
     }),
 
@@ -661,6 +701,7 @@ export const registrationRouter = router({
         },
       });
       initNewUserGamification(userId).catch(() => {});
+      sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: `${input.firstName} ${input.lastName}`, role: "DISPATCH" }).catch(() => {});
       return { success: true, userId, verificationRequired: true };
     }),
 
@@ -740,6 +781,7 @@ export const registrationRouter = router({
         },
       });
       initNewUserGamification(userId).catch(() => {});
+      sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: `${input.firstName} ${input.lastName}`, role: "ESCORT" }).catch(() => {});
       return { success: true, userId, verificationRequired: true };
     }),
 
@@ -830,6 +872,7 @@ export const registrationRouter = router({
         },
       });
       initNewUserGamification(userId).catch(() => {});
+      sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: input.managerName, role: "TERMINAL_MANAGER" }).catch(() => {});
       return { success: true, userId, companyId, verificationRequired: true };
     }),
 
@@ -900,6 +943,7 @@ export const registrationRouter = router({
         },
       });
       initNewUserGamification(userId).catch(() => {});
+      sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: `${input.firstName} ${input.lastName}`, role: "COMPLIANCE_OFFICER" }).catch(() => {});
       return { success: true, userId, verificationRequired: true };
     }),
 
@@ -970,6 +1014,7 @@ export const registrationRouter = router({
         },
       });
       initNewUserGamification(userId).catch(() => {});
+      sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: `${input.firstName} ${input.lastName}`, role: "SAFETY_MANAGER" }).catch(() => {});
       return { success: true, userId, verificationRequired: true };
     }),
 
