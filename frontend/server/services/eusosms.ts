@@ -124,10 +124,10 @@ export async function sendSms(params: SendSmsParams): Promise<{ id: number; stat
       return { id: result.id, status: "FAILED" };
     }
   } else {
-    // Not configured — log and mark as sent for dev/testing
-    console.log("[EusoSMS] Would send SMS to:", cleanNumber, "Message:", params.message.slice(0, 80) + "...");
-    await db.update(smsMessages).set({ status: "SENT", sentAt: new Date() }).where(eq(smsMessages.id, result.id));
-    return { id: result.id, status: "SENT" };
+    // Not configured — log but do NOT mark as sent
+    console.warn("[EusoSMS] SMS not configured. Would send to:", cleanNumber, "Message:", params.message.slice(0, 80) + "...");
+    await db.update(smsMessages).set({ status: "FAILED", errorMessage: "SMS gateway not configured" }).where(eq(smsMessages.id, result.id));
+    return { id: result.id, status: "NOT_CONFIGURED" };
   }
 }
 

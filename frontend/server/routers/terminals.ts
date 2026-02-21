@@ -1022,15 +1022,20 @@ export const terminalsRouter = router({
       }
 
       // Send SMS if staff has phone
+      let smsError = "";
       if (staff.phone) {
         try {
           const { sendSms } = await import("../services/eusosms");
-          await sendSms({
+          const smsResult = await sendSms({
             to: staff.phone,
             message: `EusoTrip Access: Your code is ${link.accessCode}. Open your access portal: ${accessUrl} (expires ${expiresLabel} CT)`,
           });
-          smsSent = true;
-        } catch (e) { console.error("[sendAccessLink] sms error:", e); }
+          smsSent = smsResult?.status === "SENT";
+          if (!smsSent) smsError = `SMS status: ${smsResult?.status || "unknown"}`;
+        } catch (e: any) {
+          smsError = e?.message || "SMS send failed";
+          console.error("[sendAccessLink] sms error:", e);
+        }
       }
 
       if (!staff.email && !staff.phone) {

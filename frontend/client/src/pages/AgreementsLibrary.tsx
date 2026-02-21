@@ -41,6 +41,7 @@ export default function AgreementsLibrary() {
   const role = user?.role || "SHIPPER";
   const isBroker = role === "BROKER";
   const isCatalyst = role === "CATALYST";
+  const isTerminal = role === "TERMINAL_MANAGER";
 
   // Fetch agreements
   const agQuery = (trpc as any).agreements?.list?.useQuery?.({ status: tab === "all" ? undefined : tab, limit: 50 }) || { data: [], isLoading: false };
@@ -121,7 +122,7 @@ export default function AgreementsLibrary() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Agreements</h1>
-          <p className={mt}>{isBroker ? "Manage shipper & catalyst contracts" : isCatalyst ? "View & sign shipper agreements" : "Manage catalyst agreements & contracts"}</p>
+          <p className={mt}>{isTerminal ? "Terminal access, throughput & service agreements" : isBroker ? "Manage shipper & catalyst contracts" : isCatalyst ? "View & sign shipper agreements" : "Manage catalyst agreements & contracts"}</p>
         </div>
         <div className="flex gap-2">
           {!isCatalyst && (
@@ -152,7 +153,7 @@ export default function AgreementsLibrary() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4", isLight ? "text-slate-400" : "text-slate-500")} />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by agreement #, catalyst, company..." className={cn("pl-10", ic)} />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={isTerminal ? "Search by agreement #, shipper, company..." : "Search by agreement #, catalyst, company..."} className={cn("pl-10", ic)} />
         </div>
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {(["all", "active", "pending", "draft", "expired"] as TabFilter[]).map(t => (
@@ -180,8 +181,8 @@ export default function AgreementsLibrary() {
               <PenTool className="w-8 h-8 text-slate-400" />
             </div>
             <p className={cn("font-bold text-lg mb-1", vl)}>No agreements yet</p>
-            <p className={cn("text-sm mb-6", mt)}>{isCatalyst ? "Agreements will appear here when shippers send you contracts to sign." : "Create your first agreement to start managing catalyst contracts."}</p>
-            {!isCatalyst && <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => setLocation("/agreements/create")}><Plus className="w-4 h-4 mr-2" />Create Agreement</Button>}
+            <p className={cn("text-sm mb-6", mt)}>{isTerminal ? "Create terminal access, throughput, or storage agreements with shippers and transporters." : isCatalyst ? "Agreements will appear here when shippers send you contracts to sign." : "Create your first agreement to start managing catalyst contracts."}</p>
+            {!isCatalyst && <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => setLocation("/agreements/create")}><Plus className="w-4 h-4 mr-2" />{isTerminal ? "Create Agreement" : "Create Agreement"}</Button>}
           </CardContent>
         </Card>
       ) : (
@@ -237,21 +238,43 @@ export default function AgreementsLibrary() {
       {/* Quick Actions */}
       {!isCatalyst && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <button onClick={() => setLocation("/agreements/create")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
-            <EsangIcon className="w-5 h-5 text-blue-500 mb-2" />
-            <p className={cn("font-bold text-sm", vl)}>Generate MSA</p>
-            <p className="text-xs text-slate-400">Auto-generate a Master Service Agreement from strategic inputs</p>
-          </button>
-          <button onClick={() => setLocation("/loads/recurring")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
-            <Repeat className="w-5 h-5 text-purple-500 mb-2" />
-            <p className={cn("font-bold text-sm", vl)}>Recurring Loads</p>
-            <p className="text-xs text-slate-400">Set up scheduled lanes with dedicated catalysts</p>
-          </button>
-          <button onClick={() => setLocation("/agreements/create")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
-            <FileText className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mb-2" />
-            <p className={cn("font-bold text-sm", vl)}>Upload Contract</p>
-            <p className="text-xs text-slate-400">Digitize an existing contract for electronic signing</p>
-          </button>
+          {isTerminal ? (
+            <>
+              <button onClick={() => setLocation("/agreements/create")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
+                <Shield className="w-5 h-5 text-blue-500 mb-2" />
+                <p className={cn("font-bold text-sm", vl)}>Terminal Access Agreement</p>
+                <p className="text-xs text-slate-400">Grant shippers & transporters access to your terminal facility</p>
+              </button>
+              <button onClick={() => setLocation("/agreements/create")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
+                <Truck className="w-5 h-5 text-purple-500 mb-2" />
+                <p className={cn("font-bold text-sm", vl)}>Throughput Agreement</p>
+                <p className="text-xs text-slate-400">Define volume commitments, rates, and scheduling terms</p>
+              </button>
+              <button onClick={() => setLocation("/agreements/create")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
+                <Building2 className="w-5 h-5 text-emerald-500 mb-2" />
+                <p className={cn("font-bold text-sm", vl)}>Storage & Service Agreement</p>
+                <p className="text-xs text-slate-400">Tank storage, blending services, or product handling terms</p>
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setLocation("/agreements/create")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
+                <EsangIcon className="w-5 h-5 text-blue-500 mb-2" />
+                <p className={cn("font-bold text-sm", vl)}>Generate MSA</p>
+                <p className="text-xs text-slate-400">Auto-generate a Master Service Agreement from strategic inputs</p>
+              </button>
+              <button onClick={() => setLocation("/loads/recurring")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
+                <Repeat className="w-5 h-5 text-purple-500 mb-2" />
+                <p className={cn("font-bold text-sm", vl)}>Recurring Loads</p>
+                <p className="text-xs text-slate-400">Set up scheduled lanes with dedicated catalysts</p>
+              </button>
+              <button onClick={() => setLocation("/agreements/create")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
+                <FileText className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mb-2" />
+                <p className={cn("font-bold text-sm", vl)}>Upload Contract</p>
+                <p className="text-xs text-slate-400">Digitize an existing contract for electronic signing</p>
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

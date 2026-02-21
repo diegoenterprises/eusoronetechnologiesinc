@@ -19,6 +19,7 @@ import {
   Link2, Copy, Shield, ShieldCheck, X, Trash2, ChevronDown,
   MapPin, KeyRound, Fuel, Building2, Warehouse, Pencil, Send
 } from "lucide-react";
+import { toast } from "sonner";
 
 const ROLE_LABELS: Record<string, string> = {
   gate_controller: "Gate Controller",
@@ -117,9 +118,20 @@ export default function TerminalStaff() {
   });
 
   const sendLinkMutation = (trpc as any).terminals.sendAccessLink.useMutation({
-    onSuccess: (_data: any, variables: any) => {
+    onSuccess: (data: any, variables: any) => {
       setSentToStaff(variables.staffId);
       setTimeout(() => setSentToStaff(null), 3000);
+      const parts: string[] = [];
+      if (data?.emailSent) parts.push("email");
+      if (data?.smsSent) parts.push("SMS");
+      if (parts.length > 0) {
+        toast.success(`Access link sent via ${parts.join(" & ")} to ${data?.staffName || "staff"}`);
+      } else {
+        toast.warning(`Access link could not be delivered. Check staff contact info.`);
+      }
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to send access link");
     },
   });
 
