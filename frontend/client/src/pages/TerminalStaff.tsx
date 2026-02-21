@@ -69,6 +69,7 @@ export default function TerminalStaff() {
   const [editingStaff, setEditingStaff] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>(null);
   const [sentToStaff, setSentToStaff] = useState<number | null>(null);
+  const [sendingStaffId, setSendingStaffId] = useState<number | null>(null);
 
   // Form state — includes location fields for shipper/marketer
   const [form, setForm] = useState({
@@ -119,6 +120,7 @@ export default function TerminalStaff() {
 
   const sendLinkMutation = (trpc as any).terminals.sendAccessLink.useMutation({
     onSuccess: (data: any, variables: any) => {
+      setSendingStaffId(null);
       setSentToStaff(variables.staffId);
       setTimeout(() => setSentToStaff(null), 3000);
       const parts: string[] = [];
@@ -131,6 +133,7 @@ export default function TerminalStaff() {
       }
     },
     onError: (err: any) => {
+      setSendingStaffId(null);
       toast.error(err?.message || "Failed to send access link");
     },
   });
@@ -566,10 +569,10 @@ export default function TerminalStaff() {
                               {copiedToken === staff.id ? <><CheckCircle className="w-3 h-3 mr-1" />Copied</> : <><Copy className="w-3 h-3 mr-1" />Copy Link</>}
                             </Button>
                             <Button size="sm" variant="outline"
-                              onClick={() => sendLinkMutation.mutate({ staffId: staff.id })}
-                              disabled={sendLinkMutation.isPending || sentToStaff === staff.id}
+                              onClick={() => { setSendingStaffId(staff.id); sendLinkMutation.mutate({ staffId: staff.id }); }}
+                              disabled={sendingStaffId === staff.id || sentToStaff === staff.id}
                               className={`rounded-lg text-xs ${sentToStaff === staff.id ? "bg-green-600/20 border-green-600/50 text-green-400" : "bg-emerald-600/10 border-emerald-600/30 text-emerald-400"}`}>
-                              {sentToStaff === staff.id ? <><CheckCircle className="w-3 h-3 mr-1" />Sent</> : sendLinkMutation.isPending ? <><Send className="w-3 h-3 mr-1 animate-pulse" />Sending...</> : <><Send className="w-3 h-3 mr-1" />Send</>}
+                              {sentToStaff === staff.id ? <><CheckCircle className="w-3 h-3 mr-1" />Sent</> : sendingStaffId === staff.id ? <><Send className="w-3 h-3 mr-1 animate-pulse" />Sending...</> : <><Send className="w-3 h-3 mr-1" />Send</>}
                             </Button>
                           </>
                         ) : (
