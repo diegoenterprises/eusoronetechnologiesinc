@@ -97,6 +97,8 @@ export default function AgreementsLibrary() {
       case "escort_service": return "Escort Service";
       case "dispatch_dispatch": return "Dispatch Service";
       case "terminal_access": return "Terminal Access";
+      case "throughput": return "Throughput";
+      case "storage_service": return "Storage & Service";
       case "fuel_surcharge": return "Fuel Surcharge";
       case "accessorial_schedule": return "Accessorial Schedule";
       case "nda": return "NDA";
@@ -240,17 +242,17 @@ export default function AgreementsLibrary() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {isTerminal ? (
             <>
-              <button onClick={() => setLocation("/agreements/create")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
+              <button onClick={() => setLocation("/agreements/create?type=terminal_access")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
                 <Shield className="w-5 h-5 text-blue-500 mb-2" />
                 <p className={cn("font-bold text-sm", vl)}>Terminal Access Agreement</p>
                 <p className="text-xs text-slate-400">Grant shippers & transporters access to your terminal facility</p>
               </button>
-              <button onClick={() => setLocation("/agreements/create")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
+              <button onClick={() => setLocation("/agreements/create?type=throughput")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
                 <Truck className="w-5 h-5 text-purple-500 mb-2" />
                 <p className={cn("font-bold text-sm", vl)}>Throughput Agreement</p>
                 <p className="text-xs text-slate-400">Define volume commitments, rates, and scheduling terms</p>
               </button>
-              <button onClick={() => setLocation("/agreements/create")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
+              <button onClick={() => setLocation("/agreements/create?type=storage_service")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
                 <Building2 className="w-5 h-5 text-emerald-500 mb-2" />
                 <p className={cn("font-bold text-sm", vl)}>Storage & Service Agreement</p>
                 <p className="text-xs text-slate-400">Tank storage, blending services, or product handling terms</p>

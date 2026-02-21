@@ -31,9 +31,9 @@ const ROLE_AGREEMENT_MAP: Record<string, {types:{value:string;label:string}[]; d
   BROKER: { types:[{value:"broker_catalyst",label:"Broker-Catalyst"},{value:"broker_shipper",label:"Broker-Shipper"},{value:"master_service",label:"Master Service Agreement"},{value:"lane_commitment",label:"Lane Commitment"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"broker_catalyst", partyALabel:"Broker", partyBLabel:"Catalyst / Shipper", partyBRole:"CATALYST" },
   DISPATCH: { types:[{value:"dispatch_dispatch",label:"Dispatch Service Agreement"},{value:"master_service",label:"Master Service Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"dispatch_dispatch", partyALabel:"Dispatch (Dispatcher)", partyBLabel:"Catalyst", partyBRole:"CATALYST" },
   ESCORT: { types:[{value:"escort_service",label:"Escort Service Agreement"},{value:"master_service",label:"Master Service Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"escort_service", partyALabel:"Escort Provider", partyBLabel:"Catalyst", partyBRole:"CATALYST" },
-  TERMINAL_MANAGER: { types:[{value:"terminal_access",label:"Terminal Access & Services"},{value:"master_service",label:"Master Service Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"terminal_access", partyALabel:"Terminal Operator", partyBLabel:"Catalyst / Shipper", partyBRole:"CATALYST" },
+  TERMINAL_MANAGER: { types:[{value:"terminal_access",label:"Terminal Access Agreement"},{value:"throughput",label:"Throughput Agreement"},{value:"storage_service",label:"Storage & Service Agreement"},{value:"master_service",label:"Master Service Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"terminal_access", partyALabel:"Terminal Operator", partyBLabel:"Catalyst / Shipper", partyBRole:"CATALYST" },
   DRIVER: { types:[{value:"catalyst_driver",label:"Catalyst-Driver (Owner-Op)"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"catalyst_driver", partyALabel:"Driver", partyBLabel:"Catalyst", partyBRole:"CATALYST" },
-  ADMIN: { types:[{value:"catalyst_shipper",label:"Catalyst-Shipper"},{value:"broker_catalyst",label:"Broker-Catalyst"},{value:"broker_shipper",label:"Broker-Shipper"},{value:"catalyst_driver",label:"Catalyst-Driver"},{value:"escort_service",label:"Escort Service"},{value:"dispatch_dispatch",label:"Dispatch Service"},{value:"terminal_access",label:"Terminal Access"},{value:"master_service",label:"Master Service"},{value:"lane_commitment",label:"Lane Commitment"},{value:"fuel_surcharge",label:"Fuel Surcharge"},{value:"accessorial_schedule",label:"Accessorial Schedule"},{value:"factoring",label:"Factoring"},{value:"nda",label:"NDA"},{value:"custom",label:"Custom"}], defaultType:"catalyst_shipper", partyALabel:"Party A", partyBLabel:"Party B", partyBRole:"CATALYST" },
+  ADMIN: { types:[{value:"catalyst_shipper",label:"Catalyst-Shipper"},{value:"broker_catalyst",label:"Broker-Catalyst"},{value:"broker_shipper",label:"Broker-Shipper"},{value:"catalyst_driver",label:"Catalyst-Driver"},{value:"escort_service",label:"Escort Service"},{value:"dispatch_dispatch",label:"Dispatch Service"},{value:"terminal_access",label:"Terminal Access"},{value:"throughput",label:"Throughput Agreement"},{value:"storage_service",label:"Storage & Service"},{value:"master_service",label:"Master Service"},{value:"lane_commitment",label:"Lane Commitment"},{value:"fuel_surcharge",label:"Fuel Surcharge"},{value:"accessorial_schedule",label:"Accessorial Schedule"},{value:"factoring",label:"Factoring"},{value:"nda",label:"NDA"},{value:"custom",label:"Custom"}], defaultType:"catalyst_shipper", partyALabel:"Party A", partyBLabel:"Party B", partyBRole:"CATALYST" },
 };
 ROLE_AGREEMENT_MAP.SUPER_ADMIN = ROLE_AGREEMENT_MAP.ADMIN;
 ROLE_AGREEMENT_MAP.COMPLIANCE_OFFICER = { types:[{value:"nda",label:"Non-Disclosure Agreement"},{value:"master_service",label:"Master Service Agreement"}], defaultType:"nda", partyALabel:"Company", partyBLabel:"Counterparty", partyBRole:"CATALYST" };
@@ -45,11 +45,13 @@ export default function ShipperAgreementWizard() {
   const { user } = useAuth(); const [, setLocation] = useLocation();
   const fileRef = useRef<HTMLInputElement>(null);
   const roleConfig = ROLE_AGREEMENT_MAP[user?.role || "SHIPPER"] || ROLE_AGREEMENT_MAP.SHIPPER;
+  const urlType = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("type") : null;
+  const initialType = urlType && roleConfig.types.some(t => t.value === urlType) ? urlType : roleConfig.defaultType;
   const [step, setStep] = useWizardHistory<Step>("mode", "/agreements");
   const [mode, setMode] = useState<Mode>(null);
   const [uploadedFile, setUploadedFile] = useState<File|null>(null);
   const [isDigitizing, setIsDigitizing] = useState(false);
-  const [agType, setAgType] = useState(roleConfig.defaultType);
+  const [agType, setAgType] = useState(initialType);
   const [dur, setDur] = useState<string>("short_term");
   const [aDisplayName, setADisplayName] = useState("");
   const [aName, setAName] = useState(user?.name || ""); const [aComp, setAComp] = useState("");

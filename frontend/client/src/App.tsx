@@ -195,6 +195,9 @@ import IncomingShipments from "./pages/IncomingShipments";
 import OutgoingShipments from "./pages/OutgoingShipments";
 import TerminalStaff from "./pages/TerminalStaff";
 import TerminalOperations from "./pages/TerminalOperations";
+import TerminalAppointments from "./pages/TerminalAppointments";
+import GateOperations from "./pages/GateOperations";
+import DockManagement from "./pages/DockManagement";
 import Violations from "./pages/Violations";
 import Audits from "./pages/Audits";
 import SafetyMetrics from "./pages/SafetyMetrics";
@@ -446,7 +449,7 @@ function Router() {
       <Route path={"/payments"} component={guard(ALL, <WalletPage />)} />
       <Route path={"/company"} component={guard(LOAD, <CompanyProfile />)} />
       <Route path={"/agreements"} component={guard([...LOAD, "TERMINAL_MANAGER"], <AgreementsLibrary />)} />
-      <Route path={"/agreements/create"} component={guard(SHIP, <ShipperAgreementWizard />)} />
+      <Route path={"/agreements/create"} component={guard([...LOAD, "TERMINAL_MANAGER", "ESCORT"], <ShipperAgreementWizard />)} />
       <Route path={"/agreements/broker"} component={guard([...BROK, "SHIPPER"], <BrokerContractWizard />)} />
       <Route path={"/agreements/:id"} component={guard([...LOAD, "TERMINAL_MANAGER"], <AgreementDetail />)} />
       <Route path={"/loads/recurring"} component={guard(SHIP, <RecurringLoadScheduler />)} />
@@ -616,7 +619,10 @@ function Router() {
       <Route path={"/operations"} component={guard(TERM, <TerminalOperations />)} />
       <Route path={"/terminal/scheduling"} component={guard(TERM, <TerminalScheduling />)} />
       <Route path={"/terminal/scada"} component={guard(TERM, <TerminalSCADA />)} />
-      <Route path={"/terminal/appointments"} component={guard(TERM, <AppointmentScheduler />)} />
+      <Route path={"/terminal/appointments"} component={guard(TERM, <TerminalAppointments />)} />
+      <Route path={"/appointments"} component={guard(TERM, <TerminalAppointments />)} />
+      <Route path={"/gate"} component={guard(TERM, <GateOperations />)} />
+      <Route path={"/docks"} component={guard(TERM, <DockManagement />)} />
       <Route path={"/terminal/reports"} component={guard(TERM, <TerminalOperations />)} />
       <Route path={"/loading-bays"} component={guard(TERM, <LoadingBays />)} />
       <Route path={"/terminal-inventory"} component={guard(TERM, <TerminalInventory />)} />

@@ -32,7 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/_core/hooks/useAuth";
 
-type WalletTab = "overview" | "invoices" | "send" | "cards" | "bank" | "escrow" | "history";
+type WalletTab = "overview" | "invoices" | "send" | "cards" | "bank" | "escrow" | "history" | "terminal";
 
 export default function Wallet() {
   const { theme } = useTheme();
@@ -177,9 +177,12 @@ export default function Wallet() {
     return <Badge className={`${s.bg} ${s.text} border-0 text-xs font-semibold`}>{s.label}</Badge>;
   };
 
+  const isTerminal = user?.role === "TERMINAL_MANAGER";
+
   const TABS: { id: WalletTab; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: "overview", label: "Overview", icon: <WalletIcon className="w-4 h-4" /> },
     { id: "invoices", label: "Invoices", icon: <FileText className="w-4 h-4" />, count: paySummary?.outstandingCount || 0 },
+    ...(isTerminal ? [{ id: "terminal" as WalletTab, label: "Terminal Billing", icon: <Building2 className="w-4 h-4" /> }] : []),
     { id: "send", label: "Send", icon: <Send className="w-4 h-4" /> },
     { id: "cards", label: "Cards", icon: <CreditCard className="w-4 h-4" /> },
     { id: "bank", label: "Bank", icon: <Landmark className="w-4 h-4" /> },
@@ -868,6 +871,113 @@ export default function Wallet() {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* TERMINAL BILLING TAB */}
+      {/* ============================================================ */}
+      {activeTab === "terminal" && isTerminal && (
+        <div className="space-y-6">
+          {/* Revenue Summary */}
+          <div className={`grid grid-cols-2 md:grid-cols-4 gap-4`}>
+            {[
+              { label: "This Month Revenue", value: "$0", color: isLight ? "text-emerald-600" : "text-emerald-400", bg: isLight ? "bg-emerald-50" : "bg-emerald-500/10", icon: <DollarSign className="w-5 h-5" /> },
+              { label: "Detention Fees", value: "$0", color: isLight ? "text-amber-600" : "text-amber-400", bg: isLight ? "bg-amber-50" : "bg-amber-500/10", icon: <Clock className="w-5 h-5" /> },
+              { label: "Loading Fees", value: "$0", color: isLight ? "text-blue-600" : "text-blue-400", bg: isLight ? "bg-blue-50" : "bg-blue-500/10", icon: <Receipt className="w-5 h-5" /> },
+              { label: "Accessorial Charges", value: "$0", color: isLight ? "text-purple-600" : "text-purple-400", bg: isLight ? "bg-purple-50" : "bg-purple-500/10", icon: <FileText className="w-5 h-5" /> },
+            ].map(k => (
+              <Card key={k.label} className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl ${k.bg} flex items-center justify-center`}>
+                      <span className={k.color}>{k.icon}</span>
+                    </div>
+                    <div>
+                      <p className={`text-xl font-bold ${k.color}`}>{k.value}</p>
+                      <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>{k.label}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Detention Tracking */}
+          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+            <CardHeader className="pb-3">
+              <CardTitle className={`text-sm font-semibold flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>
+                <AlertTriangle className={`w-4 h-4 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
+                Active Detention Tracking
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-center py-8`}>
+                <Clock className={`w-8 h-8 mx-auto mb-2 ${isLight ? 'text-slate-300' : 'text-slate-600'}`} />
+                <p className={`text-sm ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>No trucks currently in detention</p>
+                <p className={`text-xs mt-1 ${isLight ? 'text-slate-400' : 'text-slate-600'}`}>Trucks exceeding 2-hour free time will appear here with auto-calculated fees</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Fee Schedule */}
+          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className={`text-sm font-semibold flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>
+                  <Receipt className={`w-4 h-4 ${isLight ? 'text-blue-600' : 'text-[#1473FF]'}`} />
+                  Fee Schedule
+                </CardTitle>
+                <Button variant="outline" size="sm" className={`rounded-lg text-xs ${isLight ? 'border-slate-200' : 'border-slate-600/50'}`}>
+                  Edit Fees
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className={`divide-y ${isLight ? 'divide-slate-100' : 'divide-slate-700/50'}`}>
+                {[
+                  { fee: "Loading Fee", rate: "$400 / load", desc: "Standard rack loading operation" },
+                  { fee: "Unloading Fee", rate: "$350 / load", desc: "Standard unloading operation" },
+                  { fee: "Detention Rate", rate: "$75 / hour", desc: "After 2-hour free time" },
+                  { fee: "Demurrage (Tankers)", rate: "$150 / day", desc: "After 24-hour free time" },
+                  { fee: "After-Hours Surcharge", rate: "1.5x standard", desc: "Outside normal operating hours" },
+                  { fee: "Product Heating", rate: "Cost + 15%", desc: "Temperature-sensitive products" },
+                  { fee: "Rush Loading", rate: "$250 surcharge", desc: "Less than 4-hour notice" },
+                  { fee: "No-Show Fee", rate: "$150 / occurrence", desc: "Missed appointment without cancellation" },
+                ].map(item => (
+                  <div key={item.fee} className={`flex items-center justify-between py-3 ${isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-700/20'} transition-colors px-1 rounded-lg`}>
+                    <div>
+                      <p className={`text-sm font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{item.fee}</p>
+                      <p className={`text-xs ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>{item.desc}</p>
+                    </div>
+                    <span className={`text-sm font-semibold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>{item.rate}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Terminal Invoices — Carrier Billing */}
+          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className={`text-sm font-semibold flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>
+                  <Building2 className={`w-4 h-4 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} />
+                  Carrier Invoices
+                </CardTitle>
+                <Button size="sm" className="rounded-lg text-xs bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white hover:opacity-90">
+                  Generate Invoice
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-center py-8`}>
+                <FileText className={`w-8 h-8 mx-auto mb-2 ${isLight ? 'text-slate-300' : 'text-slate-600'}`} />
+                <p className={`text-sm ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>No carrier invoices yet</p>
+                <p className={`text-xs mt-1 ${isLight ? 'text-slate-400' : 'text-slate-600'}`}>Select a carrier and date range to generate terminal service invoices including loading fees, detention, and accessorials</p>
+              </div>
             </CardContent>
           </Card>
         </div>

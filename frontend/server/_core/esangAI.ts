@@ -1040,6 +1040,9 @@ Category: ${request.category || "unknown"}\nAPI Gravity: ${request.apiGravity}°
 - Lane Commitment Agreements with volume guarantees
 - Fuel Surcharge Schedules (DOE index-based)
 - NDA/Non-Circumvention Agreements
+- **Terminal Access Agreements** — facility access rights, appointment scheduling, rack/dock operations, safety & environmental compliance, product custody transfer, SPECTRA-MATCH verification, terminal fees (loading/unloading, detention, demurrage, after-hours, heating, rush)
+- **Throughput Agreements** — take-or-pay volume commitments, nomination/scheduling/allocation, throughput fee structures (per-barrel, pipeline receipt, additive injection, line fill allowance), product quality/ASTM specs, API MPMS metering & loss allowance, interconnection & pipeline access (49 CFR Parts 192/195), environmental compliance (EPA 40 CFR 260-280, SPCC, Clean Air Act, RCRA)
+- **Storage & Service Agreements** — dedicated/shared tank assignment, storage fees (per-barrel/month), blending services (inline, batch, additive injection), inventory management & daily/monthly reporting, product integrity & contamination liability, title/risk of loss allocation, regulatory permits (EPA SPCC, OSHA PSM 29 CFR 1910.119, API 2610, API 653 tank inspection)
 
 ## Required Contract Elements
 Every agreement MUST include:
@@ -1215,6 +1218,8 @@ Enhance each clause with specific, legally-precise language incorporating all th
       escort_service: "Escort/Pilot Car Service Agreement",
       dispatch_dispatch: "Dispatch Service Agreement",
       terminal_access: "Terminal Access & Services Agreement",
+      throughput: "Throughput Agreement",
+      storage_service: "Storage & Service Agreement",
       master_service: "Master Service Agreement",
       lane_commitment: "Lane Commitment Agreement",
       fuel_surcharge: "Fuel Surcharge Schedule",

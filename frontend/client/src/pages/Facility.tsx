@@ -253,6 +253,87 @@ export default function FacilityPage() {
               </div>
             </div>
           </div>
+
+          {/* ─── Service Capabilities ─── */}
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-4 pl-1">
+              <Handshake className="w-4 h-4 text-[#1473FF]" />
+              <span className="text-sm font-medium text-white">Service Capabilities</span>
+              <span className="text-[10px] text-slate-600 ml-auto">Agreement-backed terminal services</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+              {/* Terminal Access */}
+              <div className={cn("p-5 space-y-3 group cursor-pointer transition-all hover:border-[#1473FF]/20", cell)} onClick={() => navigate("/agreements/create?type=terminal_access")}>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#1473FF]/10 flex items-center justify-center shrink-0">
+                    <Truck className="w-4 h-4 text-[#1473FF]" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-white">Terminal Access</p>
+                    <p className="text-[10px] text-slate-500">Facility access agreements</p>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <CapRow label="Appointment Scheduling" desc="24hr advance booking via EusoTrip" />
+                  <CapRow label="Rack & Dock Operations" desc={`${docks || "---"} loading positions available`} />
+                  <CapRow label="Safety & Environmental" desc="OSHA / EPA / PHMSA compliant" />
+                  <CapRow label="Product Custody Transfer" desc="BOL verification + SPECTRA-MATCH" />
+                  <CapRow label="Driver Check-In" desc="CDL, docs, and appointment validation" />
+                </div>
+                <div className="pt-2 border-t border-white/[0.04]">
+                  <span className="text-[10px] text-[#1473FF] font-medium group-hover:underline">Create Terminal Access Agreement</span>
+                </div>
+              </div>
+
+              {/* Throughput */}
+              <div className={cn("p-5 space-y-3 group cursor-pointer transition-all hover:border-purple-500/20", cell)} onClick={() => navigate("/agreements/create?type=throughput")}>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
+                    <Gauge className="w-4 h-4 text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-white">Throughput</p>
+                    <p className="text-[10px] text-slate-500">Volume commitment agreements</p>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <CapRow label="Take-or-Pay Volumes" desc="Committed bbl/month scheduling" />
+                  <CapRow label="Nominations & Allocation" desc="Monthly nominations via EusoTrip" />
+                  <CapRow label="Metering & Measurement" desc="API MPMS calibrated custody transfer" />
+                  <CapRow label="Pipeline & Rack Receipt" desc="Multi-modal interconnections" />
+                  <CapRow label="Product Quality / ASTM" desc="Incoming spec testing + SPECTRA-MATCH" />
+                </div>
+                <div className="pt-2 border-t border-white/[0.04]">
+                  <span className="text-[10px] text-purple-400 font-medium group-hover:underline">Create Throughput Agreement</span>
+                </div>
+              </div>
+
+              {/* Storage & Service */}
+              <div className={cn("p-5 space-y-3 group cursor-pointer transition-all hover:border-emerald-500/20", cell)} onClick={() => navigate("/agreements/create?type=storage_service")}>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                    <Layers className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-white">Storage & Service</p>
+                    <p className="text-[10px] text-slate-500">Tank storage & blending agreements</p>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <CapRow label="Tank Assignment" desc={`${tanks || "---"} tanks, dedicated or shared`} />
+                  <CapRow label="Blending Services" desc="Inline, batch, additive injection" />
+                  <CapRow label="Inventory Management" desc="Daily reports via Terminal Dashboard" />
+                  <CapRow label="Product Integrity" desc="API 653 inspection + contamination controls" />
+                  <CapRow label="Title & Risk Allocation" desc="Custody transfer at interconnection" />
+                </div>
+                <div className="pt-2 border-t border-white/[0.04]">
+                  <span className="text-[10px] text-emerald-400 font-medium group-hover:underline">Create Storage & Service Agreement</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </TabsContent>
 
         {/* ════════════════ COMPLIANCE (REAL ENGINE) ════════════════ */}
@@ -660,6 +741,18 @@ function PerfRow({ label, current, total, pct, color }: { label: string; current
       </div>
       <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: color }} />
+      </div>
+    </div>
+  );
+}
+
+function CapRow({ label, desc }: { label: string; desc: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <div className="w-1 h-1 rounded-full bg-slate-600 mt-[7px] shrink-0" />
+      <div className="min-w-0">
+        <span className="text-[11px] text-slate-300 font-medium">{label}</span>
+        <span className="text-[11px] text-slate-600 ml-1">{desc}</span>
       </div>
     </div>
   );
