@@ -15,6 +15,7 @@ import {
   hzWildfires,
   hzFemaDisasters,
   hzCrudePrices,
+  facilities,
 } from "../../../drizzle/schema";
 import { sql } from "drizzle-orm";
 import { invalidateCache } from "../cache/hotZonesCache";
@@ -418,6 +419,31 @@ async function computeZoneMetrics(
     crowdLanesLearned = Number(llRows[0]?.cnt) || 0;
   } catch {}
 
+  // ── FACILITY INTELLIGENCE (FIL) — Petroleum facility density per zone ──
+  let filTerminals = 0;
+  let filRefineries = 0;
+  let filRacks = 0;
+  let filTotal = 0;
+  let filClaimedByEusotrip = 0;
+  try {
+    const filRows: any[] = await db.execute(
+      sql`SELECT
+              COUNT(*) as total,
+              COUNT(CASE WHEN facility_type IN ('TERMINAL','BULK_PLANT','TRANSLOAD') THEN 1 END) as terminals,
+              COUNT(CASE WHEN facility_type = 'REFINERY' THEN 1 END) as refineries,
+              COUNT(CASE WHEN facility_type = 'RACK' THEN 1 END) as racks,
+              COUNT(CASE WHEN claimed_by_company_id IS NOT NULL THEN 1 END) as claimed
+          FROM facilities
+          WHERE facility_state IN (${stateIn})
+            AND facility_status = 'OPERATING'`
+    );
+    filTotal = Number(filRows[0]?.total) || 0;
+    filTerminals = Number(filRows[0]?.terminals) || 0;
+    filRefineries = Number(filRows[0]?.refineries) || 0;
+    filRacks = Number(filRows[0]?.racks) || 0;
+    filClaimedByEusotrip = Number(filRows[0]?.claimed) || 0;
+  } catch {}
+
   // ── ENHANCED COMPLIANCE RISK v4.0 (emissions + RCRA + spills + road closures) ──
   const rcraViolationRate = rcraHandlerCount > 0 ? (rcraViolations / rcraHandlerCount) * 100 : 0;
   const enhancedComplianceRisk = String(Math.min(100,
@@ -461,6 +487,11 @@ async function computeZoneMetrics(
       rcraTSDFs,
       rcraViolations,
       rcraViolationRate: +rcraViolationRate.toFixed(1),
+      filTerminals,
+      filRefineries,
+      filRacks,
+      filTotal,
+      filClaimedByEusotrip,
       crowdDriverDensity,
       crowdAvgSpeed: +crowdAvgSpeed.toFixed(1),
       crowdGridCells,

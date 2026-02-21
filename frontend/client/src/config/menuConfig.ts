@@ -81,6 +81,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Terminal rack access, partnerships & supply chain"
     },
     { 
+      icon: "Database", 
+      label: "Facility Intelligence", 
+      path: "/facility-search", 
+      badge: 0,
+      description: "Search 1,400+ petroleum facilities nationwide"
+    },
+    { 
       icon: "Shield", 
       label: "Staff", 
       path: "/staff", 
@@ -223,6 +230,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/fleet-tracking", 
       badge: 0,
       description: "Real-time fleet GPS tracking"
+    },
+    { 
+      icon: "Database", 
+      label: "Facility Intelligence", 
+      path: "/facility-search", 
+      badge: 0,
+      description: "Search 1,400+ petroleum facilities nationwide"
     },
     { 
       icon: "Siren", 
@@ -901,6 +915,9 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "CalendarDays", label: "Appointments", path: "/appointments", badge: 0, description: "Schedule & manage facility appointments" },
     { icon: "Shield", label: "Gate Operations", path: "/gate", badge: 0, description: "Check-in, verify & route trucks" },
     { icon: "Container", label: "Dock Management", path: "/docks", badge: 0, description: "Bay status, assignment & loading operations" },
+    { icon: "Eye", label: "Inbound Visibility", path: "/inbound", badge: 0, description: "Real-time approaching trucks & demand forecast" },
+    { icon: "Zap", label: "DTN Integration", path: "/dtn-sync", badge: 0, description: "DTN sync status, inventory & rack pricing" },
+    { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities" },
     { icon: "Building2", label: "Terminal Profile", path: "/facility", badge: 0, description: "Identity, compliance, operations & SpectraMatch" },
     { icon: "Plus", label: "Create Load", path: "/loads/create", badge: 0, description: "Post new outbound shipment" },
     { icon: "Users", label: "Supply Chain", path: "/supply-chain", badge: 0, description: "Shipper, marketer & transporter partnerships" },

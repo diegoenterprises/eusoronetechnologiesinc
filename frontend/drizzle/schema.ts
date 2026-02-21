@@ -6299,3 +6299,309 @@ export const tripStateMiles = mysqlTable(
 export type TripStateMiles = typeof tripStateMiles.$inferSelect;
 export type InsertTripStateMiles = typeof tripStateMiles.$inferInsert;
 
+// ============================================================================
+// FACILITY INTELLIGENCE LAYER (FIL)
+// Master facility database — gov-seeded from EIA, HIFLD, state commissions
+// ============================================================================
+
+export const facilities = mysqlTable(
+  "facilities",
+  {
+    id: int("id").autoincrement().primaryKey(),
+
+    // Identity
+    facilityType: mysqlEnum("facility_type", [
+      "TERMINAL", "REFINERY", "WELL", "RACK", "TANK_BATTERY", "TRANSLOAD", "BULK_PLANT",
+    ]).notNull(),
+    facilitySubtype: varchar("facility_subtype", { length: 100 }),
+    eiaId: varchar("eia_id", { length: 20 }),
+    hifldId: varchar("hifld_id", { length: 20 }),
+    apiNumber: varchar("api_number", { length: 14 }),
+
+    // Facility Details
+    facilityName: varchar("facility_name", { length: 500 }).notNull(),
+    operatorName: varchar("operator_name", { length: 500 }),
+    ownerName: varchar("owner_name", { length: 500 }),
+
+    // Location
+    address: varchar("facility_address", { length: 500 }),
+    city: varchar("facility_city", { length: 200 }),
+    county: varchar("facility_county", { length: 200 }),
+    state: char("facility_state", { length: 2 }).notNull(),
+    zip: varchar("facility_zip", { length: 10 }),
+    latitude: decimal("latitude", { precision: 10, scale: 7 }).notNull(),
+    longitude: decimal("longitude", { precision: 10, scale: 7 }).notNull(),
+    padd: varchar("padd", { length: 10 }),
+
+    // Capacity
+    storageCapacityBbl: bigint("storage_capacity_bbl", { mode: "number" }),
+    processingCapacityBpd: int("processing_capacity_bpd"),
+
+    // Connectivity (terminals)
+    receivesPipeline: boolean("receives_pipeline").default(false),
+    receivesTanker: boolean("receives_tanker").default(false),
+    receivesBarge: boolean("receives_barge").default(false),
+    receivesTruck: boolean("receives_truck").default(false),
+    receivesRail: boolean("receives_rail").default(false),
+
+    // Products
+    products: json("products").$type<string[]>(),
+    hazmatClasses: json("hazmat_classes").$type<string[]>(),
+
+    // Well-specific
+    wellType: varchar("well_type", { length: 50 }),
+    wellStatus: varchar("well_status", { length: 50 }),
+    leaseName: varchar("lease_name", { length: 500 }),
+    producingFormation: varchar("producing_formation", { length: 200 }),
+    totalDepthFt: int("total_depth_ft"),
+
+    // Operating Status
+    status: mysqlEnum("facility_status", [
+      "OPERATING", "IDLE", "UNDER_CONSTRUCTION", "SHUT_DOWN", "PLUGGED",
+    ]).notNull(),
+
+    // EusoTrip Enrichment (user-contributed)
+    isEusotripVerified: boolean("is_eusotrip_verified").default(false),
+    claimedByCompanyId: int("claimed_by_company_id"),
+    claimedByUserId: int("claimed_by_user_id"),
+    terminalAutomationSystem: varchar("terminal_automation_system", { length: 200 }),
+    loadingHours: varchar("loading_hours", { length: 200 }),
+    appointmentRequired: boolean("appointment_required"),
+    appointmentSlotMinutes: int("appointment_slot_minutes"),
+    maxTrucksPerHour: int("max_trucks_per_hour"),
+    hasScale: boolean("has_scale"),
+    twicRequired: boolean("twic_required"),
+    safetyOrientationRequired: boolean("safety_orientation_required"),
+    gatePhone: varchar("gate_phone", { length: 20 }),
+    officePhone: varchar("office_phone", { length: 20 }),
+    loadingBays: int("loading_bays"),
+    unloadingBays: int("unloading_bays"),
+
+    // Geofence (auto-generated, overridable)
+    geofenceRadiusFt: int("geofence_radius_ft").default(500),
+    approachRadiusMi: decimal("approach_radius_mi", { precision: 4, scale: 1 }).default("5.0"),
+
+    // Metadata
+    dataSource: varchar("data_source", { length: 100 }).notNull(),
+    sourceUpdatedAt: timestamp("source_updated_at"),
+    createdAt: timestamp("facility_created_at").defaultNow(),
+    updatedAt: timestamp("facility_updated_at").defaultNow().onUpdateNow(),
+  },
+  (table) => ({
+    typeIdx: index("idx_fac_type").on(table.facilityType),
+    stateIdx: index("idx_fac_state").on(table.state),
+    statusIdx: index("idx_fac_status").on(table.status),
+    paddIdx: index("idx_fac_padd").on(table.padd),
+    claimedIdx: index("idx_fac_claimed").on(table.claimedByCompanyId),
+    locationIdx: index("idx_fac_location").on(table.latitude, table.longitude),
+    nameIdx: index("idx_fac_name").on(table.facilityName),
+    eiaIdx: index("idx_fac_eia").on(table.eiaId),
+    hifldIdx: index("idx_fac_hifld").on(table.hifldId),
+    dataSourceIdx: index("idx_fac_source").on(table.dataSource),
+  })
+);
+
+export type Facility = typeof facilities.$inferSelect;
+export type InsertFacility = typeof facilities.$inferInsert;
+
+// ============================================================================
+// FACILITY RATINGS — Driver/carrier reviews of facilities
+// ============================================================================
+
+export const facilityRatings = mysqlTable(
+  "facility_ratings",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    facilityId: int("facility_id").notNull(),
+    userId: int("user_id").notNull(),
+    userRole: varchar("user_role", { length: 50 }).notNull(),
+    rating: int("rating").notNull(),
+    waitTimeMinutes: int("wait_time_minutes"),
+    comment: text("comment"),
+    terminalResponse: text("terminal_response"),
+    terminalRespondedAt: timestamp("terminal_responded_at"),
+    loadId: int("load_id"),
+    createdAt: timestamp("fr_created_at").defaultNow(),
+  },
+  (table) => ({
+    facilityIdx: index("idx_fr_facility").on(table.facilityId),
+    userIdx: index("idx_fr_user").on(table.userId),
+    ratingIdx: index("idx_fr_rating").on(table.rating),
+  })
+);
+
+export type FacilityRating = typeof facilityRatings.$inferSelect;
+export type InsertFacilityRating = typeof facilityRatings.$inferInsert;
+
+// ============================================================================
+// FACILITY REQUIREMENTS — TWIC, PPE, orientation, carrier approval, etc.
+// ============================================================================
+
+export const facilityRequirements = mysqlTable(
+  "facility_requirements",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    facilityId: int("fq_facility_id").notNull(),
+    requirementType: varchar("requirement_type", { length: 50 }).notNull(),
+    requirementValue: varchar("requirement_value", { length: 200 }),
+    isRequired: boolean("is_required").default(true),
+    notes: text("fq_notes"),
+    createdAt: timestamp("fq_created_at").defaultNow(),
+    updatedAt: timestamp("fq_updated_at").defaultNow().onUpdateNow(),
+  },
+  (table) => ({
+    facilityIdx: index("idx_fq_facility").on(table.facilityId),
+    typeIdx: index("idx_fq_type").on(table.requirementType),
+  })
+);
+
+export type FacilityRequirement = typeof facilityRequirements.$inferSelect;
+export type InsertFacilityRequirement = typeof facilityRequirements.$inferInsert;
+
+// ============================================================================
+// FACILITY STATS CACHE — Materialized stats refreshed every 15 min
+// ============================================================================
+
+export const facilityStatsCache = mysqlTable(
+  "facility_stats_cache",
+  {
+    facilityId: int("fsc_facility_id").primaryKey(),
+    avgWaitMinutes: decimal("avg_wait_minutes", { precision: 6, scale: 1 }),
+    avgLoadingMinutes: decimal("avg_loading_minutes", { precision: 6, scale: 1 }),
+    avgTurnaroundMinutes: decimal("avg_turnaround_minutes", { precision: 6, scale: 1 }),
+    totalLoadsLast90Days: int("total_loads_last_90_days").default(0),
+    totalLoadsAllTime: int("total_loads_all_time").default(0),
+    onTimeStartPercentage: decimal("on_time_start_pct", { precision: 5, scale: 2 }),
+    detentionIncidentPercentage: decimal("detention_incident_pct", { precision: 5, scale: 2 }),
+    avgRating: decimal("avg_rating", { precision: 3, scale: 2 }),
+    totalRatings: int("total_ratings").default(0),
+    peakHoursJson: json("peak_hours_json").$type<Record<string, string>>(),
+    topCarriersJson: json("top_carriers_json").$type<Array<{ carrierId: number; loadCount: number; onTimeRate: number }>>(),
+    lastCalculatedAt: timestamp("fsc_last_calculated_at").defaultNow(),
+  }
+);
+
+export type FacilityStatsCache = typeof facilityStatsCache.$inferSelect;
+export type InsertFacilityStatsCache = typeof facilityStatsCache.$inferInsert;
+
+// ============================================================================
+// DTN CONNECTIONS — Per-facility DTN integration config
+// ============================================================================
+
+export const dtnConnections = mysqlTable(
+  "dtn_connections",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    facilityId: int("dtn_facility_id").notNull(),
+    companyId: int("dtn_company_id").notNull(),
+    dtnTerminalId: varchar("dtn_terminal_id", { length: 100 }),
+    dtnApiKeyEncrypted: json("dtn_api_key_encrypted").$type<{ iv: string; encryptedData: string; authTag: string }>(),
+    dtnEnvironment: mysqlEnum("dtn_environment", ["sandbox", "production"]).default("production"),
+    syncEnabled: boolean("sync_enabled").default(true),
+    lastSyncAt: timestamp("last_sync_at"),
+    lastSyncStatus: mysqlEnum("last_sync_status", ["SUCCESS", "ERROR", "TIMEOUT"]),
+    syncConfigJson: json("sync_config_json").$type<{
+      etaTowardsDtn?: boolean;
+      complianceToDtn?: boolean;
+      bolFromDtn?: boolean;
+      allocationFromDtn?: boolean;
+      rackPricingFromDtn?: boolean;
+      inventoryFromDtn?: boolean;
+    }>(),
+    createdAt: timestamp("dtn_created_at").defaultNow(),
+    updatedAt: timestamp("dtn_updated_at").defaultNow().onUpdateNow(),
+  },
+  (table) => ({
+    facilityIdx: index("idx_dtn_facility").on(table.facilityId),
+    companyIdx: index("idx_dtn_company").on(table.companyId),
+  })
+);
+
+export type DtnConnection = typeof dtnConnections.$inferSelect;
+export type InsertDtnConnection = typeof dtnConnections.$inferInsert;
+
+// ============================================================================
+// DTN SYNC LOG — Append-only audit trail of all DTN sync events
+// ============================================================================
+
+export const dtnSyncLog = mysqlTable(
+  "dtn_sync_log",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    dtnConnectionId: int("dtn_connection_id").notNull(),
+    facilityId: int("dsl_facility_id").notNull(),
+    direction: mysqlEnum("direction", ["TO_DTN", "FROM_DTN"]).notNull(),
+    eventType: varchar("event_type", { length: 100 }).notNull(),
+    payload: json("dsl_payload"),
+    responseStatus: int("response_status"),
+    responseBody: json("response_body"),
+    errorMessage: text("dsl_error_message"),
+    durationMs: int("duration_ms"),
+    createdAt: timestamp("dsl_created_at").defaultNow(),
+  },
+  (table) => ({
+    connectionIdx: index("idx_dsl_connection").on(table.dtnConnectionId),
+    facilityIdx: index("idx_dsl_facility").on(table.facilityId),
+    directionIdx: index("idx_dsl_direction").on(table.direction),
+    eventIdx: index("idx_dsl_event").on(table.eventType),
+    createdIdx: index("idx_dsl_created").on(table.createdAt),
+  })
+);
+
+export type DtnSyncLogEntry = typeof dtnSyncLog.$inferSelect;
+export type InsertDtnSyncLogEntry = typeof dtnSyncLog.$inferInsert;
+
+// ============================================================================
+// DETENTION GPS RECORDS — Immutable geofence-derived timestamps
+// ============================================================================
+
+export const detentionGpsRecords = mysqlTable(
+  "detention_gps_records",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("dgr_load_id").notNull(),
+    facilityId: int("dgr_facility_id").notNull(),
+    driverId: int("dgr_driver_id").notNull(),
+    carrierId: int("dgr_carrier_id").notNull(),
+
+    // Immutable GPS-derived timestamps
+    arrivalTimestamp: timestamp("arrival_timestamp").notNull(),
+    arrivalLatitude: decimal("arrival_latitude", { precision: 10, scale: 7 }),
+    arrivalLongitude: decimal("arrival_longitude", { precision: 10, scale: 7 }),
+    gateEntryTimestamp: timestamp("gate_entry_timestamp"),
+    dockAssignTimestamp: timestamp("dock_assign_timestamp"),
+    loadingStartTimestamp: timestamp("loading_start_timestamp"),
+    loadingEndTimestamp: timestamp("loading_end_timestamp"),
+    departureTimestamp: timestamp("departure_timestamp"),
+    departureLatitude: decimal("departure_latitude", { precision: 10, scale: 7 }),
+    departureLongitude: decimal("departure_longitude", { precision: 10, scale: 7 }),
+
+    // Calculated fields
+    totalTimeMinutes: int("total_time_minutes"),
+    freeTimeMinutes: int("free_time_minutes"),
+    detentionMinutes: int("detention_minutes"),
+    detentionRate: decimal("detention_rate", { precision: 8, scale: 2 }),
+    detentionCharge: decimal("detention_charge", { precision: 10, scale: 2 }),
+
+    // DTN cross-reference
+    dtnBolNumber: varchar("dtn_bol_number", { length: 100 }),
+    dtnLoadingStartTimestamp: timestamp("dtn_loading_start"),
+    dtnLoadingEndTimestamp: timestamp("dtn_loading_end"),
+
+    // Status
+    status: mysqlEnum("dgr_status", ["CALCULATED", "INVOICED", "DISPUTED", "RESOLVED"]).default("CALCULATED"),
+    createdAt: timestamp("dgr_created_at").defaultNow(),
+  },
+  (table) => ({
+    loadIdx: index("idx_dgr_load").on(table.loadId),
+    facilityIdx: index("idx_dgr_facility").on(table.facilityId),
+    driverIdx: index("idx_dgr_driver").on(table.driverId),
+    carrierIdx: index("idx_dgr_carrier").on(table.carrierId),
+    statusIdx: index("idx_dgr_status").on(table.status),
+    arrivalIdx: index("idx_dgr_arrival").on(table.arrivalTimestamp),
+  })
+);
+
+export type DetentionGpsRecord = typeof detentionGpsRecords.$inferSelect;
+export type InsertDetentionGpsRecord = typeof detentionGpsRecords.$inferInsert;
+

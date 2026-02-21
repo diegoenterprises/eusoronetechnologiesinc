@@ -40,6 +40,7 @@ import { ergRouter } from "./routers/erg";
 import { appointmentsRouter } from "./routers/appointments";
 import { permitsRouter } from "./routers/permits";
 import { facilitiesRouter } from "./routers/facilities";
+import { facilityIntelligenceRouter } from "./routers/facilityIntelligence";
 import { dispatchRoleRouter } from "./routers/dispatchRole";
 import { adminRouter } from "./routers/admin";
 import { supportRouter } from "./routers/support";
@@ -864,6 +865,9 @@ export const appRouter = router({
 
   // Facility Management
   facilities: facilitiesRouter,
+
+  // Facility Intelligence Layer (FIL) + DTN Integration
+  facilityIntelligence: facilityIntelligenceRouter,
 
   // Dispatch Role Operations
   dispatchRole: dispatchRoleRouter,

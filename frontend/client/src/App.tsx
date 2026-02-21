@@ -336,6 +336,10 @@ import NewsfeedPage from "./pages/NewsfeedPage";
 import ComplianceNetworksPage from "./pages/ComplianceNetworksPage";
 import SuperAdminTools from "./pages/SuperAdminTools";
 import AuditLogsPage from "./pages/AuditLogsPage";
+import FacilitySearch from "./pages/FacilitySearch";
+import FacilityProfile from "./pages/FacilityProfile";
+import InboundDashboard from "./pages/InboundDashboard";
+import DTNSyncDashboard from "./pages/DTNSyncDashboard";
 
 function Router() {
   // Role constants for route protection
@@ -633,6 +637,10 @@ function Router() {
       <Route path={"/detention"} component={guard([...TERM, ...CARR, ...SHIP], <DetentionTrackingPage />)} />
       <Route path={"/euso-ticket"} component={guard(TERM, <EusoTicket />)} />
       <Route path={"/run-tickets"} component={guard(TERM, <EusoTicket />)} />
+      <Route path={"/inbound"} component={guard(TERM, <InboundDashboard />)} />
+      <Route path={"/dtn-sync"} component={guard(TERM, <DTNSyncDashboard />)} />
+      <Route path={"/facility-search"} component={guard(ALL, <FacilitySearch />)} />
+      <Route path={"/facility/:id"} component={guard(ALL, <FacilityProfile />)} />
 
       {/* ============================================ */}
       {/* FACTORING ROUTES */}
