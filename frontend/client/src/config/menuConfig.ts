@@ -895,155 +895,24 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
   ],
 
-  // TERMINAL_MANAGER: Facility operations, compliance
+  // TERMINAL_MANAGER: Lean sidebar — redundancies fused into Terminal Profile
   TERMINAL_MANAGER: [
-    { 
-      icon: "LayoutDashboard", 
-      label: "Dashboard", 
-      path: "/", 
-      badge: 0,
-      description: "Terminal operations overview"
-    },
-    { 
-      icon: "Plus", 
-      label: "Create Load", 
-      path: "/loads/create", 
-      badge: 0,
-      description: "Post new outbound shipment to load board"
-    },
-    { 
-      icon: "Building2", 
-      label: "Terminal Profile", 
-      path: "/facility", 
-      badge: 0,
-      description: "Terminal identity, compliance & operations"
-    },
-    { 
-      icon: "Users", 
-      label: "Supply Chain", 
-      path: "/supply-chain", 
-      badge: 0,
-      description: "Shippers, marketers, brokers & transporter partnerships"
-    },
-    { 
-      icon: "Truck", 
-      label: "Incoming", 
-      path: "/incoming", 
-      badge: 0,
-      description: "Arriving shipments"
-    },
-    { 
-      icon: "MapPin", 
-      label: "Arrivals Tracking", 
-      path: "/fleet-tracking", 
-      badge: 0,
-      description: "Track incoming vehicles"
-    },
-    { 
-      icon: "Package", 
-      label: "Outgoing", 
-      path: "/outgoing", 
-      badge: 0,
-      description: "Departing shipments"
-    },
-    { 
-      icon: "Users", 
-      label: "Staff", 
-      path: "/staff", 
-      badge: 0,
-      description: "Access controllers & validation links"
-    },
-    { 
-      icon: "CheckCircle", 
-      label: "Operations", 
-      path: "/operations", 
-      badge: 0,
-      description: "Daily operations"
-    },
-    { 
-      icon: "AlertTriangle", 
-      label: "Compliance", 
-      path: "/facility?tab=compliance", 
-      badge: 0,
-      description: "Facility regulatory compliance"
-    },
-    { 
-      icon: "PenTool", 
-      label: "Agreements", 
-      path: "/agreements", 
-      badge: 0,
-      description: "Terminal access & service agreements"
-    },
-    { 
-      icon: "FileText", 
-      label: "Documents", 
-      path: "/documents", 
-      badge: 0,
-      description: "EPA permits, compliance docs & certifications"
-    },
-    { 
-      icon: "BarChart3", 
-      label: "Reports", 
-      path: "/reports", 
-      badge: 0,
-      description: "Operations reports"
-    },
-    { 
-      icon: "Activity", 
-      label: "SpectraMatch", 
-      path: "/spectra-match", 
-      badge: 0,
-      description: "SPECTRA-MATCH\u2122 crude oil identification"
-    },
-    { 
-      icon: "TrendingUp", 
-      label: "Market Intelligence", 
-      path: "/market-pricing", 
-      badge: 0,
-      description: "Freight rates, demand heatmaps & surge pricing"
-    },
-    { 
-      icon: "MessageSquare", 
-      label: "Messages", 
-      path: "/messages", 
-      badge: 0,
-      description: "Communication"
-    },
-    { 
-      icon: "Wallet", 
-      label: "EusoWallet", 
-      path: "/wallet", 
-      badge: 0,
-      description: "Facility payments, invoices & escrow"
-    },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/settings", 
-      badge: 0,
-      description: "Profile, preferences & security"
-    },
-    { 
-      icon: "Radio", 
-      label: "Company Channels", 
-      path: "/company-channels", 
-      badge: 0,
-      description: "Team communication channels"
-    },
-    { 
-      icon: "Newspaper", 
-      label: "News", 
-      path: "/news", 
-      badge: 0,
-      description: "Platform news and updates"
-    },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0,
-      description: "Help"
-    },
+    { icon: "LayoutDashboard", label: "Dashboard", path: "/", badge: 0, description: "Terminal operations overview" },
+    { icon: "Plus", label: "Create Load", path: "/loads/create", badge: 0, description: "Post new outbound shipment" },
+    { icon: "Building2", label: "Terminal Profile", path: "/facility", badge: 0, description: "Identity, compliance, operations & SpectraMatch" },
+    { icon: "Users", label: "Supply Chain", path: "/supply-chain", badge: 0, description: "Manage shipper, marketer & transporter partnerships" },
+    { icon: "Truck", label: "Incoming", path: "/incoming", badge: 0, description: "Arriving shipments" },
+    { icon: "MapPin", label: "Tracking", path: "/fleet-tracking", badge: 0, description: "Track incoming vehicles" },
+    { icon: "Package", label: "Outgoing", path: "/outgoing", badge: 0, description: "Departing shipments" },
+    { icon: "Users", label: "Staff", path: "/staff", badge: 0, description: "Access controllers & validation links" },
+    { icon: "PenTool", label: "Agreements", path: "/agreements", badge: 0, description: "Terminal access & service agreements" },
+    { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Permits, compliance docs & certifications" },
+    { icon: "BarChart3", label: "Reports", path: "/reports", badge: 0, description: "Operations reports" },
+    { icon: "TrendingUp", label: "Market Intel", path: "/market-pricing", badge: 0, description: "Freight rates & demand heatmaps" },
+    { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Communication" },
+    { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Payments, invoices & escrow" },
+    { icon: "Settings", label: "Settings", path: "/settings", badge: 0, description: "Profile, preferences & security" },
+    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
   ],
 
   // COMPLIANCE_OFFICER: Regulatory compliance and safety oversight
