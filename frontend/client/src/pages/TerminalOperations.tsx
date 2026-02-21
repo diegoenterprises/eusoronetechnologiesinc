@@ -1,20 +1,19 @@
 /**
- * TERMINAL OPERATIONS PAGE - TERMINAL MANAGER
- * 100% Dynamic - No mock data
- * UI Style: Gradient headers, stat cards with icons, rounded cards
+ * TERMINAL OPERATIONS REPORTS
+ * Jony Ive design — every element intentional.
+ * 100% Dynamic — tRPC backed, timeframe selectable.
+ *
+ * Shows: trucks processed, loads completed, dwell time, utilization,
+ * incidents, dock status grid, performance bars, recent activity log.
  */
 
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import {
   Activity, CheckCircle, Clock, AlertTriangle,
-  Truck, Package, Gauge
+  Truck, Package, Gauge, BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,170 +25,152 @@ export default function TerminalOperations() {
   const docksQuery = (trpc as any).terminals.getDockStatus.useQuery();
 
   const stats = statsQuery.data;
+  const cell = "rounded-2xl border border-white/[0.04] bg-white/[0.02]";
 
   const getDockStatusColor = (status: string) => {
     switch (status) {
-      case "active": return "bg-green-500";
-      case "loading": return "bg-cyan-500";
-      case "unloading": return "bg-blue-500";
-      case "idle": return "bg-slate-500";
-      case "maintenance": return "bg-red-500";
-      default: return "bg-slate-500";
+      case "active": return "bg-emerald-400";
+      case "loading": return "bg-[#1473FF]";
+      case "unloading": return "bg-purple-400";
+      case "idle": return "bg-slate-600";
+      case "maintenance": return "bg-red-400";
+      default: return "bg-slate-600";
     }
   };
 
+  if (statsQuery.isLoading) return (
+    <div className="p-6 md:p-8 space-y-8 max-w-[1200px] mx-auto">
+      <Skeleton className="h-10 w-56 rounded-xl" />
+      <div className="grid grid-cols-5 gap-4">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}</div>
+      <Skeleton className="h-[300px] w-full rounded-2xl" />
+    </div>
+  );
+
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 md:p-8 space-y-8 max-w-[1200px] mx-auto">
+
+      {/* ─── Header ─── */}
+      <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Terminal Operations</h1>
-          <p className="text-slate-400 text-sm mt-1">Daily operations overview</p>
+          <h1 className="text-[28px] font-semibold tracking-tight text-white">Operations Reports</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Terminal performance, dock utilization, and activity log</p>
         </div>
-        <Select value={timeframe} onValueChange={setTimeframe}>
-          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="today">Today</SelectItem>
-            <SelectItem value="week">This Week</SelectItem>
-            <SelectItem value="month">This Month</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-1 p-1 rounded-xl bg-white/[0.03]">
+          {["today", "week", "month"].map(t => (
+            <button key={t} onClick={() => setTimeframe(t)} className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+              timeframe === t ? "bg-[#1473FF]/15 text-[#1473FF]" : "text-slate-500 hover:text-slate-300"
+            )}>{t === "today" ? "Today" : t === "week" ? "This Week" : "This Month"}</button>
+          ))}
+        </div>
       </div>
 
+      {/* ─── KPI Cards ─── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-cyan-500/20"><Truck className="w-6 h-6 text-cyan-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-cyan-400">{stats?.trucksProcessed || 0}</p>}<p className="text-xs text-slate-400">Processed</p></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-green-400">{stats?.loadsCompleted || 0}</p>}<p className="text-xs text-slate-400">Completed</p></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-yellow-500/20"><Clock className="w-6 h-6 text-yellow-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-yellow-400">{stats?.avgDwellTime}m</p>}<p className="text-xs text-slate-400">Avg Dwell</p></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-purple-500/20"><Gauge className="w-6 h-6 text-purple-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-purple-400">{stats?.utilization}%</p>}<p className="text-xs text-slate-400">Utilization</p></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-red-500/20"><AlertTriangle className="w-6 h-6 text-red-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-red-400">{stats?.incidents || 0}</p>}<p className="text-xs text-slate-400">Incidents</p></div>
-            </div>
-          </CardContent>
-        </Card>
+        {[
+          { icon: <Truck className="w-5 h-5 text-[#1473FF]" />, value: stats?.trucksProcessed || 0, label: "Processed", color: "text-[#1473FF]" },
+          { icon: <CheckCircle className="w-5 h-5 text-emerald-400" />, value: stats?.loadsCompleted || 0, label: "Completed", color: "text-emerald-400" },
+          { icon: <Clock className="w-5 h-5 text-amber-400" />, value: `${stats?.avgDwellTime || 0}m`, label: "Avg Dwell", color: "text-amber-400" },
+          { icon: <Gauge className="w-5 h-5 text-purple-400" />, value: `${stats?.utilization || 0}%`, label: "Utilization", color: "text-purple-400" },
+          { icon: <AlertTriangle className="w-5 h-5 text-red-400" />, value: stats?.incidents || 0, label: "Incidents", color: "text-red-400" },
+        ].map((kpi) => (
+          <div key={kpi.label} className={cn("p-5 text-center", cell)}>
+            <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center mx-auto mb-3">{kpi.icon}</div>
+            <p className={cn("text-2xl font-bold", kpi.color)}>{kpi.value}</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">{kpi.label}</p>
+          </div>
+        ))}
       </div>
 
+      {/* ─── Dock Status + Performance ─── */}
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Package className="w-5 h-5 text-cyan-400" />Dock Status</CardTitle></CardHeader>
-          <CardContent>
-            {docksQuery.isLoading ? (
-              <div className="grid grid-cols-4 gap-3">{[1, 2, 3, 4, 5, 6, 7, 8].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
-            ) : (
-              <div className="grid grid-cols-4 gap-3">
-                {(docksQuery.data as any)?.map((dock: any) => (
-                  <div key={dock.id} className={cn("p-3 rounded-lg text-center border", dock.status === "active" ? "bg-green-500/10 border-green-500/30" : dock.status === "maintenance" ? "bg-red-500/10 border-red-500/30" : "bg-slate-700/30 border-slate-600/30")}>
-                    <div className={cn("w-3 h-3 rounded-full mx-auto mb-2", getDockStatusColor(dock.status))} />
-                    <p className="text-white font-bold text-sm">{dock.name}</p>
-                    <p className="text-xs text-slate-500 capitalize">{dock.status}</p>
-                    {dock.currentLoad && <p className="text-xs text-cyan-400 mt-1">#{dock.currentLoad}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Activity className="w-5 h-5 text-green-400" />Performance</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            {statsQuery.isLoading ? (
-              <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
-            ) : (
-              <>
-                <div className="p-3 rounded-lg bg-slate-700/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-slate-400">On-Time Departures</span>
-                    <span className="text-sm font-bold text-green-400">{stats?.onTimeDepartures}%</span>
-                  </div>
-                  <Progress value={stats?.onTimeDepartures || 0} className="h-2" />
-                </div>
-                <div className="p-3 rounded-lg bg-slate-700/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-slate-400">Dock Efficiency</span>
-                    <span className="text-sm font-bold text-cyan-400">{stats?.dockEfficiency}%</span>
-                  </div>
-                  <Progress value={stats?.dockEfficiency || 0} className="h-2" />
-                </div>
-                <div className="p-3 rounded-lg bg-slate-700/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-slate-400">Labor Utilization</span>
-                    <span className="text-sm font-bold text-purple-400">{stats?.laborUtilization}%</span>
-                  </div>
-                  <Progress value={stats?.laborUtilization || 0} className="h-2" />
-                </div>
-                <div className="p-3 rounded-lg bg-slate-700/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-slate-400">Safety Score</span>
-                    <span className="text-sm font-bold text-yellow-400">{stats?.safetyScore}%</span>
-                  </div>
-                  <Progress value={stats?.safetyScore || 0} className="h-2" />
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-        <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Activity className="w-5 h-5 text-cyan-400" />Recent Activity</CardTitle></CardHeader>
-        <CardContent className="p-0">
-          {operationsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : !operationsQuery.data || (Array.isArray(operationsQuery.data) && operationsQuery.data.length === 0) ? (
-            <div className="text-center py-16"><Activity className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No recent activity</p></div>
-          ) : (
-            <div className="divide-y divide-slate-700/50">
-              {(Array.isArray(operationsQuery.data) ? operationsQuery.data : []).map((activity: any) => (
-                <div key={activity.id} className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={cn("p-2 rounded-lg", activity.type === "arrival" ? "bg-green-500/20" : activity.type === "departure" ? "bg-blue-500/20" : "bg-yellow-500/20")}>
-                      {activity.type === "arrival" ? <Truck className="w-5 h-5 text-green-400" /> : activity.type === "departure" ? <Truck className="w-5 h-5 text-blue-400" /> : <Package className="w-5 h-5 text-yellow-400" />}
-                    </div>
-                    <div>
-                      <p className="text-white font-medium">{activity.description}</p>
-                      <p className="text-xs text-slate-500">{activity.details}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-slate-400">{activity.time}</p>
-                    <Badge className={cn("border-0 text-xs", activity.type === "arrival" ? "bg-green-500/20 text-green-400" : activity.type === "departure" ? "bg-blue-500/20 text-blue-400" : "bg-yellow-500/20 text-yellow-400")}>{activity.type}</Badge>
-                  </div>
+        {/* Dock Status */}
+        <div className={cn("p-6", cell)}>
+          <div className="flex items-center gap-2 mb-5"><Package className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-white">Dock Status</span></div>
+          {docksQuery.isLoading ? (
+            <div className="grid grid-cols-4 gap-3">{[1,2,3,4,5,6,7,8].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
+          ) : (docksQuery.data as any)?.length > 0 ? (
+            <div className="grid grid-cols-4 gap-3">
+              {(docksQuery.data as any).map((dock: any) => (
+                <div key={dock.id} className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3 text-center">
+                  <div className={cn("w-2.5 h-2.5 rounded-full mx-auto mb-2", getDockStatusColor(dock.status))} />
+                  <p className="text-xs font-semibold text-white">{dock.name}</p>
+                  <p className="text-[10px] text-slate-500 capitalize">{dock.status}</p>
+                  {dock.currentLoad && <p className="text-[10px] text-[#1473FF] mt-1 font-mono">#{dock.currentLoad}</p>}
                 </div>
               ))}
             </div>
+          ) : (
+            <div className="text-center py-8">
+              <Package className="w-8 h-8 text-slate-700 mx-auto mb-2" />
+              <p className="text-xs text-slate-600">No dock data available</p>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Performance */}
+        <div className={cn("p-6", cell)}>
+          <div className="flex items-center gap-2 mb-5"><BarChart3 className="w-4 h-4 text-emerald-400" /><span className="text-sm font-medium text-white">Performance</span></div>
+          <div className="space-y-4">
+            {[
+              { label: "On-Time Departures", value: stats?.onTimeDepartures || 0, color: "#34d399" },
+              { label: "Dock Efficiency", value: stats?.dockEfficiency || 0, color: "#1473FF" },
+              { label: "Labor Utilization", value: stats?.laborUtilization || 0, color: "#a855f7" },
+              { label: "Safety Score", value: stats?.safetyScore || 0, color: "#fbbf24" },
+            ].map(perf => (
+              <div key={perf.label}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs text-slate-400">{perf.label}</span>
+                  <span className="text-xs font-semibold text-white">{perf.value}%</span>
+                </div>
+                <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(perf.value, 100)}%`, backgroundColor: perf.color }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Recent Activity ─── */}
+      <div className={cell}>
+        <div className="px-6 pt-6 pb-4 flex items-center gap-2">
+          <Activity className="w-4 h-4 text-[#1473FF]" />
+          <span className="text-sm font-medium text-white">Recent Activity</span>
+        </div>
+        {operationsQuery.isLoading ? (
+          <div className="px-6 pb-6 space-y-3">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
+        ) : !operationsQuery.data || (Array.isArray(operationsQuery.data) && operationsQuery.data.length === 0) ? (
+          <div className="text-center py-16 pb-8">
+            <Activity className="w-8 h-8 text-slate-700 mx-auto mb-2" />
+            <p className="text-xs text-slate-600">No recent activity</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-white/[0.03]">
+            {(Array.isArray(operationsQuery.data) ? operationsQuery.data : []).map((activity: any) => (
+              <div key={activity.id} className="flex items-center justify-between px-6 py-3.5">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+                    activity.type === "arrival" ? "bg-emerald-500/10" : activity.type === "departure" ? "bg-[#1473FF]/10" : "bg-amber-500/10"
+                  )}>
+                    {activity.type === "arrival" ? <Truck className="w-4 h-4 text-emerald-400" /> : activity.type === "departure" ? <Truck className="w-4 h-4 text-[#1473FF]" /> : <Package className="w-4 h-4 text-amber-400" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm text-white truncate">{activity.description}</p>
+                    <p className="text-[10px] text-slate-600 truncate">{activity.details}</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0 pl-4">
+                  <p className="text-[11px] text-slate-500">{activity.time}</p>
+                  <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md",
+                    activity.type === "arrival" ? "text-emerald-400 bg-emerald-400/10" : activity.type === "departure" ? "text-[#1473FF] bg-[#1473FF]/10" : "text-amber-400 bg-amber-400/10"
+                  )}>{activity.type}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -907,7 +907,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "Users", label: "Staff", path: "/staff", badge: 0, description: "Access controllers & validation links" },
     { icon: "PenTool", label: "Agreements", path: "/agreements", badge: 0, description: "Terminal access & service agreements" },
     { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Permits, compliance docs & certifications" },
-    { icon: "BarChart3", label: "Reports", path: "/reports", badge: 0, description: "Operations reports" },
+    { icon: "BarChart3", label: "Reports", path: "/terminal/reports", badge: 0, description: "Terminal operations reports" },
     { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates & demand heatmaps" },
     { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Communication" },
     { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Payments, invoices & escrow" },
