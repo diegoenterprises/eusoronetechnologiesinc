@@ -68,7 +68,7 @@ export default function AdminPlatformFees() {
 
       {/* Revenue Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
@@ -86,7 +86,7 @@ export default function AdminPlatformFees() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -104,7 +104,7 @@ export default function AdminPlatformFees() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -120,7 +120,7 @@ export default function AdminPlatformFees() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -158,8 +158,8 @@ export default function AdminPlatformFees() {
 
         {/* Fee Configs Tab */}
         <TabsContent value="configs">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
-            <CardHeader className="border-b border-white/[0.06]">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <CardHeader className="border-b border-slate-700/50">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg text-slate-200">Fee Configurations</CardTitle>
                 <Button variant="ghost" size="sm" onClick={() => feeConfigsQuery.refetch()}>
@@ -175,7 +175,7 @@ export default function AdminPlatformFees() {
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-white/[0.06] hover:bg-white/[0.06]/30">
+                    <TableRow className="border-slate-700/50 hover:bg-slate-700/30">
                       <TableHead className="text-slate-400">Fee Code</TableHead>
                       <TableHead className="text-slate-400">Name</TableHead>
                       <TableHead className="text-slate-400">Type</TableHead>
@@ -187,7 +187,7 @@ export default function AdminPlatformFees() {
                   </TableHeader>
                   <TableBody>
                     {(feeConfigsQuery.data || []).map((config: any) => (
-                      <TableRow key={config.id} className="border-white/[0.06] hover:bg-white/[0.06]/30">
+                      <TableRow key={config.id} className="border-slate-700/50 hover:bg-slate-700/30">
                         <TableCell className="font-mono text-cyan-400">{config.feeCode}</TableCell>
                         <TableCell className="text-slate-200">{config.name}</TableCell>
                         <TableCell>
@@ -230,8 +230,8 @@ export default function AdminPlatformFees() {
 
         {/* Volume Discounts Tab */}
         <TabsContent value="discounts">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
-            <CardHeader className="border-b border-white/[0.06]">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <CardHeader className="border-b border-slate-700/50">
               <CardTitle className="text-lg text-slate-200">Volume Discounts</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -242,7 +242,7 @@ export default function AdminPlatformFees() {
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-white/[0.06] hover:bg-white/[0.06]/30">
+                    <TableRow className="border-slate-700/50 hover:bg-slate-700/30">
                       <TableHead className="text-slate-400">Name</TableHead>
                       <TableHead className="text-slate-400">Type</TableHead>
                       <TableHead className="text-slate-400">Threshold</TableHead>
@@ -253,7 +253,7 @@ export default function AdminPlatformFees() {
                   </TableHeader>
                   <TableBody>
                     {(volumeDiscountsQuery.data || []).map((discount: any) => (
-                      <TableRow key={discount.id} className="border-white/[0.06] hover:bg-white/[0.06]/30">
+                      <TableRow key={discount.id} className="border-slate-700/50 hover:bg-slate-700/30">
                         <TableCell className="text-slate-200">{discount.name}</TableCell>
                         <TableCell className="text-slate-400">{discount.discountType}</TableCell>
                         <TableCell className="text-cyan-400">{discount.thresholdValue}</TableCell>
@@ -282,8 +282,8 @@ export default function AdminPlatformFees() {
 
         {/* Promo Codes Tab */}
         <TabsContent value="promos">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
-            <CardHeader className="border-b border-white/[0.06]">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <CardHeader className="border-b border-slate-700/50">
               <CardTitle className="text-lg text-slate-200">Promo Codes</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -294,7 +294,7 @@ export default function AdminPlatformFees() {
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-white/[0.06] hover:bg-white/[0.06]/30">
+                    <TableRow className="border-slate-700/50 hover:bg-slate-700/30">
                       <TableHead className="text-slate-400">Code</TableHead>
                       <TableHead className="text-slate-400">Name</TableHead>
                       <TableHead className="text-slate-400">Type</TableHead>
@@ -306,7 +306,7 @@ export default function AdminPlatformFees() {
                   </TableHeader>
                   <TableBody>
                     {(promoCodesQuery.data || []).map((promo: any) => (
-                      <TableRow key={promo.id} className="border-white/[0.06] hover:bg-white/[0.06]/30">
+                      <TableRow key={promo.id} className="border-slate-700/50 hover:bg-slate-700/30">
                         <TableCell className="font-mono text-yellow-400">{promo.code}</TableCell>
                         <TableCell className="text-slate-200">{promo.name}</TableCell>
                         <TableCell className="text-slate-400">{promo.discountType}</TableCell>
@@ -342,8 +342,8 @@ export default function AdminPlatformFees() {
 
         {/* Revenue Tab */}
         <TabsContent value="revenue">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
-            <CardHeader className="border-b border-white/[0.06]">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <CardHeader className="border-b border-slate-700/50">
               <CardTitle className="text-lg text-slate-200">Revenue by Transaction Type</CardTitle>
             </CardHeader>
             <CardContent className="p-6">

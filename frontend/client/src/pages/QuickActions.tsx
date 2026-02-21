@@ -65,7 +65,7 @@ export default function QuickActions() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(favoritesQuery.data as any)?.map((action: any) => (
-                <Button key={action.id} variant="outline" className="h-auto p-4 flex flex-col items-center gap-2 bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04] hover:border-cyan-500/50 rounded-xl transition-all" onClick={() => setLocation(action.path)}>
+                <Button key={action.id} variant="outline" className="h-auto p-4 flex flex-col items-center gap-2 bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/50 hover:border-cyan-500/50 rounded-xl transition-all" onClick={() => setLocation(action.path)}>
                   <div className={cn("p-3 rounded-full", action.color || "bg-cyan-500/20 text-cyan-400")}>
                     {getActionIcon(action.icon)}
                   </div>
@@ -79,7 +79,7 @@ export default function QuickActions() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* All Actions */}
-        <Card className="lg:col-span-2 bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">All Actions</CardTitle>
           </CardHeader>
@@ -91,7 +91,7 @@ export default function QuickActions() {
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {(actionsQuery.data as any)?.map((action: any) => (
-                  <div key={action.id} className="p-4 rounded-xl bg-slate-700/30 hover:bg-white/[0.04] transition-colors cursor-pointer group" onClick={() => setLocation(action.path)}>
+                  <div key={action.id} className="p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer group" onClick={() => setLocation(action.path)}>
                     <div className={cn("p-3 rounded-full w-fit mb-3", action.color || "bg-slate-600/50 text-slate-400")}>
                       {getActionIcon(action.icon)}
                     </div>
@@ -109,7 +109,7 @@ export default function QuickActions() {
         </Card>
 
         {/* Recent Actions */}
-        <Card className="lg:col-span-1 bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="lg:col-span-1 bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Recent</CardTitle>
           </CardHeader>
@@ -119,9 +119,9 @@ export default function QuickActions() {
             ) : (recentQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-8">No recent actions</p>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {(recentQuery.data as any)?.map((action: any) => (
-                  <div key={action.id} className="p-4 flex items-center gap-3 hover:bg-white/[0.04] transition-colors cursor-pointer" onClick={() => setLocation(action.path)}>
+                  <div key={action.id} className="p-4 flex items-center gap-3 hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => setLocation(action.path)}>
                     <div className={cn("p-2 rounded-lg", action.color || "bg-slate-600/50 text-slate-400")}>
                       {getActionIcon(action.icon)}
                     </div>

@@ -37,7 +37,7 @@ export default function EscortDashboard() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Car className="w-6 h-6 text-cyan-400" /></div>
@@ -45,7 +45,7 @@ export default function EscortDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><Calendar className="w-6 h-6 text-yellow-400" /></div>
@@ -53,7 +53,7 @@ export default function EscortDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
@@ -61,7 +61,7 @@ export default function EscortDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><DollarSign className="w-6 h-6 text-purple-400" /></div>
@@ -69,7 +69,7 @@ export default function EscortDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20"><Star className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" /></div>
@@ -84,7 +84,7 @@ export default function EscortDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Car className="w-5 h-5 text-cyan-400" />Active Job</CardTitle></CardHeader>
           <CardContent>
             {(activeJobsQuery.data as any)?.map((job: any) => (
-              <div key={job.id} className="p-4 rounded-lg bg-white/[0.02]">
+              <div key={job.id} className="p-4 rounded-lg bg-slate-800/50">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="text-white font-bold text-lg">Job #{job.jobNumber}</p>
@@ -110,7 +110,7 @@ export default function EscortDashboard() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Calendar className="w-5 h-5 text-yellow-400" />Upcoming Jobs</CardTitle></CardHeader>
           <CardContent className="p-0">
             {upcomingQuery.isLoading ? (
@@ -118,7 +118,7 @@ export default function EscortDashboard() {
             ) : (upcomingQuery.data as any)?.length === 0 ? (
               <div className="p-6 text-center"><Calendar className="w-8 h-8 text-slate-500 mx-auto mb-2" /><p className="text-slate-400 text-sm">No upcoming jobs</p></div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {(upcomingQuery.data as any)?.map((job: any) => (
                   <div key={job.id} className="p-3 flex items-center justify-between">
                     <div>
@@ -137,13 +137,13 @@ export default function EscortDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-green-400" />Certifications</CardTitle></CardHeader>
           <CardContent className="p-0">
             {certificationsQuery.isLoading ? (
               <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {(certificationsQuery.data as any)?.states?.map((state: any) => (
                   <div key={state.code} className="p-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">

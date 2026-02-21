@@ -69,7 +69,7 @@ export default function FuelPrices() {
         </div>
         <div className="flex items-center gap-3">
           <Select value={fuelType} onValueChange={setFuelType}>
-            <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
+            <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -77,7 +77,7 @@ export default function FuelPrices() {
               <SelectItem value="def">DEF</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => { stationsQuery.refetch(); averagesQuery.refetch(); trendsQuery.refetch(); pricesQuery.refetch(); }}>
+          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => { stationsQuery.refetch(); averagesQuery.refetch(); trendsQuery.refetch(); pricesQuery.refetch(); }}>
             <RefreshCw className="w-4 h-4 mr-2" />Refresh
           </Button>
         </div>
@@ -101,7 +101,7 @@ export default function FuelPrices() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -117,7 +117,7 @@ export default function FuelPrices() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -133,7 +133,7 @@ export default function FuelPrices() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className={cn("p-3 rounded-full", (averages?.weekChange ?? 0) < 0 ? "bg-green-500/20" : "bg-red-500/20")}>
@@ -155,12 +155,12 @@ export default function FuelPrices() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search stations..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search stations..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Nearby Stations */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Fuel className="w-5 h-5 text-cyan-400" />
@@ -172,15 +172,15 @@ export default function FuelPrices() {
               <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : filteredStations?.length === 0 ? (
               <div className="text-center py-12">
-                <div className="p-4 rounded-full bg-white/[0.04] w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <Fuel className="w-8 h-8 text-slate-500" />
                 </div>
                 <p className="text-slate-400">No stations found</p>
               </div>
             ) : (
-              <div className="divide-y divide-white/[0.04] max-h-[500px] overflow-y-auto">
+              <div className="divide-y divide-slate-700/50 max-h-[500px] overflow-y-auto">
                 {filteredStations?.map((station: any, idx: number) => (
-                  <div key={station.id} className={cn("p-4 hover:bg-white/[0.04] transition-colors", idx === 0 && "bg-green-500/5 border-l-2 border-green-500")}>
+                  <div key={station.id} className={cn("p-4 hover:bg-slate-700/20 transition-colors", idx === 0 && "bg-green-500/5 border-l-2 border-green-500")}>
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
@@ -206,7 +206,7 @@ export default function FuelPrices() {
         </Card>
 
         {/* Price by Region */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Price by Region</CardTitle>
           </CardHeader>
@@ -234,7 +234,7 @@ export default function FuelPrices() {
       </div>
 
       {/* 30-Day Trend */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg">30-Day Price Trend</CardTitle>
         </CardHeader>

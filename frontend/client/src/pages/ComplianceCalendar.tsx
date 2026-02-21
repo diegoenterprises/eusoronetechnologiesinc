@@ -61,7 +61,7 @@ export default function ComplianceCalendar() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -77,7 +77,7 @@ export default function ComplianceCalendar() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -93,7 +93,7 @@ export default function ComplianceCalendar() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -109,7 +109,7 @@ export default function ComplianceCalendar() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -127,7 +127,7 @@ export default function ComplianceCalendar() {
       </div>
 
       {/* Calendar Navigation */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={prevMonth}>
@@ -144,7 +144,7 @@ export default function ComplianceCalendar() {
             <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (eventsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
-              <div className="p-4 rounded-full bg-white/[0.04] w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                 <Calendar className="w-8 h-8 text-slate-500" />
               </div>
               <p className="text-slate-400">No events this month</p>

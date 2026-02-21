@@ -111,7 +111,7 @@ export function HOSMonitor({ data, onStatusChange, onRefresh, isDriver = false }
   const cyclePercentage = (data.cycleRemaining / cycleTotal) * 100;
 
   return (
-    <Card className="bg-white/[0.02] border-slate-700">
+    <Card className="bg-slate-800/50 border-slate-700">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-white flex items-center gap-2">

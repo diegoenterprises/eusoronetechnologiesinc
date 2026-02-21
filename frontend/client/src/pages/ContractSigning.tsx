@@ -79,8 +79,8 @@ export default function ContractSigning() {
   const load = loadQuery.data;
   const bid = bidQuery.data;
 
-  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const cellCls = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
+  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cellCls = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
   const titleCls = cn("text-lg font-semibold", isLight ? "text-slate-800" : "text-white");
   const valCls = cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white");
   const mutedCls = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
@@ -179,7 +179,7 @@ export default function ContractSigning() {
 
       {/* ── Header ── */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className={cn("rounded-xl", isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]")} onClick={() => setLocation("/bids")}>
+        <Button variant="ghost" size="sm" className={cn("rounded-xl", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")} onClick={() => setLocation("/bids")}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
@@ -216,7 +216,7 @@ export default function ContractSigning() {
       {step === "review" && (
         <div className="space-y-5">
           {/* Rate Hero */}
-          <div className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-slate-200 shadow-md" : "bg-white/[0.03] border-white/[0.06]")}>
+          <div className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-slate-200 shadow-md" : "bg-slate-800/60 border-slate-700/50")}>
             <div className="bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 px-6 py-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -325,7 +325,7 @@ export default function ContractSigning() {
           <label className={cn("flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all",
             agreedToTerms
               ? isLight ? "bg-green-50 border-green-200" : "bg-green-500/10 border-green-500/30"
-              : isLight ? "bg-white border-slate-200 hover:bg-slate-50" : "bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.06]/30"
+              : isLight ? "bg-white border-slate-200 hover:bg-slate-50" : "bg-slate-800/60 border-slate-700/50 hover:bg-slate-700/30"
           )}>
             <input
               type="checkbox"

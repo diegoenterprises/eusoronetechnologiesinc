@@ -26,7 +26,7 @@ export default function PlatformAnalytics() {
   const metrics = metricsQuery.data;
 
   const StatCard = ({ icon: Icon, iconColor, bgColor, title, value, change, changeType }: any) => (
-    <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+    <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
       <CardContent className="p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -62,7 +62,7 @@ export default function PlatformAnalytics() {
           <p className="text-slate-400 text-sm mt-1">Monitor platform performance and metrics</p>
         </div>
         <Select value={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
+          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
             <Calendar className="w-4 h-4 mr-2" />
             <SelectValue />
           </SelectTrigger>
@@ -85,7 +85,7 @@ export default function PlatformAnalytics() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Trends */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-cyan-400" />
@@ -120,7 +120,7 @@ export default function PlatformAnalytics() {
         </Card>
 
         {/* Top Performers */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <TrendingUp className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
@@ -131,10 +131,10 @@ export default function PlatformAnalytics() {
             {topQuery.isLoading ? (
               <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {(topQuery.data as any)?.map((performer: any, idx: number) => (
                   <div key={performer.id} className="p-4 flex items-center gap-4">
-                    <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm", idx === 0 ? "bg-yellow-500/20 text-yellow-400" : idx === 1 ? "bg-slate-400/20 text-slate-300" : idx === 2 ? "bg-orange-500/20 text-orange-400" : "bg-white/[0.04] text-slate-400")}>
+                    <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm", idx === 0 ? "bg-yellow-500/20 text-yellow-400" : idx === 1 ? "bg-slate-400/20 text-slate-300" : idx === 2 ? "bg-orange-500/20 text-orange-400" : "bg-slate-700/50 text-slate-400")}>
                       {idx + 1}
                     </div>
                     <div className="flex-1">

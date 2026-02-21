@@ -47,7 +47,7 @@ export default function SafetyMeetings() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Calendar className="w-6 h-6 text-cyan-400" /></div>
@@ -55,7 +55,7 @@ export default function SafetyMeetings() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20"><Clock className="w-6 h-6 text-blue-400" /></div>
@@ -63,7 +63,7 @@ export default function SafetyMeetings() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
@@ -71,7 +71,7 @@ export default function SafetyMeetings() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><Users className="w-6 h-6 text-purple-400" /></div>
@@ -82,7 +82,7 @@ export default function SafetyMeetings() {
       </div>
 
       <Select value={filter} onValueChange={setFilter}>
-        <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="upcoming">Upcoming</SelectItem>
           <SelectItem value="completed">Completed</SelectItem>
@@ -90,7 +90,7 @@ export default function SafetyMeetings() {
         </SelectContent>
       </Select>
 
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Users className="w-5 h-5 text-cyan-400" />Meetings</CardTitle></CardHeader>
         <CardContent className="p-0">
           {meetingsQuery.isLoading ? (
@@ -98,7 +98,7 @@ export default function SafetyMeetings() {
           ) : (meetingsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Calendar className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No meetings found</p></div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {(meetingsQuery.data as any)?.map((meeting: any) => (
                 <div key={meeting.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">

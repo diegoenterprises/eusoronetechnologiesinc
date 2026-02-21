@@ -69,8 +69,8 @@ export default function AgreementsLibrary() {
     return true;
   });
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const cl = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cl = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
   const vl = cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white");
   const mt = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
   const ic = cn("rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500");
@@ -160,7 +160,7 @@ export default function AgreementsLibrary() {
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {(["all", "active", "pending", "draft", "expired"] as TabFilter[]).map(t => (
             <button key={t} onClick={() => setTab(t)} className={cn("px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all",
-              tab === t ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]"
+              tab === t ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
             )}>{t === "all" ? "All" : t.replace(/\b\w/g, c => c.toUpperCase())}</button>
           ))}
         </div>
@@ -220,7 +220,7 @@ export default function AgreementsLibrary() {
                         <p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${parseFloat(ag.baseRate).toLocaleString()}</p>
                       </div>
                     )}
-                    <Button size="sm" variant="ghost" className={cn("rounded-lg h-8 w-8 p-0", isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); downloadAgreementPdf({ agreementNumber: ag.agreementNumber || `AG-${ag.id}`, agreementType: ag.agreementType || "catalyst_shipper", contractDuration: ag.contractDuration, status: ag.status, generatedContent: ag.generatedContent || "Agreement content not available — open the agreement to view full details.", partyAName: ag.partyAName || user?.name, partyARole: ag.partyARole || role, partyBName: ag.partyBName || ag.partyBCompany, partyBCompany: ag.partyBCompany, partyBRole: ag.partyBRole || "CATALYST", baseRate: ag.baseRate, rateType: ag.rateType, paymentTermDays: ag.paymentTermDays, effectiveDate: ag.effectiveDate, expirationDate: ag.expirationDate, equipmentTypes: ag.equipmentTypes, hazmatRequired: ag.hazmatRequired }); }}>
+                    <Button size="sm" variant="ghost" className={cn("rounded-lg h-8 w-8 p-0", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); downloadAgreementPdf({ agreementNumber: ag.agreementNumber || `AG-${ag.id}`, agreementType: ag.agreementType || "catalyst_shipper", contractDuration: ag.contractDuration, status: ag.status, generatedContent: ag.generatedContent || "Agreement content not available — open the agreement to view full details.", partyAName: ag.partyAName || user?.name, partyARole: ag.partyARole || role, partyBName: ag.partyBName || ag.partyBCompany, partyBCompany: ag.partyBCompany, partyBRole: ag.partyBRole || "CATALYST", baseRate: ag.baseRate, rateType: ag.rateType, paymentTermDays: ag.paymentTermDays, effectiveDate: ag.effectiveDate, expirationDate: ag.expirationDate, equipmentTypes: ag.equipmentTypes, hazmatRequired: ag.hazmatRequired }); }}>
                       <Download className="w-3.5 h-3.5" />
                     </Button>
                     {ag.status?.includes?.("pending") && isCatalyst && (

@@ -161,7 +161,7 @@ export default function CatalystBidSubmission() {
   if (loadQuery.error || !load) {
     return (
       <div className="p-4 md:p-6 max-w-[900px] mx-auto">
-        <div className={cn("text-center py-16 rounded-2xl border", isLight ? "bg-white border-slate-200" : "bg-white/[0.03] border-white/[0.06]")}>
+        <div className={cn("text-center py-16 rounded-2xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
           <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-red-50" : "bg-red-500/10")}>
             <AlertTriangle className="w-10 h-10 text-red-400" />
           </div>
@@ -211,7 +211,7 @@ export default function CatalystBidSubmission() {
                   ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-lg"
                   : i < step
                     ? isLight ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-emerald-500/15 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border border-emerald-500/30"
-                    : isLight ? "bg-slate-100 text-slate-400 border border-slate-200" : "bg-slate-800 text-slate-500 border border-white/[0.06]"
+                    : isLight ? "bg-slate-100 text-slate-400 border border-slate-200" : "bg-slate-800 text-slate-500 border border-slate-700/50"
               )}
             >
               {i < step ? <CheckCircle className="w-3.5 h-3.5" /> : <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">{i + 1}</span>}
@@ -223,7 +223,7 @@ export default function CatalystBidSubmission() {
       </div>
 
       {/* ── Wizard Card ── */}
-      <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-slate-200 shadow-md" : "bg-white/[0.03] border-white/[0.06]")}>
+      <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-slate-200 shadow-md" : "bg-slate-800/60 border-slate-700/50")}>
         <CardContent className="p-6">
 
           {/* STEP 0: Load Review */}
@@ -281,7 +281,7 @@ export default function CatalystBidSubmission() {
                   { label: "Target Rate", value: `$${targetRate.toLocaleString()}`, icon: <DollarSign className="w-4 h-4" />, color: "green" },
                   { label: "Rate/Mile", value: targetRate && distance ? `$${(targetRate / distance).toFixed(2)}` : "—", icon: <Navigation className="w-4 h-4" />, color: "cyan" },
                 ].map((stat) => (
-                  <div key={stat.label} className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
+                  <div key={stat.label} className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                     <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center mb-2",
                       stat.color === "blue" ? "bg-blue-500/15 text-blue-500" :
                       stat.color === "purple" ? "bg-purple-500/15 text-purple-500" :
@@ -338,7 +338,7 @@ export default function CatalystBidSubmission() {
                   <div className="flex items-center gap-1 mb-3">
                     {(["AGGRESSIVE", "COMPETITIVE", "PREMIUM"] as const).map(s => (
                       <button key={s} onClick={() => setBidStrategy(s)}
-                        className={cn("px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all", bidStrategy === s ? "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white shadow" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-white/[0.02] text-slate-400 hover:bg-white/[0.04]")}>
+                        className={cn("px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all", bidStrategy === s ? "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white shadow" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800/50 text-slate-400 hover:bg-slate-700/50")}>
                         {s}
                       </button>
                     ))}
@@ -370,7 +370,7 @@ export default function CatalystBidSubmission() {
 
               {/* ML ETA Prediction */}
               {mlETA.data && distance > 0 && (
-                <div className={cn("p-3 rounded-lg flex items-center gap-4", isLight ? "bg-slate-50 border border-slate-200" : "bg-white/[0.02] border border-slate-700/30")}>
+                <div className={cn("p-3 rounded-lg flex items-center gap-4", isLight ? "bg-slate-50 border border-slate-200" : "bg-slate-800/50 border border-slate-700/30")}>
                   <Clock className="w-5 h-5 text-blue-400 shrink-0" />
                   <div className="flex-1">
                     <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>ML Transit Estimate</p>
@@ -395,7 +395,7 @@ export default function CatalystBidSubmission() {
                         if (distance && Number(e.target.value) > 0) setRatePerMileInput((Number(e.target.value) / distance).toFixed(2));
                       }}
                       placeholder="e.g., 2500"
-                      className={cn("pl-10 text-xl font-bold rounded-xl h-14 border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.06]")}
+                      className={cn("pl-10 text-xl font-bold rounded-xl h-14 border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/50 border-slate-600/50")}
                     />
                   </div>
                   {distance > 0 && bidAmount && (
@@ -416,7 +416,7 @@ export default function CatalystBidSubmission() {
                         if (distance && Number(e.target.value) > 0) setBidAmount(String(Math.round(Number(e.target.value) * distance)));
                       }}
                       placeholder="e.g., 3.25"
-                      className={cn("pl-10 text-xl font-bold rounded-xl h-14 border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.06]")}
+                      className={cn("pl-10 text-xl font-bold rounded-xl h-14 border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/50 border-slate-600/50")}
                     />
                   </div>
                   {distance > 0 && ratePerMileInput && (
@@ -474,13 +474,13 @@ export default function CatalystBidSubmission() {
                         rateIntel.ratingLabel === label
                           ? label === "Sweet Spot" ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-purple-400"
                             : "border-amber-300 dark:border-amber-500/50 bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                          : isLight ? "border-slate-200 bg-slate-50 text-slate-400" : "border-white/[0.06] bg-slate-800/30 text-slate-500"
+                          : isLight ? "border-slate-200 bg-slate-50 text-slate-400" : "border-slate-700/50 bg-slate-800/30 text-slate-500"
                       )}>
                         {label}
                       </span>
                     ))}
                   </div>
-                  <div className={cn("mt-4 p-3 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
+                  <div className={cn("mt-4 p-3 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                     <div className="flex items-center gap-2 mb-2">
                       <EsangIcon className="w-3 h-3 text-purple-500" />
                       <span className={cn("text-[11px] font-bold", isLight ? "text-purple-600" : "text-purple-300")}>ESANG Recommendation</span>
@@ -505,7 +505,7 @@ export default function CatalystBidSubmission() {
                   <User className="w-4 h-4 text-blue-500" />Assign Driver
                 </label>
                 <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-                  <SelectTrigger className={cn("rounded-xl h-12 border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.06]")}>
+                  <SelectTrigger className={cn("rounded-xl h-12 border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/50 border-slate-600/50")}>
                     <SelectValue placeholder="Select a driver (optional)" />
                   </SelectTrigger>
                   <SelectContent>
@@ -530,7 +530,7 @@ export default function CatalystBidSubmission() {
                   <Truck className="w-4 h-4 text-purple-500" />Assign Truck
                 </label>
                 <Select value={selectedTruck} onValueChange={setSelectedTruck}>
-                  <SelectTrigger className={cn("rounded-xl h-12 border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.06]")}>
+                  <SelectTrigger className={cn("rounded-xl h-12 border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/50 border-slate-600/50")}>
                     <SelectValue placeholder="Select a vehicle (optional)" />
                   </SelectTrigger>
                   <SelectContent>
@@ -598,7 +598,7 @@ export default function CatalystBidSubmission() {
 
               {/* Shipper's requested dates */}
               {(load.pickupDate || load.deliveryDate) && (
-                <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
+                <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                   <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Shipper's Requested Dates</p>
                   <div className="grid grid-cols-2 gap-4">
                     <div><p className="text-xs text-slate-400">Pickup</p><p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-white")}>{String(load.pickupDate || "Flexible")}</p></div>
@@ -615,7 +615,7 @@ export default function CatalystBidSubmission() {
                   value={notes}
                   onChange={(e: any) => setNotes(e.target.value)}
                   placeholder="Any relevant information for the shipper — special equipment, availability windows, certifications..."
-                  className={cn("rounded-xl border min-h-[120px]", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.06]")}
+                  className={cn("rounded-xl border min-h-[120px]", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/50 border-slate-600/50")}
                 />
               </div>
             </div>
@@ -657,7 +657,7 @@ export default function CatalystBidSubmission() {
                   ...(estimatedPickup ? [{ label: "Est. Pickup", value: estimatedPickup }] : []),
                   ...(estimatedDelivery ? [{ label: "Est. Delivery", value: estimatedDelivery }] : []),
                 ].map((item) => (
-                  <div key={item.label} className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
+                  <div key={item.label} className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                     <p className="text-[10px] text-slate-400 uppercase">{item.label}</p>
                     <p className={cn("text-sm font-medium mt-0.5", isLight ? "text-slate-800" : "text-white")}>{item.value}</p>
                   </div>
@@ -665,7 +665,7 @@ export default function CatalystBidSubmission() {
               </div>
 
               {notes && (
-                <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
+                <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                   <p className="text-[10px] text-slate-400 uppercase">Notes</p>
                   <p className={cn("text-sm mt-0.5", isLight ? "text-slate-700" : "text-slate-300")}>{notes}</p>
                 </div>
@@ -675,7 +675,7 @@ export default function CatalystBidSubmission() {
               <label className={cn("flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all",
                 acceptedTerms
                   ? isLight ? "bg-emerald-50 border-emerald-300" : "bg-emerald-500/10 border-emerald-500/30"
-                  : isLight ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
+                  : isLight ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
               )}>
                 <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-0.5 accent-emerald-500 w-4 h-4" />
                 <div>
@@ -692,7 +692,7 @@ export default function CatalystBidSubmission() {
       <div className="flex items-center justify-between">
         <Button
           variant="outline"
-          className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06]")}
+          className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-800/50 border-slate-700/50 hover:bg-slate-700")}
           onClick={() => step === 0 ? setLocation("/marketplace") : setStep(s => s - 1)}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />{step === 0 ? "Cancel" : "Back"}

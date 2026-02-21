@@ -199,7 +199,7 @@ export function DocumentUploader({
       )}
 
       {/* Upload Section */}
-      <Card className="bg-white/[0.02] border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Upload className="w-5 h-5 text-blue-400" />
@@ -211,7 +211,7 @@ export function DocumentUploader({
             <div className="space-y-2">
               <Label className="text-slate-300">Document Category <span className="text-red-400">*</span></Label>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -227,7 +227,7 @@ export function DocumentUploader({
                 type="date"
                 value={expirationDate}
                 onChange={(e) => setExpirationDate(e.target.value)}
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -242,7 +242,7 @@ export function DocumentUploader({
               "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all",
               isDragging 
                 ? "border-blue-500 bg-blue-500/10" 
-                : "border-slate-600 hover:border-slate-500 hover:bg-white/[0.06]/30",
+                : "border-slate-600 hover:border-slate-500 hover:bg-slate-700/30",
               isUploading && "pointer-events-none opacity-50"
             )}
           >
@@ -276,7 +276,7 @@ export function DocumentUploader({
       </Card>
 
       {/* Documents List */}
-      <Card className="bg-white/[0.02] border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-white flex items-center gap-2">
@@ -300,7 +300,7 @@ export function DocumentUploader({
               {documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30 hover:bg-white/[0.04] transition-colors"
+                  className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className={cn(

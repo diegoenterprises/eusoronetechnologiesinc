@@ -89,8 +89,8 @@ export default function InTransitPage() {
     load.deliveryLocation?.city?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
-  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const cellCls = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
+  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cellCls = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
   const valCls = cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white");
 
   return (
@@ -127,7 +127,7 @@ export default function InTransitPage() {
       </div>
 
       {/* ── Search ── */}
-      <div className={cn("relative rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]")}>
+      <div className={cn("relative rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
         <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           placeholder="Search by load number, origin, or destination..."
@@ -143,8 +143,8 @@ export default function InTransitPage() {
           {[1, 2, 3].map((i) => <Skeleton key={i} className={cn("h-56 w-full rounded-2xl", isLight ? "bg-slate-200" : "")} />)}
         </div>
       ) : filteredLoads.length === 0 ? (
-        <div className={cn("text-center py-16 rounded-2xl border", isLight ? "bg-white border-slate-200" : "bg-white/[0.03] border-white/[0.06]")}>
-          <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
+        <div className={cn("text-center py-16 rounded-2xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
+          <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
             <Truck className="w-10 h-10 text-slate-400" />
           </div>
           <p className={cn("text-lg font-medium", isLight ? "text-slate-700" : "text-slate-200")}>No active deliveries</p>
@@ -282,7 +282,7 @@ export default function InTransitPage() {
                     <Button
                       variant="outline"
                       onClick={() => handleContactDriver(load.driverId)}
-                      className={cn("rounded-xl text-sm h-10", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-700 hover:bg-white/[0.06]")}
+                      className={cn("rounded-xl text-sm h-10", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-700 hover:bg-slate-700")}
                     >
                       <Phone className="w-4 h-4 mr-2" />Call
                     </Button>

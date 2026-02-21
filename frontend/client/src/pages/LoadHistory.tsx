@@ -44,7 +44,7 @@ export default function LoadHistory() {
           <p className="text-slate-400 text-sm mt-1">View past shipments</p>
         </div>
         <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg"><Calendar className="w-4 h-4 mr-2" /><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><Calendar className="w-4 h-4 mr-2" /><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="week">This Week</SelectItem>
             <SelectItem value="month">This Month</SelectItem>
@@ -55,7 +55,7 @@ export default function LoadHistory() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Package className="w-6 h-6 text-cyan-400" /></div>
@@ -63,7 +63,7 @@ export default function LoadHistory() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
@@ -71,7 +71,7 @@ export default function LoadHistory() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><DollarSign className="w-6 h-6 text-purple-400" /></div>
@@ -79,7 +79,7 @@ export default function LoadHistory() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><MapPin className="w-6 h-6 text-yellow-400" /></div>
@@ -92,10 +92,10 @@ export default function LoadHistory() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search loads..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search loads..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="delivered">Delivered</SelectItem>
@@ -104,7 +104,7 @@ export default function LoadHistory() {
         </Select>
       </div>
 
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Package className="w-5 h-5 text-cyan-400" />Load History</CardTitle></CardHeader>
         <CardContent className="p-0">
           {loadsQuery.isLoading ? (
@@ -112,11 +112,11 @@ export default function LoadHistory() {
           ) : (loadsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Package className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No loads found</p></div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {(loadsQuery.data as any)?.map((load: any) => (
                 <div key={load.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={cn("p-3 rounded-xl", load.status === "delivered" ? "bg-green-500/20" : load.status === "cancelled" ? "bg-red-500/20" : "bg-white/[0.04]")}>
+                    <div className={cn("p-3 rounded-xl", load.status === "delivered" ? "bg-green-500/20" : load.status === "cancelled" ? "bg-red-500/20" : "bg-slate-700/50")}>
                       <Package className={cn("w-5 h-5", load.status === "delivered" ? "text-green-400" : load.status === "cancelled" ? "text-red-400" : "text-slate-400")} />
                     </div>
                     <div>

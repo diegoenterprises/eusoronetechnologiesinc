@@ -64,7 +64,7 @@ export default function CarrierScorecardPage() {
       {carrierId && sc && (
         <div className="space-y-6">
           {/* Header */}
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl overflow-hidden">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl overflow-hidden">
             <div className={cn("h-2 bg-gradient-to-r", GRADE_COLORS[sc.grade] || GRADE_COLORS.C)} />
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -96,7 +96,7 @@ export default function CarrierScorecardPage() {
               { ...sc.metrics.bidAcceptance, icon: <TrendingUp className="w-5 h-5 text-blue-400" />, val: `${sc.metrics.bidAcceptance.rate}%`, sub: `${sc.metrics.bidAcceptance.accepted}/${sc.metrics.bidAcceptance.totalBids} bids`, color: "text-blue-400" },
               { ...sc.metrics.hazmat, icon: <Flame className="w-5 h-5 text-orange-400" />, val: `${sc.metrics.hazmat.totalLoads}`, sub: `${sc.metrics.hazmat.delivered} delivered | HMSP: ${sc.metrics.hazmat.hmspActive ? "Active" : "None"}`, color: "text-orange-400" },
             ].map((m, i) => (
-              <Card key={i} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+              <Card key={i} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2">{m.icon}<span className="text-[10px] text-slate-400 uppercase">{m.label}</span></div>
                   <p className={cn("text-2xl font-bold", m.color)}>{m.val}</p>
@@ -108,13 +108,13 @@ export default function CarrierScorecardPage() {
 
           {/* Fleet Info */}
           <div className="grid grid-cols-2 gap-4">
-            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="p-3 rounded-full bg-blue-500/20"><Truck className="w-6 h-6 text-blue-400" /></div>
                 <div><p className="text-2xl font-bold text-blue-400">{sc.fleet.vehicles}</p><p className="text-xs text-slate-400">Vehicles</p></div>
               </CardContent>
             </Card>
-            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="p-3 rounded-full bg-purple-500/20"><Users className="w-6 h-6 text-purple-400" /></div>
                 <div><p className="text-2xl font-bold text-purple-400">{sc.fleet.drivers}</p><p className="text-xs text-slate-400">Drivers</p></div>
@@ -124,7 +124,7 @@ export default function CarrierScorecardPage() {
 
           {/* Trends */}
           {trends.length > 0 && (
-            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardHeader className="pb-3">
                 <CardTitle className="text-white text-lg flex items-center gap-2"><TrendingUp className="w-5 h-5 text-[#1473FF]" />Performance Trends (6 Mo)</CardTitle>
               </CardHeader>
@@ -147,7 +147,7 @@ export default function CarrierScorecardPage() {
       )}
 
       {/* Top Carriers Leaderboard */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2"><Award className="w-5 h-5 text-yellow-400" />Top-Rated Carriers</CardTitle>
         </CardHeader>
@@ -157,9 +157,9 @@ export default function CarrierScorecardPage() {
           ) : topCarriers.length === 0 ? (
             <div className="p-8 text-center"><Award className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No carriers ranked yet</p></div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {topCarriers.map((c: any, i: number) => (
-                <button key={c.carrierId} onClick={() => { setCarrierId(c.carrierId); setSearchId(String(c.carrierId)); }} className="w-full p-3 flex items-center justify-between hover:bg-white/[0.04] transition-colors">
+                <button key={c.carrierId} onClick={() => { setCarrierId(c.carrierId); setSearchId(String(c.carrierId)); }} className="w-full p-3 flex items-center justify-between hover:bg-slate-700/20 transition-colors">
                   <div className="flex items-center gap-3">
                     <span className={cn("w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold", i < 3 ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white" : "bg-slate-700 text-slate-300")}>
                       {i + 1}

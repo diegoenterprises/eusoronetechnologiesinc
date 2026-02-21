@@ -58,7 +58,7 @@ export default function TruckPostingBoard() {
           { label: "Hazmat Trucks", value: cap?.hazmatTrucks || 0, icon: <Flame className="w-5 h-5 text-orange-400" />, color: "text-orange-400" },
           { label: "Hazmat Loads", value: cap?.hazmatLoads || 0, icon: <Flame className="w-5 h-5 text-red-400" />, color: "text-red-400" },
         ].map(s => (
-          <Card key={s.label} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card key={s.label} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-3 text-center">
               <div className="flex justify-center mb-1">{s.icon}</div>
               {capacityQuery.isLoading ? <Skeleton className="h-6 w-10 mx-auto" /> : <p className={cn("text-lg font-bold", s.color)}>{s.value}</p>}
@@ -84,7 +84,7 @@ export default function TruckPostingBoard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Available Trucks */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Search className="w-5 h-5 text-[#1473FF]" />Available Trucks
@@ -97,9 +97,9 @@ export default function TruckPostingBoard() {
             ) : trucks.length === 0 ? (
               <div className="p-8 text-center"><Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No trucks available</p></div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {trucks.map((t: any) => (
-                  <div key={t.vehicleId} className="p-3 hover:bg-white/[0.04] transition-colors">
+                  <div key={t.vehicleId} className="p-3 hover:bg-slate-700/20 transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <Truck className="w-4 h-4 text-blue-400" />
@@ -122,7 +122,7 @@ export default function TruckPostingBoard() {
         </Card>
 
         {/* My Fleet */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Truck className="w-5 h-5 text-emerald-400" />My Fleet Availability
@@ -135,7 +135,7 @@ export default function TruckPostingBoard() {
             ) : myFleet.length === 0 ? (
               <div className="p-8 text-center"><Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No vehicles in your fleet</p></div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {myFleet.map((v: any) => (
                   <div key={v.id} className="p-3">
                     <div className="flex items-center justify-between">

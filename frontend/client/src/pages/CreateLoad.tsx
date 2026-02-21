@@ -73,7 +73,7 @@ export default function CreateLoad() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Origin */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <div className="p-2 rounded-full bg-green-500/20">
@@ -86,22 +86,22 @@ export default function CreateLoad() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-400">City *</Label>
-                <Input value={formData.originCity} onChange={(e: any) => setFormData({ ...formData, originCity: e.target.value })} placeholder="Enter city" className="bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50" />
+                <Input value={formData.originCity} onChange={(e: any) => setFormData({ ...formData, originCity: e.target.value })} placeholder="Enter city" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">State</Label>
-                <Input value={formData.originState} onChange={(e: any) => setFormData({ ...formData, originState: e.target.value })} placeholder="Enter state" className="bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50" />
+                <Input value={formData.originState} onChange={(e: any) => setFormData({ ...formData, originState: e.target.value })} placeholder="Enter state" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
               </div>
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Pickup Date *</Label>
-              <Input type="date" value={formData.pickupDate} onChange={(e: any) => setFormData({ ...formData, pickupDate: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50" />
+              <Input type="date" value={formData.pickupDate} onChange={(e: any) => setFormData({ ...formData, pickupDate: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
             </div>
           </CardContent>
         </Card>
 
         {/* Destination */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <div className="p-2 rounded-full bg-red-500/20">
@@ -114,22 +114,22 @@ export default function CreateLoad() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-400">City *</Label>
-                <Input value={formData.destinationCity} onChange={(e: any) => setFormData({ ...formData, destinationCity: e.target.value })} placeholder="Enter city" className="bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50" />
+                <Input value={formData.destinationCity} onChange={(e: any) => setFormData({ ...formData, destinationCity: e.target.value })} placeholder="Enter city" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">State</Label>
-                <Input value={formData.destinationState} onChange={(e: any) => setFormData({ ...formData, destinationState: e.target.value })} placeholder="Enter state" className="bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50" />
+                <Input value={formData.destinationState} onChange={(e: any) => setFormData({ ...formData, destinationState: e.target.value })} placeholder="Enter state" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
               </div>
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Delivery Date</Label>
-              <Input type="date" value={formData.deliveryDate} onChange={(e: any) => setFormData({ ...formData, deliveryDate: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50" />
+              <Input type="date" value={formData.deliveryDate} onChange={(e: any) => setFormData({ ...formData, deliveryDate: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
             </div>
           </CardContent>
         </Card>
 
         {/* Load Details */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <div className="p-2 rounded-full bg-blue-500/20">
@@ -142,7 +142,7 @@ export default function CreateLoad() {
             <div className="space-y-2">
               <Label className="text-slate-400">Equipment Type *</Label>
               <Select value={formData.equipmentType} onValueChange={(value) => setFormData({ ...formData, equipmentType: value })}>
-                <SelectTrigger className="bg-slate-700/30 border-white/[0.06] rounded-lg">
+                <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg">
                   <SelectValue placeholder="Select equipment" />
                 </SelectTrigger>
                 <SelectContent>
@@ -157,34 +157,34 @@ export default function CreateLoad() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-400">Weight (lbs)</Label>
-                <Input type="number" value={formData.weight} onChange={(e: any) => setFormData({ ...formData, weight: e.target.value })} placeholder="Enter weight" className="bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50" />
+                <Input type="number" value={formData.weight} onChange={(e: any) => setFormData({ ...formData, weight: e.target.value })} placeholder="Enter weight" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">Rate ($)</Label>
-                <Input type="number" value={formData.rate} onChange={(e: any) => setFormData({ ...formData, rate: e.target.value })} placeholder="Enter rate" className="bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50" />
+                <Input type="number" value={formData.rate} onChange={(e: any) => setFormData({ ...formData, rate: e.target.value })} placeholder="Enter rate" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
               </div>
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Commodity</Label>
-              <Input value={formData.commodity} onChange={(e: any) => setFormData({ ...formData, commodity: e.target.value })} placeholder="What's being shipped?" className="bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50" />
+              <Input value={formData.commodity} onChange={(e: any) => setFormData({ ...formData, commodity: e.target.value })} placeholder="What's being shipped?" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
             </div>
           </CardContent>
         </Card>
 
         {/* Notes */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Additional Notes</CardTitle>
           </CardHeader>
           <CardContent>
-            <Textarea value={formData.notes} onChange={(e: any) => setFormData({ ...formData, notes: e.target.value })} placeholder="Any special instructions or requirements..." className="bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50 min-h-[150px]" />
+            <Textarea value={formData.notes} onChange={(e: any) => setFormData({ ...formData, notes: e.target.value })} placeholder="Any special instructions or requirements..." className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50 min-h-[150px]" />
           </CardContent>
         </Card>
       </div>
 
       {/* Submit */}
       <div className="flex justify-end gap-4">
-        <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => setLocation("/load/board")}>
+        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation("/load/board")}>
           Cancel
         </Button>
         <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg px-8" onClick={handleSubmit} disabled={createMutation.isPending}>

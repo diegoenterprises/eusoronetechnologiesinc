@@ -45,7 +45,7 @@ export default function DispatchDashboard() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-cyan-500/20"><Package className="w-5 h-5 text-cyan-400" /></div>
@@ -53,7 +53,7 @@ export default function DispatchDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-yellow-500/20"><Clock className="w-5 h-5 text-yellow-400" /></div>
@@ -61,7 +61,7 @@ export default function DispatchDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-blue-500/20"><Truck className="w-5 h-5 text-blue-400" /></div>
@@ -69,7 +69,7 @@ export default function DispatchDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-purple-500/20"><MapPin className="w-5 h-5 text-purple-400" /></div>
@@ -77,7 +77,7 @@ export default function DispatchDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-green-500/20"><Navigation className="w-5 h-5 text-green-400" /></div>
@@ -85,7 +85,7 @@ export default function DispatchDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-red-500/20"><AlertTriangle className="w-5 h-5 text-red-400" /></div>
@@ -116,13 +116,13 @@ export default function DispatchDashboard() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><User className="w-5 h-5 text-cyan-400" />Driver Status</CardTitle></CardHeader>
           <CardContent className="p-0">
             {driversQuery.isLoading ? (
               <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {(driversQuery.data as any)?.map((driver: any) => (
                   <div key={driver.id} className="p-3">
                     <div className="flex items-center justify-between mb-2">
@@ -146,7 +146,7 @@ export default function DispatchDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Package className="w-5 h-5 text-yellow-400" />Unassigned Loads</CardTitle></CardHeader>
           <CardContent className="p-0">
             {unassignedQuery.isLoading ? (
@@ -154,7 +154,7 @@ export default function DispatchDashboard() {
             ) : (unassignedQuery.data as any)?.length === 0 ? (
               <div className="p-6 text-center"><CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" /><p className="text-slate-400 text-sm">All loads assigned</p></div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {(unassignedQuery.data as any)?.map((load: any) => (
                   <div key={load.id} className="p-3 flex items-center justify-between">
                     <div>

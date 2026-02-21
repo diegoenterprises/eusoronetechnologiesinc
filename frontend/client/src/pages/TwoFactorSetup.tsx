@@ -94,7 +94,7 @@ export default function TwoFactorSetup() {
       {!status?.enabled && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* QR Code */}
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2">
                 <Smartphone className="w-5 h-5 text-cyan-400" />
@@ -125,7 +125,7 @@ export default function TwoFactorSetup() {
           </Card>
 
           {/* Verification */}
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2">
                 <Key className="w-5 h-5 text-purple-400" />
@@ -134,7 +134,7 @@ export default function TwoFactorSetup() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-slate-400">Enter the 6-digit code from your authenticator app to verify setup</p>
-              <Input value={verificationCode} onChange={(e: any) => setVerificationCode(e.target.value)} placeholder="000000" maxLength={6} className="text-center text-2xl tracking-widest bg-white/[0.02] border-white/[0.06] rounded-lg" />
+              <Input value={verificationCode} onChange={(e: any) => setVerificationCode(e.target.value)} placeholder="000000" maxLength={6} className="text-center text-2xl tracking-widest bg-slate-800/50 border-slate-700/50 rounded-lg" />
               <Button className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => enableMutation.mutate({ code: verificationCode })} disabled={verificationCode.length !== 6}>
                 <Shield className="w-4 h-4 mr-2" />Enable 2FA
               </Button>
@@ -145,14 +145,14 @@ export default function TwoFactorSetup() {
 
       {/* Backup Codes (if enabled) */}
       {status?.enabled && (
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-white text-lg flex items-center gap-2">
                 <Key className="w-5 h-5 text-purple-400" />
                 Backup Codes
               </CardTitle>
-              <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => regenerateBackupMutation.mutate({})}>
+              <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => regenerateBackupMutation.mutate({})}>
                 <RefreshCw className="w-4 h-4 mr-2" />Regenerate
               </Button>
             </div>
@@ -164,7 +164,7 @@ export default function TwoFactorSetup() {
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {status?.backupCodes?.map((code: string, idx: number) => (
-                  <div key={idx} className={cn("p-2 rounded-lg text-center font-mono text-sm", status?.usedBackupCodes?.includes(code) ? "bg-slate-700/30 text-slate-500 line-through" : "bg-white/[0.04] text-slate-300")}>
+                  <div key={idx} className={cn("p-2 rounded-lg text-center font-mono text-sm", status?.usedBackupCodes?.includes(code) ? "bg-slate-700/30 text-slate-500 line-through" : "bg-slate-700/50 text-slate-300")}>
                     {code}
                   </div>
                 ))}

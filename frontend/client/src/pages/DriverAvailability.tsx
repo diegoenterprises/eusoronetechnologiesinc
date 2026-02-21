@@ -63,8 +63,8 @@ export default function DriverAvailability() {
   };
 
   const activeStatus = STATUS_OPTIONS.find((s) => s.id === currentStatus);
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white placeholder:text-slate-400");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-400");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -112,7 +112,7 @@ export default function DriverAvailability() {
                         ? `${status.bg} border-current/30 shadow-md`
                         : isLight
                           ? "bg-white border-slate-200 hover:border-slate-300"
-                          : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
+                          : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
                     )}
                   >
                     <div className={cn("p-2.5 rounded-lg", currentStatus === status.id ? status.bg : isLight ? "bg-slate-100" : "bg-slate-700/30")}>
@@ -152,7 +152,7 @@ export default function DriverAvailability() {
                           ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-sm"
                           : isLight
                             ? "bg-white border-slate-200 text-slate-400 hover:border-slate-300"
-                            : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:border-slate-600"
+                            : "bg-slate-800/50 border-slate-700/50 text-slate-500 hover:border-slate-600"
                       )}
                     >
                       {day}
@@ -217,7 +217,7 @@ export default function DriverAvailability() {
                 </div>
                 <div>
                   <p className={cn("text-xs font-medium mb-1.5", isLight ? "text-slate-500" : "text-slate-400")}>Duration</p>
-                  <select className={cn("w-full h-11 px-3 rounded-xl border text-sm", isLight ? "bg-white border-slate-200 text-slate-800" : "bg-white/[0.02] border-white/[0.06] text-white")}>
+                  <select className={cn("w-full h-11 px-3 rounded-xl border text-sm", isLight ? "bg-white border-slate-200 text-slate-800" : "bg-slate-800/50 border-slate-700/50 text-white")}>
                     <option>2 days</option>
                     <option>3 days</option>
                     <option>1 week</option>
@@ -228,7 +228,7 @@ export default function DriverAvailability() {
               </div>
               <Button
                 variant="outline"
-                className={cn("w-full h-11 rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")}
+                className={cn("w-full h-11 rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
                 onClick={() => toast.success("Home time request submitted to dispatch")}
               >
                 <Home className="w-4 h-4 mr-2" /> Submit Home Time Request

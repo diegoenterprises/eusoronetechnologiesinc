@@ -69,8 +69,8 @@ export default function HazmatCheckIn() {
     toast.success("Hazmat check-in completed");
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white placeholder:text-slate-400");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-400");
 
   if (submitted) {
     return (
@@ -123,7 +123,7 @@ export default function HazmatCheckIn() {
       </Card>
 
       {/* Progress */}
-      <div className={cn("p-4 rounded-xl", isLight ? "bg-slate-50" : "bg-white/[0.02]")}>
+      <div className={cn("p-4 rounded-xl", isLight ? "bg-slate-50" : "bg-slate-800/50")}>
         <div className="flex items-center justify-between mb-2">
           <p className={cn("text-xs font-medium", isLight ? "text-slate-500" : "text-slate-400")}>Check-In Progress</p>
           <p className={cn("text-xs font-bold", isLight ? "text-slate-700" : "text-white")}>{checked.size}/{CHECKIN_ITEMS.length}</p>
@@ -151,7 +151,7 @@ export default function HazmatCheckIn() {
                   "w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left",
                   isChecked
                     ? isLight ? "bg-green-50 border-green-200" : "bg-green-500/5 border-green-500/20"
-                    : isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
+                    : isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
                 )}
               >
                 <div className={cn(
@@ -174,7 +174,7 @@ export default function HazmatCheckIn() {
           "w-full h-12 rounded-xl text-base font-medium",
           allRequiredChecked && facilityName.trim()
             ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 shadow-lg shadow-purple-500/20"
-            : isLight ? "bg-slate-100 text-slate-400" : "bg-white/[0.04] text-slate-500"
+            : isLight ? "bg-slate-100 text-slate-400" : "bg-slate-700/50 text-slate-500"
         )}
         disabled={!allRequiredChecked || !facilityName.trim()}
         onClick={handleSubmit}

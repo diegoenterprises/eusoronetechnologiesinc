@@ -121,7 +121,7 @@ export default function EusoTicket() {
           [...Array(4)].map((_: any, i: number) => <Skeleton key={i} className="h-24" />)
         ) : (
           <>
-            <Card className="bg-slate-900/50 border-white/[0.06]">
+            <Card className="bg-slate-900/50 border-slate-700/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-blue-500/20">
@@ -134,7 +134,7 @@ export default function EusoTicket() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-900/50 border-white/[0.06]">
+            <Card className="bg-slate-900/50 border-slate-700/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-green-500/20">
@@ -149,7 +149,7 @@ export default function EusoTicket() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-900/50 border-white/[0.06]">
+            <Card className="bg-slate-900/50 border-slate-700/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-yellow-500/20">
@@ -162,7 +162,7 @@ export default function EusoTicket() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-900/50 border-white/[0.06]">
+            <Card className="bg-slate-900/50 border-slate-700/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-purple-500/20">
@@ -181,7 +181,7 @@ export default function EusoTicket() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-white/[0.02] border border-white/[0.06]">
+        <TabsList className="bg-slate-800/50 border border-slate-700/50">
           <TabsTrigger value="tickets" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500">
             <Clipboard className="w-4 h-4 mr-2" />
             Run Tickets
@@ -198,7 +198,7 @@ export default function EusoTicket() {
 
         {/* Run Tickets Tab */}
         <TabsContent value="tickets">
-          <Card className="bg-slate-900/50 border-white/[0.06]">
+          <Card className="bg-slate-900/50 border-slate-700/50">
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <CardTitle className="text-white">Run Tickets</CardTitle>
               <div className="relative">
@@ -207,7 +207,7 @@ export default function EusoTicket() {
                   placeholder="Search tickets..."
                   value={searchTerm}
                   onChange={(e: any) => setSearchTerm(e.target.value)}
-                  className="pl-9 bg-white/[0.02] border-slate-700 w-64"
+                  className="pl-9 bg-slate-800/50 border-slate-700 w-64"
                 />
               </div>
             </CardHeader>
@@ -286,7 +286,7 @@ export default function EusoTicket() {
 
         {/* BOLs Tab */}
         <TabsContent value="bols">
-          <Card className="bg-slate-900/50 border-white/[0.06]">
+          <Card className="bg-slate-900/50 border-slate-700/50">
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <CardTitle className="text-white">Bills of Lading</CardTitle>
               <div className="relative">
@@ -295,7 +295,7 @@ export default function EusoTicket() {
                   placeholder="Search BOLs..."
                   value={searchTerm}
                   onChange={(e: any) => setSearchTerm(e.target.value)}
-                  className="pl-9 bg-white/[0.02] border-slate-700 w-64"
+                  className="pl-9 bg-slate-800/50 border-slate-700 w-64"
                 />
               </div>
             </CardHeader>
@@ -372,7 +372,7 @@ export default function EusoTicket() {
         <TabsContent value="analytics">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Weekly Stats */}
-            <Card className="bg-slate-900/50 border-white/[0.06]">
+            <Card className="bg-slate-900/50 border-slate-700/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-white">Weekly Performance</CardTitle>
               </CardHeader>
@@ -401,7 +401,7 @@ export default function EusoTicket() {
             </Card>
 
             {/* Crude Type Distribution */}
-            <Card className="bg-slate-900/50 border-white/[0.06]">
+            <Card className="bg-slate-900/50 border-slate-700/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-white">Crude Type Distribution</CardTitle>
               </CardHeader>
@@ -430,7 +430,7 @@ export default function EusoTicket() {
             </Card>
 
             {/* Monthly Stats */}
-            <Card className="bg-slate-900/50 border-white/[0.06] md:col-span-2">
+            <Card className="bg-slate-900/50 border-slate-700/50 md:col-span-2">
               <CardHeader className="pb-3">
                 <CardTitle className="text-white">Monthly Summary</CardTitle>
               </CardHeader>

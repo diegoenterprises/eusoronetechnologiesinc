@@ -286,7 +286,7 @@ export default function RegisterCatalyst() {
               value={formData.einNumber}
               onChange={(e: any) => updateFormData({ einNumber: e.target.value })}
               placeholder="XX-XXXXXXX"
-              className="bg-white/[0.04] border-slate-600 text-white"
+              className="bg-slate-700/50 border-slate-600 text-white"
             />
           </div>
 
@@ -353,7 +353,7 @@ export default function RegisterCatalyst() {
                 value={formData.hazmatAuthorityNumber}
                 onChange={(e: any) => updateFormData({ hazmatAuthorityNumber: e.target.value })}
                 placeholder="HM-123456"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           )}
@@ -403,7 +403,7 @@ export default function RegisterCatalyst() {
                   value={formData.primaryContactName}
                   onChange={(e: any) => updateFormData({ primaryContactName: e.target.value })}
                   placeholder="John Smith"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
@@ -413,7 +413,7 @@ export default function RegisterCatalyst() {
                   value={formData.primaryContactTitle}
                   onChange={(e: any) => updateFormData({ primaryContactTitle: e.target.value })}
                   placeholder="Owner/Operations Manager"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
@@ -426,7 +426,7 @@ export default function RegisterCatalyst() {
                   value={formData.primaryContactEmail}
                   onChange={(e: any) => updateFormData({ primaryContactEmail: e.target.value })}
                   placeholder="john@trucking.com"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
@@ -439,7 +439,7 @@ export default function RegisterCatalyst() {
                   value={formData.primaryContactPhone}
                   onChange={(e: any) => updateFormData({ primaryContactPhone: e.target.value })}
                   placeholder="(555) 123-4567"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
             </div>
@@ -456,7 +456,7 @@ export default function RegisterCatalyst() {
                   value={formData.dispatchEmail}
                   onChange={(e: any) => updateFormData({ dispatchEmail: e.target.value })}
                   placeholder="dispatch@trucking.com"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
@@ -467,7 +467,7 @@ export default function RegisterCatalyst() {
                   value={formData.dispatchPhone}
                   onChange={(e: any) => updateFormData({ dispatchPhone: e.target.value })}
                   placeholder="(555) 123-4568"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
             </div>
@@ -498,7 +498,7 @@ export default function RegisterCatalyst() {
                   value={formData.liabilityCatalyst}
                   onChange={(e: any) => updateFormData({ liabilityCatalyst: e.target.value })}
                   placeholder="ABC Insurance"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
@@ -507,13 +507,13 @@ export default function RegisterCatalyst() {
                   value={formData.liabilityPolicy}
                   onChange={(e: any) => updateFormData({ liabilityPolicy: e.target.value })}
                   placeholder="POL-123456"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Coverage Amount <span className="text-red-400">*</span></Label>
                 <Select value={formData.liabilityCoverage} onValueChange={(v: any) => updateFormData({ liabilityCoverage: v })}>
-                  <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                     <SelectValue placeholder="Select coverage" />
                   </SelectTrigger>
                   <SelectContent>
@@ -529,7 +529,7 @@ export default function RegisterCatalyst() {
                   type="date"
                   value={formData.liabilityExpiration}
                   onChange={(e: any) => updateFormData({ liabilityExpiration: e.target.value })}
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
             </div>
@@ -544,7 +544,7 @@ export default function RegisterCatalyst() {
                   value={formData.cargoCatalyst}
                   onChange={(e: any) => updateFormData({ cargoCatalyst: e.target.value })}
                   placeholder="ABC Insurance"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
@@ -553,13 +553,13 @@ export default function RegisterCatalyst() {
                   value={formData.cargoPolicy}
                   onChange={(e: any) => updateFormData({ cargoPolicy: e.target.value })}
                   placeholder="CARGO-123456"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Coverage Amount <span className="text-red-400">*</span></Label>
                 <Select value={formData.cargoCoverage} onValueChange={(v: any) => updateFormData({ cargoCoverage: v })}>
-                  <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                     <SelectValue placeholder="Select coverage" />
                   </SelectTrigger>
                   <SelectContent>
@@ -576,7 +576,7 @@ export default function RegisterCatalyst() {
                   type="date"
                   value={formData.cargoExpiration}
                   onChange={(e: any) => updateFormData({ cargoExpiration: e.target.value })}
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
             </div>
@@ -606,7 +606,7 @@ export default function RegisterCatalyst() {
                 value={formData.powerUnits}
                 onChange={(e: any) => updateFormData({ powerUnits: e.target.value })}
                 placeholder="10"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -616,7 +616,7 @@ export default function RegisterCatalyst() {
                 value={formData.drivers}
                 onChange={(e: any) => updateFormData({ drivers: e.target.value })}
                 placeholder="15"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -626,7 +626,7 @@ export default function RegisterCatalyst() {
                 value={formData.hazmatCertifiedDrivers}
                 onChange={(e: any) => updateFormData({ hazmatCertifiedDrivers: e.target.value })}
                 placeholder="12"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -660,7 +660,7 @@ export default function RegisterCatalyst() {
               value={formData.streetAddress}
               onChange={(e: any) => updateFormData({ streetAddress: e.target.value })}
               placeholder="123 Trucking Way"
-              className="bg-white/[0.04] border-slate-600 text-white"
+              className="bg-slate-700/50 border-slate-600 text-white"
             />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -670,7 +670,7 @@ export default function RegisterCatalyst() {
                 value={formData.city}
                 onChange={(e: any) => updateFormData({ city: e.target.value })}
                 placeholder="Houston"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -679,7 +679,7 @@ export default function RegisterCatalyst() {
                 value={formData.state}
                 onChange={(e: any) => updateFormData({ state: e.target.value })}
                 placeholder="TX"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -688,7 +688,7 @@ export default function RegisterCatalyst() {
                 value={formData.zipCode}
                 onChange={(e: any) => updateFormData({ zipCode: e.target.value })}
                 placeholder="77001"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>

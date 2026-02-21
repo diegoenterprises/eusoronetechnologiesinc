@@ -54,7 +54,7 @@ export default function SystemConfiguration() {
           <p className="text-slate-400 text-sm mt-1">Platform settings and preferences</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => configQuery.refetch()}>
+          <Button variant="outline" className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-700 rounded-lg" onClick={() => configQuery.refetch()}>
             <RefreshCw className="w-4 h-4 mr-2" />Reset
           </Button>
           <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={handleSave} disabled={updateMutation.isPending}>
@@ -67,16 +67,16 @@ export default function SystemConfiguration() {
         <div className="space-y-6">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Globe className="w-5 h-5 text-cyan-400" />General Settings</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Platform Name</label>
-                <Input value={localConfig.general?.platformName || ""} onChange={(e: any) => updateField("general", "platformName", e.target.value)} className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                <Input value={localConfig.general?.platformName || ""} onChange={(e: any) => updateField("general", "platformName", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Support Email</label>
-                <Input value={localConfig.general?.supportEmail || ""} onChange={(e: any) => updateField("general", "supportEmail", e.target.value)} className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                <Input value={localConfig.general?.supportEmail || ""} onChange={(e: any) => updateField("general", "supportEmail", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               <div className="flex items-center justify-between">
                 <div><p className="text-white">Maintenance Mode</p><p className="text-xs text-slate-500">Disable access for non-admins</p></div>
@@ -85,7 +85,7 @@ export default function SystemConfiguration() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-purple-400" />Security Settings</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
@@ -94,16 +94,16 @@ export default function SystemConfiguration() {
               </div>
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Session Timeout (minutes)</label>
-                <Input type="number" value={localConfig.security?.sessionTimeout || 30} onChange={(e: any) => updateField("security", "sessionTimeout", parseInt(e.target.value))} className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                <Input type="number" value={localConfig.security?.sessionTimeout || 30} onChange={(e: any) => updateField("security", "sessionTimeout", parseInt(e.target.value))} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Max Login Attempts</label>
-                <Input type="number" value={localConfig.security?.maxLoginAttempts || 5} onChange={(e: any) => updateField("security", "maxLoginAttempts", parseInt(e.target.value))} className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                <Input type="number" value={localConfig.security?.maxLoginAttempts || 5} onChange={(e: any) => updateField("security", "maxLoginAttempts", parseInt(e.target.value))} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Bell className="w-5 h-5 text-yellow-400" />Notification Settings</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
@@ -121,12 +121,12 @@ export default function SystemConfiguration() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Database className="w-5 h-5 text-green-400" />Data Settings</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Data Retention (days)</label>
-                <Input type="number" value={(localConfig as any)?.retentionDays || 365} onChange={(e: any) => updateField("data", "retentionDays", parseInt(e.target.value))} className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                <Input type="number" value={(localConfig as any)?.retentionDays || 365} onChange={(e: any) => updateField("data", "retentionDays", parseInt(e.target.value))} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               <div className="flex items-center justify-between">
                 <div><p className="text-white">Auto Backup</p><p className="text-xs text-slate-500">Daily automatic backups</p></div>

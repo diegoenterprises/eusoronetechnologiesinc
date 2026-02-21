@@ -73,7 +73,7 @@ export default function PlatformClaimsOversight() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Claims & Disputes</h1>
           <p className="text-slate-400 text-sm mt-1">Platform-wide cargo claims, disputes & resolution tracking</p>
         </div>
-        <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-white/[0.04] rounded-lg" onClick={() => query.refetch()}>
+        <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-700/50 rounded-lg" onClick={() => query.refetch()}>
           <RefreshCw className="w-4 h-4 mr-2" />Refresh
         </Button>
       </div>
@@ -86,7 +86,7 @@ export default function PlatformClaimsOversight() {
           { label: "Resolved", value: summary.resolved, color: "text-green-400", icon: <CheckCircle className="w-5 h-5 text-green-400" /> },
           { label: "Pending", value: summary.pending, color: "text-purple-400", icon: <ShieldAlert className="w-5 h-5 text-purple-400" /> },
         ].map((s, i) => (
-          <Card key={i} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card key={i} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 flex items-center gap-3">
               {s.icon}
               <div>
@@ -102,14 +102,14 @@ export default function PlatformClaimsOversight() {
       <div className="flex gap-2 flex-wrap">
         {FILTER_STATUSES.map(f => (
           <button key={f.key} onClick={() => { setStatusFilter(f.key); setPage(0); }}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${statusFilter === f.key ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : "bg-white/[0.03] text-slate-400 border border-white/[0.06] hover:bg-white/[0.04]"}`}>
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${statusFilter === f.key ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : "bg-slate-800/60 text-slate-400 border border-slate-700/50 hover:bg-slate-700/50"}`}>
             {f.label}
           </button>
         ))}
       </div>
 
       {/* CLAIMS TABLE */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {loading ? (
             <div className="p-6 space-y-4">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
@@ -135,7 +135,7 @@ export default function PlatformClaimsOversight() {
                 const st = STATUS_CFG[c.status] || STATUS_CFG.submitted;
                 const tc = TYPE_COLORS[c.type] || TYPE_COLORS.other;
                 return (
-                  <div key={c.id} className="px-4 py-3 grid grid-cols-12 gap-3 items-center hover:bg-white/[0.04] transition-colors">
+                  <div key={c.id} className="px-4 py-3 grid grid-cols-12 gap-3 items-center hover:bg-slate-700/20 transition-colors">
                     <div className="col-span-2">
                       <span className="text-white font-mono text-sm">{c.claimNumber}</span>
                     </div>

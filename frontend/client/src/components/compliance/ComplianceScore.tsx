@@ -84,7 +84,7 @@ export function ComplianceScore({
   return (
     <div className="space-y-6">
       {/* Overall Score Card */}
-      <Card className="bg-white/[0.02] border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -171,7 +171,7 @@ export function ComplianceScore({
           
           return (
             <Card key={category.id} className={cn(
-              "bg-white/[0.02] border-slate-700",
+              "bg-slate-800/50 border-slate-700",
               category.status === "critical" && "border-red-500/50",
               category.status === "warning" && "border-yellow-500/50"
             )}>

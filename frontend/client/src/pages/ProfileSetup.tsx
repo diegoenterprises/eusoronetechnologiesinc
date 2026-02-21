@@ -56,8 +56,8 @@ export default function ProfileSetup() {
     toast.success("Profile saved successfully");
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white placeholder:text-slate-400");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-400");
   const labelCls = cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-500" : "text-slate-400");
 
   return (
@@ -74,7 +74,7 @@ export default function ProfileSetup() {
 
       {/* Avatar */}
       <div className="flex items-center gap-5">
-        <div className={cn("w-20 h-20 rounded-2xl flex items-center justify-center relative overflow-hidden", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
+        <div className={cn("w-20 h-20 rounded-2xl flex items-center justify-center relative overflow-hidden", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
           <User className="w-10 h-10 text-slate-400" />
           <button className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity rounded-2xl">
             <Camera className="w-6 h-6 text-white" />
@@ -137,7 +137,7 @@ export default function ProfileSetup() {
                     "px-4 py-2.5 rounded-xl border text-sm font-medium transition-all",
                     (form as any)[e.key]
                       ? "bg-[#1473FF]/10 text-[#1473FF] border-[#1473FF]/30"
-                      : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-white/[0.02] border-white/[0.06] text-slate-500"
+                      : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-slate-800/50 border-slate-700/50 text-slate-500"
                   )}
                 >
                   {(form as any)[e.key] && <CheckCircle className="w-3.5 h-3.5 inline mr-1.5" />}
@@ -168,7 +168,7 @@ export default function ProfileSetup() {
                     "px-4 py-2 rounded-xl border text-sm font-medium transition-all capitalize",
                     form.preferredEquipment === eq
                       ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent"
-                      : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-white/[0.02] border-white/[0.06] text-slate-500"
+                      : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-slate-800/50 border-slate-700/50 text-slate-500"
                   )}
                 >
                   {eq.replace("_", " ")}

@@ -297,7 +297,7 @@ export default function NewsFeed() {
               value={searchTerm}
               onChange={(e: any) => setSearchTerm(e.target.value)}
               placeholder="Search news..."
-              className="pl-9 bg-white/[0.04] border-slate-600"
+              className="pl-9 bg-slate-700/50 border-slate-600"
             />
           </div>
 
@@ -312,7 +312,7 @@ export default function NewsFeed() {
                   "flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
                   activeTab === cat.value
                     ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white hover:bg-white/[0.06]"
+                    : "text-slate-400 hover:text-white hover:bg-slate-700"
                 )}
               >
                 <cat.icon className="w-3 h-3" />
@@ -335,7 +335,7 @@ export default function NewsFeed() {
               {articlesArray.map((article: any) => {
                 const CategoryIcon = getCategoryIcon(article.category);
                 return (
-                  <Card key={article.id} className="bg-white/[0.02] border-slate-700 hover:border-slate-600 transition-colors">
+                  <Card key={article.id} className="bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-colors">
                     <CardContent className="p-4">
                       <div className="flex gap-4">
                         {article.imageUrl && (
@@ -381,7 +381,7 @@ export default function NewsFeed() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Live Status */}
-          <Card className="bg-white/[0.02] border-slate-700">
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Activity className="w-4 h-4 text-green-400" />
@@ -412,7 +412,7 @@ export default function NewsFeed() {
           </Card>
 
           {/* Trending */}
-          <Card className="bg-white/[0.02] border-slate-700">
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader className="pb-2">
               <CardTitle className="text-white flex items-center gap-2 text-base">
                 <TrendingUp className="w-4 h-4 text-orange-400" />Trending
@@ -427,7 +427,7 @@ export default function NewsFeed() {
                 <div className="space-y-2">
                   {(trendingQuery.data as any)?.map((article: any, idx: number) => (
                     <a key={article.id} href={article.link} target="_blank" rel="noopener noreferrer"
-                      className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-white/[0.06]/30 transition-colors group">
+                      className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-slate-700/30 transition-colors group">
                       <span className="text-xl font-bold text-slate-600 shrink-0 w-6 text-right">{idx + 1}</span>
                       <div className="min-w-0">
                         <p className="text-white text-xs line-clamp-2 group-hover:text-blue-400 transition-colors">{article.title}</p>
@@ -441,7 +441,7 @@ export default function NewsFeed() {
           </Card>
 
           {/* Quick Links */}
-          <Card className="bg-white/[0.02] border-slate-700">
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader className="pb-2">
               <CardTitle className="text-white text-base">Quick Links</CardTitle>
             </CardHeader>

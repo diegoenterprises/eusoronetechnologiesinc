@@ -186,7 +186,7 @@ export default function MyLoads() {
               <Plus className="w-4 h-4 mr-2" /> Create New Load
             </Button>
           )}
-          <Button variant="outline" size="sm" className={cn("rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")} onClick={() => loadsQuery.refetch()}>
+          <Button variant="outline" size="sm" className={cn("rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => loadsQuery.refetch()}>
             <RefreshCw className={cn("w-4 h-4", loadsQuery.isRefetching && "animate-spin")} />
           </Button>
         </div>
@@ -200,7 +200,7 @@ export default function MyLoads() {
           { count: postedCount, label: "Posted", icon: <Clock className="w-5 h-5 text-violet-400" />, bg: "bg-violet-500/15", color: "text-violet-400" },
           { count: delayedCount, label: "Delayed", icon: <AlertTriangle className="w-5 h-5 text-red-400" />, bg: "bg-red-500/15", color: "text-red-400" },
         ].map((s) => (
-          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
+          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
@@ -217,7 +217,7 @@ export default function MyLoads() {
       {/* ── Search ── */}
       <div className={cn(
         "relative rounded-xl border",
-        isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]"
+        isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50"
       )}>
         <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
@@ -234,11 +234,11 @@ export default function MyLoads() {
       {/* ── Week Date Picker ── */}
       <div className={cn(
         "rounded-xl border p-4",
-        isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]"
+        isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50"
       )}>
         {/* Month/Year Header */}
         <div className="flex items-center justify-between mb-4">
-          <button onClick={() => shiftWeek(-1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]")}>
+          <button onClick={() => shiftWeek(-1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
             <ChevronLeft className="w-5 h-5 text-slate-400" />
           </button>
           <div className="flex items-center gap-2">
@@ -250,12 +250,12 @@ export default function MyLoads() {
                 Show All
               </button>
             ) : (
-              <button onClick={() => setDateFilterActive(true)} className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium border", isLight ? "border-slate-300 text-slate-500 hover:bg-slate-100" : "border-slate-600 text-slate-400 hover:bg-white/[0.06]")}>
+              <button onClick={() => setDateFilterActive(true)} className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium border", isLight ? "border-slate-300 text-slate-500 hover:bg-slate-100" : "border-slate-600 text-slate-400 hover:bg-slate-700")}>
                 Showing All
               </button>
             )}
           </div>
-          <button onClick={() => shiftWeek(1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]")}>
+          <button onClick={() => shiftWeek(1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
             <ChevronRight className="w-5 h-5 text-slate-400" />
           </button>
         </div>
@@ -274,7 +274,7 @@ export default function MyLoads() {
                     ? "bg-gradient-to-b from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-purple-500/25"
                     : isToday
                       ? isLight ? "bg-slate-100 text-slate-800" : "bg-slate-700 text-white"
-                      : isLight ? "hover:bg-slate-50 text-slate-600" : "hover:bg-white/[0.04] text-slate-400"
+                      : isLight ? "hover:bg-slate-50 text-slate-600" : "hover:bg-slate-700/50 text-slate-400"
                 )}
               >
                 <span className="text-[10px] font-medium mb-0.5">{DAY_LABELS[day.getDay()]}</span>
@@ -297,7 +297,7 @@ export default function MyLoads() {
                 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
                 : isLight
                   ? "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                  : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]"
+                  : "bg-slate-800 text-slate-400 hover:bg-slate-700"
             )}
           >
             {tab.label}
@@ -311,9 +311,9 @@ export default function MyLoads() {
       ) : filteredLoads.length === 0 ? (
         <div className={cn(
           "text-center py-16 rounded-2xl border",
-          isLight ? "bg-white border-slate-200" : "bg-white/[0.03] border-white/[0.06]"
+          isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50"
         )}>
-          <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
+          <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
             <Package className="w-10 h-10 text-slate-400" />
           </div>
           <p className={cn("text-lg font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No loads found</p>
@@ -353,7 +353,7 @@ export default function MyLoads() {
             return (
               <Card key={load.id} className={cn(
                 "rounded-2xl border overflow-hidden",
-                isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]"
+                isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50"
               )}>
                 <CardContent className="p-0">
                   {/* ── Card Header: Company + Load # ── */}
@@ -415,12 +415,12 @@ export default function MyLoads() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 flex-wrap">
                         {load.distance > 0 && (
-                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-white/[0.04] border-slate-600 text-slate-300")}>
+                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>
                             {load.distance} miles
                           </span>
                         )}
                         {load.weight > 0 && (
-                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-white/[0.04] border-slate-600 text-slate-300")}>
+                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>
                             {Number(load.weight).toLocaleString()} {load.weightUnit || "lbs"}
                           </span>
                         )}
@@ -566,7 +566,7 @@ export default function MyLoads() {
       {/* ═══ Load Preview Modal ═══ */}
       <Dialog open={!!previewLoad} onOpenChange={(open) => { if (!open) setPreviewLoad(null); }}>
         <DialogContent
-          className={cn("sm:max-w-2xl rounded-2xl p-0 overflow-hidden", isLight ? "border border-slate-200" : "border-white/[0.06] text-white")}
+          className={cn("sm:max-w-2xl rounded-2xl p-0 overflow-hidden", isLight ? "border border-slate-200" : "border-slate-700/50 text-white")}
           style={isLight
             ? { background: "#ffffff", boxShadow: "0 25px 60px rgba(0,0,0,0.12)" }
             : { background: "linear-gradient(180deg, #161d35 0%, #0d1224 100%)", boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 80px rgba(20, 115, 255, 0.08)" }
@@ -589,7 +589,7 @@ export default function MyLoads() {
               </div>
               <div className="p-5 space-y-4">
                 {/* Route */}
-                <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.03] border-white/[0.06]")}>
+                <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1473FF]/20 to-[#BE01FF]/20 flex items-center justify-center"><MapPin className="w-4 h-4 text-[#1473FF]" /></div>
@@ -614,7 +614,7 @@ export default function MyLoads() {
                     { label: "Catalyst", value: previewLoad.catalystName || "Unassigned" },
                     { label: "Driver", value: previewLoad.driverName || "Unassigned" },
                   ].map((item: any) => (
-                    <div key={item.label} className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
+                    <div key={item.label} className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                       <p className="text-[10px] text-slate-500 mb-0.5">{item.label}</p>
                       <p className={item.gradient && previewLoad.rate > 0 ? "font-bold text-sm bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white")}>{item.value}</p>
                     </div>
@@ -622,7 +622,7 @@ export default function MyLoads() {
                 </div>
                 {/* Contact Info */}
                 {(previewLoad.catalystCompanyName || previewLoad.driverPhone) && (
-                  <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.03] border-white/[0.06]")}>
+                  <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
                     <p className="text-xs text-slate-500 mb-2 font-medium">Contact Information</p>
                     <div className="flex items-center gap-4">
                       {previewLoad.catalystCompanyName && <div className="flex items-center gap-2"><Building2 className="w-4 h-4 text-slate-400" /><span className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-300")}>{previewLoad.catalystCompanyName}</span></div>}
@@ -635,7 +635,7 @@ export default function MyLoads() {
                   <Button className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 rounded-lg" onClick={() => { setPreviewLoad(null); setLocation(`/loads/${previewLoad.id}`); }}>
                     <ExternalLink className="w-4 h-4 mr-2" />Full Details
                   </Button>
-                  <Button variant="outline" className={cn("flex-1 rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06]")} onClick={() => { setPreviewLoad(null); handleContact(previewLoad); }}>
+                  <Button variant="outline" className={cn("flex-1 rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-800/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => { setPreviewLoad(null); handleContact(previewLoad); }}>
                     <MessageSquare className="w-4 h-4 mr-2" />{previewLoad.driverName ? `Message ${previewLoad.driverName}` : previewLoad.catalystName ? `Message ${previewLoad.catalystName}` : "Message"}
                   </Button>
                 </div>

@@ -43,8 +43,8 @@ export default function ShippingPapers() {
 
   const isLoading = shipmentsQuery.isLoading;
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const sc = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const sc = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
   const lbl = cn("text-[10px] uppercase tracking-wider font-medium", isLight ? "text-slate-400" : "text-slate-500");
   const val = cn("text-sm font-semibold mt-0.5", isLight ? "text-slate-800" : "text-white");
 
@@ -70,7 +70,7 @@ export default function ShippingPapers() {
           <Button
             variant="outline"
             size="sm"
-            className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")}
+            className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
             onClick={() => shipmentsQuery.refetch?.()}
           >
             <RefreshCw className="w-4 h-4" />
@@ -78,7 +78,7 @@ export default function ShippingPapers() {
           <Button
             variant="outline"
             size="sm"
-            className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")}
+            className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
             onClick={() => toast.info("Preparing print-ready shipping papers...")}
           >
             <Printer className="w-4 h-4 mr-1.5" />
@@ -119,7 +119,7 @@ export default function ShippingPapers() {
         /* Empty state */
         <Card className={cc}>
           <CardContent className="py-16 text-center">
-            <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
+            <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
               <FileText className="w-8 h-8 text-slate-400" />
             </div>
             <p className={cn("font-medium text-lg", isLight ? "text-slate-600" : "text-slate-300")}>No Active Hazmat Shipment</p>
@@ -165,7 +165,7 @@ export default function ShippingPapers() {
                         ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
                         : isLight
                           ? "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                          : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]"
+                          : "bg-slate-800 text-slate-400 hover:bg-slate-700"
                     )}
                   >
                     {s.label}
@@ -226,7 +226,7 @@ export default function ShippingPapers() {
 
                   {/* Origin / Destination */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className={cn("flex items-start gap-3 p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
+                    <div className={cn("flex items-start gap-3 p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                       <div className={cn("p-2 rounded-lg", "bg-blue-500/15")}>
                         <MapPin className="w-4 h-4 text-blue-400" />
                       </div>
@@ -240,7 +240,7 @@ export default function ShippingPapers() {
                         </p>
                       </div>
                     </div>
-                    <div className={cn("flex items-start gap-3 p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
+                    <div className={cn("flex items-start gap-3 p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                       <div className={cn("p-2 rounded-lg", "bg-green-500/15")}>
                         <MapPin className="w-4 h-4 text-green-400" />
                       </div>
@@ -284,7 +284,7 @@ export default function ShippingPapers() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
+                    <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                       <div className="flex items-center gap-2 mb-2">
                         <Shield className="w-4 h-4 text-blue-400" />
                         <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>National Response Center</p>
@@ -294,7 +294,7 @@ export default function ShippingPapers() {
                         Mandatory for reportable spills (49 CFR 171.15)
                       </p>
                     </div>
-                    <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
+                    <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                       <div className="flex items-center gap-2 mb-2">
                         <AlertTriangle className="w-4 h-4 text-orange-400" />
                         <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>Emergency Services</p>
@@ -335,7 +335,7 @@ export default function ShippingPapers() {
                   ].map((item, i) => (
                     <div key={i} className={cn(
                       "flex items-start gap-4 p-4 rounded-xl border",
-                      isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
+                      isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
                     )}>
                       <div className={cn("p-2.5 rounded-lg flex-shrink-0", "bg-[#1473FF]/10 text-[#1473FF]")}>
                         {item.icon}
@@ -364,7 +364,7 @@ export default function ShippingPapers() {
                 {shipments.slice(1).map((s: any) => (
                   <div key={s.id} className={cn(
                     "flex items-center justify-between p-3 rounded-xl border transition-colors cursor-pointer",
-                    isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
+                    isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
                   )}>
                     <div className="flex items-center gap-3">
                       <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold", "bg-red-500/15 text-red-400")}>

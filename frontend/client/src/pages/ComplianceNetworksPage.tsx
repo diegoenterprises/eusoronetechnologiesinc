@@ -33,28 +33,28 @@ export default function ComplianceNetworksPage() {
       {/* Status Overview */}
       {status && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <Network className="w-6 h-6 text-blue-400 mx-auto mb-2" />
               <p className="text-xl font-bold text-blue-400">{status.connectedNetworks || 0}</p>
               <p className="text-[9px] text-slate-400 uppercase">Connected</p>
             </CardContent>
           </Card>
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <Shield className="w-6 h-6 text-green-400 mx-auto mb-2" />
               <p className="text-xl font-bold text-green-400">{status.bypassRate || 0}%</p>
               <p className="text-[9px] text-slate-400 uppercase">Bypass Rate</p>
             </CardContent>
           </Card>
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <Truck className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
               <p className="text-xl font-bold text-cyan-400">{status.enrolledVehicles || 0}</p>
               <p className="text-[9px] text-slate-400 uppercase">Enrolled Vehicles</p>
             </CardContent>
           </Card>
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <Activity className="w-6 h-6 text-purple-400 mx-auto mb-2" />
               <p className="text-xl font-bold text-purple-400">{status.totalBypasses || 0}</p>
@@ -67,7 +67,7 @@ export default function ComplianceNetworksPage() {
       {/* Network Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Drivewyze */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Radio className="w-5 h-5 text-blue-400" />Drivewyze PreClear
@@ -87,7 +87,7 @@ export default function ComplianceNetworksPage() {
         </Card>
 
         {/* PrePass */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Shield className="w-5 h-5 text-green-400" />PrePass Safety Alliance
@@ -108,7 +108,7 @@ export default function ComplianceNetworksPage() {
       </div>
 
       {/* Enrolled Vehicles */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Truck className="w-5 h-5 text-cyan-400" />Network Enrollment
@@ -124,7 +124,7 @@ export default function ComplianceNetworksPage() {
               <p className="text-xs text-slate-500 mt-1">Enroll your fleet to start bypassing weigh stations</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {networks.map((n: any, i: number) => (
                 <div key={i} className="py-2 flex items-center justify-between">
                   <span className="text-white text-sm">{n.name || n.network}</span>

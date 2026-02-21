@@ -81,7 +81,7 @@ export default function NewsfeedPage() {
           )}
 
           {/* Articles */}
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2">
                 <Newspaper className="w-5 h-5 text-[#1473FF]" />Latest Articles
@@ -94,11 +94,11 @@ export default function NewsfeedPage() {
               ) : articles.length === 0 ? (
                 <div className="p-8 text-center"><Newspaper className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No articles available</p></div>
               ) : (
-                <div className="divide-y divide-white/[0.04]">
+                <div className="divide-y divide-slate-700/50">
                   {articles.map((a: any, i: number) => {
                     const cat = CATEGORY_CONFIG[a.category] || CATEGORY_CONFIG.industry;
                     return (
-                      <div key={i} className="p-3 hover:bg-white/[0.04] transition-colors">
+                      <div key={i} className="p-3 hover:bg-slate-700/20 transition-colors">
                         <div className="flex items-start gap-3">
                           <div className={cn("p-1.5 rounded-lg mt-0.5 shrink-0", cat.color)}>{cat.icon}</div>
                           <div className="flex-1 min-w-0">
@@ -122,7 +122,7 @@ export default function NewsfeedPage() {
 
         {/* Sidebar */}
         <div className="space-y-4">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-green-400" />Trending</CardTitle>
             </CardHeader>
@@ -130,7 +130,7 @@ export default function NewsfeedPage() {
               {trending.length === 0 ? (
                 <div className="p-4 text-center text-xs text-slate-400">No trending topics</div>
               ) : (
-                <div className="divide-y divide-white/[0.04]">
+                <div className="divide-y divide-slate-700/50">
                   {trending.slice(0, 8).map((t: any, i: number) => (
                     <div key={i} className="px-4 py-2 flex items-center gap-2">
                       <span className="text-[10px] text-slate-500 font-bold w-4">{i + 1}</span>

@@ -48,7 +48,7 @@ export default function AccountingPage() {
       {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-green-500/20"><ArrowUpRight className="w-5 h-5 text-green-400" /></div>
@@ -59,7 +59,7 @@ export default function AccountingPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-red-500/20"><ArrowDownLeft className="w-5 h-5 text-red-400" /></div>
@@ -70,7 +70,7 @@ export default function AccountingPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-purple-500/20"><DollarSign className="w-5 h-5 text-purple-400" /></div>
@@ -81,7 +81,7 @@ export default function AccountingPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-yellow-500/20"><AlertTriangle className="w-5 h-5 text-yellow-400" /></div>
@@ -107,7 +107,7 @@ export default function AccountingPage() {
 
       {/* Revenue Breakdown */}
       {tab === "summary" && revenue && (
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2"><BarChart3 className="w-5 h-5 text-[#1473FF]" />Revenue Breakdown</CardTitle>
           </CardHeader>
@@ -127,7 +127,7 @@ export default function AccountingPage() {
 
       {/* Receivables List */}
       {tab === "receivables" && (
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2"><ArrowUpRight className="w-5 h-5 text-green-400" />Accounts Receivable</CardTitle>
           </CardHeader>
@@ -137,7 +137,7 @@ export default function AccountingPage() {
             ) : receivables.length === 0 ? (
               <div className="p-8 text-center"><DollarSign className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No receivables</p></div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {receivables.map((r: any) => (
                   <div key={r.id} className="p-3 flex items-center justify-between">
                     <div>
@@ -158,7 +158,7 @@ export default function AccountingPage() {
 
       {/* Payables List */}
       {tab === "payables" && (
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2"><ArrowDownLeft className="w-5 h-5 text-red-400" />Accounts Payable</CardTitle>
           </CardHeader>
@@ -168,7 +168,7 @@ export default function AccountingPage() {
             ) : payables.length === 0 ? (
               <div className="p-8 text-center"><DollarSign className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No payables</p></div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {payables.map((p: any) => (
                   <div key={p.id} className="p-3 flex items-center justify-between">
                     <div>

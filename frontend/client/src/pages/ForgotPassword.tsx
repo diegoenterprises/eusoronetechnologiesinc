@@ -136,7 +136,7 @@ export default function ForgotPassword() {
                   variant="outline"
                   className={`w-full h-11 rounded-xl ${
                     theme === "dark"
-                      ? "bg-slate-800/30 border-white/15 text-white hover:bg-white/[0.04]"
+                      ? "bg-slate-800/30 border-white/15 text-white hover:bg-slate-700/50"
                       : "border-slate-300 text-slate-700 hover:bg-slate-50"
                   }`}
                   onClick={() => { setSent(false); setEmail(""); }}

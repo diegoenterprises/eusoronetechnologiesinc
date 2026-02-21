@@ -217,7 +217,7 @@ export default function RegisterDriver() {
                 value={formData.firstName}
                 onChange={(e: any) => updateFormData({ firstName: e.target.value })}
                 placeholder="John"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
               <p className="text-xs text-slate-500">As it appears on your CDL</p>
             </div>
@@ -229,7 +229,7 @@ export default function RegisterDriver() {
                 value={formData.lastName}
                 onChange={(e: any) => updateFormData({ lastName: e.target.value })}
                 placeholder="Smith"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -244,7 +244,7 @@ export default function RegisterDriver() {
                 value={formData.email}
                 onChange={(e: any) => updateFormData({ email: e.target.value })}
                 placeholder="john.smith@email.com"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -256,7 +256,7 @@ export default function RegisterDriver() {
                 value={formData.phone}
                 onChange={(e: any) => updateFormData({ phone: e.target.value })}
                 placeholder="(555) 123-4567"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -270,7 +270,7 @@ export default function RegisterDriver() {
                 type="date"
                 value={formData.dateOfBirth}
                 onChange={(e: any) => updateFormData({ dateOfBirth: e.target.value })}
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -283,7 +283,7 @@ export default function RegisterDriver() {
                 value={formData.ssn}
                 onChange={(e: any) => updateFormData({ ssn: e.target.value })}
                 placeholder="••••"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
               <p className="text-xs text-slate-500">Required for TSA background verification</p>
             </div>
@@ -313,7 +313,7 @@ export default function RegisterDriver() {
               value={formData.streetAddress}
               onChange={(e: any) => updateFormData({ streetAddress: e.target.value })}
               placeholder="123 Main St"
-              className="bg-white/[0.04] border-slate-600 text-white"
+              className="bg-slate-700/50 border-slate-600 text-white"
             />
           </div>
 
@@ -326,7 +326,7 @@ export default function RegisterDriver() {
                 value={formData.city}
                 onChange={(e: any) => updateFormData({ city: e.target.value })}
                 placeholder="Houston"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -334,7 +334,7 @@ export default function RegisterDriver() {
                 State <span className="text-red-400">*</span>
               </Label>
               <Select value={formData.state} onValueChange={(v: any) => updateFormData({ state: v })}>
-                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="State" />
                 </SelectTrigger>
                 <SelectContent>
@@ -352,7 +352,7 @@ export default function RegisterDriver() {
                 value={formData.zipCode}
                 onChange={(e: any) => updateFormData({ zipCode: e.target.value })}
                 placeholder="77001"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -458,7 +458,7 @@ export default function RegisterDriver() {
                 value={formData.cdlNumber}
                 onChange={(e: any) => updateFormData({ cdlNumber: e.target.value })}
                 placeholder="12345678"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -466,7 +466,7 @@ export default function RegisterDriver() {
                 Issuing State <span className="text-red-400">*</span>
               </Label>
               <Select value={formData.cdlState} onValueChange={(v: any) => updateFormData({ cdlState: v })}>
-                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select state" />
                 </SelectTrigger>
                 <SelectContent>
@@ -484,7 +484,7 @@ export default function RegisterDriver() {
                 CDL Class <span className="text-red-400">*</span>
               </Label>
               <Select value={formData.cdlClass} onValueChange={(v: any) => updateFormData({ cdlClass: v })}>
-                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select class" />
                 </SelectTrigger>
                 <SelectContent>
@@ -502,7 +502,7 @@ export default function RegisterDriver() {
                 type="date"
                 value={formData.cdlExpiration}
                 onChange={(e: any) => updateFormData({ cdlExpiration: e.target.value })}
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -560,7 +560,7 @@ export default function RegisterDriver() {
                   value={formData.medicalCardNumber}
                   onChange={(e: any) => updateFormData({ medicalCardNumber: e.target.value })}
                   placeholder="ME Certificate #"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
@@ -571,7 +571,7 @@ export default function RegisterDriver() {
                   type="date"
                   value={formData.medicalExpiration}
                   onChange={(e: any) => updateFormData({ medicalExpiration: e.target.value })}
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
             </div>
@@ -592,7 +592,7 @@ export default function RegisterDriver() {
                   value={formData.twicNumber}
                   onChange={(e: any) => updateFormData({ twicNumber: e.target.value })}
                   placeholder="TWIC #"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
@@ -601,7 +601,7 @@ export default function RegisterDriver() {
                   type="date"
                   value={formData.twicExpiration}
                   onChange={(e: any) => updateFormData({ twicExpiration: e.target.value })}
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
             </div>
@@ -645,7 +645,7 @@ export default function RegisterDriver() {
                 type="date"
                 value={formData.hazmatTrainingDate}
                 onChange={(e: any) => updateFormData({ hazmatTrainingDate: e.target.value })}
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -654,7 +654,7 @@ export default function RegisterDriver() {
                 value={formData.hazmatTrainingProvider}
                 onChange={(e: any) => updateFormData({ hazmatTrainingProvider: e.target.value })}
                 placeholder="J.J. Keller, Luma, etc."
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -665,7 +665,7 @@ export default function RegisterDriver() {
               type="date"
               value={formData.securityTrainingDate}
               onChange={(e: any) => updateFormData({ securityTrainingDate: e.target.value })}
-              className="bg-white/[0.04] border-slate-600 text-white"
+              className="bg-slate-700/50 border-slate-600 text-white"
             />
           </div>
 

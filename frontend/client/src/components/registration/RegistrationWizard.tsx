@@ -101,7 +101,7 @@ export function RegistrationWizard({
       {/* Theme Toggle */}
       <button
         onClick={toggleTheme}
-        className={`fixed top-6 right-6 z-50 p-2.5 rounded-full border backdrop-blur-sm transition-all duration-300 hover:scale-110 ${isLight ? 'bg-white/80 border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm' : 'bg-slate-800/80 border-slate-600 text-slate-300 hover:bg-white/[0.06]'}`}
+        className={`fixed top-6 right-6 z-50 p-2.5 rounded-full border backdrop-blur-sm transition-all duration-300 hover:scale-110 ${isLight ? 'bg-white/80 border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm' : 'bg-slate-800/80 border-slate-600 text-slate-300 hover:bg-slate-700'}`}
         title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
       >
         {isLight ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
@@ -172,7 +172,7 @@ export function RegistrationWizard({
                   "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all",
                   isCurrent && (isLight ? "bg-blue-50 text-blue-600 border border-blue-300" : "bg-blue-500/20 text-blue-400 border border-blue-500/30"),
                   isComplete && !isCurrent && (isLight ? "bg-green-50 text-green-600 border border-green-300" : "bg-green-500/20 text-green-400 border border-green-500/30"),
-                  !isCurrent && !isComplete && (isLight ? "bg-slate-100 text-slate-400 border border-slate-200" : "bg-white/[0.02] text-slate-500 border border-slate-700"),
+                  !isCurrent && !isComplete && (isLight ? "bg-slate-100 text-slate-400 border border-slate-200" : "bg-slate-800/50 text-slate-500 border border-slate-700"),
                   isClickable && "cursor-pointer hover:opacity-80"
                 )}
               >
@@ -197,7 +197,7 @@ export function RegistrationWizard({
             animation: "tileIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards",
           }}
         >
-          <Card className={`mb-6 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-slate-700'}`}>
+          <Card className={`mb-6 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700'}`}>
             <CardHeader>
               <CardTitle className={`flex items-center gap-3 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                 {steps[currentStep].icon}
@@ -229,7 +229,7 @@ export function RegistrationWizard({
             variant="outline"
             onClick={handleBack}
             disabled={isFirstStep || isValidating || isSubmitting}
-            className={isLight ? 'border-slate-300 text-slate-600 hover:bg-slate-100' : 'border-slate-600 text-slate-300 hover:bg-white/[0.06]'}
+            className={isLight ? 'border-slate-300 text-slate-600 hover:bg-slate-100' : 'border-slate-600 text-slate-300 hover:bg-slate-700'}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back

@@ -159,7 +159,7 @@ export default function SpectraMatch() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Input Parameters */}
         <div className="lg:col-span-1 space-y-6">
-          <Card className="bg-slate-900/50 border-white/[0.06]">
+          <Card className="bg-slate-900/50 border-slate-700/50">
             <CardHeader className="pb-3">
               <CardTitle className="text-white flex items-center gap-2">
                 <Beaker className="w-5 h-5 text-cyan-400" />
@@ -291,7 +291,7 @@ export default function SpectraMatch() {
           </Card>
 
           {/* Recent History */}
-          <Card className="bg-slate-900/50 border-white/[0.06]">
+          <Card className="bg-slate-900/50 border-slate-700/50">
             <CardHeader className="pb-3">
               <CardTitle className="text-white flex items-center gap-2 text-base">
                 <Clock className="w-4 h-4 text-slate-400" />
@@ -309,7 +309,7 @@ export default function SpectraMatch() {
                   {(historyQuery.data as any)?.identifications.map((item: any) => (
                     <div
                       key={item.id}
-                      className="p-3 rounded-lg bg-white/[0.02] border border-slate-700/30"
+                      className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/30"
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-white text-sm font-medium">{item.crudeType}</span>
@@ -333,7 +333,7 @@ export default function SpectraMatch() {
           {identifyMutation.data ? (
             <>
               {/* Primary Match */}
-              <Card className="bg-slate-900/50 border-white/[0.06] overflow-hidden">
+              <Card className="bg-slate-900/50 border-slate-700/50 overflow-hidden">
                 <div className="h-1 bg-gradient-to-r from-cyan-500 to-purple-500" />
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-6">
@@ -409,7 +409,7 @@ export default function SpectraMatch() {
               </Card>
 
               {/* Parameter Analysis */}
-              <Card className="bg-slate-900/50 border-white/[0.06]">
+              <Card className="bg-slate-900/50 border-slate-700/50">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-white">Adaptive Parameter Analysis</CardTitle>
                 </CardHeader>
@@ -437,7 +437,7 @@ export default function SpectraMatch() {
               </Card>
 
               {/* Alternative Matches */}
-              <Card className="bg-slate-900/50 border-white/[0.06]">
+              <Card className="bg-slate-900/50 border-slate-700/50">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-white">Alternative Matches</CardTitle>
                 </CardHeader>
@@ -472,7 +472,7 @@ export default function SpectraMatch() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* AI Reasoning */}
-                    <div className="p-3 rounded-lg bg-white/[0.02] border border-slate-700/30">
+                    <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
                       <div className="flex items-center gap-2 mb-2">
                         <Target className="w-4 h-4 text-cyan-400" />
                         <span className="text-sm text-white font-medium">Reasoning</span>
@@ -500,7 +500,7 @@ export default function SpectraMatch() {
 
                     {/* Market Context */}
                     {identifyMutation.data.esangAI.marketContext && (
-                      <div className="p-3 rounded-lg bg-white/[0.02] border border-slate-700/30">
+                      <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
                         <div className="flex items-center gap-2 mb-2">
                           <TrendingUp className="w-4 h-4 text-green-400" />
                           <span className="text-sm text-white font-medium">Market Context</span>
@@ -524,7 +524,7 @@ export default function SpectraMatch() {
               )}
 
               {/* Ask ESANG AI About This Product */}
-              <Card className="bg-slate-900/50 border-white/[0.06]">
+              <Card className="bg-slate-900/50 border-slate-700/50">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-white flex items-center gap-2 text-base">
                     <MessageSquare className="w-4 h-4 text-cyan-400" />
@@ -537,7 +537,7 @@ export default function SpectraMatch() {
                       value={aiQuestion}
                       onChange={(e: any) => setAiQuestion(e.target.value)}
                       placeholder="Ask anything about this product (safety, handling, pricing, regulations, compatibility...)"
-                      className="bg-white/[0.02] border-white/[0.06] text-white min-h-[60px] resize-none"
+                      className="bg-slate-800/50 border-slate-700/50 text-white min-h-[60px] resize-none"
                       onKeyDown={(e: any) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleAskAI())}
                     />
                     <Button
@@ -591,7 +591,7 @@ export default function SpectraMatch() {
             </>
           ) : (
             /* Empty State */
-            <Card className="bg-slate-900/50 border-white/[0.06]">
+            <Card className="bg-slate-900/50 border-slate-700/50">
               <CardContent className="py-16 text-center">
                 <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
                   <Activity className="w-10 h-10 text-purple-400" />
@@ -641,15 +641,15 @@ export default function SpectraMatch() {
               ) : (
                 <div className="space-y-4">
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="p-3 rounded-lg bg-white/[0.02] text-center">
+                    <div className="p-3 rounded-lg bg-slate-800/50 text-center">
                       <p className="text-2xl font-bold text-cyan-400">{learningStatsQuery.data?.totalIdentifications || 0}</p>
                       <p className="text-[10px] text-slate-500">Identifications</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-white/[0.02] text-center">
+                    <div className="p-3 rounded-lg bg-slate-800/50 text-center">
                       <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{learningStatsQuery.data?.avgConfidence || 0}%</p>
                       <p className="text-[10px] text-slate-500">Avg Confidence</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-white/[0.02] text-center">
+                    <div className="p-3 rounded-lg bg-slate-800/50 text-center">
                       <p className={cn(
                         "text-2xl font-bold",
                         learningStatsQuery.data?.recentTrend === "Improving" ? "text-green-400" :
@@ -680,7 +680,7 @@ export default function SpectraMatch() {
           </Card>
 
           {/* Crude Oil Database Reference */}
-          <Card className="bg-slate-900/50 border-white/[0.06]">
+          <Card className="bg-slate-900/50 border-slate-700/50">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-base">Known Crude Oil Types</CardTitle>
             </CardHeader>

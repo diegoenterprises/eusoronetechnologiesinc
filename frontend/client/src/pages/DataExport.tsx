@@ -53,7 +53,7 @@ export default function DataExport() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Database className="w-6 h-6 text-cyan-400" /></div>
@@ -61,7 +61,7 @@ export default function DataExport() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
@@ -69,7 +69,7 @@ export default function DataExport() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20"><Clock className="w-6 h-6 text-blue-400" /></div>
@@ -77,7 +77,7 @@ export default function DataExport() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><Download className="w-6 h-6 text-purple-400" /></div>
@@ -88,7 +88,7 @@ export default function DataExport() {
       </div>
 
       <Select value={dataType} onValueChange={setDataType}>
-        <SelectTrigger className="w-[180px] bg-white/[0.02] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="w-[180px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Data</SelectItem>
           <SelectItem value="loads">Loads</SelectItem>
@@ -98,7 +98,7 @@ export default function DataExport() {
         </SelectContent>
       </Select>
 
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" />Export History</CardTitle></CardHeader>
         <CardContent className="p-0">
           {exportsQuery.isLoading ? (
@@ -106,7 +106,7 @@ export default function DataExport() {
           ) : (exportsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Database className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No exports found</p></div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {(exportsQuery.data as any)?.map((exp: any) => (
                 <div key={exp.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -127,7 +127,7 @@ export default function DataExport() {
                     </div>
                   </div>
                   {exp.status === "completed" && (
-                    <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] rounded-lg">
+                    <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg">
                       <Download className="w-4 h-4 mr-1" />Download
                     </Button>
                   )}

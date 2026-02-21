@@ -232,7 +232,7 @@ export default function SpectraMatchWidget({
                     "flex flex-col items-center gap-1 p-2 rounded-lg border text-[10px] font-medium transition-all",
                     category === cat.id
                       ? `${cat.activeBg} ${cat.activeBorder} ${cat.activeText}`
-                      : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:border-slate-600 hover:text-slate-400"
+                      : "bg-white/[0.03] border-slate-700/50 text-slate-500 hover:border-slate-600 hover:text-slate-400"
                   )}
                 >
                   <cat.icon className="w-3.5 h-3.5" />
@@ -299,7 +299,7 @@ export default function SpectraMatchWidget({
                     Source Basin / Field
                   </Label>
                   <Select value={sourceBasin} onValueChange={setSourceBasin}>
-                    <SelectTrigger className="bg-white/[0.02] border-white/[0.06] h-8 text-xs">
+                    <SelectTrigger className="bg-slate-800/50 border-slate-700/50 h-8 text-xs">
                       <SelectValue placeholder="Select basin" />
                     </SelectTrigger>
                     <SelectContent>
@@ -324,7 +324,7 @@ export default function SpectraMatchWidget({
                     Grade
                   </Label>
                   <Select value={fuelGrade} onValueChange={setFuelGrade}>
-                    <SelectTrigger className="bg-white/[0.02] border-white/[0.06] h-8 text-xs">
+                    <SelectTrigger className="bg-slate-800/50 border-slate-700/50 h-8 text-xs">
                       <SelectValue placeholder="Select grade" />
                     </SelectTrigger>
                     <SelectContent>
@@ -381,7 +381,7 @@ export default function SpectraMatchWidget({
                     Product Type
                   </Label>
                   <Select value={fuelGrade} onValueChange={setFuelGrade}>
-                    <SelectTrigger className="bg-white/[0.02] border-white/[0.06] h-8 text-xs">
+                    <SelectTrigger className="bg-slate-800/50 border-slate-700/50 h-8 text-xs">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -467,7 +467,7 @@ export default function SpectraMatchWidget({
 
           {/* Result */}
           {result && (
-            <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] space-y-3">
+            <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-white font-semibold text-sm">{result.primaryMatch.name}</div>
@@ -511,7 +511,7 @@ export default function SpectraMatchWidget({
 
               {/* ESANG AI Intelligence Layer */}
               {result.esangAI && (
-                <div className="space-y-2 pt-2 border-t border-white/[0.06]">
+                <div className="space-y-2 pt-2 border-t border-slate-700/50">
                   <div className="flex items-center gap-1.5">
                     <EsangIcon className="w-3 h-3 text-purple-400" />
                     <span className="text-[10px] text-purple-400 font-medium">ESANG AI Analysis</span>

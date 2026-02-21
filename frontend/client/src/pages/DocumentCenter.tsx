@@ -312,7 +312,7 @@ function UploadModal({
               {files.map((entry, idx) => {
                 const aiResult = digitizeResults[idx];
                 return (
-                  <div key={idx} className={cn("rounded-xl overflow-hidden border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.03] border-white/[0.06]")}>
+                  <div key={idx} className={cn("rounded-xl overflow-hidden border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
                     <div className="flex items-start gap-3 p-3">
                       <div className={cn("p-2 rounded-lg shrink-0", isLight ? "bg-blue-50" : "bg-blue-500/15")}>
                         <File className="w-4 h-4 text-blue-400" />
@@ -619,7 +619,7 @@ export default function DocumentCenter() {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
             {/* Compliance Score Ring */}
-            <Card className={cn("lg:col-span-1 flex items-center justify-center", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}>
+            <Card className={cn("lg:col-span-1 flex items-center justify-center", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
               <CardContent className="py-6 flex flex-col items-center">
                 <ComplianceRing score={summary.complianceScore} />
                 <div className="mt-3 text-center">
@@ -644,7 +644,7 @@ export default function DocumentCenter() {
                 { label: "Missing", value: summary.totalMissing, icon: AlertTriangle, color: "text-yellow-400", bg: "bg-yellow-500/10" },
                 { label: "Issues", value: summary.totalIssues, icon: XCircle, color: "text-red-400", bg: "bg-red-500/10" },
               ].map((stat) => (
-                <Card key={stat.label} className={cn(isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}>
+                <Card key={stat.label} className={cn(isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
                   <CardContent className="py-4 px-4">
                     <div className="flex items-center gap-2 mb-2">
                       <div className={cn("p-1.5 rounded-lg", stat.bg)}>
@@ -659,7 +659,7 @@ export default function DocumentCenter() {
             </div>
 
             {/* Urgent Actions */}
-            <Card className={cn("lg:col-span-2", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}>
+            <Card className={cn("lg:col-span-2", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
               <CardHeader className="pb-2">
                 <CardTitle className={cn("text-sm font-semibold flex items-center gap-2", isLight ? "text-slate-900" : "text-white")}>
                   <AlertTriangle className="w-4 h-4 text-orange-400" />
@@ -703,7 +703,7 @@ export default function DocumentCenter() {
 
           {/* Progress Bar */}
           {summary.totalRequired > 0 && (
-            <div className={cn("px-4 py-3 rounded-xl", isLight ? "bg-white border border-slate-200" : "bg-white/[0.02] border border-white/[0.06]")}>
+            <div className={cn("px-4 py-3 rounded-xl", isLight ? "bg-white border border-slate-200" : "bg-slate-800/50 border border-slate-700/50")}>
               <div className="flex items-center justify-between mb-2">
                 <span className={cn("text-xs font-semibold", isLight ? "text-slate-700" : "text-slate-300")}>
                   Document Completion
@@ -779,7 +779,7 @@ export default function DocumentCenter() {
           {/* Document List grouped by category */}
           <div className="space-y-3">
             {filteredDocs.length === 0 ? (
-              <Card className={cn(isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}>
+              <Card className={cn(isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
                 <CardContent className="py-12 text-center">
                   <FolderOpen className="w-12 h-12 mx-auto text-slate-500 mb-3" />
                   <p className={cn("text-sm font-medium", isLight ? "text-slate-600" : "text-slate-300")}>
@@ -796,16 +796,16 @@ export default function DocumentCenter() {
                 const isExpanded = expandedCategories.has(cat) || categoryKeys.length <= 3;
 
                 return (
-                  <Card key={cat} className={cn(isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}>
+                  <Card key={cat} className={cn(isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
                     <button
                       onClick={() => toggleCategory(cat)}
                       className={cn(
                         "w-full flex items-center justify-between px-5 py-3 text-left",
-                        isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.04]"
+                        isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20"
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={cn("p-2 rounded-lg", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
+                        <div className={cn("p-2 rounded-lg", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
                           {CATEGORY_ICONS[cat] || <FileText className="w-4 h-4 text-slate-400" />}
                         </div>
                         <div>
@@ -828,7 +828,7 @@ export default function DocumentCenter() {
                               doc.status === "EXPIRED" ? "bg-red-500/5 border-l-2 border-red-500" :
                               doc.status === "REJECTED" ? "bg-red-500/5 border-l-2 border-red-400" :
                               doc.status === "NOT_UPLOADED" && doc.isBlocking ? "bg-yellow-500/5 border-l-2 border-yellow-500" : "",
-                              isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.04]"
+                              isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20"
                             )}
                           >
                             <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -941,7 +941,7 @@ export default function DocumentCenter() {
 
           {/* Next Expiration */}
           {data?.nextExpiration && (
-            <Card className={cn("border-l-4 border-yellow-500", isLight ? "bg-yellow-50 border-yellow-200" : "bg-yellow-500/5 border-white/[0.06]")}>
+            <Card className={cn("border-l-4 border-yellow-500", isLight ? "bg-yellow-50 border-yellow-200" : "bg-yellow-500/5 border-slate-700/50")}>
               <CardContent className="py-3 px-5 flex items-center gap-3">
                 <Clock className="w-5 h-5 text-yellow-400 flex-shrink-0" />
                 <div>

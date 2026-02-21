@@ -70,7 +70,7 @@ export default function SettlementHistory() {
     { id: "processing", label: "Processing" },
   ];
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -88,7 +88,7 @@ export default function SettlementHistory() {
           <Button
             variant="outline"
             size="sm"
-            className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")}
+            className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
             onClick={() => settlementsQuery.refetch?.()}
           >
             <RefreshCw className="w-4 h-4" />
@@ -112,7 +112,7 @@ export default function SettlementHistory() {
           { icon: <FileText className="w-5 h-5 text-blue-400" />, bg: "bg-blue-500/15", value: String(settlements.length), label: "Statements", color: "text-blue-400" },
           { icon: <TrendingUp className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/15", value: settlements.length > 0 ? `$${Math.round(totalPaid / Math.max(1, settlements.filter((s: any) => s.status === "paid").length)).toLocaleString()}` : "$0", label: "Avg Settlement", color: "text-purple-400" },
         ].map((s) => (
-          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
+          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
@@ -138,7 +138,7 @@ export default function SettlementHistory() {
                 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
                 : isLight
                   ? "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                  : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]"
+                  : "bg-slate-800 text-slate-400 hover:bg-slate-700"
             )}
           >
             {f.label}
@@ -153,7 +153,7 @@ export default function SettlementHistory() {
       ) : filtered.length === 0 ? (
         <Card className={cc}>
           <CardContent className="py-16 text-center">
-            <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
+            <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
               <FileText className="w-8 h-8 text-slate-400" />
             </div>
             <p className={cn("font-medium text-lg", isLight ? "text-slate-600" : "text-slate-300")}>No Settlements Found</p>
@@ -232,7 +232,7 @@ export default function SettlementHistory() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className={cn("rounded-lg text-xs", isLight ? "border-slate-200" : "bg-white/[0.04] border-white/[0.06]")}
+                          className={cn("rounded-lg text-xs", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50")}
                           onClick={(e: any) => { e.stopPropagation(); toast.info("Downloading settlement PDF..."); }}
                         >
                           <Download className="w-3 h-3 mr-1" /> PDF

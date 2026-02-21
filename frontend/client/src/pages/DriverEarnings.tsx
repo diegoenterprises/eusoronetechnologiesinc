@@ -57,7 +57,7 @@ export default function DriverEarnings() {
         </div>
         <div className="flex items-center gap-3">
           <Select value={period} onValueChange={(v: any) => setPeriod(v as "week" | "month" | "quarter" | "year")}>
-            <SelectTrigger className="w-32 bg-white/[0.04] border-slate-600"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="week">This Week</SelectItem>
               <SelectItem value="month">This Month</SelectItem>
@@ -80,7 +80,7 @@ export default function DriverEarnings() {
             <p className="text-xs text-slate-400">Total Earnings</p>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4 text-center">
             <Package className="w-6 h-6 mx-auto mb-2 text-blue-400" />
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
@@ -89,7 +89,7 @@ export default function DriverEarnings() {
             <p className="text-xs text-slate-400">Loads</p>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4 text-center">
             <Truck className="w-6 h-6 mx-auto mb-2 text-purple-400" />
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
@@ -98,7 +98,7 @@ export default function DriverEarnings() {
             <p className="text-xs text-slate-400">Miles</p>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4 text-center">
             <Target className="w-6 h-6 mx-auto mb-2 text-orange-400" />
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
@@ -107,7 +107,7 @@ export default function DriverEarnings() {
             <p className="text-xs text-slate-400">Avg/Mile</p>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4 text-center">
             <Award className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
@@ -121,7 +121,7 @@ export default function DriverEarnings() {
       {/* Week Navigation */}
       <div className="flex items-center justify-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => setWeekOffset(o => o + 1)}><ChevronLeft className="w-5 h-5" /></Button>
-        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/[0.04]">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700/50">
           <Calendar className="w-4 h-4 text-slate-400" />
           {weeklyQuery.isLoading ? <Skeleton className="h-5 w-40" /> : (
             <span className="text-white font-medium">{weekly?.weekStart} - {weekly?.weekEnd}</span>
@@ -165,7 +165,7 @@ export default function DriverEarnings() {
       </Card>
 
       {/* Earnings List */}
-      <Card className="bg-white/[0.02] border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2"><Wallet className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />Earnings Breakdown</CardTitle>
         </CardHeader>
@@ -207,7 +207,7 @@ export default function DriverEarnings() {
       </Card>
 
       {/* Payment Methods */}
-      <Card className="bg-white/[0.02] border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2"><CreditCard className="w-5 h-5 text-blue-400" />Payment Method</CardTitle>
         </CardHeader>

@@ -160,7 +160,7 @@ export default function ZeunProviderNetwork() {
                 value={searchText}
                 onChange={(e: any) => handleSearchChange(e.target.value)}
                 placeholder="Search by city, state, or mechanic name (e.g. 'Houston', 'Loves Travel')..."
-                className={cn("pl-10 rounded-xl", L ? "" : "bg-white/[0.02] border-white/[0.06]")}
+                className={cn("pl-10 rounded-xl", L ? "" : "bg-slate-800/50 border-slate-700/50")}
               />
               {searchLoading && debouncedSearch && (
                 <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-blue-500" />
@@ -197,7 +197,7 @@ export default function ZeunProviderNetwork() {
                   className={cn("flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all",
                     sel
                       ? (L ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-blue-500/10 border-blue-500/30 text-blue-400")
-                      : (L ? "border-slate-200 text-slate-500 hover:border-slate-300" : "border-white/[0.06] text-slate-400 hover:border-slate-600")
+                      : (L ? "border-slate-200 text-slate-500 hover:border-slate-300" : "border-slate-700/50 text-slate-400 hover:border-slate-600")
                   )}>
                   <Icon className="w-3.5 h-3.5" />
                   {pt.label}
@@ -269,7 +269,7 @@ export default function ZeunProviderNetwork() {
 
                   {/* Info pills */}
                   <div className="flex flex-wrap items-center gap-2 mb-3">
-                    <span className={cn("flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg", L ? "bg-slate-100 text-slate-600" : "bg-white/[0.04] text-slate-300")}>
+                    <span className={cn("flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg", L ? "bg-slate-100 text-slate-600" : "bg-slate-700/50 text-slate-300")}>
                       <MapPin className="h-3 w-3" />{provider.distance} mi
                     </span>
                     {provider.available24x7 && (
@@ -326,7 +326,7 @@ export default function ZeunProviderNetwork() {
       ) : (
         <Card className={cc}>
           <CardContent className="py-12 text-center">
-            <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", L ? "bg-slate-100" : "bg-white/[0.04]")}>
+            <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", L ? "bg-slate-100" : "bg-slate-700/50")}>
               <Building2 className={cn("w-8 h-8", L ? "text-slate-400" : "text-slate-500")} />
             </div>
             <p className={cn("font-semibold", L ? "text-slate-700" : "text-slate-300")}>No providers found</p>

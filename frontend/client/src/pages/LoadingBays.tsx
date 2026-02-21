@@ -69,7 +69,7 @@ export default function LoadingBays() {
         </div>
         <Button 
           variant="outline" 
-          className="bg-white/[0.04] border-white/[0.06] hover:bg-slate-600/50 rounded-lg"
+          className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 rounded-lg"
           onClick={() => baysQuery.refetch()}
         >
           <RefreshCw className="w-4 h-4 mr-2" />
@@ -153,7 +153,7 @@ export default function LoadingBays() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Warehouse className="w-5 h-5 text-cyan-400" />
@@ -212,7 +212,7 @@ export default function LoadingBays() {
         </div>
 
         <div>
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Truck className="w-5 h-5 text-purple-400" />

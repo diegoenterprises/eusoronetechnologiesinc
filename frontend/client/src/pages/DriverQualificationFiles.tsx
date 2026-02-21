@@ -74,28 +74,28 @@ export default function DriverQualificationFiles() {
       {/* Fleet Compliance Summary */}
       {complianceReport && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <Users className="w-5 h-5 text-blue-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-blue-400">{complianceReport.summary?.totalDrivers || 0}</p>
               <p className="text-[9px] text-slate-400 uppercase">Total Drivers</p>
             </CardContent>
           </Card>
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <CheckCircle className="w-5 h-5 text-green-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-green-400">{complianceReport.summary?.fullyCompliant || 0}</p>
               <p className="text-[9px] text-slate-400 uppercase">Fully Compliant</p>
             </CardContent>
           </Card>
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <AlertTriangle className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-yellow-400">{complianceReport.summary?.partiallyCompliant || 0}</p>
               <p className="text-[9px] text-slate-400 uppercase">Partial</p>
             </CardContent>
           </Card>
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <Shield className="w-5 h-5 text-purple-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-purple-400">{complianceReport.summary?.complianceRate || 0}%</p>
@@ -115,7 +115,7 @@ export default function DriverQualificationFiles() {
 
       {/* Driver DQ Overview */}
       {activeDriverId && overview && (
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <FileText className="w-5 h-5 text-[#1473FF]" />
@@ -153,16 +153,16 @@ export default function DriverQualificationFiles() {
 
       {/* Documents List */}
       {activeDriverId && docs.length > 0 && (
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <ClipboardCheck className="w-5 h-5 text-cyan-400" />DQ Documents
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {docs.map((d: any) => (
-                <div key={d.id} className="p-3 flex items-center justify-between hover:bg-white/[0.04]">
+                <div key={d.id} className="p-3 flex items-center justify-between hover:bg-slate-700/20">
                   <div>
                     <p className="text-white text-sm font-medium">{d.name || d.type}</p>
                     <p className="text-xs text-slate-500">{d.type} · Uploaded {d.uploadedAt}</p>
@@ -177,7 +177,7 @@ export default function DriverQualificationFiles() {
 
       {/* Employment History */}
       {activeDriverId && empHistory && (
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Briefcase className="w-5 h-5 text-purple-400" />Employment History

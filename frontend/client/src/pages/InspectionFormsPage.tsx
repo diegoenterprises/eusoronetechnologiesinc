@@ -58,7 +58,7 @@ export default function InspectionFormsPage() {
             { label: "OOS", value: stats.oos || 0, icon: <Shield className="w-5 h-5 text-red-400" />, color: "text-red-400" },
             { label: "Pending", value: stats.pending || 0, icon: <Clock className="w-5 h-5 text-purple-400" />, color: "text-purple-400" },
           ].map(s => (
-            <Card key={s.label} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+            <Card key={s.label} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardContent className="p-3 text-center">
                 <div className="flex justify-center mb-1">{s.icon}</div>
                 <p className={cn("text-lg font-bold", s.color)}>{s.value}</p>
@@ -84,7 +84,7 @@ export default function InspectionFormsPage() {
       </div>
 
       {/* Inspection List */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#1473FF]" />Inspection Records
@@ -97,9 +97,9 @@ export default function InspectionFormsPage() {
           ) : inspections.length === 0 ? (
             <div className="p-8 text-center"><ClipboardCheck className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No inspections found</p></div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {inspections.map((insp: any) => (
-                <div key={insp.id} className="p-3 flex items-center justify-between hover:bg-white/[0.04]">
+                <div key={insp.id} className="p-3 flex items-center justify-between hover:bg-slate-700/20">
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-white font-medium text-sm">Inspection #{insp.id}</span>

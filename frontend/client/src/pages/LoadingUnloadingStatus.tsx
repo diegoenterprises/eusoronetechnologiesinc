@@ -161,7 +161,7 @@ export default function LoadingUnloadingStatus() {
     );
   }
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -221,7 +221,7 @@ export default function LoadingUnloadingStatus() {
                 </div>
 
                 {/* Tank visualization */}
-                <div className={cn("relative h-32 rounded-xl overflow-hidden mb-3", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
+                <div className={cn("relative h-32 rounded-xl overflow-hidden mb-3", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
                   <div
                     className={cn(
                       "absolute bottom-0 left-0 right-0 transition-all duration-1000 rounded-b-xl",
@@ -272,7 +272,7 @@ export default function LoadingUnloadingStatus() {
               "flex items-center gap-3 p-3 rounded-xl border transition-colors",
               step.done
                 ? isLight ? "bg-green-50 border-green-200" : "bg-green-500/5 border-green-500/20"
-                : isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
+                : isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
             )}>
               <div className={cn(
                 "w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 text-xs font-bold",

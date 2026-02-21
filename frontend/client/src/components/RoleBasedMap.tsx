@@ -241,7 +241,7 @@ export default function RoleBasedMap({
             size="sm"
             onClick={() => refetch()}
             disabled={isRefetching}
-            className={`backdrop-blur border ${isDark ? 'bg-slate-800/80 border-slate-700 text-white hover:bg-white/[0.06]' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}
+            className={`backdrop-blur border ${isDark ? 'bg-slate-800/80 border-slate-700 text-white hover:bg-slate-700' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}
           >
             <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
           </Button>
@@ -406,7 +406,7 @@ export default function RoleBasedMap({
                 className={`p-2 rounded border cursor-pointer transition-all text-xs
                   ${selectedLocation?.id === location.id 
                     ? 'bg-blue-500/20 border-blue-500' 
-                    : isDark ? 'bg-white/[0.04] border-slate-600 hover:border-blue-500/50' : 'bg-gray-50 border-gray-200 hover:border-blue-400'}`}
+                    : isDark ? 'bg-slate-700/50 border-slate-600 hover:border-blue-500/50' : 'bg-gray-50 border-gray-200 hover:border-blue-400'}`}
               >
                 <div className="flex items-center gap-2">
                   <div className={`w-8 h-8 rounded-full ${getMarkerColor(location.type, location.status)} flex items-center justify-center`}>

@@ -109,7 +109,7 @@ export default function AppointmentScheduler() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4 text-center">
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
               <p className="text-3xl font-bold text-white">{(summaryQuery.data as any)?.todayTotal ?? 0}</p>
@@ -157,7 +157,7 @@ export default function AppointmentScheduler() {
           <Button variant="ghost" size="sm" onClick={() => navigateDate(-1)}>
             <ChevronLeft className="w-5 h-5" />
           </Button>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/[0.04]">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700/50">
             <Calendar className="w-4 h-4 text-slate-400" />
             <span className="text-white font-medium">
               {new Date(selectedDate).toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}
@@ -171,7 +171,7 @@ export default function AppointmentScheduler() {
           </Button>
         </div>
         <Select value={selectedRack} onValueChange={setSelectedRack}>
-          <SelectTrigger className="w-40 bg-white/[0.04] border-slate-600">
+          <SelectTrigger className="w-40 bg-slate-700/50 border-slate-600">
             <SelectValue placeholder="All Racks" />
           </SelectTrigger>
           <SelectContent>
@@ -192,7 +192,7 @@ export default function AppointmentScheduler() {
 
         {/* List Tab */}
         <TabsContent value="list" className="mt-6">
-          <Card className="bg-white/[0.02] border-slate-700">
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-0">
               {appointmentsQuery.isLoading ? (
                 <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full" />)}</div>
@@ -204,7 +204,7 @@ export default function AppointmentScheduler() {
               ) : (
                 <div className="divide-y divide-slate-700">
                   {(appointmentsQuery.data as any)?.appointments?.map((apt: any) => (
-                    <div key={apt.id} className="flex items-center justify-between p-4 hover:bg-white/[0.06]/30 transition-colors">
+                    <div key={apt.id} className="flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className={cn(
                           "p-2 rounded-lg",
@@ -274,7 +274,7 @@ export default function AppointmentScheduler() {
 
         {/* Timeline Tab */}
         <TabsContent value="timeline" className="mt-6">
-          <Card className="bg-white/[0.02] border-slate-700">
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-4">
               {appointmentsQuery.isLoading ? (
                 <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full" />)}</div>
@@ -322,7 +322,7 @@ export default function AppointmentScheduler() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {racksQuery.isLoading ? (
               [1, 2, 3, 4].map((i: any) => (
-                <Card key={i} className="bg-white/[0.02] border-slate-700">
+                <Card key={i} className="bg-slate-800/50 border-slate-700">
                   <CardContent className="p-4"><Skeleton className="h-32 w-full" /></CardContent>
                 </Card>
               ))
@@ -333,7 +333,7 @@ export default function AppointmentScheduler() {
                 const nextApt = rackAppointments.find((apt: any) => apt.status === "checked_in" || apt.status === "scheduled");
 
                 return (
-                  <Card key={rack.id} className="bg-white/[0.02] border-slate-700">
+                  <Card key={rack.id} className="bg-slate-800/50 border-slate-700">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-white flex items-center justify-between">
                         <span>{rack.name}</span>
@@ -363,7 +363,7 @@ export default function AppointmentScheduler() {
                       {nextApt && (
                         <div>
                           <p className="text-xs text-slate-500 mb-2">Next Up:</p>
-                          <div className="p-2 rounded bg-white/[0.04]">
+                          <div className="p-2 rounded bg-slate-700/50">
                             <p className="text-white text-sm">{nextApt.catalystName}</p>
                             <p className="text-xs text-slate-400">
                               {new Date(nextApt.scheduledTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}

@@ -35,7 +35,7 @@ export default function HelpCenter() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><FileText className="w-6 h-6 text-cyan-400" /></div>
@@ -43,7 +43,7 @@ export default function HelpCenter() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><Book className="w-6 h-6 text-purple-400" /></div>
@@ -51,7 +51,7 @@ export default function HelpCenter() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><Video className="w-6 h-6 text-green-400" /></div>
@@ -59,7 +59,7 @@ export default function HelpCenter() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><HelpCircle className="w-6 h-6 text-yellow-400" /></div>
@@ -71,21 +71,21 @@ export default function HelpCenter() {
 
       <div className="relative max-w-lg mx-auto">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search for help..." className="pl-12 py-6 text-lg bg-white/[0.02] border-white/[0.06] rounded-xl" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search for help..." className="pl-12 py-6 text-lg bg-slate-800/50 border-slate-700/50 rounded-xl" />
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Book className="w-5 h-5 text-purple-400" />Categories</CardTitle></CardHeader>
           <CardContent className="p-0">
             {categoriesQuery.isLoading ? (
               <div className="p-4 space-y-2">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {(categoriesQuery.data as any)?.map((category: any) => (
-                  <div key={category.id} className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/[0.06]/30 transition-colors">
+                  <div key={category.id} className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-700/30 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-white/[0.04]"><FileText className="w-4 h-4 text-cyan-400" /></div>
+                      <div className="p-2 rounded-lg bg-slate-700/50"><FileText className="w-4 h-4 text-cyan-400" /></div>
                       <div>
                         <p className="text-white font-medium">{category.name}</p>
                         <p className="text-xs text-slate-500">{category.articleCount} articles</p>
@@ -99,7 +99,7 @@ export default function HelpCenter() {
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2 bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="md:col-span-2 bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" />Popular Articles</CardTitle></CardHeader>
           <CardContent className="p-0">
             {articlesQuery.isLoading ? (
@@ -107,9 +107,9 @@ export default function HelpCenter() {
             ) : (articlesQuery.data as any)?.length === 0 ? (
               <div className="text-center py-16"><HelpCircle className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No articles found</p></div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {(articlesQuery.data as any)?.map((article: any) => (
-                  <div key={article.id} className="p-4 cursor-pointer hover:bg-white/[0.06]/30 transition-colors">
+                  <div key={article.id} className="p-4 cursor-pointer hover:bg-slate-700/30 transition-colors">
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="flex items-center gap-2 mb-1">

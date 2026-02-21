@@ -75,7 +75,7 @@ export function CSAScores({
   return (
     <div className="space-y-6">
       {/* Header Card */}
-      <Card className="bg-white/[0.02] border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700">
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div>
@@ -158,7 +158,7 @@ export function CSAScores({
             <Card 
               key={basic.code} 
               className={cn(
-                "bg-white/[0.02] border-slate-700",
+                "bg-slate-800/50 border-slate-700",
                 basic.alert && "border-red-500/50 ring-1 ring-red-500/20"
               )}
             >
@@ -233,7 +233,7 @@ export function CSAScores({
       </div>
 
       {/* Legend */}
-      <Card className="bg-white/[0.02] border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700">
         <CardContent className="p-4">
           <div className="flex items-start gap-2">
             <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />

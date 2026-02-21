@@ -52,7 +52,7 @@ export default function PaymentHistory() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Track all payments and transactions</p>
         </div>
-        <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
+        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
           <Download className="w-4 h-4 mr-2" />Export
         </Button>
       </div>
@@ -75,7 +75,7 @@ export default function PaymentHistory() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -91,7 +91,7 @@ export default function PaymentHistory() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -107,7 +107,7 @@ export default function PaymentHistory() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -128,10 +128,10 @@ export default function PaymentHistory() {
       <div className="flex flex-wrap gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search payments..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
+          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search payments..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
+          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
             <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>
@@ -141,7 +141,7 @@ export default function PaymentHistory() {
           </SelectContent>
         </Select>
         <Select value={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
+          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
             <SelectValue placeholder="Date Range" />
           </SelectTrigger>
           <SelectContent>
@@ -154,21 +154,21 @@ export default function PaymentHistory() {
       </div>
 
       {/* Payments List */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {paymentsQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : filteredPayments?.length === 0 ? (
             <div className="text-center py-16">
-              <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <DollarSign className="w-10 h-10 text-slate-500" />
               </div>
               <p className="text-slate-400 text-lg">No payments found</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {filteredPayments?.map((payment: any) => (
-                <div key={payment.id} className="p-4 hover:bg-white/[0.04] transition-colors">
+                <div key={payment.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={cn("p-3 rounded-xl", payment.type === "received" ? "bg-green-500/20" : "bg-red-500/20")}>

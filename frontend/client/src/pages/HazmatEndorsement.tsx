@@ -66,8 +66,8 @@ export default function HazmatEndorsement() {
 
   const isLoading = profileQuery.isLoading || certsQuery.isLoading;
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const sc = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const sc = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -84,7 +84,7 @@ export default function HazmatEndorsement() {
         <Button
           variant="outline"
           size="sm"
-          className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")}
+          className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
           onClick={() => profileQuery.refetch?.()}
         >
           <RefreshCw className="w-4 h-4" />
@@ -115,8 +115,8 @@ export default function HazmatEndorsement() {
                   <div className={cn(
                     "w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black mb-1",
                     hasEndorsement
-                      ? isLight ? "bg-white shadow-sm text-green-600" : "bg-white/[0.02] text-green-400"
-                      : isLight ? "bg-white shadow-sm text-red-500" : "bg-white/[0.02] text-red-400"
+                      ? isLight ? "bg-white shadow-sm text-green-600" : "bg-slate-800/50 text-green-400"
+                      : isLight ? "bg-white shadow-sm text-red-500" : "bg-slate-800/50 text-red-400"
                   )}>
                     H
                   </div>
@@ -164,7 +164,7 @@ export default function HazmatEndorsement() {
               { icon: <Calendar className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/15", value: endorsementExpiry ? new Date(endorsementExpiry).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "N/A", label: "Expiration", color: "text-purple-400" },
               { icon: <BookOpen className="w-5 h-5 text-cyan-400" />, bg: "bg-cyan-500/15", value: "49 CFR 172.704", label: "Training Req", color: "text-cyan-400" },
             ].map((s) => (
-              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
+              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
@@ -199,7 +199,7 @@ export default function HazmatEndorsement() {
                     </div>
                     <div className={cn(
                       "flex-1 p-4 rounded-xl border transition-colors",
-                      isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
+                      isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
                     )}>
                       <div className="flex items-start gap-3">
                         <div className={cn("p-2 rounded-lg flex-shrink-0", "bg-[#1473FF]/10 text-[#1473FF]")}>

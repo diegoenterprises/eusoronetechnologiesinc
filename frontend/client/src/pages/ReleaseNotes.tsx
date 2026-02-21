@@ -55,7 +55,7 @@ export default function ReleaseNotes() {
           <p className="text-slate-400 text-sm mt-1">Stay updated with the latest changes</p>
         </div>
         <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
+          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -92,7 +92,7 @@ export default function ReleaseNotes() {
       )}
 
       {/* Release List */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <FileText className="w-5 h-5 text-purple-400" />
@@ -108,12 +108,12 @@ export default function ReleaseNotes() {
               <p className="text-slate-400">No release notes found</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {(releasesQuery.data as any)?.map((release: any) => (
                 <div key={release.id} className="p-4">
                   <div className="flex items-start justify-between cursor-pointer" onClick={() => setExpandedRelease(expandedRelease === release.id ? null : release.id)}>
                     <div className="flex items-start gap-4">
-                      <div className="p-2 rounded-lg bg-white/[0.04]">
+                      <div className="p-2 rounded-lg bg-slate-700/50">
                         <Tag className="w-5 h-5 text-cyan-400" />
                       </div>
                       <div>

@@ -90,8 +90,8 @@ export default function ShipperAgreementWizard() {
     onError: (e:any) => toast.error("Sign failed", { description: e.message }),
   }) || { mutate:()=>{}, isPending:false };
 
-  const cc = cn("rounded-2xl border", isLight?"bg-white border-slate-200 shadow-sm":"bg-white/[0.03] border-white/[0.06]");
-  const cl = cn("p-4 rounded-xl border", isLight?"bg-slate-50 border-slate-200":"bg-white/[0.02] border-slate-700/30");
+  const cc = cn("rounded-2xl border", isLight?"bg-white border-slate-200 shadow-sm":"bg-slate-800/60 border-slate-700/50");
+  const cl = cn("p-4 rounded-xl border", isLight?"bg-slate-50 border-slate-200":"bg-slate-800/50 border-slate-700/30");
   const vl = cn("font-medium text-sm", isLight?"text-slate-800":"text-white");
   const mt = cn("text-sm", isLight?"text-slate-500":"text-slate-400");
   const ic = cn("rounded-xl", isLight?"bg-white border-slate-200":"bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500");
@@ -124,7 +124,7 @@ export default function ShipperAgreementWizard() {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[960px] mx-auto">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className={cn("rounded-xl",isLight?"hover:bg-slate-100":"hover:bg-white/[0.06]")} onClick={()=>setLocation("/agreements")}><ArrowLeft className="w-4 h-4"/></Button>
+        <Button variant="ghost" size="sm" className={cn("rounded-xl",isLight?"hover:bg-slate-100":"hover:bg-slate-700")} onClick={()=>setLocation("/agreements")}><ArrowLeft className="w-4 h-4"/></Button>
         <div><h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Agreement Wizard</h1><p className={mt}>Generate or digitize a {agType.replace(/_/g, " ")} agreement</p></div>
       </div>
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
@@ -134,11 +134,11 @@ export default function ShipperAgreementWizard() {
       {/* ── MODE ── */}
       {step==="mode"&&(<div className="space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button onClick={()=>setMode("generate")} className={cn("p-6 rounded-2xl border-2 text-left transition-all",mode==="generate"?"border-[#1473FF] bg-gradient-to-br from-[#1473FF]/10 to-[#BE01FF]/10 shadow-lg":isLight?"border-slate-200 bg-white hover:border-slate-300":"border-slate-700 bg-white/[0.03] hover:border-slate-600")}>
+          <button onClick={()=>setMode("generate")} className={cn("p-6 rounded-2xl border-2 text-left transition-all",mode==="generate"?"border-[#1473FF] bg-gradient-to-br from-[#1473FF]/10 to-[#BE01FF]/10 shadow-lg":isLight?"border-slate-200 bg-white hover:border-slate-300":"border-slate-700 bg-slate-800/60 hover:border-slate-600")}>
             <div className="p-3 rounded-xl bg-gradient-to-br from-[#1473FF]/15 to-[#BE01FF]/15 w-12 h-12 flex items-center justify-center mb-3"><EsangIcon className="w-6 h-6 text-[#1473FF]"/></div>
             <p className={cn("font-bold mb-1",vl)}>Generate Agreement</p><p className={cn("text-xs",mt)}>Auto-generate MSA, Rate Confirmation, or Lane Commitment with FMCSA-compliant clauses.</p>
           </button>
-          <button onClick={()=>setMode("upload")} className={cn("p-6 rounded-2xl border-2 text-left transition-all",mode==="upload"?"border-[#BE01FF] bg-gradient-to-br from-[#BE01FF]/10 to-[#1473FF]/10 shadow-lg":isLight?"border-slate-200 bg-white hover:border-slate-300":"border-slate-700 bg-white/[0.03] hover:border-slate-600")}>
+          <button onClick={()=>setMode("upload")} className={cn("p-6 rounded-2xl border-2 text-left transition-all",mode==="upload"?"border-[#BE01FF] bg-gradient-to-br from-[#BE01FF]/10 to-[#1473FF]/10 shadow-lg":isLight?"border-slate-200 bg-white hover:border-slate-300":"border-slate-700 bg-slate-800/60 hover:border-slate-600")}>
             <div className="p-3 rounded-xl bg-gradient-to-br from-[#BE01FF]/15 to-[#1473FF]/15 w-12 h-12 flex items-center justify-center mb-3"><Scan className="w-6 h-6 text-[#BE01FF]"/></div>
             <p className={cn("font-bold mb-1",vl)}>Upload & Digitize</p><p className={cn("text-xs",mt)}>Upload existing contract. Digitizer extracts clauses, signature lines, and financial fields.</p>
           </button>

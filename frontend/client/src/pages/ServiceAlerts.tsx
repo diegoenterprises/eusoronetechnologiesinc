@@ -55,14 +55,14 @@ export default function ServiceAlerts() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">System notifications and alerts</p>
         </div>
-        <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => alertsQuery.refetch()}>
+        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => alertsQuery.refetch()}>
           <RefreshCw className="w-4 h-4 mr-2" />Refresh
         </Button>
       </div>
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -78,7 +78,7 @@ export default function ServiceAlerts() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -94,7 +94,7 @@ export default function ServiceAlerts() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -110,7 +110,7 @@ export default function ServiceAlerts() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -130,7 +130,7 @@ export default function ServiceAlerts() {
       {/* Filter */}
       <div className="flex items-center gap-4">
         <Select value={severityFilter} onValueChange={setSeverityFilter}>
-          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
+          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
             <SelectValue placeholder="Severity" />
           </SelectTrigger>
           <SelectContent>
@@ -143,19 +143,19 @@ export default function ServiceAlerts() {
       </div>
 
       {/* Alerts List */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {alertsQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : (alertsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
-              <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <Bell className="w-10 h-10 text-slate-500" />
               </div>
               <p className="text-slate-400 text-lg">No alerts</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {(alertsQuery.data as any)?.map((alert: any) => (
                 <div key={alert.id} className={cn("p-4", alert.severity === "critical" && "bg-red-500/5 border-l-2 border-red-500", alert.severity === "warning" && "bg-yellow-500/5 border-l-2 border-yellow-500")}>
                   <div className="flex items-start justify-between mb-2">
@@ -176,7 +176,7 @@ export default function ServiceAlerts() {
                     </div>
                     <div className="flex items-center gap-2">
                       {!alert.acknowledged && (
-                        <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => acknowledgeMutation.mutate({ alertId: alert.id })}>
+                        <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => acknowledgeMutation.mutate({ alertId: alert.id })}>
                           <Eye className="w-3 h-3 mr-1" />Acknowledge
                         </Button>
                       )}

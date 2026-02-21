@@ -137,7 +137,7 @@ export default function BrokerCatalysts() {
         )}
       </div>
 
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <CardTitle className="text-white flex items-center gap-2">
@@ -151,11 +151,11 @@ export default function BrokerCatalysts() {
                   placeholder="Search catalysts..."
                   value={search}
                   onChange={(e: any) => setSearch(e.target.value)}
-                  className="pl-9 bg-white/[0.04] border-white/[0.06] rounded-lg w-64"
+                  className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg w-64"
                 />
               </div>
               <Select value={tierFilter} onValueChange={setTierFilter}>
-                <SelectTrigger className="w-32 bg-white/[0.04] border-white/[0.06] rounded-lg">
+                <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600/50 rounded-lg">
                   <SelectValue placeholder="Tier" />
                 </SelectTrigger>
                 <SelectContent>
@@ -167,7 +167,7 @@ export default function BrokerCatalysts() {
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-32 bg-white/[0.04] border-white/[0.06] rounded-lg">
+                <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600/50 rounded-lg">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -261,7 +261,7 @@ export default function BrokerCatalysts() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="bg-white/[0.04] border-white/[0.06] hover:bg-slate-600/50 rounded-lg"
+                        className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 rounded-lg"
                       >
                         View Profile
                       </Button>

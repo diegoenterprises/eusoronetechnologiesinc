@@ -288,7 +288,7 @@ export default function CompanyPage() {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all whitespace-nowrap ${
                 activeTab === tab.id
                   ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                  : "bg-slate-800 text-slate-400 hover:bg-white/[0.06] hover:text-white"
+                  : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"
               }`}
             >
               <Icon size={18} />
@@ -452,7 +452,7 @@ export default function CompanyPage() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white/[0.04] p-4 rounded-lg border border-slate-600">
+              <div className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
                 <div className="flex items-center gap-3 mb-2">
                   <Truck size={24} className="text-blue-400" />
                   <div>
@@ -463,7 +463,7 @@ export default function CompanyPage() {
                 <p className="text-slate-500 text-xs">Active vehicles</p>
               </div>
 
-              <div className="bg-white/[0.04] p-4 rounded-lg border border-slate-600">
+              <div className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
                 <div className="flex items-center gap-3 mb-2">
                   <Users size={24} className="text-green-400" />
                   <div>
@@ -474,7 +474,7 @@ export default function CompanyPage() {
                 <p className="text-slate-500 text-xs">Active drivers</p>
               </div>
 
-              <div className="bg-white/[0.04] p-4 rounded-lg border border-slate-600">
+              <div className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
                 <div className="flex items-center gap-3 mb-2">
                   <Calendar size={24} className="text-purple-400" />
                   <div>
@@ -511,7 +511,7 @@ export default function CompanyPage() {
               {documents.map((doc: any) => (
                 <div
                   key={doc.id}
-                  className="flex items-center justify-between p-4 bg-white/[0.04] rounded-lg border border-slate-600 hover:border-slate-500 transition-all"
+                  className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg border border-slate-600 hover:border-slate-500 transition-all"
                 >
                   <div className="flex items-center gap-4">
                     <FileText size={24} className="text-blue-400" />
@@ -595,7 +595,7 @@ export default function CompanyPage() {
               {fleet.map((vehicle: any) => (
                 <div
                   key={vehicle.id}
-                  className="flex items-center justify-between p-4 bg-white/[0.04] rounded-lg border border-slate-600"
+                  className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg border border-slate-600"
                 >
                   <div className="flex items-center gap-4">
                     <Truck size={24} className="text-blue-400" />
@@ -628,17 +628,17 @@ export default function CompanyPage() {
           <Card className="bg-slate-800 border-slate-700 p-6">
             <h2 className="text-xl font-bold text-white mb-6">Fleet Summary</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white/[0.04] p-4 rounded-lg border border-slate-600">
+              <div className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
                 <p className="text-slate-400 text-sm mb-2">Total Vehicles</p>
                 <p className="text-white text-3xl font-bold">{fleet.length}</p>
               </div>
-              <div className="bg-white/[0.04] p-4 rounded-lg border border-slate-600">
+              <div className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
                 <p className="text-slate-400 text-sm mb-2">Active</p>
                 <p className="text-green-400 text-3xl font-bold">
                   {fleet.filter((v: any) => v.status === "ACTIVE").length}
                 </p>
               </div>
-              <div className="bg-white/[0.04] p-4 rounded-lg border border-slate-600">
+              <div className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
                 <p className="text-slate-400 text-sm mb-2">In Maintenance</p>
                 <p className="text-orange-400 text-3xl font-bold">
                   {fleet.filter((v: any) => v.status === "MAINTENANCE").length}
@@ -661,7 +661,7 @@ export default function CompanyPage() {
             {certifications.map((cert: any, index: number) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-4 bg-white/[0.04] rounded-lg border border-slate-600"
+                className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg border border-slate-600"
               >
                 <div className="flex items-center gap-3">
                   <Award size={20} className="text-yellow-400" />
@@ -713,7 +713,7 @@ export default function CompanyPage() {
                 <p className="text-white text-4xl font-bold">{performanceMetrics.customerRating}/5.0</p>
               </div>
 
-              <div className="bg-white/[0.04] p-6 rounded-lg border border-slate-600">
+              <div className="bg-slate-700/50 p-6 rounded-lg border border-slate-600">
                 <div className="flex items-center gap-2 mb-2">
                   <Package size={20} className="text-blue-400" />
                   <p className="text-slate-400 text-sm">Total Loads</p>
@@ -721,7 +721,7 @@ export default function CompanyPage() {
                 <p className="text-white text-3xl font-bold">{performanceMetrics.totalLoads.toLocaleString()}</p>
               </div>
 
-              <div className="bg-white/[0.04] p-6 rounded-lg border border-slate-600">
+              <div className="bg-slate-700/50 p-6 rounded-lg border border-slate-600">
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin size={20} className="text-green-400" />
                   <p className="text-slate-400 text-sm">Total Miles</p>
@@ -729,7 +729,7 @@ export default function CompanyPage() {
                 <p className="text-white text-3xl font-bold">{performanceMetrics.totalMiles.toLocaleString()}</p>
               </div>
 
-              <div className="bg-white/[0.04] p-6 rounded-lg border border-slate-600">
+              <div className="bg-slate-700/50 p-6 rounded-lg border border-slate-600">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign size={20} className="text-yellow-400" />
                   <p className="text-slate-400 text-sm">Avg Load Value</p>

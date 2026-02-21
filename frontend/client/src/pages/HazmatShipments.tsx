@@ -73,7 +73,7 @@ export default function HazmatShipments() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-orange-500/20">
@@ -89,7 +89,7 @@ export default function HazmatShipments() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -105,7 +105,7 @@ export default function HazmatShipments() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -121,7 +121,7 @@ export default function HazmatShipments() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -145,12 +145,12 @@ export default function HazmatShipments() {
           value={searchTerm}
           onChange={(e: any) => setSearchTerm(e.target.value)}
           placeholder="Search by load number or product..."
-          className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg focus:border-cyan-500/50"
+          className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
         />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-1">
+        <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-1">
           <TabsTrigger value="in_transit" className="data-[state=active]:bg-slate-700 rounded-md">In Transit</TabsTrigger>
           <TabsTrigger value="loading" className="data-[state=active]:bg-slate-700 rounded-md">Loading</TabsTrigger>
           <TabsTrigger value="delivered" className="data-[state=active]:bg-slate-700 rounded-md">Delivered</TabsTrigger>
@@ -158,21 +158,21 @@ export default function HazmatShipments() {
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-0">
               {shipmentsQuery.isLoading ? (
                 <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
               ) : filteredShipments?.length === 0 ? (
                 <div className="text-center py-16">
-                  <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                  <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <AlertTriangle className="w-10 h-10 text-slate-500" />
                   </div>
                   <p className="text-slate-400 text-lg">No hazmat shipments found</p>
                 </div>
               ) : (
-                <div className="divide-y divide-white/[0.04]">
+                <div className="divide-y divide-slate-700/50">
                   {filteredShipments?.map((shipment: any) => (
-                    <div key={shipment.id} className="p-4 hover:bg-white/[0.04] transition-colors">
+                    <div key={shipment.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-4">
                           <div className={cn("p-3 rounded-xl", shipment.hazardClass === "flammable" ? "bg-orange-500/20" : shipment.hazardClass === "toxic" ? "bg-purple-500/20" : "bg-red-500/20")}>

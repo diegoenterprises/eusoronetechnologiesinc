@@ -59,7 +59,7 @@ export default function FeatureFlags() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -75,7 +75,7 @@ export default function FeatureFlags() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -91,7 +91,7 @@ export default function FeatureFlags() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -107,7 +107,7 @@ export default function FeatureFlags() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -127,28 +127,28 @@ export default function FeatureFlags() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search flags..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search flags..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       {/* Flags List */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {flagsQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
           ) : filteredFlags?.length === 0 ? (
             <div className="text-center py-16">
-              <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <Flag className="w-10 h-10 text-slate-500" />
               </div>
               <p className="text-slate-400 text-lg">No feature flags found</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {filteredFlags?.map((flag: any) => (
                 <div key={flag.id} className={cn("p-4", flag.enabled && "bg-green-500/5 border-l-2 border-green-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className={cn("p-3 rounded-xl", flag.enabled ? "bg-green-500/20" : "bg-white/[0.04]")}>
+                      <div className={cn("p-3 rounded-xl", flag.enabled ? "bg-green-500/20" : "bg-slate-700/50")}>
                         <Flag className={cn("w-5 h-5", flag.enabled ? "text-green-400" : "text-slate-400")} />
                       </div>
                       <div>

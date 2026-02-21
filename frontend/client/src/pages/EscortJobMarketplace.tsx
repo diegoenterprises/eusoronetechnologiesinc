@@ -65,7 +65,7 @@ export default function EscortJobMarketplace() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -81,7 +81,7 @@ export default function EscortJobMarketplace() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -97,7 +97,7 @@ export default function EscortJobMarketplace() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -113,7 +113,7 @@ export default function EscortJobMarketplace() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -134,10 +134,10 @@ export default function EscortJobMarketplace() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search by location..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search by location..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
+          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -150,7 +150,7 @@ export default function EscortJobMarketplace() {
       </div>
 
       {/* Jobs List */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Car className="w-5 h-5 text-cyan-400" />
@@ -167,7 +167,7 @@ export default function EscortJobMarketplace() {
               <p className="text-sm text-slate-500 mt-1">Check back later for new opportunities</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {(jobsQuery.data as any)?.map((job: any) => (
                 <div key={job.id} className={cn("p-4", job.urgency === "urgent" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-start justify-between mb-3">

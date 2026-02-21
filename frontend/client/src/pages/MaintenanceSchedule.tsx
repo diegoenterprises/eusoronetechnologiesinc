@@ -63,7 +63,7 @@ export default function MaintenanceSchedule() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Calendar className="w-6 h-6 text-cyan-400" /></div>
@@ -71,7 +71,7 @@ export default function MaintenanceSchedule() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><Wrench className="w-6 h-6 text-yellow-400" /></div>
@@ -79,7 +79,7 @@ export default function MaintenanceSchedule() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20"><AlertTriangle className="w-6 h-6 text-red-400" /></div>
@@ -87,7 +87,7 @@ export default function MaintenanceSchedule() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
@@ -98,7 +98,7 @@ export default function MaintenanceSchedule() {
       </div>
 
       <Select value={filter} onValueChange={setFilter}>
-        <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="upcoming">Upcoming</SelectItem>
           <SelectItem value="in_progress">In Progress</SelectItem>
@@ -107,7 +107,7 @@ export default function MaintenanceSchedule() {
         </SelectContent>
       </Select>
 
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Wrench className="w-5 h-5 text-cyan-400" />Maintenance Tasks</CardTitle></CardHeader>
         <CardContent className="p-0">
           {maintenanceQuery.isLoading ? (
@@ -115,7 +115,7 @@ export default function MaintenanceSchedule() {
           ) : (maintenanceQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Wrench className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No maintenance tasks</p></div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {(maintenanceQuery.data as any)?.map((task: any) => (
                 <div key={task.id} className={cn("p-4 flex items-center justify-between", task.status === "overdue" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center gap-4">

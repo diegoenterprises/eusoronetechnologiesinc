@@ -84,7 +84,7 @@ export function ConversationList({
   };
 
   return (
-    <Card className="bg-white/[0.02] border-slate-700 h-full">
+    <Card className="bg-slate-800/50 border-slate-700 h-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-white flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-blue-400" />
@@ -96,12 +96,12 @@ export function ConversationList({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search conversations..."
-            className="pl-9 bg-white/[0.04] border-slate-600 text-white"
+            className="pl-9 bg-slate-700/50 border-slate-600 text-white"
           />
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="divide-y divide-white/[0.04]">
+        <div className="divide-y divide-slate-700/50">
           {filteredConversations.length === 0 ? (
             <div className="p-8 text-center">
               <MessageSquare className="w-10 h-10 text-slate-600 mx-auto mb-3" />
@@ -119,7 +119,7 @@ export function ConversationList({
                   onClick={() => onSelect(conv)}
                   className={cn(
                     "p-4 cursor-pointer transition-colors",
-                    isSelected ? "bg-blue-500/10" : "hover:bg-white/[0.06]/30",
+                    isSelected ? "bg-blue-500/10" : "hover:bg-slate-700/30",
                     isUnread && "bg-slate-700/20"
                   )}
                 >

@@ -53,7 +53,7 @@ export default function APIManagement() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Key className="w-6 h-6 text-cyan-400" /></div>
@@ -61,7 +61,7 @@ export default function APIManagement() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
@@ -69,7 +69,7 @@ export default function APIManagement() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><Activity className="w-6 h-6 text-purple-400" /></div>
@@ -77,7 +77,7 @@ export default function APIManagement() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20"><XCircle className="w-6 h-6 text-red-400" /></div>
@@ -89,10 +89,10 @@ export default function APIManagement() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search API keys..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search API keys..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Key className="w-5 h-5 text-cyan-400" />API Keys</CardTitle></CardHeader>
         <CardContent className="p-0">
           {keysQuery.isLoading ? (
@@ -100,7 +100,7 @@ export default function APIManagement() {
           ) : (keysQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Key className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No API keys found</p></div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {(keysQuery.data as any)?.map((key: any) => (
                 <div key={key.id} className={cn("p-4 flex items-center justify-between", key.status === "revoked" && "opacity-60")}>
                   <div className="flex items-center gap-4">
@@ -113,7 +113,7 @@ export default function APIManagement() {
                         {getStatusBadge(key.status)}
                       </div>
                       <div className="flex items-center gap-2">
-                        <code className="text-xs text-slate-400 bg-white/[0.04] px-2 py-1 rounded">{key.keyPrefix}...{key.keySuffix}</code>
+                        <code className="text-xs text-slate-400 bg-slate-700/50 px-2 py-1 rounded">{key.keyPrefix}...{key.keySuffix}</code>
                         <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => { navigator.clipboard.writeText(key.fullKey); toast.success("Copied"); }}>
                           <Copy className="w-3 h-3 text-slate-400" />
                         </Button>

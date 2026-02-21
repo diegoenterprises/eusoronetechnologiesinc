@@ -108,7 +108,7 @@ export default function CatalystVettingDetails() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4 text-center">
             <Shield className="w-6 h-6 mx-auto mb-2 text-blue-400" />
             {catalystQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
@@ -126,7 +126,7 @@ export default function CatalystVettingDetails() {
             <p className="text-xs text-slate-400">Rating</p>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4 text-center">
             <Truck className="w-6 h-6 mx-auto mb-2 text-green-400" />
             {catalystQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
@@ -135,7 +135,7 @@ export default function CatalystVettingDetails() {
             <p className="text-xs text-slate-400">Fleet Size</p>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4 text-center">
             <TrendingUp className="w-6 h-6 mx-auto mb-2 text-purple-400" />
             {catalystQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
@@ -144,7 +144,7 @@ export default function CatalystVettingDetails() {
             <p className="text-xs text-slate-400">Loads Completed</p>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4 text-center">
             <Calendar className="w-6 h-6 mx-auto mb-2 text-orange-400" />
             {catalystQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
@@ -165,7 +165,7 @@ export default function CatalystVettingDetails() {
 
         <TabsContent value="overview" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-white/[0.02] border-slate-700">
+            <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader><CardTitle className="text-white flex items-center gap-2"><Building className="w-5 h-5 text-blue-400" />Company Information</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 {catalystQuery.isLoading ? (
@@ -182,7 +182,7 @@ export default function CatalystVettingDetails() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/[0.02] border-slate-700">
+            <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader><CardTitle className="text-white flex items-center gap-2"><MapPin className="w-5 h-5 text-green-400" />Contact Information</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 {catalystQuery.isLoading ? (
@@ -201,7 +201,7 @@ export default function CatalystVettingDetails() {
         </TabsContent>
 
         <TabsContent value="csa" className="mt-6">
-          <Card className="bg-white/[0.02] border-slate-700">
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader><CardTitle className="text-white flex items-center gap-2"><Shield className="w-5 h-5 text-blue-400" />CSA BASIC Scores</CardTitle></CardHeader>
             <CardContent>
               {csaQuery.isLoading ? (
@@ -234,10 +234,10 @@ export default function CatalystVettingDetails() {
         <TabsContent value="insurance" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {insuranceQuery.isLoading ? (
-              [1, 2, 3].map((i: any) => <Card key={i} className="bg-white/[0.02] border-slate-700"><CardContent className="p-4"><Skeleton className="h-40 w-full" /></CardContent></Card>)
+              [1, 2, 3].map((i: any) => <Card key={i} className="bg-slate-800/50 border-slate-700"><CardContent className="p-4"><Skeleton className="h-40 w-full" /></CardContent></Card>)
             ) : (
               (insuranceQuery.data as any)?.map((insurance: any) => (
-                <Card key={insurance.type} className="bg-white/[0.02] border-slate-700">
+                <Card key={insurance.type} className="bg-slate-800/50 border-slate-700">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
                       <Shield className={cn("w-5 h-5", insurance.type === "liability" ? "text-blue-400" : insurance.type === "cargo" ? "text-green-400" : "text-purple-400")} />
@@ -263,7 +263,7 @@ export default function CatalystVettingDetails() {
         </TabsContent>
 
         <TabsContent value="history" className="mt-6">
-          <Card className="bg-white/[0.02] border-slate-700">
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader><CardTitle className="text-white">Load History</CardTitle></CardHeader>
             <CardContent>
               {historyQuery.isLoading ? (

@@ -91,7 +91,7 @@ export default function HazmatRouteRestrictions({
 
   if (query.isLoading) {
     return (
-      <div className={cn("flex items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-slate-700/30", className)}>
+      <div className={cn("flex items-center gap-2 p-3 rounded-xl bg-slate-800/50 border border-slate-700/30", className)}>
         <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
         <span className="text-xs text-slate-400">Checking hazmat route restrictions...</span>
       </div>
@@ -217,7 +217,7 @@ export default function HazmatRouteRestrictions({
               </div>
               <div className="grid grid-cols-2 gap-2 text-center">
                 {data.ergProtectiveDistances.smallSpill && (
-                  <div className="p-2 rounded-lg bg-white/[0.02] border border-slate-700/30">
+                  <div className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/30">
                     <p className="text-[9px] text-slate-500 uppercase">Small Spill</p>
                     <p className="text-[11px] text-white font-medium">
                       {data.ergProtectiveDistances.smallSpill.day} (day) / {data.ergProtectiveDistances.smallSpill.night} (night)
@@ -225,7 +225,7 @@ export default function HazmatRouteRestrictions({
                   </div>
                 )}
                 {data.ergProtectiveDistances.largeSpill && (
-                  <div className="p-2 rounded-lg bg-white/[0.02] border border-slate-700/30">
+                  <div className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/30">
                     <p className="text-[9px] text-slate-500 uppercase">Large Spill</p>
                     <p className="text-[11px] text-white font-medium">
                       {data.ergProtectiveDistances.largeSpill.day} (day) / {data.ergProtectiveDistances.largeSpill.night} (night)

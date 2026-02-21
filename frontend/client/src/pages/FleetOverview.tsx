@@ -77,7 +77,7 @@ export default function FleetOverview() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4 text-center">
             {summaryQuery.isLoading ? (
               <Skeleton className="h-8 w-16 mx-auto" />
@@ -117,7 +117,7 @@ export default function FleetOverview() {
             <p className="text-xs text-slate-400">Out of Service</p>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4 text-center">
             {summaryQuery.isLoading ? (
               <Skeleton className="h-8 w-16 mx-auto" />
@@ -130,7 +130,7 @@ export default function FleetOverview() {
       </div>
 
       {/* Fuel Summary */}
-      <Card className="bg-white/[0.02] border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -170,11 +170,11 @@ export default function FleetOverview() {
                 value={searchTerm}
                 onChange={(e: any) => setSearchTerm(e.target.value)}
                 placeholder="Search vehicles..."
-                className="pl-9 bg-white/[0.04] border-slate-600"
+                className="pl-9 bg-slate-700/50 border-slate-600"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-36 bg-white/[0.04] border-slate-600">
+              <SelectTrigger className="w-36 bg-slate-700/50 border-slate-600">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -185,7 +185,7 @@ export default function FleetOverview() {
               </SelectContent>
             </Select>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-36 bg-white/[0.04] border-slate-600">
+              <SelectTrigger className="w-36 bg-slate-700/50 border-slate-600">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
@@ -200,7 +200,7 @@ export default function FleetOverview() {
           {vehiclesQuery.isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i: any) => (
-                <Card key={i} className="bg-white/[0.02] border-slate-700">
+                <Card key={i} className="bg-slate-800/50 border-slate-700">
                   <CardContent className="p-4">
                     <Skeleton className="h-16 w-full" />
                   </CardContent>
@@ -208,7 +208,7 @@ export default function FleetOverview() {
               ))}
             </div>
           ) : (vehiclesQuery.data as any)?.vehicles?.length === 0 ? (
-            <Card className="bg-white/[0.02] border-slate-700">
+            <Card className="bg-slate-800/50 border-slate-700">
               <CardContent className="p-12 text-center">
                 <Truck className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                 <p className="text-slate-400">No vehicles found</p>
@@ -217,7 +217,7 @@ export default function FleetOverview() {
           ) : (
             <div className="space-y-3">
               {(vehiclesQuery.data as any)?.vehicles?.map((vehicle: any) => (
-                <Card key={vehicle.id} className="bg-white/[0.02] border-slate-700 hover:border-slate-600 transition-colors">
+                <Card key={vehicle.id} className="bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-colors">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
@@ -299,7 +299,7 @@ export default function FleetOverview() {
 
         {/* Maintenance Tab */}
         <TabsContent value="maintenance" className="mt-6">
-          <Card className="bg-white/[0.02] border-slate-700">
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Wrench className="w-5 h-5 text-yellow-400" />
@@ -361,7 +361,7 @@ export default function FleetOverview() {
 
         {/* Map Tab */}
         <TabsContent value="map" className="mt-6">
-          <Card className="bg-white/[0.02] border-slate-700">
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Navigation className="w-5 h-5 text-blue-400" />

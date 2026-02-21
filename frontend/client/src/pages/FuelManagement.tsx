@@ -47,7 +47,7 @@ export default function FuelManagement() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-orange-500/20">
@@ -63,7 +63,7 @@ export default function FuelManagement() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
@@ -79,7 +79,7 @@ export default function FuelManagement() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -95,7 +95,7 @@ export default function FuelManagement() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -114,7 +114,7 @@ export default function FuelManagement() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Current Prices */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Current Fuel Prices</CardTitle>
           </CardHeader>
@@ -146,7 +146,7 @@ export default function FuelManagement() {
         </Card>
 
         {/* Transactions */}
-        <Card className="lg:col-span-2 bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-white text-lg">Recent Transactions</CardTitle>
@@ -156,7 +156,7 @@ export default function FuelManagement() {
                   value={searchTerm}
                   onChange={(e: any) => setSearchTerm(e.target.value)}
                   placeholder="Search..."
-                  className="pl-9 bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50"
+                  className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
                 />
               </div>
             </div>
@@ -166,15 +166,15 @@ export default function FuelManagement() {
               <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : filteredTransactions?.length === 0 ? (
               <div className="text-center py-16">
-                <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                   <Fuel className="w-10 h-10 text-slate-500" />
                 </div>
                 <p className="text-slate-400 text-lg">No transactions found</p>
               </div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {filteredTransactions?.map((tx: any) => (
-                  <div key={tx.id} className="p-4 hover:bg-white/[0.04] transition-colors">
+                  <div key={tx.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="p-3 rounded-full bg-orange-500/20">

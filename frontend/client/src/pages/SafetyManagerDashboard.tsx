@@ -64,7 +64,7 @@ export default function SafetyManagerDashboard() {
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><User className="w-6 h-6 text-cyan-400" /></div>
@@ -72,7 +72,7 @@ export default function SafetyManagerDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20"><AlertTriangle className="w-6 h-6 text-red-400" /></div>
@@ -80,7 +80,7 @@ export default function SafetyManagerDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><Clock className="w-6 h-6 text-yellow-400" /></div>
@@ -88,7 +88,7 @@ export default function SafetyManagerDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><TestTube className="w-6 h-6 text-green-400" /></div>
@@ -96,7 +96,7 @@ export default function SafetyManagerDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-orange-500/20"><AlertTriangle className="w-6 h-6 text-orange-400" /></div>
@@ -107,7 +107,7 @@ export default function SafetyManagerDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />CSA BASIC Scores</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {csaQuery.isLoading ? (
@@ -130,13 +130,13 @@ export default function SafetyManagerDashboard() {
         </Card>
 
         <div className="space-y-6">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-400" />Top Performers</CardTitle></CardHeader>
             <CardContent className="p-0">
               {driversQuery.isLoading ? (
                 <div className="p-4 space-y-2">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
               ) : (
-                <div className="divide-y divide-white/[0.04]">
+                <div className="divide-y divide-slate-700/50">
                   {(driversQuery.data as any)?.map((driver: any, i: number) => (
                     <div key={driver.id} className="p-2 flex items-center justify-between">
                       <div className="flex items-center gap-2">

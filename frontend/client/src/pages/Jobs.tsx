@@ -412,7 +412,7 @@ export default function JobsPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all whitespace-nowrap ${
               activeTab === tab.id
                 ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                : "bg-slate-800 text-slate-400 hover:bg-white/[0.06] hover:text-white"
+                : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"
             }`}
           >
             {tab.label}
@@ -702,7 +702,7 @@ export default function JobsPage() {
             </div>
 
             <div className="mb-6">
-              <div className="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
                 <span className="text-slate-400 text-sm">Fairness Meter</span>
                 <div className="flex items-center gap-2">
                   {bidAmount >= selectedLoad.pay * 0.95 ? (
@@ -765,7 +765,7 @@ export default function JobsPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="p-3 bg-white/[0.04] rounded-lg">
+              <div className="p-3 bg-slate-700/50 rounded-lg">
                 <p className="text-xs text-slate-500 mb-1">Your Bid</p>
                 <p className="text-white text-xl font-bold">${selectedLoad.myBid.amount.toLocaleString()}</p>
               </div>

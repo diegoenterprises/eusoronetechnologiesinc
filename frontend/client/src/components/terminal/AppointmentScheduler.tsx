@@ -144,7 +144,7 @@ export function AppointmentScheduler({
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {docks.map((dock) => (
           <Card key={dock.id} className={cn(
-            "bg-white/[0.02] border-slate-700",
+            "bg-slate-800/50 border-slate-700",
             dock.status === "occupied" && "border-green-500/50",
             dock.status === "maintenance" && "border-yellow-500/50"
           )}>
@@ -175,7 +175,7 @@ export function AppointmentScheduler({
       </div>
 
       {/* Schedule Grid */}
-      <Card className="bg-white/[0.02] border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader className="pb-2">
           <CardTitle className="text-white flex items-center gap-2">
             <Clock className="w-5 h-5 text-blue-400" />
@@ -218,7 +218,7 @@ export function AppointmentScheduler({
                     return (
                       <div 
                         key={`${dock.id}-${hour}`} 
-                        className="p-1 min-h-[60px] bg-slate-700/20 hover:bg-white/[0.06]/40 transition-colors rounded"
+                        className="p-1 min-h-[60px] bg-slate-700/20 hover:bg-slate-700/40 transition-colors rounded"
                       >
                         {dockAppointments.map((apt) => (
                           <div
@@ -249,7 +249,7 @@ export function AppointmentScheduler({
       </Card>
 
       {/* Appointments List */}
-      <Card className="bg-white/[0.02] border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader className="pb-2">
           <CardTitle className="text-white flex items-center gap-2">
             <Truck className="w-5 h-5 text-blue-400" />
@@ -264,7 +264,7 @@ export function AppointmentScheduler({
               appointments.map((apt) => (
                 <div
                   key={apt.id}
-                  className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 hover:bg-white/[0.04] transition-colors"
+                  className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     <div className={cn(
@@ -361,7 +361,7 @@ export function AppointmentScheduler({
                   value={newAppointment.dockNumber}
                   onValueChange={(v) => setNewAppointment({ ...newAppointment, dockNumber: v })}
                 >
-                  <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                     <SelectValue placeholder="Select dock" />
                   </SelectTrigger>
                   <SelectContent>
@@ -379,7 +379,7 @@ export function AppointmentScheduler({
                     type="date"
                     value={selectedDate.toISOString().split('T')[0]}
                     onChange={(e) => onDateChange(new Date(e.target.value))}
-                    className="bg-white/[0.04] border-slate-600 text-white"
+                    className="bg-slate-700/50 border-slate-600 text-white"
                   />
                 </div>
                 <div className="space-y-2">
@@ -390,7 +390,7 @@ export function AppointmentScheduler({
                       ...newAppointment, 
                       scheduledTime: `${selectedDate.toISOString().split('T')[0]}T${e.target.value}` 
                     })}
-                    className="bg-white/[0.04] border-slate-600 text-white"
+                    className="bg-slate-700/50 border-slate-600 text-white"
                   />
                 </div>
               </div>
@@ -401,7 +401,7 @@ export function AppointmentScheduler({
                   value={newAppointment.appointmentType}
                   onValueChange={(v) => setNewAppointment({ ...newAppointment, appointmentType: v as any })}
                 >
-                  <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -417,7 +417,7 @@ export function AppointmentScheduler({
                   value={newAppointment.catalystName || ""}
                   onChange={(e) => setNewAppointment({ ...newAppointment, catalystName: e.target.value })}
                   placeholder="ABC Trucking"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
 
@@ -428,7 +428,7 @@ export function AppointmentScheduler({
                     value={newAppointment.truckNumber || ""}
                     onChange={(e) => setNewAppointment({ ...newAppointment, truckNumber: e.target.value })}
                     placeholder="TRK-101"
-                    className="bg-white/[0.04] border-slate-600 text-white"
+                    className="bg-slate-700/50 border-slate-600 text-white"
                   />
                 </div>
                 <div className="space-y-2">
@@ -437,7 +437,7 @@ export function AppointmentScheduler({
                     type="number"
                     value={newAppointment.duration || 60}
                     onChange={(e) => setNewAppointment({ ...newAppointment, duration: parseInt(e.target.value) })}
-                    className="bg-white/[0.04] border-slate-600 text-white"
+                    className="bg-slate-700/50 border-slate-600 text-white"
                   />
                 </div>
               </div>

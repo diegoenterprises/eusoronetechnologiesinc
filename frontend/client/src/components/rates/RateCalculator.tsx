@@ -90,7 +90,7 @@ export function RateCalculator({ load, onBidSubmit }: RateCalculatorProps) {
   const aiSuggestedMax = load.offeredRate * 1.10;
 
   return (
-    <Card className="bg-white/[0.02] border-slate-700">
+    <Card className="bg-slate-800/50 border-slate-700">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-white flex items-center gap-2">
@@ -132,7 +132,7 @@ export function RateCalculator({ load, onBidSubmit }: RateCalculatorProps) {
                 type="number"
                 value={bidAmount}
                 onChange={(e) => setBidAmount(parseFloat(e.target.value) || 0)}
-                className="pl-9 bg-white/[0.04] border-slate-600 text-white text-lg"
+                className="pl-9 bg-slate-700/50 border-slate-600 text-white text-lg"
               />
             </div>
             <div className="text-right">
@@ -239,7 +239,7 @@ export function RateCalculator({ load, onBidSubmit }: RateCalculatorProps) {
                   step="0.01"
                   value={costs.fuelPrice}
                   onChange={(e) => setCosts({...costs, fuelPrice: parseFloat(e.target.value) || 0})}
-                  className="bg-white/[0.04] border-slate-600 text-white mt-1"
+                  className="bg-slate-700/50 border-slate-600 text-white mt-1"
                 />
               </div>
               <div>
@@ -249,7 +249,7 @@ export function RateCalculator({ load, onBidSubmit }: RateCalculatorProps) {
                   step="0.1"
                   value={costs.mpg}
                   onChange={(e) => setCosts({...costs, mpg: parseFloat(e.target.value) || 1})}
-                  className="bg-white/[0.04] border-slate-600 text-white mt-1"
+                  className="bg-slate-700/50 border-slate-600 text-white mt-1"
                 />
               </div>
 
@@ -261,7 +261,7 @@ export function RateCalculator({ load, onBidSubmit }: RateCalculatorProps) {
                   step="0.01"
                   value={costs.driverPayPerMile}
                   onChange={(e) => setCosts({...costs, driverPayPerMile: parseFloat(e.target.value) || 0})}
-                  className="bg-white/[0.04] border-slate-600 text-white mt-1"
+                  className="bg-slate-700/50 border-slate-600 text-white mt-1"
                 />
               </div>
               <div>
@@ -271,7 +271,7 @@ export function RateCalculator({ load, onBidSubmit }: RateCalculatorProps) {
                   step="0.01"
                   value={costs.insurancePerMile}
                   onChange={(e) => setCosts({...costs, insurancePerMile: parseFloat(e.target.value) || 0})}
-                  className="bg-white/[0.04] border-slate-600 text-white mt-1"
+                  className="bg-slate-700/50 border-slate-600 text-white mt-1"
                 />
               </div>
 
@@ -283,7 +283,7 @@ export function RateCalculator({ load, onBidSubmit }: RateCalculatorProps) {
                   step="0.01"
                   value={costs.maintenancePerMile}
                   onChange={(e) => setCosts({...costs, maintenancePerMile: parseFloat(e.target.value) || 0})}
-                  className="bg-white/[0.04] border-slate-600 text-white mt-1"
+                  className="bg-slate-700/50 border-slate-600 text-white mt-1"
                 />
               </div>
               <div>
@@ -292,7 +292,7 @@ export function RateCalculator({ load, onBidSubmit }: RateCalculatorProps) {
                   type="number"
                   value={costs.deadheadMiles}
                   onChange={(e) => setCosts({...costs, deadheadMiles: parseInt(e.target.value) || 0})}
-                  className="bg-white/[0.04] border-slate-600 text-white mt-1"
+                  className="bg-slate-700/50 border-slate-600 text-white mt-1"
                 />
               </div>
 
@@ -304,7 +304,7 @@ export function RateCalculator({ load, onBidSubmit }: RateCalculatorProps) {
                   step="0.5"
                   value={costs.dispatchFee}
                   onChange={(e) => setCosts({...costs, dispatchFee: parseFloat(e.target.value) || 0})}
-                  className="bg-white/[0.04] border-slate-600 text-white mt-1"
+                  className="bg-slate-700/50 border-slate-600 text-white mt-1"
                 />
               </div>
               <div>
@@ -314,7 +314,7 @@ export function RateCalculator({ load, onBidSubmit }: RateCalculatorProps) {
                   step="0.5"
                   value={costs.factorFee}
                   onChange={(e) => setCosts({...costs, factorFee: parseFloat(e.target.value) || 0})}
-                  className="bg-white/[0.04] border-slate-600 text-white mt-1"
+                  className="bg-slate-700/50 border-slate-600 text-white mt-1"
                 />
               </div>
             </div>

@@ -45,13 +45,13 @@ export default function SystemHealth() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">System Health</h1>
           <p className="text-slate-400 text-sm mt-1">Monitor system performance</p>
         </div>
-        <Button variant="outline" className="bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => { healthQuery.refetch(); servicesQuery.refetch(); }}>
+        <Button variant="outline" className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-700 rounded-lg" onClick={() => { healthQuery.refetch(); servicesQuery.refetch(); }}>
           <RefreshCw className="w-4 h-4 mr-2" />Refresh
         </Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Activity className="w-6 h-6 text-cyan-400" /></div>
@@ -59,7 +59,7 @@ export default function SystemHealth() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><Cpu className="w-6 h-6 text-green-400" /></div>
@@ -67,7 +67,7 @@ export default function SystemHealth() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><Server className="w-6 h-6 text-purple-400" /></div>
@@ -75,7 +75,7 @@ export default function SystemHealth() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><HardDrive className="w-6 h-6 text-yellow-400" /></div>
@@ -86,7 +86,7 @@ export default function SystemHealth() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Server className="w-5 h-5 text-cyan-400" />Resource Usage</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             {healthQuery.isLoading ? (
@@ -114,13 +114,13 @@ export default function SystemHealth() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Database className="w-5 h-5 text-purple-400" />Services</CardTitle></CardHeader>
           <CardContent className="p-0">
             {servicesQuery.isLoading ? (
               <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {(servicesQuery.data as any)?.map((service: any) => (
                   <div key={service.id} className={cn("p-4 flex items-center justify-between", service.status === "down" && "bg-red-500/5 border-l-2 border-red-500")}>
                     <div className="flex items-center gap-3">

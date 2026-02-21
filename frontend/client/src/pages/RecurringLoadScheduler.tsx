@@ -185,8 +185,8 @@ export default function RecurringLoadScheduler() {
     }
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const cl = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cl = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
   const vl = cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white");
   const mt = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
   const ic = cn("rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500");
@@ -255,7 +255,7 @@ export default function RecurringLoadScheduler() {
     <div className="p-4 md:p-6 space-y-6 max-w-[960px] mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className={cn("rounded-xl", isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]")} onClick={() => setLocation("/agreements")}>
+        <Button variant="ghost" size="sm" className={cn("rounded-xl", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")} onClick={() => setLocation("/agreements")}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>

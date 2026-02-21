@@ -61,7 +61,7 @@ export function BidCard({
 
   return (
     <Card className={cn(
-      "bg-white/[0.02] border-slate-700 hover:border-slate-600 transition-all",
+      "bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-all",
       bid.status === "accepted" && "border-green-500/50 bg-green-500/5",
       bid.status === "rejected" && "border-red-500/50 bg-red-500/5 opacity-60"
     )}>

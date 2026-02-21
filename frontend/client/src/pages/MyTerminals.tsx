@@ -35,8 +35,8 @@ export default function MyTerminals() {
   const terminals = (terminalsQuery.data || []) as any[];
   const classification = classQuery.data as any;
 
-  const cardCls = cn("rounded-2xl border transition-all", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const cellCls = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
+  const cardCls = cn("rounded-2xl border transition-all", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cellCls = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
 
   const getTerminalTypeLabel = (type: string) => {
     const m: Record<string, string> = {
@@ -139,7 +139,7 @@ export default function MyTerminals() {
                       {t.terminalName} {t.terminalCode ? <span className={cn("text-xs font-normal", isLight ? "text-slate-400" : "text-slate-500")}>({t.terminalCode})</span> : ""}
                     </h3>
                     {t.terminalType && (
-                      <Badge className={cn("text-[9px] border mt-1", isLight ? "bg-slate-100 text-slate-600 border-slate-200" : "bg-white/[0.04] text-slate-300 border-slate-600/30")}>
+                      <Badge className={cn("text-[9px] border mt-1", isLight ? "bg-slate-100 text-slate-600 border-slate-200" : "bg-slate-700/50 text-slate-300 border-slate-600/30")}>
                         {getTerminalTypeLabel(t.terminalType)}
                       </Badge>
                     )}

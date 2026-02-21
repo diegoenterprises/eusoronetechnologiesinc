@@ -199,7 +199,7 @@ export default function RegisterTerminal() {
                 value={formData.firstName}
                 onChange={(e: any) => updateFormData({ firstName: e.target.value })}
                 placeholder="John"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -210,7 +210,7 @@ export default function RegisterTerminal() {
                 value={formData.lastName}
                 onChange={(e: any) => updateFormData({ lastName: e.target.value })}
                 placeholder="Smith"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -225,7 +225,7 @@ export default function RegisterTerminal() {
                 value={formData.email}
                 onChange={(e: any) => updateFormData({ email: e.target.value })}
                 placeholder="john@terminal.com"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -237,7 +237,7 @@ export default function RegisterTerminal() {
                 value={formData.phone}
                 onChange={(e: any) => updateFormData({ phone: e.target.value })}
                 placeholder="(555) 123-4567"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function RegisterTerminal() {
           <div className="space-y-2">
             <Label className="text-slate-300">Job Title</Label>
             <Select value={formData.jobTitle} onValueChange={(v: any) => updateFormData({ jobTitle: v })}>
-              <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+              <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                 <SelectValue placeholder="Select your role" />
               </SelectTrigger>
               <SelectContent>
@@ -283,7 +283,7 @@ export default function RegisterTerminal() {
                 value={formData.facilityName}
                 onChange={(e: any) => updateFormData({ facilityName: e.target.value })}
                 placeholder="Houston Terminal #1"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -291,7 +291,7 @@ export default function RegisterTerminal() {
                 Facility Type <span className="text-red-400">*</span>
               </Label>
               <Select value={formData.facilityType} onValueChange={(v: any) => updateFormData({ facilityType: v })}>
-                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select facility type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -314,7 +314,7 @@ export default function RegisterTerminal() {
               value={formData.streetAddress}
               onChange={(e: any) => updateFormData({ streetAddress: e.target.value })}
               placeholder="1234 Industrial Blvd"
-              className="bg-white/[0.04] border-slate-600 text-white"
+              className="bg-slate-700/50 border-slate-600 text-white"
             />
           </div>
 
@@ -327,7 +327,7 @@ export default function RegisterTerminal() {
                 value={formData.city}
                 onChange={(e: any) => updateFormData({ city: e.target.value })}
                 placeholder="Houston"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -335,7 +335,7 @@ export default function RegisterTerminal() {
                 State <span className="text-red-400">*</span>
               </Label>
               <Select value={formData.state} onValueChange={(v: any) => updateFormData({ state: v })}>
-                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="State" />
                 </SelectTrigger>
                 <SelectContent>
@@ -353,7 +353,7 @@ export default function RegisterTerminal() {
                 value={formData.zipCode}
                 onChange={(e: any) => updateFormData({ zipCode: e.target.value })}
                 placeholder="77001"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -396,7 +396,7 @@ export default function RegisterTerminal() {
                 value={formData.epaId}
                 onChange={(e: any) => updateFormData({ epaId: e.target.value })}
                 placeholder="TXD123456789"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -405,7 +405,7 @@ export default function RegisterTerminal() {
                 value={formData.statePermitNumber}
                 onChange={(e: any) => updateFormData({ statePermitNumber: e.target.value })}
                 placeholder="State environmental permit #"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -417,7 +417,7 @@ export default function RegisterTerminal() {
                 type="date"
                 value={formData.spccPlanDate}
                 onChange={(e: any) => updateFormData({ spccPlanDate: e.target.value })}
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
               <p className="text-xs text-slate-500">Spill Prevention, Control, and Countermeasure plan date</p>
             </div>
@@ -428,7 +428,7 @@ export default function RegisterTerminal() {
                 value={formData.storageCapacity}
                 onChange={(e: any) => updateFormData({ storageCapacity: e.target.value })}
                 placeholder="100000"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -463,7 +463,7 @@ export default function RegisterTerminal() {
           <div className="space-y-2">
             <Label className="text-slate-300">Operating Hours</Label>
             <Select value={formData.operatingHours} onValueChange={(v: any) => updateFormData({ operatingHours: v })}>
-              <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+              <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                 <SelectValue placeholder="Select operating hours" />
               </SelectTrigger>
               <SelectContent>
@@ -507,7 +507,7 @@ export default function RegisterTerminal() {
                 value={formData.loadingRacks}
                 onChange={(e: any) => updateFormData({ loadingRacks: e.target.value })}
                 placeholder="8"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -517,7 +517,7 @@ export default function RegisterTerminal() {
                 value={formData.unloadingRacks}
                 onChange={(e: any) => updateFormData({ unloadingRacks: e.target.value })}
                 placeholder="4"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -554,7 +554,7 @@ export default function RegisterTerminal() {
                 value={formData.emergencyContact}
                 onChange={(e: any) => updateFormData({ emergencyContact: e.target.value })}
                 placeholder="Jane Smith"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -566,7 +566,7 @@ export default function RegisterTerminal() {
                 value={formData.emergencyPhone}
                 onChange={(e: any) => updateFormData({ emergencyPhone: e.target.value })}
                 placeholder="(555) 123-4567"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -577,7 +577,7 @@ export default function RegisterTerminal() {
               type="date"
               value={formData.lastInspectionDate}
               onChange={(e: any) => updateFormData({ lastInspectionDate: e.target.value })}
-              className="bg-white/[0.04] border-slate-600 text-white"
+              className="bg-slate-700/50 border-slate-600 text-white"
             />
           </div>
 

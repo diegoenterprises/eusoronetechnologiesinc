@@ -208,7 +208,7 @@ export default function RegisterBroker() {
                 value={formData.companyName}
                 onChange={(e: any) => updateFormData({ companyName: e.target.value })}
                 placeholder="ABC Logistics LLC"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -217,7 +217,7 @@ export default function RegisterBroker() {
                 value={formData.dba}
                 onChange={(e: any) => updateFormData({ dba: e.target.value })}
                 placeholder="Doing Business As"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -231,7 +231,7 @@ export default function RegisterBroker() {
                 value={formData.einNumber}
                 onChange={(e: any) => updateFormData({ einNumber: e.target.value })}
                 placeholder="XX-XXXXXXX"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -241,7 +241,7 @@ export default function RegisterBroker() {
                 value={formData.yearEstablished}
                 onChange={(e: any) => updateFormData({ yearEstablished: e.target.value })}
                 placeholder="2015"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -282,7 +282,7 @@ export default function RegisterBroker() {
                 value={formData.primaryContactName}
                 onChange={(e: any) => updateFormData({ primaryContactName: e.target.value })}
                 placeholder="John Smith"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -291,7 +291,7 @@ export default function RegisterBroker() {
                 value={formData.primaryContactTitle}
                 onChange={(e: any) => updateFormData({ primaryContactTitle: e.target.value })}
                 placeholder="Operations Manager"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -306,7 +306,7 @@ export default function RegisterBroker() {
                 value={formData.primaryContactEmail}
                 onChange={(e: any) => updateFormData({ primaryContactEmail: e.target.value })}
                 placeholder="john@company.com"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -318,7 +318,7 @@ export default function RegisterBroker() {
                 value={formData.primaryContactPhone}
                 onChange={(e: any) => updateFormData({ primaryContactPhone: e.target.value })}
                 placeholder="(555) 123-4567"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -347,7 +347,7 @@ export default function RegisterBroker() {
               value={formData.streetAddress}
               onChange={(e: any) => updateFormData({ streetAddress: e.target.value })}
               placeholder="123 Business Blvd"
-              className="bg-white/[0.04] border-slate-600 text-white"
+              className="bg-slate-700/50 border-slate-600 text-white"
             />
           </div>
 
@@ -360,7 +360,7 @@ export default function RegisterBroker() {
                 value={formData.city}
                 onChange={(e: any) => updateFormData({ city: e.target.value })}
                 placeholder="Houston"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -368,7 +368,7 @@ export default function RegisterBroker() {
                 State <span className="text-red-400">*</span>
               </Label>
               <Select value={formData.state} onValueChange={(v: any) => updateFormData({ state: v })}>
-                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="State" />
                 </SelectTrigger>
                 <SelectContent>
@@ -386,7 +386,7 @@ export default function RegisterBroker() {
                 value={formData.zipCode}
                 onChange={(e: any) => updateFormData({ zipCode: e.target.value })}
                 placeholder="77001"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -426,7 +426,7 @@ export default function RegisterBroker() {
               value={formData.brokerAuthority}
               onChange={(e: any) => updateFormData({ brokerAuthority: e.target.value })}
               placeholder="Same as MC number if applicable"
-              className="bg-white/[0.04] border-slate-600 text-white"
+              className="bg-slate-700/50 border-slate-600 text-white"
             />
           </div>
 
@@ -439,7 +439,7 @@ export default function RegisterBroker() {
                 value={formData.suretyBondCatalyst}
                 onChange={(e: any) => updateFormData({ suretyBondCatalyst: e.target.value })}
                 placeholder="ABC Surety Company"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -450,7 +450,7 @@ export default function RegisterBroker() {
                 value={formData.bondNumber}
                 onChange={(e: any) => updateFormData({ bondNumber: e.target.value })}
                 placeholder="BOND-123456"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -461,7 +461,7 @@ export default function RegisterBroker() {
                 Bond Amount <span className="text-red-400">*</span>
               </Label>
               <Select value={formData.suretyBondAmount} onValueChange={(v: any) => updateFormData({ suretyBondAmount: v })}>
-                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -479,7 +479,7 @@ export default function RegisterBroker() {
                 type="date"
                 value={formData.bondExpiration}
                 onChange={(e: any) => updateFormData({ bondExpiration: e.target.value })}
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -509,7 +509,7 @@ export default function RegisterBroker() {
                 value={formData.insuranceCatalyst}
                 onChange={(e: any) => updateFormData({ insuranceCatalyst: e.target.value })}
                 placeholder="ABC Insurance Co"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -520,7 +520,7 @@ export default function RegisterBroker() {
                 value={formData.policyNumber}
                 onChange={(e: any) => updateFormData({ policyNumber: e.target.value })}
                 placeholder="POL-123456"
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>
@@ -531,7 +531,7 @@ export default function RegisterBroker() {
                 Coverage Amount <span className="text-red-400">*</span>
               </Label>
               <Select value={formData.coverageAmount} onValueChange={(v: any) => updateFormData({ coverageAmount: v })}>
-                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select coverage" />
                 </SelectTrigger>
                 <SelectContent>
@@ -550,7 +550,7 @@ export default function RegisterBroker() {
                 type="date"
                 value={formData.expirationDate}
                 onChange={(e: any) => updateFormData({ expirationDate: e.target.value })}
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
           </div>

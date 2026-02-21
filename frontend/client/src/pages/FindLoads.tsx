@@ -145,7 +145,7 @@ export default function FindLoads() {
             <Package className="w-4 h-4 text-blue-500" />
             <span className="text-blue-500 text-sm font-bold">{filteredLoads.length} Available</span>
           </div>
-          <Button variant="outline" size="sm" className={cn("rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-600 hover:bg-white/[0.06]")} onClick={() => loadsQuery.refetch()}>
+          <Button variant="outline" size="sm" className={cn("rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-600 hover:bg-slate-700")} onClick={() => loadsQuery.refetch()}>
             <RefreshCw className={cn("w-4 h-4", loadsQuery.isRefetching && "animate-spin")} />
           </Button>
         </div>
@@ -154,7 +154,7 @@ export default function FindLoads() {
       {/* ── Search ── */}
       <div className={cn(
         "relative rounded-xl border",
-        isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]"
+        isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50"
       )}>
         <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
@@ -171,10 +171,10 @@ export default function FindLoads() {
       {/* ── Week Date Picker ── */}
       <div className={cn(
         "rounded-xl border p-4",
-        isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]"
+        isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50"
       )}>
         <div className="flex items-center justify-between mb-4">
-          <button onClick={() => shiftWeek(-1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]")}>
+          <button onClick={() => shiftWeek(-1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
             <ChevronLeft className="w-5 h-5 text-slate-400" />
           </button>
           <div className="flex items-center gap-2">
@@ -186,12 +186,12 @@ export default function FindLoads() {
                 Show All
               </button>
             ) : (
-              <button onClick={() => setDateFilterActive(true)} className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium border", isLight ? "border-slate-300 text-slate-500 hover:bg-slate-100" : "border-slate-600 text-slate-400 hover:bg-white/[0.06]")}>
+              <button onClick={() => setDateFilterActive(true)} className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium border", isLight ? "border-slate-300 text-slate-500 hover:bg-slate-100" : "border-slate-600 text-slate-400 hover:bg-slate-700")}>
                 Showing All
               </button>
             )}
           </div>
-          <button onClick={() => shiftWeek(1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]")}>
+          <button onClick={() => shiftWeek(1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
             <ChevronRight className="w-5 h-5 text-slate-400" />
           </button>
         </div>
@@ -209,7 +209,7 @@ export default function FindLoads() {
                     ? "bg-gradient-to-b from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-purple-500/25"
                     : isToday
                       ? isLight ? "bg-slate-100 text-slate-800" : "bg-slate-700 text-white"
-                      : isLight ? "hover:bg-slate-50 text-slate-600" : "hover:bg-white/[0.04] text-slate-400"
+                      : isLight ? "hover:bg-slate-50 text-slate-600" : "hover:bg-slate-700/50 text-slate-400"
                 )}
               >
                 <span className="text-[10px] font-medium mb-0.5">{DAY_LABELS[day.getDay()]}</span>
@@ -233,7 +233,7 @@ export default function FindLoads() {
                 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
                 : isLight
                   ? "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                  : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]"
+                  : "bg-slate-800 text-slate-400 hover:bg-slate-700"
             )}
           >
             {tab.label}
@@ -251,7 +251,7 @@ export default function FindLoads() {
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {mlDemand.data.topLanes.slice(0, 6).map((lane: any, i: number) => (
-              <div key={i} className={cn("flex-shrink-0 px-3 py-2 rounded-lg border text-center min-w-[100px]", isLight ? "bg-white border-slate-200" : "bg-white/[0.03] border-slate-700/40")}>
+              <div key={i} className={cn("flex-shrink-0 px-3 py-2 rounded-lg border text-center min-w-[100px]", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/40")}>
                 <p className={cn("text-xs font-bold", isLight ? "text-slate-700" : "text-white")}>{lane.lane}</p>
                 <p className={cn("text-[10px]", isLight ? "text-slate-500" : "text-slate-400")}>{lane.volume} loads</p>
                 <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${lane.trend === "RISING" ? "bg-green-500/15 text-green-500" : lane.trend === "DECLINING" ? "bg-red-500/15 text-red-500" : "bg-slate-500/15 text-slate-400"}`}>
@@ -269,9 +269,9 @@ export default function FindLoads() {
       ) : filteredLoads.length === 0 ? (
         <div className={cn(
           "text-center py-16 rounded-2xl border",
-          isLight ? "bg-white border-slate-200" : "bg-white/[0.03] border-white/[0.06]"
+          isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50"
         )}>
-          <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
+          <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
             <Package className="w-10 h-10 text-slate-400" />
           </div>
           <p className={cn("text-lg font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No loads available</p>
@@ -290,7 +290,7 @@ export default function FindLoads() {
             return (
               <Card key={load.id} className={cn(
                 "rounded-2xl border overflow-hidden transition-shadow hover:shadow-lg",
-                isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]"
+                isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50"
               )}>
                 <CardContent className="p-0">
                   {/* Card Header */}
@@ -332,12 +332,12 @@ export default function FindLoads() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 flex-wrap">
                         {load.distance > 0 && (
-                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-white/[0.04] border-slate-600 text-slate-300")}>
+                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>
                             {load.distance} miles
                           </span>
                         )}
                         {load.weight > 0 && (
-                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-white/[0.04] border-slate-600 text-slate-300")}>
+                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>
                             {Number(load.weight).toLocaleString()} {load.weightUnit || "lbs"}
                           </span>
                         )}

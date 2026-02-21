@@ -703,7 +703,7 @@ export default function LoadCreationWizard() {
         ))}
       </div>
 
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-6">
           {/* STEP 0: Trailer Type Selection */}
           {rs === 0 && (
@@ -746,17 +746,17 @@ export default function LoadCreationWizard() {
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                       <Input value={formData.productName || ""} onChange={(e: any) => handleProductNameChange(e.target.value)} onFocus={() => { if (searchQuery.length >= 2) setShowSuggestions(true); }}
                         placeholder={selectedTrailer?.id === "liquid_tank" ? "e.g., Gasoline, Diesel, Sulfuric Acid..." : selectedTrailer?.id === "gas_tank" ? "e.g., Propane, Ammonia, Chlorine..." : "Search ERG 2020 materials..."}
-                        className="bg-white/[0.04] border-white/[0.06] rounded-lg pl-10" />
+                        className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10" />
                     </div>
                     <Button variant="outline" className="bg-purple-500/20 border-purple-500/30 text-purple-400 hover:bg-purple-500/30 rounded-lg" onClick={handleSuggest}>
                       <EsangIcon className="w-4 h-4 mr-2" />ESANG AI
                     </Button>
                   </div>
                   {showSuggestions && ergSearch.data?.results?.length > 0 && (
-                    <div className="absolute z-50 left-0 right-16 mt-1 bg-slate-800 border border-white/[0.06] rounded-lg shadow-xl max-h-64 overflow-y-auto">
-                      <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-white/[0.06]">ERG 2020 -- {ergSearch.data.count} results from 1,980 materials</div>
+                    <div className="absolute z-50 left-0 right-16 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                      <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2020 -- {ergSearch.data.count} results from 1,980 materials</div>
                       {ergSearch.data.results.map((m: any, i: number) => (
-                        <button key={`${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-white/[0.04] flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
+                        <button key={`${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
                           <div className="flex-1 min-w-0">
                             <p className="text-white text-sm font-medium truncate">{m.name}</p>
                             {m.alternateNames?.length > 0 && <p className="text-slate-500 text-[10px] truncate">Also: {m.alternateNames.slice(0, 2).join(", ")}</p>}
@@ -772,7 +772,7 @@ export default function LoadCreationWizard() {
                     </div>
                   )}
                   {showSuggestions && searchQuery.length >= 2 && ergSearch.isLoading && (
-                    <div className="absolute z-50 left-0 right-16 mt-1 bg-slate-800 border border-white/[0.06] rounded-lg shadow-xl p-3">
+                    <div className="absolute z-50 left-0 right-16 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-3">
                       <div className="flex items-center gap-2 text-slate-400 text-sm"><EsangIcon className="w-4 h-4 animate-spin" />Searching ERG 2020 database...</div>
                     </div>
                   )}
@@ -780,7 +780,7 @@ export default function LoadCreationWizard() {
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Hazmat Classification</label>
                   <Select value={formData.hazmatClass || ""} onValueChange={(v: any) => updateField("hazmatClass", v)}>
-                    <SelectTrigger className="bg-white/[0.04] border-white/[0.06] rounded-lg"><SelectValue placeholder="Select class" /></SelectTrigger>
+                    <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select class" /></SelectTrigger>
                     <SelectContent>{getClassesForTrailer(formData.trailerType).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
@@ -789,13 +789,13 @@ export default function LoadCreationWizard() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <Input value={formData.unNumber || ""} onChange={(e: any) => handleUNChange(e.target.value)} onFocus={() => { if (unSearchQuery.length >= 2) setShowUNSuggestions(true); }}
-                      placeholder="e.g., 1203, UN1223" className="bg-white/[0.04] border-white/[0.06] rounded-lg pl-10" />
+                      placeholder="e.g., 1203, UN1223" className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10" />
                   </div>
                   {showUNSuggestions && ergUNSearch.data?.results?.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-white/[0.06] rounded-lg shadow-xl max-h-64 overflow-y-auto">
-                      <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-white/[0.06]">ERG 2020 -- UN Number Matches</div>
+                    <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                      <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2020 -- UN Number Matches</div>
                       {ergUNSearch.data.results.map((m: any, i: number) => (
-                        <button key={`un-${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-white/[0.04] flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
+                        <button key={`un-${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
                           <div className="flex-1 min-w-0"><p className="text-white text-sm font-medium truncate">{m.name}</p></div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
@@ -817,9 +817,9 @@ export default function LoadCreationWizard() {
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                           <Input value={formData.productName || ""} onChange={(e: any) => updateField("productName", e.target.value)}
                             placeholder="Type your product name..."
-                            className="bg-white/[0.04] border-white/[0.06] rounded-lg pl-10" />
+                            className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10" />
                         </div>
-                        <Button variant="outline" size="sm" className="text-slate-400 border-white/[0.06] hover:bg-white/[0.04] rounded-lg"
+                        <Button variant="outline" size="sm" className="text-slate-400 border-slate-600/50 hover:bg-slate-700/50 rounded-lg"
                           onClick={() => { setIsOtherProduct(false); updateField("productName", ""); updateField("productId", ""); }}>
                           Back to list
                         </Button>
@@ -836,10 +836,10 @@ export default function LoadCreationWizard() {
                           }}
                           onFocus={() => setShowProductDropdown(true)}
                           placeholder={`Search ${productList.length || 50} products for ${selectedTrailer?.name || "this trailer"}...`}
-                          className="bg-white/[0.04] border-white/[0.06] rounded-lg pl-10" />
+                          className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10" />
                         {showProductDropdown && (
-                          <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-white/[0.06] rounded-lg shadow-xl max-h-72 overflow-y-auto">
-                            <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-white/[0.06] sticky top-0 bg-slate-800">
+                          <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-72 overflow-y-auto">
+                            <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50 sticky top-0 bg-slate-800">
                               {selectedTrailer?.name} -- {productList.length} products {productDropdownSearch ? `matching "${productDropdownSearch}"` : ""}
                             </div>
                             {productListQuery.isLoading ? (
@@ -850,7 +850,7 @@ export default function LoadCreationWizard() {
                               <div className="p-3 text-slate-500 text-sm">No products match "{productDropdownSearch}"</div>
                             ) : null}
                             {productList.map((p: any) => (
-                              <button key={p.id} className="w-full text-left px-3 py-2 hover:bg-white/[0.04] flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors"
+                              <button key={p.id} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors"
                                 onClick={() => {
                                   updateField("productName", p.name);
                                   updateField("productId", p.id);
@@ -870,7 +870,7 @@ export default function LoadCreationWizard() {
                                 </div>
                               </button>
                             ))}
-                            <button className="w-full text-left px-3 py-2.5 hover:bg-purple-500/10 flex items-center gap-2 border-t border-white/[0.06] transition-colors"
+                            <button className="w-full text-left px-3 py-2.5 hover:bg-purple-500/10 flex items-center gap-2 border-t border-slate-600/50 transition-colors"
                               onClick={() => { setIsOtherProduct(true); setShowProductDropdown(false); setProductDropdownSearch(""); updateField("productName", ""); updateField("productId", "other"); }}>
                               <Plus className="w-4 h-4 text-purple-400" />
                               <span className="text-purple-400 text-sm font-medium">Other -- Type product name manually</span>
@@ -898,10 +898,10 @@ export default function LoadCreationWizard() {
                     <div>
                       <label className="text-sm text-slate-400 mb-1 block">Required Temperature Range</label>
                       <div className="flex gap-2">
-                        <Input type="number" value={formData.tempMin || ""} onChange={(e: any) => updateField("tempMin", e.target.value)} placeholder="Min" className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
-                        <Input type="number" value={formData.tempMax || ""} onChange={(e: any) => updateField("tempMax", e.target.value)} placeholder="Max" className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                        <Input type="number" value={formData.tempMin || ""} onChange={(e: any) => updateField("tempMin", e.target.value)} placeholder="Min" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                        <Input type="number" value={formData.tempMax || ""} onChange={(e: any) => updateField("tempMax", e.target.value)} placeholder="Max" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
                         <Select value={formData.tempUnit || "F"} onValueChange={(v: any) => updateField("tempUnit", v)}>
-                          <SelectTrigger className="w-16 bg-white/[0.04] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="w-16 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                           <SelectContent><SelectItem value="F">F</SelectItem><SelectItem value="C">C</SelectItem></SelectContent>
                         </Select>
                       </div>
@@ -911,10 +911,10 @@ export default function LoadCreationWizard() {
                     <div>
                       <label className="text-sm text-slate-400 mb-1 block">Required Temperature Range (optional)</label>
                       <div className="flex gap-2">
-                        <Input type="number" value={formData.tempMin || ""} onChange={(e: any) => updateField("tempMin", e.target.value)} placeholder="Min" className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
-                        <Input type="number" value={formData.tempMax || ""} onChange={(e: any) => updateField("tempMax", e.target.value)} placeholder="Max" className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                        <Input type="number" value={formData.tempMin || ""} onChange={(e: any) => updateField("tempMin", e.target.value)} placeholder="Min" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                        <Input type="number" value={formData.tempMax || ""} onChange={(e: any) => updateField("tempMax", e.target.value)} placeholder="Max" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
                         <Select value={formData.tempUnit || "F"} onValueChange={(v: any) => updateField("tempUnit", v)}>
-                          <SelectTrigger className="w-16 bg-white/[0.04] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="w-16 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                           <SelectContent><SelectItem value="F">F</SelectItem><SelectItem value="C">C</SelectItem></SelectContent>
                         </Select>
                       </div>
@@ -940,36 +940,36 @@ export default function LoadCreationWizard() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">API Gravity (degrees)</label>
-                  <Input type="number" step="0.1" value={formData.apiGravity || ""} onChange={(e: any) => updateField("apiGravity", e.target.value)} placeholder="e.g., 35.5" className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                  <Input type="number" step="0.1" value={formData.apiGravity || ""} onChange={(e: any) => updateField("apiGravity", e.target.value)} placeholder="e.g., 35.5" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">BS&W (Basic Sediment & Water %)</label>
-                  <Input type="number" step="0.01" value={formData.bsw || ""} onChange={(e: any) => updateField("bsw", e.target.value)} placeholder="e.g., 0.5" className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                  <Input type="number" step="0.01" value={formData.bsw || ""} onChange={(e: any) => updateField("bsw", e.target.value)} placeholder="e.g., 0.5" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Sulfur Content (%)</label>
-                  <Input type="number" step="0.01" value={formData.sulfurContent || ""} onChange={(e: any) => updateField("sulfurContent", e.target.value)} placeholder="e.g., 1.2" className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                  <Input type="number" step="0.01" value={formData.sulfurContent || ""} onChange={(e: any) => updateField("sulfurContent", e.target.value)} placeholder="e.g., 1.2" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Flash Point (F)</label>
-                  <Input type="number" value={formData.flashPoint || ""} onChange={(e: any) => updateField("flashPoint", e.target.value)} placeholder="e.g., -45" className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                  <Input type="number" value={formData.flashPoint || ""} onChange={(e: any) => updateField("flashPoint", e.target.value)} placeholder="e.g., -45" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Viscosity (cSt @ 40C)</label>
-                  <Input type="number" step="0.1" value={formData.viscosity || ""} onChange={(e: any) => updateField("viscosity", e.target.value)} placeholder="e.g., 5.8" className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                  <Input type="number" step="0.1" value={formData.viscosity || ""} onChange={(e: any) => updateField("viscosity", e.target.value)} placeholder="e.g., 5.8" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Pour Point (F)</label>
-                  <Input type="number" value={formData.pourPoint || ""} onChange={(e: any) => updateField("pourPoint", e.target.value)} placeholder="e.g., -20" className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                  <Input type="number" value={formData.pourPoint || ""} onChange={(e: any) => updateField("pourPoint", e.target.value)} placeholder="e.g., -20" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Reid Vapor Pressure (psi)</label>
-                  <Input type="number" step="0.1" value={formData.reidVaporPressure || ""} onChange={(e: any) => updateField("reidVaporPressure", e.target.value)} placeholder="e.g., 8.5" className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                  <Input type="number" step="0.1" value={formData.reidVaporPressure || ""} onChange={(e: any) => updateField("reidVaporPressure", e.target.value)} placeholder="e.g., 8.5" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Color / Appearance</label>
                   <Select value={formData.appearance || ""} onValueChange={(v: any) => updateField("appearance", v)}>
-                    <SelectTrigger className="bg-white/[0.04] border-white/[0.06] rounded-lg"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Clear">Clear / Colorless</SelectItem>
                       <SelectItem value="Light">Light / Straw</SelectItem>
@@ -1029,7 +1029,7 @@ export default function LoadCreationWizard() {
                         }
                       }
                     }}
-                      placeholder={getPlaceholder(formData.trailerType || "")} className="bg-white/[0.04] border-white/[0.06] rounded-lg flex-1" />
+                      placeholder={getPlaceholder(formData.trailerType || "")} className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
                     <Select value={currentUnit} onValueChange={(v: any) => {
                       updateField("quantityUnit", v);
                       // Recalculate weight when unit changes
@@ -1052,7 +1052,7 @@ export default function LoadCreationWizard() {
                         }
                       }
                     }}>
-                      <SelectTrigger className="w-32 bg-white/[0.04] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {quantityUnits.map((u: string) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
                       </SelectContent>
@@ -1069,9 +1069,9 @@ export default function LoadCreationWizard() {
                       updateField("weight", e.target.value);
                       updateField("weightAutoCalc", false);
                       updateField("weightSource", "");
-                    }} placeholder="42000" className={`bg-white/[0.04] border-white/[0.06] rounded-lg flex-1 ${formData.weightAutoCalc ? "ring-1 ring-cyan-500/30" : ""}`} />
+                    }} placeholder="42000" className={`bg-slate-700/50 border-slate-600/50 rounded-lg flex-1 ${formData.weightAutoCalc ? "ring-1 ring-cyan-500/30" : ""}`} />
                     <Select value={formData.weightUnit || "lbs"} onValueChange={(v: any) => updateField("weightUnit", v)}>
-                      <SelectTrigger className="w-24 bg-white/[0.04] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-24 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                       <SelectContent><SelectItem value="lbs">lbs</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="tons">tons</SelectItem></SelectContent>
                     </Select>
                   </div>
@@ -1130,7 +1130,7 @@ export default function LoadCreationWizard() {
                           "flex-1 py-3 rounded-xl text-sm font-bold transition-all border",
                           (formData.compartments || 1) === n
                             ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-lg"
-                            : "bg-white/[0.04] border-white/[0.06] text-slate-400 hover:bg-white/[0.06]"
+                            : "bg-slate-700/50 border-slate-600/50 text-slate-400 hover:bg-slate-700"
                         )}
                       >
                         {n}
@@ -1170,14 +1170,14 @@ export default function LoadCreationWizard() {
                               }}
                               onFocus={() => { setActiveCompIdx(i); if (compSearchQuery.length >= 2) setShowCompSuggestions(true); }}
                               placeholder={`Search product for comp ${i + 1}...`}
-                              className="bg-white/[0.04] border-white/[0.06] rounded-lg text-sm pl-9"
+                              className="bg-slate-700/50 border-slate-600/50 rounded-lg text-sm pl-9"
                             />
                             {/* ERG Suggestions Dropdown for this compartment */}
                             {showCompSuggestions && activeCompIdx === i && ergCompSearch.data?.results?.length > 0 && (
-                              <div className="absolute z-[100] left-0 right-0 bottom-full mb-1 bg-slate-800 border border-white/[0.06] rounded-lg shadow-xl max-h-52 overflow-y-auto">
-                                <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-white/[0.06]">ERG 2020 — Compartment {i + 1}</div>
+                              <div className="absolute z-[100] left-0 right-0 bottom-full mb-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-52 overflow-y-auto">
+                                <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2020 — Compartment {i + 1}</div>
                                 {ergCompSearch.data.results.map((m: any, mi: number) => (
-                                  <button key={`comp-${i}-${m.unNumber}-${mi}`} className="w-full text-left px-3 py-2 hover:bg-white/[0.04] flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors"
+                                  <button key={`comp-${i}-${m.unNumber}-${mi}`} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors"
                                     onClick={() => {
                                       const arr = [...(formData.compartmentProducts || [])];
                                       arr[i] = { ...arr[i], product: m.name, unNumber: `UN${m.unNumber}`, hazardClass: m.hazardClass, guide: m.guide };
@@ -1197,7 +1197,7 @@ export default function LoadCreationWizard() {
                               </div>
                             )}
                             {showCompSuggestions && activeCompIdx === i && compSearchQuery.length >= 2 && ergCompSearch.isLoading && (
-                              <div className="absolute z-[100] left-0 right-0 bottom-full mb-1 bg-slate-800 border border-white/[0.06] rounded-lg shadow-xl p-2">
+                              <div className="absolute z-[100] left-0 right-0 bottom-full mb-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-2">
                                 <div className="flex items-center gap-2 text-slate-400 text-xs"><EsangIcon className="w-3 h-3 animate-spin" />Searching ERG 2020...</div>
                               </div>
                             )}
@@ -1211,7 +1211,7 @@ export default function LoadCreationWizard() {
                               updateField("compartmentProducts", arr);
                             }}
                             placeholder="Volume"
-                            className="bg-white/[0.04] border-white/[0.06] rounded-lg text-sm w-28"
+                            className="bg-slate-700/50 border-slate-600/50 rounded-lg text-sm w-28"
                           />
                           <span className="text-xs text-slate-500 w-10">{currentUnit === "Gallons" ? "gal" : currentUnit === "Barrels" ? "bbl" : currentUnit.toLowerCase().slice(0, 3)}</span>
                         </div>
@@ -1279,14 +1279,14 @@ export default function LoadCreationWizard() {
                       <Badge variant="outline" className="text-[10px] border-[#BE01FF]/30 text-[#BE01FF]">{fleet.totalLoads} load{fleet.totalLoads !== 1 ? "s" : ""}</Badge>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <button onClick={() => { setUsePerTruckCapacity(false); }} className={cn("px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors", !usePerTruckCapacity ? "bg-[#1473FF] text-white" : "bg-white/[0.04] text-slate-400")}>Uniform</button>
-                      <button onClick={() => { setUsePerTruckCapacity(true); if (truckRoster.length === 0) addTruckToRoster(); }} className={cn("px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors", usePerTruckCapacity ? "bg-[#BE01FF] text-white" : "bg-white/[0.04] text-slate-400")}>Per Truck</button>
+                      <button onClick={() => { setUsePerTruckCapacity(false); }} className={cn("px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors", !usePerTruckCapacity ? "bg-[#1473FF] text-white" : "bg-slate-700/50 text-slate-400")}>Uniform</button>
+                      <button onClick={() => { setUsePerTruckCapacity(true); if (truckRoster.length === 0) addTruckToRoster(); }} className={cn("px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors", usePerTruckCapacity ? "bg-[#BE01FF] text-white" : "bg-slate-700/50 text-slate-400")}>Per Truck</button>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3 text-center mb-3">
-                    <div className="p-2 rounded-lg bg-white/[0.02]"><p className="text-[10px] text-slate-500">Total Loads</p><p className="text-white text-lg font-bold">{fleet.totalLoads}</p></div>
-                    <div className="p-2 rounded-lg bg-white/[0.02]"><p className="text-[10px] text-slate-500">Trucks Needed</p><p className="text-[#1473FF] text-lg font-bold">{fleet.trucksNeeded}</p></div>
-                    <div className="p-2 rounded-lg bg-white/[0.02]"><p className="text-[10px] text-slate-500">Max Per Truck</p><p className="text-[#BE01FF] text-lg font-bold">{fleet.defaultMax.toLocaleString()} {fleet.unit?.toLowerCase().slice(0, 3)}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Total Loads</p><p className="text-white text-lg font-bold">{fleet.totalLoads}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Trucks Needed</p><p className="text-[#1473FF] text-lg font-bold">{fleet.trucksNeeded}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Max Per Truck</p><p className="text-[#BE01FF] text-lg font-bold">{fleet.defaultMax.toLocaleString()} {fleet.unit?.toLowerCase().slice(0, 3)}</p></div>
                   </div>
 
                   {/* Per-Truck Roster */}
@@ -1296,9 +1296,9 @@ export default function LoadCreationWizard() {
                       {truckRoster.map((t, i) => (
                         <div key={t.id} className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/40">
                           <span className="text-[10px] font-mono text-slate-500 w-5 text-center">{i + 1}</span>
-                          <Input value={t.name} onChange={e => updateTruckInRoster(t.id, "name", e.target.value)} className="h-7 text-xs bg-white/[0.04] border-white/[0.06] rounded w-24" />
-                          <div className="flex items-center gap-1"><span className="text-[9px] text-slate-500">Max</span><Input type="number" value={t.capacity} onChange={e => updateTruckInRoster(t.id, "capacity", parseInt(e.target.value) || 0)} className="h-7 text-xs bg-white/[0.04] border-white/[0.06] rounded w-16" /></div>
-                          <div className="flex items-center gap-1"><span className="text-[9px] text-slate-500">Fill</span><Input type="number" value={t.fill} onChange={e => updateTruckInRoster(t.id, "fill", parseInt(e.target.value) || 0)} className="h-7 text-xs bg-white/[0.04] border-white/[0.06] rounded w-16" /></div>
+                          <Input value={t.name} onChange={e => updateTruckInRoster(t.id, "name", e.target.value)} className="h-7 text-xs bg-slate-700/50 border-slate-600/50 rounded w-24" />
+                          <div className="flex items-center gap-1"><span className="text-[9px] text-slate-500">Max</span><Input type="number" value={t.capacity} onChange={e => updateTruckInRoster(t.id, "capacity", parseInt(e.target.value) || 0)} className="h-7 text-xs bg-slate-700/50 border-slate-600/50 rounded w-16" /></div>
+                          <div className="flex items-center gap-1"><span className="text-[9px] text-slate-500">Fill</span><Input type="number" value={t.fill} onChange={e => updateTruckInRoster(t.id, "fill", parseInt(e.target.value) || 0)} className="h-7 text-xs bg-slate-700/50 border-slate-600/50 rounded w-16" /></div>
                           <Badge variant="outline" className={cn("text-[9px] border-0", t.fill > 0 && t.capacity > 0 ? "bg-green-500/15 text-green-400" : "bg-slate-500/15 text-slate-400")}>{t.capacity > 0 ? Math.round((t.fill / t.capacity) * 100) : 0}%</Badge>
                           <button onClick={() => removeTruckFromRoster(t.id)} className="text-red-400/60 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
@@ -1308,7 +1308,7 @@ export default function LoadCreationWizard() {
                           <AlertTriangle className="w-3 h-3" />Max {maxTrucksAllowed} truck{maxTrucksAllowed !== 1 ? "s" : ""} for {Number(formData.quantity).toLocaleString()} {fleet?.unit?.toLowerCase() || "units"}
                         </div>
                       ) : (
-                        <button onClick={addTruckToRoster} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-white/[0.06] text-slate-400 text-xs hover:bg-slate-800/30 transition-colors">
+                        <button onClick={addTruckToRoster} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-slate-600/50 text-slate-400 text-xs hover:bg-slate-800/30 transition-colors">
                           <Plus className="w-3 h-3" />Add Truck ({truckRoster.length}/{maxTrucksAllowed})
                         </button>
                       )}
@@ -1342,12 +1342,12 @@ export default function LoadCreationWizard() {
               <div>
                 <label className="text-sm text-slate-400 mb-1 block flex items-center gap-2"><MapPin className="w-4 h-4 text-green-400" />Origin / Pickup</label>
                 <Input ref={originRef} value={formData.origin || ""} onChange={(e: any) => updateField("origin", e.target.value)}
-                  placeholder={mapsLoaded ? "Start typing an address..." : "City, State or full address"} className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                  placeholder={mapsLoaded ? "Start typing an address..." : "City, State or full address"} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               <div>
                 <label className="text-sm text-slate-400 mb-1 block flex items-center gap-2"><MapPin className="w-4 h-4 text-red-400" />Destination / Drop-off</label>
                 <Input ref={destRef} value={formData.destination || ""} onChange={(e: any) => updateField("destination", e.target.value)}
-                  placeholder={mapsLoaded ? "Start typing an address..." : "City, State or full address"} className="bg-white/[0.04] border-white/[0.06] rounded-lg" />
+                  placeholder={mapsLoaded ? "Start typing an address..." : "City, State or full address"} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               {/* Route Map Preview */}
               {mapsLoaded && (
@@ -1385,8 +1385,8 @@ export default function LoadCreationWizard() {
           {/* STEP 5: Catalyst Requirements */}
           {rs === 5 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div><label className="text-sm text-slate-400 mb-1 block">Minimum Safety Score</label><Input type="number" value={formData.minSafetyScore || ""} onChange={(e: any) => updateField("minSafetyScore", e.target.value)} placeholder="e.g., 80" className="bg-white/[0.04] border-white/[0.06] rounded-lg" /></div>
-              <div><label className="text-sm text-slate-400 mb-1 block">Required Endorsements</label><Input value={formData.endorsements || ""} onChange={(e: any) => updateField("endorsements", e.target.value)} placeholder={isHazmat ? "Hazmat, Tanker" : "e.g., Tanker, Doubles/Triples"} className="bg-white/[0.04] border-white/[0.06] rounded-lg" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block">Minimum Safety Score</label><Input type="number" value={formData.minSafetyScore || ""} onChange={(e: any) => updateField("minSafetyScore", e.target.value)} placeholder="e.g., 80" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block">Required Endorsements</label><Input value={formData.endorsements || ""} onChange={(e: any) => updateField("endorsements", e.target.value)} placeholder={isHazmat ? "Hazmat, Tanker" : "e.g., Tanker, Doubles/Triples"} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
               {isHazmat && (
                 <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
                   <div className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-orange-400" /><span className="text-orange-400 text-sm font-medium">Hazmat load requires HM endorsement on CDL</span></div>
@@ -1428,7 +1428,7 @@ export default function LoadCreationWizard() {
                     if (ag?.baseRate) updateField("rate", String(parseFloat(ag.baseRate)));
                     if (ag?.ratePerMile) updateField("ratePerMile", String(parseFloat(ag.ratePerMile)));
                   }}>
-                    <SelectTrigger className="bg-white/[0.04] border-white/[0.06] rounded-lg"><SelectValue placeholder="Select an active agreement (optional)" /></SelectTrigger>
+                    <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select an active agreement (optional)" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No Agreement</SelectItem>
                       {agreementsList.map((ag: any) => (
@@ -1526,7 +1526,7 @@ export default function LoadCreationWizard() {
                     const val = e.target.value;
                     updateField("rate", val);
                     if (formData.distance && Number(val) > 0) updateField("ratePerMile", (Number(val) / formData.distance).toFixed(2));
-                  }} placeholder="e.g., 2500" className="bg-white/[0.04] border-white/[0.06] rounded-lg text-lg" />
+                  }} placeholder="e.g., 2500" className="bg-slate-700/50 border-slate-600/50 rounded-lg text-lg" />
                   {formData.distance && formData.rate && (
                     <p className="text-sm text-slate-500 mt-2">= <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${(Number(formData.rate) / formData.distance).toFixed(2)}/mi</span> over {formData.distance} miles</p>
                   )}
@@ -1538,7 +1538,7 @@ export default function LoadCreationWizard() {
                     const val = e.target.value;
                     updateField("ratePerMile", val);
                     if (formData.distance && Number(val) > 0) updateField("rate", String(Math.round(Number(val) * formData.distance)));
-                  }} placeholder="e.g., 3.25" className="bg-white/[0.04] border-white/[0.06] rounded-lg text-lg" />
+                  }} placeholder="e.g., 3.25" className="bg-slate-700/50 border-slate-600/50 rounded-lg text-lg" />
                   {formData.distance && formData.ratePerMile && (
                     <p className="text-sm text-slate-500 mt-2">= <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${Math.round(Number(formData.ratePerMile) * formData.distance).toLocaleString()} total</span> for {formData.distance} miles</p>
                   )}
@@ -1573,7 +1573,7 @@ export default function LoadCreationWizard() {
 
               {/* ML ETA Prediction */}
               {mlETA.data && formData.distance > 0 && (
-                <div className="p-3 rounded-lg bg-white/[0.02] border border-slate-700/30 flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/30 flex items-center gap-4">
                   <Clock className="w-5 h-5 text-blue-400 shrink-0" />
                   <div className="flex-1">
                     <p className="text-xs text-slate-400">ML-Predicted Transit Time</p>
@@ -1660,12 +1660,12 @@ export default function LoadCreationWizard() {
                     {intel && (intel.originZone || intel.destZone || intel.originSurge > 1.05) && (
                       <div className="flex flex-wrap gap-1.5 mt-3 justify-center">
                         {intel.originZone && (
-                          <span className={cn("text-[10px] px-2 py-0.5 rounded-full bg-white/[0.02] border border-slate-700/30", demandColor(intel.originDemand))}>
+                          <span className={cn("text-[10px] px-2 py-0.5 rounded-full bg-slate-800/50 border border-slate-700/30", demandColor(intel.originDemand))}>
                             {intel.originZone}: {intel.originDemand.replace("_", " ")}
                           </span>
                         )}
                         {intel.destZone && (
-                          <span className={cn("text-[10px] px-2 py-0.5 rounded-full bg-white/[0.02] border border-slate-700/30", demandColor(intel.destDemand))}>
+                          <span className={cn("text-[10px] px-2 py-0.5 rounded-full bg-slate-800/50 border border-slate-700/30", demandColor(intel.destDemand))}>
                             {intel.destZone}: {intel.destDemand.replace("_", " ")}
                           </span>
                         )}
@@ -1679,20 +1679,20 @@ export default function LoadCreationWizard() {
 
                     <div className="flex justify-between mt-4 px-2">
                       <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
-                        ratio < 0.80 ? "border-red-300 dark:border-red-500/50 bg-red-50 dark:bg-red-500/15 text-red-500 dark:text-red-400" : "border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
+                        ratio < 0.80 ? "border-red-300 dark:border-red-500/50 bg-red-50 dark:bg-red-500/15 text-red-500 dark:text-red-400" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
                         Too Low
                       </button>
                       <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
-                        ratio >= 0.90 && ratio <= 1.15 ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-purple-400" : "border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
+                        ratio >= 0.90 && ratio <= 1.15 ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-purple-400" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
                         Good Offer
                       </button>
                       <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
-                        ratio > 1.25 ? "border-red-300 dark:border-red-500/50 bg-red-50 dark:bg-red-500/15 text-red-500 dark:text-red-400" : "border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
+                        ratio > 1.25 ? "border-red-300 dark:border-red-500/50 bg-red-50 dark:bg-red-500/15 text-red-500 dark:text-red-400" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
                         Too High
                       </button>
                     </div>
 
-                    <div className="mt-4 p-3 rounded-lg bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-slate-700/30">
+                    <div className="mt-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/30">
                       <div className="flex items-center gap-2 mb-2">
                         <EsangIcon className="w-3 h-3 text-purple-500 dark:text-purple-400" />
                         <span className="text-[11px] font-bold text-purple-600 dark:text-purple-300">ESANG Recommendation</span>
@@ -1740,10 +1740,10 @@ export default function LoadCreationWizard() {
                     <Badge variant="outline" className="text-[10px] border-[#BE01FF]/30 text-[#BE01FF]">{fleet.totalLoads} loads</Badge>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-                    <div className="p-2 rounded-lg bg-white/[0.02]"><p className="text-[10px] text-slate-500">Rate / Load</p><p className="text-white text-sm font-bold">${Number(formData.rate).toLocaleString()}</p></div>
-                    <div className="p-2 rounded-lg bg-white/[0.02]"><p className="text-[10px] text-slate-500">Catalyst Payout</p><p className="text-white text-sm font-bold">${fleet.totalJobCost.toLocaleString()}</p></div>
-                    <div className="p-2 rounded-lg bg-white/[0.02]"><p className="text-[10px] text-slate-500">Platform Fee (8%)</p><p className="text-[#BE01FF] text-sm font-bold">${fleet.platformFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
-                    <div className="p-2 rounded-lg bg-white/[0.02]"><p className="text-[10px] text-slate-500">Total w/ Fee</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-sm font-bold">${fleet.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Rate / Load</p><p className="text-white text-sm font-bold">${Number(formData.rate).toLocaleString()}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Catalyst Payout</p><p className="text-white text-sm font-bold">${fleet.totalJobCost.toLocaleString()}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Platform Fee (8%)</p><p className="text-[#BE01FF] text-sm font-bold">${fleet.platformFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Total w/ Fee</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-sm font-bold">${fleet.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
                   </div>
                 </div>
               )}
@@ -1883,7 +1883,7 @@ export default function LoadCreationWizard() {
               {/* ── Fleet Summary (multi-load) ── */}
               {fleet && fleet.totalLoads > 1 && (
                 <div className="rounded-2xl border border-[#1473FF]/30 bg-gradient-to-r from-[#1473FF]/5 to-[#BE01FF]/5 overflow-hidden">
-                  <div className="px-5 py-3 bg-white/[0.03] border-b border-[#1473FF]/20 flex items-center gap-2">
+                  <div className="px-5 py-3 bg-slate-800/60 border-b border-[#1473FF]/20 flex items-center gap-2">
                     <Calculator className="w-4 h-4 text-[#1473FF]" />
                     <span className="text-sm font-semibold text-white">Fleet Summary</span>
                     <Badge variant="outline" className="text-[10px] border-[#BE01FF]/30 text-[#BE01FF] ml-auto">{fleet.totalLoads} loads</Badge>
@@ -1926,7 +1926,7 @@ export default function LoadCreationWizard() {
               {/* ── Compartment Breakdown (multi-comp tankers) ── */}
               {(formData.compartments || 1) > 1 && formData.compartmentProducts?.length > 0 && (
                 <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-500/5 to-purple-500/5 overflow-hidden">
-                  <div className="px-5 py-3 bg-white/[0.03] border-b border-blue-500/15 flex items-center gap-2">
+                  <div className="px-5 py-3 bg-slate-800/60 border-b border-blue-500/15 flex items-center gap-2">
                     <Droplets className="w-4 h-4 text-blue-400" />
                     <span className="text-sm font-semibold text-white">Compartment Breakdown</span>
                     <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-400 ml-auto">{formData.compartments} comp.</Badge>
@@ -1961,7 +1961,7 @@ export default function LoadCreationWizard() {
               {/* ── SPECTRA-MATCH Parameters ── */}
               {(formData.apiGravity || formData.bsw || formData.sulfurContent || formData.flashPoint) && (
                 <div className="rounded-2xl border border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-cyan-500/5 overflow-hidden">
-                  <div className="px-5 py-3 bg-white/[0.03] border-b border-purple-500/15 flex items-center gap-2">
+                  <div className="px-5 py-3 bg-slate-800/60 border-b border-purple-500/15 flex items-center gap-2">
                     <EsangIcon className="w-4 h-4 text-purple-400" />
                     <span className="text-sm font-semibold text-white">SPECTRA-MATCH Parameters</span>
                   </div>
@@ -1984,7 +1984,7 @@ export default function LoadCreationWizard() {
       </Card>
 
       <div className="flex items-center justify-between">
-        <Button variant="outline" className="bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => setStep(step - 1)} disabled={step === 0}>
+        <Button variant="outline" className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-700 rounded-lg" onClick={() => setStep(step - 1)} disabled={step === 0}>
           <ArrowLeft className="w-4 h-4 mr-2" />Back
         </Button>
         {step < STEPS.length - 1 ? (

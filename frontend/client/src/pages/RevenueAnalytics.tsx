@@ -42,7 +42,7 @@ export default function RevenueAnalytics() {
         </div>
         <div className="flex items-center gap-3">
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
+            <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -52,7 +52,7 @@ export default function RevenueAnalytics() {
               <SelectItem value="year">This Year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
+          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
             <Download className="w-4 h-4 mr-2" />Export
           </Button>
         </div>
@@ -76,7 +76,7 @@ export default function RevenueAnalytics() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -92,7 +92,7 @@ export default function RevenueAnalytics() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -113,7 +113,7 @@ export default function RevenueAnalytics() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -131,7 +131,7 @@ export default function RevenueAnalytics() {
       </div>
 
       {/* Revenue Goal */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Target className="w-5 h-5 text-cyan-400" />
@@ -165,7 +165,7 @@ export default function RevenueAnalytics() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue by Category */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Revenue by Category</CardTitle>
           </CardHeader>
@@ -190,7 +190,7 @@ export default function RevenueAnalytics() {
         </Card>
 
         {/* Top Revenue Sources */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Top Revenue Sources</CardTitle>
           </CardHeader>
@@ -220,7 +220,7 @@ export default function RevenueAnalytics() {
       </div>
 
       {/* Monthly Trends */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg">Monthly Revenue Trend</CardTitle>
         </CardHeader>

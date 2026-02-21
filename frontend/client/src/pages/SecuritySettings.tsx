@@ -63,7 +63,7 @@ export default function SecuritySettings() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Security Options */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Lock className="w-5 h-5 text-cyan-400" />
@@ -85,7 +85,7 @@ export default function SecuritySettings() {
                   </div>
                   <div className="flex items-center gap-2">
                     {settings?.twoFactorEnabled ? <Badge className="bg-green-500/20 text-green-400 border-0">Enabled</Badge> : <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Disabled</Badge>}
-                    <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => setLocation("/two-factor-setup")}>
+                    <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation("/two-factor-setup")}>
                       Configure
                     </Button>
                   </div>
@@ -99,7 +99,7 @@ export default function SecuritySettings() {
                       <p className="text-xs text-slate-500">Last changed: {settings?.passwordLastChanged}</p>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => setLocation("/change-password")}>
+                  <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation("/change-password")}>
                     Change
                   </Button>
                 </div>
@@ -131,7 +131,7 @@ export default function SecuritySettings() {
         </Card>
 
         {/* Recent Security Alerts */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-yellow-400" />
@@ -147,7 +147,7 @@ export default function SecuritySettings() {
                 <p className="text-slate-400">No security alerts</p>
               </div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {(alertsQuery.data as any)?.map((alert: any) => (
                   <div key={alert.id} className={cn("p-4", alert.severity === "high" && "bg-red-500/5 border-l-2 border-red-500")}>
                     <div className="flex items-center justify-between mb-1">

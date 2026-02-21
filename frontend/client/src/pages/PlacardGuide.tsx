@@ -64,7 +64,7 @@ export default function PlacardGuide() {
     );
   }, [searchTerm]);
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -81,7 +81,7 @@ export default function PlacardGuide() {
       </div>
 
       {/* Search */}
-      <div className={cn("relative rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-white/[0.03] border-white/[0.06]")}>
+      <div className={cn("relative rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
         <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={searchTerm}
@@ -138,7 +138,7 @@ export default function PlacardGuide() {
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {p.examples.map((ex) => (
-                          <Badge key={ex} className={cn("text-[10px] border", isLight ? "bg-slate-100 text-slate-600 border-slate-200" : "bg-white/[0.04] text-slate-300 border-white/[0.06]")}>
+                          <Badge key={ex} className={cn("text-[10px] border", isLight ? "bg-slate-100 text-slate-600 border-slate-200" : "bg-slate-700/50 text-slate-300 border-slate-600/50")}>
                             {ex}
                           </Badge>
                         ))}

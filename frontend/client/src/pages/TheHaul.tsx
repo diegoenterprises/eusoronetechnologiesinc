@@ -48,7 +48,7 @@ export default function TheHaul() {
   const [chatInput, setChatInput] = useState("");
   const [showRules, setShowRules] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const cc = cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]");
+  const cc = cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50");
 
   const profileQ = (trpc as any).gamification?.getProfile?.useQuery?.({ userId: undefined }) || { data: null, isLoading: false };
   const missionsQ = (trpc as any).gamification?.getMissions?.useQuery?.({}) || { data: null, isLoading: false };
@@ -145,7 +145,7 @@ export default function TheHaul() {
         <Button
           variant="outline"
           size="sm"
-          className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "border-white/[0.06] hover:bg-white/[0.06]")}
+          className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-600/50 hover:bg-slate-700")}
           disabled={aiGenLoading || refreshMut.isPending}
           onClick={async () => {
             setAiGenLoading(true);
@@ -180,11 +180,11 @@ export default function TheHaul() {
           {aiGenLoading ? "Generating..." : "AI Missions"}
         </Button>
         {profile && (
-          <div className={cn("flex items-center gap-4 px-4 py-2 rounded-xl", isLight ? "bg-slate-50 border border-slate-200" : "bg-white/[0.02] border border-white/[0.06]")}>
+          <div className={cn("flex items-center gap-4 px-4 py-2 rounded-xl", isLight ? "bg-slate-50 border border-slate-200" : "bg-slate-800/50 border border-slate-700/50")}>
             <div className="text-center"><p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Lv.{profile.level}</p><p className="text-[10px] text-slate-400">Level</p></div>
-            <div className="w-px h-8 bg-white/[0.04]" />
+            <div className="w-px h-8 bg-slate-700/50" />
             <div className="text-center"><p className="text-lg font-bold text-yellow-400">{(profile.totalPoints || 0).toLocaleString()}</p><p className="text-[10px] text-slate-400">XP</p></div>
-            <div className="w-px h-8 bg-white/[0.04]" />
+            <div className="w-px h-8 bg-slate-700/50" />
             <div className="text-center"><p className="text-lg font-bold text-cyan-400">#{profile.rank || "—"}</p><p className="text-[10px] text-slate-400">Rank</p></div>
           </div>
         )}
@@ -192,7 +192,7 @@ export default function TheHaul() {
 
       {/* XP Bar */}
       {profile && (
-        <div className={cn("rounded-xl p-4", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border border-white/[0.06]")}>
+        <div className={cn("rounded-xl p-4", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border border-slate-700/50")}>
           <div className="flex items-center justify-between mb-2">
             <span className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-300")}>Level {profile.level} Progress</span>
             <span className="text-xs text-slate-400">{profile.currentXp || 0} / {profile.xpToNextLevel || 1000} XP</span>
@@ -203,7 +203,7 @@ export default function TheHaul() {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={cn("rounded-xl p-1", isLight ? "bg-slate-100" : "bg-white/[0.02]")}>
+        <TabsList className={cn("rounded-xl p-1", isLight ? "bg-slate-100" : "bg-slate-800/50")}>
           <TabsTrigger value="lobby" className="rounded-lg text-sm gap-1.5"><MessageCircle className="w-4 h-4" /> Lobby</TabsTrigger>
           <TabsTrigger value="missions" className="rounded-lg text-sm gap-1.5"><Target className="w-4 h-4" /> Missions</TabsTrigger>
           <TabsTrigger value="rewards" className="rounded-lg text-sm gap-1.5"><Gift className="w-4 h-4" /> Rewards</TabsTrigger>
@@ -245,8 +245,8 @@ export default function TheHaul() {
                 ))}
                 <div ref={chatEndRef} />
               </div>
-              <div className={cn("p-3 border-t flex gap-2", isLight ? "border-slate-200 bg-white" : "border-white/[0.06]")}>
-                <Input value={chatInput} onChange={(e: any) => setChatInput(e.target.value)} onKeyDown={(e: any) => e.key === "Enter" && sendMsg()} placeholder="Type a message... (keep it professional)" maxLength={500} className={cn("rounded-lg flex-1", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/[0.06]")} />
+              <div className={cn("p-3 border-t flex gap-2", isLight ? "border-slate-200 bg-white" : "border-slate-700/50")}>
+                <Input value={chatInput} onChange={(e: any) => setChatInput(e.target.value)} onKeyDown={(e: any) => e.key === "Enter" && sendMsg()} placeholder="Type a message... (keep it professional)" maxLength={500} className={cn("rounded-lg flex-1", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/50")} />
                 <Button onClick={sendMsg} disabled={!chatInput.trim() || postMut.isPending} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 rounded-lg px-4"><Send className="w-4 h-4" /></Button>
               </div>
             </CardContent>
@@ -258,7 +258,7 @@ export default function TheHaul() {
           {activeM.length > 0 && (
             <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><Zap className="w-5 h-5 text-yellow-400" />Active Missions</CardTitle></CardHeader>
               <CardContent className="space-y-3">{activeM.map((m: any) => { const pct = m.targetValue > 0 ? (m.currentProgress / m.targetValue) * 100 : 0; return (
-                <div key={m.id} className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-white/[0.06]")}>
+                <div key={m.id} className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-slate-700/50")}>
                   <div className="flex items-start justify-between mb-2"><div><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{m.name}</p><p className="text-xs text-slate-400 mt-0.5">{m.description}</p></div><div className="text-right"><p className="text-sm font-bold text-yellow-400">+{m.xpReward} XP</p><Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]">{m.type}</Badge></div></div>
                   <div className="flex items-center gap-3"><Progress value={pct} className="flex-1 h-2" /><span className="text-xs text-slate-400">{Math.round(pct)}%</span></div>
                   <div className="flex items-center gap-2 mt-2">
@@ -271,7 +271,7 @@ export default function TheHaul() {
             <CardContent>{missionsQ.isLoading ? <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
               : allAvail.length === 0 ? <div className="text-center py-8"><Target className="w-10 h-10 text-slate-500 mx-auto mb-2" /><p className="text-slate-400">No missions available</p></div>
               : <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{allAvail.map((m: any, i: number) => (
-                <div key={m.id || i} className={cn("p-4 rounded-xl border relative", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-white/[0.06]")}>
+                <div key={m.id || i} className={cn("p-4 rounded-xl border relative", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-slate-700/50")}>
                   {m.source === "esang_ai" && <div className="absolute top-0 right-0 px-2 py-0.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-[9px] text-white font-medium rounded-bl-lg">AI</div>}
                   <p className={cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white")}>{m.name}</p>
                   <p className="text-[11px] text-slate-400 mt-1">{m.description}</p>
@@ -298,7 +298,7 @@ export default function TheHaul() {
           <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><Gift className="w-5 h-5 text-purple-400" />Rewards Catalog</CardTitle></CardHeader>
             <CardContent>{!rewards ? <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
               : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">{(rewards.rewards || []).map((r: any) => (
-                <div key={r.id} className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-white/[0.06]")}>
+                <div key={r.id} className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-slate-700/50")}>
                   <div className="flex items-start justify-between"><div><p className={cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white")}>{r.name}</p><p className="text-[11px] text-slate-400 mt-0.5">{r.description}</p></div><Star className="w-4 h-4 text-yellow-400 flex-shrink-0" /></div>
                   <div className="flex items-center justify-between mt-3"><Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]">{r.category}</Badge><span className="text-sm font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{r.pointsCost?.toLocaleString()} pts</span></div>
                 </div>))}</div>}</CardContent></Card>
@@ -306,10 +306,10 @@ export default function TheHaul() {
 
         {/* LEADERBOARD */}
         <TabsContent value="leaderboard" className="space-y-4 mt-4">
-          <Card className={cc}><CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><Trophy className="w-5 h-5 text-yellow-400" />{lbScope === "own" ? `${(leaderboardQ.data?.role || "DRIVER").replace(/_/g, " ")} Leaderboard` : "Platform Leaderboard"}</CardTitle><div className="flex gap-1">{(["own", "all"] as const).map(s => (<button key={s} onClick={() => setLbScope(s)} className={cn("px-3 py-1 rounded-lg text-xs font-medium transition-all", lbScope === s ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-white/[0.04] text-slate-400 hover:bg-slate-600/50")}>{s === "own" ? "My Role" : "All Roles"}</button>))}</div></div></CardHeader>
+          <Card className={cc}><CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><Trophy className="w-5 h-5 text-yellow-400" />{lbScope === "own" ? `${(leaderboardQ.data?.role || "DRIVER").replace(/_/g, " ")} Leaderboard` : "Platform Leaderboard"}</CardTitle><div className="flex gap-1">{(["own", "all"] as const).map(s => (<button key={s} onClick={() => setLbScope(s)} className={cn("px-3 py-1 rounded-lg text-xs font-medium transition-all", lbScope === s ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-700/50 text-slate-400 hover:bg-slate-600/50")}>{s === "own" ? "My Role" : "All Roles"}</button>))}</div></div></CardHeader>
             <CardContent>
               {profile ? (
-                <div className={cn("p-4 rounded-xl border mb-4", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-white/[0.06]")}>
+                <div className={cn("p-4 rounded-xl border mb-4", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-slate-700/50")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3"><Crown className="w-6 h-6 text-yellow-400" /><div><p className={cn("font-bold", isLight ? "text-slate-800" : "text-white")}>{profile.name}</p><p className="text-xs text-slate-400">Your Position</p></div></div>
                     <div className="flex items-center gap-6">
@@ -323,7 +323,7 @@ export default function TheHaul() {
               {leaderboardQ.isLoading ? <div className="space-y-3">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
               : (leaderboardQ.data?.leaders || []).length === 0 ? <div className="text-center py-8"><Users className="w-10 h-10 text-slate-500 mx-auto mb-2" /><p className="text-slate-400 font-medium">Leaderboard updates weekly</p><p className="text-xs text-slate-500 mt-1">Complete missions and earn XP to climb the ranks</p></div>
               : <div className="space-y-2">{(leaderboardQ.data?.leaders || []).map((l: any) => (
-                <div key={l.userId} className={cn("flex items-center gap-3 p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-white/[0.06]")}>
+                <div key={l.userId} className={cn("flex items-center gap-3 p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-slate-700/50")}>
                   <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm", l.rank === 1 ? "bg-yellow-500/20 text-yellow-400" : l.rank === 2 ? "bg-slate-300/20 text-slate-300" : l.rank === 3 ? "bg-orange-500/20 text-orange-400" : "bg-slate-500/10 text-slate-400")}>{l.rank <= 3 ? ["1st","2nd","3rd"][l.rank-1] : `#${l.rank}`}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2"><p className={cn("font-medium text-sm truncate", isLight ? "text-slate-800" : "text-white")}>{l.name}</p><Badge className={cn("border-0 text-[9px] px-1.5 py-0", ROLE_BG[l.role] || "bg-slate-500/20 text-slate-400")}>{l.role}</Badge></div>

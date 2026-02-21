@@ -61,7 +61,7 @@ export default function NRCReport() {
 
   const allChecked = CALL_CHECKLIST.every((item) => checkedItems.includes(item.id));
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -115,7 +115,7 @@ export default function NRCReport() {
           {NRC_TRIGGERS.map((trigger, i) => (
             <div key={i} className={cn(
               "flex items-start gap-3 p-3 rounded-xl border",
-              isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
+              isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
             )}>
               <div className="w-6 h-6 rounded-md bg-red-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <span className="text-[10px] font-bold text-red-500">{i + 1}</span>
@@ -168,7 +168,7 @@ export default function NRCReport() {
                   "w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left",
                   isChecked
                     ? isLight ? "bg-green-50 border-green-200" : "bg-green-500/5 border-green-500/20"
-                    : isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
+                    : isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
                 )}
               >
                 <div className={cn(
@@ -199,7 +199,7 @@ export default function NRCReport() {
                   ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20"
                   : isLight
                     ? "bg-slate-100 text-slate-400 pointer-events-none"
-                    : "bg-white/[0.04] text-slate-500 pointer-events-none"
+                    : "bg-slate-700/50 text-slate-500 pointer-events-none"
               )}
             >
               <Phone className="w-5 h-5" />
@@ -238,7 +238,7 @@ export default function NRCReport() {
 
           <div className={cn(
             "flex items-start gap-4 p-4 rounded-xl border",
-            isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
+            isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
           )}>
             <div className="p-2.5 rounded-lg bg-blue-500/15 flex-shrink-0">
               <Shield className="w-5 h-5 text-blue-500" />

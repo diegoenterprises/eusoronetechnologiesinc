@@ -74,7 +74,7 @@ export default function PreTripChecklist() {
       ) : (
         <>
           {(checklistQuery.data as any)?.categories?.map((category: any) => (
-            <Card key={category.id} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+            <Card key={category.id} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardHeader className="pb-3">
                 <CardTitle className="text-white text-lg flex items-center gap-2">
                   <ClipboardCheck className="w-5 h-5 text-cyan-400" />
@@ -83,7 +83,7 @@ export default function PreTripChecklist() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {category.items.map((item: any) => (
-                  <div key={item.id} className={cn("p-3 rounded-lg border flex items-center justify-between", defects.includes(item.id) ? "bg-red-500/10 border-red-500/30" : checkedItems[item.id] ? "bg-green-500/10 border-green-500/30" : "bg-slate-700/30 border-white/[0.06]")}>
+                  <div key={item.id} className={cn("p-3 rounded-lg border flex items-center justify-between", defects.includes(item.id) ? "bg-red-500/10 border-red-500/30" : checkedItems[item.id] ? "bg-green-500/10 border-green-500/30" : "bg-slate-700/30 border-slate-600/50")}>
                     <div className="flex items-center gap-3">
                       <Checkbox checked={checkedItems[item.id] || false} onCheckedChange={() => toggleItem(item.id)} className="border-slate-500" />
                       <div>
@@ -94,7 +94,7 @@ export default function PreTripChecklist() {
                     <div className="flex items-center gap-2">
                       {checkedItems[item.id] && !defects.includes(item.id) && <CheckCircle className="w-5 h-5 text-green-400" />}
                       {defects.includes(item.id) && <AlertTriangle className="w-5 h-5 text-red-400" />}
-                      <Button size="sm" variant={defects.includes(item.id) ? "destructive" : "outline"} className={cn("rounded-lg text-xs", !defects.includes(item.id) && "bg-white/[0.04] border-white/[0.06]")} onClick={() => toggleItem(item.id, true)}>
+                      <Button size="sm" variant={defects.includes(item.id) ? "destructive" : "outline"} className={cn("rounded-lg text-xs", !defects.includes(item.id) && "bg-slate-700/50 border-slate-600/50")} onClick={() => toggleItem(item.id, true)}>
                         {defects.includes(item.id) ? "Defect Noted" : "Report Defect"}
                       </Button>
                     </div>
@@ -123,15 +123,15 @@ export default function PreTripChecklist() {
             </Card>
           )}
 
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3"><CardTitle className="text-white text-lg">Notes</CardTitle></CardHeader>
             <CardContent>
-              <Textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} placeholder="Add any additional notes..." className="bg-white/[0.04] border-white/[0.06] rounded-lg min-h-[100px]" />
+              <Textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} placeholder="Add any additional notes..." className="bg-slate-700/50 border-slate-600/50 rounded-lg min-h-[100px]" />
             </CardContent>
           </Card>
 
           <div className="flex items-center justify-between">
-            <Button variant="outline" className="bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
+            <Button variant="outline" className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-700 rounded-lg">
               <Camera className="w-4 h-4 mr-2" />Add Photos
             </Button>
             <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={handleSubmit} disabled={!allChecked || submitMutation.isPending}>

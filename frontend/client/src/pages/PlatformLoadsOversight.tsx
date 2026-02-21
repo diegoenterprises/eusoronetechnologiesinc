@@ -72,7 +72,7 @@ export default function PlatformLoadsOversight() {
           <p className="text-slate-400 text-sm mt-1">All loads across the platform — every status, every party</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-white/[0.04] rounded-lg" onClick={() => loadsQuery.refetch()}>
+          <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-700/50 rounded-lg" onClick={() => loadsQuery.refetch()}>
             <RefreshCw className="w-4 h-4 mr-2" />Refresh
           </Button>
         </div>
@@ -82,14 +82,14 @@ export default function PlatformLoadsOversight() {
       <div className="flex gap-2 flex-wrap">
         {FILTER_STATUSES.map(f => (
           <button key={f.key} onClick={() => { setStatusFilter(f.key); setPage(0); }}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${statusFilter === f.key ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : "bg-white/[0.03] text-slate-400 border border-white/[0.06] hover:bg-white/[0.04]"}`}>
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${statusFilter === f.key ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : "bg-slate-800/60 text-slate-400 border border-slate-700/50 hover:bg-slate-700/50"}`}>
             {f.label}
           </button>
         ))}
       </div>
 
       {/* LOADS TABLE */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {loading ? (
             <div className="p-6 space-y-4">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
@@ -119,7 +119,7 @@ export default function PlatformLoadsOversight() {
                 const destCity = l.destination?.city || (l.deliveryLocation as any)?.city || "";
                 const destState = l.destination?.state || (l.deliveryLocation as any)?.state || "";
                 return (
-                  <div key={l.id} className="px-4 py-3 grid grid-cols-12 gap-3 items-center hover:bg-white/[0.04] transition-colors">
+                  <div key={l.id} className="px-4 py-3 grid grid-cols-12 gap-3 items-center hover:bg-slate-700/20 transition-colors">
                     <div className="col-span-1">
                       <span className="text-white font-mono text-sm">#{l.loadNumber || l.id}</span>
                     </div>

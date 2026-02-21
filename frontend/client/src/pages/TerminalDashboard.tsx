@@ -106,7 +106,7 @@ export default function TerminalDashboard() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -122,7 +122,7 @@ export default function TerminalDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -138,7 +138,7 @@ export default function TerminalDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -154,7 +154,7 @@ export default function TerminalDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -170,7 +170,7 @@ export default function TerminalDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-orange-500/20">
@@ -188,7 +188,7 @@ export default function TerminalDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-1">
+        <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-1">
           <TabsTrigger value="overview" className="data-[state=active]:bg-slate-700 rounded-md">Overview</TabsTrigger>
           <TabsTrigger value="racks" className="data-[state=active]:bg-slate-700 rounded-md">Racks</TabsTrigger>
           <TabsTrigger value="inventory" className="data-[state=active]:bg-slate-700 rounded-md">Inventory</TabsTrigger>
@@ -198,7 +198,7 @@ export default function TerminalDashboard() {
         <TabsContent value="overview" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Rack Status */}
-            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardHeader className="pb-3"><CardTitle className="text-white text-lg">Rack Status</CardTitle></CardHeader>
               <CardContent>
                 {racksQuery.isLoading ? (
@@ -220,7 +220,7 @@ export default function TerminalDashboard() {
             </Card>
 
             {/* Tank Levels */}
-            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardHeader className="pb-3"><CardTitle className="text-white text-lg">Tank Levels</CardTitle></CardHeader>
               <CardContent>
                 {tanksQuery.isLoading ? (
@@ -321,14 +321,14 @@ export default function TerminalDashboard() {
         </TabsContent>
 
         <TabsContent value="appointments" className="mt-6">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3"><CardTitle className="text-white text-lg">Today's Appointments</CardTitle></CardHeader>
             <CardContent>
               {appointmentsQuery.isLoading ? (
                 <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
               ) : (appointmentsQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="p-4 rounded-full bg-white/[0.04] w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <Calendar className="w-8 h-8 text-slate-500" />
                   </div>
                   <p className="text-slate-400">No appointments today</p>
@@ -338,7 +338,7 @@ export default function TerminalDashboard() {
                   {(appointmentsQuery.data as any)?.map((appt: any) => (
                     <div key={appt.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30">
                       <div className="flex items-center gap-4">
-                        <div className="text-center p-3 rounded-xl bg-white/[0.04] min-w-[60px]">
+                        <div className="text-center p-3 rounded-xl bg-slate-700/50 min-w-[60px]">
                           <p className="text-white font-bold">{appt.time}</p>
                         </div>
                         <div>

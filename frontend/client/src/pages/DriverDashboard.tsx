@@ -51,17 +51,17 @@ export default function DriverDashboard() {
               {hos.violation && <Badge className="bg-red-500/20 text-red-400 border-0"><AlertTriangle className="w-3 h-3 mr-1" />HOS Violation</Badge>}
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <div className="p-3 rounded-lg bg-white/[0.02]">
+              <div className="p-3 rounded-lg bg-slate-800/50">
                 <p className="text-xs text-slate-500 mb-1">Driving</p>
                 <div className="flex items-center justify-between mb-1"><span className="text-white font-bold">{hos.drivingUsed}h</span><span className="text-xs text-slate-500">/ 11h</span></div>
                 <Progress value={(hos.drivingUsed / 11) * 100} className="h-2" />
               </div>
-              <div className="p-3 rounded-lg bg-white/[0.02]">
+              <div className="p-3 rounded-lg bg-slate-800/50">
                 <p className="text-xs text-slate-500 mb-1">On-Duty</p>
                 <div className="flex items-center justify-between mb-1"><span className="text-white font-bold">{hos.onDutyUsed}h</span><span className="text-xs text-slate-500">/ 14h</span></div>
                 <Progress value={(hos.onDutyUsed / 14) * 100} className="h-2" />
               </div>
-              <div className="p-3 rounded-lg bg-white/[0.02]">
+              <div className="p-3 rounded-lg bg-slate-800/50">
                 <p className="text-xs text-slate-500 mb-1">70hr Cycle</p>
                 <div className="flex items-center justify-between mb-1"><span className="text-white font-bold">{hos.cycleUsed}h</span><span className="text-xs text-slate-500">/ 70h</span></div>
                 <Progress value={(hos.cycleUsed / 70) * 100} className="h-2" />
@@ -83,11 +83,11 @@ export default function DriverDashboard() {
               <Badge className={cn("border-0", assignment.status === "in_transit" ? "bg-cyan-500/20 text-cyan-400" : "bg-yellow-500/20 text-yellow-400")}>{assignment.status?.replace("_", " ")}</Badge>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="p-3 rounded-lg bg-white/[0.02]">
+              <div className="p-3 rounded-lg bg-slate-800/50">
                 <div className="flex items-center gap-2 text-green-400 mb-1"><MapPin className="w-4 h-4" /><span className="text-xs">Origin</span></div>
                 <p className="text-white font-medium">{typeof assignment.origin === "object" ? `${assignment.origin.name}, ${assignment.origin.city}, ${assignment.origin.state}` : assignment.origin}</p>
               </div>
-              <div className="p-3 rounded-lg bg-white/[0.02]">
+              <div className="p-3 rounded-lg bg-slate-800/50">
                 <div className="flex items-center gap-2 text-red-400 mb-1"><MapPin className="w-4 h-4" /><span className="text-xs">Destination</span></div>
                 <p className="text-white font-medium">{typeof assignment.destination === "object" ? `${assignment.destination.name}, ${assignment.destination.city}, ${assignment.destination.state}` : assignment.destination}</p>
               </div>
@@ -96,14 +96,14 @@ export default function DriverDashboard() {
               <Button className="flex-1 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
                 <Navigation className="w-4 h-4 mr-2" />Navigate
               </Button>
-              <Button variant="outline" className="bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
+              <Button variant="outline" className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-700 rounded-lg">
                 <Phone className="w-4 h-4 mr-2" />Dispatch
               </Button>
             </div>
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-8 text-center">
             <Truck className="w-12 h-12 text-slate-500 mx-auto mb-4" />
             <p className="text-white font-bold text-lg mb-2">No Active Assignment</p>
@@ -113,7 +113,7 @@ export default function DriverDashboard() {
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><DollarSign className="w-6 h-6 text-green-400" /></div>
@@ -121,7 +121,7 @@ export default function DriverDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><MapPin className="w-6 h-6 text-purple-400" /></div>
@@ -129,7 +129,7 @@ export default function DriverDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Truck className="w-6 h-6 text-cyan-400" /></div>
@@ -137,7 +137,7 @@ export default function DriverDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><CheckCircle className="w-6 h-6 text-yellow-400" /></div>
@@ -148,10 +148,10 @@ export default function DriverDashboard() {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <Button variant="outline" className="bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06] rounded-lg h-16">
+        <Button variant="outline" className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-700 rounded-lg h-16">
           <ClipboardCheck className="w-5 h-5 mr-2" />Pre-Trip Inspection
         </Button>
-        <Button variant="outline" className="bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06] rounded-lg h-16">
+        <Button variant="outline" className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-700 rounded-lg h-16">
           <Truck className="w-5 h-5 mr-2" />DVIR
         </Button>
       </div>

@@ -130,7 +130,7 @@ export default function Erg() {
             value={searchTerm}
             onChange={(e: any) => setSearchTerm(e.target.value)}
             placeholder="Search UN number (e.g. 1203), guide (e.g. 128), or material name..."
-            className="pl-9 bg-white/[0.04] border-slate-600 text-white"
+            className="pl-9 bg-slate-700/50 border-slate-600 text-white"
           />
         </div>
         <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={ergLookupMutation.isPending}>
@@ -141,13 +141,13 @@ export default function Erg() {
 
       {/* Live Search Results */}
       {searchTerm.length >= 2 && searchQuery.data && (searchQuery.data as any[]).length > 0 && !ergResult && (
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-0">
-            <div className="divide-y divide-white/[0.04] max-h-64 overflow-y-auto">
+            <div className="divide-y divide-slate-700/50 max-h-64 overflow-y-auto">
               {(searchQuery.data as any[]).slice(0, 10).map((item: any) => (
                 <div
                   key={item.unNumber}
-                  className="p-3 hover:bg-white/[0.06]/30 cursor-pointer flex items-center justify-between"
+                  className="p-3 hover:bg-slate-700/30 cursor-pointer flex items-center justify-between"
                   onClick={() => {
                     ergLookupMutation.mutate({ unNumber: item.unNumber.replace("UN", "") });
                   }}
@@ -171,7 +171,7 @@ export default function Erg() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-white/[0.02] border border-slate-700">
+        <TabsList className="bg-slate-800/50 border border-slate-700">
           <TabsTrigger value="lookup" className="flex items-center gap-1">
             <Database className="w-3.5 h-3.5" />
             UN Lookup
@@ -195,7 +195,7 @@ export default function Erg() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               {ergLookupMutation.isPending ? (
-                <Card className="bg-white/[0.02] border-slate-700">
+                <Card className="bg-slate-800/50 border-slate-700">
                   <CardContent className="p-6 space-y-4">
                     <Skeleton className="h-8 w-3/4" />
                     <Skeleton className="h-4 w-1/2" />
@@ -207,7 +207,7 @@ export default function Erg() {
                 <div className="space-y-4">
                   {/* Material Info */}
                   {ergResult.material && (
-                    <Card className="bg-white/[0.02] border-slate-700">
+                    <Card className="bg-slate-800/50 border-slate-700">
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div>
@@ -233,7 +233,7 @@ export default function Erg() {
                   {/* Guide Details */}
                   {ergResult.guide && (
                     <>
-                      <Card className="bg-white/[0.02] border-slate-700">
+                      <Card className="bg-slate-800/50 border-slate-700">
                         <CardHeader className="pb-2">
                           <CardTitle className="text-sm text-white flex items-center gap-2">
                             <MapPin className="w-4 h-4 text-blue-400" />
@@ -287,7 +287,7 @@ export default function Erg() {
                       )}
 
                       {/* Hazards */}
-                      <Card className="bg-white/[0.02] border-slate-700">
+                      <Card className="bg-slate-800/50 border-slate-700">
                         <CardHeader className="pb-2">
                           <CardTitle className="text-sm text-red-400 flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4" />
@@ -311,7 +311,7 @@ export default function Erg() {
                       </Card>
 
                       {/* Emergency Response */}
-                      <Card className="bg-white/[0.02] border-slate-700">
+                      <Card className="bg-slate-800/50 border-slate-700">
                         <CardHeader className="pb-2">
                           <CardTitle className="text-sm text-green-400 flex items-center gap-2">
                             <Shield className="w-4 h-4" />
@@ -355,7 +355,7 @@ export default function Erg() {
                   )}
                 </div>
               ) : ergResult && !ergResult.found ? (
-                <Card className="bg-white/[0.02] border-slate-700">
+                <Card className="bg-slate-800/50 border-slate-700">
                   <CardContent className="p-8 text-center">
                     <AlertTriangle className="w-12 h-12 text-yellow-400 mx-auto mb-3" />
                     <p className="text-white font-medium">Material Not Found</p>
@@ -367,7 +367,7 @@ export default function Erg() {
                   </CardContent>
                 </Card>
               ) : (
-                <Card className="bg-white/[0.02] border-slate-700">
+                <Card className="bg-slate-800/50 border-slate-700">
                   <CardContent className="p-12 text-center">
                     <Search className="w-12 h-12 text-slate-500 mx-auto mb-3" />
                     <p className="text-white font-medium">Search for a hazardous material</p>
@@ -386,12 +386,12 @@ export default function Erg() {
 
             {/* Sidebar - Recent & Quick Access */}
             <div className="space-y-4">
-              <Card className="bg-white/[0.02] border-slate-700">
+              <Card className="bg-slate-800/50 border-slate-700">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm text-white">Common Petroleum Products</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <div className="divide-y divide-white/[0.04]">
+                  <div className="divide-y divide-slate-700/50">
                     {[
                       { un: "1267", name: "Crude Oil", guide: "128" },
                       { un: "1203", name: "Gasoline", guide: "128" },
@@ -404,7 +404,7 @@ export default function Erg() {
                       { un: "1230", name: "Methanol", guide: "131" },
                       { un: "3494", name: "Sour Crude", guide: "131" },
                     ].map(item => (
-                      <div key={item.un} className="p-3 hover:bg-white/[0.06]/30 cursor-pointer flex items-center justify-between"
+                      <div key={item.un} className="p-3 hover:bg-slate-700/30 cursor-pointer flex items-center justify-between"
                         onClick={() => { setSearchTerm(item.un); ergLookupMutation.mutate({ unNumber: item.un }); }}>
                         <div>
                           <span className="text-orange-400 font-mono text-xs">UN{item.un}</span>
@@ -419,14 +419,14 @@ export default function Erg() {
 
               {/* Recent Lookups */}
               {recentLookupsQuery.data && (
-                <Card className="bg-white/[0.02] border-slate-700">
+                <Card className="bg-slate-800/50 border-slate-700">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm text-white">Recent Lookups</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <div className="divide-y divide-white/[0.04]">
+                    <div className="divide-y divide-slate-700/50">
                       {(recentLookupsQuery.data as any[]).map((item: any, idx: number) => (
-                        <div key={idx} className="p-3 hover:bg-white/[0.06]/30 cursor-pointer"
+                        <div key={idx} className="p-3 hover:bg-slate-700/30 cursor-pointer"
                           onClick={() => { setSearchTerm(item.unNumber.replace("UN", "")); ergLookupMutation.mutate({ unNumber: item.unNumber.replace("UN", "") }); }}>
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-white">{item.product}</span>
@@ -456,9 +456,9 @@ export default function Erg() {
             </div>
 
             {guideQuery.isLoading ? (
-              <Card className="bg-white/[0.02] border-slate-700"><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
+              <Card className="bg-slate-800/50 border-slate-700"><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
             ) : guideQuery.data ? (
-              <Card className="bg-white/[0.02] border-slate-700">
+              <Card className="bg-slate-800/50 border-slate-700">
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="w-14 h-14 rounded-lg flex items-center justify-center text-white font-bold text-xl" style={{ backgroundColor: (guideQuery.data as any).color || "#6B7280" }}>
@@ -544,7 +544,7 @@ export default function Erg() {
                 </CardContent>
               </Card>
             ) : (
-              <Card className="bg-white/[0.02] border-slate-700">
+              <Card className="bg-slate-800/50 border-slate-700">
                 <CardContent className="p-12 text-center">
                   <BookOpen className="w-12 h-12 text-slate-500 mx-auto mb-3" />
                   <p className="text-slate-400">Select a guide number above to view response procedures</p>
@@ -558,7 +558,7 @@ export default function Erg() {
         <TabsContent value="ai" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
-              <Card className="bg-white/[0.02] border-slate-700">
+              <Card className="bg-slate-800/50 border-slate-700">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <EsangIcon className="w-5 h-5 text-blue-400" />
@@ -571,7 +571,7 @@ export default function Erg() {
                       value={aiQuestion}
                       onChange={(e: any) => setAiQuestion(e.target.value)}
                       placeholder="e.g. What are the emergency procedures for a crude oil spill?"
-                      className="bg-white/[0.04] border-slate-600 text-white"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                       onKeyDown={(e: any) => e.key === "Enter" && handleAskAI()}
                     />
                     <Button className="bg-gradient-to-r from-blue-600 to-purple-600" onClick={handleAskAI} disabled={aiChatMutation.isPending}>
@@ -652,7 +652,7 @@ export default function Erg() {
               { name: "SETIQ", phone: "800-002-8800", desc: "Sistema de Emergencias en Transporte", country: "Mexico" },
               { name: "Military Shipments", phone: "703-697-0218", desc: "Incidents involving military materials", country: "USA" },
             ].map(contact => (
-              <Card key={contact.name} className="bg-white/[0.02] border-slate-700">
+              <Card key={contact.name} className="bg-slate-800/50 border-slate-700">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">

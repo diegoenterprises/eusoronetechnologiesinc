@@ -260,7 +260,7 @@ export const HazmatDecalPreview: React.FC<{
   const classInfo = HAZMAT_CLASSES[hazmatClass] || HAZMAT_CLASSES["9"];
 
   return (
-    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+    <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
       <p className="text-slate-400 text-xs mb-3 text-center">Required Placard</p>
       
       <div className="flex items-center justify-center gap-6">

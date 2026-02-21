@@ -43,7 +43,7 @@ export default function SystemSettings() {
         <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
       ) : (
         <div className="grid gap-6">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Security Settings</CardTitle>
             </CardHeader>
@@ -72,7 +72,7 @@ export default function SystemSettings() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2"><Bell className="w-5 h-5 text-purple-400" />Notification Settings</CardTitle>
             </CardHeader>
@@ -101,7 +101,7 @@ export default function SystemSettings() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2"><Database className="w-5 h-5 text-green-400" />Data Settings</CardTitle>
             </CardHeader>
@@ -123,7 +123,7 @@ export default function SystemSettings() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2"><Globe className="w-5 h-5 text-blue-400" />Regional Settings</CardTitle>
             </CardHeader>

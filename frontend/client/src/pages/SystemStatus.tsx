@@ -85,7 +85,7 @@ export default function SystemStatus() {
 
       {/* Uptime Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -101,7 +101,7 @@ export default function SystemStatus() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -117,7 +117,7 @@ export default function SystemStatus() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -133,7 +133,7 @@ export default function SystemStatus() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -151,7 +151,7 @@ export default function SystemStatus() {
       </div>
 
       {/* Services */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Server className="w-5 h-5 text-cyan-400" />
@@ -162,7 +162,7 @@ export default function SystemStatus() {
           {statusQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {status?.services?.map((service: any) => (
                 <div key={service.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -192,7 +192,7 @@ export default function SystemStatus() {
       </Card>
 
       {/* Recent Incidents */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-yellow-400" />
@@ -209,7 +209,7 @@ export default function SystemStatus() {
               <p className="text-sm text-slate-500 mt-1">All systems running smoothly</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {(incidentsQuery.data as any)?.map((incident: any) => (
                 <div key={incident.id} className="p-4">
                   <div className="flex items-start gap-3">

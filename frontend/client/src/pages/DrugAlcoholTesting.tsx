@@ -73,7 +73,7 @@ export default function DrugAlcoholTesting() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -89,7 +89,7 @@ export default function DrugAlcoholTesting() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -105,7 +105,7 @@ export default function DrugAlcoholTesting() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -121,7 +121,7 @@ export default function DrugAlcoholTesting() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -175,10 +175,10 @@ export default function DrugAlcoholTesting() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search by driver name..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search by driver name..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
+          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -192,7 +192,7 @@ export default function DrugAlcoholTesting() {
       </div>
 
       {/* Tests List */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <TestTube className="w-5 h-5 text-cyan-400" />
@@ -208,12 +208,12 @@ export default function DrugAlcoholTesting() {
               <p className="text-slate-400">No test records found</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {(testsQuery.data as any)?.map((test: any) => (
                 <div key={test.id} className={cn("p-4", test.result === "positive" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className={cn("p-3 rounded-xl", test.result === "negative" ? "bg-green-500/20" : test.result === "positive" ? "bg-red-500/20" : "bg-white/[0.04]")}>
+                      <div className={cn("p-3 rounded-xl", test.result === "negative" ? "bg-green-500/20" : test.result === "positive" ? "bg-red-500/20" : "bg-slate-700/50")}>
                         <User className={cn("w-5 h-5", test.result === "negative" ? "text-green-400" : test.result === "positive" ? "text-red-400" : "text-slate-400")} />
                       </div>
                       <div>
@@ -229,7 +229,7 @@ export default function DrugAlcoholTesting() {
                         </div>
                       </div>
                     </div>
-                    <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
+                    <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
                       <FileText className="w-4 h-4 mr-1" />View
                     </Button>
                   </div>

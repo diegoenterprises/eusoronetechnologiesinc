@@ -81,7 +81,7 @@ export default function PreTripInspection() {
       </div>
 
       {/* Vehicle Info */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-4">
           {vehicleQuery.isLoading ? (
             <Skeleton className="h-16 w-full rounded-xl" />
@@ -120,7 +120,7 @@ export default function PreTripInspection() {
 
       {/* Inspection Categories */}
       {INSPECTION_CATEGORIES.map((category: any) => (
-        <Card key={category.id} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card key={category.id} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-white text-lg">{category.name}</CardTitle>
           </CardHeader>
@@ -133,10 +133,10 @@ export default function PreTripInspection() {
                 <div key={itemId} className={cn("p-3 rounded-xl flex items-center justify-between", result === "pass" ? "bg-green-500/10 border border-green-500/20" : result === "fail" ? "bg-red-500/10 border border-red-500/20" : "bg-slate-700/30")}>
                   <span className={cn("font-medium", result === "pass" ? "text-green-400" : result === "fail" ? "text-red-400" : "text-white")}>{item}</span>
                   <div className="flex gap-2">
-                    <Button size="sm" variant={result === "pass" ? "default" : "outline"} className={cn("rounded-lg", result === "pass" ? "bg-green-600 hover:bg-green-700" : "bg-white/[0.04] border-white/[0.06] hover:bg-green-500/20 hover:border-green-500/30")} onClick={() => handleItemResult(itemId, "pass")}>
+                    <Button size="sm" variant={result === "pass" ? "default" : "outline"} className={cn("rounded-lg", result === "pass" ? "bg-green-600 hover:bg-green-700" : "bg-slate-700/50 border-slate-600/50 hover:bg-green-500/20 hover:border-green-500/30")} onClick={() => handleItemResult(itemId, "pass")}>
                       <CheckCircle className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant={result === "fail" ? "default" : "outline"} className={cn("rounded-lg", result === "fail" ? "bg-red-600 hover:bg-red-700" : "bg-white/[0.04] border-white/[0.06] hover:bg-red-500/20 hover:border-red-500/30")} onClick={() => handleItemResult(itemId, "fail")}>
+                    <Button size="sm" variant={result === "fail" ? "default" : "outline"} className={cn("rounded-lg", result === "fail" ? "bg-red-600 hover:bg-red-700" : "bg-slate-700/50 border-slate-600/50 hover:bg-red-500/20 hover:border-red-500/30")} onClick={() => handleItemResult(itemId, "fail")}>
                       <XCircle className="w-4 h-4" />
                     </Button>
                   </div>
@@ -148,13 +148,13 @@ export default function PreTripInspection() {
       ))}
 
       {/* Notes */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-2">
           <CardTitle className="text-white text-lg">Notes / Defects</CardTitle>
         </CardHeader>
         <CardContent>
-          <Textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} placeholder="Describe any defects or issues found..." className="bg-slate-700/30 border-white/[0.06] rounded-xl min-h-[100px]" />
-          <Button variant="outline" className="mt-3 bg-slate-700/30 border-white/[0.06] hover:bg-white/[0.04] rounded-lg">
+          <Textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} placeholder="Describe any defects or issues found..." className="bg-slate-700/30 border-slate-600/50 rounded-xl min-h-[100px]" />
+          <Button variant="outline" className="mt-3 bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-lg">
             <Camera className="w-4 h-4 mr-2" />Add Photo
           </Button>
         </CardContent>

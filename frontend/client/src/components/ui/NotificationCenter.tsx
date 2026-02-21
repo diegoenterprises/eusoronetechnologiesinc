@@ -147,12 +147,12 @@ export function NotificationCenter({
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {filteredNotifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={cn(
-                    "p-4 hover:bg-white/[0.06]/30 transition-colors cursor-pointer",
+                    "p-4 hover:bg-slate-700/30 transition-colors cursor-pointer",
                     !notification.read && "bg-slate-700/20",
                     PRIORITY_STYLES[notification.priority]
                   )}

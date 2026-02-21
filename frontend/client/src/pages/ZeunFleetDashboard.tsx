@@ -129,11 +129,11 @@ export default function ZeunFleetDashboard() {
           <div className="flex flex-wrap gap-4 items-end">
             <div>
               <label className={cn("text-[10px] font-medium uppercase tracking-wider block mb-1.5", L ? "text-slate-400" : "text-slate-500")}>Start Date</label>
-              <Input type="date" value={dateRange.startDate} onChange={(e: any) => setDateRange({ ...dateRange, startDate: e.target.value })} className={cn("rounded-xl text-sm", L ? "" : "bg-white/[0.02] border-white/[0.06]")} />
+              <Input type="date" value={dateRange.startDate} onChange={(e: any) => setDateRange({ ...dateRange, startDate: e.target.value })} className={cn("rounded-xl text-sm", L ? "" : "bg-slate-800/50 border-slate-700/50")} />
             </div>
             <div>
               <label className={cn("text-[10px] font-medium uppercase tracking-wider block mb-1.5", L ? "text-slate-400" : "text-slate-500")}>End Date</label>
-              <Input type="date" value={dateRange.endDate} onChange={(e: any) => setDateRange({ ...dateRange, endDate: e.target.value })} className={cn("rounded-xl text-sm", L ? "" : "bg-white/[0.02] border-white/[0.06]")} />
+              <Input type="date" value={dateRange.endDate} onChange={(e: any) => setDateRange({ ...dateRange, endDate: e.target.value })} className={cn("rounded-xl text-sm", L ? "" : "bg-slate-800/50 border-slate-700/50")} />
             </div>
             <div>
               <label className={cn("text-[10px] font-medium uppercase tracking-wider block mb-1.5", L ? "text-slate-400" : "text-slate-500")}>Status</label>
@@ -195,7 +195,7 @@ export default function ZeunFleetDashboard() {
           ) : openBreakdowns.length > 0 ? (
             <div className="space-y-2">
               {openBreakdowns.map((b: any) => (
-                <div key={b.id} className={cn("p-4 rounded-xl border transition-colors", L ? "bg-slate-50 border-slate-200 hover:bg-slate-100/80" : "bg-white/[0.02] border-slate-700/30 hover:bg-slate-800/70")}>
+                <div key={b.id} className={cn("p-4 rounded-xl border transition-colors", L ? "bg-slate-50 border-slate-200 hover:bg-slate-100/80" : "bg-slate-800/50 border-slate-700/30 hover:bg-slate-800/70")}>
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
@@ -243,7 +243,7 @@ export default function ZeunFleetDashboard() {
           ) : resolvedBreakdowns.length > 0 ? (
             <div className="space-y-2">
               {resolvedBreakdowns.slice(0, 5).map((b: any) => (
-                <div key={b.id} className={cn("flex justify-between items-center p-3.5 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
+                <div key={b.id} className={cn("flex justify-between items-center p-3.5 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                   <div>
                     <p className={cn("font-medium text-sm", L ? "text-slate-800" : "text-white")}>{b.issueCategory.replace(/_/g, " ")}</p>
                     <p className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>{b.driverName || "Unknown Driver"}</p>

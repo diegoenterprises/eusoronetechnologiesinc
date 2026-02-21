@@ -70,8 +70,8 @@ export default function CDLVerification() {
 
   const isLoading = profileQuery.isLoading || certsQuery.isLoading;
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const sc = cn("rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const sc = cn("rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
 
   const handleUpload = () => {
     setUploading(true);
@@ -97,7 +97,7 @@ export default function CDLVerification() {
           <Button
             variant="outline"
             size="sm"
-            className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")}
+            className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
             onClick={() => { profileQuery.refetch?.(); }}
           >
             <RefreshCw className={cn("w-4 h-4", profileQuery.isRefetching && "animate-spin")} />
@@ -118,7 +118,7 @@ export default function CDLVerification() {
           {/* CDL Card — the hero element */}
           <Card className={cn(
             "rounded-2xl border overflow-hidden",
-            isLight ? "bg-white border-slate-200 shadow-lg" : "bg-white/[0.03] border-white/[0.06]"
+            isLight ? "bg-white border-slate-200 shadow-lg" : "bg-slate-800/60 border-slate-700/50"
           )}>
             {/* Gradient accent bar */}
             <div className="h-1.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" />
@@ -131,7 +131,7 @@ export default function CDLVerification() {
                 )}>
                   <div className={cn(
                     "w-16 h-16 rounded-2xl flex items-center justify-center mb-3",
-                    isLight ? "bg-white shadow-sm" : "bg-white/[0.02]"
+                    isLight ? "bg-white shadow-sm" : "bg-slate-800/50"
                   )}>
                     <CreditCard className="w-8 h-8 text-[#1473FF]" />
                   </div>
@@ -201,7 +201,7 @@ export default function CDLVerification() {
               { icon: <Shield className="w-5 h-5 text-green-400" />, bg: "bg-green-500/15", value: endorsements.includes("H") || endorsements.includes("X") ? "Yes" : "No", label: "Hazmat Cleared", color: "text-green-400" },
               { icon: <Truck className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/15", value: `Class ${cdlClass}`, label: "Vehicle Class", color: "text-purple-400" },
             ].map((s) => (
-              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
+              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
@@ -226,7 +226,7 @@ export default function CDLVerification() {
             <CardContent className="space-y-3">
               {endorsements.length === 0 ? (
                 <div className={cn("text-center py-10 rounded-xl", sc)}>
-                  <div className={cn("w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
+                  <div className={cn("w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
                     <Award className="w-7 h-7 text-slate-400" />
                   </div>
                   <p className={cn("font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No endorsements on file</p>
@@ -242,7 +242,7 @@ export default function CDLVerification() {
                     return (
                       <div key={code} className={cn(
                         "flex items-center gap-4 p-4 rounded-xl border transition-colors",
-                        isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
+                        isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
                       )}>
                         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold border", info.color)}>
                           {code}

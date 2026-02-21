@@ -44,7 +44,7 @@ export default function ConnectedApps() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -60,7 +60,7 @@ export default function ConnectedApps() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -76,7 +76,7 @@ export default function ConnectedApps() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -94,7 +94,7 @@ export default function ConnectedApps() {
       </div>
 
       {/* Apps List */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Link2 className="w-5 h-5 text-cyan-400" />
@@ -111,12 +111,12 @@ export default function ConnectedApps() {
               <p className="text-sm text-slate-500 mt-1">Connect apps to extend functionality</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {(appsQuery.data as any)?.map((app: any) => (
                 <div key={app.id} className={cn("p-4", app.status === "expired" && "bg-yellow-500/5 border-l-2 border-yellow-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", app.status === "active" ? "bg-gradient-to-br from-cyan-500/20 to-blue-500/20" : "bg-white/[0.04]")}>
+                      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", app.status === "active" ? "bg-gradient-to-br from-cyan-500/20 to-blue-500/20" : "bg-slate-700/50")}>
                         {app.icon ? <img src={app.icon} alt={app.name} className="w-8 h-8 rounded" /> : <Link2 className="w-6 h-6 text-slate-400" />}
                       </div>
                       <div>
@@ -152,11 +152,11 @@ export default function ConnectedApps() {
 
                   {/* Permissions */}
                   {app.permissions?.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                    <div className="mt-3 pt-3 border-t border-slate-700/50">
                       <p className="text-xs text-slate-500 mb-2">Permissions granted:</p>
                       <div className="flex flex-wrap gap-2">
                         {app.permissions.map((perm: string, idx: number) => (
-                          <Badge key={idx} className="bg-white/[0.04] text-slate-300 border-0 text-xs">{perm}</Badge>
+                          <Badge key={idx} className="bg-slate-700/50 text-slate-300 border-0 text-xs">{perm}</Badge>
                         ))}
                       </div>
                     </div>

@@ -119,7 +119,7 @@ export default function LiveNewsFeed() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -130,7 +130,7 @@ export default function LiveNewsFeed() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -141,7 +141,7 @@ export default function LiveNewsFeed() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -155,7 +155,7 @@ export default function LiveNewsFeed() {
       </div>
 
       {/* Search & Filters */}
-      <Card className="bg-white/[0.02] border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700">
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center gap-4">
             <div className="relative flex-1 min-w-[250px]">
@@ -164,7 +164,7 @@ export default function LiveNewsFeed() {
                 value={searchTerm}
                 onChange={(e: any) => setSearchTerm(e.target.value)}
                 placeholder="Search news..."
-                className="pl-9 bg-white/[0.04] border-slate-600 text-white"
+                className="pl-9 bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
 
@@ -189,7 +189,7 @@ export default function LiveNewsFeed() {
 
       {/* Tabs for quick filtering */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-white/[0.02] border border-slate-700">
+        <TabsList className="bg-slate-800/50 border border-slate-700">
           <TabsTrigger value="all">All News</TabsTrigger>
           <TabsTrigger value="oil_gas">Oil & Gas</TabsTrigger>
           <TabsTrigger value="trucking">Trucking & Logistics</TabsTrigger>
@@ -200,7 +200,7 @@ export default function LiveNewsFeed() {
         <TabsContent value={activeTab} className="mt-6">
           {/* Loading State */}
           {isLoading && articles.length === 0 && (
-            <Card className="bg-white/[0.02] border-slate-700">
+            <Card className="bg-slate-800/50 border-slate-700">
               <CardContent className="py-12 text-center">
                 <RefreshCw className="w-10 h-10 text-blue-400 animate-spin mx-auto mb-4" />
                 <p className="text-slate-400">Loading news feeds...</p>
@@ -230,7 +230,7 @@ export default function LiveNewsFeed() {
 
           {/* Empty State */}
           {!isLoading && filteredArticles.length === 0 && articles.length > 0 && (
-            <Card className="bg-white/[0.02] border-slate-700">
+            <Card className="bg-slate-800/50 border-slate-700">
               <CardContent className="py-12 text-center">
                 <Newspaper className="w-12 h-12 text-slate-500 mx-auto mb-4" />
                 <p className="text-slate-400">No articles match your filters</p>
@@ -241,7 +241,7 @@ export default function LiveNewsFeed() {
       </Tabs>
 
       {/* Feed Sources */}
-      <Card className="bg-white/[0.02] border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader className="pb-2">
           <CardTitle className="text-white text-sm flex items-center gap-2">
             <Rss className="w-4 h-4 text-orange-400" />
@@ -279,7 +279,7 @@ function ArticleCard({ article }: { article: NewsArticle }) {
       rel="noopener noreferrer"
       className="block"
     >
-      <Card className="bg-white/[0.02] border-slate-700 hover:border-blue-500/50 transition-all h-full group">
+      <Card className="bg-slate-800/50 border-slate-700 hover:border-blue-500/50 transition-all h-full group">
         <CardContent className="p-5">
           {/* Category & Source */}
           <div className="flex items-center justify-between mb-3">

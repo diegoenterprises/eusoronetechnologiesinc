@@ -66,7 +66,7 @@ export default function RoutePlanning() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Route Input */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Plan Route</CardTitle>
           </CardHeader>
@@ -79,7 +79,7 @@ export default function RoutePlanning() {
                   value={origin}
                   onChange={(e: any) => setOrigin(e.target.value)}
                   placeholder="Enter origin city, state"
-                  className="pl-9 bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50"
+                  className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
                 />
               </div>
             </div>
@@ -95,7 +95,7 @@ export default function RoutePlanning() {
                       value={stop}
                       onChange={(e: any) => updateStop(idx, e.target.value)}
                       placeholder="Enter stop location"
-                      className="pl-9 bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50"
+                      className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
                     />
                   </div>
                   <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => removeStop(idx)}>
@@ -105,7 +105,7 @@ export default function RoutePlanning() {
               </div>
             ))}
 
-            <Button variant="outline" className="w-full bg-slate-700/30 border-white/[0.06] hover:bg-white/[0.04] rounded-lg" onClick={addStop}>
+            <Button variant="outline" className="w-full bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-lg" onClick={addStop}>
               <Plus className="w-4 h-4 mr-2" />Add Stop
             </Button>
 
@@ -117,7 +117,7 @@ export default function RoutePlanning() {
                   value={destination}
                   onChange={(e: any) => setDestination(e.target.value)}
                   placeholder="Enter destination city, state"
-                  className="pl-9 bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50"
+                  className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
                 />
               </div>
             </div>
@@ -131,14 +131,14 @@ export default function RoutePlanning() {
         </Card>
 
         {/* Route Results */}
-        <Card className="lg:col-span-2 bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Route Details</CardTitle>
           </CardHeader>
           <CardContent>
             {!origin || !destination ? (
               <div className="text-center py-16">
-                <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                   <Route className="w-10 h-10 text-slate-500" />
                 </div>
                 <p className="text-slate-400 text-lg">Enter origin and destination</p>
@@ -236,7 +236,7 @@ export default function RoutePlanning() {
         </Card>
 
         {/* Saved Routes */}
-        <Card className="lg:col-span-3 bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="lg:col-span-3 bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Saved Routes</CardTitle>
           </CardHeader>
@@ -252,7 +252,7 @@ export default function RoutePlanning() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {(savedRoutesQuery.data as any)?.map((savedRoute: any) => (
-                  <div key={savedRoute.id} className="p-4 rounded-xl bg-slate-700/30 hover:bg-white/[0.04] transition-colors cursor-pointer" onClick={() => { setOrigin(savedRoute.origin); setDestination(savedRoute.destination); setStops(savedRoute.stops || []); }}>
+                  <div key={savedRoute.id} className="p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer" onClick={() => { setOrigin(savedRoute.origin); setDestination(savedRoute.destination); setStops(savedRoute.stops || []); }}>
                     <div className="flex items-center gap-2 mb-2">
                       <MapPin className="w-4 h-4 text-green-400" />
                       <span className="text-white font-medium">{savedRoute.origin}</span>

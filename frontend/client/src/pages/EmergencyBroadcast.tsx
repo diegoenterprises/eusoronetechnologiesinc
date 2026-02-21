@@ -65,8 +65,8 @@ export default function EmergencyBroadcast() {
     toast.success("Emergency broadcast sent successfully");
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white placeholder:text-slate-400");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-400");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[900px] mx-auto">
@@ -107,7 +107,7 @@ export default function EmergencyBroadcast() {
                         "flex-1 py-3 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-2",
                         severity === s
                           ? `${cfg.bg} ${cfg.color} border-current/30 ring-1 ring-current/20`
-                          : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-white/[0.02] border-white/[0.06] text-slate-500"
+                          : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-slate-800/50 border-slate-700/50 text-slate-500"
                       )}
                     >
                       {s === "critical" && <AlertTriangle className="w-4 h-4" />}
@@ -137,7 +137,7 @@ export default function EmergencyBroadcast() {
                       "py-3 rounded-xl border text-xs font-medium transition-all flex flex-col items-center gap-1.5",
                       target === t.id
                         ? "bg-[#1473FF]/10 text-[#1473FF] border-[#1473FF]/30"
-                        : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-white/[0.02] border-white/[0.06] text-slate-500"
+                        : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-slate-800/50 border-slate-700/50 text-slate-500"
                     )}
                   >
                     {t.icon}
@@ -160,7 +160,7 @@ export default function EmergencyBroadcast() {
                 value={message}
                 onChange={(e: any) => setMessage(e.target.value)}
                 placeholder="Provide clear, actionable instructions..."
-                className={cn("rounded-xl min-h-[120px]", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white placeholder:text-slate-400")}
+                className={cn("rounded-xl min-h-[120px]", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-400")}
               />
             </div>
 
@@ -190,7 +190,7 @@ export default function EmergencyBroadcast() {
             <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
               &quot;{title}&quot; sent to {target === "all" ? "all drivers" : target}
             </p>
-            <Button variant="outline" className={cn("mt-4 rounded-xl", isLight ? "border-slate-200" : "bg-white/[0.04] border-white/[0.06]")} onClick={() => { setSent(false); setTitle(""); setMessage(""); }}>
+            <Button variant="outline" className={cn("mt-4 rounded-xl", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50")} onClick={() => { setSent(false); setTitle(""); setMessage(""); }}>
               Send Another
             </Button>
           </CardContent>
@@ -212,7 +212,7 @@ export default function EmergencyBroadcast() {
             return (
               <div key={b.id} className={cn(
                 "flex items-center justify-between p-4 rounded-xl border",
-                isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
+                isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
               )}>
                 <div className="flex items-center gap-3">
                   <div className={cn("p-2.5 rounded-lg", sev.bg)}>

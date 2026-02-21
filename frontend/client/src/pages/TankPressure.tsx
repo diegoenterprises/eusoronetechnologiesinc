@@ -125,7 +125,7 @@ export default function TankPressure() {
   const overallStatus: PressureStatus = maxPressurePct > 90 ? "critical" : maxPressurePct > 75 ? "warning" : "normal";
   const overallConfig = STATUS_CONFIG[overallStatus];
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -219,7 +219,7 @@ export default function TankPressure() {
                 "flex items-center justify-between p-3 rounded-xl border",
                 isOverdue
                   ? isLight ? "bg-red-50 border-red-200" : "bg-red-500/5 border-red-500/20"
-                  : isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
+                  : isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
               )}>
                 <div className="flex items-center gap-3">
                   <div className={cn("p-2 rounded-lg", isOverdue ? "bg-red-500/15" : "bg-green-500/15")}>

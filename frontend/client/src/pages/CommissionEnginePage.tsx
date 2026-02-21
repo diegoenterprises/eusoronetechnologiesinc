@@ -60,7 +60,7 @@ export default function CommissionEnginePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Calculator */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Calculator className="w-5 h-5 text-[#1473FF]" />Fee Calculator
@@ -100,7 +100,7 @@ export default function CommissionEnginePage() {
         </Card>
 
         {/* Results */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-green-400" />Breakdown
@@ -144,7 +144,7 @@ export default function CommissionEnginePage() {
 
       {/* Commodity Indexes */}
       {indexes && (
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2"><BarChart3 className="w-5 h-5 text-cyan-400" />Live Commodity Indexes</CardTitle>
           </CardHeader>

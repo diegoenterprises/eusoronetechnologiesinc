@@ -147,7 +147,7 @@ export default function OperatingAuthority() {
       </div>
 
       {/* ─── TAB NAV ─── */}
-      <div className="flex gap-1 p-1 bg-white/[0.02] rounded-xl border border-white/[0.06] w-fit">
+      <div className="flex gap-1 p-1 bg-slate-800/50 rounded-xl border border-slate-700/50 w-fit">
         {tabs.map(t => (
           <button
             key={t.key}
@@ -155,7 +155,7 @@ export default function OperatingAuthority() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               activeTab === t.key
                 ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-white border border-blue-500/30"
-                : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
+                : "text-slate-400 hover:text-white hover:bg-slate-700/50"
             }`}
           >
             <t.icon className="w-4 h-4" />{t.label}
@@ -174,7 +174,7 @@ export default function OperatingAuthority() {
               { label: "As Lessor", value: stats?.asLessor ?? 0, color: "from-blue-500 to-cyan-500", icon: Building2 },
               { label: "As Lessee", value: stats?.asLessee ?? 0, color: "from-purple-500 to-pink-500", icon: Truck },
             ].map(s => (
-              <Card key={s.label} className="bg-white/[0.02] border-white/[0.06] overflow-hidden">
+              <Card key={s.label} className="bg-slate-800/50 border-slate-700/50 overflow-hidden">
                 <CardContent className="p-4 relative">
                   <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${s.color}`} />
                   <div className="flex items-center justify-between">
@@ -193,7 +193,7 @@ export default function OperatingAuthority() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Own Authority Card */}
-            <Card className="lg:col-span-2 bg-white/[0.02] border-white/[0.06]">
+            <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-white flex items-center gap-2 text-lg">
                   <Shield className="w-5 h-5 text-blue-400" />Your Authority
@@ -278,7 +278,7 @@ export default function OperatingAuthority() {
             </Card>
 
             {/* Compliance Score */}
-            <Card className="bg-white/[0.02] border-white/[0.06]">
+            <Card className="bg-slate-800/50 border-slate-700/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-white flex items-center gap-2 text-lg">
                   <Scale className="w-5 h-5 text-emerald-400" />FMCSR Part 376
@@ -312,7 +312,7 @@ export default function OperatingAuthority() {
                     const met = anyLease.some((l: any) => l[req.key]);
                     return (
                       <div key={req.key} className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${met ? "bg-emerald-500/5 border border-emerald-500/20" : "bg-slate-900/40 border border-slate-700/30"}`}>
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${met ? "bg-emerald-500/20" : "bg-white/[0.04]"}`}>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${met ? "bg-emerald-500/20" : "bg-slate-700/50"}`}>
                           {met ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <XCircle className="w-3.5 h-3.5 text-slate-500" />}
                         </div>
                         <span className={`text-sm ${met ? "text-white" : "text-slate-500"}`}>{req.label}</span>
@@ -327,7 +327,7 @@ export default function OperatingAuthority() {
           {/* ─── 2026 AUTHORITY INTELLIGENCE PANELS ─── */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Cargo Theft Risk for Operating Area */}
-            <Card className="bg-white/[0.02] border-white/[0.06]">
+            <Card className="bg-slate-800/50 border-slate-700/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <ShieldAlert className="w-4 h-4 text-red-400" />
@@ -347,7 +347,7 @@ export default function OperatingAuthority() {
                     <p className="text-[10px] text-slate-500">Score: {theftRisk.data.overallScore}/100 — {theftRisk.data.recommendations?.[0] || "Monitor theft activity"}</p>
                     <div className="flex flex-wrap gap-1">
                       {theftRisk.data.custodyChain?.filter((c: any) => c.required).slice(0, 3).map((c: any) => (
-                        <span key={c.step} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-slate-400">{c.action}</span>
+                        <span key={c.step} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-400">{c.action}</span>
                       ))}
                     </div>
                   </div>
@@ -358,7 +358,7 @@ export default function OperatingAuthority() {
             </Card>
 
             {/* 2027 EPA Fleet Readiness */}
-            <Card className="bg-white/[0.02] border-white/[0.06]">
+            <Card className="bg-slate-800/50 border-slate-700/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Leaf className="w-4 h-4 text-emerald-400" />
@@ -391,7 +391,7 @@ export default function OperatingAuthority() {
             </Card>
 
             {/* Authority Health Summary */}
-            <Card className="bg-white/[0.02] border-white/[0.06]">
+            <Card className="bg-slate-800/50 border-slate-700/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <ShieldCheck className="w-4 h-4 text-cyan-400" />
@@ -452,7 +452,7 @@ export default function OperatingAuthority() {
           {leasesQuery?.isLoading ? (
             <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : leases.length === 0 ? (
-            <Card className="bg-white/[0.02] border-white/[0.06]">
+            <Card className="bg-slate-800/50 border-slate-700/50">
               <CardContent className="py-16 text-center">
                 <Handshake className="w-14 h-14 text-slate-600 mx-auto mb-4" />
                 <p className="text-white font-semibold text-lg">No Lease Agreements</p>
@@ -537,7 +537,7 @@ export default function OperatingAuthority() {
           {equipmentQuery?.isLoading ? (
             <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
           ) : equipment.length === 0 ? (
-            <Card className="bg-white/[0.02] border-white/[0.06]">
+            <Card className="bg-slate-800/50 border-slate-700/50">
               <CardContent className="py-16 text-center">
                 <Truck className="w-14 h-14 text-slate-600 mx-auto mb-4" />
                 <p className="text-white font-semibold text-lg">No Equipment Registered</p>
@@ -553,12 +553,12 @@ export default function OperatingAuthority() {
                 const yr = v.year || 0;
                 const epaStatus = yr >= 2024 ? "compliant" : yr >= 2021 ? "near" : "action";
                 return (
-                  <Card key={v.vehicleId} className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.06] transition-colors">
+                  <Card key={v.vehicleId} className="bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50 transition-colors">
                     <div className={`h-0.5 ${epaStatus === "compliant" ? "bg-gradient-to-r from-emerald-500 to-teal-500" : epaStatus === "near" ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-red-500 to-orange-500"}`} />
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${v.authoritySource === "leased" ? "bg-blue-500/20" : "bg-white/[0.04]"}`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${v.authoritySource === "leased" ? "bg-blue-500/20" : "bg-slate-700/50"}`}>
                             <Truck className={`w-5 h-5 ${v.authoritySource === "leased" ? "text-blue-400" : "text-slate-400"}`} />
                           </div>
                           <div>
@@ -630,7 +630,7 @@ export default function OperatingAuthority() {
       {activeTab === "browse" && (
         <div className="space-y-5">
           {/* FMCSA Search Bar */}
-          <Card className="bg-white/[0.02] border-white/[0.06]">
+          <Card className="bg-slate-800/50 border-slate-700/50">
             <CardContent className="p-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
@@ -648,7 +648,7 @@ export default function OperatingAuthority() {
                     placeholder="Enter DOT#, MC#, or company name..."
                     value={browseSearch}
                     onChange={e => setBrowseSearch(e.target.value)}
-                    className="pl-10 bg-slate-900/60 border-white/[0.06] text-white rounded-xl h-11"
+                    className="pl-10 bg-slate-900/60 border-slate-700/50 text-white rounded-xl h-11"
                   />
                 </div>
                 <Button
@@ -673,7 +673,7 @@ export default function OperatingAuthority() {
           {fmcsaSearching ? (
             <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
           ) : fmcsaQuery && fmcsaResults.length === 0 ? (
-            <Card className="bg-white/[0.02] border-white/[0.06]">
+            <Card className="bg-slate-800/50 border-slate-700/50">
               <CardContent className="py-14 text-center">
                 <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
                 <p className="text-white font-semibold">No Results Found</p>
@@ -686,7 +686,7 @@ export default function OperatingAuthority() {
                 {fmcsaResults.length} carrier{fmcsaResults.length > 1 ? "s" : ""} found
               </p>
               {fmcsaResults.map((c: any, idx: number) => (
-                <Card key={`${c.dotNumber}-${idx}`} className="bg-white/[0.02] border-white/[0.06] hover:border-blue-500/30 transition-all overflow-hidden">
+                <Card key={`${c.dotNumber}-${idx}`} className="bg-slate-800/50 border-slate-700/50 hover:border-blue-500/30 transition-all overflow-hidden">
                   <div className={`h-0.5 ${c.allowedToOperate ? "bg-gradient-to-r from-emerald-500 to-teal-500" : "bg-gradient-to-r from-red-500 to-orange-500"}`} />
                   <CardContent className="p-5">
                     {/* Header */}
@@ -805,7 +805,7 @@ export default function OperatingAuthority() {
               ))}
             </div>
           ) : !fmcsaQuery ? (
-            <Card className="bg-white/[0.02] border-white/[0.06]">
+            <Card className="bg-slate-800/50 border-slate-700/50">
               <CardContent className="py-14 text-center">
                 <Search className="w-12 h-12 text-slate-600 mx-auto mb-3" />
                 <p className="text-white font-semibold">Search the FMCSA Database</p>
@@ -828,7 +828,7 @@ export default function OperatingAuthority() {
         <div className="space-y-5">
           {/* Market Rate Intelligence */}
           {marketIntel?.data && (
-            <Card className="bg-white/[0.02] border-white/[0.06]">
+            <Card className="bg-slate-800/50 border-slate-700/50">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
@@ -893,7 +893,7 @@ export default function OperatingAuthority() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {/* Cargo Theft Deep Dive */}
             {theftRisk?.data && (
-              <Card className="bg-white/[0.02] border-white/[0.06]">
+              <Card className="bg-slate-800/50 border-slate-700/50">
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -933,7 +933,7 @@ export default function OperatingAuthority() {
 
           {/* Tariff & Trade Policy */}
           {tariffs?.data && (
-            <Card className="bg-white/[0.02] border-white/[0.06]">
+            <Card className="bg-slate-800/50 border-slate-700/50">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
@@ -962,7 +962,7 @@ export default function OperatingAuthority() {
 
           {/* Seasonal Disruption Calendar */}
           {seasonalCal?.data && (
-            <Card className="bg-white/[0.02] border-white/[0.06]">
+            <Card className="bg-slate-800/50 border-slate-700/50">
               <CardContent className="p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <Calendar className="w-5 h-5 text-blue-400" />
@@ -1075,7 +1075,7 @@ function LeaseCard({ lease, onSign, onTerminate, onUpdateCompliance }: { lease: 
   const total = complianceChecks.length;
 
   return (
-    <Card className="bg-white/[0.02] border-white/[0.06] overflow-hidden">
+    <Card className="bg-slate-800/50 border-slate-700/50 overflow-hidden">
       <div className={`h-0.5 ${lease.status === "active" ? "bg-gradient-to-r from-emerald-500 to-teal-500" : lease.status === "pending_signatures" ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-slate-700"}`} />
       <CardContent className="p-5">
         <div className="flex items-start justify-between mb-4">
@@ -1146,7 +1146,7 @@ function LeaseCard({ lease, onSign, onTerminate, onUpdateCompliance }: { lease: 
                 className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors cursor-pointer ${
                   lease[c.key]
                     ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                    : "bg-slate-800 text-slate-500 border border-white/[0.06] hover:border-slate-600"
+                    : "bg-slate-800 text-slate-500 border border-slate-700/50 hover:border-slate-600"
                 }`}
               >
                 {lease[c.key] ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
@@ -1246,7 +1246,7 @@ function CreateLeaseDialog({ open, onOpenChange, onSubmit, authorities }: { open
                   className={`p-3 rounded-xl border text-left transition-all ${
                     form.leaseType === key
                       ? `${cfg.bg} border-current ${cfg.color}`
-                      : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:border-slate-600"
+                      : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600"
                   }`}
                 >
                   <p className="font-medium text-sm">{cfg.label}</p>
@@ -1260,7 +1260,7 @@ function CreateLeaseDialog({ open, onOpenChange, onSubmit, authorities }: { open
           <div>
             <Label className="text-slate-400 text-xs uppercase tracking-wider">Carrier (Lessor)</Label>
             <Select value={form.lessorCompanyId ? String(form.lessorCompanyId) : ""} onValueChange={v => setForm(f => ({ ...f, lessorCompanyId: Number(v) }))}>
-              <SelectTrigger className="mt-1.5 bg-white/[0.02] border-white/[0.06] rounded-xl"><SelectValue placeholder="Select carrier..." /></SelectTrigger>
+              <SelectTrigger className="mt-1.5 bg-slate-800/50 border-slate-700/50 rounded-xl"><SelectValue placeholder="Select carrier..." /></SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
                 {authorities.map((a: any) => (
                   <SelectItem key={a.companyId} value={String(a.companyId)} className="text-white">
@@ -1280,7 +1280,7 @@ function CreateLeaseDialog({ open, onOpenChange, onSubmit, authorities }: { open
               max={100}
               value={form.revenueSharePercent}
               onChange={e => setForm(f => ({ ...f, revenueSharePercent: Number(e.target.value) }))}
-              className="mt-1.5 bg-white/[0.02] border-white/[0.06] text-white rounded-xl"
+              className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl"
             />
           </div>
 
@@ -1288,11 +1288,11 @@ function CreateLeaseDialog({ open, onOpenChange, onSubmit, authorities }: { open
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-slate-400 text-xs uppercase tracking-wider">Start Date</Label>
-              <Input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="mt-1.5 bg-white/[0.02] border-white/[0.06] text-white rounded-xl" />
+              <Input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
             </div>
             <div>
               <Label className="text-slate-400 text-xs uppercase tracking-wider">End Date</Label>
-              <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="mt-1.5 bg-white/[0.02] border-white/[0.06] text-white rounded-xl" />
+              <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
             </div>
           </div>
 
@@ -1301,10 +1301,10 @@ function CreateLeaseDialog({ open, onOpenChange, onSubmit, authorities }: { open
             <div>
               <Label className="text-slate-400 text-xs uppercase tracking-wider">Route</Label>
               <div className="grid grid-cols-2 gap-3 mt-1.5">
-                <Input placeholder="Origin city" value={form.originCity} onChange={e => setForm(f => ({ ...f, originCity: e.target.value }))} className="bg-white/[0.02] border-white/[0.06] text-white rounded-xl" />
-                <Input placeholder="Origin state" value={form.originState} onChange={e => setForm(f => ({ ...f, originState: e.target.value }))} className="bg-white/[0.02] border-white/[0.06] text-white rounded-xl" />
-                <Input placeholder="Destination city" value={form.destinationCity} onChange={e => setForm(f => ({ ...f, destinationCity: e.target.value }))} className="bg-white/[0.02] border-white/[0.06] text-white rounded-xl" />
-                <Input placeholder="Destination state" value={form.destinationState} onChange={e => setForm(f => ({ ...f, destinationState: e.target.value }))} className="bg-white/[0.02] border-white/[0.06] text-white rounded-xl" />
+                <Input placeholder="Origin city" value={form.originCity} onChange={e => setForm(f => ({ ...f, originCity: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+                <Input placeholder="Origin state" value={form.originState} onChange={e => setForm(f => ({ ...f, originState: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+                <Input placeholder="Destination city" value={form.destinationCity} onChange={e => setForm(f => ({ ...f, destinationCity: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+                <Input placeholder="Destination state" value={form.destinationState} onChange={e => setForm(f => ({ ...f, destinationState: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
               </div>
             </div>
           )}
@@ -1323,7 +1323,7 @@ function CreateLeaseDialog({ open, onOpenChange, onSubmit, authorities }: { open
                   className={`px-2.5 py-1 rounded-lg text-xs transition-all ${
                     form.trailerTypes.includes(tt)
                       ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                      : "bg-slate-800 text-slate-500 border border-white/[0.06] hover:border-slate-600"
+                      : "bg-slate-800 text-slate-500 border border-slate-700/50 hover:border-slate-600"
                   }`}
                 >
                   {tt}
@@ -1339,7 +1339,7 @@ function CreateLeaseDialog({ open, onOpenChange, onSubmit, authorities }: { open
               value={form.notes}
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
               placeholder="Additional terms or notes..."
-              className="mt-1.5 bg-white/[0.02] border-white/[0.06] text-white rounded-xl resize-none"
+              className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl resize-none"
               rows={3}
             />
           </div>
@@ -1406,7 +1406,7 @@ function FMCSALeaseDialog({ open, onOpenChange, carrier, onSubmit }: { open: boo
 
         <div className="space-y-4 mt-2">
           {/* Carrier Info (pre-filled from FMCSA) */}
-          <Card className="bg-white/[0.03] border-white/[0.06]">
+          <Card className="bg-slate-800/60 border-slate-700/50">
             <CardContent className="p-3">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${carrier.allowedToOperate ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-red-500/10 border border-red-500/20"}`}>
@@ -1437,7 +1437,7 @@ function FMCSALeaseDialog({ open, onOpenChange, carrier, onSubmit }: { open: boo
                   className={`p-3 rounded-xl border text-left transition-all ${
                     form.leaseType === key
                       ? `${cfg.bg} border-current ${cfg.color}`
-                      : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:border-slate-600"
+                      : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600"
                   }`}
                 >
                   <p className="font-medium text-sm">{cfg.label}</p>
@@ -1456,7 +1456,7 @@ function FMCSALeaseDialog({ open, onOpenChange, carrier, onSubmit }: { open: boo
               max={100}
               value={form.revenueSharePercent}
               onChange={e => setForm(f => ({ ...f, revenueSharePercent: Number(e.target.value) }))}
-              className="mt-1.5 bg-white/[0.02] border-white/[0.06] text-white rounded-xl"
+              className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl"
             />
           </div>
 
@@ -1464,11 +1464,11 @@ function FMCSALeaseDialog({ open, onOpenChange, carrier, onSubmit }: { open: boo
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-slate-400 text-xs uppercase tracking-wider">Start Date</Label>
-              <Input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="mt-1.5 bg-white/[0.02] border-white/[0.06] text-white rounded-xl" />
+              <Input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
             </div>
             <div>
               <Label className="text-slate-400 text-xs uppercase tracking-wider">End Date</Label>
-              <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="mt-1.5 bg-white/[0.02] border-white/[0.06] text-white rounded-xl" />
+              <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
             </div>
           </div>
 
@@ -1477,10 +1477,10 @@ function FMCSALeaseDialog({ open, onOpenChange, carrier, onSubmit }: { open: boo
             <div>
               <Label className="text-slate-400 text-xs uppercase tracking-wider">Route</Label>
               <div className="grid grid-cols-2 gap-3 mt-1.5">
-                <Input placeholder="Origin city" value={form.originCity} onChange={e => setForm(f => ({ ...f, originCity: e.target.value }))} className="bg-white/[0.02] border-white/[0.06] text-white rounded-xl" />
-                <Input placeholder="Origin state" value={form.originState} onChange={e => setForm(f => ({ ...f, originState: e.target.value }))} className="bg-white/[0.02] border-white/[0.06] text-white rounded-xl" />
-                <Input placeholder="Destination city" value={form.destinationCity} onChange={e => setForm(f => ({ ...f, destinationCity: e.target.value }))} className="bg-white/[0.02] border-white/[0.06] text-white rounded-xl" />
-                <Input placeholder="Destination state" value={form.destinationState} onChange={e => setForm(f => ({ ...f, destinationState: e.target.value }))} className="bg-white/[0.02] border-white/[0.06] text-white rounded-xl" />
+                <Input placeholder="Origin city" value={form.originCity} onChange={e => setForm(f => ({ ...f, originCity: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+                <Input placeholder="Origin state" value={form.originState} onChange={e => setForm(f => ({ ...f, originState: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+                <Input placeholder="Destination city" value={form.destinationCity} onChange={e => setForm(f => ({ ...f, destinationCity: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+                <Input placeholder="Destination state" value={form.destinationState} onChange={e => setForm(f => ({ ...f, destinationState: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
               </div>
             </div>
           )}
@@ -1499,7 +1499,7 @@ function FMCSALeaseDialog({ open, onOpenChange, carrier, onSubmit }: { open: boo
                   className={`px-2.5 py-1 rounded-lg text-xs transition-all ${
                     form.trailerTypes.includes(tt)
                       ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                      : "bg-slate-800 text-slate-500 border border-white/[0.06] hover:border-slate-600"
+                      : "bg-slate-800 text-slate-500 border border-slate-700/50 hover:border-slate-600"
                   }`}
                 >
                   {tt}
@@ -1515,7 +1515,7 @@ function FMCSALeaseDialog({ open, onOpenChange, carrier, onSubmit }: { open: boo
               value={form.notes}
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
               placeholder="Additional terms or notes..."
-              className="mt-1.5 bg-white/[0.02] border-white/[0.06] text-white rounded-xl resize-none"
+              className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl resize-none"
               rows={3}
             />
           </div>

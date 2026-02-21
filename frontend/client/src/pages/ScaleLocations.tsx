@@ -48,7 +48,7 @@ export default function ScaleLocations() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -64,7 +64,7 @@ export default function ScaleLocations() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -80,7 +80,7 @@ export default function ScaleLocations() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -96,7 +96,7 @@ export default function ScaleLocations() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
@@ -116,7 +116,7 @@ export default function ScaleLocations() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search scale locations..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search scale locations..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -134,9 +134,9 @@ export default function ScaleLocations() {
             ) : (nearbyQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-8">No nearby scales</p>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {(nearbyQuery.data as any)?.map((scale: any) => (
-                  <div key={scale.id} className="p-4 hover:bg-white/[0.04] transition-colors">
+                  <div key={scale.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-white font-medium">{scale.name}</p>
                       <span className="text-cyan-400 text-sm">{scale.distance} mi</span>
@@ -153,7 +153,7 @@ export default function ScaleLocations() {
         </Card>
 
         {/* All Scales */}
-        <Card className="lg:col-span-2 bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">All Scale Locations</CardTitle>
           </CardHeader>
@@ -162,15 +162,15 @@ export default function ScaleLocations() {
               <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
             ) : filteredScales?.length === 0 ? (
               <div className="text-center py-16">
-                <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                   <Scale className="w-10 h-10 text-slate-500" />
                 </div>
                 <p className="text-slate-400 text-lg">No scales found</p>
               </div>
             ) : (
-              <div className="divide-y divide-white/[0.04] max-h-[600px] overflow-y-auto">
+              <div className="divide-y divide-slate-700/50 max-h-[600px] overflow-y-auto">
                 {filteredScales?.map((scale: any) => (
-                  <div key={scale.id} className="p-4 hover:bg-white/[0.04] transition-colors">
+                  <div key={scale.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
@@ -194,7 +194,7 @@ export default function ScaleLocations() {
                     {scale.services && (
                       <div className="flex flex-wrap gap-2 mt-2">
                         {scale.services.map((service: string) => (
-                          <Badge key={service} className="bg-white/[0.04] text-slate-300 border-0 text-xs">{service}</Badge>
+                          <Badge key={service} className="bg-slate-700/50 text-slate-300 border-0 text-xs">{service}</Badge>
                         ))}
                       </div>
                     )}

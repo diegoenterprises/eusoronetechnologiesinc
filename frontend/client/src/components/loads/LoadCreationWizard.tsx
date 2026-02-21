@@ -332,7 +332,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                   value={formData.properShippingName}
                   onChange={(e) => updateFormData({ properShippingName: e.target.value })}
                   placeholder="e.g., Gasoline, Diesel Fuel, Sulfuric Acid"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
 
@@ -344,7 +344,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                   value={formData.unNumber}
                   onChange={(e) => updateFormData({ unNumber: e.target.value })}
                   placeholder="UN1203"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
 
@@ -354,7 +354,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                   value={formData.technicalName}
                   onChange={(e) => updateFormData({ technicalName: e.target.value })}
                   placeholder="Chemical formula or technical name"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
 
@@ -363,7 +363,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                   Hazard Class <span className="text-red-400">*</span>
                 </Label>
                 <Select value={formData.hazardClass} onValueChange={(v) => updateFormData({ hazardClass: v })}>
-                  <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                     <SelectValue placeholder="Select hazard class" />
                   </SelectTrigger>
                   <SelectContent>
@@ -382,7 +382,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
               <div className="space-y-2">
                 <Label className="text-slate-300">Packing Group</Label>
                 <Select value={formData.packingGroup} onValueChange={(v) => updateFormData({ packingGroup: v })}>
-                  <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                     <SelectValue placeholder="Select packing group" />
                   </SelectTrigger>
                   <SelectContent>
@@ -445,13 +445,13 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                   value={formData.quantity}
                   onChange={(e) => updateFormData({ quantity: e.target.value })}
                   placeholder="5000"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Unit</Label>
                 <Select value={formData.quantityUnit} onValueChange={(v) => updateFormData({ quantityUnit: v })}>
-                  <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -471,7 +471,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                   value={formData.packageCount}
                   onChange={(e) => updateFormData({ packageCount: e.target.value })}
                   placeholder="1"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
             </div>
@@ -484,7 +484,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                   value={formData.grossWeight}
                   onChange={(e) => updateFormData({ grossWeight: e.target.value })}
                   placeholder="42000"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
@@ -494,7 +494,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                   value={formData.netWeight}
                   onChange={(e) => updateFormData({ netWeight: e.target.value })}
                   placeholder="40000"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
             </div>
@@ -504,7 +504,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                 Container Type <span className="text-red-400">*</span>
               </Label>
               <Select value={formData.containerType} onValueChange={(v) => updateFormData({ containerType: v })}>
-                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select container type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -539,7 +539,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                   value={formData.cargoValue}
                   onChange={(e) => updateFormData({ cargoValue: e.target.value })}
                   placeholder="100000"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
             </div>
@@ -550,7 +550,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
         return (
           <div className="space-y-6">
             <Tabs defaultValue="origin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-white/[0.04]">
+              <TabsList className="grid w-full grid-cols-2 bg-slate-700/50">
                 <TabsTrigger value="origin">Origin / Pickup</TabsTrigger>
                 <TabsTrigger value="destination">Destination / Delivery</TabsTrigger>
               </TabsList>
@@ -562,7 +562,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                     value={formData.originFacilityName}
                     onChange={(e) => updateFormData({ originFacilityName: e.target.value })}
                     placeholder="ABC Chemical Terminal"
-                    className="bg-white/[0.04] border-slate-600 text-white"
+                    className="bg-slate-700/50 border-slate-600 text-white"
                   />
                 </div>
                 
@@ -572,7 +572,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                     value={formData.originAddress}
                     onChange={(e) => updateFormData({ originAddress: e.target.value })}
                     placeholder="123 Industrial Blvd"
-                    className="bg-white/[0.04] border-slate-600 text-white"
+                    className="bg-slate-700/50 border-slate-600 text-white"
                   />
                 </div>
                 
@@ -583,7 +583,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                       value={formData.originCity}
                       onChange={(e) => updateFormData({ originCity: e.target.value })}
                       placeholder="Houston"
-                      className="bg-white/[0.04] border-slate-600 text-white"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -592,7 +592,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                       value={formData.originState}
                       onChange={(e) => updateFormData({ originState: e.target.value })}
                       placeholder="TX"
-                      className="bg-white/[0.04] border-slate-600 text-white"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -601,7 +601,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                       value={formData.originZip}
                       onChange={(e) => updateFormData({ originZip: e.target.value })}
                       placeholder="77001"
-                      className="bg-white/[0.04] border-slate-600 text-white"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                     />
                   </div>
                 </div>
@@ -613,7 +613,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                       type="datetime-local"
                       value={formData.pickupDateStart}
                       onChange={(e) => updateFormData({ pickupDateStart: e.target.value })}
-                      className="bg-white/[0.04] border-slate-600 text-white"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -622,7 +622,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                       type="datetime-local"
                       value={formData.pickupDateEnd}
                       onChange={(e) => updateFormData({ pickupDateEnd: e.target.value })}
-                      className="bg-white/[0.04] border-slate-600 text-white"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                     />
                   </div>
                 </div>
@@ -657,7 +657,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                     value={formData.destFacilityName}
                     onChange={(e) => updateFormData({ destFacilityName: e.target.value })}
                     placeholder="XYZ Refinery"
-                    className="bg-white/[0.04] border-slate-600 text-white"
+                    className="bg-slate-700/50 border-slate-600 text-white"
                   />
                 </div>
                 
@@ -667,7 +667,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                     value={formData.destAddress}
                     onChange={(e) => updateFormData({ destAddress: e.target.value })}
                     placeholder="456 Refinery Road"
-                    className="bg-white/[0.04] border-slate-600 text-white"
+                    className="bg-slate-700/50 border-slate-600 text-white"
                   />
                 </div>
                 
@@ -678,7 +678,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                       value={formData.destCity}
                       onChange={(e) => updateFormData({ destCity: e.target.value })}
                       placeholder="Dallas"
-                      className="bg-white/[0.04] border-slate-600 text-white"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -687,7 +687,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                       value={formData.destState}
                       onChange={(e) => updateFormData({ destState: e.target.value })}
                       placeholder="TX"
-                      className="bg-white/[0.04] border-slate-600 text-white"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -696,7 +696,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                       value={formData.destZip}
                       onChange={(e) => updateFormData({ destZip: e.target.value })}
                       placeholder="75001"
-                      className="bg-white/[0.04] border-slate-600 text-white"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                     />
                   </div>
                 </div>
@@ -708,7 +708,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                       type="datetime-local"
                       value={formData.deliveryDateStart}
                       onChange={(e) => updateFormData({ deliveryDateStart: e.target.value })}
-                      className="bg-white/[0.04] border-slate-600 text-white"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -717,7 +717,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                       type="datetime-local"
                       value={formData.deliveryDateEnd}
                       onChange={(e) => updateFormData({ deliveryDateEnd: e.target.value })}
-                      className="bg-white/[0.04] border-slate-600 text-white"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                     />
                   </div>
                 </div>
@@ -734,7 +734,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                 Equipment Type <span className="text-red-400">*</span>
               </Label>
               <Select value={formData.equipmentType} onValueChange={(v) => updateFormData({ equipmentType: v })}>
-                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select equipment type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -779,7 +779,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                   value={formData.temperatureMin}
                   onChange={(e) => updateFormData({ temperatureMin: e.target.value })}
                   placeholder="Leave blank if N/A"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
@@ -789,7 +789,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                   value={formData.temperatureMax}
                   onChange={(e) => updateFormData({ temperatureMax: e.target.value })}
                   placeholder="Leave blank if N/A"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
             </div>
@@ -814,7 +814,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
               <div className="space-y-2">
                 <Label className="text-slate-300">Minimum Insurance Coverage</Label>
                 <Select value={formData.minInsuranceCoverage} onValueChange={(v) => updateFormData({ minInsuranceCoverage: v })}>
-                  <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -828,7 +828,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
               <div className="space-y-2">
                 <Label className="text-slate-300">Minimum Safety Rating</Label>
                 <Select value={formData.minSafetyRating} onValueChange={(v) => updateFormData({ minSafetyRating: v })}>
-                  <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -901,7 +901,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                   value={formData.bookNowRate}
                   onChange={(e) => updateFormData({ bookNowRate: e.target.value })}
                   placeholder="2500"
-                  className="bg-white/[0.04] border-slate-600 text-white"
+                  className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
             )}
@@ -915,7 +915,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                     value={formData.targetRate}
                     onChange={(e) => updateFormData({ targetRate: e.target.value })}
                     placeholder="2800"
-                    className="bg-white/[0.04] border-slate-600 text-white"
+                    className="bg-slate-700/50 border-slate-600 text-white"
                   />
                 </div>
                 <div className="space-y-2">
@@ -925,13 +925,13 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                     value={formData.minimumBid}
                     onChange={(e) => updateFormData({ minimumBid: e.target.value })}
                     placeholder="2200"
-                    className="bg-white/[0.04] border-slate-600 text-white"
+                    className="bg-slate-700/50 border-slate-600 text-white"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-slate-300">Bidding Duration</Label>
                   <Select value={formData.biddingDuration} onValueChange={(v) => updateFormData({ biddingDuration: v })}>
-                    <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
+                    <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1012,7 +1012,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                 value={formData.specialInstructions}
                 onChange={(e) => updateFormData({ specialInstructions: e.target.value })}
                 placeholder="Any additional instructions for the catalyst..."
-                className="bg-white/[0.04] border-slate-600 text-white"
+                className="bg-slate-700/50 border-slate-600 text-white"
                 rows={3}
               />
             </div>
@@ -1067,7 +1067,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                 "flex items-center gap-1 px-2 py-1 rounded text-xs transition-all",
                 index === currentStep && "bg-blue-500/20 text-blue-400",
                 index < currentStep && "bg-green-500/20 text-green-400",
-                index > currentStep && "bg-white/[0.04] text-slate-500"
+                index > currentStep && "bg-slate-700/50 text-slate-500"
               )}
             >
               {step.icon}
@@ -1077,7 +1077,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
         </div>
 
         {/* Step Content */}
-        <Card className="bg-white/[0.02] border-slate-700 mb-6">
+        <Card className="bg-slate-800/50 border-slate-700 mb-6">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-3">
               {steps[currentStep].icon}

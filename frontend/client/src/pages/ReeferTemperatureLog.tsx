@@ -81,7 +81,7 @@ export default function ReeferTemperatureLog() {
     });
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
   const sub = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
 
   const chartMax = Math.max(...hourlyAvgs.map((h) => h.avg), range.max + 2);
@@ -268,7 +268,7 @@ export default function ReeferTemperatureLog() {
                       "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
                       selectedRange === key
                         ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-blue-500/25"
-                        : isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-white/[0.04] text-slate-300 hover:bg-white/[0.06]"
+                        : isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-slate-700/50 text-slate-300 hover:bg-slate-700"
                     )}
                   >
                     {val.label}
@@ -357,7 +357,7 @@ export default function ReeferTemperatureLog() {
                 placeholder="Temperature (°F)"
                 value={manualTemp}
                 onChange={(e) => setManualTemp(e.target.value)}
-                className={cn("rounded-xl h-11", isLight ? "border-slate-200" : "border-slate-700 bg-white/[0.02]")}
+                className={cn("rounded-xl h-11", isLight ? "border-slate-200" : "border-slate-700 bg-slate-800/50")}
               />
             </div>
             <div className="flex gap-1.5">
@@ -369,7 +369,7 @@ export default function ReeferTemperatureLog() {
                     "px-3 py-2 rounded-lg text-xs font-medium transition-all",
                     manualZone === z
                       ? "bg-[#1473FF] text-white"
-                      : isLight ? "bg-slate-100 text-slate-600" : "bg-white/[0.04] text-slate-300"
+                      : isLight ? "bg-slate-100 text-slate-600" : "bg-slate-700/50 text-slate-300"
                   )}
                 >
                   {z}
@@ -387,7 +387,7 @@ export default function ReeferTemperatureLog() {
             placeholder="Notes (door opens, defrost cycles, product condition...)"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className={cn("mt-3 rounded-xl min-h-[80px]", isLight ? "border-slate-200" : "border-slate-700 bg-white/[0.02]")}
+            className={cn("mt-3 rounded-xl min-h-[80px]", isLight ? "border-slate-200" : "border-slate-700 bg-slate-800/50")}
           />
         </CardContent>
       </Card>

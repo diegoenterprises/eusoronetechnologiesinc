@@ -76,7 +76,7 @@ export default function SuperAdminDashboard() {
           <p className="text-slate-400 text-sm mt-1">Full oversight — loads, users, agreements, disputes, support, telemetry</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-white/[0.04] rounded-lg" onClick={() => { sq.refetch(); aq.refetch(); }}>
+          <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-700/50 rounded-lg" onClick={() => { sq.refetch(); aq.refetch(); }}>
             <RefreshCw className="w-4 h-4 mr-2" />Refresh
           </Button>
           <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 rounded-lg" onClick={() => nav("/admin/approvals")}>
@@ -96,7 +96,7 @@ export default function SuperAdminDashboard() {
           { icon: <AlertTriangle className="w-5 h-5 text-red-400" />, bg: "bg-red-500/20", v: counts.claims || 0, label: "Claims", c: "text-red-400" },
           { icon: <Activity className={`w-5 h-5 ${hOk ? "text-green-400" : "text-slate-400"}`} />, bg: hOk ? "bg-green-500/20" : "bg-slate-500/20", v: s?.systemHealth || "N/A", label: "System", c: hOk ? "text-green-400" : "text-slate-400", cap: true },
         ].map((k, i) => (
-          <Card key={i} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card key={i} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className={`p-2.5 rounded-full ${k.bg}`}>{k.icon}</div>
@@ -137,7 +137,7 @@ export default function SuperAdminDashboard() {
       {/* MAIN: Quick Actions + Activity Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* QUICK ACTIONS */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl lg:col-span-1">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl lg:col-span-1">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Zap className="w-5 h-5 text-cyan-400" />Quick Actions</CardTitle></CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-2.5">
@@ -159,7 +159,7 @@ export default function SuperAdminDashboard() {
                 { icon: <Building2 className="w-5 h-5 text-purple-400" />, label: "Companies", path: "/super-admin/companies" },
                 { icon: <Settings className="w-5 h-5 text-slate-400" />, label: "Config", path: "/super-admin/settings" },
               ].map((a, i) => (
-                <Button key={i} variant="outline" className="h-16 flex-col gap-1 bg-slate-700/30 border-white/[0.06] hover:bg-white/[0.04] rounded-xl text-xs" onClick={() => nav(a.path)}>
+                <Button key={i} variant="outline" className="h-16 flex-col gap-1 bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl text-xs" onClick={() => nav(a.path)}>
                   {a.icon}<span className="text-slate-300">{a.label}</span>
                 </Button>
               ))}
@@ -168,14 +168,14 @@ export default function SuperAdminDashboard() {
         </Card>
 
         {/* ACTIVITY FEED */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl lg:col-span-2">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl lg:col-span-2">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <CardTitle className="text-white text-lg flex items-center gap-2"><Activity className="w-5 h-5 text-green-400" />Platform Activity</CardTitle>
               <div className="flex gap-1.5 flex-wrap">
                 {["all","load","bid","user","agreement","claim"].map(f => (
                   <button key={f} onClick={() => setActFilter(f)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${actFilter === f ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : "bg-white/[0.04] text-slate-400 hover:bg-white/[0.06]"}`}>
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${actFilter === f ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : "bg-slate-700/50 text-slate-400 hover:bg-slate-700"}`}>
                     {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1) + "s"}
                   </button>
                 ))}
@@ -190,7 +190,7 @@ export default function SuperAdminDashboard() {
             ) : (
               <div className="divide-y divide-slate-700/30">
                 {events.slice(0, 30).map((e: any) => (
-                  <div key={e.id} className="px-4 py-3 flex items-start gap-3 hover:bg-white/[0.04] transition-colors cursor-pointer"
+                  <div key={e.id} className="px-4 py-3 flex items-start gap-3 hover:bg-slate-700/20 transition-colors cursor-pointer"
                     onClick={() => { if (e.entity === "load") nav(`/loads/${e.entityId}`); else if (e.entity === "user") nav("/super-admin/users"); }}>
                     <div className="mt-0.5">{TYPE_ICON[e.type] || <Activity className="w-4 h-4 text-slate-400" />}</div>
                     <div className="flex-1 min-w-0">
@@ -212,7 +212,7 @@ export default function SuperAdminDashboard() {
       {/* USER DISTRIBUTION + RECENT REGISTRATIONS + PLATFORM HEALTH */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* USER DISTRIBUTION */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Users className="w-5 h-5 text-blue-400" />User Distribution</CardTitle></CardHeader>
           <CardContent className="space-y-2.5">
             {loading ? <div className="space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-8 w-full rounded-lg" />)}</div> : roles.length === 0 ? (
@@ -225,7 +225,7 @@ export default function SuperAdminDashboard() {
                   <div className={`p-1.5 rounded-lg ${c.bg}`}><Users className={`w-3.5 h-3.5 ${c.color}`} /></div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5"><span className="text-xs text-white font-medium">{c.label}</span><span className="text-[10px] text-slate-400">{r.count} ({pct}%)</span></div>
-                    <div className="h-1 w-full rounded-full bg-white/[0.04]"><div className="h-full rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" style={{ width: `${pct}%` }} /></div>
+                    <div className="h-1 w-full rounded-full bg-slate-700/50"><div className="h-full rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" style={{ width: `${pct}%` }} /></div>
                   </div>
                 </div>
               );
@@ -234,7 +234,7 @@ export default function SuperAdminDashboard() {
         </Card>
 
         {/* RECENT REGISTRATIONS */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-white text-lg flex items-center gap-2"><TrendingUp className="w-5 h-5 text-green-400" />Recent Signups</CardTitle>
@@ -245,7 +245,7 @@ export default function SuperAdminDashboard() {
             {loading ? <div className="p-4 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full" />)}</div> : recent.length === 0 ? (
               <div className="p-6 text-center"><p className="text-slate-400 text-sm">No registrations</p></div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-700/50">
                 {recent.slice(0, 8).map((u: any) => {
                   const rc = ROLE_CFG[u.role] || { label: u.role, color: "text-slate-400", bg: "bg-slate-500/20" };
                   return (
@@ -267,7 +267,7 @@ export default function SuperAdminDashboard() {
         </Card>
 
         {/* PLATFORM HEALTH */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-400" />Platform Health</CardTitle></CardHeader>
           <CardContent className="space-y-2.5">
             {[
@@ -288,7 +288,7 @@ export default function SuperAdminDashboard() {
                 <Badge className={`border-0 text-[10px] ${svc.ok ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>{svc.ok ? "OK" : "Down"}</Badge>
               </div>
             ))}
-            <div className="pt-2 border-t border-white/[0.06] grid grid-cols-2 gap-3 text-xs text-slate-500">
+            <div className="pt-2 border-t border-slate-700/50 grid grid-cols-2 gap-3 text-xs text-slate-500">
               <div>Loads/month: <span className="text-white font-medium">{s?.loads?.totalThisMonth || 0}</span></div>
               <div>Active users: <span className="text-white font-medium">{s?.users?.active || 0}</span></div>
               <div>Total bids: <span className="text-white font-medium">{(counts.bids || 0).toLocaleString()}</span></div>

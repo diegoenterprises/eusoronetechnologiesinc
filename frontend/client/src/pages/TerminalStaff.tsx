@@ -246,7 +246,7 @@ export default function TerminalStaff() {
           { label: "On Break", value: stats?.onBreak || 0, color: "yellow", icon: Clock },
           { label: "Shift Leads", value: stats?.supervisors || 0, color: "purple", icon: ShieldCheck },
         ].map(({ label, value, color, icon: Icon }) => (
-          <Card key={label} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card key={label} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-5">
               <div className="flex items-center gap-4">
                 <div className={`p-3 rounded-full bg-${color}-500/20`}><Icon className={`w-6 h-6 text-${color}-400`} /></div>
@@ -263,7 +263,7 @@ export default function TerminalStaff() {
       {/* Search */}
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search staff..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search staff..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       {/* Add Staff Modal */}
@@ -285,7 +285,7 @@ export default function TerminalStaff() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-slate-400 mb-1 block">Location Type</label>
-                      <select value={form.locationType} onChange={(e: any) => setForm({ ...form, locationType: e.target.value })} className="w-full bg-white/[0.02] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white">
+                      <select value={form.locationType} onChange={(e: any) => setForm({ ...form, locationType: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
                         <option value="warehouse">Warehouse</option>
                         <option value="dock">Dock</option>
                         <option value="yard">Yard</option>
@@ -298,19 +298,19 @@ export default function TerminalStaff() {
                     </div>
                     <div>
                       <label className="text-xs text-slate-400 mb-1 block">Location Name</label>
-                      <Input value={form.locationName} onChange={(e: any) => setForm({ ...form, locationName: e.target.value })} placeholder="Main Warehouse, Dock B..." className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                      <Input value={form.locationName} onChange={(e: any) => setForm({ ...form, locationName: e.target.value })} placeholder="Main Warehouse, Dock B..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                     </div>
                     <div className="md:col-span-2">
                       <label className="text-xs text-slate-400 mb-1 block">Address</label>
-                      <Input value={form.locationAddress} onChange={(e: any) => setForm({ ...form, locationAddress: e.target.value })} placeholder="123 Industrial Blvd, Houston, TX 77001" className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                      <Input value={form.locationAddress} onChange={(e: any) => setForm({ ...form, locationAddress: e.target.value })} placeholder="123 Industrial Blvd, Houston, TX 77001" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                     </div>
                     <div>
                       <label className="text-xs text-slate-400 mb-1 block">Latitude (for geofence)</label>
-                      <Input type="number" step="any" value={form.locationLat} onChange={(e: any) => setForm({ ...form, locationLat: e.target.value })} placeholder="29.7604" className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                      <Input type="number" step="any" value={form.locationLat} onChange={(e: any) => setForm({ ...form, locationLat: e.target.value })} placeholder="29.7604" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                     </div>
                     <div>
                       <label className="text-xs text-slate-400 mb-1 block">Longitude (for geofence)</label>
-                      <Input type="number" step="any" value={form.locationLng} onChange={(e: any) => setForm({ ...form, locationLng: e.target.value })} placeholder="-95.3698" className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                      <Input type="number" step="any" value={form.locationLng} onChange={(e: any) => setForm({ ...form, locationLng: e.target.value })} placeholder="-95.3698" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                     </div>
                   </div>
                   <p className="text-[10px] text-slate-600">Lat/Lng enables geofence verification — staff must be within 500m of this location to validate arrivals</p>
@@ -320,19 +320,19 @@ export default function TerminalStaff() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Full Name *</label>
-                  <Input value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} placeholder="John Smith" className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                  <Input value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} placeholder="John Smith" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Phone</label>
-                  <Input value={form.phone} onChange={(e: any) => setForm({ ...form, phone: e.target.value })} placeholder="(555) 123-4567" className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                  <Input value={form.phone} onChange={(e: any) => setForm({ ...form, phone: e.target.value })} placeholder="(555) 123-4567" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Email</label>
-                  <Input value={form.email} onChange={(e: any) => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                  <Input value={form.email} onChange={(e: any) => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Role</label>
-                  <select value={form.staffRole} onChange={(e: any) => setForm({ ...form, staffRole: e.target.value })} className="w-full bg-white/[0.02] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white">
+                  <select value={form.staffRole} onChange={(e: any) => setForm({ ...form, staffRole: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
                     {isShipper ? (
                       <>
                         <option value="dock_manager">Dock Manager</option>
@@ -356,11 +356,11 @@ export default function TerminalStaff() {
                 </div>
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">{isShipper ? "Assigned Area" : "Assigned Zone"}</label>
-                  <Input value={form.assignedZone} onChange={(e: any) => setForm({ ...form, assignedZone: e.target.value })} placeholder={isShipper ? "Dock A, Receiving Bay 2..." : "Gate A, Rack 3, Bay 1-4..."} className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                  <Input value={form.assignedZone} onChange={(e: any) => setForm({ ...form, assignedZone: e.target.value })} placeholder={isShipper ? "Dock A, Receiving Bay 2..." : "Gate A, Rack 3, Bay 1-4..."} className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Shift</label>
-                  <select value={form.shift} onChange={(e: any) => setForm({ ...form, shift: e.target.value })} className="w-full bg-white/[0.02] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white">
+                  <select value={form.shift} onChange={(e: any) => setForm({ ...form, shift: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
                     <option value="day">Day</option>
                     <option value="night">Night</option>
                     <option value="swing">Swing</option>
@@ -378,7 +378,7 @@ export default function TerminalStaff() {
                 </label>
               </div>
               <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={() => setShowAdd(false)} className="bg-white/[0.02] border-white/[0.06] rounded-lg">Cancel</Button>
+                <Button variant="outline" onClick={() => setShowAdd(false)} className="bg-slate-800/50 border-slate-700/50 rounded-lg">Cancel</Button>
                 <Button onClick={handleAdd} disabled={!form.name.trim() || addMutation.isPending}
                   className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
                   {addMutation.isPending ? "Adding..." : "Add Controller"}
@@ -408,7 +408,7 @@ export default function TerminalStaff() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-slate-400 mb-1 block">Location Type</label>
-                      <select value={editForm.locationType} onChange={(e: any) => setEditForm({ ...editForm, locationType: e.target.value })} className="w-full bg-white/[0.02] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white">
+                      <select value={editForm.locationType} onChange={(e: any) => setEditForm({ ...editForm, locationType: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
                         <option value="warehouse">Warehouse</option>
                         <option value="dock">Dock</option>
                         <option value="yard">Yard</option>
@@ -421,19 +421,19 @@ export default function TerminalStaff() {
                     </div>
                     <div>
                       <label className="text-xs text-slate-400 mb-1 block">Location Name</label>
-                      <Input value={editForm.locationName} onChange={(e: any) => setEditForm({ ...editForm, locationName: e.target.value })} placeholder="Main Warehouse, Dock B..." className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                      <Input value={editForm.locationName} onChange={(e: any) => setEditForm({ ...editForm, locationName: e.target.value })} placeholder="Main Warehouse, Dock B..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                     </div>
                     <div className="md:col-span-2">
                       <label className="text-xs text-slate-400 mb-1 block">Address</label>
-                      <Input value={editForm.locationAddress} onChange={(e: any) => setEditForm({ ...editForm, locationAddress: e.target.value })} placeholder="123 Industrial Blvd, Houston, TX 77001" className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                      <Input value={editForm.locationAddress} onChange={(e: any) => setEditForm({ ...editForm, locationAddress: e.target.value })} placeholder="123 Industrial Blvd, Houston, TX 77001" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                     </div>
                     <div>
                       <label className="text-xs text-slate-400 mb-1 block">Latitude (for geofence)</label>
-                      <Input type="number" step="any" value={editForm.locationLat} onChange={(e: any) => setEditForm({ ...editForm, locationLat: e.target.value })} placeholder="29.7604" className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                      <Input type="number" step="any" value={editForm.locationLat} onChange={(e: any) => setEditForm({ ...editForm, locationLat: e.target.value })} placeholder="29.7604" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                     </div>
                     <div>
                       <label className="text-xs text-slate-400 mb-1 block">Longitude (for geofence)</label>
-                      <Input type="number" step="any" value={editForm.locationLng} onChange={(e: any) => setEditForm({ ...editForm, locationLng: e.target.value })} placeholder="-95.3698" className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                      <Input type="number" step="any" value={editForm.locationLng} onChange={(e: any) => setEditForm({ ...editForm, locationLng: e.target.value })} placeholder="-95.3698" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                     </div>
                   </div>
                   <p className="text-[10px] text-slate-600">Lat/Lng enables geofence verification — staff must be within 500m of this location</p>
@@ -443,19 +443,19 @@ export default function TerminalStaff() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Full Name *</label>
-                  <Input value={editForm.name} onChange={(e: any) => setEditForm({ ...editForm, name: e.target.value })} className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                  <Input value={editForm.name} onChange={(e: any) => setEditForm({ ...editForm, name: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Phone</label>
-                  <Input value={editForm.phone} onChange={(e: any) => setEditForm({ ...editForm, phone: e.target.value })} className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                  <Input value={editForm.phone} onChange={(e: any) => setEditForm({ ...editForm, phone: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Email</label>
-                  <Input value={editForm.email} onChange={(e: any) => setEditForm({ ...editForm, email: e.target.value })} className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                  <Input value={editForm.email} onChange={(e: any) => setEditForm({ ...editForm, email: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Role</label>
-                  <select value={editForm.staffRole} onChange={(e: any) => setEditForm({ ...editForm, staffRole: e.target.value })} className="w-full bg-white/[0.02] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white">
+                  <select value={editForm.staffRole} onChange={(e: any) => setEditForm({ ...editForm, staffRole: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
                     {isShipper ? (
                       <>
                         <option value="dock_manager">Dock Manager</option>
@@ -479,11 +479,11 @@ export default function TerminalStaff() {
                 </div>
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">{isShipper ? "Assigned Area" : "Assigned Zone"}</label>
-                  <Input value={editForm.assignedZone} onChange={(e: any) => setEditForm({ ...editForm, assignedZone: e.target.value })} className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+                  <Input value={editForm.assignedZone} onChange={(e: any) => setEditForm({ ...editForm, assignedZone: e.target.value })} className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Shift</label>
-                  <select value={editForm.shift} onChange={(e: any) => setEditForm({ ...editForm, shift: e.target.value })} className="w-full bg-white/[0.02] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white">
+                  <select value={editForm.shift} onChange={(e: any) => setEditForm({ ...editForm, shift: e.target.value })} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white">
                     <option value="day">Day</option>
                     <option value="night">Night</option>
                     <option value="swing">Swing</option>
@@ -501,7 +501,7 @@ export default function TerminalStaff() {
                 </label>
               </div>
               <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={() => { setEditingStaff(null); setEditForm(null); }} className="bg-white/[0.02] border-white/[0.06] rounded-lg">Cancel</Button>
+                <Button variant="outline" onClick={() => { setEditingStaff(null); setEditForm(null); }} className="bg-slate-800/50 border-slate-700/50 rounded-lg">Cancel</Button>
                 <Button onClick={handleEdit} disabled={!editForm.name?.trim() || updateMutation.isPending}
                   className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
                   {updateMutation.isPending ? "Saving..." : "Save Changes"}
@@ -513,7 +513,7 @@ export default function TerminalStaff() {
       )}
 
       {/* Staff List */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Access Controllers</CardTitle>
         </CardHeader>
@@ -527,7 +527,7 @@ export default function TerminalStaff() {
               <p className="text-slate-500 text-xs mt-1">Add staff to manage who validates arriving drivers</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {staffList.map((staff: any) => {
                 const link = getStaffLink(staff.id);
                 return (

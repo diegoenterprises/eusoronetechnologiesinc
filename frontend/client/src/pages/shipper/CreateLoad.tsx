@@ -215,7 +215,7 @@ export default function CreateLoad() {
       <div className="flex items-center gap-1 md:gap-2 mb-6 overflow-x-auto pb-2">
         {STEPS.map((s, i) => (
           <React.Fragment key={s.id}>
-            <button onClick={() => s.id < step && setStep(s.id)} className={cn("flex items-center gap-1.5 px-2 md:px-3 py-2 rounded-lg transition-colors shrink-0", step === s.id ? "bg-cyan-500/20 text-cyan-400" : step > s.id ? "bg-green-500/20 text-green-400 cursor-pointer hover:bg-green-500/25" : isLight ? "bg-slate-100 text-slate-400" : "bg-white/[0.02] text-slate-500")}>
+            <button onClick={() => s.id < step && setStep(s.id)} className={cn("flex items-center gap-1.5 px-2 md:px-3 py-2 rounded-lg transition-colors shrink-0", step === s.id ? "bg-cyan-500/20 text-cyan-400" : step > s.id ? "bg-green-500/20 text-green-400 cursor-pointer hover:bg-green-500/25" : isLight ? "bg-slate-100 text-slate-400" : "bg-slate-800/50 text-slate-500")}>
               <s.icon className="w-4 h-4" />
               <span className="text-xs md:text-sm hidden md:inline">{s.title}</span>
             </button>
@@ -226,19 +226,19 @@ export default function CreateLoad() {
 
       <Progress value={(step / 8) * 100} className="h-2 mb-6" />
 
-      <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
+      <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
         <CardContent className="p-6">
           {step === 1 && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><Label>Product Name</Label><Input value={formData.productName} onChange={e => updateField("productName", e.target.value)} placeholder="Enter product name" className="bg-white/[0.04] border-white/[0.06]" /></div>
+                <div><Label>Product Name</Label><Input value={formData.productName} onChange={e => updateField("productName", e.target.value)} placeholder="Enter product name" className="bg-slate-700/50 border-slate-600/50" /></div>
                 <div className="flex items-center gap-2 pt-6"><Checkbox checked={formData.isHazmat} onCheckedChange={v => updateField("isHazmat", v)} /><Label>This is a hazardous material</Label></div>
               </div>
               {formData.isHazmat && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30">
-                  <div><Label>Hazmat Class</Label>{(hazmatQuery as any).isLoading || (hazmatQuery as any).isPending ? <Skeleton className="h-10" /> : <Select value={formData.hazmatClass} onValueChange={v => updateField("hazmatClass", v)}><SelectTrigger className="bg-white/[0.04]"><SelectValue placeholder="Select class" /></SelectTrigger><SelectContent><SelectItem value="1">Class 1 - Explosives</SelectItem><SelectItem value="2">Class 2 - Gases</SelectItem><SelectItem value="3">Class 3 - Flammable Liquids</SelectItem><SelectItem value="4">Class 4 - Flammable Solids</SelectItem><SelectItem value="5">Class 5 - Oxidizers</SelectItem><SelectItem value="6">Class 6 - Poisons</SelectItem><SelectItem value="7">Class 7 - Radioactive</SelectItem><SelectItem value="8">Class 8 - Corrosives</SelectItem><SelectItem value="9">Class 9 - Misc</SelectItem></SelectContent></Select>}</div>
-                  <div><Label>UN Number</Label><Input value={formData.unNumber} onChange={e => updateField("unNumber", e.target.value)} placeholder="UN1234" className="bg-white/[0.04]" /></div>
-                  <div><Label>Packing Group</Label><Select value={formData.packingGroup} onValueChange={v => updateField("packingGroup", v)}><SelectTrigger className="bg-white/[0.04]"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="I">I - Great Danger</SelectItem><SelectItem value="II">II - Medium Danger</SelectItem><SelectItem value="III">III - Minor Danger</SelectItem></SelectContent></Select></div>
+                  <div><Label>Hazmat Class</Label>{(hazmatQuery as any).isLoading || (hazmatQuery as any).isPending ? <Skeleton className="h-10" /> : <Select value={formData.hazmatClass} onValueChange={v => updateField("hazmatClass", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select class" /></SelectTrigger><SelectContent><SelectItem value="1">Class 1 - Explosives</SelectItem><SelectItem value="2">Class 2 - Gases</SelectItem><SelectItem value="3">Class 3 - Flammable Liquids</SelectItem><SelectItem value="4">Class 4 - Flammable Solids</SelectItem><SelectItem value="5">Class 5 - Oxidizers</SelectItem><SelectItem value="6">Class 6 - Poisons</SelectItem><SelectItem value="7">Class 7 - Radioactive</SelectItem><SelectItem value="8">Class 8 - Corrosives</SelectItem><SelectItem value="9">Class 9 - Misc</SelectItem></SelectContent></Select>}</div>
+                  <div><Label>UN Number</Label><Input value={formData.unNumber} onChange={e => updateField("unNumber", e.target.value)} placeholder="UN1234" className="bg-slate-700/50" /></div>
+                  <div><Label>Packing Group</Label><Select value={formData.packingGroup} onValueChange={v => updateField("packingGroup", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="I">I - Great Danger</SelectItem><SelectItem value="II">II - Medium Danger</SelectItem><SelectItem value="III">III - Minor Danger</SelectItem></SelectContent></Select></div>
                 </div>
               )}
             </div>
@@ -251,9 +251,9 @@ export default function CreateLoad() {
                 <h3 className={cn("font-semibold", isLight ? "text-slate-800" : "text-white")}>Total Volume Demand</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><Label>Total Volume Needed</Label><Input type="number" value={formData.totalDemand} onChange={e => updateField("totalDemand", e.target.value)} placeholder="e.g. 5000" className="bg-white/[0.04]" /></div>
-                <div><Label>Unit</Label><Select value={formData.demandUnit} onValueChange={v => updateField("demandUnit", v)}><SelectTrigger className="bg-white/[0.04]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="barrels">Barrels (bbl)</SelectItem><SelectItem value="gallons">Gallons (gal)</SelectItem></SelectContent></Select></div>
-                <div><Label>Days to Complete</Label><Input type="number" min="1" value={formData.totalDays} onChange={e => updateField("totalDays", e.target.value)} className="bg-white/[0.04]" /></div>
+                <div><Label>Total Volume Needed</Label><Input type="number" value={formData.totalDemand} onChange={e => updateField("totalDemand", e.target.value)} placeholder="e.g. 5000" className="bg-slate-700/50" /></div>
+                <div><Label>Unit</Label><Select value={formData.demandUnit} onValueChange={v => updateField("demandUnit", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="barrels">Barrels (bbl)</SelectItem><SelectItem value="gallons">Gallons (gal)</SelectItem></SelectContent></Select></div>
+                <div><Label>Days to Complete</Label><Input type="number" min="1" value={formData.totalDays} onChange={e => updateField("totalDays", e.target.value)} className="bg-slate-700/50" /></div>
               </div>
 
               <div className={cn("p-4 rounded-xl border", isLight ? "bg-blue-50 border-blue-200" : "bg-[#1473FF]/5 border-[#1473FF]/20")}>
@@ -273,16 +273,16 @@ export default function CreateLoad() {
                   <>
                     <p className={cn("text-xs mb-3", isLight ? "text-slate-500" : "text-slate-400")}>All trucks use the same tanker capacity and fill level.</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div><Label>Tanker Max Capacity (bbl)</Label><Input type="number" value={formData.tankerCapacity} onChange={e => updateField("tankerCapacity", e.target.value)} placeholder="130-210" className={cn(isLight ? "bg-white border-slate-300" : "bg-white/[0.04]")} /><p className="text-[10px] text-slate-500 mt-1">Industry range: 130-210 bbl</p></div>
-                      <div><Label>Actual Fill Per Load (bbl)</Label><Input type="number" value={formData.actualFill} onChange={e => updateField("actualFill", e.target.value)} placeholder="e.g. 190" className={cn(isLight ? "bg-white border-slate-300" : "bg-white/[0.04]")} /><p className="text-[10px] text-slate-500 mt-1">Operators rarely fill to max</p></div>
-                      <div><Label>Loads Per Truck / Day</Label><Input type="number" min="1" value={formData.loadsPerTruckPerDay} onChange={e => updateField("loadsPerTruckPerDay", e.target.value)} className={cn(isLight ? "bg-white border-slate-300" : "bg-white/[0.04]")} /><p className="text-[10px] text-slate-500 mt-1">Round trips per truck daily</p></div>
+                      <div><Label>Tanker Max Capacity (bbl)</Label><Input type="number" value={formData.tankerCapacity} onChange={e => updateField("tankerCapacity", e.target.value)} placeholder="130-210" className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /><p className="text-[10px] text-slate-500 mt-1">Industry range: 130-210 bbl</p></div>
+                      <div><Label>Actual Fill Per Load (bbl)</Label><Input type="number" value={formData.actualFill} onChange={e => updateField("actualFill", e.target.value)} placeholder="e.g. 190" className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /><p className="text-[10px] text-slate-500 mt-1">Operators rarely fill to max</p></div>
+                      <div><Label>Loads Per Truck / Day</Label><Input type="number" min="1" value={formData.loadsPerTruckPerDay} onChange={e => updateField("loadsPerTruckPerDay", e.target.value)} className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /><p className="text-[10px] text-slate-500 mt-1">Round trips per truck daily</p></div>
                     </div>
                     <div className="flex items-center gap-2 mt-3">
                       <Checkbox checked={formData.manualTruckOverride} onCheckedChange={v => updateField("manualTruckOverride", v)} />
                       <Label className="text-sm">I want to specify exact truck count</Label>
                     </div>
                     {formData.manualTruckOverride && (
-                      <div className="mt-2 w-48"><Label>Trucks</Label><Input type="number" min="1" value={formData.trucksNeeded} onChange={e => updateField("trucksNeeded", e.target.value)} className={cn(isLight ? "bg-white border-slate-300" : "bg-white/[0.04]")} /></div>
+                      <div className="mt-2 w-48"><Label>Trucks</Label><Input type="number" min="1" value={formData.trucksNeeded} onChange={e => updateField("trucksNeeded", e.target.value)} className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /></div>
                     )}
                   </>
                 ) : (
@@ -290,11 +290,11 @@ export default function CreateLoad() {
                     <p className={cn("text-xs mb-3", isLight ? "text-slate-500" : "text-slate-400")}>Define individual trucks with different tanker capacities. The system distributes loads proportionally.</p>
                     <div className="space-y-2">
                       {trucks.map((t, i) => (
-                        <div key={t.id} className={cn("flex items-center gap-3 p-3 rounded-lg border", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700")}>
+                        <div key={t.id} className={cn("flex items-center gap-3 p-3 rounded-lg border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700")}>
                           <span className={cn("text-xs font-mono w-6 text-center", isLight ? "text-slate-400" : "text-slate-500")}>{i + 1}</span>
-                          <Input value={t.name} onChange={e => updateTruck(t.id, "name", e.target.value)} className={cn("w-32 h-8 text-xs", isLight ? "bg-slate-50" : "bg-white/[0.04]")} placeholder="Name" />
-                          <div className="flex items-center gap-1"><Label className="text-[10px] text-slate-400 shrink-0">Max</Label><Input type="number" value={t.capacity} onChange={e => updateTruck(t.id, "capacity", parseInt(e.target.value) || 0)} className={cn("w-20 h-8 text-xs", isLight ? "bg-slate-50" : "bg-white/[0.04]")} /></div>
-                          <div className="flex items-center gap-1"><Label className="text-[10px] text-slate-400 shrink-0">Fill</Label><Input type="number" value={t.fill} onChange={e => updateTruck(t.id, "fill", parseInt(e.target.value) || 0)} className={cn("w-20 h-8 text-xs", isLight ? "bg-slate-50" : "bg-white/[0.04]")} /></div>
+                          <Input value={t.name} onChange={e => updateTruck(t.id, "name", e.target.value)} className={cn("w-32 h-8 text-xs", isLight ? "bg-slate-50" : "bg-slate-700/50")} placeholder="Name" />
+                          <div className="flex items-center gap-1"><Label className="text-[10px] text-slate-400 shrink-0">Max</Label><Input type="number" value={t.capacity} onChange={e => updateTruck(t.id, "capacity", parseInt(e.target.value) || 0)} className={cn("w-20 h-8 text-xs", isLight ? "bg-slate-50" : "bg-slate-700/50")} /></div>
+                          <div className="flex items-center gap-1"><Label className="text-[10px] text-slate-400 shrink-0">Fill</Label><Input type="number" value={t.fill} onChange={e => updateTruck(t.id, "fill", parseInt(e.target.value) || 0)} className={cn("w-20 h-8 text-xs", isLight ? "bg-slate-50" : "bg-slate-700/50")} /></div>
                           <Badge className={cn("text-[9px] shrink-0", t.fill > 0 && t.capacity > 0 ? "bg-green-500/15 text-green-400 border-0" : "bg-slate-500/15 text-slate-400 border-0")}>{t.capacity > 0 ? Math.round((t.fill / t.capacity) * 100) : 0}%</Badge>
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => removeTruck(t.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                         </div>
@@ -302,7 +302,7 @@ export default function CreateLoad() {
                       <Button variant="outline" size="sm" onClick={addTruck} className={cn("w-full h-9 rounded-lg border-dashed", isLight ? "border-slate-300 text-slate-500 hover:bg-slate-50" : "border-slate-600 text-slate-400 hover:bg-slate-800")}><Plus className="w-3.5 h-3.5 mr-1.5" />Add Truck</Button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-3">
-                      <div><Label>Loads Per Truck / Day</Label><Input type="number" min="1" value={formData.loadsPerTruckPerDay} onChange={e => updateField("loadsPerTruckPerDay", e.target.value)} className={cn("w-32", isLight ? "bg-white border-slate-300" : "bg-white/[0.04]")} /></div>
+                      <div><Label>Loads Per Truck / Day</Label><Input type="number" min="1" value={formData.loadsPerTruckPerDay} onChange={e => updateField("loadsPerTruckPerDay", e.target.value)} className={cn("w-32", isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /></div>
                     </div>
                   </>
                 )}
@@ -349,19 +349,19 @@ export default function CreateLoad() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className={cn("space-y-4 p-4 rounded-lg", isLight ? "bg-[#1473FF]/5 border border-[#1473FF]/20" : "bg-[#1473FF]/10 border border-[#1473FF]/30")}>
                 <h3 className="text-[#1473FF] font-medium flex items-center gap-2"><MapPin className="w-4 h-4" />Origin / Pickup</h3>
-                <Input value={formData.originName} onChange={e => updateField("originName", e.target.value)} placeholder="Facility Name" className="bg-white/[0.04]" />
-                <Input value={formData.originAddress} onChange={e => updateField("originAddress", e.target.value)} placeholder="Address" className="bg-white/[0.04]" />
-                <div className="grid grid-cols-3 gap-2"><Input value={formData.originCity} onChange={e => updateField("originCity", e.target.value)} placeholder="City" className="bg-white/[0.04]" /><Input value={formData.originState} onChange={e => updateField("originState", e.target.value)} placeholder="State" className="bg-white/[0.04]" /><Input value={formData.originZip} onChange={e => updateField("originZip", e.target.value)} placeholder="ZIP" className="bg-white/[0.04]" /></div>
-                <Input value={formData.originContact} onChange={e => updateField("originContact", e.target.value)} placeholder="Contact Name" className="bg-white/[0.04]" />
-                <Input value={formData.originPhone} onChange={e => updateField("originPhone", e.target.value)} placeholder="Phone" className="bg-white/[0.04]" />
+                <Input value={formData.originName} onChange={e => updateField("originName", e.target.value)} placeholder="Facility Name" className="bg-slate-700/50" />
+                <Input value={formData.originAddress} onChange={e => updateField("originAddress", e.target.value)} placeholder="Address" className="bg-slate-700/50" />
+                <div className="grid grid-cols-3 gap-2"><Input value={formData.originCity} onChange={e => updateField("originCity", e.target.value)} placeholder="City" className="bg-slate-700/50" /><Input value={formData.originState} onChange={e => updateField("originState", e.target.value)} placeholder="State" className="bg-slate-700/50" /><Input value={formData.originZip} onChange={e => updateField("originZip", e.target.value)} placeholder="ZIP" className="bg-slate-700/50" /></div>
+                <Input value={formData.originContact} onChange={e => updateField("originContact", e.target.value)} placeholder="Contact Name" className="bg-slate-700/50" />
+                <Input value={formData.originPhone} onChange={e => updateField("originPhone", e.target.value)} placeholder="Phone" className="bg-slate-700/50" />
               </div>
               <div className={cn("space-y-4 p-4 rounded-lg", isLight ? "bg-[#BE01FF]/5 border border-[#BE01FF]/20" : "bg-[#BE01FF]/10 border border-[#BE01FF]/30")}>
                 <h3 className="text-[#BE01FF] font-medium flex items-center gap-2"><MapPin className="w-4 h-4" />Destination / Drop-off</h3>
-                <Input value={formData.destName} onChange={e => updateField("destName", e.target.value)} placeholder="Facility Name" className="bg-white/[0.04]" />
-                <Input value={formData.destAddress} onChange={e => updateField("destAddress", e.target.value)} placeholder="Address" className="bg-white/[0.04]" />
-                <div className="grid grid-cols-3 gap-2"><Input value={formData.destCity} onChange={e => updateField("destCity", e.target.value)} placeholder="City" className="bg-white/[0.04]" /><Input value={formData.destState} onChange={e => updateField("destState", e.target.value)} placeholder="State" className="bg-white/[0.04]" /><Input value={formData.destZip} onChange={e => updateField("destZip", e.target.value)} placeholder="ZIP" className="bg-white/[0.04]" /></div>
-                <Input value={formData.destContact} onChange={e => updateField("destContact", e.target.value)} placeholder="Contact Name" className="bg-white/[0.04]" />
-                <Input value={formData.destPhone} onChange={e => updateField("destPhone", e.target.value)} placeholder="Phone" className="bg-white/[0.04]" />
+                <Input value={formData.destName} onChange={e => updateField("destName", e.target.value)} placeholder="Facility Name" className="bg-slate-700/50" />
+                <Input value={formData.destAddress} onChange={e => updateField("destAddress", e.target.value)} placeholder="Address" className="bg-slate-700/50" />
+                <div className="grid grid-cols-3 gap-2"><Input value={formData.destCity} onChange={e => updateField("destCity", e.target.value)} placeholder="City" className="bg-slate-700/50" /><Input value={formData.destState} onChange={e => updateField("destState", e.target.value)} placeholder="State" className="bg-slate-700/50" /><Input value={formData.destZip} onChange={e => updateField("destZip", e.target.value)} placeholder="ZIP" className="bg-slate-700/50" /></div>
+                <Input value={formData.destContact} onChange={e => updateField("destContact", e.target.value)} placeholder="Contact Name" className="bg-slate-700/50" />
+                <Input value={formData.destPhone} onChange={e => updateField("destPhone", e.target.value)} placeholder="Phone" className="bg-slate-700/50" />
               </div>
             </div>
           )}
@@ -369,20 +369,20 @@ export default function CreateLoad() {
           {step === 4 && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><Label>Equipment Type</Label><Select value={formData.equipmentType} onValueChange={v => updateField("equipmentType", v)}><SelectTrigger className="bg-white/[0.04]"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="dry_van">Dry Van</SelectItem><SelectItem value="reefer">Reefer</SelectItem><SelectItem value="flatbed">Flatbed</SelectItem><SelectItem value="liquid_tank">Tanker (Hazmat Liquid)</SelectItem><SelectItem value="gas_tank">Tanker (Gas)</SelectItem><SelectItem value="food_grade_tank">Food-Grade Tank</SelectItem><SelectItem value="water_tank">Water Tank</SelectItem><SelectItem value="bulk_hopper">Bulk Hopper</SelectItem><SelectItem value="step_deck">Step Deck</SelectItem><SelectItem value="lowboy">Lowboy</SelectItem></SelectContent></Select></div>
-                <div><Label>Trailer Length</Label><Select value={formData.trailerLength} onValueChange={v => updateField("trailerLength", v)}><SelectTrigger className="bg-white/[0.04]"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="48">48 ft</SelectItem><SelectItem value="53">53 ft</SelectItem></SelectContent></Select></div>
-                <div><Label>Compartments</Label><Input type="number" min="1" max="5" value={formData.compartments} onChange={e => updateField("compartments", e.target.value)} className="bg-white/[0.04]" /></div>
+                <div><Label>Equipment Type</Label><Select value={formData.equipmentType} onValueChange={v => updateField("equipmentType", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="dry_van">Dry Van</SelectItem><SelectItem value="reefer">Reefer</SelectItem><SelectItem value="flatbed">Flatbed</SelectItem><SelectItem value="liquid_tank">Tanker (Hazmat Liquid)</SelectItem><SelectItem value="gas_tank">Tanker (Gas)</SelectItem><SelectItem value="food_grade_tank">Food-Grade Tank</SelectItem><SelectItem value="water_tank">Water Tank</SelectItem><SelectItem value="bulk_hopper">Bulk Hopper</SelectItem><SelectItem value="step_deck">Step Deck</SelectItem><SelectItem value="lowboy">Lowboy</SelectItem></SelectContent></Select></div>
+                <div><Label>Trailer Length</Label><Select value={formData.trailerLength} onValueChange={v => updateField("trailerLength", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="48">48 ft</SelectItem><SelectItem value="53">53 ft</SelectItem></SelectContent></Select></div>
+                <div><Label>Compartments</Label><Input type="number" min="1" max="5" value={formData.compartments} onChange={e => updateField("compartments", e.target.value)} className="bg-slate-700/50" /></div>
               </div>
               <div className="flex items-center gap-2"><Checkbox checked={formData.tempControl} onCheckedChange={v => updateField("tempControl", v)} /><Label>Temperature Controlled</Label></div>
-              {formData.tempControl && <div className="grid grid-cols-2 gap-4"><div><Label>Min Temp (F)</Label><Input type="number" value={formData.tempMin} onChange={e => updateField("tempMin", e.target.value)} className="bg-white/[0.04]" /></div><div><Label>Max Temp (F)</Label><Input type="number" value={formData.tempMax} onChange={e => updateField("tempMax", e.target.value)} className="bg-white/[0.04]" /></div></div>}
+              {formData.tempControl && <div className="grid grid-cols-2 gap-4"><div><Label>Min Temp (F)</Label><Input type="number" value={formData.tempMin} onChange={e => updateField("tempMin", e.target.value)} className="bg-slate-700/50" /></div><div><Label>Max Temp (F)</Label><Input type="number" value={formData.tempMax} onChange={e => updateField("tempMax", e.target.value)} className="bg-slate-700/50" /></div></div>}
             </div>
           )}
 
           {step === 5 && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><Label>Pickup Date</Label><Input type="date" value={formData.pickupDate} onChange={e => updateField("pickupDate", e.target.value)} className="bg-white/[0.04]" /></div>
-                <div><Label>Delivery Date</Label><Input type="date" value={formData.deliveryDate} onChange={e => updateField("deliveryDate", e.target.value)} className="bg-white/[0.04]" /></div>
+                <div><Label>Pickup Date</Label><Input type="date" value={formData.pickupDate} onChange={e => updateField("pickupDate", e.target.value)} className="bg-slate-700/50" /></div>
+                <div><Label>Delivery Date</Label><Input type="date" value={formData.deliveryDate} onChange={e => updateField("deliveryDate", e.target.value)} className="bg-slate-700/50" /></div>
               </div>
               <div><Label>Schedule Type</Label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
@@ -399,10 +399,10 @@ export default function CreateLoad() {
                 </div>
               </div>
               {formData.scheduleType === "recurring" && (
-                <div className="w-48"><Label>Recurring Days</Label><Input type="number" min="1" value={formData.recurringDays} onChange={e => { updateField("recurringDays", e.target.value); updateField("totalDays", e.target.value); }} className="bg-white/[0.04]" /></div>
+                <div className="w-48"><Label>Recurring Days</Label><Input type="number" min="1" value={formData.recurringDays} onChange={e => { updateField("recurringDays", e.target.value); updateField("totalDays", e.target.value); }} className="bg-slate-700/50" /></div>
               )}
               {formData.scheduleType === "convoy" && (
-                <div className="w-48"><Label>Convoy Size (trucks)</Label><Input type="number" min="2" value={formData.convoySize} onChange={e => updateField("convoySize", e.target.value)} className="bg-white/[0.04]" /></div>
+                <div className="w-48"><Label>Convoy Size (trucks)</Label><Input type="number" min="2" value={formData.convoySize} onChange={e => updateField("convoySize", e.target.value)} className="bg-slate-700/50" /></div>
               )}
             </div>
           )}
@@ -414,7 +414,7 @@ export default function CreateLoad() {
                 <div className="flex items-center gap-2"><Checkbox checked={formData.hazmatEndorsement} onCheckedChange={v => updateField("hazmatEndorsement", v)} /><Label>Hazmat Endorsement</Label></div>
                 <div className="flex items-center gap-2"><Checkbox checked={formData.tankerEndorsement} onCheckedChange={v => updateField("tankerEndorsement", v)} /><Label>Tanker Endorsement</Label></div>
               </div>
-              <div><Label>Minimum Safety Rating</Label><Select value={formData.minRating} onValueChange={v => updateField("minRating", v)}><SelectTrigger className="bg-white/[0.04] w-48"><SelectValue placeholder="Any" /></SelectTrigger><SelectContent><SelectItem value="any">Any</SelectItem><SelectItem value="satisfactory">Satisfactory</SelectItem><SelectItem value="conditional">Conditional or Better</SelectItem></SelectContent></Select></div>
+              <div><Label>Minimum Safety Rating</Label><Select value={formData.minRating} onValueChange={v => updateField("minRating", v)}><SelectTrigger className="bg-slate-700/50 w-48"><SelectValue placeholder="Any" /></SelectTrigger><SelectContent><SelectItem value="any">Any</SelectItem><SelectItem value="satisfactory">Satisfactory</SelectItem><SelectItem value="conditional">Conditional or Better</SelectItem></SelectContent></Select></div>
               <div><Label>Assignment Type</Label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
                   {[
@@ -445,7 +445,7 @@ export default function CreateLoad() {
                     if (ag?.baseRate) updateField("ratePerLoad", String(parseFloat(ag.baseRate)));
                     if (ag?.paymentTermDays) updateField("paymentTerms", String(ag.paymentTermDays));
                   }}>
-                    <SelectTrigger className={cn(isLight ? "bg-white border-slate-300" : "bg-white/[0.04]")}>
+                    <SelectTrigger className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")}>
                       <SelectValue placeholder="Select an active agreement (optional)" />
                     </SelectTrigger>
                     <SelectContent>
@@ -479,8 +479,8 @@ export default function CreateLoad() {
           {step === 7 && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><Label>Rate Per Load ($)</Label><Input type="number" value={formData.ratePerLoad} onChange={e => updateField("ratePerLoad", e.target.value)} placeholder="Rate for a single truck load" className="bg-white/[0.04]" /></div>
-                <div><Label>Payment Terms</Label><Select value={formData.paymentTerms} onValueChange={v => updateField("paymentTerms", v)}><SelectTrigger className="bg-white/[0.04]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="quick">Quick Pay (2%)</SelectItem><SelectItem value="15">Net 15</SelectItem><SelectItem value="30">Net 30</SelectItem></SelectContent></Select></div>
+                <div><Label>Rate Per Load ($)</Label><Input type="number" value={formData.ratePerLoad} onChange={e => updateField("ratePerLoad", e.target.value)} placeholder="Rate for a single truck load" className="bg-slate-700/50" /></div>
+                <div><Label>Payment Terms</Label><Select value={formData.paymentTerms} onValueChange={v => updateField("paymentTerms", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="quick">Quick Pay (2%)</SelectItem><SelectItem value="15">Net 15</SelectItem><SelectItem value="30">Net 30</SelectItem></SelectContent></Select></div>
               </div>
               {calc.totalLoads > 0 && parseFloat(formData.ratePerLoad) > 0 && (
                 <div className={cn("p-4 rounded-xl border", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-[#1473FF]/30")}>
@@ -499,7 +499,7 @@ export default function CreateLoad() {
                   </div>
                 </div>
               )}
-              <div className="col-span-full"><Label>Special Instructions</Label><Textarea value={formData.notes} onChange={e => updateField("notes", e.target.value)} placeholder="Loading instructions, safety notes, contact details..." className="bg-white/[0.04]" /></div>
+              <div className="col-span-full"><Label>Special Instructions</Label><Textarea value={formData.notes} onChange={e => updateField("notes", e.target.value)} placeholder="Loading instructions, safety notes, contact details..." className="bg-slate-700/50" /></div>
             </div>
           )}
 
@@ -517,7 +517,7 @@ export default function CreateLoad() {
                 </div>
               </div>
 
-              <div className={cn("grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700")}>
+              <div className={cn("grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700")}>
                 <div><p className="text-slate-400 text-xs">Product</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{formData.productName || "N/A"}</p></div>
                 <div><p className="text-slate-400 text-xs">Hazmat</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{formData.isHazmat ? `Class ${formData.hazmatClass} (${formData.unNumber})` : "No"}</p></div>
                 <div><p className="text-slate-400 text-xs">Equipment</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{formData.equipmentType || "N/A"}</p></div>
@@ -537,7 +537,7 @@ export default function CreateLoad() {
                   <p className={cn("text-xs font-semibold mb-2 flex items-center gap-2", isLight ? "text-slate-700" : "text-slate-300")}><Truck className="w-3.5 h-3.5" />Multi-Truck Roster ({trucks.length} trucks)</p>
                   <div className="space-y-1">
                     {calc.truckBreakdown.map((tb, i) => (
-                      <div key={i} className={cn("flex items-center justify-between px-3 py-1.5 rounded-lg text-xs", isLight ? "bg-white border border-slate-100" : "bg-white/[0.02]")}>
+                      <div key={i} className={cn("flex items-center justify-between px-3 py-1.5 rounded-lg text-xs", isLight ? "bg-white border border-slate-100" : "bg-slate-800/50")}>
                         <span className={cn("font-medium", isLight ? "text-slate-700" : "text-white")}>{tb.name}</span>
                         <div className="flex items-center gap-3">
                           <span className="text-slate-400">{tb.fill}/{tb.capacity} bbl</span>
@@ -558,7 +558,7 @@ export default function CreateLoad() {
               )}
 
               {formData.notes && (
-                <div className={cn("p-3 rounded-xl border text-sm", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700")}>
+                <div className={cn("p-3 rounded-xl border text-sm", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700")}>
                   <p className="text-slate-400 text-xs mb-1">Special Instructions</p>
                   <p className={cn(isLight ? "text-slate-800" : "text-white")}>{formData.notes}</p>
                 </div>
@@ -569,7 +569,7 @@ export default function CreateLoad() {
       </Card>
 
       <div className="flex justify-between">
-        <Button variant="outline" onClick={prevStep} disabled={step === 1} className={cn(isLight ? "border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}><ChevronLeft className="w-4 h-4 mr-2" />Previous</Button>
+        <Button variant="outline" onClick={prevStep} disabled={step === 1} className={cn(isLight ? "border-slate-200" : "bg-slate-800/50 border-slate-700/50")}><ChevronLeft className="w-4 h-4 mr-2" />Previous</Button>
         {step < 8 ? (
           <Button onClick={nextStep} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white">Next<ChevronRight className="w-4 h-4 ml-2" /></Button>
         ) : (

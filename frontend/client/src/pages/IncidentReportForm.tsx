@@ -83,8 +83,8 @@ export default function IncidentReportForm() {
     });
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white placeholder:text-slate-400");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-400");
   const labelCls = cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-500" : "text-slate-400");
 
   if (submitted) {
@@ -173,7 +173,7 @@ export default function IncidentReportForm() {
                         ? "bg-[#1473FF]/10 text-[#1473FF] border-[#1473FF]/30"
                         : isLight
                           ? "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                          : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:border-slate-600"
+                          : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600"
                     )}
                   >
                     {type}
@@ -212,7 +212,7 @@ export default function IncidentReportForm() {
                 value={form.description}
                 onChange={(e: any) => update("description", e.target.value)}
                 placeholder="Describe what happened, sequence of events, and immediate actions taken..."
-                className={cn("rounded-xl min-h-[100px]", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white placeholder:text-slate-400")}
+                className={cn("rounded-xl min-h-[100px]", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-400")}
               />
             </div>
 
@@ -262,7 +262,7 @@ export default function IncidentReportForm() {
                 <select
                   value={form.quantityUnit}
                   onChange={(e) => update("quantityUnit", e.target.value)}
-                  className={cn("w-full h-11 px-3 rounded-xl border text-sm", isLight ? "bg-white border-slate-200 text-slate-800" : "bg-white/[0.02] border-white/[0.06] text-white")}
+                  className={cn("w-full h-11 px-3 rounded-xl border text-sm", isLight ? "bg-white border-slate-200 text-slate-800" : "bg-slate-800/50 border-slate-700/50 text-white")}
                 >
                   <option value="gallons">Gallons</option>
                   <option value="pounds">Pounds</option>
@@ -274,7 +274,7 @@ export default function IncidentReportForm() {
             </div>
 
             <div className="flex gap-3">
-              <Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-white/[0.04] border-white/[0.06]")} onClick={() => setStep("details")}>
+              <Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50")} onClick={() => setStep("details")}>
                 Back
               </Button>
               <Button className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl h-11" onClick={() => setStep("impact")}>
@@ -322,7 +322,7 @@ export default function IncidentReportForm() {
                       "flex items-center gap-3 p-3 rounded-xl border transition-all text-left",
                       (form as any)[item.key]
                         ? isLight ? "bg-red-50 border-red-200" : "bg-red-500/5 border-red-500/20"
-                        : isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
+                        : isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
                     )}
                   >
                     <div className={cn(
@@ -341,7 +341,7 @@ export default function IncidentReportForm() {
             </div>
 
             <div className="flex gap-3">
-              <Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-white/[0.04] border-white/[0.06]")} onClick={() => setStep("materials")}>
+              <Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50")} onClick={() => setStep("materials")}>
                 Back
               </Button>
               <Button className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl h-11" onClick={() => setStep("review")}>
@@ -391,7 +391,7 @@ export default function IncidentReportForm() {
             )}
 
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-white/[0.04] border-white/[0.06]")} onClick={() => setStep("impact")}>
+              <Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50")} onClick={() => setStep("impact")}>
                 Back
               </Button>
               <Button

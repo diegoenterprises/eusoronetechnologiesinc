@@ -82,7 +82,7 @@ export default function LoadTracking() {
 
   const cardClass = cn(
     "rounded-2xl border overflow-hidden",
-    isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]"
+    isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50"
   );
 
   return (
@@ -100,7 +100,7 @@ export default function LoadTracking() {
         </div>
         <Button
           variant="outline"
-          className={cn("rounded-lg", isLight ? "bg-white border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")}
+          className={cn("rounded-lg", isLight ? "bg-white border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
           onClick={() => recentQuery.refetch()}
         >
           <RefreshCw className={cn("w-4 h-4 mr-2", recentQuery.isRefetching ? "animate-spin" : "")} />Refresh
@@ -235,7 +235,7 @@ export default function LoadTracking() {
                       { label: "Product", value: trackedLoad.product },
                       { label: "Rate", value: trackedLoad.rate > 0 ? `$${trackedLoad.rate.toLocaleString()}` : "N/A" },
                     ].map((item) => (
-                      <div key={item.label} className={cn("p-3 rounded-xl", isLight ? "bg-white/70 border border-slate-100" : "bg-white/[0.02]")}>
+                      <div key={item.label} className={cn("p-3 rounded-xl", isLight ? "bg-white/70 border border-slate-100" : "bg-slate-800/50")}>
                         <p className="text-[11px] text-slate-400 mb-0.5">{item.label}</p>
                         <p className={cn("font-medium text-sm truncate", isLight ? "text-slate-800" : "text-white")}>{item.value || "N/A"}</p>
                       </div>
@@ -345,14 +345,14 @@ export default function LoadTracking() {
               </div>
             ) : recentLoads.length === 0 ? (
               <div className="text-center py-12">
-                <div className={cn("p-4 rounded-2xl w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
+                <div className={cn("p-4 rounded-2xl w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
                   <Navigation className="w-10 h-10 text-slate-400" />
                 </div>
                 <p className={cn("text-lg font-medium mb-1", isLight ? "text-slate-600" : "text-slate-300")}>No shipments yet</p>
                 <p className="text-sm text-slate-400">Enter a load number above to track a shipment, or create a load first.</p>
               </div>
             ) : (
-              <div className={cn("divide-y rounded-xl overflow-hidden border", isLight ? "divide-slate-100 border-slate-200" : "divide-slate-700/30 border-white/[0.06]")}>
+              <div className={cn("divide-y rounded-xl overflow-hidden border", isLight ? "divide-slate-100 border-slate-200" : "divide-slate-700/30 border-slate-700/50")}>
                 {recentLoads.map((s: any) => {
                   const sc = getStatusConfig(s.status);
                   return (

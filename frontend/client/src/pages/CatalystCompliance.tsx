@@ -137,14 +137,14 @@ export default function CatalystCompliance() {
           >
             <Upload className="w-4 h-4 mr-2" />Upload Document
           </Button>
-          <Button variant="outline" size="sm" className={cn("rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")} onClick={() => { statsQuery.refetch?.(); userDocsQuery.refetch?.(); }}>
+          <Button variant="outline" size="sm" className={cn("rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => { statsQuery.refetch?.(); userDocsQuery.refetch?.(); }}>
             <RefreshCw className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
       {/* ── Compliance Score Hero ── */}
-      <div className={cn("rounded-2xl overflow-hidden border", isLight ? "bg-white border-slate-200 shadow-lg" : "bg-white/[0.03] border-white/[0.06]")}>
+      <div className={cn("rounded-2xl overflow-hidden border", isLight ? "bg-white border-slate-200 shadow-lg" : "bg-slate-800/60 border-slate-700/50")}>
         <div className="bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 p-6 md:p-8">
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-center">
@@ -215,7 +215,7 @@ export default function CatalystCompliance() {
             value={searchTerm}
             onChange={(e: any) => setSearchTerm(e.target.value)}
             placeholder="Search documents..."
-            className={cn("pl-9 rounded-lg", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}
+            className={cn("pl-9 rounded-lg", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}
           />
         </div>
         <div className="flex items-center gap-1 overflow-x-auto">
@@ -229,7 +229,7 @@ export default function CatalystCompliance() {
                   ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
                   : isLight
                     ? "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                    : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]"
+                    : "bg-slate-800 text-slate-400 hover:bg-slate-700"
               )}
             >
               {tab.label}
@@ -239,13 +239,13 @@ export default function CatalystCompliance() {
       </div>
 
       {/* ── Document Checklist ── */}
-      <Card className={cn("rounded-xl overflow-hidden border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
+      <Card className={cn("rounded-xl overflow-hidden border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-4 space-y-3">{[1,2,3,4,5].map((i: number) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : filteredDocs.length === 0 ? (
             <div className="text-center py-16">
-              <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
+              <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
                 <FileText className="w-10 h-10 text-slate-400" />
               </div>
               <p className={cn("text-lg font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No documents found</p>
@@ -308,7 +308,7 @@ export default function CatalystCompliance() {
       {/* ── Upload Dialog ── */}
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
         <DialogContent
-          className={cn("sm:max-w-md rounded-2xl", isLight ? "border-slate-200" : "border-white/[0.06]")}
+          className={cn("sm:max-w-md rounded-2xl", isLight ? "border-slate-200" : "border-slate-700/50")}
           style={isLight ? {} : { background: "linear-gradient(180deg, #161d35 0%, #0d1224 100%)" }}
         >
           <DialogHeader>

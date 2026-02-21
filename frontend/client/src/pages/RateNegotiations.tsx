@@ -92,21 +92,21 @@ export default function RateNegotiations() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4">
               <p className="text-[10px] text-slate-400 uppercase mb-1">Initiator</p>
               <p className="text-white font-medium">{detail.initiator?.name || "Unknown"}</p>
               <p className="text-xs text-slate-500">{detail.initiator?.role}</p>
             </CardContent>
           </Card>
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4">
               <p className="text-[10px] text-slate-400 uppercase mb-1">Respondent</p>
               <p className="text-white font-medium">{detail.respondent?.name || "Unknown"}</p>
               <p className="text-xs text-slate-500">{detail.respondent?.role}</p>
             </CardContent>
           </Card>
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4">
               <p className="text-[10px] text-slate-400 uppercase mb-1">Current Offer</p>
               <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
@@ -118,7 +118,7 @@ export default function RateNegotiations() {
         </div>
 
         {/* Message Thread */}
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-[#1473FF]" />Negotiation Thread
@@ -130,7 +130,7 @@ export default function RateNegotiations() {
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-medium text-white">{msg.sender?.name || "System"}</span>
                   <div className="flex items-center gap-2">
-                    <Badge className="text-[9px] bg-white/[0.04] text-slate-300">R{msg.round}</Badge>
+                    <Badge className="text-[9px] bg-slate-700/50 text-slate-300">R{msg.round}</Badge>
                     <span className="text-[10px] text-slate-500">{msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}</span>
                   </div>
                 </div>
@@ -187,7 +187,7 @@ export default function RateNegotiations() {
           { label: "Rejected", value: stats?.rejected || 0, icon: <XCircle className="w-5 h-5 text-red-400" />, color: "text-red-400" },
           { label: "Win Rate", value: `${stats?.winRate || 0}%`, icon: <TrendingUp className="w-5 h-5 text-purple-400" />, color: "text-purple-400" },
         ].map(s => (
-          <Card key={s.label} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card key={s.label} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-slate-700/30">{s.icon}</div>
@@ -212,7 +212,7 @@ export default function RateNegotiations() {
       </div>
 
       {/* List */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {listQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
@@ -222,9 +222,9 @@ export default function RateNegotiations() {
               <p className="text-slate-400">No negotiations found</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {negotiations.map((neg: any) => (
-                <button key={neg.id} onClick={() => setSelectedId(neg.id)} className="w-full p-4 flex items-center justify-between hover:bg-white/[0.04] transition-colors text-left">
+                <button key={neg.id} onClick={() => setSelectedId(neg.id)} className="w-full p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors text-left">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-white font-medium truncate">{neg.subject}</p>

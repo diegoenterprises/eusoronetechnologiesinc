@@ -153,7 +153,7 @@ export default function SettlementDetails() {
       </div>
 
       {/* Driver Info */}
-      <Card className="bg-white/[0.02] border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -188,7 +188,7 @@ export default function SettlementDetails() {
 
         <TabsContent value="details" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-white/[0.02] border-slate-700">
+            <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader>
                 <CardTitle className="text-green-400 flex items-center gap-2">
                   <TrendingUp className="w-5 h-5" />Revenue
@@ -218,7 +218,7 @@ export default function SettlementDetails() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/[0.02] border-slate-700">
+            <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader>
                 <CardTitle className="text-red-400 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5" />Deductions
@@ -265,7 +265,7 @@ export default function SettlementDetails() {
         </TabsContent>
 
         <TabsContent value="loads" className="mt-6">
-          <Card className="bg-white/[0.02] border-slate-700">
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader><CardTitle className="text-white">Loads in This Period</CardTitle></CardHeader>
             <CardContent>
               {settlementQuery.isLoading ? (
@@ -299,7 +299,7 @@ export default function SettlementDetails() {
         </TabsContent>
 
         <TabsContent value="history" className="mt-6">
-          <Card className="bg-white/[0.02] border-slate-700">
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader><CardTitle className="text-white">Previous Settlements</CardTitle></CardHeader>
             <CardContent>
               {historyQuery.isLoading ? (
@@ -309,7 +309,7 @@ export default function SettlementDetails() {
               ) : (
                 <div className="space-y-3">
                   {(historyQuery.data as any)?.map((stl: any) => (
-                    <div key={stl.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 hover:bg-white/[0.04] transition-colors cursor-pointer">
+                    <div key={stl.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer">
                       <div className="flex items-center gap-4">
                         <div className="p-2 rounded-lg bg-green-500/20">
                           <CheckCircle className="w-5 h-5 text-green-400" />

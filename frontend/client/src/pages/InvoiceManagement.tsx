@@ -56,7 +56,7 @@ export default function InvoiceManagement() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><FileText className="w-6 h-6 text-cyan-400" /></div>
@@ -64,7 +64,7 @@ export default function InvoiceManagement() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><DollarSign className="w-6 h-6 text-green-400" /></div>
@@ -72,7 +72,7 @@ export default function InvoiceManagement() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><Clock className="w-6 h-6 text-yellow-400" /></div>
@@ -80,7 +80,7 @@ export default function InvoiceManagement() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20"><AlertTriangle className="w-6 h-6 text-red-400" /></div>
@@ -93,10 +93,10 @@ export default function InvoiceManagement() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search invoices..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search invoices..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="paid">Paid</SelectItem>
@@ -107,7 +107,7 @@ export default function InvoiceManagement() {
         </Select>
       </div>
 
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" />Invoices</CardTitle></CardHeader>
         <CardContent className="p-0">
           {invoicesQuery.isLoading ? (
@@ -115,7 +115,7 @@ export default function InvoiceManagement() {
           ) : (invoicesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No invoices found</p></div>
           ) : (
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-slate-700/50">
               {(invoicesQuery.data as any)?.map((invoice: any) => (
                 <div key={invoice.id} className={cn("p-4 flex items-center justify-between", invoice.status === "overdue" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div>
@@ -135,7 +135,7 @@ export default function InvoiceManagement() {
                       <p className="text-xs text-slate-500">Issued: {invoice.issuedDate}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] rounded-lg"><Download className="w-4 h-4" /></Button>
+                      <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg"><Download className="w-4 h-4" /></Button>
                       {invoice.status === "draft" && (
                         <Button size="sm" className="bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-lg" onClick={() => sendMutation.mutate({ invoiceId: invoice.id })}>
                           <Send className="w-4 h-4" />

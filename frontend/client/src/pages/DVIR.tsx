@@ -84,7 +84,7 @@ export default function DVIR() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -98,7 +98,7 @@ export default function DVIR() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -112,7 +112,7 @@ export default function DVIR() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -143,7 +143,7 @@ export default function DVIR() {
       </Card>
 
       {/* Inspection Checklist */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <FileText className="w-5 h-5 text-cyan-400" />
@@ -169,7 +169,7 @@ export default function DVIR() {
                           "h-auto py-3 justify-start text-sm rounded-xl transition-all",
                           selectedDefects.includes(item.id)
                             ? "bg-red-500/20 border-red-500/50 text-red-400 hover:bg-red-500/30"
-                            : "bg-slate-700/30 border-white/[0.06] hover:bg-white/[0.04] text-slate-300"
+                            : "bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 text-slate-300"
                         )}
                         onClick={() => toggleDefect(item.id)}
                       >
@@ -192,7 +192,7 @@ export default function DVIR() {
               value={notes}
               onChange={(e: any) => setNotes(e.target.value)}
               placeholder="Additional notes or defect details..."
-              className="bg-slate-700/30 border-white/[0.06] rounded-xl focus:border-cyan-500/50"
+              className="bg-slate-700/30 border-slate-600/50 rounded-xl focus:border-cyan-500/50"
               rows={3}
             />
           </div>
@@ -229,7 +229,7 @@ export default function DVIR() {
       </Card>
 
       {/* Recent DVIRs */}
-      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg">Recent Inspections</CardTitle>
         </CardHeader>
@@ -238,7 +238,7 @@ export default function DVIR() {
             <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (recentQuery.data as any)?.length === 0 ? (
             <div className="text-center py-8">
-              <div className="p-4 rounded-full bg-white/[0.04] w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+              <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                 <FileText className="w-8 h-8 text-slate-500" />
               </div>
               <p className="text-slate-400">No recent inspections</p>

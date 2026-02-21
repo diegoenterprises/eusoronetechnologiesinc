@@ -124,9 +124,9 @@ export default function PerLoadInsurance() {
     });
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
   const sub = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
-  const inputCn = cn("rounded-xl h-11", isLight ? "border-slate-200" : "border-slate-700 bg-white/[0.02]");
+  const inputCn = cn("rounded-xl h-11", isLight ? "border-slate-200" : "border-slate-700 bg-slate-800/50");
 
   // ─── STEP 3: PURCHASED ───────────────────────────────────────────────────
   if (step === "purchased" && quote) {
@@ -356,7 +356,7 @@ export default function PerLoadInsurance() {
                 onClick={() => setShowCommodityDropdown(!showCommodityDropdown)}
                 className={cn(
                   "w-full h-11 px-3 rounded-xl border text-left flex items-center justify-between text-sm",
-                  isLight ? "border-slate-200 bg-white text-slate-700" : "border-slate-700 bg-white/[0.02] text-slate-200"
+                  isLight ? "border-slate-200 bg-white text-slate-700" : "border-slate-700 bg-slate-800/50 text-slate-200"
                 )}
               >
                 <span>{selectedCommodity?.label || "Select commodity"}</span>
@@ -375,7 +375,7 @@ export default function PerLoadInsurance() {
                         "w-full text-left px-3 py-2.5 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl",
                         commodity === c.value
                           ? "bg-[#1473FF]/10 text-[#1473FF] font-medium"
-                          : isLight ? "hover:bg-slate-50 text-slate-700" : "hover:bg-white/[0.04] text-slate-200"
+                          : isLight ? "hover:bg-slate-50 text-slate-700" : "hover:bg-slate-700/50 text-slate-200"
                       )}
                     >
                       {c.label}
@@ -403,7 +403,7 @@ export default function PerLoadInsurance() {
                     "py-2.5 rounded-xl text-sm font-medium transition-all",
                     coverage === tier.value
                       ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-blue-500/25"
-                      : isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-white/[0.04] text-slate-300 hover:bg-white/[0.06]"
+                      : isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-slate-700/50 text-slate-300 hover:bg-slate-700"
                   )}
                 >
                   {tier.label}

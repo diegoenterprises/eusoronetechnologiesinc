@@ -91,7 +91,7 @@ export default function Claims() {
       </div>
 
       {/* Tab Switcher */}
-      <div className={cn("flex items-center gap-1 p-1 rounded-xl w-fit", L ? "bg-slate-100" : "bg-white/[0.03]")}>
+      <div className={cn("flex items-center gap-1 p-1 rounded-xl w-fit", L ? "bg-slate-100" : "bg-slate-800/60")}>
         {([{ id: "list" as const, l: "All Claims", I: FileText }, { id: "file" as const, l: "File New", I: Plus }]).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} className={cn("flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all",
             tab === t.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : L ? "text-slate-500" : "text-slate-400"
@@ -121,7 +121,7 @@ export default function Claims() {
             ) : (
               <div className={cn("divide-y", L ? "divide-slate-100" : "divide-slate-700/20")}>
                 {claims.map((c: any) => (
-                  <div key={c.id} className={cn("px-4 py-3.5 transition-colors", L ? "hover:bg-slate-50" : "hover:bg-white/[0.04]")}>
+                  <div key={c.id} className={cn("px-4 py-3.5 transition-colors", L ? "hover:bg-slate-50" : "hover:bg-slate-700/20")}>
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
@@ -157,7 +157,7 @@ export default function Claims() {
                 {CLAIM_TYPES.map(t => (
                   <button key={t.id} onClick={() => setForm({...form, type: t.id})}
                     className={cn("p-3 rounded-xl border-2 text-left transition-all flex items-center gap-2",
-                      form.type === t.id ? "border-blue-500 bg-blue-500/10" : L ? "border-slate-200 hover:border-blue-300" : "border-white/[0.06] hover:border-blue-500/30"
+                      form.type === t.id ? "border-blue-500 bg-blue-500/10" : L ? "border-slate-200 hover:border-blue-300" : "border-slate-700/50 hover:border-blue-500/30"
                     )}>
                     <t.icon className={cn("w-4 h-4", t.color)} />
                     <span className={cn("text-xs font-medium", L ? "text-slate-700" : "text-slate-200")}>{t.label}</span>
@@ -168,7 +168,7 @@ export default function Claims() {
 
             <Input type="number" placeholder="Claim Amount ($)" value={form.amount} onChange={(e: any) => setForm({...form, amount: e.target.value})} className="rounded-xl" />
 
-            <Textarea placeholder="Describe the issue in detail..." value={form.description} onChange={(e: any) => setForm({...form, description: e.target.value})} rows={4} className={cn("rounded-xl", L ? "" : "bg-white/[0.02] border-white/[0.06]")} />
+            <Textarea placeholder="Describe the issue in detail..." value={form.description} onChange={(e: any) => setForm({...form, description: e.target.value})} rows={4} className={cn("rounded-xl", L ? "" : "bg-slate-800/50 border-slate-700/50")} />
 
             <Button className="w-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold"
               disabled={!form.loadId || !form.amount || !form.description || fileMut.isPending}

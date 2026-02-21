@@ -37,7 +37,7 @@ export default function DriverNavigation() {
       </div>
 
       {assignmentQuery.isLoading ? <Skeleton className="h-32 w-full rounded-xl" /> : !assignment ? (
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-8 text-center">
             <Truck className="w-12 h-12 text-slate-500 mx-auto mb-4" />
             <p className="text-slate-400">No active assignment</p>
@@ -57,11 +57,11 @@ export default function DriverNavigation() {
                 </Badge>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 rounded-lg bg-white/[0.02]">
+                <div className="p-3 rounded-lg bg-slate-800/50">
                   <div className="flex items-center gap-2 text-green-400 mb-1"><MapPin className="w-4 h-4" /><span className="text-xs">Origin</span></div>
                   <p className="text-white text-sm font-medium">{typeof assignment.origin === 'object' ? `${assignment.origin.city}, ${assignment.origin.state}` : assignment.origin}</p>
                 </div>
-                <div className="p-3 rounded-lg bg-white/[0.02]">
+                <div className="p-3 rounded-lg bg-slate-800/50">
                   <div className="flex items-center gap-2 text-red-400 mb-1"><MapPin className="w-4 h-4" /><span className="text-xs">Destination</span></div>
                   <p className="text-white text-sm font-medium">{typeof assignment.destination === 'object' ? `${assignment.destination.city}, ${assignment.destination.state}` : assignment.destination}</p>
                 </div>
@@ -72,7 +72,7 @@ export default function DriverNavigation() {
           {routeQuery.isLoading ? <Skeleton className="h-64 w-full rounded-xl" /> : route && (
             <>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+                <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
                   <CardContent className="p-5">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-full bg-cyan-500/20"><Navigation className="w-6 h-6 text-cyan-400" /></div>
@@ -80,7 +80,7 @@ export default function DriverNavigation() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+                <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
                   <CardContent className="p-5">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-full bg-green-500/20"><Clock className="w-6 h-6 text-green-400" /></div>
@@ -88,7 +88,7 @@ export default function DriverNavigation() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+                <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
                   <CardContent className="p-5">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-full bg-purple-500/20"><Clock className="w-6 h-6 text-purple-400" /></div>
@@ -96,7 +96,7 @@ export default function DriverNavigation() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+                <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
                   <CardContent className="p-5">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-full bg-yellow-500/20"><Fuel className="w-6 h-6 text-yellow-400" /></div>
@@ -106,7 +106,7 @@ export default function DriverNavigation() {
                 </Card>
               </div>
 
-              <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl h-[300px]">
+              <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl h-[300px]">
                 <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Navigation className="w-5 h-5 text-cyan-400" />Route Map</CardTitle></CardHeader>
                 <CardContent className="h-[220px] flex items-center justify-center">
                   <div className="text-center">
@@ -156,19 +156,19 @@ export default function DriverNavigation() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="p-3 rounded-lg bg-white/[0.02] text-center">
+                    <div className="p-3 rounded-lg bg-slate-800/50 text-center">
                       <CheckCircle className="w-6 h-6 text-green-400 mx-auto mb-2" />
                       <p className="text-xs text-slate-400">HazMat Cleared</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-white/[0.02] text-center">
+                    <div className="p-3 rounded-lg bg-slate-800/50 text-center">
                       <CheckCircle className="w-6 h-6 text-green-400 mx-auto mb-2" />
                       <p className="text-xs text-slate-400">Tunnel OK</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-white/[0.02] text-center">
+                    <div className="p-3 rounded-lg bg-slate-800/50 text-center">
                       <CheckCircle className="w-6 h-6 text-green-400 mx-auto mb-2" />
                       <p className="text-xs text-slate-400">Weight Cleared</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-white/[0.02] text-center">
+                    <div className="p-3 rounded-lg bg-slate-800/50 text-center">
                       <CheckCircle className="w-6 h-6 text-green-400 mx-auto mb-2" />
                       <p className="text-xs text-slate-400">Permits Valid</p>
                     </div>
@@ -193,7 +193,7 @@ export default function DriverNavigation() {
                 </Card>
               )}
 
-              <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+              <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
                 <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Phone className="w-5 h-5 text-green-400" />Contacts</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-3 rounded-lg bg-slate-700/30 flex items-center justify-between">

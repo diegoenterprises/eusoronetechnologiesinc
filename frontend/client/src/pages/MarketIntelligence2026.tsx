@@ -141,7 +141,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
           <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <button onClick={() => window.history.back()} className="p-1.5 rounded-lg hover:bg-white/[0.03] transition-colors">
+                <button onClick={() => window.history.back()} className="p-1.5 rounded-lg hover:bg-slate-800/60 transition-colors">
                   <ArrowLeft className="w-4 h-4 text-slate-400" />
                 </button>
                 <div>
@@ -154,23 +154,23 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
               </div>
               {/* Lane & load parameters — these drive all scores */}
               <div className="flex items-center gap-2 text-xs flex-wrap">
-                <select value={laneOrigin} onChange={e => setLaneOrigin(e.target.value)} className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2 py-1.5 text-xs" title="Origin state">
+                <select value={laneOrigin} onChange={e => setLaneOrigin(e.target.value)} className="bg-slate-800/60 border border-slate-700/50 rounded-lg px-2 py-1.5 text-xs" title="Origin state">
                   {["TX","CA","FL","IL","GA","OH","PA","NJ","NY","WA","LA","CO","AZ","NV","TN","NC"].map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
                 <ChevronRight className="w-3 h-3 text-slate-500" />
-                <select value={laneDest} onChange={e => setLaneDest(e.target.value)} className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2 py-1.5 text-xs" title="Destination state">
+                <select value={laneDest} onChange={e => setLaneDest(e.target.value)} className="bg-slate-800/60 border border-slate-700/50 rounded-lg px-2 py-1.5 text-xs" title="Destination state">
                   {["CA","TX","FL","IL","GA","OH","PA","NJ","NY","WA","LA","CO","AZ","NV","TN","NC"].map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
-                <input type="number" value={distance} onChange={e => setDistance(Number(e.target.value))} className="w-16 bg-white/[0.03] border border-white/[0.06] rounded-lg px-2 py-1.5 text-xs" title="Distance (mi)" />
+                <input type="number" value={distance} onChange={e => setDistance(Number(e.target.value))} className="w-16 bg-slate-800/60 border border-slate-700/50 rounded-lg px-2 py-1.5 text-xs" title="Distance (mi)" />
                 <span className="text-slate-500">mi</span>
                 <span className="text-slate-600">|</span>
-                <select value={equipment} onChange={e => setEquipment(e.target.value)} className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2 py-1.5 text-xs" title="Equipment type">
+                <select value={equipment} onChange={e => setEquipment(e.target.value)} className="bg-slate-800/60 border border-slate-700/50 rounded-lg px-2 py-1.5 text-xs" title="Equipment type">
                   <option value="dry_van">Dry Van</option>
                   <option value="reefer">Reefer</option>
                   <option value="flatbed">Flatbed</option>
                   <option value="tanker">Tanker</option>
                 </select>
-                <select value={commodity} onChange={e => setCommodity(e.target.value)} className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2 py-1.5 text-xs" title="Commodity type">
+                <select value={commodity} onChange={e => setCommodity(e.target.value)} className="bg-slate-800/60 border border-slate-700/50 rounded-lg px-2 py-1.5 text-xs" title="Commodity type">
                   <option value="general">General Freight</option>
                   <option value="electronics">Electronics</option>
                   <option value="pharmaceuticals">Pharmaceuticals</option>
@@ -181,7 +181,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                   <option value="building materials">Building Materials</option>
                   <option value="metals">Metals</option>
                 </select>
-                <input type="number" value={weight} onChange={e => setWeight(Number(e.target.value))} className="w-20 bg-white/[0.03] border border-white/[0.06] rounded-lg px-2 py-1.5 text-xs" title="Weight (lbs)" />
+                <input type="number" value={weight} onChange={e => setWeight(Number(e.target.value))} className="w-20 bg-slate-800/60 border border-slate-700/50 rounded-lg px-2 py-1.5 text-xs" title="Weight (lbs)" />
                 <span className="text-slate-500">lbs</span>
               </div>
             </div>
@@ -793,7 +793,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
               </h2>
               <div className="space-y-2">
                 {calendar.data.events.map((e: any, i: number) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/20 hover:bg-white/[0.06]/30 transition-colors">
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/20 hover:bg-slate-700/30 transition-colors">
                     <span className={`px-2 py-0.5 rounded text-[9px] font-bold min-w-[50px] text-center ${e.impact === "HIGH" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>{e.impact}</span>
                     <span className="text-[10px] text-slate-500 w-20 font-medium">{e.month}</span>
                     <div className="flex-1">

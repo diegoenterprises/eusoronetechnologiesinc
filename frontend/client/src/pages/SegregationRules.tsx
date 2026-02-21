@@ -63,7 +63,7 @@ export default function SegregationRules() {
     { enabled: !!checkerPair }
   ) || { data: null, isLoading: false };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
 
   const handleCheck = () => {
     if (!classA || !classB) {
@@ -112,7 +112,7 @@ export default function SegregationRules() {
                 onChange={(e) => { setClassA(e.target.value); setCheckerPair(null); }}
                 className={cn(
                   "w-full h-11 px-3 rounded-xl border text-sm",
-                  isLight ? "bg-white border-slate-200 text-slate-800" : "bg-white/[0.02] border-white/[0.06] text-white"
+                  isLight ? "bg-white border-slate-200 text-slate-800" : "bg-slate-800/50 border-slate-700/50 text-white"
                 )}
               >
                 <option value="">Select class...</option>
@@ -133,7 +133,7 @@ export default function SegregationRules() {
                 onChange={(e) => { setClassB(e.target.value); setCheckerPair(null); }}
                 className={cn(
                   "w-full h-11 px-3 rounded-xl border text-sm",
-                  isLight ? "bg-white border-slate-200 text-slate-800" : "bg-white/[0.02] border-white/[0.06] text-white"
+                  isLight ? "bg-white border-slate-200 text-slate-800" : "bg-slate-800/50 border-slate-700/50 text-white"
                 )}
               >
                 <option value="">Select class...</option>
@@ -197,7 +197,7 @@ export default function SegregationRules() {
             <table className="w-full text-xs">
               <thead>
                 <tr>
-                  <th className={cn("p-2 text-left font-medium sticky left-0 z-10", isLight ? "bg-white text-slate-500" : "bg-white/[0.03] text-slate-400")}>
+                  <th className={cn("p-2 text-left font-medium sticky left-0 z-10", isLight ? "bg-white text-slate-500" : "bg-slate-800/60 text-slate-400")}>
                     Class
                   </th>
                   {COMMON_CLASSES.map((c) => (
@@ -207,7 +207,7 @@ export default function SegregationRules() {
                         "p-2 text-center font-bold cursor-pointer transition-colors whitespace-nowrap",
                         selectedClass === c
                           ? "bg-[#1473FF]/10 text-[#1473FF]"
-                          : isLight ? "text-slate-600 hover:bg-slate-50" : "text-slate-300 hover:bg-white/[0.06]/30"
+                          : isLight ? "text-slate-600 hover:bg-slate-50" : "text-slate-300 hover:bg-slate-700/30"
                       )}
                       onClick={() => setSelectedClass(selectedClass === c ? null : c)}
                     >
@@ -223,7 +223,7 @@ export default function SegregationRules() {
                       "p-2 font-bold whitespace-nowrap sticky left-0 z-10 cursor-pointer transition-colors",
                       selectedClass === row
                         ? "bg-[#1473FF]/10 text-[#1473FF]"
-                        : isLight ? "bg-white text-slate-700 hover:bg-slate-50" : "bg-white/[0.03] text-slate-200 hover:bg-white/[0.06]/30"
+                        : isLight ? "bg-white text-slate-700 hover:bg-slate-50" : "bg-slate-800/60 text-slate-200 hover:bg-slate-700/30"
                     )} onClick={() => setSelectedClass(selectedClass === row ? null : row)}>
                       <div>
                         <span>{row}</span>
@@ -298,7 +298,7 @@ export default function SegregationRules() {
           ].map((rule, i) => (
             <div key={i} className={cn(
               "flex items-start gap-4 p-4 rounded-xl border",
-              isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
+              isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
             )}>
               <div className={cn("p-2.5 rounded-lg flex-shrink-0", rule.color)}>
                 <AlertTriangle className="w-4 h-4" />

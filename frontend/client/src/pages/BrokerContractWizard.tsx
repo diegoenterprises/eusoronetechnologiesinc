@@ -108,8 +108,8 @@ export default function BrokerContractWizard() {
     onError: (e: any) => toast.error("Sign failed", { description: e.message }),
   }) || { mutate: () => {}, isPending: false };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
-  const cl = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cl = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
   const vl = cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white");
   const mt = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
   const ic = cn("rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500");
@@ -159,7 +159,7 @@ export default function BrokerContractWizard() {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[960px] mx-auto">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className={cn("rounded-xl", isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]")} onClick={() => setLocation("/agreements")}><ArrowLeft className="w-4 h-4" /></Button>
+        <Button variant="ghost" size="sm" className={cn("rounded-xl", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")} onClick={() => setLocation("/agreements")}><ArrowLeft className="w-4 h-4" /></Button>
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Broker Contract Wizard</h1>
           <p className={mt}>Create shipper↔broker or broker↔catalyst agreements</p>
@@ -183,7 +183,7 @@ export default function BrokerContractWizard() {
         <div className="space-y-5">
           <p className={cn("text-center text-sm", mt)}>Which side of the brokerage are you contracting?</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button onClick={() => { setDirection("shipper_to_broker"); setAgType("broker_shipper"); }} className={cn("p-6 rounded-2xl border-2 text-left transition-all", direction === "shipper_to_broker" ? "border-[#1473FF] bg-gradient-to-br from-[#1473FF]/10 to-[#BE01FF]/10 shadow-lg" : isLight ? "border-slate-200 bg-white" : "border-slate-700 bg-white/[0.03]")}>
+            <button onClick={() => { setDirection("shipper_to_broker"); setAgType("broker_shipper"); }} className={cn("p-6 rounded-2xl border-2 text-left transition-all", direction === "shipper_to_broker" ? "border-[#1473FF] bg-gradient-to-br from-[#1473FF]/10 to-[#BE01FF]/10 shadow-lg" : isLight ? "border-slate-200 bg-white" : "border-slate-700 bg-slate-800/60")}>
               <div className="flex items-center gap-2 mb-3">
                 <div className="p-2 rounded-lg bg-blue-500/15"><Building2 className="w-5 h-5 text-blue-500" /></div>
                 <ArrowRight className="w-4 h-4 text-slate-400" />
@@ -192,7 +192,7 @@ export default function BrokerContractWizard() {
               <p className={cn("font-bold mb-1", vl)}>Shipper → Broker</p>
               <p className={cn("text-xs", mt)}>Secure a load or lane from a shipper. You'll set the rate the shipper pays you.</p>
             </button>
-            <button onClick={() => { setDirection("broker_to_catalyst"); setAgType("broker_catalyst"); }} className={cn("p-6 rounded-2xl border-2 text-left transition-all", direction === "broker_to_catalyst" ? "border-[#BE01FF] bg-gradient-to-br from-[#BE01FF]/10 to-[#1473FF]/10 shadow-lg" : isLight ? "border-slate-200 bg-white" : "border-slate-700 bg-white/[0.03]")}>
+            <button onClick={() => { setDirection("broker_to_catalyst"); setAgType("broker_catalyst"); }} className={cn("p-6 rounded-2xl border-2 text-left transition-all", direction === "broker_to_catalyst" ? "border-[#BE01FF] bg-gradient-to-br from-[#BE01FF]/10 to-[#1473FF]/10 shadow-lg" : isLight ? "border-slate-200 bg-white" : "border-slate-700 bg-slate-800/60")}>
               <div className="flex items-center gap-2 mb-3">
                 <div className="p-2 rounded-lg bg-purple-500/15"><Scale className="w-5 h-5 text-purple-500" /></div>
                 <ArrowRight className="w-4 h-4 text-slate-400" />

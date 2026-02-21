@@ -154,7 +154,7 @@ export default function ApprovalGateCard({
             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
               timeLeft.expired ? "bg-red-500/15 text-red-400 border-red-500/30" :
               timeLeft.urgent ? "bg-amber-500/15 text-amber-400 border-amber-500/30 animate-pulse" :
-              "bg-white/[0.04] text-slate-400 border-white/[0.06]"
+              "bg-slate-700/50 text-slate-400 border-slate-600/50"
             }`}>
               <Clock className="w-3 h-3 inline mr-1" />
               {timeLeft.text}
@@ -199,7 +199,7 @@ export default function ApprovalGateCard({
                 value={denyReason}
                 onChange={(e) => setDenyReason(e.target.value)}
                 placeholder="Reason for denial (required)"
-                className="w-full bg-slate-900/50 border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-red-500/50 resize-none"
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-red-500/50 resize-none"
                 rows={2}
               />
               <div className="flex gap-2">
@@ -213,7 +213,7 @@ export default function ApprovalGateCard({
                 </button>
                 <button
                   onClick={() => { setShowDenyReason(false); setDenyReason(""); }}
-                  className="px-3 py-2 rounded-lg border border-white/[0.06] text-xs text-slate-400 hover:text-white transition-colors"
+                  className="px-3 py-2 rounded-lg border border-slate-700/50 text-xs text-slate-400 hover:text-white transition-colors"
                 >
                   Cancel
                 </button>

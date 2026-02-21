@@ -141,7 +141,7 @@ export function ChatWindow({
   let lastDate: string | null = null;
 
   return (
-    <Card className="bg-white/[0.02] border-slate-700 flex flex-col h-[600px]">
+    <Card className="bg-slate-800/50 border-slate-700 flex flex-col h-[600px]">
       {/* Header */}
       <CardHeader className="pb-3 border-b border-slate-700">
         <div className="flex items-center justify-between">
@@ -299,7 +299,7 @@ export function ChatWindow({
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
-            className="flex-1 bg-white/[0.04] border-slate-600 text-white"
+            className="flex-1 bg-slate-700/50 border-slate-600 text-white"
           />
           <Button 
             onClick={handleSend} 

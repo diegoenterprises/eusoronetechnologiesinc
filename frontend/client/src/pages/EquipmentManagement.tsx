@@ -60,7 +60,7 @@ export default function EquipmentManagement() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -76,7 +76,7 @@ export default function EquipmentManagement() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -92,7 +92,7 @@ export default function EquipmentManagement() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -108,7 +108,7 @@ export default function EquipmentManagement() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -128,11 +128,11 @@ export default function EquipmentManagement() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search equipment..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search equipment..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-1">
+        <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-1">
           <TabsTrigger value="all" className="data-[state=active]:bg-slate-700 rounded-md">All</TabsTrigger>
           <TabsTrigger value="active" className="data-[state=active]:bg-slate-700 rounded-md">Active</TabsTrigger>
           <TabsTrigger value="available" className="data-[state=active]:bg-slate-700 rounded-md">Available</TabsTrigger>
@@ -140,21 +140,21 @@ export default function EquipmentManagement() {
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
-          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-0">
               {equipmentQuery.isLoading ? (
                 <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
               ) : filteredEquipment?.length === 0 ? (
                 <div className="text-center py-16">
-                  <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                  <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <Truck className="w-10 h-10 text-slate-500" />
                   </div>
                   <p className="text-slate-400 text-lg">No equipment found</p>
                 </div>
               ) : (
-                <div className="divide-y divide-white/[0.04]">
+                <div className="divide-y divide-slate-700/50">
                   {filteredEquipment?.map((eq: any) => (
-                    <div key={eq.id} className="p-4 hover:bg-white/[0.04] transition-colors cursor-pointer" onClick={() => setLocation(`/equipment/${eq.id}`)}>
+                    <div key={eq.id} className="p-4 hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => setLocation(`/equipment/${eq.id}`)}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className={cn("p-3 rounded-xl", eq.status === "active" ? "bg-green-500/20" : eq.status === "maintenance" ? "bg-yellow-500/20" : eq.status === "out_of_service" ? "bg-red-500/20" : "bg-blue-500/20")}>

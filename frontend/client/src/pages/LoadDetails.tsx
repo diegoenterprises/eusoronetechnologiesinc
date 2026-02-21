@@ -387,8 +387,8 @@ export default function LoadDetails() {
   if (!load) {
     return (
       <div className="p-4 md:p-6 max-w-[1100px] mx-auto">
-        <div className={cn("text-center py-16 rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]")}>
-          <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
+        <div className={cn("text-center py-16 rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+          <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
             <Package className="w-10 h-10 text-slate-400" />
           </div>
           <p className={cn("text-lg font-medium", isLight ? "text-slate-800" : "text-white")}>Load not found</p>
@@ -409,9 +409,9 @@ export default function LoadDetails() {
   const rate = Number(load.rate) || 0;
   const ratePerMile = distance > 0 && rate > 0 ? (rate / distance).toFixed(2) : "0.00";
 
-  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
   const titleCls = cn("text-lg font-semibold", isLight ? "text-slate-800" : "text-white");
-  const cellCls = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
+  const cellCls = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
   const valCls = cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white");
 
   // Shape load data for StatePanel
@@ -455,7 +455,7 @@ export default function LoadDetails() {
           </div>
         </div>
         <div className="flex gap-2 flex-shrink-0">
-          <Button variant="outline" className={cn("rounded-xl text-sm", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06]")} onClick={() => setLocation("/messages")}>
+          <Button variant="outline" className={cn("rounded-xl text-sm", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-800/50 border-slate-700/50 hover:bg-slate-700")} onClick={() => setLocation("/messages")}>
             <Phone className="w-4 h-4 mr-2" />Contact
           </Button>
           {(load.status === "posted" || load.status === "bidding") && (isLoadOwner || userRole === "SHIPPER") && (
@@ -477,7 +477,7 @@ export default function LoadDetails() {
       </div>
 
       {/* ── Rate & Stats Summary ── */}
-      <div className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-slate-200 shadow-md" : "bg-white/[0.03] border-white/[0.06]")}>
+      <div className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-slate-200 shadow-md" : "bg-slate-800/60 border-slate-700/50")}>
         <div className="bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 px-6 py-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
@@ -513,7 +513,7 @@ export default function LoadDetails() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {mlRatePrediction.data && (
-              <div className={cn("p-3 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-white/[0.03] border-slate-700/40")}>
+              <div className={cn("p-3 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/40")}>
                 <p className="text-[10px] text-slate-400 uppercase mb-1">ML Rate Prediction</p>
                 <div className="flex items-baseline gap-2">
                   <span className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${mlRatePrediction.data.predictedSpotRate.toLocaleString()}</span>
@@ -528,7 +528,7 @@ export default function LoadDetails() {
               </div>
             )}
             {mlETA.data && (
-              <div className={cn("p-3 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-white/[0.03] border-slate-700/40")}>
+              <div className={cn("p-3 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/40")}>
                 <p className="text-[10px] text-slate-400 uppercase mb-1">ML Transit Estimate</p>
                 <div className="flex items-baseline gap-2">
                   <span className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{mlETA.data.estimatedDays}d</span>
@@ -543,7 +543,7 @@ export default function LoadDetails() {
               </div>
             )}
             {mlDynamicPrice.data && (
-              <div className={cn("p-3 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-white/[0.03] border-slate-700/40")}>
+              <div className={cn("p-3 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/40")}>
                 <p className="text-[10px] text-slate-400 uppercase mb-1">Dynamic Pricing</p>
                 <div className="flex items-baseline gap-2">
                   <span className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${mlDynamicPrice.data.recommendedRate.toLocaleString()}</span>
@@ -588,7 +588,7 @@ export default function LoadDetails() {
 
       {/* ═══════════ GATE ACCESS CARD (Driver/Catalyst — present to access controller) ═══════════ */}
       {isInExecution && (isAssignedDriver || isAssignedCatalyst) && (
-        <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-cyan-200 shadow-md" : "bg-white/[0.03] border-cyan-500/30")}>
+        <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-cyan-200 shadow-md" : "bg-slate-800/60 border-cyan-500/30")}>
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
@@ -1050,7 +1050,7 @@ export default function LoadDetails() {
 
       {/* ── Incoming Bids Section (Shipper View) ── */}
       {isShipper && (
-        <Card className={cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]")}>
+        <Card className={cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
           <CardHeader>
             <CardTitle className={cn("flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
               <Scale className="w-5 h-5 text-purple-400" />
@@ -1202,7 +1202,7 @@ export default function LoadDetails() {
 
       {/* ═══════════ BOTTOM BID CTA (posted loads, bidder roles) ═══════════ */}
       {(load.status === "posted" || load.status === "bidding") && canBid && (
-        <div className={cn("rounded-2xl border p-6 flex flex-col sm:flex-row items-center justify-between gap-4", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]")}>
+        <div className={cn("rounded-2xl border p-6 flex flex-col sm:flex-row items-center justify-between gap-4", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
           <div>
             <p className={cn("font-bold text-lg", isLight ? "text-slate-800" : "text-white")}>Ready to haul this load?</p>
             <p className="text-sm text-slate-400">Submit a competitive bid and get assigned.</p>
