@@ -445,10 +445,10 @@ function Router() {
       <Route path={"/catalysts"} component={guard([...SHIP, "BROKER"], <CatalystsPage />)} />
       <Route path={"/payments"} component={guard(ALL, <WalletPage />)} />
       <Route path={"/company"} component={guard(LOAD, <CompanyProfile />)} />
-      <Route path={"/agreements"} component={guard(LOAD, <AgreementsLibrary />)} />
+      <Route path={"/agreements"} component={guard([...LOAD, "TERMINAL_MANAGER"], <AgreementsLibrary />)} />
       <Route path={"/agreements/create"} component={guard(SHIP, <ShipperAgreementWizard />)} />
       <Route path={"/agreements/broker"} component={guard([...BROK, "SHIPPER"], <BrokerContractWizard />)} />
-      <Route path={"/agreements/:id"} component={guard(LOAD, <AgreementDetail />)} />
+      <Route path={"/agreements/:id"} component={guard([...LOAD, "TERMINAL_MANAGER"], <AgreementDetail />)} />
       <Route path={"/loads/recurring"} component={guard(SHIP, <RecurringLoadScheduler />)} />
       <Route path={"/loads/:id"} component={guard(LOAD, <LoadDetails />)} />
       <Route path={"/shipper/dispatch"} component={guard(SHIP, <ShipperDispatchControl />)} />
