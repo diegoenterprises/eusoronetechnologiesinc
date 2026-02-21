@@ -17,9 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
-const cell = "rounded-2xl border border-white/[0.04] bg-white/[0.02]";
-const inp = "bg-white/[0.04] border-white/[0.06] rounded-xl text-white placeholder:text-slate-500";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const STATUS_STYLE: Record<string, { cls: string; label: string; icon: any }> = {
   scheduled:  { cls: "text-blue-400 bg-blue-400/10", label: "Scheduled", icon: Clock },
@@ -33,6 +31,10 @@ const STATUS_STYLE: Record<string, { cls: string; label: string; icon: any }> = 
 const TIME_SLOTS = ["06:00","07:00","08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00"];
 
 export default function TerminalAppointments() {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+  const cell = isLight ? "rounded-2xl border border-slate-200/80 bg-white" : "rounded-2xl border border-white/[0.04] bg-white/[0.02]";
+  const inp = isLight ? "bg-slate-50 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400" : "bg-white/[0.04] border-white/[0.06] rounded-xl text-white placeholder:text-slate-500";
   const [view, setView] = useState<"calendar" | "list" | "pending">("calendar");
   const [dateOffset, setDateOffset] = useState(0);
   const [filter, setFilter] = useState("all");
@@ -93,7 +95,7 @@ export default function TerminalAppointments() {
       {/* Header */}
       <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-[28px] font-semibold tracking-tight text-white">Appointments</h1>
+          <h1 className={`text-[28px] font-semibold tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>Appointments</h1>
           <p className="text-sm text-slate-500 mt-0.5">Schedule, manage, and track facility appointments</p>
         </div>
         <div className="flex items-center gap-2">
@@ -106,7 +108,7 @@ export default function TerminalAppointments() {
       {/* KPI Bar */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         {[
-          { label: "Total", value: stats.total, color: "text-white" },
+          { label: "Total", value: stats.total, color: isLight ? "text-slate-900" : "text-white" },
           { label: "Scheduled", value: stats.scheduled, color: "text-blue-400" },
           { label: "Checked In", value: stats.checkedIn, color: "text-amber-400" },
           { label: "In Progress", value: stats.inProgress, color: "text-purple-400" },
@@ -126,16 +128,16 @@ export default function TerminalAppointments() {
           {(["calendar", "list", "pending"] as const).map(v => (
             <button key={v} onClick={() => setView(v)} className={cn(
               "text-[11px] px-3 py-1.5 rounded-lg font-medium transition-colors",
-              view === v ? "bg-[#1473FF]/15 text-[#1473FF]" : "bg-white/[0.03] text-slate-500 hover:text-slate-300"
+              view === v ? "bg-[#1473FF]/15 text-[#1473FF]" : isLight ? "bg-slate-100 text-slate-500 hover:text-slate-700" : "bg-white/[0.03] text-slate-500 hover:text-slate-300"
             )}>{v === "calendar" ? "Calendar" : v === "list" ? "List" : "Pending"}</button>
           ))}
         </div>
 
         <div className="flex items-center gap-2">
-          <button onClick={() => setDateOffset(d => d - 1)} className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] transition-colors"><ChevronLeft className="w-4 h-4 text-slate-400" /></button>
-          <button onClick={() => setDateOffset(0)} className="text-xs text-slate-300 font-medium px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08]">Today</button>
-          <span className="text-sm text-white font-medium min-w-[200px] text-center">{dateLabel}</span>
-          <button onClick={() => setDateOffset(d => d + 1)} className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] transition-colors"><ChevronRight className="w-4 h-4 text-slate-400" /></button>
+          <button onClick={() => setDateOffset(d => d - 1)} className={`p-1.5 rounded-lg transition-colors ${isLight ? "bg-slate-100 hover:bg-slate-200" : "bg-white/[0.04] hover:bg-white/[0.08]"}`}><ChevronLeft className="w-4 h-4 text-slate-400" /></button>
+          <button onClick={() => setDateOffset(0)} className={`text-xs font-medium px-3 py-1.5 rounded-lg ${isLight ? "text-slate-600 bg-slate-100 hover:bg-slate-200" : "text-slate-300 bg-white/[0.04] hover:bg-white/[0.08]"}`}>Today</button>
+          <span className={`text-sm font-medium min-w-[200px] text-center ${isLight ? "text-slate-900" : "text-white"}`}>{dateLabel}</span>
+          <button onClick={() => setDateOffset(d => d + 1)} className={`p-1.5 rounded-lg transition-colors ${isLight ? "bg-slate-100 hover:bg-slate-200" : "bg-white/[0.04] hover:bg-white/[0.08]"}`}><ChevronRight className="w-4 h-4 text-slate-400" /></button>
         </div>
 
         <div className="relative">
@@ -149,11 +151,11 @@ export default function TerminalAppointments() {
         <div className={cn("overflow-x-auto", cell)}>
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-white/[0.04]">
+              <tr className={`border-b ${isLight ? "border-slate-200" : "border-white/[0.04]"}`}>
                 <th className="py-3 px-4 text-left text-[10px] text-slate-500 uppercase tracking-wider font-semibold w-20">Time</th>
                 {racks.length > 0 ? racks.map((r: any) => (
                   <th key={r.id} className="py-3 px-3 text-center text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-                    <span className="block text-white">{r.name}</span>
+                    <span className={`block ${isLight ? "text-slate-900" : "text-white"}`}>{r.name}</span>
                     <span className={cn("text-[9px] font-medium px-1.5 py-0.5 rounded-md mt-0.5 inline-block",
                       r.status === "available" ? "text-emerald-400 bg-emerald-400/10" :
                       r.status === "in_use" ? "text-blue-400 bg-blue-400/10" :
@@ -167,7 +169,7 @@ export default function TerminalAppointments() {
             </thead>
             <tbody>
               {TIME_SLOTS.map(time => (
-                <tr key={time} className="border-b border-white/[0.03] hover:bg-white/[0.01]">
+                <tr key={time} className={`border-b ${isLight ? "border-slate-100 hover:bg-slate-50" : "border-white/[0.03] hover:bg-white/[0.01]"}`}>
                   <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">{time}</td>
                   {(racks.length > 0 ? racks : [{ id: "bay_1" }, { id: "bay_2" }, { id: "bay_3" }, { id: "bay_4" }, { id: "bay_5" }, { id: "bay_6" }]).map((r: any) => {
                     const appt = getApptForSlot(time, r.id || r.name);
@@ -180,11 +182,11 @@ export default function TerminalAppointments() {
                             appt.status === "loading" ? "bg-purple-500/10 border-purple-500/20" :
                             "bg-blue-500/10 border-blue-500/20"
                           )}>
-                            <p className="text-[10px] font-medium text-white truncate">{appt.driver}</p>
+                            <p className={`text-[10px] font-medium truncate ${isLight ? "text-slate-900" : "text-white"}`}>{appt.driver}</p>
                             <p className="text-[9px] text-slate-400 truncate">{appt.type}</p>
                           </div>
                         ) : (
-                          <div className="h-8 rounded-lg border border-dashed border-white/[0.04] hover:border-white/[0.08] transition-colors cursor-pointer" onClick={() => { setFormTime(time); setShowCreate(true); }} />
+                          <div className={`h-8 rounded-lg border border-dashed transition-colors cursor-pointer ${isLight ? "border-slate-200 hover:border-slate-400" : "border-white/[0.04] hover:border-white/[0.08]"}`} onClick={() => { setFormTime(time); setShowCreate(true); }} />
                         )}
                       </td>
                     );
@@ -203,7 +205,7 @@ export default function TerminalAppointments() {
             {["all", "scheduled", "checked_in", "loading", "completed", "cancelled"].map(f => (
               <button key={f} onClick={() => setFilter(f)} className={cn(
                 "text-[10px] px-3 py-1.5 rounded-lg font-medium transition-colors",
-                filter === f ? "bg-[#1473FF]/15 text-[#1473FF]" : "bg-white/[0.03] text-slate-500 hover:text-slate-300"
+                filter === f ? "bg-[#1473FF]/15 text-[#1473FF]" : isLight ? "bg-slate-100 text-slate-500 hover:text-slate-700" : "bg-white/[0.03] text-slate-500 hover:text-slate-300"
               )}>{f === "all" ? "All" : f.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}</button>
             ))}
           </div>
@@ -221,15 +223,15 @@ export default function TerminalAppointments() {
                 const Icon = st.icon;
                 const time = a.scheduledAt ? new Date(a.scheduledAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "";
                 return (
-                  <div key={a.id} className="flex items-center justify-between px-5 py-4 hover:bg-white/[0.01]">
+                  <div key={a.id} className={`flex items-center justify-between px-5 py-4 ${isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.01]"}`}>
                     <div className="flex items-center gap-4 min-w-0">
                       <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0", st.cls)}>
                         <Icon className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-white truncate">{a.driver || "Unassigned"}</p>
-                          {a.dock && <span className="text-[9px] text-slate-500 bg-white/[0.04] px-1.5 py-0.5 rounded font-mono">{a.dock}</span>}
+                          <p className={`text-sm font-medium truncate ${isLight ? "text-slate-900" : "text-white"}`}>{a.driver || "Unassigned"}</p>
+                          {a.dock && <span className={`text-[9px] text-slate-500 px-1.5 py-0.5 rounded font-mono ${isLight ? "bg-slate-100" : "bg-white/[0.04]"}`}>{a.dock}</span>}
                         </div>
                         <div className="flex items-center gap-3 mt-0.5">
                           <span className="text-[11px] text-slate-400"><Clock className="w-3 h-3 inline mr-1" />{time}</span>
@@ -271,10 +273,10 @@ export default function TerminalAppointments() {
       {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
-          <div className={cn("w-full max-w-lg p-6 space-y-5 mx-4", cell, "bg-[#0B1120] border-white/[0.08]")} onClick={e => e.stopPropagation()}>
+          <div className={cn("w-full max-w-lg p-6 space-y-5 mx-4", cell, isLight ? "bg-white border-slate-200" : "bg-[#0B1120] border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">New Appointment</h2>
-              <button onClick={() => setShowCreate(false)} className="text-slate-500 hover:text-white"><XCircle className="w-5 h-5" /></button>
+              <h2 className={`text-lg font-semibold ${isLight ? "text-slate-900" : "text-white"}`}>New Appointment</h2>
+              <button onClick={() => setShowCreate(false)} className={`${isLight ? "text-slate-400 hover:text-slate-700" : "text-slate-500 hover:text-white"}`}><XCircle className="w-5 h-5" /></button>
             </div>
             <div className="h-[2px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] rounded-full" />
 

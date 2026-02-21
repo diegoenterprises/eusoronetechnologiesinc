@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 
 export type ThemeMode = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
@@ -12,30 +12,70 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-/**
- * EusoTrip is a DARK-MODE-ONLY brand.
- * Light mode is disabled permanently. All resolved themes return "dark".
- */
-function applyDark() {
+const STORAGE_KEY = "eusotrip-theme-mode";
+
+function getSystemTheme(): ResolvedTheme {
+  if (typeof window === "undefined") return "dark";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function resolveTheme(mode: ThemeMode): ResolvedTheme {
+  if (mode === "system") return getSystemTheme();
+  return mode;
+}
+
+function applyTheme(resolved: ResolvedTheme) {
   const root = document.documentElement;
-  root.setAttribute("data-theme", "dark");
-  root.classList.add("dark");
-  root.classList.remove("light");
+  root.setAttribute("data-theme", resolved);
+  if (resolved === "dark") {
+    root.classList.add("dark");
+    root.classList.remove("light");
+  } else {
+    root.classList.add("light");
+    root.classList.remove("dark");
+  }
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Always dark — brand identity
-  const mode: ThemeMode = "dark";
-  const theme: ResolvedTheme = "dark";
+  const [mode, setModeState] = useState<ThemeMode>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "light" || stored === "dark" || stored === "system") return stored;
+    } catch {}
+    return "dark";
+  });
 
-  // No-op setters (kept for API compat so nothing crashes)
-  const setMode = useCallback((_newMode: ThemeMode) => {}, []);
-  const toggleTheme = useCallback(() => {}, []);
+  const [theme, setTheme] = useState<ResolvedTheme>(() => resolveTheme(mode));
 
-  // Force dark on mount + clear any stale light preference
+  const setMode = useCallback((newMode: ThemeMode) => {
+    setModeState(newMode);
+    try { localStorage.setItem(STORAGE_KEY, newMode); } catch {}
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setMode(theme === "dark" ? "light" : "dark");
+  }, [theme, setMode]);
+
   useEffect(() => {
-    applyDark();
-    try { localStorage.setItem("eusotrip-theme-mode", "dark"); } catch {}
+    const resolved = resolveTheme(mode);
+    setTheme(resolved);
+    applyTheme(resolved);
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "system") return;
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e: MediaQueryListEvent) => {
+      const resolved = e.matches ? "dark" : "light";
+      setTheme(resolved);
+      applyTheme(resolved);
+    };
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [mode]);
+
+  useEffect(() => {
+    applyTheme(resolveTheme(mode));
   }, []);
 
   return (

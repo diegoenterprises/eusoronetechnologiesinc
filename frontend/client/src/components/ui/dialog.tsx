@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { XIcon } from "lucide-react";
 import * as React from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // Context to track composition state across dialog children
 const DialogCompositionContext = React.createContext<{
@@ -119,10 +120,16 @@ function DialogContent({
     [isComposing, onEscapeKeyDown]
   );
 
-  const defaultStyle = {
-    background: "linear-gradient(180deg, #161d35 0%, #0d1224 100%)",
-    boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 80px rgba(20, 115, 255, 0.08)",
-  };
+  const { theme } = useTheme();
+  const defaultStyle = theme === "light"
+    ? {
+        background: "#ffffff",
+        boxShadow: "0 25px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)",
+      }
+    : {
+        background: "linear-gradient(180deg, #161d35 0%, #0d1224 100%)",
+        boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 80px rgba(20, 115, 255, 0.08)",
+      };
 
   return (
     <DialogPortal data-slot="dialog-portal">
@@ -141,7 +148,10 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute top-4 right-4 rounded-lg p-1.5 text-white/40 hover:text-white hover:bg-white/10 transition-all focus:outline-none disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            className={cn(
+              "absolute top-4 right-4 rounded-lg p-1.5 transition-all focus:outline-none disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+              theme === "light" ? "text-slate-400 hover:text-slate-700 hover:bg-slate-100" : "text-white/40 hover:text-white hover:bg-white/10"
+            )}
           >
             <XIcon />
             <span className="sr-only">Close</span>
@@ -182,7 +192,7 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-white text-lg leading-none font-semibold text-center", className)}
+      className={cn("text-lg leading-none font-semibold text-center dark:text-white text-slate-900", className)}
       {...props}
     />
   );
@@ -195,7 +205,7 @@ function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("text-white/75 text-base text-center", className)}
+      className={cn("text-base text-center dark:text-white/75 text-slate-500", className)}
       {...props}
     />
   );
