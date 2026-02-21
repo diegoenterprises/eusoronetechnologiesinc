@@ -988,33 +988,11 @@ export const terminalsRouter = router({
       if (staff.email) {
         try {
           const { emailService } = await import("../_core/email");
+          const { buildAccessLinkEmail } = await import("../services/notifications");
           await emailService.send({
             to: staff.email,
             subject: "Your EusoTrip Access Link",
-            html: `
-              <!DOCTYPE html><html><head><style>
-                body{font-family:Arial,sans-serif;line-height:1.6;color:#333}
-                .container{max-width:600px;margin:0 auto;padding:20px}
-                .header{background:linear-gradient(135deg,#06b6d4 0%,#10b981 100%);color:white;padding:30px;text-align:center;border-radius:8px 8px 0 0}
-                .content{background:#f9f9f9;padding:30px;border-radius:0 0 8px 8px}
-                .code{font-size:32px;font-weight:bold;letter-spacing:8px;color:#06b6d4;text-align:center;padding:20px;background:#e0f2fe;border-radius:8px;margin:16px 0}
-                .button{display:inline-block;background:#06b6d4;color:white;padding:12px 30px;text-decoration:none;border-radius:6px;margin:20px 0}
-                .footer{text-align:center;margin-top:20px;color:#666;font-size:12px}
-              </style></head><body>
-              <div class="container">
-                <div class="header"><h1>Access Controller Link</h1></div>
-                <div class="content">
-                  <p>Hello ${staff.name},</p>
-                  <p>You have been assigned as an access controller. Use the link below to validate arriving drivers:</p>
-                  <p style="text-align:center"><a href="${accessUrl}" class="button">Open Access Portal</a></p>
-                  <p>Your 6-digit access code:</p>
-                  <div class="code">${link.accessCode}</div>
-                  <p style="font-size:13px;color:#666">You will need this code to authenticate when you open the link.</p>
-                  <p style="font-size:12px;color:#999">Link expires: ${expiresLabel} CT</p>
-                  <p style="font-size:12px;color:#999">If you did not expect this, contact your manager.</p>
-                </div>
-                <div class="footer"><p>EusoTrip - Logistics Platform</p></div>
-              </div></body></html>`,
+            html: buildAccessLinkEmail(staff.name, accessUrl, link.accessCode, expiresLabel),
             text: `EusoTrip Access Link\n\nHello ${staff.name},\n\nOpen this link to validate arriving drivers:\n${accessUrl}\n\nYour access code: ${link.accessCode}\n\nExpires: ${expiresLabel} CT`,
           });
           emailSent = true;

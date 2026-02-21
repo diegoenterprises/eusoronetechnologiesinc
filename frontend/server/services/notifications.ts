@@ -195,7 +195,7 @@ export async function notifyEmailVerified(params: {
       ${p(`Hello ${params.name},`)}
       ${p("Your email has been verified and your account is now active. You're ready to go.")}
       ${btn(`${APP_URL}/dashboard`, "Open Dashboard")}
-    `, "#10b981"),
+    `),
   }));
 
   if (params.phone) {
@@ -268,7 +268,7 @@ export async function notifyPasswordResetComplete(params: {
       ${p("Your password has been reset successfully. You can now log in with your new password.")}
       ${btn(`${APP_URL}/login`, "Log In")}
       ${muted("If you did not reset your password, contact support immediately.")}
-    `, "#10b981"),
+    `),
   }));
 
   if (params.phone) {
@@ -323,9 +323,9 @@ export async function notify2FAEnabled(params: {
     subject: "Two-Factor Authentication Enabled - EusoTrip",
     html: emailWrap("2FA Enabled", `
       ${p(`Hello ${params.name},`)}
-      ${p("Two-factor authentication is now <strong style=\"color:#10B981\">active</strong> on your account. You'll receive a verification code via SMS each time you log in.")}
+      ${p("Two-factor authentication is now <strong style=\"color:#1473FF\">active</strong> on your account. You'll receive a verification code via SMS each time you log in.")}
       ${muted("If you did not enable this, contact support immediately.")}
-    `, "#10b981"),
+    `),
   }));
 
   if (params.phone) {
@@ -486,7 +486,7 @@ export async function notifyBidReceived(params: {
     html: emailWrap("New Bid Received", `
       ${p(`Hello ${params.name},`)}
       ${p(`<strong style="color:#E2E8F0">${params.bidderName}</strong> placed a bid on load <strong style="color:#E2E8F0">${params.loadNumber}</strong>.`)}
-      ${infoTable(infoRow("Bid Amount", `<strong style="color:#10B981">$${params.bidAmount.toLocaleString()}</strong>`) + infoRow("Bidder", params.bidderName))}
+      ${infoTable(infoRow("Bid Amount", `<strong style="color:#1473FF">$${params.bidAmount.toLocaleString()}</strong>`) + infoRow("Bidder", params.bidderName))}
       ${btn(`${APP_URL}/loads/${params.loadNumber}`, "Review Bid")}
     `),
   }));
@@ -514,9 +514,9 @@ export async function notifyBidAccepted(params: {
     subject: `Bid Accepted - Load ${params.loadNumber}`,
     html: emailWrap("Bid Accepted", `
       ${p(`Hello ${params.name},`)}
-      ${p(`Your bid of <strong style="color:#10B981">$${params.bidAmount.toLocaleString()}</strong> on load <strong style="color:#E2E8F0">${params.loadNumber}</strong> has been accepted.`)}
+      ${p(`Your bid of <strong style="color:#1473FF">$${params.bidAmount.toLocaleString()}</strong> on load <strong style="color:#E2E8F0">${params.loadNumber}</strong> has been accepted.`)}
       ${btn(`${APP_URL}/loads/${params.loadNumber}`, "View Load Details")}
-    `, "#10b981"),
+    `),
   }));
 
   if (params.phone) {
@@ -571,10 +571,10 @@ export async function notifyPaymentReceived(params: {
     subject: `$${params.amount.toLocaleString()} Received - EusoTrip`,
     html: emailWrap("Payment Received", `
       ${p(`Hello ${params.name},`)}
-      ${p(`You received a payment of <strong style="color:#10B981">$${params.amount.toLocaleString()}</strong> from <strong style="color:#E2E8F0">${params.fromName}</strong>.`)}
+      ${p(`You received a payment of <strong style="color:#1473FF">$${params.amount.toLocaleString()}</strong> from <strong style="color:#E2E8F0">${params.fromName}</strong>.`)}
       ${params.reference ? infoTable(infoRow("Reference", params.reference)) : ""}
       ${btn(`${APP_URL}/wallet`, "View Wallet")}
-    `, "#10b981"),
+    `),
   }));
 
   if (params.phone) {
@@ -630,7 +630,7 @@ export async function notifyAccountApproved(params: {
       ${p(`Hello ${params.name},`)}
       ${p("Your EusoTrip account has been verified and approved. You now have full access to the platform.")}
       ${btn(`${APP_URL}/login`, "Log In to EusoTrip")}
-    `, "#10b981"),
+    `),
   }));
 
   if (params.phone) {
@@ -639,6 +639,28 @@ export async function notifyAccountApproved(params: {
       message: `EusoTrip: Your account has been approved! Log in at ${APP_URL}/login`,
     }));
   }
+}
+
+// ─── Exported Branded Email Builders ─────────────────────────────────
+
+/**
+ * Access Controller Link email — branded dark template.
+ * Replaces the old turquoise/cyan inline template in terminals router.
+ */
+export function buildAccessLinkEmail(name: string, accessUrl: string, accessCode: string, expiresLabel: string): string {
+  const p = (text: string) => `<p style="margin:0 0 14px;color:#94A3B8;font-size:15px;line-height:1.7">${text}</p>`;
+  const muted = (text: string) => `<p style="margin:12px 0 0;font-size:12px;color:#475569">${text}</p>`;
+
+  return emailWrap("Access Controller Link", `
+    ${p(`Hello ${name},`)}
+    ${p("You have been assigned as an access controller. Use the link below to validate arriving drivers:")}
+    ${btn(accessUrl, "Open Access Portal")}
+    ${p("Your 6-digit access code:")}
+    ${codeBlock(accessCode)}
+    ${muted("You will need this code to authenticate when you open the link.")}
+    ${muted(`Link expires: ${expiresLabel} CT`)}
+    ${muted("If you did not expect this, contact your manager.")}
+  `);
 }
 
 // ─── Utilities ───────────────────────────────────────────────────────
