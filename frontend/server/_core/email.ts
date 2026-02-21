@@ -104,49 +104,86 @@ class EmailService {
     };
   }
 
+  // ─── Branded email template (matches notifications.ts design system) ───
+  private brandedEmail(title: string, bodyHtml: string): string {
+    const LOGO_URL = `${APP_URL}/eusotrip-logo.png`;
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>${title} - EusoTrip</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0B1120;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0B1120;min-height:100vh">
+<tr><td align="center" style="padding:40px 16px 20px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
+
+<tr><td align="center" style="padding-bottom:32px">
+  <img src="${LOGO_URL}" alt="EusoTrip" width="52" height="52" style="display:block;border:0;border-radius:14px">
+</td></tr>
+
+<tr><td style="background:linear-gradient(145deg,rgba(30,41,59,0.80),rgba(15,23,42,0.95));border:1px solid rgba(255,255,255,0.06);border-radius:20px;overflow:hidden">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr><td style="height:3px;background:linear-gradient(90deg,#1473FF,#BE01FF)"></td></tr>
+  </table>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr><td style="padding:36px 36px 0">
+    <h1 style="margin:0;font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:-0.3px;line-height:1.3">${title}</h1>
+  </td></tr>
+  </table>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr><td style="padding:20px 36px 36px;color:#94A3B8;font-size:15px;line-height:1.7">
+    ${bodyHtml}
+  </td></tr>
+  </table>
+</td></tr>
+
+<tr><td style="padding:28px 0 0;text-align:center">
+  <p style="margin:0 0 4px;font-size:12px;color:#475569;letter-spacing:0.5px">
+    <span style="background:linear-gradient(90deg,#1473FF,#BE01FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:600">EusoTrip</span>
+  </p>
+  <p style="margin:0 0 4px;font-size:11px;color:#334155">Hazmat &amp; Energy Logistics Platform</p>
+  <p style="margin:0;font-size:11px;color:#1E293B">
+    <a href="${APP_URL}/privacy-policy" style="color:#475569;text-decoration:none">Privacy</a>
+    &nbsp;&middot;&nbsp;
+    <a href="${APP_URL}/terms" style="color:#475569;text-decoration:none">Terms</a>
+    &nbsp;&middot;&nbsp;
+    <a href="${APP_URL}" style="color:#475569;text-decoration:none">eusotrip.com</a>
+  </p>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+  }
+
+  private brandedButton(href: string, label: string, color?: string): string {
+    const bg = color || "linear-gradient(135deg,#1473FF,#BE01FF)";
+    const isSolid = !bg.includes("gradient");
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 8px">
+    <tr><td align="center">
+      <a href="${href}" style="display:inline-block;padding:14px 36px;background:${bg};${isSolid ? `background-color:${bg};` : ""}color:#FFFFFF;font-size:14px;font-weight:600;text-decoration:none;border-radius:12px;letter-spacing:0.2px">${label}</a>
+    </td></tr>
+    </table>`;
+  }
+
   /**
    * Send verification email
    */
   async sendVerificationEmail(email: string, token: string, name?: string): Promise<boolean> {
     const verifyUrl = `${APP_URL}/verify-email?token=${token}`;
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-          .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Welcome to EusoTrip</h1>
-          </div>
-          <div class="content">
-            <p>Hello${name ? ` ${name}` : ""},</p>
-            <p>Thank you for registering with EusoTrip. Please verify your email address by clicking the button below:</p>
-            <p style="text-align: center;">
-              <a href="${verifyUrl}" class="button">Verify Email Address</a>
-            </p>
-            <p>Or copy and paste this link into your browser:</p>
-            <p style="word-break: break-all; color: #667eea;">${verifyUrl}</p>
-            <p>This link will expire in 24 hours.</p>
-            <p>If you did not create an account, please ignore this email.</p>
-          </div>
-          <div class="footer">
-            <p>EusoTrip - Hazmat Logistics Platform</p>
-            <p>This is an automated message, please do not reply.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+    const html = this.brandedEmail("Welcome to EusoTrip", `
+      <p style="margin:0 0 12px;color:#CBD5E1">Hello${name ? ` ${name}` : ""},</p>
+      <p style="margin:0 0 12px;color:#CBD5E1">Thank you for registering. Verify your email to activate your account.</p>
+      ${this.brandedButton(verifyUrl, "Verify Email Address")}
+      <p style="margin:12px 0 0;font-size:12px;color:#475569;line-height:1.5">This link expires in 24 hours. If you didn't create this account, ignore this email.</p>
+    `);
 
     return this.send({
       to: email,
@@ -162,39 +199,11 @@ class EmailService {
   async sendPasswordResetEmail(email: string, token: string): Promise<boolean> {
     const resetUrl = `${APP_URL}/reset-password?token=${token}`;
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-          .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Password Reset</h1>
-          </div>
-          <div class="content">
-            <p>You requested a password reset for your EusoTrip account.</p>
-            <p style="text-align: center;">
-              <a href="${resetUrl}" class="button">Reset Password</a>
-            </p>
-            <p>This link will expire in 1 hour.</p>
-            <p>If you did not request this, please ignore this email.</p>
-          </div>
-          <div class="footer">
-            <p>EusoTrip - Hazmat Logistics Platform</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+    const html = this.brandedEmail("Reset Your Password", `
+      <p style="margin:0 0 12px;color:#CBD5E1">A password reset was requested for your EusoTrip account.</p>
+      ${this.brandedButton(resetUrl, "Reset Password")}
+      <p style="margin:12px 0 0;font-size:12px;color:#475569;line-height:1.5">This link expires in 1 hour. If you didn't request this, ignore this email.</p>
+    `);
 
     return this.send({
       to: email,
@@ -207,39 +216,11 @@ class EmailService {
    * Send registration approval notification
    */
   async sendApprovalEmail(email: string, name: string): Promise<boolean> {
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-          .button { display: inline-block; background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Account Approved</h1>
-          </div>
-          <div class="content">
-            <p>Hello ${name},</p>
-            <p>Great news! Your EusoTrip account has been verified and approved.</p>
-            <p>You now have full access to the platform. Log in to start using all features:</p>
-            <p style="text-align: center;">
-              <a href="${APP_URL}/login" class="button">Log In to EusoTrip</a>
-            </p>
-          </div>
-          <div class="footer">
-            <p>EusoTrip - Hazmat Logistics Platform</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+    const html = this.brandedEmail("Account Approved", `
+      <p style="margin:0 0 12px;color:#CBD5E1">Hello ${name},</p>
+      <p style="margin:0 0 12px;color:#CBD5E1">Your EusoTrip account has been verified and approved. You now have full access to the platform.</p>
+      ${this.brandedButton(`${APP_URL}/login`, "Log In to EusoTrip")}
+    `);
 
     return this.send({
       to: email,
@@ -252,42 +233,15 @@ class EmailService {
    * Send load assignment notification
    */
   async sendLoadAssignmentEmail(email: string, name: string, loadNumber: string): Promise<boolean> {
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-          .button { display: inline-block; background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>New Load Assignment</h1>
-          </div>
-          <div class="content">
-            <p>Hello ${name},</p>
-            <p>You have been assigned a new load: <strong>${loadNumber}</strong></p>
-            <p style="text-align: center;">
-              <a href="${APP_URL}/loads/${loadNumber}" class="button">View Load Details</a>
-            </p>
-          </div>
-          <div class="footer">
-            <p>EusoTrip - Hazmat Logistics Platform</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+    const html = this.brandedEmail("New Load Assignment", `
+      <p style="margin:0 0 12px;color:#CBD5E1">Hello ${name},</p>
+      <p style="margin:0 0 12px;color:#CBD5E1">You've been assigned load <strong style="color:#E2E8F0">${loadNumber}</strong>.</p>
+      ${this.brandedButton(`${APP_URL}/loads/${loadNumber}`, "View Load Details")}
+    `);
 
     return this.send({
       to: email,
-      subject: `New Load Assignment: ${loadNumber}`,
+      subject: `Load ${loadNumber} Assigned - EusoTrip`,
       html,
     });
   }

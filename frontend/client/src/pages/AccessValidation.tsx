@@ -1,5 +1,9 @@
 /**
- * ACCESS VALIDATION PAGE — Lightweight 24h Token-Based
+ * ACCESS VALIDATION PAGE
+ * 
+ * Jony Ive design language — every element intentional, every pixel purposeful.
+ * EusoTrip brand: #1473FF → #BE01FF gradient, dark slate canvas, frosted glass.
+ * 
  * Used by gate/rack/bay controllers to validate arriving drivers.
  * NO LOGIN REQUIRED — the token + 6-digit access code IS the auth.
  *
@@ -40,7 +44,11 @@ function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number)
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const GEOFENCE_RADIUS_METERS = 500; // 500m radius
+const GEOFENCE_RADIUS_METERS = 500;
+
+// ─── Design tokens ───────────────────────────────────────────────────
+const glass = "bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl";
+const glassInner = "bg-white/[0.03] border border-white/[0.04] rounded-xl";
 
 interface StaffInfo {
   id: number;
@@ -56,40 +64,53 @@ interface StaffInfo {
   locationName: string | null;
 }
 
+/** Logo + brand wordmark header */
+function BrandHeader({ subtitle }: { subtitle?: string }) {
+  return (
+    <div className="text-center mb-8">
+      <img src="/eusotrip-logo.png" alt="EusoTrip" className="w-14 h-14 mx-auto mb-4 object-contain rounded-[14px]" />
+      <h1 className="text-[22px] font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent tracking-tight">
+        EusoTrip
+      </h1>
+      {subtitle && <p className="text-slate-500 text-[13px] mt-1 tracking-wide">{subtitle}</p>}
+    </div>
+  );
+}
+
+/** Gradient accent bar for cards */
+function GradientBar() {
+  return <div className="h-[2px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] rounded-full" />;
+}
+
 export default function AccessValidation() {
   const params = useParams<{ token: string }>();
   const token = params?.token || "";
 
-  // Phase state: loading → code_entry → location_check → ready → (decision result)
   const [phase, setPhase] = useState<"loading" | "code_entry" | "location_check" | "ready" | "approved" | "denied" | "expired" | "locked" | "error">("loading");
 
   const [staff, setStaff] = useState<StaffInfo | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Code entry
   const [codeDigits, setCodeDigits] = useState(["", "", "", "", "", ""]);
   const [codeError, setCodeError] = useState("");
   const [codeSubmitting, setCodeSubmitting] = useState(false);
   const codeRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Location
   const [staffLat, setStaffLat] = useState<number | null>(null);
   const [staffLng, setStaffLng] = useState<number | null>(null);
   const [geoDistance, setGeoDistance] = useState<number | null>(null);
   const [locationVerifiedAt, setLocationVerifiedAt] = useState<string | null>(null);
   const [locationError, setLocationError] = useState("");
 
-  // Load lookup
   const [loadInput, setLoadInput] = useState("");
   const [lookupStatus, setLookupStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
   const [loadData, setLoadData] = useState<{ load: any; driver: any; shipper: any } | null>(null);
 
-  // Decision
   const [decision, setDecision] = useState<"pending" | "submitting">("pending");
   const [denyReason, setDenyReason] = useState("");
 
-  // ──────────── STEP 1: Validate token on mount ────────────
+  // ──────────── STEP 1: Validate token ────────────
   useEffect(() => {
     if (!token) { setPhase("error"); setErrorMsg("No token provided"); return; }
     fetch(`/api/access/validate/${token}`)
@@ -103,16 +124,12 @@ export default function AccessValidation() {
         if (!data) return;
         setStaff(data.staff);
         setExpiresAt(data.expiresAt);
-        if (data.codeVerified) {
-          setPhase("location_check");
-        } else {
-          setPhase("code_entry");
-        }
+        setPhase(data.codeVerified ? "location_check" : "code_entry");
       })
       .catch(() => { setPhase("error"); setErrorMsg("Connection failed"); });
   }, [token]);
 
-  // ──────────── STEP 2: Code entry handlers ────────────
+  // ──────────── STEP 2: Code entry ────────────
   const handleCodeInput = (index: number, value: string) => {
     if (!/^\d?$/.test(value)) return;
     const next = [...codeDigits];
@@ -146,31 +163,23 @@ export default function AccessValidation() {
     setCodeSubmitting(false);
   };
 
-  // ──────────── STEP 3: Location services ────────────
+  // ──────────── STEP 3: Location ────────────
   const requestLocation = () => {
     setLocationError("");
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation not supported by this browser");
-      return;
-    }
+    if (!navigator.geolocation) { setLocationError("Geolocation not supported"); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
         setStaffLat(lat);
         setStaffLng(lng);
-        const now = new Date().toISOString();
-        setLocationVerifiedAt(now);
-
+        setLocationVerifiedAt(new Date().toISOString());
         if (staff?.terminalLat && staff?.terminalLng) {
-          const dist = haversineMeters(lat, lng, staff.terminalLat, staff.terminalLng);
-          setGeoDistance(Math.round(dist));
+          setGeoDistance(Math.round(haversineMeters(lat, lng, staff.terminalLat, staff.terminalLng)));
         }
         setPhase("ready");
       },
       (err) => {
-        if (err.code === 1) setLocationError("Location permission denied. You must allow location access to validate arrivals.");
-        else setLocationError("Unable to get location. Please try again.");
+        setLocationError(err.code === 1 ? "Location permission denied. You must allow location access." : "Unable to get location. Please try again.");
       },
       { enableHighAccuracy: true, timeout: 15000 }
     );
@@ -182,15 +191,8 @@ export default function AccessValidation() {
     setLookupStatus("loading");
     setLoadData(null);
     fetch(`/api/access/lookup/${token}/${loadInput.trim()}`)
-      .then(r => {
-        if (!r.ok) { setLookupStatus("not_found"); return null; }
-        return r.json();
-      })
-      .then(data => {
-        if (!data) return;
-        setLoadData(data);
-        setLookupStatus("found");
-      })
+      .then(r => { if (!r.ok) { setLookupStatus("not_found"); return null; } return r.json(); })
+      .then(data => { if (!data) return; setLoadData(data); setLookupStatus("found"); })
       .catch(() => setLookupStatus("not_found"));
   };
 
@@ -201,131 +203,143 @@ export default function AccessValidation() {
     fetch(`/api/access/decide/${token}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        loadId: loadData?.load?.id,
-        driverId: loadData?.load?.driverId,
-        decision: dec,
-        denyReason: dec === "denied" ? denyReason : undefined,
-        staffLat,
-        staffLng,
-        geofenceDistanceMeters: geoDistance,
-        locationVerifiedAt,
-      }),
+      body: JSON.stringify({ loadId: loadData?.load?.id, driverId: loadData?.load?.driverId, decision: dec, denyReason: dec === "denied" ? denyReason : undefined, staffLat, staffLng, geofenceDistanceMeters: geoDistance, locationVerifiedAt }),
     })
       .then(r => r.json())
       .then(() => setPhase(dec))
       .catch(() => setDecision("pending"));
   };
 
-  // ═══════════════ RENDERS ═══════════════
+  // ═══════════════════════════════════════════════════════════════════
+  //  RENDERS
+  // ═══════════════════════════════════════════════════════════════════
 
-  // Loading
+  // ──── Loading ────
   if (phase === "loading") {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0B1120] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-cyan-400 animate-spin mx-auto mb-3" />
-          <p className="text-slate-400 text-sm">Validating access link...</p>
+          <div className="w-10 h-10 mx-auto mb-4 rounded-full border-2 border-transparent border-t-[#1473FF] border-r-[#BE01FF] animate-spin" />
+          <p className="text-slate-500 text-[13px] tracking-wide">Validating access...</p>
         </div>
       </div>
     );
   }
 
-  // Expired / Error / Locked
+  // ──── Error States ────
   if (phase === "expired" || phase === "error" || phase === "locked") {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="text-center max-w-sm">
-          {phase === "locked" ? <Lock className="w-12 h-12 text-red-400 mx-auto mb-4" /> : <ShieldX className="w-12 h-12 text-red-400 mx-auto mb-4" />}
-          <h1 className="text-xl font-bold text-white mb-2">
-            {phase === "expired" ? "Link Expired" : phase === "locked" ? "Link Locked" : "Invalid Link"}
-          </h1>
-          <p className="text-slate-400 text-sm">
-            {phase === "expired" ? "This access link has expired (24h). Contact your manager for a new link."
-              : phase === "locked" ? "Too many incorrect code attempts. This link has been locked. Contact your manager."
-              : errorMsg || "This link is invalid or has been revoked."}
-          </p>
+      <div className="min-h-screen bg-[#0B1120] flex items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center">
+          <BrandHeader />
+          <div className={`${glass} p-8`}>
+            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-5">
+              {phase === "locked" ? <Lock className="w-7 h-7 text-red-400" /> : <ShieldX className="w-7 h-7 text-red-400" />}
+            </div>
+            <h2 className="text-lg font-semibold text-white mb-2 tracking-tight">
+              {phase === "expired" ? "Link Expired" : phase === "locked" ? "Link Locked" : "Invalid Link"}
+            </h2>
+            <p className="text-slate-400 text-[13px] leading-relaxed">
+              {phase === "expired" ? "This access link has expired. Contact your manager for a new link."
+                : phase === "locked" ? "Too many incorrect attempts. This link has been locked."
+                : errorMsg || "This link is invalid or has been revoked."}
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
-  // ──────── Phase: CODE ENTRY ────────
+  // ──── Code Entry ────
   if (phase === "code_entry") {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="text-center max-w-sm w-full">
-          <Shield className="w-12 h-12 text-cyan-400 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-white mb-1">Access Verification</h1>
-          <p className="text-slate-400 text-sm mb-6">Enter the 6-digit code provided by your manager</p>
+      <div className="min-h-screen bg-[#0B1120] flex items-center justify-center p-6">
+        <div className="max-w-sm w-full">
+          <BrandHeader subtitle="Access Verification" />
+          <div className={`${glass} p-8`}>
+            <GradientBar />
+            <div className="mt-6 mb-2 text-center">
+              <p className="text-slate-400 text-[13px]">Enter the 6-digit code from your manager</p>
+            </div>
 
-          <div className="flex justify-center gap-2 mb-4">
-            {codeDigits.map((d, i) => (
-              <input
-                key={i}
-                ref={el => { codeRefs.current[i] = el; }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={d}
-                onChange={e => handleCodeInput(i, e.target.value)}
-                onKeyDown={e => handleCodeKeyDown(i, e)}
-                className="w-12 h-14 text-center text-2xl font-bold bg-slate-800 border-2 border-slate-700 rounded-xl text-white focus:border-cyan-500 focus:outline-none transition"
-              />
-            ))}
+            <div className="flex justify-center gap-2.5 my-6">
+              {codeDigits.map((d, i) => (
+                <input
+                  key={i}
+                  ref={el => { codeRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={d}
+                  onChange={e => handleCodeInput(i, e.target.value)}
+                  onKeyDown={e => handleCodeKeyDown(i, e)}
+                  className="w-12 h-14 text-center text-xl font-semibold bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:border-[#1473FF] focus:ring-1 focus:ring-[#1473FF]/30 focus:outline-none transition-all"
+                />
+              ))}
+            </div>
+
+            {codeError && (
+              <div className="flex items-center justify-center gap-1.5 text-red-400 text-[13px] mb-4">
+                <AlertTriangle className="w-3.5 h-3.5" />{codeError}
+              </div>
+            )}
+
+            <button
+              onClick={submitCode}
+              disabled={codeDigits.join("").length !== 6 || codeSubmitting}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-semibold text-[14px] transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-[#1473FF]/20 active:scale-[0.98]"
+            >
+              {codeSubmitting ? <Loader2 className="w-4.5 h-4.5 animate-spin" /> : <KeyRound className="w-4.5 h-4.5" />}
+              {codeSubmitting ? "Verifying..." : "Verify Code"}
+            </button>
           </div>
 
-          {codeError && (
-            <p className="text-red-400 text-sm mb-4 flex items-center justify-center gap-1">
-              <AlertTriangle className="w-4 h-4" />{codeError}
-            </p>
-          )}
-
-          <button
-            onClick={submitCode}
-            disabled={codeDigits.join("").length !== 6 || codeSubmitting}
-            className="w-full py-3 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {codeSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <KeyRound className="w-5 h-5" />}
-            {codeSubmitting ? "Verifying..." : "Verify Code"}
-          </button>
-
           {staff && (
-            <p className="text-slate-600 text-xs mt-4">{staff.name} - {ROLE_LABELS[staff.staffRole] || staff.staffRole}</p>
+            <p className="text-center text-slate-600 text-[11px] mt-5 tracking-wide">
+              {staff.name} &middot; {ROLE_LABELS[staff.staffRole] || staff.staffRole}
+            </p>
           )}
         </div>
       </div>
     );
   }
 
-  // ──────── Phase: LOCATION CHECK ────────
+  // ──── Location Check ────
   if (phase === "location_check") {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="text-center max-w-sm w-full">
-          <Navigation className="w-12 h-12 text-cyan-400 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-white mb-1">Location Verification</h1>
-          <p className="text-slate-400 text-sm mb-6">
-            Location services must be enabled to verify you are at the {staff?.locationType && staff.locationType !== "terminal" ? (staff.locationName || staff.locationType.replace(/_/g, " ")) : "terminal or pickup location"}
-          </p>
+      <div className="min-h-screen bg-[#0B1120] flex items-center justify-center p-6">
+        <div className="max-w-sm w-full">
+          <BrandHeader subtitle="Location Verification" />
+          <div className={`${glass} p-8`}>
+            <GradientBar />
+            <div className="mt-6 mb-6 text-center">
+              <div className="w-14 h-14 rounded-full bg-[#1473FF]/10 flex items-center justify-center mx-auto mb-4">
+                <Navigation className="w-6 h-6 text-[#1473FF]" />
+              </div>
+              <p className="text-slate-400 text-[13px] leading-relaxed">
+                Enable location services to verify you are at the{" "}
+                <span className="text-slate-300">{staff?.locationType && staff.locationType !== "terminal" ? (staff.locationName || staff.locationType.replace(/_/g, " ")) : "terminal"}</span>
+              </p>
+            </div>
 
-          <button
-            onClick={requestLocation}
-            className="w-full py-4 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-semibold transition flex items-center justify-center gap-2"
-          >
-            <MapPin className="w-5 h-5" />Enable Location Services
-          </button>
+            <button
+              onClick={requestLocation}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-semibold text-[14px] flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-[#1473FF]/20 active:scale-[0.98] transition-all"
+            >
+              <MapPin className="w-4.5 h-4.5" />Enable Location
+            </button>
 
-          {locationError && (
-            <p className="text-red-400 text-sm mt-4 flex items-center justify-center gap-1">
-              <AlertTriangle className="w-4 h-4" />{locationError}
-            </p>
-          )}
+            {locationError && (
+              <div className="flex items-center gap-1.5 text-red-400 text-[13px] mt-4">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />{locationError}
+              </div>
+            )}
+          </div>
 
           {staff && (
-            <div className="mt-6 text-slate-600 text-xs">
-              <p>{staff.name} - {ROLE_LABELS[staff.staffRole] || staff.staffRole}</p>
-              {staff.terminalName && <p className="text-cyan-600/50 mt-1">{staff.terminalName}</p>}
+            <div className="text-center mt-5">
+              <p className="text-slate-600 text-[11px] tracking-wide">{staff.name} &middot; {ROLE_LABELS[staff.staffRole] || staff.staffRole}</p>
+              {staff.terminalName && <p className="text-[#1473FF]/40 text-[11px] mt-0.5">{staff.terminalName}</p>}
             </div>
           )}
         </div>
@@ -333,89 +347,90 @@ export default function AccessValidation() {
     );
   }
 
-  // ──────── Phase: DECISION RESULT ────────
+  // ──── Decision Result ────
   if (phase === "approved" || phase === "denied") {
+    const isApproved = phase === "approved";
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="text-center max-w-sm">
-          {phase === "approved" ? (
-            <>
-              <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-10 h-10 text-green-400" />
-              </div>
-              <h1 className="text-2xl font-bold text-green-400 mb-2">Access Approved</h1>
-              <p className="text-slate-400 text-sm">Load #{loadData?.load?.id} — Driver cleared for entry</p>
-              <p className="text-slate-600 text-xs mt-2">{new Date().toLocaleString()}</p>
-            </>
-          ) : (
-            <>
-              <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
-                <XCircle className="w-10 h-10 text-red-400" />
-              </div>
-              <h1 className="text-2xl font-bold text-red-400 mb-2">Access Denied</h1>
-              <p className="text-slate-400 text-sm">Load #{loadData?.load?.id} — {denyReason || "Entry denied"}</p>
-              <p className="text-slate-600 text-xs mt-2">{new Date().toLocaleString()}</p>
-            </>
-          )}
-          <button
-            onClick={() => { setPhase("ready"); setDecision("pending"); setLoadData(null); setLoadInput(""); setLookupStatus("idle"); setDenyReason(""); }}
-            className="mt-6 px-6 py-2 rounded-lg bg-slate-800 text-slate-300 text-sm hover:bg-slate-700 transition"
-          >
-            Validate Another
-          </button>
+      <div className="min-h-screen bg-[#0B1120] flex items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center">
+          <BrandHeader />
+          <div className={`${glass} p-8`}>
+            <div className={`w-20 h-20 rounded-full mx-auto mb-5 flex items-center justify-center ${isApproved ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
+              {isApproved
+                ? <CheckCircle className="w-9 h-9 text-emerald-400" />
+                : <XCircle className="w-9 h-9 text-red-400" />}
+            </div>
+            <h2 className={`text-xl font-bold mb-2 tracking-tight ${isApproved ? "text-emerald-400" : "text-red-400"}`}>
+              {isApproved ? "Access Approved" : "Access Denied"}
+            </h2>
+            <p className="text-slate-400 text-[13px]">
+              Load #{loadData?.load?.id} &mdash; {isApproved ? "Driver cleared for entry" : (denyReason || "Entry denied")}
+            </p>
+            <p className="text-slate-600 text-[11px] mt-2">{new Date().toLocaleString()}</p>
+
+            <button
+              onClick={() => { setPhase("ready"); setDecision("pending"); setLoadData(null); setLoadInput(""); setLookupStatus("idle"); setDenyReason(""); }}
+              className="mt-6 px-6 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-slate-300 text-[13px] font-medium hover:bg-white/[0.08] transition-all"
+            >
+              Validate Another
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  // ──────── Phase: READY — Main validation UI ────────
+  // ═══════════════════════════════════════════════════════════════════
+  //  READY — Main Validation UI
+  // ═══════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-slate-950 p-4 max-w-lg mx-auto">
+    <div className="min-h-screen bg-[#0B1120] p-4 pb-8 max-w-lg mx-auto">
       {/* Header */}
-      <div className="text-center mb-5 pt-3">
-        <Shield className="w-8 h-8 text-cyan-400 mx-auto mb-1" />
-        <h1 className="text-lg font-bold text-white">Access Validation</h1>
+      <div className="text-center pt-4 pb-5">
+        <img src="/eusotrip-logo.png" alt="EusoTrip" className="w-10 h-10 mx-auto mb-3 object-contain rounded-[10px]" />
+        <h1 className="text-[17px] font-bold text-white tracking-tight">Access Validation</h1>
         {staff && (
-          <div className="mt-1">
-            <p className="text-slate-300 text-sm font-medium">{staff.name}</p>
-            <p className="text-slate-500 text-xs">{ROLE_LABELS[staff.staffRole] || staff.staffRole}{staff.assignedZone ? ` — ${staff.assignedZone}` : ""}</p>
-            {staff.terminalName && <p className="text-cyan-500/60 text-xs">{staff.terminalName}</p>}
+          <div className="mt-1.5">
+            <p className="text-slate-300 text-[13px] font-medium">{staff.name}</p>
+            <p className="text-slate-500 text-[11px] tracking-wide">{ROLE_LABELS[staff.staffRole] || staff.staffRole}{staff.assignedZone ? ` \u00b7 ${staff.assignedZone}` : ""}</p>
+            {staff.terminalName && <p className="text-[#1473FF]/50 text-[11px]">{staff.terminalName}</p>}
           </div>
         )}
       </div>
 
       {/* Security badges */}
-      <div className="flex items-center justify-center gap-3 mb-4">
-        <span className="flex items-center gap-1 text-[10px] text-green-500 bg-green-500/10 px-2 py-1 rounded-full">
-          <KeyRound className="w-3 h-3" />Code Verified
+      <div className="flex items-center justify-center gap-2 mb-5">
+        <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-400/8 border border-emerald-400/10 px-2.5 py-1 rounded-full font-medium">
+          <KeyRound className="w-3 h-3" />Verified
         </span>
-        <span className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-full ${
+        <span className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-medium border ${
           geoDistance !== null && geoDistance <= GEOFENCE_RADIUS_METERS
-            ? "text-green-500 bg-green-500/10"
+            ? "text-emerald-400 bg-emerald-400/8 border-emerald-400/10"
             : geoDistance !== null
-            ? "text-yellow-500 bg-yellow-500/10"
-            : "text-cyan-500 bg-cyan-500/10"
+            ? "text-amber-400 bg-amber-400/8 border-amber-400/10"
+            : "text-[#1473FF] bg-[#1473FF]/8 border-[#1473FF]/10"
         }`}>
           <MapPin className="w-3 h-3" />
           {geoDistance !== null
             ? geoDistance <= GEOFENCE_RADIUS_METERS
               ? `On-site (${geoDistance}m)`
               : `${geoDistance}m away`
-            : "Location tracked"}
+            : "Located"}
         </span>
         {expiresAt && (
-          <span className="flex items-center gap-1 text-[10px] text-slate-500 bg-slate-500/10 px-2 py-1 rounded-full">
+          <span className="flex items-center gap-1 text-[10px] text-slate-500 bg-white/[0.03] border border-white/[0.04] px-2.5 py-1 rounded-full">
             <Clock className="w-3 h-3" />{new Date(expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </span>
         )}
       </div>
 
-      {/* Load Lookup */}
-      <div className="bg-slate-900/80 rounded-2xl p-5 border border-slate-800 mb-4">
-        <h2 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
-          <Search className="w-4 h-4 text-cyan-400" />Look Up Arrival
+      {/* Load Lookup Card */}
+      <div className={`${glass} p-5 mb-4`}>
+        <GradientBar />
+        <h2 className="text-white font-semibold text-[14px] mt-4 mb-1 flex items-center gap-2 tracking-tight">
+          <Search className="w-4 h-4 text-[#1473FF]" />Look Up Arrival
         </h2>
-        <p className="text-slate-500 text-xs mb-3">Enter the load number from the driver's QR code or paperwork</p>
+        <p className="text-slate-500 text-[12px] mb-4">Enter the load number from the driver's paperwork or QR code</p>
         <div className="flex gap-2">
           <input
             type="text"
@@ -424,83 +439,83 @@ export default function AccessValidation() {
             onChange={e => setLoadInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && lookupLoad()}
             placeholder="Load # (e.g. 1234)"
-            className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+            className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 text-white text-[14px] placeholder-slate-600 focus:border-[#1473FF] focus:ring-1 focus:ring-[#1473FF]/20 focus:outline-none transition-all"
           />
           <button
             onClick={lookupLoad}
             disabled={lookupStatus === "loading"}
-            className="px-5 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-sm font-medium transition disabled:opacity-50"
+            className="px-5 py-3 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl text-[13px] font-semibold transition-all disabled:opacity-40 hover:shadow-lg hover:shadow-[#1473FF]/20 active:scale-[0.97]"
           >
             {lookupStatus === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Look Up"}
           </button>
         </div>
         {lookupStatus === "not_found" && (
-          <div className="mt-3 flex items-center gap-2 text-red-400 text-xs">
-            <AlertTriangle className="w-4 h-4" />Load not found. Check the number and try again.
+          <div className="mt-3 flex items-center gap-1.5 text-red-400 text-[12px]">
+            <AlertTriangle className="w-3.5 h-3.5" />Load not found. Check the number and try again.
           </div>
         )}
       </div>
 
       {/* Load Details + Decision */}
       {loadData && (
-        <div className="bg-slate-900/80 rounded-2xl p-5 border border-slate-800 space-y-4">
+        <div className={`${glass} p-5 space-y-4`}>
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-white font-semibold text-sm flex items-center gap-2">
-                <Truck className="w-4 h-4 text-cyan-400" />Load #{loadData.load.id}
+              <h2 className="text-white font-semibold text-[14px] flex items-center gap-2 tracking-tight">
+                <Truck className="w-4 h-4 text-[#1473FF]" />Load #{loadData.load.id}
               </h2>
-              <span className={`text-xs px-2 py-1 rounded-full ${
-                loadData.load.status === "in_transit" ? "bg-blue-500/20 text-blue-400" :
-                loadData.load.status === "at_pickup" ? "bg-yellow-500/20 text-yellow-400" :
-                loadData.load.status === "delivered" ? "bg-green-500/20 text-green-400" :
-                "bg-slate-500/20 text-slate-400"
+              <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium border ${
+                loadData.load.status === "in_transit" ? "bg-blue-500/8 text-blue-400 border-blue-400/10" :
+                loadData.load.status === "at_pickup" ? "bg-amber-500/8 text-amber-400 border-amber-400/10" :
+                loadData.load.status === "delivered" ? "bg-emerald-500/8 text-emerald-400 border-emerald-400/10" :
+                "bg-white/[0.03] text-slate-400 border-white/[0.04]"
               }`}>
                 {loadData.load.status?.replace(/_/g, " ")}
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="bg-slate-800/50 rounded-lg p-3">
-                <p className="text-slate-500 mb-1 flex items-center gap-1"><MapPin className="w-3 h-3" />Origin</p>
+            <div className="grid grid-cols-2 gap-2.5 text-[12px]">
+              <div className={`${glassInner} p-3`}>
+                <p className="text-slate-500 mb-1 flex items-center gap-1 text-[11px]"><MapPin className="w-3 h-3" />Origin</p>
                 <p className="text-white font-medium">{loadData.load.pickupCity}, {loadData.load.pickupState}</p>
               </div>
-              <div className="bg-slate-800/50 rounded-lg p-3">
-                <p className="text-slate-500 mb-1 flex items-center gap-1"><MapPin className="w-3 h-3" />Destination</p>
+              <div className={`${glassInner} p-3`}>
+                <p className="text-slate-500 mb-1 flex items-center gap-1 text-[11px]"><MapPin className="w-3 h-3" />Destination</p>
                 <p className="text-white font-medium">{loadData.load.deliveryCity}, {loadData.load.deliveryState}</p>
               </div>
-              <div className="bg-slate-800/50 rounded-lg p-3">
-                <p className="text-slate-500 mb-1 flex items-center gap-1"><Package className="w-3 h-3" />Cargo</p>
-                <p className="text-white font-medium">{loadData.load.cargoType || "N/A"} — {loadData.load.equipmentType || "N/A"}</p>
+              <div className={`${glassInner} p-3`}>
+                <p className="text-slate-500 mb-1 flex items-center gap-1 text-[11px]"><Package className="w-3 h-3" />Cargo</p>
+                <p className="text-white font-medium">{loadData.load.cargoType || "N/A"} &mdash; {loadData.load.equipmentType || "N/A"}</p>
               </div>
-              <div className="bg-slate-800/50 rounded-lg p-3">
-                <p className="text-slate-500 mb-1">Weight</p>
+              <div className={`${glassInner} p-3`}>
+                <p className="text-slate-500 mb-1 text-[11px]">Weight</p>
                 <p className="text-white font-medium">{loadData.load.weight ? `${Number(loadData.load.weight).toLocaleString()} lbs` : "N/A"}</p>
               </div>
             </div>
-            {loadData.load.referenceNumber && <p className="text-slate-500 text-xs mt-2">Ref: {loadData.load.referenceNumber}</p>}
+            {loadData.load.referenceNumber && <p className="text-slate-600 text-[11px] mt-2">Ref: {loadData.load.referenceNumber}</p>}
           </div>
 
           {loadData.driver && (
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <p className="text-slate-500 text-xs mb-1 flex items-center gap-1"><User className="w-3 h-3" />Driver</p>
-              <p className="text-white font-medium text-sm">{loadData.driver.name}</p>
-              {loadData.driver.email && <p className="text-slate-500 text-xs">{loadData.driver.email}</p>}
+            <div className={`${glassInner} p-3`}>
+              <p className="text-slate-500 text-[11px] mb-1 flex items-center gap-1"><User className="w-3 h-3" />Driver</p>
+              <p className="text-white font-medium text-[13px]">{loadData.driver.name}</p>
+              {loadData.driver.email && <p className="text-slate-500 text-[11px]">{loadData.driver.email}</p>}
             </div>
           )}
 
           {loadData.shipper && (
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <p className="text-slate-500 text-xs mb-1">Shipper</p>
-              <p className="text-white font-medium text-sm">{loadData.shipper.name}</p>
+            <div className={`${glassInner} p-3`}>
+              <p className="text-slate-500 text-[11px] mb-1">Shipper</p>
+              <p className="text-white font-medium text-[13px]">{loadData.shipper.name}</p>
             </div>
           )}
 
           {/* Geofence warning */}
           {geoDistance !== null && geoDistance > GEOFENCE_RADIUS_METERS && (
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
+            <div className="bg-amber-500/8 border border-amber-500/15 rounded-xl p-3.5 flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
               <div>
-                <p className="text-yellow-400 text-xs font-medium">Outside geofence</p>
-                <p className="text-yellow-500/70 text-[10px]">You are {geoDistance}m from the terminal. Expected within {GEOFENCE_RADIUS_METERS}m. This will be logged.</p>
+                <p className="text-amber-400 text-[12px] font-medium">Outside geofence</p>
+                <p className="text-amber-500/60 text-[11px]">You are {geoDistance}m from the terminal. Expected within {GEOFENCE_RADIUS_METERS}m. This will be logged.</p>
               </div>
             </div>
           )}
@@ -511,9 +526,9 @@ export default function AccessValidation() {
                 <>
                   <button
                     onClick={() => submitDecision("approved")}
-                    className="w-full py-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-lg flex items-center justify-center gap-2 transition active:scale-[0.98]"
+                    className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[16px] flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20"
                   >
-                    <ShieldCheck className="w-6 h-6" />Approve Access
+                    <ShieldCheck className="w-5 h-5" />Approve Access
                   </button>
                   <div>
                     <input
@@ -521,21 +536,21 @@ export default function AccessValidation() {
                       value={denyReason}
                       onChange={e => setDenyReason(e.target.value)}
                       placeholder="Deny reason (required)..."
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm placeholder-slate-500 focus:border-red-500 focus:outline-none mb-2"
+                      className="w-full bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2.5 text-white text-[13px] placeholder-slate-600 focus:border-red-500/50 focus:outline-none mb-2 transition-all"
                     />
                     <button
                       onClick={() => submitDecision("denied")}
                       disabled={!denyReason.trim()}
-                      className="w-full py-3 rounded-xl bg-red-600/80 hover:bg-red-600 text-white font-medium flex items-center justify-center gap-2 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="w-full py-3 rounded-xl bg-red-500/80 hover:bg-red-500 text-white font-medium text-[14px] flex items-center justify-center gap-2 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
                     >
-                      <ShieldX className="w-5 h-5" />Deny Access
+                      <ShieldX className="w-4.5 h-4.5" />Deny Access
                     </button>
                   </div>
                 </>
               ) : (
-                <div className="flex items-center justify-center gap-2 py-4">
-                  <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
-                  <span className="text-slate-400 text-sm">Recording decision...</span>
+                <div className="flex items-center justify-center gap-2.5 py-6">
+                  <div className="w-5 h-5 rounded-full border-2 border-transparent border-t-[#1473FF] border-r-[#BE01FF] animate-spin" />
+                  <span className="text-slate-400 text-[13px]">Recording decision...</span>
                 </div>
               )}
             </div>
@@ -543,9 +558,13 @@ export default function AccessValidation() {
         </div>
       )}
 
-      <p className="text-center text-slate-700 text-[10px] mt-6">
-        EusoTrip Access Validation — Token + Code + Geofence secured
-      </p>
+      {/* Footer */}
+      <div className="text-center mt-6">
+        <p className="text-[10px] tracking-[0.08em] text-slate-700 uppercase">
+          <span className="bg-gradient-to-r from-[#1473FF]/30 to-[#BE01FF]/30 bg-clip-text text-transparent">EusoTrip</span>
+          {" "}&middot; Token + Code + Geofence Secured
+        </p>
+      </div>
     </div>
   );
 }

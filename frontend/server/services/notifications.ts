@@ -4,6 +4,8 @@
  * Wraps email (ACS Email) + SMS (ACS SMS) into a single service.
  * Every transactional touchpoint calls one method here and both channels fire.
  * 
+ * Brand: EusoTrip — #1473FF → #BE01FF gradient, dark slate, Jony Ive precision.
+ * 
  * Notification categories:
  *   AUTH   — registration, verification, password, 2FA, login alerts
  *   LOAD   — assignment, status change, delivery
@@ -16,27 +18,130 @@ import { emailService } from "../_core/email";
 import { sendSms } from "./eusosms";
 
 const APP_URL = process.env.APP_URL || "https://eusotrip.com";
+const LOGO_URL = `${APP_URL}/eusotrip-logo.png`;
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 function safe(fn: () => Promise<any>) {
   return fn().catch((e: any) => console.error("[Notifications]", e?.message || e));
 }
 
-function emailWrap(headerColor: string, title: string, bodyHtml: string) {
-  return `<!DOCTYPE html><html><head><style>
-    body{font-family:Arial,sans-serif;line-height:1.6;color:#333}
-    .c{max-width:600px;margin:0 auto;padding:20px}
-    .h{background:linear-gradient(135deg,${headerColor});color:#fff;padding:30px;text-align:center;border-radius:8px 8px 0 0}
-    .b{background:#f9f9f9;padding:30px;border-radius:0 0 8px 8px}
-    .btn{display:inline-block;color:#fff;padding:12px 30px;text-decoration:none;border-radius:6px;margin:20px 0;font-weight:bold}
-    .f{text-align:center;margin-top:20px;color:#666;font-size:12px}
-    .code{font-size:32px;font-weight:bold;letter-spacing:8px;text-align:center;padding:20px;background:#e0f2fe;border-radius:8px;margin:16px 0;color:#0284c7}
-  </style></head><body>
-  <div class="c">
-    <div class="h"><h1>${title}</h1></div>
-    <div class="b">${bodyHtml}</div>
-    <div class="f"><p>EusoTrip - Logistics Platform</p><p>This is an automated message, please do not reply.</p></div>
-  </div></body></html>`;
+/**
+ * EusoTrip branded email template — Jony Ive design language.
+ * Dark slate canvas, frosted card, gradient accents, generous whitespace.
+ */
+function emailWrap(title: string, bodyHtml: string, accentColor?: string) {
+  const accent = accentColor || "#1473FF";
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>${title} - EusoTrip</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0B1120;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0B1120;min-height:100vh">
+<tr><td align="center" style="padding:40px 16px 20px">
+
+<!-- Outer container -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
+
+<!-- Logo + brand -->
+<tr><td align="center" style="padding-bottom:32px">
+  <img src="${LOGO_URL}" alt="EusoTrip" width="52" height="52" style="display:block;border:0;border-radius:14px">
+</td></tr>
+
+<!-- Glass card -->
+<tr><td style="background:linear-gradient(145deg,rgba(30,41,59,0.80),rgba(15,23,42,0.95));border:1px solid rgba(255,255,255,0.06);border-radius:20px;overflow:hidden">
+
+  <!-- Gradient accent bar -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr><td style="height:3px;background:linear-gradient(90deg,#1473FF,#BE01FF)"></td></tr>
+  </table>
+
+  <!-- Title -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr><td style="padding:36px 36px 0">
+    <h1 style="margin:0;font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:-0.3px;line-height:1.3">${title}</h1>
+  </td></tr>
+  </table>
+
+  <!-- Body -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr><td style="padding:20px 36px 36px;color:#94A3B8;font-size:15px;line-height:1.7">
+    ${bodyHtml}
+  </td></tr>
+  </table>
+
+</td></tr>
+
+<!-- Footer -->
+<tr><td style="padding:28px 0 0;text-align:center">
+  <p style="margin:0 0 4px;font-size:12px;color:#475569;letter-spacing:0.5px">
+    <span style="background:linear-gradient(90deg,#1473FF,#BE01FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:600">EusoTrip</span>
+  </p>
+  <p style="margin:0 0 4px;font-size:11px;color:#334155">Hazmat &amp; Energy Logistics Platform</p>
+  <p style="margin:0;font-size:11px;color:#1E293B">
+    <a href="${APP_URL}/privacy-policy" style="color:#475569;text-decoration:none">Privacy</a>
+    &nbsp;&middot;&nbsp;
+    <a href="${APP_URL}/terms" style="color:#475569;text-decoration:none">Terms</a>
+    &nbsp;&middot;&nbsp;
+    <a href="${APP_URL}" style="color:#475569;text-decoration:none">eusotrip.com</a>
+  </p>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
+/** Branded CTA button — gradient or solid */
+function btn(href: string, label: string, color?: string) {
+  const bg = color || "linear-gradient(135deg,#1473FF,#BE01FF)";
+  const isSolid = !bg.includes("gradient");
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 8px">
+  <tr><td align="center">
+    <a href="${href}" style="display:inline-block;padding:14px 36px;background:${bg};${isSolid ? `background-color:${bg};` : ""}color:#FFFFFF;font-size:14px;font-weight:600;text-decoration:none;border-radius:12px;letter-spacing:0.2px">${label}</a>
+  </td></tr>
+  </table>`;
+}
+
+/** Verification code block */
+function codeBlock(code: string) {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0">
+  <tr><td align="center">
+    <div style="display:inline-block;padding:20px 40px;background:rgba(20,115,255,0.08);border:1px solid rgba(20,115,255,0.15);border-radius:16px">
+      <span style="font-size:36px;font-weight:700;letter-spacing:12px;color:#FFFFFF;font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace">${code}</span>
+    </div>
+  </td></tr>
+  </table>`;
+}
+
+/** Info row for tables (login alerts, load details) */
+function infoRow(label: string, value: string) {
+  return `<tr>
+    <td style="padding:10px 14px;font-size:13px;color:#64748B;border-bottom:1px solid rgba(255,255,255,0.04)">${label}</td>
+    <td style="padding:10px 14px;font-size:13px;color:#E2E8F0;font-weight:500;border-bottom:1px solid rgba(255,255,255,0.04);text-align:right">${value}</td>
+  </tr>`;
+}
+
+function infoTable(rows: string) {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;overflow:hidden;margin:16px 0">
+  ${rows}
+  </table>`;
+}
+
+/** Small muted text */
+function muted(text: string) {
+  return `<p style="margin:12px 0 0;font-size:12px;color:#475569;line-height:1.5">${text}</p>`;
+}
+
+/** Paragraph */
+function p(text: string) {
+  return `<p style="margin:0 0 12px;color:#CBD5E1">${text}</p>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -55,21 +160,18 @@ export async function notifyRegistration(params: {
 }) {
   const verifyUrl = `${APP_URL}/verify-email?token=${params.verificationToken}`;
 
-  // Email: verification link
   safe(() => emailService.send({
     to: params.email,
     subject: "Verify Your EusoTrip Account",
-    html: emailWrap("#667eea 0%, #764ba2 100%", "Welcome to EusoTrip", `
-      <p>Hello ${params.name},</p>
-      <p>Thank you for registering as a <strong>${formatRole(params.role)}</strong>. Please verify your email address to activate your account:</p>
-      <p style="text-align:center"><a href="${verifyUrl}" class="btn" style="background:#667eea">Verify Email Address</a></p>
-      <p style="word-break:break-all;color:#667eea;font-size:13px">${verifyUrl}</p>
-      <p style="font-size:13px;color:#666">This link expires in 24 hours.</p>
+    html: emailWrap("Welcome to EusoTrip", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Thank you for registering as a <strong style="color:#E2E8F0">${formatRole(params.role)}</strong>. Verify your email to activate your account.`)}
+      ${btn(verifyUrl, "Verify Email Address")}
+      ${muted("This link expires in 24 hours. If you didn't create this account, ignore this email.")}
     `),
     text: `Welcome to EusoTrip! Verify your email: ${verifyUrl}`,
   }));
 
-  // SMS: welcome + prompt to verify
   if (params.phone) {
     safe(() => sendSms({
       to: params.phone!,
@@ -88,12 +190,12 @@ export async function notifyEmailVerified(params: {
 }) {
   safe(() => emailService.send({
     to: params.email,
-    subject: "Email Verified - Welcome to EusoTrip",
-    html: emailWrap("#10b981 0%, #059669 100%", "Email Verified", `
-      <p>Hello ${params.name},</p>
-      <p>Your email has been verified successfully. Your account is now active.</p>
-      <p style="text-align:center"><a href="${APP_URL}/dashboard" class="btn" style="background:#10b981">Go to Dashboard</a></p>
-    `),
+    subject: "Email Verified - EusoTrip",
+    html: emailWrap("You're Verified", `
+      ${p(`Hello ${params.name},`)}
+      ${p("Your email has been verified and your account is now active. You're ready to go.")}
+      ${btn(`${APP_URL}/dashboard`, "Open Dashboard")}
+    `, "#10b981"),
   }));
 
   if (params.phone) {
@@ -112,16 +214,17 @@ export async function notifyPasswordChanged(params: {
   phone?: string;
   name: string;
 }) {
+  const time = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
   safe(() => emailService.send({
     to: params.email,
     subject: "Password Changed - EusoTrip",
-    html: emailWrap("#f59e0b 0%, #d97706 100%", "Password Changed", `
-      <p>Hello ${params.name},</p>
-      <p>Your EusoTrip password was changed successfully.</p>
-      <p style="font-size:13px;color:#666">If you did not make this change, please contact support immediately or reset your password:</p>
-      <p style="text-align:center"><a href="${APP_URL}/forgot-password" class="btn" style="background:#ef4444">Reset Password</a></p>
-      <p style="font-size:12px;color:#999">Time: ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CT</p>
-    `),
+    html: emailWrap("Password Changed", `
+      ${p(`Hello ${params.name},`)}
+      ${p("Your EusoTrip password was changed successfully.")}
+      ${infoTable(infoRow("Time", `${time} CT`))}
+      ${muted("If you did not make this change, reset your password immediately.")}
+      ${btn(`${APP_URL}/forgot-password`, "Reset Password", "#EF4444")}
+    `, "#F59E0B"),
   }));
 
   if (params.phone) {
@@ -141,9 +244,6 @@ export async function notifyPasswordResetRequested(params: {
   name: string;
   resetToken: string;
 }) {
-  const resetUrl = `${APP_URL}/reset-password?token=${params.resetToken}`;
-
-  // Email already sent by existing forgotPassword flow — send SMS alert only
   if (params.phone) {
     safe(() => sendSms({
       to: params.phone!,
@@ -163,12 +263,12 @@ export async function notifyPasswordResetComplete(params: {
   safe(() => emailService.send({
     to: params.email,
     subject: "Password Reset Complete - EusoTrip",
-    html: emailWrap("#10b981 0%, #059669 100%", "Password Reset Complete", `
-      <p>Hello ${params.name || "there"},</p>
-      <p>Your EusoTrip password has been reset successfully.</p>
-      <p style="text-align:center"><a href="${APP_URL}/login" class="btn" style="background:#10b981">Log In Now</a></p>
-      <p style="font-size:12px;color:#999">If you did not reset your password, contact support immediately.</p>
-    `),
+    html: emailWrap("Password Reset Complete", `
+      ${p(`Hello ${params.name || "there"},`)}
+      ${p("Your password has been reset successfully. You can now log in with your new password.")}
+      ${btn(`${APP_URL}/login`, "Log In")}
+      ${muted("If you did not reset your password, contact support immediately.")}
+    `, "#10b981"),
   }));
 
   if (params.phone) {
@@ -190,24 +290,22 @@ export async function notify2FACode(params: {
   name: string;
   code: string;
 }) {
-  // Primary: SMS
   if (params.phone) {
     safe(() => sendSms({
       to: params.phone!,
-      message: `EusoTrip verification code: ${params.code}. This code expires in 10 minutes. Do not share this code.`,
+      message: `EusoTrip verification code: ${params.code}. Expires in 10 minutes. Do not share this code.`,
     }));
   }
 
-  // Backup: Email
   safe(() => emailService.send({
     to: params.email,
-    subject: `${params.code} - EusoTrip Verification Code`,
-    html: emailWrap("#3b82f6 0%, #1d4ed8 100%", "Verification Code", `
-      <p>Hello ${params.name},</p>
-      <p>Your EusoTrip verification code is:</p>
-      <div class="code">${params.code}</div>
-      <p style="font-size:13px;color:#666">This code expires in 10 minutes. Do not share this code with anyone.</p>
-      <p style="font-size:12px;color:#999">If you did not request this code, someone may be trying to access your account.</p>
+    subject: `${params.code} - Your EusoTrip Verification Code`,
+    html: emailWrap("Verification Code", `
+      ${p(`Hello ${params.name},`)}
+      ${p("Enter this code to complete your sign-in:")}
+      ${codeBlock(params.code)}
+      ${muted("This code expires in 10 minutes. Never share this code with anyone.")}
+      ${muted("If you didn't request this, someone may be trying to access your account.")}
     `),
   }));
 }
@@ -223,17 +321,17 @@ export async function notify2FAEnabled(params: {
   safe(() => emailService.send({
     to: params.email,
     subject: "Two-Factor Authentication Enabled - EusoTrip",
-    html: emailWrap("#10b981 0%, #059669 100%", "2FA Enabled", `
-      <p>Hello ${params.name},</p>
-      <p>Two-factor authentication has been enabled on your EusoTrip account. You will now be required to enter a verification code when logging in.</p>
-      <p style="font-size:13px;color:#666">If you did not enable this, contact support immediately.</p>
-    `),
+    html: emailWrap("2FA Enabled", `
+      ${p(`Hello ${params.name},`)}
+      ${p("Two-factor authentication is now <strong style=\"color:#10B981\">active</strong> on your account. You'll receive a verification code via SMS each time you log in.")}
+      ${muted("If you did not enable this, contact support immediately.")}
+    `, "#10b981"),
   }));
 
   if (params.phone) {
     safe(() => sendSms({
       to: params.phone!,
-      message: `EusoTrip: Two-factor authentication has been enabled on your account. You'll receive a code via SMS each time you log in.`,
+      message: `EusoTrip: 2FA has been enabled on your account. You'll receive a code via SMS each time you log in.`,
     }));
   }
 }
@@ -249,12 +347,13 @@ export async function notify2FADisabled(params: {
   safe(() => emailService.send({
     to: params.email,
     subject: "Two-Factor Authentication Disabled - EusoTrip",
-    html: emailWrap("#ef4444 0%, #dc2626 100%", "2FA Disabled", `
-      <p>Hello ${params.name},</p>
-      <p>Two-factor authentication has been <strong>disabled</strong> on your EusoTrip account.</p>
-      <p style="font-size:13px;color:#666">Your account is now less secure. We recommend re-enabling 2FA.</p>
-      <p style="font-size:12px;color:#999">If you did not make this change, reset your password immediately.</p>
-    `),
+    html: emailWrap("2FA Disabled", `
+      ${p(`Hello ${params.name},`)}
+      ${p("Two-factor authentication has been <strong style=\"color:#EF4444\">disabled</strong> on your account. Your account is now less secure.")}
+      ${muted("We strongly recommend re-enabling 2FA from your security settings.")}
+      ${muted("If you did not make this change, reset your password immediately.")}
+      ${btn(`${APP_URL}/forgot-password`, "Secure Account", "#EF4444")}
+    `, "#EF4444"),
   }));
 
   if (params.phone) {
@@ -282,24 +381,25 @@ export async function notifyNewLogin(params: {
 
   safe(() => emailService.send({
     to: params.email,
-    subject: "New Login to Your EusoTrip Account",
-    html: emailWrap("#3b82f6 0%, #1d4ed8 100%", "New Login Detected", `
-      <p>Hello ${params.name},</p>
-      <p>A new login to your EusoTrip account was detected:</p>
-      <table style="width:100%;border-collapse:collapse;margin:16px 0">
-        <tr><td style="padding:8px;color:#666;font-size:13px">Time</td><td style="padding:8px;font-weight:bold">${time} CT</td></tr>
-        ${params.ip ? `<tr><td style="padding:8px;color:#666;font-size:13px">IP Address</td><td style="padding:8px;font-weight:bold">${params.ip}</td></tr>` : ""}
-        ${params.userAgent ? `<tr><td style="padding:8px;color:#666;font-size:13px">Device</td><td style="padding:8px;font-weight:bold;font-size:12px">${params.userAgent.slice(0, 100)}</td></tr>` : ""}
-      </table>
-      <p style="font-size:13px;color:#666">If this was you, no action is needed. If you don't recognize this login:</p>
-      <p style="text-align:center"><a href="${APP_URL}/forgot-password" class="btn" style="background:#ef4444">Secure Your Account</a></p>
+    subject: "New Login - EusoTrip",
+    html: emailWrap("New Login Detected", `
+      ${p(`Hello ${params.name},`)}
+      ${p("A new sign-in to your EusoTrip account was detected.")}
+      ${infoTable(
+        infoRow("Time", `${time} CT`)
+        + (params.ip ? infoRow("IP Address", params.ip) : "")
+        + (params.userAgent ? infoRow("Device", params.userAgent.slice(0, 80)) : "")
+      )}
+      ${muted("If this was you, no action is needed.")}
+      ${muted("Don't recognize this login?")}
+      ${btn(`${APP_URL}/forgot-password`, "Secure Your Account", "#EF4444")}
     `),
   }));
 
   if (params.phone) {
     safe(() => sendSms({
       to: params.phone!,
-      message: `EusoTrip: New login detected at ${time} CT${params.ip ? ` from ${params.ip}` : ""}. If this wasn't you, secure your account at ${APP_URL}/forgot-password`,
+      message: `EusoTrip: New login at ${time} CT${params.ip ? ` from ${params.ip}` : ""}. Not you? ${APP_URL}/forgot-password`,
     }));
   }
 }
@@ -319,13 +419,22 @@ export async function notifyLoadAssigned(params: {
   origin?: string;
   destination?: string;
 }) {
-  safe(() => emailService.sendLoadAssignmentEmail(params.email, params.name, params.loadNumber));
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `Load ${params.loadNumber} Assigned - EusoTrip`,
+    html: emailWrap("New Load Assignment", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`You've been assigned load <strong style="color:#E2E8F0">${params.loadNumber}</strong>.`)}
+      ${params.origin && params.destination ? infoTable(infoRow("Origin", params.origin) + infoRow("Destination", params.destination)) : ""}
+      ${btn(`${APP_URL}/loads/${params.loadNumber}`, "View Load Details")}
+    `),
+  }));
 
   if (params.phone) {
     const route = params.origin && params.destination ? ` (${params.origin} -> ${params.destination})` : "";
     safe(() => sendSms({
       to: params.phone!,
-      message: `EusoTrip: You've been assigned load ${params.loadNumber}${route}. View details at ${APP_URL}/loads/${params.loadNumber}`,
+      message: `EusoTrip: You've been assigned load ${params.loadNumber}${route}. View: ${APP_URL}/loads/${params.loadNumber}`,
     }));
   }
 }
@@ -344,11 +453,11 @@ export async function notifyLoadStatusChanged(params: {
   safe(() => emailService.send({
     to: params.email,
     subject: `Load ${params.loadNumber} - ${formatStatus(params.newStatus)}`,
-    html: emailWrap("#3b82f6 0%, #1d4ed8 100%", "Load Status Update", `
-      <p>Hello ${params.name},</p>
-      <p>Load <strong>${params.loadNumber}</strong> status has changed:</p>
-      <p style="text-align:center;font-size:18px"><span style="color:#666">${formatStatus(params.oldStatus)}</span> &rarr; <span style="font-weight:bold;color:#3b82f6">${formatStatus(params.newStatus)}</span></p>
-      <p style="text-align:center"><a href="${APP_URL}/loads/${params.loadNumber}" class="btn" style="background:#3b82f6">View Load</a></p>
+    html: emailWrap("Load Status Update", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Load <strong style="color:#E2E8F0">${params.loadNumber}</strong> has a status update.`)}
+      ${infoTable(infoRow("Previous", formatStatus(params.oldStatus)) + infoRow("Current", `<strong style="color:#1473FF">${formatStatus(params.newStatus)}</strong>`))}
+      ${btn(`${APP_URL}/loads/${params.loadNumber}`, "View Load")}
     `),
   }));
 
@@ -373,11 +482,12 @@ export async function notifyBidReceived(params: {
 }) {
   safe(() => emailService.send({
     to: params.email,
-    subject: `New Bid on Load ${params.loadNumber} - $${params.bidAmount.toLocaleString()}`,
-    html: emailWrap("#8b5cf6 0%, #7c3aed 100%", "New Bid Received", `
-      <p>Hello ${params.name},</p>
-      <p><strong>${params.bidderName}</strong> placed a bid of <strong>$${params.bidAmount.toLocaleString()}</strong> on load <strong>${params.loadNumber}</strong>.</p>
-      <p style="text-align:center"><a href="${APP_URL}/loads/${params.loadNumber}" class="btn" style="background:#8b5cf6">Review Bid</a></p>
+    subject: `New Bid - Load ${params.loadNumber}`,
+    html: emailWrap("New Bid Received", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`<strong style="color:#E2E8F0">${params.bidderName}</strong> placed a bid on load <strong style="color:#E2E8F0">${params.loadNumber}</strong>.`)}
+      ${infoTable(infoRow("Bid Amount", `<strong style="color:#10B981">$${params.bidAmount.toLocaleString()}</strong>`) + infoRow("Bidder", params.bidderName))}
+      ${btn(`${APP_URL}/loads/${params.loadNumber}`, "Review Bid")}
     `),
   }));
 
@@ -402,17 +512,17 @@ export async function notifyBidAccepted(params: {
   safe(() => emailService.send({
     to: params.email,
     subject: `Bid Accepted - Load ${params.loadNumber}`,
-    html: emailWrap("#10b981 0%, #059669 100%", "Bid Accepted", `
-      <p>Hello ${params.name},</p>
-      <p>Your bid of <strong>$${params.bidAmount.toLocaleString()}</strong> on load <strong>${params.loadNumber}</strong> has been accepted!</p>
-      <p style="text-align:center"><a href="${APP_URL}/loads/${params.loadNumber}" class="btn" style="background:#10b981">View Load Details</a></p>
-    `),
+    html: emailWrap("Bid Accepted", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Your bid of <strong style="color:#10B981">$${params.bidAmount.toLocaleString()}</strong> on load <strong style="color:#E2E8F0">${params.loadNumber}</strong> has been accepted.`)}
+      ${btn(`${APP_URL}/loads/${params.loadNumber}`, "View Load Details")}
+    `, "#10b981"),
   }));
 
   if (params.phone) {
     safe(() => sendSms({
       to: params.phone!,
-      message: `EusoTrip: Your bid of $${params.bidAmount.toLocaleString()} on load ${params.loadNumber} was ACCEPTED. View details at ${APP_URL}/loads/${params.loadNumber}`,
+      message: `EusoTrip: Your $${params.bidAmount.toLocaleString()} bid on load ${params.loadNumber} was ACCEPTED. ${APP_URL}/loads/${params.loadNumber}`,
     }));
   }
 }
@@ -429,18 +539,18 @@ export async function notifyBidRejected(params: {
   safe(() => emailService.send({
     to: params.email,
     subject: `Bid Update - Load ${params.loadNumber}`,
-    html: emailWrap("#64748b 0%, #475569 100%", "Bid Not Selected", `
-      <p>Hello ${params.name},</p>
-      <p>Your bid on load <strong>${params.loadNumber}</strong> was not selected this time.</p>
-      <p>Browse available loads on the marketplace:</p>
-      <p style="text-align:center"><a href="${APP_URL}/marketplace" class="btn" style="background:#3b82f6">View Marketplace</a></p>
+    html: emailWrap("Bid Not Selected", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Your bid on load <strong style="color:#E2E8F0">${params.loadNumber}</strong> was not selected this time.`)}
+      ${p("Browse available loads on the marketplace:")}
+      ${btn(`${APP_URL}/marketplace`, "View Marketplace")}
     `),
   }));
 
   if (params.phone) {
     safe(() => sendSms({
       to: params.phone!,
-      message: `EusoTrip: Your bid on load ${params.loadNumber} was not selected. Browse more loads at ${APP_URL}/marketplace`,
+      message: `EusoTrip: Your bid on load ${params.loadNumber} was not selected. Browse more at ${APP_URL}/marketplace`,
     }));
   }
 }
@@ -458,19 +568,19 @@ export async function notifyPaymentReceived(params: {
 }) {
   safe(() => emailService.send({
     to: params.email,
-    subject: `Payment Received - $${params.amount.toLocaleString()}`,
-    html: emailWrap("#10b981 0%, #059669 100%", "Payment Received", `
-      <p>Hello ${params.name},</p>
-      <p>You received a payment of <strong>$${params.amount.toLocaleString()}</strong> from <strong>${params.fromName}</strong>.</p>
-      ${params.reference ? `<p style="font-size:13px;color:#666">Reference: ${params.reference}</p>` : ""}
-      <p style="text-align:center"><a href="${APP_URL}/wallet" class="btn" style="background:#10b981">View Wallet</a></p>
-    `),
+    subject: `$${params.amount.toLocaleString()} Received - EusoTrip`,
+    html: emailWrap("Payment Received", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`You received a payment of <strong style="color:#10B981">$${params.amount.toLocaleString()}</strong> from <strong style="color:#E2E8F0">${params.fromName}</strong>.`)}
+      ${params.reference ? infoTable(infoRow("Reference", params.reference)) : ""}
+      ${btn(`${APP_URL}/wallet`, "View Wallet")}
+    `, "#10b981"),
   }));
 
   if (params.phone) {
     safe(() => sendSms({
       to: params.phone!,
-      message: `EusoTrip: You received $${params.amount.toLocaleString()} from ${params.fromName}. View wallet at ${APP_URL}/wallet`,
+      message: `EusoTrip: $${params.amount.toLocaleString()} received from ${params.fromName}. Wallet: ${APP_URL}/wallet`,
     }));
   }
 }
@@ -488,19 +598,19 @@ export async function notifyPaymentSent(params: {
 }) {
   safe(() => emailService.send({
     to: params.email,
-    subject: `Payment Sent - $${params.amount.toLocaleString()}`,
-    html: emailWrap("#3b82f6 0%, #1d4ed8 100%", "Payment Sent", `
-      <p>Hello ${params.name},</p>
-      <p>Your payment of <strong>$${params.amount.toLocaleString()}</strong> to <strong>${params.toName}</strong> has been processed.</p>
-      ${params.reference ? `<p style="font-size:13px;color:#666">Reference: ${params.reference}</p>` : ""}
-      <p style="text-align:center"><a href="${APP_URL}/wallet" class="btn" style="background:#3b82f6">View Wallet</a></p>
+    subject: `$${params.amount.toLocaleString()} Sent - EusoTrip`,
+    html: emailWrap("Payment Sent", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Your payment of <strong style="color:#E2E8F0">$${params.amount.toLocaleString()}</strong> to <strong style="color:#E2E8F0">${params.toName}</strong> has been processed.`)}
+      ${params.reference ? infoTable(infoRow("Reference", params.reference)) : ""}
+      ${btn(`${APP_URL}/wallet`, "View Wallet")}
     `),
   }));
 
   if (params.phone) {
     safe(() => sendSms({
       to: params.phone!,
-      message: `EusoTrip: Payment of $${params.amount.toLocaleString()} to ${params.toName} has been sent. View wallet at ${APP_URL}/wallet`,
+      message: `EusoTrip: $${params.amount.toLocaleString()} sent to ${params.toName}. Wallet: ${APP_URL}/wallet`,
     }));
   }
 }
@@ -513,12 +623,20 @@ export async function notifyAccountApproved(params: {
   phone?: string;
   name: string;
 }) {
-  safe(() => emailService.sendApprovalEmail(params.email, params.name));
+  safe(() => emailService.send({
+    to: params.email,
+    subject: "Account Approved - EusoTrip",
+    html: emailWrap("Account Approved", `
+      ${p(`Hello ${params.name},`)}
+      ${p("Your EusoTrip account has been verified and approved. You now have full access to the platform.")}
+      ${btn(`${APP_URL}/login`, "Log In to EusoTrip")}
+    `, "#10b981"),
+  }));
 
   if (params.phone) {
     safe(() => sendSms({
       to: params.phone!,
-      message: `EusoTrip: Your account has been approved! Log in to access all features: ${APP_URL}/login`,
+      message: `EusoTrip: Your account has been approved! Log in at ${APP_URL}/login`,
     }));
   }
 }
