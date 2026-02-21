@@ -50,7 +50,7 @@ export default function Leaderboard() {
         </div>
         <div className="flex gap-2">
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[130px] bg-slate-800/50 border-slate-700/50 rounded-lg">
+            <SelectTrigger className="w-[130px] bg-white/[0.02] border-white/[0.06] rounded-lg">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -61,7 +61,7 @@ export default function Leaderboard() {
             </SelectContent>
           </Select>
           <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="w-[130px] bg-slate-800/50 border-slate-700/50 rounded-lg">
+            <SelectTrigger className="w-[130px] bg-white/[0.02] border-white/[0.06] rounded-lg">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -113,7 +113,7 @@ export default function Leaderboard() {
       ) : ((leaderboardQuery.data as any)?.length ?? 0) >= 3 && (
         <div className="grid grid-cols-3 gap-4">
           {/* 2nd Place */}
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl mt-8">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl mt-8">
             <CardContent className="p-4 text-center">
               <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center mb-3">
                 <Medal className="w-8 h-8 text-white" />
@@ -137,7 +137,7 @@ export default function Leaderboard() {
           </Card>
 
           {/* 3rd Place */}
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl mt-8">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl mt-8">
             <CardContent className="p-4 text-center">
               <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-amber-600 to-amber-700 flex items-center justify-center mb-3">
                 <Medal className="w-8 h-8 text-white" />
@@ -151,7 +151,7 @@ export default function Leaderboard() {
       )}
 
       {/* Full Leaderboard */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-400" />
@@ -167,11 +167,11 @@ export default function Leaderboard() {
               <p className="text-slate-400">No rankings available</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/50 max-h-[500px] overflow-y-auto">
+            <div className="divide-y divide-white/[0.04] max-h-[500px] overflow-y-auto">
               {(leaderboardQuery.data as any)?.slice(3).map((user: any, idx: number) => (
                 <div key={user.id} className={cn("p-4 flex items-center justify-between", user.isCurrentUser && "bg-cyan-500/10 border-l-2 border-cyan-500")}>
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-slate-700/50 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center">
                       {getRankIcon(idx + 4)}
                     </div>
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">

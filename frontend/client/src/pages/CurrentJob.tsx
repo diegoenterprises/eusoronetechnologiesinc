@@ -57,7 +57,7 @@ export default function CurrentJob() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-400" /> Pickup (Completed)
@@ -69,7 +69,7 @@ export default function CurrentJob() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <MapPin className="w-5 h-5 text-blue-400" /> Delivery
@@ -83,7 +83,7 @@ export default function CurrentJob() {
         </Card>
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-white/[0.02] border-slate-700">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-yellow-400" /> Cargo Details

@@ -127,7 +127,7 @@ function SeparationBar({ label, distance, maxDistance, position }: {
           {isAlert && <AlertTriangle className="w-3 h-3 text-red-500 animate-pulse" />}
         </div>
       </div>
-      <div className="h-1.5 rounded-full bg-slate-700/50 overflow-hidden">
+      <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${barColor} ${isAlert ? "animate-pulse" : ""}`}
           style={{ width: `${Math.min(pct * 100, 100)}%` }}
@@ -154,7 +154,7 @@ export default function ConvoySyncDashboard({ convoy, className = "" }: ConvoySy
   const isActive = !["escort_complete", "disbanded", "completed"].includes(convoy.status?.toLowerCase() || "");
 
   return (
-    <div className={`rounded-2xl border border-slate-700/50 bg-slate-800/60 overflow-hidden ${className}`}>
+    <div className={`rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden ${className}`}>
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 px-5 py-4">
         <div className="flex items-center justify-between">
@@ -222,7 +222,7 @@ export default function ConvoySyncDashboard({ convoy, className = "" }: ConvoySy
                     {/* Connector line */}
                     {i > 0 && (
                       <div className={`absolute top-3 -left-1/2 w-full h-0.5 ${
-                        isCompleted ? "bg-emerald-500/50" : "bg-slate-700/50"
+                        isCompleted ? "bg-emerald-500/50" : "bg-white/[0.04]"
                       }`} />
                     )}
                     {/* Node */}

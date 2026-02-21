@@ -169,7 +169,7 @@ export default function RegisterCompliance() {
                 value={formData.firstName}
                 onChange={(e: any) => updateFormData({ firstName: e.target.value })}
                 placeholder="John"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -178,7 +178,7 @@ export default function RegisterCompliance() {
                 value={formData.lastName}
                 onChange={(e: any) => updateFormData({ lastName: e.target.value })}
                 placeholder="Smith"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -191,7 +191,7 @@ export default function RegisterCompliance() {
                 value={formData.email}
                 onChange={(e: any) => updateFormData({ email: e.target.value })}
                 placeholder="john@company.com"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -201,7 +201,7 @@ export default function RegisterCompliance() {
                 value={formData.phone}
                 onChange={(e: any) => updateFormData({ phone: e.target.value })}
                 placeholder="(555) 123-4567"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -229,7 +229,7 @@ export default function RegisterCompliance() {
                 value={formData.companyName}
                 onChange={(e: any) => updateFormData({ companyName: e.target.value })}
                 placeholder="ABC Trucking LLC"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -249,7 +249,7 @@ export default function RegisterCompliance() {
             <div className="space-y-2">
               <Label className="text-slate-300">Job Title</Label>
               <Select value={formData.jobTitle} onValueChange={(v: any) => updateFormData({ jobTitle: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="Select title" />
                 </SelectTrigger>
                 <SelectContent>
@@ -267,7 +267,7 @@ export default function RegisterCompliance() {
                 value={formData.reportsTo}
                 onChange={(e: any) => updateFormData({ reportsTo: e.target.value })}
                 placeholder="VP of Operations, etc."
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -319,7 +319,7 @@ export default function RegisterCompliance() {
                 type="date"
                 value={formData.fmcsaTrainingDate}
                 onChange={(e: any) => updateFormData({ fmcsaTrainingDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -328,7 +328,7 @@ export default function RegisterCompliance() {
                 type="date"
                 value={formData.hazmatTrainingDate}
                 onChange={(e: any) => updateFormData({ hazmatTrainingDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>

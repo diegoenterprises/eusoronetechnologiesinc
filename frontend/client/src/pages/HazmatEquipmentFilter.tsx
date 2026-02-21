@@ -66,7 +66,7 @@ export default function HazmatEquipmentFilter() {
   }, [equipment, searchTerm, typeFilter, availableOnly, currentOnly]);
 
   const types = Array.from(new Set(equipment.map((e) => e.type)));
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -92,19 +92,19 @@ export default function HazmatEquipmentFilter() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className={cn("relative rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
+          <div className={cn("relative rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}>
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search by unit #, DOT spec, or product..." className={cn("w-full pl-10 pr-4 py-2.5 rounded-xl text-sm border-0 bg-transparent focus:outline-none", isLight ? "text-slate-800" : "text-white placeholder:text-slate-400")} />
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => setTypeFilter("all")} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all", typeFilter === "all" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-slate-800/50 border-slate-700/50 text-slate-500")}>All Types</button>
+            <button onClick={() => setTypeFilter("all")} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all", typeFilter === "all" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-white/[0.02] border-white/[0.06] text-slate-500")}>All Types</button>
             {types.map((t) => (
-              <button key={t} onClick={() => setTypeFilter(t)} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all", typeFilter === t ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-slate-800/50 border-slate-700/50 text-slate-500")}>{t}</button>
+              <button key={t} onClick={() => setTypeFilter(t)} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all", typeFilter === t ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-white/[0.02] border-white/[0.06] text-slate-500")}>{t}</button>
             ))}
-            <button onClick={() => setAvailableOnly(!availableOnly)} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all", availableOnly ? "bg-green-500/10 text-green-500 border-green-500/30" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-slate-800/50 border-slate-700/50 text-slate-500")}>
+            <button onClick={() => setAvailableOnly(!availableOnly)} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all", availableOnly ? "bg-green-500/10 text-green-500 border-green-500/30" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-white/[0.02] border-white/[0.06] text-slate-500")}>
               {availableOnly && <CheckCircle className="w-3 h-3 inline mr-1" />} Available Only
             </button>
-            <button onClick={() => setCurrentOnly(!currentOnly)} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all", currentOnly ? "bg-blue-500/10 text-blue-500 border-blue-500/30" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-slate-800/50 border-slate-700/50 text-slate-500")}>
+            <button onClick={() => setCurrentOnly(!currentOnly)} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all", currentOnly ? "bg-blue-500/10 text-blue-500 border-blue-500/30" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-white/[0.02] border-white/[0.06] text-slate-500")}>
               {currentOnly && <CheckCircle className="w-3 h-3 inline mr-1" />} Inspection Current
             </button>
           </div>
@@ -145,7 +145,7 @@ export default function HazmatEquipmentFilter() {
                       </div>
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {eq.products.map((p) => (
-                          <span key={p} className={cn("text-[9px] px-2 py-0.5 rounded-md", isLight ? "bg-slate-100 text-slate-500" : "bg-slate-700/50 text-slate-400")}>{p}</span>
+                          <span key={p} className={cn("text-[9px] px-2 py-0.5 rounded-md", isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.04] text-slate-400")}>{p}</span>
                         ))}
                       </div>
                     </div>

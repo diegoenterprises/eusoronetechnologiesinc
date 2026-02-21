@@ -159,7 +159,7 @@ export default function IndustryDirectory() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -170,7 +170,7 @@ export default function IndustryDirectory() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -181,7 +181,7 @@ export default function IndustryDirectory() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -192,7 +192,7 @@ export default function IndustryDirectory() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -203,7 +203,7 @@ export default function IndustryDirectory() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -217,7 +217,7 @@ export default function IndustryDirectory() {
       </div>
 
       {/* Search & Filters */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-white/[0.02] border-slate-700">
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center gap-4">
             <div className="relative flex-1 min-w-[250px]">
@@ -226,12 +226,12 @@ export default function IndustryDirectory() {
                 value={searchTerm}
                 onChange={(e: any) => setSearchTerm(e.target.value)}
                 placeholder="Search companies, services..."
-                className="pl-9 bg-slate-700/50 border-slate-600 text-white"
+                className="pl-9 bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
 
             <Select value={stateFilter} onValueChange={setStateFilter}>
-              <SelectTrigger className="w-40 bg-slate-700/50 border-slate-600 text-white">
+              <SelectTrigger className="w-40 bg-white/[0.04] border-slate-600 text-white">
                 <SelectValue placeholder="State" />
               </SelectTrigger>
               <SelectContent>
@@ -243,7 +243,7 @@ export default function IndustryDirectory() {
             </Select>
 
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-44 bg-slate-700/50 border-slate-600 text-white">
+              <SelectTrigger className="w-44 bg-white/[0.04] border-slate-600 text-white">
                 <SelectValue placeholder="Company Type" />
               </SelectTrigger>
               <SelectContent>
@@ -259,7 +259,7 @@ export default function IndustryDirectory() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-800/50 border border-slate-700">
+        <TabsList className="bg-white/[0.02] border border-slate-700">
           <TabsTrigger value="all">All Companies ({allCompanies.length})</TabsTrigger>
           <TabsTrigger value="verified">Verified ({stats.verified})</TabsTrigger>
         </TabsList>
@@ -303,7 +303,7 @@ function CompanyGrid({
 }) {
   if (companies.length === 0) {
     return (
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-white/[0.02] border-slate-700">
         <CardContent className="py-12 text-center">
           <Building2 className="w-12 h-12 text-slate-500 mx-auto mb-4" />
           <p className="text-slate-400">No companies found matching your criteria</p>
@@ -319,7 +319,7 @@ function CompanyGrid({
           key={company.id}
           onClick={() => onSelect(company)}
           className={cn(
-            "bg-slate-800/50 border-slate-700 hover:border-blue-500/50 transition-all cursor-pointer",
+            "bg-white/[0.02] border-slate-700 hover:border-blue-500/50 transition-all cursor-pointer",
             selectedId === company.id && "border-blue-500"
           )}
         >
@@ -441,7 +441,7 @@ function CompanyDetailModal({ company, onClose }: { company: Company; onClose: (
                   href={company.website} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/30 hover:bg-white/[0.04] transition-colors"
                 >
                   <Globe className="w-5 h-5 text-purple-400" />
                   <div className="flex-1">
@@ -459,7 +459,7 @@ function CompanyDetailModal({ company, onClose }: { company: Company; onClose: (
             <h4 className="text-sm font-medium text-slate-300">Services</h4>
             <div className="flex flex-wrap gap-2">
               {company.services.map((service: any, idx: number) => (
-                <Badge key={idx} className="bg-slate-700/50 text-slate-300">
+                <Badge key={idx} className="bg-white/[0.04] text-slate-300">
                   {service}
                 </Badge>
               ))}

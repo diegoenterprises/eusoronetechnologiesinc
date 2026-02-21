@@ -46,7 +46,7 @@ export default function DriverOnboarding() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><UserCheck className="w-6 h-6 text-cyan-400" /></div>
@@ -54,7 +54,7 @@ export default function DriverOnboarding() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20"><Clock className="w-6 h-6 text-blue-400" /></div>
@@ -62,7 +62,7 @@ export default function DriverOnboarding() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
@@ -70,7 +70,7 @@ export default function DriverOnboarding() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20"><AlertTriangle className="w-6 h-6 text-red-400" /></div>
@@ -82,10 +82,10 @@ export default function DriverOnboarding() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><UserCheck className="w-5 h-5 text-cyan-400" />Onboarding Progress</CardTitle></CardHeader>
         <CardContent className="p-0">
           {onboardingQuery.isLoading ? (
@@ -93,7 +93,7 @@ export default function DriverOnboarding() {
           ) : (onboardingQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><UserCheck className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No onboarding found</p></div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(onboardingQuery.data as any)?.map((driver: any) => (
                 <div key={driver.id} className={cn("p-4", driver.status === "stalled" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between mb-3">

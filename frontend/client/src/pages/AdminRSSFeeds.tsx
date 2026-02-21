@@ -194,7 +194,7 @@ export default function AdminRSSFeeds() {
           [1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)
         ) : (
           <>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -205,7 +205,7 @@ export default function AdminRSSFeeds() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -216,7 +216,7 @@ export default function AdminRSSFeeds() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -227,7 +227,7 @@ export default function AdminRSSFeeds() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -254,11 +254,11 @@ export default function AdminRSSFeeds() {
             value={searchTerm}
             onChange={(e: any) => setSearchTerm(e.target.value)}
             placeholder="Search feeds..."
-            className="pl-9 bg-slate-700/50 border-slate-600"
+            className="pl-9 bg-white/[0.04] border-slate-600"
           />
         </div>
         <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-[200px] bg-slate-700/50 border-slate-600">
+          <SelectTrigger className="w-[200px] bg-white/[0.04] border-slate-600">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent className="bg-slate-800 border-slate-700">
@@ -276,7 +276,7 @@ export default function AdminRSSFeeds() {
       </div>
 
       {/* Feeds List */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-white/[0.02] border-slate-700">
         <CardHeader>
           <CardTitle className="text-white">RSS Feed Sources ({filteredFeeds.length})</CardTitle>
         </CardHeader>
@@ -310,7 +310,7 @@ export default function AdminRSSFeeds() {
                       "flex items-center justify-between p-4 rounded-lg border transition-colors",
                       feed.enabled
                         ? "bg-slate-700/30 border-slate-600"
-                        : "bg-slate-800/50 border-slate-700 opacity-60"
+                        : "bg-white/[0.02] border-slate-700 opacity-60"
                     )}
                   >
                     <div className="flex items-center gap-4">

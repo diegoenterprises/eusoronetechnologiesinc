@@ -50,7 +50,7 @@ export default function HOSCompliance() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -66,7 +66,7 @@ export default function HOSCompliance() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -82,7 +82,7 @@ export default function HOSCompliance() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -98,7 +98,7 @@ export default function HOSCompliance() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -151,11 +151,11 @@ export default function HOSCompliance() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
       </div>
 
       {/* Drivers List */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <User className="w-5 h-5 text-cyan-400" />
@@ -171,7 +171,7 @@ export default function HOSCompliance() {
               <p className="text-slate-400">No drivers found</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(driversQuery.data as any)?.map((driver: any) => (
                 <div key={driver.id} className={cn("p-4", driver.status === "violation" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between mb-3">

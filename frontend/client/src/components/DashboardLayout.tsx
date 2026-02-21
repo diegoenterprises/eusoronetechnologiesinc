@@ -81,6 +81,8 @@ import {
   Banknote,
   UserCheck,
   Radio,
+  CalendarDays,
+  Container,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -153,6 +155,8 @@ const iconMap: Record<string, React.ReactNode> = {
   Radio: <Radio size={20} />,
   Percent: <Percent size={20} />,
   Siren: <Siren size={20} />,
+  CalendarDays: <CalendarDays size={20} />,
+  Container: <Container size={20} />,
 };
 
 // --- Notification Bell Component ---
@@ -172,9 +176,9 @@ function NotificationBell({ onNavigate }: { onNavigate: (path: string) => void }
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          className="relative p-2 hover:bg-gray-800/50 rounded-xl transition-colors"
+          className="relative p-2 hover:bg-white/[0.04] rounded-xl transition-colors"
         >
-          <Bell size={18} className="text-gray-400" />
+          <Bell size={18} className="text-slate-400" />
           {unread > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1 animate-pulse">
               {unread > 99 ? "99+" : unread}
@@ -197,7 +201,7 @@ function NotificationBell({ onNavigate }: { onNavigate: (path: string) => void }
           items.map((n: any) => (
             <DropdownMenuItem
               key={n.id}
-              className={`flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${!n.isRead ? "bg-gradient-to-r from-purple-500/5 to-blue-500/5 dark:from-purple-500/10 dark:to-blue-500/10" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
+              className={`flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${!n.isRead ? "bg-gradient-to-r from-purple-500/5 to-blue-500/5 dark:from-purple-500/10 dark:to-blue-500/10" : "hover:bg-slate-50 dark:hover:bg-white/[0.02]"}`}
               onClick={() => { if (!n.isRead) markReadMutation.mutate({ id: n.id }); }}
             >
               <div className="flex items-center gap-2 w-full">
@@ -399,7 +403,7 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="flex h-screen bg-gray-950 text-white relative overflow-hidden">
+    <div className="flex h-screen bg-slate-950 text-white relative overflow-hidden">
       {/* Ambient background glow */}
       <AmbientGlow />
 
@@ -416,12 +420,12 @@ export default function DashboardLayout({
         initial={false}
         animate={{ width: sidebarOpen ? 256 : 72 }}
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className={`bg-gray-900/80 backdrop-blur-xl border-r border-gray-800/50 flex flex-col overflow-hidden relative z-30 flex-shrink-0 ${
+        className={`bg-slate-950/95 backdrop-blur-xl border-r border-white/[0.04] flex flex-col overflow-hidden relative z-30 flex-shrink-0 ${
           sidebarOpen ? "fixed inset-y-0 left-0 md:relative" : "hidden md:flex"
         }`}
       >
         {/* Logo */}
-        <div className="p-4 border-b border-gray-800/50 flex items-center gap-3">
+        <div className="p-4 border-b border-white/[0.04] flex items-center gap-3">
           <motion.img
             src="/eusotrip-logo.png"
             alt="EusoTrip"
@@ -467,10 +471,10 @@ export default function DashboardLayout({
                 whileTap={{ scale: isLocked ? 1 : 0.97 }}
                 className={`sidebar-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg relative ${
                   isLocked
-                    ? "text-gray-600 cursor-default"
+                    ? "text-slate-600 cursor-default"
                     : isActive
                     ? "active text-white"
-                    : "text-gray-400 hover:text-white"
+                    : "text-slate-400 hover:text-white"
                 }`}
               >
                 <motion.div
@@ -480,8 +484,8 @@ export default function DashboardLayout({
                 >
                   {iconMap[item.icon] || item.icon}
                   {isLocked && (
-                    <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-gray-800 flex items-center justify-center">
-                      <Lock className="w-2 h-2 text-gray-500" />
+                    <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-slate-800 flex items-center justify-center">
+                      <Lock className="w-2 h-2 text-slate-500" />
                     </div>
                   )}
                 </motion.div>
@@ -494,9 +498,9 @@ export default function DashboardLayout({
                       transition={{ duration: 0.2 }}
                       className="flex items-center gap-2 flex-1 overflow-hidden"
                     >
-                      <span className={`flex-1 text-left text-sm whitespace-nowrap ${isLocked ? "text-gray-600" : ""}`}>{item.label}</span>
+                      <span className={`flex-1 text-left text-sm whitespace-nowrap ${isLocked ? "text-slate-600" : ""}`}>{item.label}</span>
                       {isLocked ? (
-                        <Lock className="w-3.5 h-3.5 text-gray-600 flex-shrink-0" />
+                        <Lock className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />
                       ) : item.badge ? (
                         <motion.span
                           initial={{ scale: 0 }}
@@ -524,12 +528,12 @@ export default function DashboardLayout({
         </nav>
 
         {/* Sidebar Toggle */}
-        <div className="p-2 border-t border-gray-800/50">
+        <div className="p-2 border-t border-white/[0.04]">
           <motion.button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="w-full flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800/50 transition-colors"
+            className="w-full flex items-center justify-center p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/[0.04] transition-colors"
           >
             <motion.div
               animate={{ rotate: sidebarOpen ? 0 : 180 }}
@@ -541,7 +545,7 @@ export default function DashboardLayout({
         </div>
 
         {/* User Profile Footer */}
-        <div className="p-3 border-t border-gray-800/50">
+        <div className="p-3 border-t border-white/[0.04]">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <motion.button
@@ -568,8 +572,8 @@ export default function DashboardLayout({
                       transition={{ duration: 0.2 }}
                       className="flex-1 text-left text-sm overflow-hidden"
                     >
-                      <p className="font-semibold truncate text-gray-200">{displayName}</p>
-                      <p className="text-gray-500 text-xs truncate">{displayRole}</p>
+                      <p className="font-semibold truncate text-slate-200">{displayName}</p>
+                      <p className="text-slate-500 text-xs truncate">{displayRole}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -600,7 +604,7 @@ export default function DashboardLayout({
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className={`backdrop-blur-xl px-3 sm:px-6 py-3 flex items-center justify-between relative z-20 ${theme === "light" ? "bg-white/80 border-b border-slate-200/80" : "bg-gray-900/60 border-b border-gray-800/50"}`}
+          className={`backdrop-blur-xl px-3 sm:px-6 py-3 flex items-center justify-between relative z-20 ${theme === "light" ? "bg-white/80 border-b border-slate-200/80" : "bg-slate-950/80 border-b border-white/[0.04]"}`}
         >
           <div className="flex items-center gap-4">
             {/* Mobile menu toggle */}
@@ -608,7 +612,7 @@ export default function DashboardLayout({
               onClick={() => setSidebarOpen(!sidebarOpen)}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              className={`p-1.5 rounded-lg ${theme === "light" ? "text-slate-500 hover:text-slate-800 hover:bg-slate-100" : "text-gray-400 hover:text-white hover:bg-gray-800/50"}`}
+              className={`p-1.5 rounded-lg ${theme === "light" ? "text-slate-500 hover:text-slate-800 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-white/[0.04]"}`}
             >
               <Menu size={20} />
             </motion.button>
@@ -648,7 +652,7 @@ export default function DashboardLayout({
                     : (searchFocused ? "rgba(20, 115, 255, 0.3)" : "rgba(255,255,255,0.06)"),
                 }}
               >
-                <Search size={16} className={`flex-shrink-0 transition-colors duration-200 ${searchFocused ? "text-blue-400" : theme === "light" ? "text-slate-400" : "text-gray-500"}`} />
+                <Search size={16} className={`flex-shrink-0 transition-colors duration-200 ${searchFocused ? "text-blue-400" : theme === "light" ? "text-slate-400" : "text-slate-500"}`} />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -658,15 +662,15 @@ export default function DashboardLayout({
                   onFocus={() => { setSearchFocused(true); if (searchQuery.length >= 2) setSearchOpen(true); }}
                   onBlur={() => setSearchFocused(false)}
                   onKeyDown={handleSearchKeyDown}
-                  className={`bg-transparent text-sm outline-none flex-1 min-w-0 truncate ${theme === "light" ? "text-slate-800 placeholder-slate-400" : "text-white placeholder-gray-500"}`}
+                  className={`bg-transparent text-sm outline-none flex-1 min-w-0 truncate ${theme === "light" ? "text-slate-800 placeholder-slate-400" : "text-white placeholder-slate-500"}`}
                 />
                 {searchQuery && (
-                  <button onClick={() => { setSearchQuery(""); setSearchOpen(false); }} className="text-gray-500 hover:text-white p-0.5">
+                  <button onClick={() => { setSearchQuery(""); setSearchOpen(false); }} className="text-slate-500 hover:text-white p-0.5">
                     <X size={14} />
                   </button>
                 )}
                 {!searchFocused && (
-                  <kbd className={`hidden lg:inline-flex text-[10px] rounded px-1.5 py-0.5 font-mono ${theme === "light" ? "text-slate-400 border border-slate-300 bg-slate-50" : "text-gray-500 border border-gray-700"}`}>⌘K</kbd>
+                  <kbd className={`hidden lg:inline-flex text-[10px] rounded px-1.5 py-0.5 font-mono ${theme === "light" ? "text-slate-400 border border-slate-300 bg-slate-50" : "text-slate-500 border border-white/[0.08]"}`}>⌘K</kbd>
                 )}
               </motion.div>
 
@@ -678,24 +682,24 @@ export default function DashboardLayout({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -4, scale: 0.98 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-gray-900/95 backdrop-blur-xl border border-gray-700/60 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-50"
+                    className="absolute top-full left-0 right-0 mt-2 bg-slate-950/95 backdrop-blur-xl border border-white/[0.06] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-50"
                   >
                     <div className="h-0.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" />
                     <div className="p-2 max-h-[360px] overflow-y-auto">
                       {isSearching ? (
-                        <div className="flex items-center justify-center gap-2 py-6 text-gray-400 text-sm">
+                        <div className="flex items-center justify-center gap-2 py-6 text-slate-400 text-sm">
                           <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                           Searching...
                         </div>
                       ) : results.length === 0 ? (
                         <div className="py-6 text-center">
-                          <Search size={24} className="mx-auto text-gray-600 mb-2" />
-                          <p className="text-gray-400 text-sm">No results for "{searchQuery}"</p>
-                          <p className="text-gray-600 text-xs mt-1">Try loads, cities, catalysts, or driver names</p>
+                          <Search size={24} className="mx-auto text-slate-600 mb-2" />
+                          <p className="text-slate-400 text-sm">No results for "{searchQuery}"</p>
+                          <p className="text-slate-600 text-xs mt-1">Try loads, cities, catalysts, or driver names</p>
                         </div>
                       ) : (
                         <>
-                          <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider px-2 py-1">
+                          <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider px-2 py-1">
                             {results.length} result{results.length !== 1 ? "s" : ""}
                           </p>
                           {results.map((r, i) => (
@@ -715,7 +719,7 @@ export default function DashboardLayout({
                                 r.type === "catalyst" ? "bg-orange-500/15 text-orange-400" :
                                 r.type === "company" ? "bg-emerald-500/15 text-emerald-400" :
                                 r.type === "user" ? "bg-purple-500/15 text-purple-400" :
-                                "bg-gray-500/15 text-gray-400"
+                                "bg-slate-500/15 text-slate-400"
                               }`}>
                                 {r.type === "load" ? <Package size={16} /> :
                                  r.type === "driver" ? <User size={16} /> :
@@ -726,7 +730,7 @@ export default function DashboardLayout({
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-white truncate">{r.title}</p>
-                                <p className="text-xs text-gray-500 truncate">{r.subtitle}</p>
+                                <p className="text-xs text-slate-500 truncate">{r.subtitle}</p>
                               </div>
                               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
                                 r.type === "load" ? "bg-blue-500/10 text-blue-400" :
@@ -734,7 +738,7 @@ export default function DashboardLayout({
                                 r.type === "catalyst" ? "bg-orange-500/10 text-orange-400" :
                                 r.type === "company" ? "bg-emerald-500/10 text-emerald-400" :
                                 r.type === "user" ? "bg-purple-500/10 text-purple-400" :
-                                "bg-gray-500/10 text-gray-400"
+                                "bg-slate-500/10 text-slate-400"
                               }`}>
                                 {r.type.toUpperCase()}
                               </span>
@@ -749,7 +753,7 @@ export default function DashboardLayout({
             </div>
 
             {/* Spacer between search and action icons */}
-            <div className={`hidden md:block w-px h-5 ${theme === "light" ? "bg-slate-200" : "bg-gray-700/50"}`} />
+            <div className={`hidden md:block w-px h-5 ${theme === "light" ? "bg-slate-200" : "bg-white/[0.06]"}`} />
 
             {/* Right action icons group */}
             <div className="flex items-center gap-3">
@@ -760,11 +764,11 @@ export default function DashboardLayout({
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className={`relative p-2 rounded-xl transition-colors flex-shrink-0 ${theme === "light" ? "hover:bg-slate-100" : "hover:bg-gray-800/50"}`}
+                  className={`relative p-2 rounded-xl transition-colors flex-shrink-0 ${theme === "light" ? "hover:bg-slate-100" : "hover:bg-white/[0.04]"}`}
                   title={`Theme: ${mode}`}
                 >
                   {theme === "dark" ? (
-                    <Moon size={18} className="text-gray-400" />
+                    <Moon size={18} className="text-slate-400" />
                   ) : (
                     <Sun size={18} className="text-amber-500" />
                   )}
@@ -798,7 +802,7 @@ export default function DashboardLayout({
                 <motion.button
                   whileHover={{ scale: 1.08 }}
                   whileTap={{ scale: 0.95 }}
-                  className="p-1 hover:bg-gray-800/50 rounded-xl transition-colors"
+                  className="p-1 hover:bg-white/[0.04] rounded-xl transition-colors"
                 >
                   <Avatar className="w-8 h-8">
                     {displayAvatar ? (
@@ -831,7 +835,7 @@ export default function DashboardLayout({
         </motion.header>
 
         {/* Main Content Area — Domino Cascade Page Transition */}
-        <main className="flex-1 overflow-y-auto smooth-scroll bg-gray-950/50">
+        <main className="flex-1 overflow-y-auto smooth-scroll bg-slate-950/50">
           {/* Approval status banner for pending/suspended users */}
           <ApprovalBanner />
 
@@ -849,7 +853,7 @@ export default function DashboardLayout({
           <EsangFloatingButton />
 
           {/* Security Compliance Footer */}
-          <footer className="border-t border-gray-800/50 bg-gray-900/40 backdrop-blur-sm px-4 py-4 mt-4">
+          <footer className="border-t border-white/[0.04] bg-slate-950/60 backdrop-blur-sm px-4 py-4 mt-4">
             <div className="max-w-7xl mx-auto">
               <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-3">
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-500/10 border border-green-500/20">
@@ -873,7 +877,7 @@ export default function DashboardLayout({
                   <span className="text-[10px] sm:text-xs font-medium text-amber-400">PCI-DSS</span>
                 </div>
               </div>
-              <p className="text-center text-[10px] sm:text-xs text-gray-500">
+              <p className="text-center text-[10px] sm:text-xs text-slate-500">
                 Eusorone Technologies Inc. All rights reserved. Secured with enterprise-grade encryption.
               </p>
             </div>

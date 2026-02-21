@@ -116,7 +116,7 @@ export default function DockAssignment() {
 
   const [dockStatus, setDockStatus] = useState<DockStatus>('assigned');
   const st = STATUS_CFG[dockStatus];
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   const advanceStatus = () => {
     const order: DockStatus[] = ["assigned", "waiting", "loading", "complete"];
@@ -193,7 +193,7 @@ export default function DockAssignment() {
           {dock.instructions.map((inst, i) => (
             <div key={i} className={cn(
               "flex items-start gap-3 p-3 rounded-xl border",
-              isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+              isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
             )}>
               <div className={cn("w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 text-xs font-bold", "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white")}>
                 {i + 1}

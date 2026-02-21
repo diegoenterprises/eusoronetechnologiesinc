@@ -60,7 +60,7 @@ export default function PODManagement() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -76,7 +76,7 @@ export default function PODManagement() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -92,7 +92,7 @@ export default function PODManagement() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -108,7 +108,7 @@ export default function PODManagement() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -129,10 +129,10 @@ export default function PODManagement() {
       <div className="flex flex-wrap gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search PODs..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search PODs..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
+          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -146,21 +146,21 @@ export default function PODManagement() {
       </div>
 
       {/* POD List */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardContent className="p-0">
           {podsQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : filteredPODs?.length === 0 ? (
             <div className="text-center py-16">
-              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <FileCheck className="w-10 h-10 text-slate-500" />
               </div>
               <p className="text-slate-400 text-lg">No PODs found</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {filteredPODs?.map((pod: any) => (
-                <div key={pod.id} className={cn("p-4 hover:bg-slate-700/20 transition-colors cursor-pointer", pod.status === "missing" && "bg-red-500/5 border-l-2 border-red-500")} onClick={() => setLocation(`/pod/${pod.id}`)}>
+                <div key={pod.id} className={cn("p-4 hover:bg-white/[0.04] transition-colors cursor-pointer", pod.status === "missing" && "bg-red-500/5 border-l-2 border-red-500")} onClick={() => setLocation(`/pod/${pod.id}`)}>
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <div className="flex items-center gap-2 mb-1">

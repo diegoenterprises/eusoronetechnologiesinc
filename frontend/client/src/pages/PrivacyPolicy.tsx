@@ -417,7 +417,7 @@ export default function PrivacyPolicy() {
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isLight ? 'bg-gradient-to-br from-slate-50 via-white to-slate-100' : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'}`}>
       {/* Top Navigation */}
-      <div className={`sticky top-0 z-10 backdrop-blur-lg border-b ${isLight ? 'bg-white/90 border-slate-200' : 'bg-slate-900/90 border-slate-700/50'}`}>
+      <div className={`sticky top-0 z-10 backdrop-blur-lg border-b ${isLight ? 'bg-white/90 border-slate-200' : 'bg-slate-900/90 border-white/[0.06]'}`}>
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <button
             onClick={() => navigate("/")}
@@ -437,7 +437,7 @@ export default function PrivacyPolicy() {
             </div>
             <button
               onClick={toggleTheme}
-              className={`p-2 rounded-full border transition-all duration-300 hover:scale-110 ${isLight ? 'bg-white/80 border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm' : 'bg-slate-800/80 border-slate-600 text-slate-300 hover:bg-slate-700'}`}
+              className={`p-2 rounded-full border transition-all duration-300 hover:scale-110 ${isLight ? 'bg-white/80 border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm' : 'bg-slate-800/80 border-slate-600 text-slate-300 hover:bg-white/[0.06]'}`}
               title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
             >
               {isLight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
@@ -506,12 +506,12 @@ export default function PrivacyPolicy() {
                 className={`rounded-xl transition-colors ${
                   section.highlight
                     ? (isLight ? 'bg-white border-emerald-300 shadow-sm' : 'bg-slate-800/70 border-emerald-500/30')
-                    : (isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50')
+                    : (isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]')
                 }`}
               >
                 <button
                   onClick={() => toggleSection(section.id)}
-                  className={`w-full px-6 py-4 flex items-center gap-3 text-left transition-colors rounded-xl ${isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-700/30'}`}
+                  className={`w-full px-6 py-4 flex items-center gap-3 text-left transition-colors rounded-xl ${isLight ? 'hover:bg-slate-50' : 'hover:bg-white/[0.06]/30'}`}
                 >
                   {section.icon}
                   <span className={`flex-1 font-semibold text-sm md:text-base ${isLight ? 'text-slate-900' : 'text-white'}`}>
@@ -530,7 +530,7 @@ export default function PrivacyPolicy() {
                 </button>
                 {isExpanded && (
                   <CardContent className="px-6 pb-6 pt-0">
-                    <div className={`text-sm leading-relaxed border-t pt-4 ${isLight ? 'text-slate-600 border-slate-200' : 'text-slate-300 border-slate-700/50'}`}>
+                    <div className={`text-sm leading-relaxed border-t pt-4 ${isLight ? 'text-slate-600 border-slate-200' : 'text-slate-300 border-white/[0.06]'}`}>
                       {section.content}
                     </div>
                   </CardContent>
@@ -541,7 +541,7 @@ export default function PrivacyPolicy() {
         </div>
 
         {/* Contact DPO */}
-        <Card className={`rounded-xl mt-8 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+        <Card className={`rounded-xl mt-8 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
               <Mail className="w-5 h-5 text-cyan-400 mt-0.5" />

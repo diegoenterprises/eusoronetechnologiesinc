@@ -84,7 +84,7 @@ export default function TwoFactorAuth() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Setup / Disable */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Smartphone className="w-5 h-5 text-cyan-400" />
@@ -123,7 +123,7 @@ export default function TwoFactorAuth() {
                 {/* Verification */}
                 <div className="space-y-2">
                   <p className="text-white font-medium">Enter verification code</p>
-                  <Input value={verificationCode} onChange={(e: any) => setVerificationCode(e.target.value)} placeholder="000000" maxLength={6} className="text-center text-2xl tracking-widest bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                  <Input value={verificationCode} onChange={(e: any) => setVerificationCode(e.target.value)} placeholder="000000" maxLength={6} className="text-center text-2xl tracking-widest bg-slate-700/30 border-white/[0.06] rounded-lg" />
                 </div>
 
                 <Button className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => enableMutation.mutate({ code: verificationCode })} disabled={verificationCode.length !== 6 || enableMutation.isPending}>
@@ -131,7 +131,7 @@ export default function TwoFactorAuth() {
                 </Button>
 
                 {!setupQuery.data && (
-                  <Button variant="outline" className="w-full bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setupQuery.refetch()}>
+                  <Button variant="outline" className="w-full bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => setupQuery.refetch()}>
                     <QrCode className="w-4 h-4 mr-2" />Generate QR Code
                   </Button>
                 )}
@@ -148,7 +148,7 @@ export default function TwoFactorAuth() {
         </Card>
 
         {/* Backup Codes */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-white text-lg flex items-center gap-2">
@@ -156,7 +156,7 @@ export default function TwoFactorAuth() {
                 Backup Codes
               </CardTitle>
               {status?.enabled && (
-                <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => regenerateMutation.mutate({})}>
+                <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => regenerateMutation.mutate({})}>
                   <RefreshCw className="w-4 h-4 mr-1" />Regenerate
                 </Button>
               )}
@@ -175,7 +175,7 @@ export default function TwoFactorAuth() {
                     <div key={idx} className="p-2 rounded-lg bg-slate-700/30 font-mono text-center text-white">{code}</div>
                   ))}
                 </div>
-                <Button variant="outline" className="w-full mt-4 bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => copyToClipboard(status?.backupCodes?.join("\n") || "")}>
+                <Button variant="outline" className="w-full mt-4 bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => copyToClipboard(status?.backupCodes?.join("\n") || "")}>
                   <Copy className="w-4 h-4 mr-2" />Copy All Codes
                 </Button>
               </>

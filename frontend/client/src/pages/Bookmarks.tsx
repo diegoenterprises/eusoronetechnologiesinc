@@ -59,7 +59,7 @@ export default function Bookmarks() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -75,7 +75,7 @@ export default function Bookmarks() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -91,7 +91,7 @@ export default function Bookmarks() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -107,7 +107,7 @@ export default function Bookmarks() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -127,25 +127,25 @@ export default function Bookmarks() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search bookmarks..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search bookmarks..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
       </div>
 
       {/* Bookmarks List */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardContent className="p-0">
           {bookmarksQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : filteredBookmarks?.length === 0 ? (
             <div className="text-center py-16">
-              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <Bookmark className="w-10 h-10 text-slate-500" />
               </div>
               <p className="text-slate-400 text-lg">No bookmarks found</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {filteredBookmarks?.map((bookmark: any) => (
-                <div key={bookmark.id} className="p-4 flex items-center gap-4 hover:bg-slate-700/20 transition-colors">
+                <div key={bookmark.id} className="p-4 flex items-center gap-4 hover:bg-white/[0.04] transition-colors">
                   <div className={cn("p-2 rounded-lg", getTypeColor(bookmark.type))}>
                     <Bookmark className="w-5 h-5" />
                   </div>

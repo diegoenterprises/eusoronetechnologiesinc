@@ -365,7 +365,7 @@ export default function CompanyChannels() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-slate-700 text-slate-400 hover:bg-slate-700"
+                  className="border-slate-700 text-slate-400 hover:bg-white/[0.06]"
                   onClick={() => setShowMembers(true)}
                 >
                   <Users size={18} />
@@ -374,7 +374,7 @@ export default function CompanyChannels() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`border-slate-700 hover:bg-slate-700 ${isMuted ? "text-red-400" : "text-slate-400"}`}
+                  className={`border-slate-700 hover:bg-white/[0.06] ${isMuted ? "text-red-400" : "text-slate-400"}`}
                   onClick={handleToggleMute}
                   disabled={toggleMuteMutation.isPending}
                 >
@@ -383,7 +383,7 @@ export default function CompanyChannels() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-slate-700 text-slate-400 hover:bg-slate-700"
+                  className="border-slate-700 text-slate-400 hover:bg-white/[0.06]"
                   onClick={handleOpenSettings}
                 >
                   <Settings size={18} />
@@ -499,7 +499,7 @@ export default function CompanyChannels() {
                   accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip"
                 />
                 <button
-                  className="p-2 hover:bg-slate-700 rounded transition-colors"
+                  className="p-2 hover:bg-white/[0.06] rounded transition-colors"
                   onClick={handleFileSelect}
                   title="Attach file"
                 >
@@ -634,7 +634,7 @@ export default function CompanyChannels() {
         <Card className="bg-slate-800 border-slate-700 p-6 w-[420px]">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-white">Channel Settings</h2>
-            <button onClick={() => setShowSettings(false)} className="p-1 hover:bg-slate-700 rounded">
+            <button onClick={() => setShowSettings(false)} className="p-1 hover:bg-white/[0.06] rounded">
               <X size={20} className="text-slate-400" />
             </button>
           </div>
@@ -714,7 +714,7 @@ export default function CompanyChannels() {
             <h2 className="text-xl font-bold text-white">
               Members ({activeChannel.memberCount})
             </h2>
-            <button onClick={() => setShowMembers(false)} className="p-1 hover:bg-slate-700 rounded">
+            <button onClick={() => setShowMembers(false)} className="p-1 hover:bg-white/[0.06] rounded">
               <X size={20} className="text-slate-400" />
             </button>
           </div>
@@ -728,7 +728,7 @@ export default function CompanyChannels() {
               <p className="text-slate-500 text-center py-4">No members found</p>
             ) : (
               members.map((member: any) => (
-                <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors">
+                <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.04] hover:bg-white/[0.06] transition-colors">
                   <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
                     {(member.name || "?").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
                   </div>

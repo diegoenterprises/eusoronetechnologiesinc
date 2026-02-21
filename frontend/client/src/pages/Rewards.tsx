@@ -55,7 +55,7 @@ export default function Rewards() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -71,7 +71,7 @@ export default function Rewards() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -87,7 +87,7 @@ export default function Rewards() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -103,7 +103,7 @@ export default function Rewards() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -122,7 +122,7 @@ export default function Rewards() {
 
       {/* Tier Progress */}
       {summary?.nextTier && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-3">
               <span className="text-white font-medium">{summary.tier}</span>
@@ -136,7 +136,7 @@ export default function Rewards() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Available Rewards */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Available Rewards</CardTitle>
           </CardHeader>
@@ -145,7 +145,7 @@ export default function Rewards() {
               <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
             ) : (rewardsQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
-                <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                <div className="p-4 rounded-full bg-white/[0.04] w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <Gift className="w-8 h-8 text-slate-500" />
                 </div>
                 <p className="text-slate-400">No rewards available</p>
@@ -153,7 +153,7 @@ export default function Rewards() {
             ) : (
               <div className="space-y-3">
                 {(rewardsQuery.data as any)?.map((reward: any) => (
-                  <div key={reward.id} className="p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
+                  <div key={reward.id} className="p-4 rounded-xl bg-slate-700/30 hover:bg-white/[0.04] transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-full bg-purple-500/20">
@@ -179,7 +179,7 @@ export default function Rewards() {
         </Card>
 
         {/* Recent Activity */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Recent Activity</CardTitle>
           </CardHeader>
@@ -188,7 +188,7 @@ export default function Rewards() {
               <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (historyQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
-                <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                <div className="p-4 rounded-full bg-white/[0.04] w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <Star className="w-8 h-8 text-slate-500" />
                 </div>
                 <p className="text-slate-400">No activity yet</p>

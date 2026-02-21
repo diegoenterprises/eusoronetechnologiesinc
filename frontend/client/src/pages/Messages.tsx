@@ -270,17 +270,17 @@ export default function Messages() {
 
         {/* ── Conversations List ── */}
         <Card className={cn(
-          "bg-slate-800/50 border-slate-700/50 rounded-2xl overflow-hidden",
+          "bg-white/[0.02] border-white/[0.06] rounded-2xl overflow-hidden",
           showMobileChat && "hidden lg:block"
         )}>
-          <CardHeader className="pb-3 border-b border-slate-700/50 px-4 pt-4">
+          <CardHeader className="pb-3 border-b border-white/[0.06] px-4 pt-4">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <Input
                 value={searchTerm}
                 onChange={(e: any) => setSearchTerm(e.target.value)}
                 placeholder="Search conversations..."
-                className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-xl focus:border-purple-500/50 text-sm"
+                className="pl-9 bg-slate-700/30 border-white/[0.06] rounded-xl focus:border-purple-500/50 text-sm"
               />
             </div>
           </CardHeader>
@@ -304,7 +304,7 @@ export default function Messages() {
                       "group relative flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-all",
                       selectedConversation === conv.id
                         ? "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-l-2 border-l-purple-500"
-                        : "hover:bg-slate-700/30 border-l-2 border-l-transparent"
+                        : "hover:bg-white/[0.06]/30 border-l-2 border-l-transparent"
                     )}
                     onClick={() => setSelectedConversation(conv.id)}
                   >
@@ -342,7 +342,7 @@ export default function Messages() {
 
                     {/* Context menu trigger */}
                     <button
-                      className="opacity-0 group-hover:opacity-100 hover:opacity-100 p-1 rounded-lg hover:bg-slate-700/50 transition-all"
+                      className="opacity-0 group-hover:opacity-100 hover:opacity-100 p-1 rounded-lg hover:bg-white/[0.04] transition-all"
                       onClick={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); setShowContextMenu(showContextMenu?.id === conv.id ? null : { id: conv.id, x: rect.right, y: rect.bottom + 4 }); }}
                     >
                       <MoreVertical className="w-3.5 h-3.5 text-slate-500 pointer-events-none" />
@@ -357,7 +357,7 @@ export default function Messages() {
 
         {/* ── Chat Area ── */}
         <Card className={cn(
-          "lg:col-span-2 bg-slate-800/50 border-slate-700/50 rounded-2xl overflow-hidden flex flex-col",
+          "lg:col-span-2 bg-white/[0.02] border-white/[0.06] rounded-2xl overflow-hidden flex flex-col",
           !showMobileChat && "hidden lg:flex"
         )}>
           {!selectedConversation ? (
@@ -373,7 +373,7 @@ export default function Messages() {
           ) : (
             <>
               {/* Chat Header */}
-              <CardHeader className="pb-3 border-b border-slate-700/50 px-5 pt-4">
+              <CardHeader className="pb-3 border-b border-white/[0.06] px-5 pt-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Button variant="ghost" size="sm" className="lg:hidden p-1" onClick={() => setShowMobileChat(false)}>
@@ -453,7 +453,7 @@ export default function Messages() {
                         {/* Unsend button for own messages — always visible */}
                         {message.isOwn && !isUnsent && (
                           <button
-                            className="self-center p-1.5 rounded-full text-slate-500 hover:text-slate-300 hover:bg-slate-700/80 transition-all flex-shrink-0"
+                            className="self-center p-1.5 rounded-full text-slate-500 hover:text-slate-300 hover:bg-white/[0.06]/80 transition-all flex-shrink-0"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -543,7 +543,7 @@ export default function Messages() {
                               "px-4 py-2.5 transition-all",
                               message.isOwn
                                 ? "bg-gradient-to-br from-[#1473FF] via-[#3B5FFF] to-[#BE01FF] text-white rounded-[20px] rounded-br-[6px] shadow-lg shadow-blue-500/15"
-                                : "bg-slate-700/60 backdrop-blur-md text-white/90 rounded-[20px] rounded-bl-[6px] border border-slate-600/50 shadow-md"
+                                : "bg-slate-700/60 backdrop-blur-md text-white/90 rounded-[20px] rounded-bl-[6px] border border-white/[0.06] shadow-md"
                             )}>
                               <p className={cn(
                                 "text-[13.5px] leading-[1.55] whitespace-pre-wrap tracking-[-0.01em]",
@@ -570,7 +570,7 @@ export default function Messages() {
               </CardContent>
 
               {/* Message Input */}
-              <div className="p-4 border-t border-slate-700/50">
+              <div className="p-4 border-t border-white/[0.06]">
                 {e2eReady && (
                   <div className="mb-2 flex items-center justify-center gap-1.5 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent/60">
                     <Lock className="w-2.5 h-2.5" />
@@ -666,7 +666,7 @@ export default function Messages() {
                     value={newMessage}
                     onChange={(e: any) => setNewMessage(e.target.value)}
                     placeholder="Type a message..."
-                    className="flex-1 bg-slate-700/30 border-slate-600/50 rounded-xl focus:border-purple-500/50 text-sm"
+                    className="flex-1 bg-slate-700/30 border-white/[0.06] rounded-xl focus:border-purple-500/50 text-sm"
                     onKeyDown={(e: any) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
@@ -753,7 +753,7 @@ export default function Messages() {
                 value={paymentNote}
                 onChange={(e: any) => setPaymentNote(e.target.value)}
                 placeholder="Add a note (optional)"
-                className="bg-slate-700/50 border-slate-600/50 rounded-xl text-sm"
+                className="bg-white/[0.04] border-white/[0.06] rounded-xl text-sm"
               />
 
               {/* Stripe badge */}
@@ -816,7 +816,7 @@ export default function Messages() {
                   value={userSearchTerm}
                   onChange={(e: any) => setUserSearchTerm(e.target.value)}
                   placeholder="Search by name or email..."
-                  className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-xl text-sm focus:border-purple-500/50"
+                  className="pl-9 bg-white/[0.04] border-white/[0.06] rounded-xl text-sm focus:border-purple-500/50"
                   autoFocus
                 />
               </div>
@@ -834,7 +834,7 @@ export default function Messages() {
                   (usersQuery.data as any)?.map((user: any) => (
                     <button
                       key={user.id}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700/50 transition-all text-left"
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.04] transition-all text-left"
                       onClick={() => handleStartConversation(user.id, user.name)}
                       disabled={createConversationMutation.isPending}
                     >
@@ -888,7 +888,7 @@ export default function Messages() {
               <X className="w-4 h-4" /> Unsend Message
             </button>
             <button
-              className="w-full text-left px-4 py-2.5 text-sm text-slate-400 hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors"
+              className="w-full text-left px-4 py-2.5 text-sm text-slate-400 hover:bg-white/[0.04] flex items-center gap-2.5 transition-colors"
               onClick={() => { unsendMessageMutation.mutate({ messageId: messageContextMenu.id }); setMessageContextMenu(null); }}
             >
               <Trash2 className="w-4 h-4" /> Delete Message
@@ -907,7 +907,7 @@ export default function Messages() {
             className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-1 min-w-[140px]"
           >
             <button
-              className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/50 flex items-center gap-2"
+              className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-white/[0.04] flex items-center gap-2"
               onClick={() => { archiveConversationMutation.mutate({ conversationId: showContextMenu.id }); }}
             >
               <Archive className="w-3.5 h-3.5" /> Archive

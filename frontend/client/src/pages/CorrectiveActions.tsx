@@ -88,7 +88,7 @@ export default function CorrectiveActions() {
     { id: "closed", label: `Closed (${closedCount})` },
   ];
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -102,7 +102,7 @@ export default function CorrectiveActions() {
             Track and resolve safety findings and compliance gaps
           </p>
         </div>
-        <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => actionsQuery.refetch?.()}>
+        <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")} onClick={() => actionsQuery.refetch?.()}>
           <RefreshCw className="w-4 h-4" />
         </Button>
       </div>
@@ -115,7 +115,7 @@ export default function CorrectiveActions() {
           { icon: <AlertTriangle className="w-5 h-5 text-red-400" />, bg: "bg-red-500/15", value: String(overdueCount), label: "Overdue", color: "text-red-400" },
           { icon: <CheckCircle className="w-5 h-5 text-green-400" />, bg: "bg-green-500/15", value: String(closedCount), label: "Closed", color: "text-green-400" },
         ].map((s) => (
-          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
@@ -132,7 +132,7 @@ export default function CorrectiveActions() {
       {/* Filter tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         {filters.map((f) => (
-          <button key={f.id} onClick={() => setFilter(f.id)} className={cn("px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all", filter === f.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700")}>
+          <button key={f.id} onClick={() => setFilter(f.id)} className={cn("px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all", filter === f.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]")}>
             {f.label}
           </button>
         ))}

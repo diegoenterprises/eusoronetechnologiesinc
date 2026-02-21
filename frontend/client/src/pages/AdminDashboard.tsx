@@ -44,7 +44,7 @@ export default function AdminDashboard() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -60,7 +60,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -76,7 +76,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-orange-500/20">
@@ -126,7 +126,7 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-1">
+        <TabsList className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-1">
           <TabsTrigger value="overview" className="data-[state=active]:bg-slate-700 rounded-md">Overview</TabsTrigger>
           <TabsTrigger value="verifications" className="data-[state=active]:bg-slate-700 rounded-md">Verifications</TabsTrigger>
           <TabsTrigger value="activity" className="data-[state=active]:bg-slate-700 rounded-md">Activity</TabsTrigger>
@@ -134,7 +134,7 @@ export default function AdminDashboard() {
 
         <TabsContent value="overview" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardHeader className="pb-3">
                 <CardTitle className="text-white text-lg">Platform Health</CardTitle>
               </CardHeader>
@@ -169,25 +169,25 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardHeader className="pb-3">
                 <CardTitle className="text-white text-lg">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => setLocation("/admin/user-management")}>
+                  <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-white/[0.06] hover:bg-white/[0.04] rounded-xl" onClick={() => setLocation("/admin/user-management")}>
                     <Users className="w-6 h-6 mb-2 text-blue-400" />
                     <span className="text-slate-300">Manage Users</span>
                   </Button>
-                  <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => setLocation("/admin/verification-dashboard")}>
+                  <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-white/[0.06] hover:bg-white/[0.04] rounded-xl" onClick={() => setLocation("/admin/verification-dashboard")}>
                     <Shield className="w-6 h-6 mb-2 text-purple-400" />
                     <span className="text-slate-300">Verifications</span>
                   </Button>
-                  <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => setLocation("/audit-logs")}>
+                  <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-white/[0.06] hover:bg-white/[0.04] rounded-xl" onClick={() => setLocation("/audit-logs")}>
                     <Activity className="w-6 h-6 mb-2 text-cyan-400" />
                     <span className="text-slate-300">Audit Logs</span>
                   </Button>
-                  <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => setLocation("/settings")}>
+                  <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-white/[0.06] hover:bg-white/[0.04] rounded-xl" onClick={() => setLocation("/settings")}>
                     <Settings className="w-6 h-6 mb-2 text-orange-400" />
                     <span className="text-slate-300">Settings</span>
                   </Button>
@@ -198,7 +198,7 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="verifications" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg">Pending Verifications</CardTitle>
             </CardHeader>
@@ -207,7 +207,7 @@ export default function AdminDashboard() {
                 <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
               ) : (pendingVerificationsQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <div className="p-4 rounded-full bg-white/[0.04] w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <CheckCircle className="w-8 h-8 text-green-400" />
                   </div>
                   <p className="text-slate-400">No pending verifications</p>
@@ -238,7 +238,7 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="activity" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg">Recent Activity</CardTitle>
             </CardHeader>
@@ -247,7 +247,7 @@ export default function AdminDashboard() {
                 <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
               ) : (recentActivityQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <div className="p-4 rounded-full bg-white/[0.04] w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <Activity className="w-8 h-8 text-slate-500" />
                   </div>
                   <p className="text-slate-400">No recent activity</p>

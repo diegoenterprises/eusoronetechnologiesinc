@@ -58,7 +58,7 @@ export default function DriverScorecard() {
           <p className="text-slate-400 text-sm">Your performance and safety metrics</p>
         </div>
         <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-32 bg-white/[0.04] border-slate-600"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="week">This Week</SelectItem>
             <SelectItem value="month">This Month</SelectItem>
@@ -111,19 +111,19 @@ export default function DriverScorecard() {
                 [1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-24" />)
               ) : (
                 <>
-                  <div className="text-center p-3 rounded-lg bg-slate-800/50">
+                  <div className="text-center p-3 rounded-lg bg-white/[0.02]">
                     <p className="text-2xl font-bold text-blue-400">{(scorecard?.metrics as any)?.distanceThisMonth?.toLocaleString() || scorecard?.metrics?.milesThisMonth?.toLocaleString() || 0}</p>
                     <p className="text-xs text-slate-500">Miles</p>
                   </div>
-                  <div className="text-center p-3 rounded-lg bg-slate-800/50">
+                  <div className="text-center p-3 rounded-lg bg-white/[0.02]">
                     <p className="text-2xl font-bold text-green-400">{scorecard?.metrics?.onTimeDelivery || 0}%</p>
                     <p className="text-xs text-slate-500">On-Time</p>
                   </div>
-                  <div className="text-center p-3 rounded-lg bg-slate-800/50">
+                  <div className="text-center p-3 rounded-lg bg-white/[0.02]">
                     <p className="text-2xl font-bold text-yellow-400">{scorecard?.metrics?.customerRating || 0}</p>
                     <p className="text-xs text-slate-500">Rating</p>
                   </div>
-                  <div className="text-center p-3 rounded-lg bg-slate-800/50">
+                  <div className="text-center p-3 rounded-lg bg-white/[0.02]">
                     <p className="text-2xl font-bold text-purple-400">{scorecard?.metrics?.inspectionScore || 0}%</p>
                     <p className="text-xs text-slate-500">Inspection</p>
                   </div>
@@ -137,10 +137,10 @@ export default function DriverScorecard() {
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {scorecardQuery.isLoading ? (
-          [1, 2, 3, 4].map((i: any) => <Card key={i} className="bg-slate-800/50 border-slate-700"><CardContent className="p-4"><Skeleton className="h-20 w-full" /></CardContent></Card>)
+          [1, 2, 3, 4].map((i: any) => <Card key={i} className="bg-white/[0.02] border-slate-700"><CardContent className="p-4"><Skeleton className="h-20 w-full" /></CardContent></Card>)
         ) : (
           <>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-slate-400 text-sm">Safety Events</span>
@@ -150,7 +150,7 @@ export default function DriverScorecard() {
                 <Progress value={100 - (scorecard?.metrics?.safetyEvents || 0) * 10} className="h-1 mt-2" />
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-slate-400 text-sm">Hard Braking</span>
@@ -160,7 +160,7 @@ export default function DriverScorecard() {
                 <Progress value={100 - (scorecard?.metrics?.hardBraking || 0) * 5} className="h-1 mt-2" />
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-slate-400 text-sm">Speeding</span>
@@ -170,7 +170,7 @@ export default function DriverScorecard() {
                 <Progress value={100 - (scorecard?.metrics?.speeding || 0) * 5} className="h-1 mt-2" />
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-slate-400 text-sm">HOS Violations</span>
@@ -186,7 +186,7 @@ export default function DriverScorecard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Events */}
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardHeader><CardTitle className="text-white flex items-center gap-2"><Activity className="w-5 h-5 text-blue-400" />Recent Events</CardTitle></CardHeader>
           <CardContent>
             {eventsQuery.isLoading ? (
@@ -216,7 +216,7 @@ export default function DriverScorecard() {
         </Card>
 
         {/* Achievements */}
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardHeader><CardTitle className="text-white flex items-center gap-2"><Award className="w-5 h-5 text-yellow-400" />Achievements</CardTitle></CardHeader>
           <CardContent>
             {achievementsQuery.isLoading ? (

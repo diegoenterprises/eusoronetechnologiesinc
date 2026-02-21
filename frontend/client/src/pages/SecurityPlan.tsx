@@ -107,7 +107,7 @@ export default function SecurityPlan() {
   const [expandedSection, setExpandedSection] = useState<string | null>("enroute");
   const [acknowledged, setAcknowledged] = useState(false);
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -183,7 +183,7 @@ export default function SecurityPlan() {
                     {section.items.map((item, i) => (
                       <div key={i} className={cn(
                         "flex items-start gap-3 p-3 rounded-xl border",
-                        isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+                        isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
                       )}>
                         <div className={cn("w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5", section.bg)}>
                           <CheckCircle className={cn("w-3.5 h-3.5", section.color)} />
@@ -211,7 +211,7 @@ export default function SecurityPlan() {
           {TRAINING_ITEMS.map((item, i) => (
             <div key={i} className={cn(
               "flex items-center justify-between p-3 rounded-xl border",
-              isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+              isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
             )}>
               <div className="flex items-center gap-3">
                 <div className={cn("p-2 rounded-lg", item.required ? "bg-blue-500/15" : "bg-slate-500/15")}>
@@ -255,7 +255,7 @@ export default function SecurityPlan() {
                 href={`tel:${c.number.replace(/[^0-9]/g, "")}`}
                 className={cn(
                   "flex items-center gap-3 p-4 rounded-xl border transition-colors",
-                  isLight ? "bg-white border-slate-200 hover:border-red-300" : "bg-slate-800/50 border-slate-700/30 hover:border-red-500/30"
+                  isLight ? "bg-white border-slate-200 hover:border-red-300" : "bg-white/[0.02] border-slate-700/30 hover:border-red-500/30"
                 )}
               >
                 <div className="p-2.5 rounded-lg bg-red-500/15">

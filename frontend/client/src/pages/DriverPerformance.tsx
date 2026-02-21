@@ -78,7 +78,7 @@ export default function DriverPerformance() {
         </div>
         <div className="flex items-center gap-3">
           <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-            <SelectTrigger className="w-48 bg-slate-700/50 border-slate-600">
+            <SelectTrigger className="w-48 bg-white/[0.04] border-slate-600">
               <SelectValue placeholder="Select Driver" />
             </SelectTrigger>
             <SelectContent>
@@ -92,7 +92,7 @@ export default function DriverPerformance() {
             </SelectContent>
           </Select>
           <Select value={timePeriod} onValueChange={setTimePeriod}>
-            <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600">
+            <SelectTrigger className="w-32 bg-white/[0.04] border-slate-600">
               <SelectValue placeholder="Period" />
             </SelectTrigger>
             <SelectContent>
@@ -181,41 +181,41 @@ export default function DriverPerformance() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {performanceQuery.isLoading ? (
           [1, 2, 3, 4, 5].map((i: any) => (
-            <Card key={i} className="bg-slate-800/50 border-slate-700">
+            <Card key={i} className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4 text-center"><Skeleton className="h-16 w-full" /></CardContent>
             </Card>
           ))
         ) : (
           <>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4 text-center">
                 <Shield className={cn("w-6 h-6 mx-auto mb-2", getScoreColor(driver?.metrics?.safety || 0))} />
                 <p className={cn("text-2xl font-bold", getScoreColor(driver?.metrics?.safety || 0))}>{driver?.metrics?.safety || 0}</p>
                 <p className="text-xs text-slate-400">Safety</p>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4 text-center">
                 <Fuel className={cn("w-6 h-6 mx-auto mb-2", getScoreColor(driver?.metrics?.efficiency || 0))} />
                 <p className={cn("text-2xl font-bold", getScoreColor(driver?.metrics?.efficiency || 0))}>{driver?.metrics?.efficiency || 0}</p>
                 <p className="text-xs text-slate-400">Efficiency</p>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4 text-center">
                 <CheckCircle className={cn("w-6 h-6 mx-auto mb-2", getScoreColor(driver?.metrics?.compliance || 0))} />
                 <p className={cn("text-2xl font-bold", getScoreColor(driver?.metrics?.compliance || 0))}>{driver?.metrics?.compliance || 0}</p>
                 <p className="text-xs text-slate-400">Compliance</p>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4 text-center">
                 <Clock className={cn("w-6 h-6 mx-auto mb-2", getScoreColor(driver?.metrics?.onTime || 0))} />
                 <p className={cn("text-2xl font-bold", getScoreColor(driver?.metrics?.onTime || 0))}>{driver?.metrics?.onTime || 0}%</p>
                 <p className="text-xs text-slate-400">On-Time</p>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4 text-center">
                 <Star className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
                 <p className="text-2xl font-bold text-yellow-400">{driver?.metrics?.customerRating || 0}</p>
@@ -235,7 +235,7 @@ export default function DriverPerformance() {
 
         <TabsContent value="overview" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardHeader><CardTitle className="text-white">Performance Stats</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 {performanceQuery.isLoading ? (
@@ -269,7 +269,7 @@ export default function DriverPerformance() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardHeader><CardTitle className="text-white">Score Breakdown</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 {performanceQuery.isLoading ? (
@@ -293,7 +293,7 @@ export default function DriverPerformance() {
         </TabsContent>
 
         <TabsContent value="events" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-white/[0.02] border-slate-700">
             <CardHeader><CardTitle className="text-white">Recent Performance Events</CardTitle></CardHeader>
             <CardContent>
               {eventsQuery.isLoading ? (
@@ -337,7 +337,7 @@ export default function DriverPerformance() {
         </TabsContent>
 
         <TabsContent value="comparison" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-white/[0.02] border-slate-700">
             <CardHeader><CardTitle className="text-white">Team Comparison</CardTitle></CardHeader>
             <CardContent>
               {leaderboardQuery.isLoading ? (
@@ -347,7 +347,7 @@ export default function DriverPerformance() {
                   {(leaderboardQuery.data as any)?.map((d: any, idx: number) => (
                     <div key={d.id} className={cn(
                       "flex items-center justify-between p-4 rounded-lg transition-colors",
-                      d.id === selectedDriver ? "bg-blue-500/20 border border-blue-500/30" : "bg-slate-700/30 hover:bg-slate-700/50"
+                      d.id === selectedDriver ? "bg-blue-500/20 border border-blue-500/30" : "bg-slate-700/30 hover:bg-white/[0.04]"
                     )}>
                       <div className="flex items-center gap-4">
                         <div className={cn(

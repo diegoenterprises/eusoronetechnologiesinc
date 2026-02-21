@@ -54,7 +54,7 @@ export default function AuditLogsPage() {
             { label: "Users Active", value: stats.activeUsers || 0, icon: <User className="w-5 h-5 text-green-400" />, color: "text-green-400" },
             { label: "Security Events", value: stats.securityEvents || 0, icon: <Shield className="w-5 h-5 text-red-400" />, color: "text-red-400" },
           ].map(s => (
-            <Card key={s.label} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card key={s.label} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-full bg-slate-700/30">{s.icon}</div>
@@ -73,7 +73,7 @@ export default function AuditLogsPage() {
       </div>
 
       {/* Logs List */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Activity className="w-5 h-5 text-[#1473FF]" />Event Log
@@ -85,9 +85,9 @@ export default function AuditLogsPage() {
           ) : logs.length === 0 ? (
             <div className="p-8 text-center"><ScrollText className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No audit logs found</p></div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(Array.isArray(logs) ? logs : []).map((log: any, i: number) => (
-                <div key={log.id || i} className="p-3 flex items-center justify-between hover:bg-slate-700/20">
+                <div key={log.id || i} className="p-3 flex items-center justify-between hover:bg-white/[0.04]">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-slate-700/30 flex items-center justify-center">
                       {log.action === "delete" ? <AlertTriangle className="w-4 h-4 text-red-400" /> :

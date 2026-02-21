@@ -175,7 +175,7 @@ export function DVIRForm({
   };
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700">
+    <Card className="bg-white/[0.02] border-slate-700">
       <CardHeader className="border-b border-slate-700">
         <div className="flex items-center justify-between">
           <div>
@@ -225,12 +225,12 @@ export function DVIRForm({
           const categoryItems = allItems.filter(item => item.category === category);
 
           return (
-            <div key={category} className="border-b border-slate-700/50 last:border-0">
+            <div key={category} className="border-b border-white/[0.06] last:border-0">
               {/* Category Header */}
               <div 
                 onClick={() => toggleCategory(category)}
                 className={cn(
-                  "flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700/30 transition-colors",
+                  "flex items-center justify-between p-4 cursor-pointer hover:bg-white/[0.06]/30 transition-colors",
                   status === "defect" && "bg-red-500/5"
                 )}
               >
@@ -321,7 +321,7 @@ export function DVIRForm({
                             className={cn(
                               "h-8 px-3 text-xs",
                               itemStatus === "not_applicable" 
-                                ? "bg-slate-600 hover:bg-slate-700" 
+                                ? "bg-slate-600 hover:bg-white/[0.06]" 
                                 : "border-slate-600"
                             )}
                           >
@@ -349,7 +349,7 @@ export function DVIRForm({
             value={defectNotes}
             onChange={(e) => setDefectNotes(e.target.value)}
             placeholder="Describe each defect in detail..."
-            className="bg-slate-700/50 border-slate-600 text-white min-h-[80px]"
+            className="bg-white/[0.04] border-slate-600 text-white min-h-[80px]"
           />
           <Button variant="outline" size="sm" className="mt-2 border-slate-600">
             <Camera className="w-4 h-4 mr-2" />

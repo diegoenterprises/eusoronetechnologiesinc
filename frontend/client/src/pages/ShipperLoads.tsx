@@ -77,7 +77,7 @@ export default function ShipperLoads() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardContent className="p-4 text-center">
             <Package className="w-6 h-6 mx-auto mb-2 text-blue-400" />
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
@@ -113,7 +113,7 @@ export default function ShipperLoads() {
             <p className="text-xs text-slate-400">Delivered</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardContent className="p-4 text-center">
             <DollarSign className="w-6 h-6 mx-auto mb-2 text-green-400" />
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-20 mx-auto" /> : (
@@ -128,10 +128,10 @@ export default function ShipperLoads() {
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search loads..." className="pl-9 bg-slate-700/50 border-slate-600" />
+          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search loads..." className="pl-9 bg-white/[0.04] border-slate-600" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36 bg-slate-700/50 border-slate-600"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="w-36 bg-white/[0.04] border-slate-600"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
@@ -143,7 +143,7 @@ export default function ShipperLoads() {
       </div>
 
       {/* Loads List */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-white/[0.02] border-slate-700">
         <CardContent className="p-0">
           {loadsQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full" />)}</div>
@@ -158,7 +158,7 @@ export default function ShipperLoads() {
           ) : (
             <div className="divide-y divide-slate-700">
               {(loadsQuery.data as any)?.loads?.map((load: any) => (
-                <div key={load.id} className="flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors">
+                <div key={load.id} className="flex items-center justify-between p-4 hover:bg-white/[0.06]/30 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-2 rounded-lg", load.status === "in_transit" ? "bg-blue-500/20" : load.status === "delivered" ? "bg-green-500/20" : "bg-yellow-500/20")}>
                       <Package className={cn("w-5 h-5", load.status === "in_transit" ? "text-blue-400" : load.status === "delivered" ? "text-green-400" : "text-yellow-400")} />

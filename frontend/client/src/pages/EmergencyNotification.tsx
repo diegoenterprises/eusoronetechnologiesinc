@@ -106,7 +106,7 @@ export default function EmergencyNotification() {
     { id: "info", label: `Info (${alerts.filter((a) => a.severity === "info").length})` },
   ];
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -122,11 +122,11 @@ export default function EmergencyNotification() {
         </div>
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
-            <Button variant="outline" size="sm" className={cn("rounded-xl text-xs", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50")} onClick={markAllRead}>
+            <Button variant="outline" size="sm" className={cn("rounded-xl text-xs", isLight ? "border-slate-200" : "bg-white/[0.04] border-white/[0.06]")} onClick={markAllRead}>
               <CheckCircle className="w-3 h-3 mr-1" /> Mark All Read
             </Button>
           )}
-          <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => alertsQuery.refetch?.()}>
+          <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")} onClick={() => alertsQuery.refetch?.()}>
             <RefreshCw className="w-4 h-4" />
           </Button>
         </div>
@@ -165,7 +165,7 @@ export default function EmergencyNotification() {
           { icon: <Eye className="w-5 h-5 text-yellow-400" />, bg: "bg-yellow-500/15", value: String(unreadCount), label: "Unread", color: "text-yellow-400" },
           { icon: <Cloud className="w-5 h-5 text-cyan-400" />, bg: "bg-cyan-500/15", value: String(weatherAlerts.length), label: "Weather", color: "text-cyan-400" },
         ].map((s) => (
-          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
@@ -189,7 +189,7 @@ export default function EmergencyNotification() {
               "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all",
               filter === f.id
                 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
-                : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]"
             )}
           >
             {f.label}

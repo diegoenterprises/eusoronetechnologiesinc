@@ -28,7 +28,7 @@ export default function FleetManagement() {
   const statsQuery = (trpc as any).fleet.getFleetStats.useQuery();
   const stats = statsQuery.data;
 
-  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
   const titleCls = cn("text-lg font-semibold", isLight ? "text-slate-800" : "text-white");
   const valCls = cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white");
 
@@ -93,7 +93,7 @@ export default function FleetManagement() {
 
       {/* ── Search + Filter ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className={cn("relative flex-1 max-w-sm rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+        <div className={cn("relative flex-1 max-w-sm rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]")}>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             value={search}
@@ -112,7 +112,7 @@ export default function FleetManagement() {
                 "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                 status === tab.id
                   ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
-                  : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                  : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]"
               )}
             >
               {tab.label}
@@ -133,7 +133,7 @@ export default function FleetManagement() {
             <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: number) => <Skeleton key={i} className={cn("h-20 w-full rounded-xl", isLight ? "bg-slate-100" : "")} />)}</div>
           ) : (vehiclesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
-              <div className={cn("p-4 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
+              <div className={cn("p-4 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
                 <Truck className="w-8 h-8 text-slate-400" />
               </div>
               <p className={cn("font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No vehicles found</p>
@@ -145,7 +145,7 @@ export default function FleetManagement() {
                 <div key={vehicle.id} className={cn(
                   "p-4 flex items-center justify-between transition-colors",
                   vehicle.status === "out_of_service" && (isLight ? "bg-red-50/50 border-l-3 border-l-red-500" : "bg-red-500/5 border-l-3 border-l-red-500"),
-                  isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20"
+                  isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.04]"
                 )}>
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl",

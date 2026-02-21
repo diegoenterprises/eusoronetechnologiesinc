@@ -83,7 +83,7 @@ export default function TodaySchedule() {
   const currentItem = schedule.find((s) => s.status === "current");
   const hoursRemaining = hos?.hoursAvailable?.driving || hos?.driving || 11;
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[900px] mx-auto">
@@ -97,7 +97,7 @@ export default function TodaySchedule() {
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
           </p>
         </div>
-        <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => currentLoadQuery.refetch?.()}>
+        <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")} onClick={() => currentLoadQuery.refetch?.()}>
           <RefreshCw className="w-4 h-4" />
         </Button>
       </div>
@@ -116,7 +116,7 @@ export default function TodaySchedule() {
               { icon: <Clock className="w-5 h-5 text-blue-400" />, bg: "bg-blue-500/15", value: `${hoursRemaining}h`, label: "HOS Left", color: "text-blue-400" },
               { icon: <Navigation className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/15", value: "287 mi", label: "Remaining", color: "text-purple-400" },
             ].map((s) => (
-              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
@@ -164,7 +164,7 @@ export default function TodaySchedule() {
                         "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border-2 transition-all",
                         isCurrent ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] border-transparent text-white shadow-lg shadow-blue-500/20" :
                         isCompleted ? `${cfg.bg} border-transparent ${cfg.color}` :
-                        isLight ? "bg-white border-slate-200 text-slate-400" : "bg-slate-800/50 border-slate-700/30 text-slate-500"
+                        isLight ? "bg-white border-slate-200 text-slate-400" : "bg-white/[0.02] border-slate-700/30 text-slate-500"
                       )}>
                         {isCompleted ? <CheckCircle className="w-5 h-5" /> : cfg.icon}
                       </div>
@@ -187,7 +187,7 @@ export default function TodaySchedule() {
                           ? "ring-2 ring-[#1473FF]/30 " + (isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/5 border-blue-500/20")
                           : isCompleted
                             ? isLight ? "bg-green-50/50 border-green-200/50" : "bg-green-500/5 border-green-500/10"
-                            : isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+                            : isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
                       )}>
                         <div className="flex items-center justify-between mb-1">
                           <p className={cn("text-sm font-bold", isCurrent ? "text-[#1473FF]" : isCompleted ? "text-green-600 line-through opacity-60" : isLight ? "text-slate-800" : "text-white")}>

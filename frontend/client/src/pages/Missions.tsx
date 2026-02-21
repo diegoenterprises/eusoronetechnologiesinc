@@ -102,7 +102,7 @@ export default function Missions() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -118,7 +118,7 @@ export default function Missions() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
@@ -134,7 +134,7 @@ export default function Missions() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -150,7 +150,7 @@ export default function Missions() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -178,7 +178,7 @@ export default function Missions() {
               size="sm"
               className={selectedType === type.value 
                 ? "bg-purple-600 hover:bg-purple-500" 
-                : "border-slate-600 text-slate-300 hover:bg-slate-700"}
+                : "border-slate-600 text-slate-300 hover:bg-white/[0.06]"}
               onClick={() => setSelectedType(type.value)}
             >
               <Icon className="w-4 h-4 mr-2" />
@@ -343,7 +343,7 @@ function MissionCard({
   const RewardIcon = rewardIcons[mission.rewardType] || Gift;
 
   return (
-    <Card className={`bg-slate-800/50 border-slate-700/50 rounded-xl ${completed ? "opacity-75" : ""}`}>
+    <Card className={`bg-white/[0.02] border-white/[0.06] rounded-xl ${completed ? "opacity-75" : ""}`}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between mb-3">
           <div>

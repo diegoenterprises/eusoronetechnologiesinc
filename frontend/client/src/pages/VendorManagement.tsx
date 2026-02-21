@@ -58,7 +58,7 @@ export default function VendorManagement() {
             { label: "Pending", value: stats.pending || 0, icon: <Building2 className="w-5 h-5 text-yellow-400" />, color: "text-yellow-400" },
             { label: "Avg Rating", value: stats.avgRating?.toFixed(1) || "N/A", icon: <Star className="w-5 h-5 text-purple-400" />, color: "text-purple-400" },
           ].map(s => (
-            <Card key={s.label} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card key={s.label} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-full bg-slate-700/30">{s.icon}</div>
@@ -78,7 +78,7 @@ export default function VendorManagement() {
 
       {/* Detail Panel */}
       {selectedId && detail && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Building2 className="w-5 h-5 text-[#1473FF]" />{detail.name}
@@ -97,7 +97,7 @@ export default function VendorManagement() {
       )}
 
       {/* Vendor List */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Building2 className="w-5 h-5 text-cyan-400" />All Vendors
@@ -110,9 +110,9 @@ export default function VendorManagement() {
           ) : vendors.length === 0 ? (
             <div className="p-8 text-center"><Building2 className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No vendors found</p></div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {vendors.map((v: any) => (
-                <button key={v.id} onClick={() => setSelectedId(v.id)} className="w-full p-3 flex items-center justify-between hover:bg-slate-700/20 text-left">
+                <button key={v.id} onClick={() => setSelectedId(v.id)} className="w-full p-3 flex items-center justify-between hover:bg-white/[0.04] text-left">
                   <div className="flex items-center gap-3">
                     {TYPE_ICONS[v.type] || <Building2 className="w-4 h-4 text-slate-400" />}
                     <div>

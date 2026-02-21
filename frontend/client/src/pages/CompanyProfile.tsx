@@ -105,7 +105,7 @@ export default function CompanyProfile() {
                 onChange={handleLogoUpload}
               />
               <div
-                className="w-24 h-24 rounded-xl bg-slate-700/50 flex items-center justify-center relative cursor-pointer group overflow-hidden border-2 border-transparent hover:border-cyan-500/50 transition-all"
+                className="w-24 h-24 rounded-xl bg-white/[0.04] flex items-center justify-center relative cursor-pointer group overflow-hidden border-2 border-transparent hover:border-cyan-500/50 transition-all"
                 onClick={() => logoInputRef.current?.click()}
                 title="Click to upload company logo"
               >
@@ -143,7 +143,7 @@ export default function CompanyProfile() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -159,7 +159,7 @@ export default function CompanyProfile() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -175,7 +175,7 @@ export default function CompanyProfile() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -191,7 +191,7 @@ export default function CompanyProfile() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -209,7 +209,7 @@ export default function CompanyProfile() {
       </div>
 
       {/* Company Details */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg">Company Details</CardTitle>
         </CardHeader>
@@ -219,22 +219,22 @@ export default function CompanyProfile() {
           ) : isEditing ? (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label className="text-sm text-slate-400 mb-1 block">Company Name</label><Input value={formData.name || ""} onChange={(e: any) => setFormData({ ...formData, name: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">Legal Name</label><Input value={formData.legalName || ""} onChange={(e: any) => setFormData({ ...formData, legalName: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">DOT Number</label><Input value={formData.dotNumber || ""} onChange={(e: any) => setFormData({ ...formData, dotNumber: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">MC Number</label><Input value={formData.mcNumber || ""} onChange={(e: any) => setFormData({ ...formData, mcNumber: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">EIN (Tax ID)</label><Input value={formData.ein || ""} onChange={(e: any) => setFormData({ ...formData, ein: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">Phone</label><Input value={formData.phone || ""} onChange={(e: any) => setFormData({ ...formData, phone: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">Email</label><Input value={formData.email || ""} onChange={(e: any) => setFormData({ ...formData, email: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">Website</label><Input value={formData.website || ""} onChange={(e: any) => setFormData({ ...formData, website: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Company Name</label><Input value={formData.name || ""} onChange={(e: any) => setFormData({ ...formData, name: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Legal Name</label><Input value={formData.legalName || ""} onChange={(e: any) => setFormData({ ...formData, legalName: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">DOT Number</label><Input value={formData.dotNumber || ""} onChange={(e: any) => setFormData({ ...formData, dotNumber: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">MC Number</label><Input value={formData.mcNumber || ""} onChange={(e: any) => setFormData({ ...formData, mcNumber: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">EIN (Tax ID)</label><Input value={formData.ein || ""} onChange={(e: any) => setFormData({ ...formData, ein: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Phone</label><Input value={formData.phone || ""} onChange={(e: any) => setFormData({ ...formData, phone: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Email</label><Input value={formData.email || ""} onChange={(e: any) => setFormData({ ...formData, email: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Website</label><Input value={formData.website || ""} onChange={(e: any) => setFormData({ ...formData, website: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg" /></div>
               </div>
-              <div><label className="text-sm text-slate-400 mb-1 block">Address</label><Input value={formData.address || ""} onChange={(e: any) => setFormData({ ...formData, address: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block">Address</label><Input value={formData.address || ""} onChange={(e: any) => setFormData({ ...formData, address: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg" /></div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><label className="text-sm text-slate-400 mb-1 block">City</label><Input value={formData.city || ""} onChange={(e: any) => setFormData({ ...formData, city: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">State</label><Input value={formData.state || ""} onChange={(e: any) => setFormData({ ...formData, state: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">Zip Code</label><Input value={formData.zipCode || ""} onChange={(e: any) => setFormData({ ...formData, zipCode: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">City</label><Input value={formData.city || ""} onChange={(e: any) => setFormData({ ...formData, city: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">State</label><Input value={formData.state || ""} onChange={(e: any) => setFormData({ ...formData, state: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Zip Code</label><Input value={formData.zipCode || ""} onChange={(e: any) => setFormData({ ...formData, zipCode: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg" /></div>
               </div>
-              <div><label className="text-sm text-slate-400 mb-1 block">Description</label><Textarea value={formData.description || ""} onChange={(e: any) => setFormData({ ...formData, description: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg min-h-[100px]" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block">Description</label><Textarea value={formData.description || ""} onChange={(e: any) => setFormData({ ...formData, description: e.target.value })} className="bg-slate-700/30 border-white/[0.06] rounded-lg min-h-[100px]" /></div>
               <div className="flex gap-3">
                 <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => {
                   // Sanitize: ensure no null values sent to mutation
@@ -242,7 +242,7 @@ export default function CompanyProfile() {
                   Object.entries(formData).forEach(([k, v]) => { clean[k] = v ?? ""; });
                   updateMutation.mutate(clean);
                 }}>Save Changes</Button>
-                <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setIsEditing(false)}>Cancel</Button>
+                <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => setIsEditing(false)}>Cancel</Button>
               </div>
             </div>
           ) : (

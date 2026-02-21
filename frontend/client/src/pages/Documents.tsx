@@ -236,7 +236,7 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
                 const cc = colorClasses(catMeta.color);
                 const aiResult = digitizeResults[idx];
                 return (
-                  <div key={idx} className="rounded-xl bg-slate-800/60 border border-slate-700/50 overflow-hidden">
+                  <div key={idx} className="rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-hidden">
                     <div className="flex items-start gap-3 p-3">
                       <div className={cn("p-2 rounded-lg shrink-0", cc.bg)}>
                         <File className={cn("w-4 h-4", cc.text)} />
@@ -563,7 +563,7 @@ export default function Documents() {
           { label: "Expiring", value: stats.expiring, icon: Clock, color: "yellow" },
           { label: "Expired", value: stats.expired, icon: AlertTriangle, color: "red" },
         ].map(s => (
-          <Card key={s.label} className="bg-slate-800/50 border-slate-700/50 rounded-xl hover:border-slate-600/50 transition-colors">
+          <Card key={s.label} className="bg-white/[0.02] border-white/[0.06] rounded-xl hover:border-white/[0.06] transition-colors">
             <CardContent className="p-4 flex items-center gap-3">
               <div className={cn("p-2.5 rounded-xl", `bg-${s.color}-500/15`)}>
                 <s.icon className={cn("w-5 h-5", `text-${s.color}-400`)} />
@@ -596,7 +596,7 @@ export default function Documents() {
                 "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-all border",
                 isActive
                   ? `${cc.bg} ${cc.text} border-transparent ring-1 ${cc.ring}`
-                  : "bg-slate-800/40 text-slate-400 border-slate-700/50 hover:bg-slate-800 hover:text-white"
+                  : "bg-slate-800/40 text-slate-400 border-white/[0.06] hover:bg-slate-800 hover:text-white"
               )}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -622,7 +622,7 @@ export default function Documents() {
             value={searchTerm}
             onChange={(e: any) => setSearchTerm(e.target.value)}
             placeholder="Search by name, type, or tag..."
-            className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50 h-9 text-sm"
+            className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg focus:border-cyan-500/50 h-9 text-sm"
           />
         </div>
 
@@ -675,9 +675,9 @@ export default function Documents() {
           {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
         </div>
       ) : documents.length === 0 ? (
-        <Card className="bg-slate-800/30 border-slate-700/50 rounded-xl">
+        <Card className="bg-slate-800/30 border-white/[0.06] rounded-xl">
           <CardContent className="py-20 text-center">
-            <div className="p-5 rounded-2xl bg-slate-800/60 w-20 h-20 mx-auto mb-5 flex items-center justify-center">
+            <div className="p-5 rounded-2xl bg-white/[0.03] w-20 h-20 mx-auto mb-5 flex items-center justify-center">
               <FolderOpen className="w-10 h-10 text-slate-600" />
             </div>
             <p className="text-slate-300 text-lg font-medium">No documents yet</p>
@@ -694,14 +694,14 @@ export default function Documents() {
         </Card>
       ) : viewMode === "list" ? (
         /* LIST VIEW */
-        <Card className="bg-slate-800/30 border-slate-700/50 rounded-xl overflow-hidden">
+        <Card className="bg-slate-800/30 border-white/[0.06] rounded-xl overflow-hidden">
           <div className="divide-y divide-slate-700/40">
             {documents.map((doc: any) => {
               const catMeta = getCategoryMeta(doc.category);
               const cc = colorClasses(catMeta.color);
               const Icon = catMeta.icon;
               return (
-                <div key={doc.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-700/15 transition-colors group">
+                <div key={doc.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.06]/15 transition-colors group">
                   <div className={cn("p-2.5 rounded-xl shrink-0", cc.bg)}>
                     <Icon className={cn("w-5 h-5", cc.text)} />
                   </div>
@@ -721,14 +721,14 @@ export default function Documents() {
                     {statusBadge(doc.status)}
                     <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors"
                         onClick={() => handleView(doc)}
                         title="Preview document"
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors"
                         onClick={() => handleDownload(doc)}
                         title="Download document"
                       >
@@ -755,7 +755,7 @@ export default function Documents() {
             const cc = colorClasses(catMeta.color);
             const Icon = catMeta.icon;
             return (
-              <Card key={doc.id} className="bg-slate-800/40 border-slate-700/50 rounded-xl hover:border-slate-600/50 transition-all group cursor-pointer">
+              <Card key={doc.id} className="bg-slate-800/40 border-white/[0.06] rounded-xl hover:border-white/[0.06] transition-all group cursor-pointer">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className={cn("p-2.5 rounded-xl", cc.bg)}>
@@ -770,14 +770,14 @@ export default function Documents() {
                   )}
                   <div className="flex gap-1 mt-3 pt-3 border-t border-slate-700/40 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors"
                       onClick={() => handleView(doc)}
                       title="Preview document"
                     >
                       <Eye className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors"
                       onClick={() => handleDownload(doc)}
                       title="Download document"
                     >

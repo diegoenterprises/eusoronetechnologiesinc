@@ -214,7 +214,7 @@ export default function RegisterEscort() {
                 value={formData.firstName}
                 onChange={(e: any) => updateFormData({ firstName: e.target.value })}
                 placeholder="John"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -223,7 +223,7 @@ export default function RegisterEscort() {
                 value={formData.lastName}
                 onChange={(e: any) => updateFormData({ lastName: e.target.value })}
                 placeholder="Smith"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -236,7 +236,7 @@ export default function RegisterEscort() {
                 value={formData.email}
                 onChange={(e: any) => updateFormData({ email: e.target.value })}
                 placeholder="john@email.com"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -246,7 +246,7 @@ export default function RegisterEscort() {
                 value={formData.phone}
                 onChange={(e: any) => updateFormData({ phone: e.target.value })}
                 placeholder="(555) 123-4567"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -257,7 +257,7 @@ export default function RegisterEscort() {
               type="date"
               value={formData.dateOfBirth}
               onChange={(e: any) => updateFormData({ dateOfBirth: e.target.value })}
-              className="bg-slate-700/50 border-slate-600 text-white"
+              className="bg-white/[0.04] border-slate-600 text-white"
             />
           </div>
         </div>
@@ -283,7 +283,7 @@ export default function RegisterEscort() {
               value={formData.streetAddress}
               onChange={(e: any) => updateFormData({ streetAddress: e.target.value })}
               placeholder="123 Main St"
-              className="bg-slate-700/50 border-slate-600 text-white"
+              className="bg-white/[0.04] border-slate-600 text-white"
             />
           </div>
 
@@ -294,13 +294,13 @@ export default function RegisterEscort() {
                 value={formData.city}
                 onChange={(e: any) => updateFormData({ city: e.target.value })}
                 placeholder="Houston"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">State <span className="text-red-400">*</span></Label>
               <Select value={formData.state} onValueChange={(v: any) => updateFormData({ state: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="State" />
                 </SelectTrigger>
                 <SelectContent>
@@ -316,7 +316,7 @@ export default function RegisterEscort() {
                 value={formData.zipCode}
                 onChange={(e: any) => updateFormData({ zipCode: e.target.value })}
                 placeholder="77001"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -324,7 +324,7 @@ export default function RegisterEscort() {
           <div className="space-y-2">
             <Label className="text-slate-300">Service Radius (miles)</Label>
             <Select value={formData.serviceRadius} onValueChange={(v: any) => updateFormData({ serviceRadius: v })}>
-              <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+              <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -360,13 +360,13 @@ export default function RegisterEscort() {
                 value={formData.licenseNumber}
                 onChange={(e: any) => updateFormData({ licenseNumber: e.target.value })}
                 placeholder="12345678"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Issuing State <span className="text-red-400">*</span></Label>
               <Select value={formData.licenseState} onValueChange={(v: any) => updateFormData({ licenseState: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="Select state" />
                 </SelectTrigger>
                 <SelectContent>
@@ -385,13 +385,13 @@ export default function RegisterEscort() {
                 type="date"
                 value={formData.licenseExpiration}
                 onChange={(e: any) => updateFormData({ licenseExpiration: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">License Class</Label>
               <Select value={formData.licenseClass} onValueChange={(v: any) => updateFormData({ licenseClass: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="Select class" />
                 </SelectTrigger>
                 <SelectContent>
@@ -477,7 +477,7 @@ export default function RegisterEscort() {
                           [state]: e.target.value 
                         }
                       })}
-                      className="bg-slate-700/50 border-slate-600 text-white text-sm"
+                      className="bg-white/[0.04] border-slate-600 text-white text-sm"
                     />
                     <Input
                       type="date"
@@ -488,7 +488,7 @@ export default function RegisterEscort() {
                           [state]: e.target.value 
                         }
                       })}
-                      className="bg-slate-700/50 border-slate-600 text-white text-sm"
+                      className="bg-white/[0.04] border-slate-600 text-white text-sm"
                     />
                   </div>
                 ))}
@@ -512,7 +512,7 @@ export default function RegisterEscort() {
                 value={formData.vehicleYear}
                 onChange={(e: any) => updateFormData({ vehicleYear: e.target.value })}
                 placeholder="2022"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -521,7 +521,7 @@ export default function RegisterEscort() {
                 value={formData.vehicleMake}
                 onChange={(e: any) => updateFormData({ vehicleMake: e.target.value })}
                 placeholder="Ford"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -530,7 +530,7 @@ export default function RegisterEscort() {
                 value={formData.vehicleModel}
                 onChange={(e: any) => updateFormData({ vehicleModel: e.target.value })}
                 placeholder="F-150"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -539,7 +539,7 @@ export default function RegisterEscort() {
                 value={formData.vehicleColor}
                 onChange={(e: any) => updateFormData({ vehicleColor: e.target.value })}
                 placeholder="White"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -551,13 +551,13 @@ export default function RegisterEscort() {
                 value={formData.vehiclePlate}
                 onChange={(e: any) => updateFormData({ vehiclePlate: e.target.value })}
                 placeholder="ABC-1234"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Plate State <span className="text-red-400">*</span></Label>
               <Select value={formData.vehicleState} onValueChange={(v: any) => updateFormData({ vehicleState: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="Select state" />
                 </SelectTrigger>
                 <SelectContent>
@@ -616,7 +616,7 @@ export default function RegisterEscort() {
                 value={formData.insuranceCatalyst}
                 onChange={(e: any) => updateFormData({ insuranceCatalyst: e.target.value })}
                 placeholder="ABC Insurance"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -625,7 +625,7 @@ export default function RegisterEscort() {
                 value={formData.policyNumber}
                 onChange={(e: any) => updateFormData({ policyNumber: e.target.value })}
                 placeholder="POL-123456"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -634,7 +634,7 @@ export default function RegisterEscort() {
             <div className="space-y-2">
               <Label className="text-slate-300">Coverage Amount <span className="text-red-400">*</span></Label>
               <Select value={formData.coverageAmount} onValueChange={(v: any) => updateFormData({ coverageAmount: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="Select coverage" />
                 </SelectTrigger>
                 <SelectContent>
@@ -651,7 +651,7 @@ export default function RegisterEscort() {
                 type="date"
                 value={formData.expirationDate}
                 onChange={(e: any) => updateFormData({ expirationDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -710,7 +710,7 @@ export default function RegisterEscort() {
             <div className="space-y-2">
               <Label className="text-slate-300">Years of Experience</Label>
               <Select value={formData.yearsExperience} onValueChange={(v: any) => updateFormData({ yearsExperience: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
@@ -728,7 +728,7 @@ export default function RegisterEscort() {
                 value={formData.previousEmployer}
                 onChange={(e: any) => updateFormData({ previousEmployer: e.target.value })}
                 placeholder="Company name (if any)"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>

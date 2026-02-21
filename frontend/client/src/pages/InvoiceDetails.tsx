@@ -59,7 +59,7 @@ export default function InvoiceDetails() {
     return (
       <div className="p-4 md:p-6">
         <div className="text-center py-16">
-          <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+          <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
             <FileText className="w-10 h-10 text-slate-500" />
           </div>
           <p className="text-slate-400 text-lg">Invoice not found</p>
@@ -90,7 +90,7 @@ export default function InvoiceDetails() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+          <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
             <Download className="w-4 h-4 mr-2" />Download
           </Button>
           {invoice.status === "draft" && (
@@ -126,7 +126,7 @@ export default function InvoiceDetails() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bill To */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Building className="w-5 h-5 text-cyan-400" />
@@ -144,7 +144,7 @@ export default function InvoiceDetails() {
         </Card>
 
         {/* Invoice Details */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Calendar className="w-5 h-5 text-cyan-400" />
@@ -174,7 +174,7 @@ export default function InvoiceDetails() {
         </Card>
 
         {/* Line Items */}
-        <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="lg:col-span-2 bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Line Items</CardTitle>
           </CardHeader>
@@ -199,7 +199,7 @@ export default function InvoiceDetails() {
                 ))}
                 
                 {/* Totals */}
-                <div className="border-t border-slate-700/50 pt-4 mt-4 space-y-2">
+                <div className="border-t border-white/[0.06] pt-4 mt-4 space-y-2">
                   <div className="flex justify-between text-slate-400">
                     <span>Subtotal</span>
                     <span>${(invoice.subtotal || 0).toLocaleString()}</span>
@@ -216,7 +216,7 @@ export default function InvoiceDetails() {
                       <span>-${(invoice.discount || 0).toLocaleString()}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-white font-bold text-lg pt-2 border-t border-slate-700/50">
+                  <div className="flex justify-between text-white font-bold text-lg pt-2 border-t border-white/[0.06]">
                     <span>Total</span>
                     <span>${(invoice.total || 0).toLocaleString()}</span>
                   </div>

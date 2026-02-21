@@ -61,7 +61,7 @@ export default function DeductionsBreakdown() {
     { id: "advance", label: "Advances" },
   ];
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -76,7 +76,7 @@ export default function DeductionsBreakdown() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => walletQuery.refetch?.()}>
+          <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")} onClick={() => walletQuery.refetch?.()}>
             <RefreshCw className="w-4 h-4" />
           </Button>
           <Button size="sm" className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl" onClick={() => toast.info("Downloading deduction report...")}>
@@ -93,7 +93,7 @@ export default function DeductionsBreakdown() {
           { icon: <FileText className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/15", value: String(deductions.length), label: "Line Items", color: "text-purple-400" },
           { icon: <PieChart className="w-5 h-5 text-cyan-400" />, bg: "bg-cyan-500/15", value: DEDUCTION_TYPES.length.toString(), label: "Categories", color: "text-cyan-400" },
         ].map((s) => (
-          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
@@ -117,7 +117,7 @@ export default function DeductionsBreakdown() {
               "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all",
               filter === f.id
                 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
-                : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]"
             )}
           >
             {f.label}
@@ -145,7 +145,7 @@ export default function DeductionsBreakdown() {
                 return (
                   <div key={dt.id} className={cn(
                     "flex items-center gap-4 p-4 rounded-xl border transition-colors",
-                    isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
+                    isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
                   )}>
                     <div className={cn("p-2.5 rounded-lg flex-shrink-0", dt.bg, dt.color)}>
                       {dt.icon}
@@ -191,7 +191,7 @@ export default function DeductionsBreakdown() {
                 {deductions.slice(0, 10).map((d: any, i: number) => (
                   <div key={i} className={cn(
                     "flex items-center justify-between p-3 rounded-xl border",
-                    isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+                    isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
                   )}>
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-red-500/10">

@@ -206,7 +206,7 @@ export default function RegisterShipper() {
                 value={formData.companyName}
                 onChange={(e: any) => updateFormData({ companyName: e.target.value })}
                 placeholder="ABC Chemical Corp"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -216,7 +216,7 @@ export default function RegisterShipper() {
                 value={formData.dba}
                 onChange={(e: any) => updateFormData({ dba: e.target.value })}
                 placeholder="Doing Business As"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -227,7 +227,7 @@ export default function RegisterShipper() {
                 Company Type <span className="text-red-400">*</span>
               </Label>
               <Select value={formData.companyType} onValueChange={(v: any) => updateFormData({ companyType: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -248,7 +248,7 @@ export default function RegisterShipper() {
                 value={formData.yearEstablished}
                 onChange={(e: any) => updateFormData({ yearEstablished: e.target.value })}
                 placeholder="2000"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -263,7 +263,7 @@ export default function RegisterShipper() {
                 value={formData.einNumber}
                 onChange={(e: any) => updateFormData({ einNumber: e.target.value })}
                 placeholder="XX-XXXXXXX"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -273,7 +273,7 @@ export default function RegisterShipper() {
                 value={formData.dunsNumber}
                 onChange={(e: any) => updateFormData({ dunsNumber: e.target.value })}
                 placeholder="Optional"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -304,7 +304,7 @@ export default function RegisterShipper() {
                 value={formData.primaryContactName}
                 onChange={(e: any) => updateFormData({ primaryContactName: e.target.value })}
                 placeholder="John Smith"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -314,7 +314,7 @@ export default function RegisterShipper() {
                 value={formData.primaryContactTitle}
                 onChange={(e: any) => updateFormData({ primaryContactTitle: e.target.value })}
                 placeholder="Logistics Manager"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -332,7 +332,7 @@ export default function RegisterShipper() {
                   value={formData.primaryContactEmail}
                   onChange={(e: any) => updateFormData({ primaryContactEmail: e.target.value })}
                   placeholder="john@company.com"
-                  className="bg-slate-700/50 border-slate-600 text-white pl-10"
+                  className="bg-white/[0.04] border-slate-600 text-white pl-10"
                 />
               </div>
             </div>
@@ -348,7 +348,7 @@ export default function RegisterShipper() {
                   value={formData.primaryContactPhone}
                   onChange={(e: any) => updateFormData({ primaryContactPhone: e.target.value })}
                   placeholder="(555) 123-4567"
-                  className="bg-slate-700/50 border-slate-600 text-white pl-10"
+                  className="bg-white/[0.04] border-slate-600 text-white pl-10"
                 />
               </div>
             </div>
@@ -362,7 +362,7 @@ export default function RegisterShipper() {
               value={formData.billingEmail}
               onChange={(e: any) => updateFormData({ billingEmail: e.target.value })}
               placeholder="billing@company.com (if different)"
-              className="bg-slate-700/50 border-slate-600 text-white"
+              className="bg-white/[0.04] border-slate-600 text-white"
             />
           </div>
         </div>
@@ -395,7 +395,7 @@ export default function RegisterShipper() {
               value={formData.streetAddress}
               onChange={(e: any) => updateFormData({ streetAddress: e.target.value })}
               placeholder="123 Industrial Blvd"
-              className="bg-slate-700/50 border-slate-600 text-white"
+              className="bg-white/[0.04] border-slate-600 text-white"
             />
           </div>
 
@@ -409,7 +409,7 @@ export default function RegisterShipper() {
                 value={formData.city}
                 onChange={(e: any) => updateFormData({ city: e.target.value })}
                 placeholder="Houston"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -417,7 +417,7 @@ export default function RegisterShipper() {
                 State <span className="text-red-400">*</span>
               </Label>
               <Select value={formData.state} onValueChange={(v: any) => updateFormData({ state: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="State" />
                 </SelectTrigger>
                 <SelectContent>
@@ -436,7 +436,7 @@ export default function RegisterShipper() {
                 value={formData.zipCode}
                 onChange={(e: any) => updateFormData({ zipCode: e.target.value })}
                 placeholder="77001"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -482,7 +482,7 @@ export default function RegisterShipper() {
                   value={formData.phmsamRegistrationNumber}
                   onChange={(e: any) => updateFormData({ phmsamRegistrationNumber: e.target.value })}
                   placeholder="PHMSA-XXXXXX"
-                  className="bg-slate-700/50 border-slate-600 text-white pl-10"
+                  className="bg-white/[0.04] border-slate-600 text-white pl-10"
                 />
               </div>
             </div>
@@ -495,7 +495,7 @@ export default function RegisterShipper() {
                 value={formData.epaId}
                 onChange={(e: any) => updateFormData({ epaId: e.target.value })}
                 placeholder="TXD123456789"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -543,7 +543,7 @@ export default function RegisterShipper() {
                 value={formData.insuranceCatalyst}
                 onChange={(e: any) => updateFormData({ insuranceCatalyst: e.target.value })}
                 placeholder="ABC Insurance Co"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -555,7 +555,7 @@ export default function RegisterShipper() {
                 value={formData.policyNumber}
                 onChange={(e: any) => updateFormData({ policyNumber: e.target.value })}
                 placeholder="POL-123456"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -566,7 +566,7 @@ export default function RegisterShipper() {
                 Coverage Amount <span className="text-red-400">*</span>
               </Label>
               <Select value={formData.coverageAmount} onValueChange={(v: any) => updateFormData({ coverageAmount: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="Select coverage" />
                 </SelectTrigger>
                 <SelectContent>
@@ -586,7 +586,7 @@ export default function RegisterShipper() {
                 type="date"
                 value={formData.expirationDate}
                 onChange={(e: any) => updateFormData({ expirationDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>

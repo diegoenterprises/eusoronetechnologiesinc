@@ -35,14 +35,14 @@ export default function ShipperProfile() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Your company information and stats</p>
         </div>
-        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+        <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
           <Edit className="w-4 h-4 mr-2" />Edit Profile
         </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Company Info */}
-        <Card className="lg:col-span-1 bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="lg:col-span-1 bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-6">
             {profileQuery.isLoading ? (
               <div className="space-y-4">
@@ -89,7 +89,7 @@ export default function ShipperProfile() {
         <div className="lg:col-span-2 space-y-6">
           {/* Stats Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardContent className="p-5">
                 <div className="flex items-center gap-4">
                   <div className="p-3 rounded-full bg-blue-500/20">
@@ -105,7 +105,7 @@ export default function ShipperProfile() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardContent className="p-5">
                 <div className="flex items-center gap-4">
                   <div className="p-3 rounded-full bg-emerald-500/20">
@@ -121,7 +121,7 @@ export default function ShipperProfile() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardContent className="p-5">
                 <div className="flex items-center gap-4">
                   <div className="p-3 rounded-full bg-green-500/20">
@@ -137,7 +137,7 @@ export default function ShipperProfile() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardContent className="p-5">
                 <div className="flex items-center gap-4">
                   <div className="p-3 rounded-full bg-purple-500/20">
@@ -155,7 +155,7 @@ export default function ShipperProfile() {
           </div>
 
           {/* Monthly Volume */}
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg">Monthly Volume</CardTitle>
             </CardHeader>
@@ -179,7 +179,7 @@ export default function ShipperProfile() {
           </Card>
 
           {/* Recent Loads */}
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg">Recent Loads</CardTitle>
             </CardHeader>
@@ -189,9 +189,9 @@ export default function ShipperProfile() {
               ) : (recentLoadsQuery.data as any)?.length === 0 ? (
                 <p className="text-slate-400 text-center py-8">No recent loads</p>
               ) : (
-                <div className="divide-y divide-slate-700/50">
+                <div className="divide-y divide-white/[0.04]">
                   {(recentLoadsQuery.data as any)?.map((load: any) => (
-                    <div key={load.id} className="p-4 hover:bg-slate-700/20 transition-colors">
+                    <div key={load.id} className="p-4 hover:bg-white/[0.04] transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-white font-medium">{load.loadNumber}</p>

@@ -168,7 +168,7 @@ export default function RegisterDispatch() {
                 value={formData.firstName}
                 onChange={(e: any) => updateFormData({ firstName: e.target.value })}
                 placeholder="John"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -179,7 +179,7 @@ export default function RegisterDispatch() {
                 value={formData.lastName}
                 onChange={(e: any) => updateFormData({ lastName: e.target.value })}
                 placeholder="Smith"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -194,7 +194,7 @@ export default function RegisterDispatch() {
                 value={formData.email}
                 onChange={(e: any) => updateFormData({ email: e.target.value })}
                 placeholder="john@company.com"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -206,7 +206,7 @@ export default function RegisterDispatch() {
                 value={formData.phone}
                 onChange={(e: any) => updateFormData({ phone: e.target.value })}
                 placeholder="(555) 123-4567"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -273,7 +273,7 @@ export default function RegisterDispatch() {
                 value={formData.companyName}
                 onChange={(e: any) => updateFormData({ companyName: e.target.value })}
                 placeholder="ABC Trucking LLC"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -284,7 +284,7 @@ export default function RegisterDispatch() {
                 value={formData.companyUsdot}
                 onChange={(e: any) => updateFormData({ companyUsdot: e.target.value })}
                 placeholder="1234567"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -296,13 +296,13 @@ export default function RegisterDispatch() {
                 value={formData.jobTitle}
                 onChange={(e: any) => updateFormData({ jobTitle: e.target.value })}
                 placeholder="Dispatcher, Load Coordinator, etc."
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Department</Label>
               <Select value={formData.department} onValueChange={(v: any) => updateFormData({ department: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -335,7 +335,7 @@ export default function RegisterDispatch() {
           <div className="space-y-2">
             <Label className="text-slate-300">Years of Dispatch Experience</Label>
             <Select value={formData.yearsExperience} onValueChange={(v: any) => updateFormData({ yearsExperience: v })}>
-              <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+              <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                 <SelectValue placeholder="Select experience level" />
               </SelectTrigger>
               <SelectContent>
@@ -392,7 +392,7 @@ export default function RegisterDispatch() {
                 type="date"
                 value={formData.hazmatTrainingDate}
                 onChange={(e: any) => updateFormData({ hazmatTrainingDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -401,7 +401,7 @@ export default function RegisterDispatch() {
                 value={formData.hazmatTrainingProvider}
                 onChange={(e: any) => updateFormData({ hazmatTrainingProvider: e.target.value })}
                 placeholder="J.J. Keller, company training, etc."
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -445,7 +445,7 @@ export default function RegisterDispatch() {
               value={formData.otherCertifications}
               onChange={(e: any) => updateFormData({ otherCertifications: e.target.value })}
               placeholder="List any other relevant certifications"
-              className="bg-slate-700/50 border-slate-600 text-white"
+              className="bg-white/[0.04] border-slate-600 text-white"
             />
           </div>
 

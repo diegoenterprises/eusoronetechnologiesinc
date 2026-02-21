@@ -60,7 +60,7 @@ export default function FactoringDebtors() {
     creditRating: d.creditRating || "N/A",
   }));
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
   const sub = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
 
   const getRatingColor = (rating: string) => {
@@ -140,7 +140,7 @@ export default function FactoringDebtors() {
               placeholder="Search debtors..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className={cn("pl-9 rounded-xl h-11", isLight ? "border-slate-200" : "border-slate-700 bg-slate-800/50")}
+              className={cn("pl-9 rounded-xl h-11", isLight ? "border-slate-200" : "border-slate-700 bg-white/[0.02]")}
             />
           </div>
 
@@ -209,7 +209,7 @@ export default function FactoringDebtors() {
                 placeholder="Company name or MC/DOT #"
                 value={creditCheckEntity}
                 onChange={(e) => setCreditCheckEntity(e.target.value)}
-                className={cn("rounded-xl h-10 mb-2", isLight ? "border-slate-200" : "border-slate-700 bg-slate-800/50")}
+                className={cn("rounded-xl h-10 mb-2", isLight ? "border-slate-200" : "border-slate-700 bg-white/[0.02]")}
               />
               <Button
                 onClick={runCreditCheck}

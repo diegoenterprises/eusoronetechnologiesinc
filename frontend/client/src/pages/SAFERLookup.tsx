@@ -52,16 +52,16 @@ export default function SAFERLookup() {
         </div>
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-slate-700/50 rounded-lg p-1">
+            <div className="flex items-center gap-2 bg-white/[0.04] rounded-lg p-1">
               <Button size="sm" variant={searchType === "mc" ? "default" : "ghost"} className={cn("rounded-lg", searchType === "mc" && "bg-gradient-to-r from-cyan-600 to-emerald-600")} onClick={() => setSearchType("mc")}>MC#</Button>
               <Button size="sm" variant={searchType === "dot" ? "default" : "ghost"} className={cn("rounded-lg", searchType === "dot" && "bg-gradient-to-r from-cyan-600 to-emerald-600")} onClick={() => setSearchType("dot")}>DOT#</Button>
             </div>
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input value={searchValue} onChange={(e: any) => setSearchValue(e.target.value)} placeholder={`Enter ${searchType.toUpperCase()} number...`} className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg" onKeyDown={(e: any) => e.key === "Enter" && handleSearch()} />
+              <Input value={searchValue} onChange={(e: any) => setSearchValue(e.target.value)} placeholder={`Enter ${searchType.toUpperCase()} number...`} className="pl-9 bg-white/[0.04] border-white/[0.06] rounded-lg" onKeyDown={(e: any) => e.key === "Enter" && handleSearch()} />
             </div>
             <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={handleSearch} disabled={lookupMutation.isPending}>
               <Search className="w-4 h-4 mr-2" />Search
@@ -94,16 +94,16 @@ export default function SAFERLookup() {
                 {getStatusBadge(result.operatingStatus)}
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">MC Number</p><p className="text-white font-medium">{result.mcNumber || "N/A"}</p></div>
-                <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">DOT Number</p><p className="text-white font-medium">{result.dotNumber}</p></div>
-                <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">Entity Type</p><p className="text-white font-medium">{result.entityType}</p></div>
-                <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">Power Units</p><p className="text-white font-medium">{result.powerUnits}</p></div>
+                <div className="p-3 rounded-lg bg-white/[0.02]"><p className="text-xs text-slate-500">MC Number</p><p className="text-white font-medium">{result.mcNumber || "N/A"}</p></div>
+                <div className="p-3 rounded-lg bg-white/[0.02]"><p className="text-xs text-slate-500">DOT Number</p><p className="text-white font-medium">{result.dotNumber}</p></div>
+                <div className="p-3 rounded-lg bg-white/[0.02]"><p className="text-xs text-slate-500">Entity Type</p><p className="text-white font-medium">{result.entityType}</p></div>
+                <div className="p-3 rounded-lg bg-white/[0.02]"><p className="text-xs text-slate-500">Power Units</p><p className="text-white font-medium">{result.powerUnits}</p></div>
               </div>
             </CardContent>
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Building className="w-5 h-5 text-cyan-400" />Company Info</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <div><p className="text-xs text-slate-500">Address</p><p className="text-white">{result.address}</p></div>
@@ -112,7 +112,7 @@ export default function SAFERLookup() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Truck className="w-5 h-5 text-purple-400" />Fleet Info</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between"><span className="text-slate-400">Drivers</span><span className="text-white font-medium">{result.drivers}</span></div>
@@ -121,7 +121,7 @@ export default function SAFERLookup() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-green-400" />Insurance</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 {result.insurance?.map((ins: any, i: number) => (
@@ -136,7 +136,7 @@ export default function SAFERLookup() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-yellow-400" />Safety Rating</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between"><span className="text-slate-400">Rating</span><span className={cn("font-medium", result.safetyRating === "Satisfactory" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : result.safetyRating === "Conditional" ? "text-yellow-400" : "text-red-400")}>{result.safetyRating || "Not Rated"}</span></div>
@@ -149,7 +149,7 @@ export default function SAFERLookup() {
       )}
 
       {!lookupMutation.isPending && !result && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-12 text-center">
             <Shield className="w-16 h-16 text-slate-500 mx-auto mb-4" />
             <p className="text-slate-400">Enter an MC or DOT number to lookup catalyst information</p>

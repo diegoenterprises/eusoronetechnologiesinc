@@ -65,7 +65,7 @@ export default function VehicleInspections() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -81,7 +81,7 @@ export default function VehicleInspections() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -97,7 +97,7 @@ export default function VehicleInspections() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -113,7 +113,7 @@ export default function VehicleInspections() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -167,10 +167,10 @@ export default function VehicleInspections() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search by vehicle..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search by vehicle..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
         </div>
         <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
+          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -183,7 +183,7 @@ export default function VehicleInspections() {
       </div>
 
       {/* Inspections List */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <FileText className="w-5 h-5 text-cyan-400" />
@@ -199,12 +199,12 @@ export default function VehicleInspections() {
               <p className="text-slate-400">No inspection records found</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(inspectionsQuery.data as any)?.map((inspection: any) => (
                 <div key={inspection.id} className={cn("p-4", inspection.result === "fail" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className={cn("p-3 rounded-xl", inspection.result === "pass" ? "bg-green-500/20" : inspection.result === "fail" ? "bg-red-500/20" : "bg-slate-700/50")}>
+                      <div className={cn("p-3 rounded-xl", inspection.result === "pass" ? "bg-green-500/20" : inspection.result === "fail" ? "bg-red-500/20" : "bg-white/[0.04]")}>
                         <Truck className={cn("w-5 h-5", inspection.result === "pass" ? "text-green-400" : inspection.result === "fail" ? "text-red-400" : "text-slate-400")} />
                       </div>
                       <div>
@@ -220,7 +220,7 @@ export default function VehicleInspections() {
                         </div>
                       </div>
                     </div>
-                    <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+                    <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
                       <FileText className="w-4 h-4 mr-1" />View
                     </Button>
                   </div>

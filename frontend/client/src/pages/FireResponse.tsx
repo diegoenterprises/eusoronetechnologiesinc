@@ -56,7 +56,7 @@ export default function FireResponse() {
     ? FIRE_CLASSES.find((fc) => fc.hazardClass === selectedClass)
     : activeFireClass;
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -114,7 +114,7 @@ export default function FireResponse() {
                   ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
                   : isLight
                     ? "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                    : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                    : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]"
               )}
             >
               {fc.hazardClass} {fc.name}
@@ -216,7 +216,7 @@ export default function FireResponse() {
             ].map((item) => (
               <div key={item.step} className={cn(
                 "flex items-center gap-4 p-4 rounded-xl border",
-                isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+                isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
               )}>
                 <div className={cn(
                   "w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0",

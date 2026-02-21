@@ -61,7 +61,7 @@ function IRPComplianceSection() {
   const regs: any[] = irpRegsQuery?.data || [];
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+    <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
       <CardHeader className="pb-3">
         <CardTitle className="text-white text-lg flex items-center gap-2">
           <Truck className="w-5 h-5 text-cyan-400" />
@@ -102,7 +102,7 @@ function IRPComplianceSection() {
               {regs.length === 0 ? (
                 <div className="p-4 text-center text-slate-400 text-sm">No IRP registrations found</div>
               ) : regs.map((reg: any) => (
-                <div key={reg.id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-700/20 hover:bg-slate-700/40 transition-colors">
+                <div key={reg.id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-700/20 hover:bg-white/[0.06]/40 transition-colors">
                   <div className="flex items-center gap-3">
                     <span className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-xs font-bold text-cyan-400">{reg.state}</span>
                     <div>
@@ -215,7 +215,7 @@ export default function ComplianceDashboard() {
           { label: "Expired", count: ds.totalExpired, color: "text-red-400", bg: "bg-red-500/20", icon: <XCircle className="w-5 h-5" /> },
           { label: "Rejected", count: ds.totalRejected, color: "text-red-400", bg: "bg-red-500/20", icon: <XCircle className="w-5 h-5" /> },
         ].map(s => (
-          <Card key={s.label} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card key={s.label} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardContent className="p-4 flex items-center gap-3">
               <div className={cn("p-2 rounded-lg", s.bg, s.color)}>{s.icon}</div>
               <div>
@@ -235,7 +235,7 @@ export default function ComplianceDashboard() {
             onClick={() => setFilterStatus(f)}
             className={cn(
               "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-              filterStatus === f ? "bg-[#1473FF] text-white" : "bg-slate-800/50 text-slate-400 hover:bg-slate-700/50"
+              filterStatus === f ? "bg-[#1473FF] text-white" : "bg-white/[0.02] text-slate-400 hover:bg-white/[0.04]"
             )}
           >
             {f === "ALL" ? "All" : (STATUS_CONFIG[f]?.label || f)} {f !== "ALL" && `(${reqs.filter(r => r.docStatus === f).length})`}
@@ -257,8 +257,8 @@ export default function ComplianceDashboard() {
             const icon = isState ? <MapPin className="w-4 h-4 text-cyan-400" /> : (GROUP_ICONS[group] || <FileText className="w-4 h-4 text-slate-400" />);
 
             return (
-              <Card key={group} className="bg-slate-800/50 border-slate-700/50 rounded-xl overflow-hidden">
-                <button onClick={() => toggleGroup(group)} className="w-full flex items-center justify-between p-4 hover:bg-slate-700/20 transition-colors text-left">
+              <Card key={group} className="bg-white/[0.02] border-white/[0.06] rounded-xl overflow-hidden">
+                <button onClick={() => toggleGroup(group)} className="w-full flex items-center justify-between p-4 hover:bg-white/[0.04] transition-colors text-left">
                   <div className="flex items-center gap-3">
                     {icon}
                     <div>
@@ -281,7 +281,7 @@ export default function ComplianceDashboard() {
                       const st = STATUS_CONFIG[req.docStatus] || STATUS_CONFIG.MISSING;
                       const pr = PRIORITY_CONFIG[req.priority] || PRIORITY_CONFIG.MEDIUM;
                       return (
-                        <div key={`${req.documentTypeId}-${req.stateCode || ""}-${idx}`} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/10 transition-colors border-b border-slate-700/10 last:border-0">
+                        <div key={`${req.documentTypeId}-${req.stateCode || ""}-${idx}`} className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.06]/10 transition-colors border-b border-slate-700/10 last:border-0">
                           <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", st.bg, st.color)}>{st.icon}</div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -293,17 +293,17 @@ export default function ComplianceDashboard() {
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             {req.statePortalUrl && (
-                              <a href={req.statePortalUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-slate-700/30 hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors" title="State Portal">
+                              <a href={req.statePortalUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-slate-700/30 hover:bg-white/[0.06]/60 text-slate-400 hover:text-white transition-colors" title="State Portal">
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </a>
                             )}
                             {!req.statePortalUrl && req.downloadUrl && (
-                              <a href={req.downloadUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-slate-700/30 hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors" title="Download Form">
+                              <a href={req.downloadUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-slate-700/30 hover:bg-white/[0.06]/60 text-slate-400 hover:text-white transition-colors" title="Download Form">
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </a>
                             )}
                             {!req.statePortalUrl && !req.downloadUrl && req.sourceUrl && (
-                              <a href={req.sourceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-slate-700/30 hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors" title="More Info">
+                              <a href={req.sourceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-slate-700/30 hover:bg-white/[0.06]/60 text-slate-400 hover:text-white transition-colors" title="More Info">
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </a>
                             )}
@@ -322,7 +322,7 @@ export default function ComplianceDashboard() {
 
       {/* Summary by Group */}
       {data?.summary?.byGroup && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Requirements by Group</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {Object.entries(data.summary.byGroup as Record<string, number>).map(([g, count]: [string, number]) => {
@@ -350,7 +350,7 @@ export default function ComplianceDashboard() {
 
       {/* State Compliance Summary */}
       {stateGroups.length > 0 && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><MapPin className="w-5 h-5 text-cyan-400" />State-Specific Requirements ({stateGroups.length} states)</CardTitle></CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">

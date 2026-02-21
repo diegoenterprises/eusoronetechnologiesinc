@@ -45,7 +45,7 @@ export default function BillingHistory() {
           <p className="text-slate-400 text-sm mt-1">View your invoices and payment history</p>
         </div>
         <Select value={yearFilter} onValueChange={setYearFilter}>
-          <SelectTrigger className="w-[120px] bg-slate-800/50 border-slate-700/50 rounded-lg">
+          <SelectTrigger className="w-[120px] bg-white/[0.02] border-white/[0.06] rounded-lg">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -74,7 +74,7 @@ export default function BillingHistory() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -90,7 +90,7 @@ export default function BillingHistory() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -106,7 +106,7 @@ export default function BillingHistory() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -124,7 +124,7 @@ export default function BillingHistory() {
       </div>
 
       {/* Invoices List */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg">Invoices</CardTitle>
         </CardHeader>
@@ -133,17 +133,17 @@ export default function BillingHistory() {
             <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
           ) : (invoicesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
-              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <Receipt className="w-10 h-10 text-slate-500" />
               </div>
               <p className="text-slate-400 text-lg">No invoices found</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(invoicesQuery.data as any)?.map((invoice: any) => (
-                <div key={invoice.id} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors">
+                <div key={invoice.id} className="p-4 flex items-center justify-between hover:bg-white/[0.04] transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className="p-2 rounded-lg bg-slate-700/50">
+                    <div className="p-2 rounded-lg bg-white/[0.04]">
                       <Receipt className="w-5 h-5 text-slate-400" />
                     </div>
                     <div>
@@ -159,7 +159,7 @@ export default function BillingHistory() {
                   </div>
                   <div className="flex items-center gap-4">
                     <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${invoice.amount?.toLocaleString()}</p>
-                    <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+                    <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
                       <Download className="w-4 h-4" />
                     </Button>
                   </div>

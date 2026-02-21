@@ -92,7 +92,7 @@ export default function AccidentReport() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardContent className="p-4 text-center">
             <FileText className="w-6 h-6 mx-auto mb-2 text-blue-400" />
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
@@ -128,7 +128,7 @@ export default function AccidentReport() {
             <p className="text-xs text-slate-400">Closed</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardContent className="p-4 text-center">
             <Calendar className="w-6 h-6 mx-auto mb-2 text-purple-400" />
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
@@ -167,10 +167,10 @@ export default function AccidentReport() {
         <TabsContent value="reports" className="mt-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="relative flex-1 max-w-sm">
-              <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search reports..." className="bg-slate-700/50 border-slate-600" />
+              <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search reports..." className="bg-white/[0.04] border-slate-600" />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-36 bg-slate-700/50 border-slate-600"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectTrigger className="w-36 bg-white/[0.04] border-slate-600"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="open">Open</SelectItem>
@@ -181,7 +181,7 @@ export default function AccidentReport() {
             </Select>
           </div>
 
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-white/[0.02] border-slate-700">
             <CardContent className="p-0">
               {reportsQuery.isLoading ? (
                 <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full" />)}</div>
@@ -193,7 +193,7 @@ export default function AccidentReport() {
               ) : (
                 <div className="divide-y divide-slate-700">
                   {(reportsQuery.data as any)?.map((report: any) => (
-                    <div key={report.id} className="flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors">
+                    <div key={report.id} className="flex items-center justify-between p-4 hover:bg-white/[0.06]/30 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className={cn("p-2 rounded-lg", report.severity === "critical" ? "bg-red-500/20" : report.severity === "major" ? "bg-orange-500/20" : "bg-yellow-500/20")}>
                           <AlertTriangle className={cn("w-5 h-5", report.severity === "critical" ? "text-red-400" : report.severity === "major" ? "text-orange-400" : "text-yellow-400")} />
@@ -235,18 +235,18 @@ export default function AccidentReport() {
         </TabsContent>
 
         <TabsContent value="new" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-white/[0.02] border-slate-700">
             <CardHeader><CardTitle className="text-white flex items-center gap-2"><Plus className="w-5 h-5 text-red-400" />New Accident Report</CardTitle></CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  <div><Label className="text-slate-400">Date of Incident</Label><Input type="date" className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                  <div><Label className="text-slate-400">Time of Incident</Label><Input type="time" className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                  <div><Label className="text-slate-400">Location</Label><Input placeholder="Enter location" className="mt-1 bg-slate-700/50 border-slate-600" /></div>
+                  <div><Label className="text-slate-400">Date of Incident</Label><Input type="date" className="mt-1 bg-white/[0.04] border-slate-600" /></div>
+                  <div><Label className="text-slate-400">Time of Incident</Label><Input type="time" className="mt-1 bg-white/[0.04] border-slate-600" /></div>
+                  <div><Label className="text-slate-400">Location</Label><Input placeholder="Enter location" className="mt-1 bg-white/[0.04] border-slate-600" /></div>
                   <div>
                     <Label className="text-slate-400">Severity</Label>
                     <Select>
-                      <SelectTrigger className="mt-1 bg-slate-700/50 border-slate-600"><SelectValue placeholder="Select severity" /></SelectTrigger>
+                      <SelectTrigger className="mt-1 bg-white/[0.04] border-slate-600"><SelectValue placeholder="Select severity" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="near_miss">Near Miss</SelectItem>
                         <SelectItem value="minor">Minor</SelectItem>
@@ -257,9 +257,9 @@ export default function AccidentReport() {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <div><Label className="text-slate-400">Driver</Label><Input placeholder="Driver name" className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                  <div><Label className="text-slate-400">Vehicle Unit</Label><Input placeholder="Vehicle unit number" className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                  <div><Label className="text-slate-400">Description</Label><Textarea placeholder="Describe the incident..." className="mt-1 bg-slate-700/50 border-slate-600" rows={4} /></div>
+                  <div><Label className="text-slate-400">Driver</Label><Input placeholder="Driver name" className="mt-1 bg-white/[0.04] border-slate-600" /></div>
+                  <div><Label className="text-slate-400">Vehicle Unit</Label><Input placeholder="Vehicle unit number" className="mt-1 bg-white/[0.04] border-slate-600" /></div>
+                  <div><Label className="text-slate-400">Description</Label><Textarea placeholder="Describe the incident..." className="mt-1 bg-white/[0.04] border-slate-600" rows={4} /></div>
                 </div>
               </div>
 
@@ -281,7 +281,7 @@ export default function AccidentReport() {
 
         <TabsContent value="analytics" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardHeader><CardTitle className="text-white">Incidents by Severity</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -301,7 +301,7 @@ export default function AccidentReport() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardHeader><CardTitle className="text-white">Monthly Trend</CardTitle></CardHeader>
               <CardContent>
                 <div className="h-48 bg-slate-700/30 rounded-lg flex items-center justify-center">

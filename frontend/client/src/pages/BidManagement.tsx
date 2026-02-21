@@ -58,9 +58,9 @@ export default function BidManagement() {
 
   const stats = statsQuery.data as any;
 
-  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
   const titleCls = cn("text-lg font-semibold", isLight ? "text-slate-800" : "text-white");
-  const cellCls = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
+  const cellCls = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
 
   const statusBadge = (status: string) => {
     const m: Record<string, { cls: string; icon: React.ReactNode; label: string }> = {
@@ -135,7 +135,7 @@ export default function BidManagement() {
           </div>
           <div className="flex flex-wrap gap-2">
             {mlDemand.data.topLanes.slice(0, 5).map((lane: any, i: number) => (
-              <span key={i} className={cn("text-[10px] px-2 py-1 rounded-lg border", isLight ? "bg-white border-slate-200 text-slate-600" : "bg-slate-800/50 border-slate-700/30 text-slate-300")}>
+              <span key={i} className={cn("text-[10px] px-2 py-1 rounded-lg border", isLight ? "bg-white border-slate-200 text-slate-600" : "bg-white/[0.02] border-slate-700/30 text-slate-300")}>
                 <span className="font-bold">{lane.lane}</span>
                 <span className="text-slate-400 ml-1">{lane.volume} loads</span>
                 <span className={`ml-1 ${lane.trend === "RISING" ? "text-green-400" : lane.trend === "DECLINING" ? "text-red-400" : "text-slate-400"}`}>{lane.trend === "RISING" ? "+" : lane.trend === "DECLINING" ? "-" : "="}</span>
@@ -147,7 +147,7 @@ export default function BidManagement() {
 
       {/* ── Quick Bid on Available Loads ── */}
       {((availableLoadsQuery.data as any)?.loads?.length ?? 0) > 0 && (
-        <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-blue-200 shadow-sm" : "bg-slate-800/60 border-blue-500/30")}>
+        <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-blue-200 shadow-sm" : "bg-white/[0.03] border-blue-500/30")}>
           <div className="bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 px-5 py-3 flex items-center gap-2">
             <Package className="w-5 h-5 text-blue-500" />
             <span className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>Quick Bid — Available Loads</span>
@@ -192,7 +192,7 @@ export default function BidManagement() {
                 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
                 : isLight
                   ? "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                  : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                  : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]"
             )}
           >
             {tab.label}
@@ -212,7 +212,7 @@ export default function BidManagement() {
             <div className="p-4 space-y-3">{[1, 2, 3].map((i: number) => <Skeleton key={i} className={cn("h-24 w-full rounded-xl", isLight ? "bg-slate-100" : "")} />)}</div>
           ) : (bidsQuery.data as any)?.length === 0 ? (
             <div className={cn("text-center py-16", isLight ? "" : "")}>
-              <div className={cn("p-4 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
+              <div className={cn("p-4 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
                 <Gavel className="w-8 h-8 text-slate-400" />
               </div>
               <p className={cn("font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No bids found</p>
@@ -229,7 +229,7 @@ export default function BidManagement() {
                   className={cn(
                     "p-4 transition-colors cursor-pointer",
                     bid.status === "accepted" && (isLight ? "bg-green-50/50 border-l-3 border-l-green-500" : "bg-green-500/5 border-l-3 border-l-green-500"),
-                    isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20"
+                    isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.04]"
                   )}
                   onClick={() => bid.loadId && setLocation(`/load/${bid.loadId}`)}
                 >

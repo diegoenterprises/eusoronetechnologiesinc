@@ -261,13 +261,13 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
   // Shared styles
   const panelBg = isLight
     ? "bg-white border-slate-200 shadow-2xl shadow-slate-300/50"
-    : "bg-[#0d1224] border-slate-700/50 shadow-2xl shadow-black/50";
+    : "bg-[#0d1224] border-white/[0.06] shadow-2xl shadow-black/50";
   const headerBg = isLight
     ? "bg-gradient-to-r from-slate-50 to-white border-b border-slate-200"
-    : "bg-gradient-to-r from-[#161d35] to-[#0d1224] border-b border-slate-700/50";
+    : "bg-gradient-to-r from-[#161d35] to-[#0d1224] border-b border-white/[0.06]";
   const inputBg = isLight
     ? "bg-slate-100 border-slate-200 text-slate-800 placeholder:text-slate-400"
-    : "bg-slate-800/60 border-slate-700/50 text-white placeholder:text-slate-500";
+    : "bg-white/[0.03] border-white/[0.06] text-white placeholder:text-slate-500";
 
   return (
     <AnimatePresence>
@@ -370,7 +370,7 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
                         "flex items-center gap-2 px-3 py-2 rounded-xl text-[11px] font-medium transition-all text-left",
                         isLight
                           ? "bg-white border border-slate-200 text-slate-600 hover:border-purple-300 hover:bg-purple-50"
-                          : "bg-slate-800/60 border border-slate-700/50 text-slate-300 hover:border-purple-500/50 hover:bg-purple-500/10"
+                          : "bg-white/[0.03] border border-white/[0.06] text-slate-300 hover:border-purple-500/50 hover:bg-purple-500/10"
                       )}
                     >
                       <span className="text-purple-400">{qp.icon}</span>
@@ -461,7 +461,7 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
           </div>
 
           {/* Input bar */}
-          <div className={cn("px-3 py-2.5 flex-shrink-0 border-t", isLight ? "bg-white border-slate-200" : "bg-[#0d1224] border-slate-700/50")}>
+          <div className={cn("px-3 py-2.5 flex-shrink-0 border-t", isLight ? "bg-white border-slate-200" : "bg-[#0d1224] border-white/[0.06]")}>
             <div className="flex items-center gap-2">
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*,.pdf,.doc,.docx,.txt" onChange={handleFileUpload} />
               <button

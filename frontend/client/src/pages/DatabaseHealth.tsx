@@ -49,7 +49,7 @@ export default function DatabaseHealth() {
           <p className="text-slate-400 text-sm mt-1">Monitor database performance and health</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => healthQuery.refetch()}>
+          <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => healthQuery.refetch()}>
             <RefreshCw className="w-4 h-4 mr-2" />Refresh
           </Button>
           <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => optimizeMutation.mutate({})}>
@@ -82,7 +82,7 @@ export default function DatabaseHealth() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -98,7 +98,7 @@ export default function DatabaseHealth() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -114,7 +114,7 @@ export default function DatabaseHealth() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -130,7 +130,7 @@ export default function DatabaseHealth() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -148,7 +148,7 @@ export default function DatabaseHealth() {
       </div>
 
       {/* Storage Usage */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <HardDrive className="w-5 h-5 text-cyan-400" />
@@ -175,7 +175,7 @@ export default function DatabaseHealth() {
       </Card>
 
       {/* Slow Queries */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Clock className="w-5 h-5 text-yellow-400" />
@@ -191,7 +191,7 @@ export default function DatabaseHealth() {
               <p className="text-slate-400">No slow queries detected</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/50 max-h-[400px] overflow-y-auto">
+            <div className="divide-y divide-white/[0.04] max-h-[400px] overflow-y-auto">
               {(queriesQuery.data as any)?.map((query: any, idx: number) => (
                 <div key={idx} className="p-4">
                   <div className="flex items-center justify-between mb-2">

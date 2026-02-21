@@ -68,11 +68,11 @@ export default function BroadcastMessages() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input value={title} onChange={(e: any) => setTitle(e.target.value)} placeholder="Broadcast title..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
-          <Textarea value={message} onChange={(e: any) => setMessage(e.target.value)} placeholder="Write your message..." className="bg-slate-800/50 border-slate-700/50 rounded-lg min-h-[120px]" />
+          <Input value={title} onChange={(e: any) => setTitle(e.target.value)} placeholder="Broadcast title..." className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+          <Textarea value={message} onChange={(e: any) => setMessage(e.target.value)} placeholder="Write your message..." className="bg-white/[0.02] border-white/[0.06] rounded-lg min-h-[120px]" />
           <div className="flex items-center gap-4">
             <Select value={audience} onValueChange={setAudience}>
-              <SelectTrigger className="w-[200px] bg-slate-800/50 border-slate-700/50 rounded-lg">
+              <SelectTrigger className="w-[200px] bg-white/[0.02] border-white/[0.06] rounded-lg">
                 <Users className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Select audience" />
               </SelectTrigger>
@@ -91,7 +91,7 @@ export default function BroadcastMessages() {
       </Card>
 
       {/* Previous Broadcasts */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg">Previous Broadcasts</CardTitle>
         </CardHeader>
@@ -100,13 +100,13 @@ export default function BroadcastMessages() {
             <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : (broadcastsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
-              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <Megaphone className="w-10 h-10 text-slate-500" />
               </div>
               <p className="text-slate-400 text-lg">No broadcasts yet</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(broadcastsQuery.data as any)?.map((broadcast: any) => (
                 <div key={broadcast.id} className="p-4">
                   <div className="flex items-start justify-between">

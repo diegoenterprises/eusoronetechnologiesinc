@@ -71,7 +71,7 @@ export default function DrugTestAcknowledgment() {
     toast.success("Drug & alcohol testing acknowledgment signed successfully");
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -112,7 +112,7 @@ export default function DrugTestAcknowledgment() {
               { icon: <Calendar className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/15", value: clearinghouse?.lastQueryDate ? new Date(clearinghouse.lastQueryDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "N/A", label: "Last Query", color: "text-purple-400" },
               { icon: <Database className="w-5 h-5 text-cyan-400" />, bg: "bg-cyan-500/15", value: "FMCSA", label: "Clearinghouse", color: "text-cyan-400" },
             ].map((s) => (
-              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
@@ -139,7 +139,7 @@ export default function DrugTestAcknowledgment() {
                 {TEST_TYPES.map((tt) => (
                   <div key={tt.id} className={cn(
                     "flex items-start gap-3 p-4 rounded-xl border",
-                    isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+                    isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
                   )}>
                     <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold", "bg-[#1473FF]/10 text-[#1473FF]")}>
                       {tt.id === "pre_employment" ? "PE" : tt.id === "random" ? "RN" : tt.id === "post_accident" ? "PA" : tt.id === "reasonable_suspicion" ? "RS" : tt.id === "return_to_duty" ? "RT" : "FU"}
@@ -196,7 +196,7 @@ export default function DrugTestAcknowledgment() {
                         "w-full flex items-start gap-4 p-4 rounded-xl border transition-all text-left",
                         acknowledged[index]
                           ? isLight ? "bg-green-50 border-green-200" : "bg-green-500/5 border-green-500/20"
-                          : isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
+                          : isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
                       )}
                     >
                       <div className={cn(
@@ -226,7 +226,7 @@ export default function DrugTestAcknowledgment() {
                           ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:from-[#1260DD] hover:to-[#A801DD] text-white shadow-lg shadow-purple-500/20"
                           : isLight
                             ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                            : "bg-slate-700/50 text-slate-500 cursor-not-allowed"
+                            : "bg-white/[0.04] text-slate-500 cursor-not-allowed"
                       )}
                       disabled={!allAcknowledged}
                       onClick={handleSign}
@@ -253,7 +253,7 @@ export default function DrugTestAcknowledgment() {
                 {tests.slice(0, 5).map((test: any, i: number) => (
                   <div key={i} className={cn(
                     "flex items-center justify-between p-3 rounded-xl border",
-                    isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+                    isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
                   )}>
                     <div className="flex items-center gap-3">
                       <div className={cn(

@@ -54,7 +54,7 @@ export default function HazmatRouteCompliance() {
   const overallPass = failCount === 0;
   const categories = Array.from(new Set(checks.map((c: ComplianceCheck) => c.category)));
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -82,7 +82,7 @@ export default function HazmatRouteCompliance() {
           { icon: <AlertTriangle className="w-5 h-5 text-yellow-400" />, bg: "bg-yellow-500/15", value: String(warnCount), label: "Warnings", color: "text-yellow-400" },
           { icon: <XCircle className="w-5 h-5 text-red-400" />, bg: "bg-red-500/15", value: String(failCount), label: "Failed", color: "text-red-400" },
         ].map((s) => (
-          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
@@ -134,7 +134,7 @@ export default function HazmatRouteCompliance() {
                     "flex items-start gap-3 p-3 rounded-xl border",
                     check.status === "fail" ? (isLight ? "bg-red-50 border-red-200" : "bg-red-500/5 border-red-500/20") :
                     check.status === "warning" ? (isLight ? "bg-yellow-50 border-yellow-200" : "bg-yellow-500/5 border-yellow-500/20") :
-                    isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+                    isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
                   )}>
                     <div className={cn("p-1.5 rounded-md flex-shrink-0 mt-0.5", st.bg, st.color)}>{st.icon}</div>
                     <div className="flex-1">

@@ -67,8 +67,8 @@ export default function DirectDeposit() {
     return "****" + num.slice(-4);
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
-  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-400");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white placeholder:text-slate-400");
   const labelCls = cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-500" : "text-slate-400");
 
   return (
@@ -83,7 +83,7 @@ export default function DirectDeposit() {
             Manage your bank account and payment preferences
           </p>
         </div>
-        <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => walletQuery.refetch?.()}>
+        <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")} onClick={() => walletQuery.refetch?.()}>
           <RefreshCw className="w-4 h-4" />
         </Button>
       </div>
@@ -144,14 +144,14 @@ export default function DirectDeposit() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                      <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                         <p className={cn("text-[10px] uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>Status</p>
                         <div className="flex items-center gap-1.5 mt-1">
                           <CheckCircle className="w-3.5 h-3.5 text-green-500" />
                           <p className="text-sm font-bold text-green-500">Verified</p>
                         </div>
                       </div>
-                      <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                      <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                         <p className={cn("text-[10px] uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>Schedule</p>
                         <p className={cn("text-sm font-bold mt-1", isLight ? "text-slate-800" : "text-white")}>Weekly</p>
                       </div>
@@ -161,7 +161,7 @@ export default function DirectDeposit() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
+                        className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")}
                         onClick={() => setShowForm(true)}
                       >
                         <Settings className="w-4 h-4 mr-1.5" /> Edit
@@ -171,7 +171,7 @@ export default function DirectDeposit() {
                 </div>
               ) : (
                 <div className="text-center py-10">
-                  <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
+                  <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
                     <Building2 className="w-8 h-8 text-slate-400" />
                   </div>
                   <p className={cn("font-medium text-lg", isLight ? "text-slate-600" : "text-slate-300")}>No Bank Account On File</p>
@@ -254,7 +254,7 @@ export default function DirectDeposit() {
                             ? "bg-[#1473FF]/10 text-[#1473FF] border-[#1473FF]/30"
                             : isLight
                               ? "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                              : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600"
+                              : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:border-slate-600"
                         )}
                       >
                         {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -266,7 +266,7 @@ export default function DirectDeposit() {
                 <div className="flex gap-3 pt-2">
                   <Button
                     variant="outline"
-                    className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50")}
+                    className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-white/[0.04] border-white/[0.06]")}
                     onClick={() => setShowForm(false)}
                   >
                     Cancel
@@ -299,7 +299,7 @@ export default function DirectDeposit() {
               ].map((item) => (
                 <div key={item.label} className={cn(
                   "flex items-center gap-4 p-3 rounded-xl border",
-                  isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+                  isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
                 )}>
                   <div className={cn("p-2 rounded-lg", "bg-[#1473FF]/10 text-[#1473FF]")}>{item.icon}</div>
                   <div className="flex-1">

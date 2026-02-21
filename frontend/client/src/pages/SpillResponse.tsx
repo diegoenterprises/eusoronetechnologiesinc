@@ -74,7 +74,7 @@ export default function SpillResponse() {
     { id: "documentation", label: "Documentation" },
   ];
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   const handleSOS = () => {
     setSosActive(true);
@@ -118,10 +118,10 @@ export default function SpillResponse() {
               num.priority
                 ? isLight
                   ? "bg-white border-red-200 hover:border-red-300 shadow-sm"
-                  : "bg-slate-800/60 border-red-500/20 hover:border-red-500/40"
+                  : "bg-white/[0.03] border-red-500/20 hover:border-red-500/40"
                 : isLight
                   ? "bg-white border-slate-200 hover:border-slate-300"
-                  : "bg-slate-800/60 border-slate-700/50 hover:border-slate-600"
+                  : "bg-white/[0.03] border-white/[0.06] hover:border-slate-600"
             )}
           >
             <div className={cn("p-2.5 rounded-lg", num.bg)}>
@@ -168,7 +168,7 @@ export default function SpillResponse() {
                 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
                 : isLight
                   ? "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                  : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                  : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]"
             )}
           >
             {p.label}
@@ -196,7 +196,7 @@ export default function SpillResponse() {
                     "w-full flex items-start gap-4 p-4 rounded-xl border transition-all text-left",
                     done
                       ? isLight ? "bg-green-50 border-green-200" : "bg-green-500/5 border-green-500/20"
-                      : isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
+                      : isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
                   )}
                 >
                   <div className={cn(
@@ -333,7 +333,7 @@ export default function SpillResponse() {
                 {NRC_THRESHOLDS.map((t, i) => (
                   <div key={i} className={cn(
                     "flex items-center justify-between p-3 rounded-xl border",
-                    isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+                    isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
                   )}>
                     <p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{t.material}</p>
                     <p className={cn("text-xs", isLight ? "text-red-600" : "text-red-400")}>{t.quantity}</p>
@@ -397,7 +397,7 @@ export default function SpillResponse() {
               ].map((item, i) => (
                 <div key={i} className={cn(
                   "p-4 rounded-xl border",
-                  isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+                  isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
                 )}>
                   <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{item.title}</p>
                   <p className={cn("text-xs mt-1", isLight ? "text-slate-500" : "text-slate-400")}>{item.detail}</p>

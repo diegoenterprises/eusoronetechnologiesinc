@@ -27,7 +27,7 @@ export default function Drivers() {
 
   const driversQuery = (trpc as any).drivers.list.useQuery({ limit: 50 });
 
-  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
   const valCls = cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white");
 
   const statusBadge = (s: string) => {
@@ -94,7 +94,7 @@ export default function Drivers() {
       </div>
 
       {/* ── Search ── */}
-      <div className={cn("relative max-w-md rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+      <div className={cn("relative max-w-md rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]")}>
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={searchTerm}
@@ -111,7 +111,7 @@ export default function Drivers() {
             <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: number) => <Skeleton key={i} className={cn("h-20 w-full rounded-xl", isLight ? "bg-slate-100" : "")} />)}</div>
           ) : filteredDrivers?.length === 0 ? (
             <div className="text-center py-16">
-              <div className={cn("p-4 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
+              <div className={cn("p-4 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
                 <Users className="w-8 h-8 text-slate-400" />
               </div>
               <p className={cn("font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No drivers found</p>
@@ -123,7 +123,7 @@ export default function Drivers() {
           ) : (
             <div className={cn("divide-y", isLight ? "divide-slate-100" : "divide-slate-700/30")}>
               {filteredDrivers?.map((driver: any) => (
-                <div key={driver.id} className={cn("p-4 transition-colors", isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20")}>
+                <div key={driver.id} className={cn("p-4 transition-colors", isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.04]")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={cn("p-3 rounded-xl",
@@ -150,7 +150,7 @@ export default function Drivers() {
                       <Button variant="ghost" size="sm" className={cn("rounded-lg", isLight ? "text-slate-400 hover:text-slate-700" : "text-slate-400 hover:text-white")}>
                         <Phone className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="outline" className={cn("rounded-xl text-xs font-bold", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-700 hover:bg-slate-700")} onClick={() => setLocation(`/drivers/${driver.id}`)}>
+                      <Button size="sm" variant="outline" className={cn("rounded-xl text-xs font-bold", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-700 hover:bg-white/[0.06]")} onClick={() => setLocation(`/drivers/${driver.id}`)}>
                         <Eye className="w-3.5 h-3.5 mr-1" />View
                       </Button>
                     </div>

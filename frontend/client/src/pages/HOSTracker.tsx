@@ -70,7 +70,7 @@ export default function HOSTracker() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="p-4 rounded-full bg-slate-700/50">
+              <div className="p-4 rounded-full bg-white/[0.04]">
                 <Clock className="w-10 h-10 text-cyan-400" />
               </div>
               <div>
@@ -100,7 +100,7 @@ export default function HOSTracker() {
 
           {/* HOS Gauges */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl bg-slate-800/50">
+            <div className="p-4 rounded-xl bg-white/[0.02]">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-slate-400">Driving Time</span>
                 {hosQuery.isLoading ? <Skeleton className="h-5 w-16" /> : (
@@ -111,7 +111,7 @@ export default function HOSTracker() {
               <p className="text-xs text-slate-500 mt-2">{11 - (hos?.drivingHours || 0)}h remaining</p>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-800/50">
+            <div className="p-4 rounded-xl bg-white/[0.02]">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-slate-400">On-Duty Time</span>
                 {hosQuery.isLoading ? <Skeleton className="h-5 w-16" /> : (
@@ -122,7 +122,7 @@ export default function HOSTracker() {
               <p className="text-xs text-slate-500 mt-2">{14 - (hos?.onDutyHours || 0)}h remaining</p>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-800/50">
+            <div className="p-4 rounded-xl bg-white/[0.02]">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-slate-400">70hr Cycle</span>
                 {hosQuery.isLoading ? <Skeleton className="h-5 w-16" /> : (
@@ -155,7 +155,7 @@ export default function HOSTracker() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl cursor-pointer hover:bg-slate-700/50 transition-colors">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl cursor-pointer hover:bg-white/[0.04] transition-colors">
           <CardContent className="p-5 text-center">
             <div className="p-3 rounded-full bg-green-500/20 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
               <Play className="w-6 h-6 text-green-400" />
@@ -164,7 +164,7 @@ export default function HOSTracker() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl cursor-pointer hover:bg-slate-700/50 transition-colors">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl cursor-pointer hover:bg-white/[0.04] transition-colors">
           <CardContent className="p-5 text-center">
             <div className="p-3 rounded-full bg-blue-500/20 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
               <Clock className="w-6 h-6 text-blue-400" />
@@ -173,7 +173,7 @@ export default function HOSTracker() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl cursor-pointer hover:bg-slate-700/50 transition-colors">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl cursor-pointer hover:bg-white/[0.04] transition-colors">
           <CardContent className="p-5 text-center">
             <div className="p-3 rounded-full bg-purple-500/20 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
               <Moon className="w-6 h-6 text-purple-400" />
@@ -182,7 +182,7 @@ export default function HOSTracker() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl cursor-pointer hover:bg-slate-700/50 transition-colors">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl cursor-pointer hover:bg-white/[0.04] transition-colors">
           <CardContent className="p-5 text-center">
             <div className="p-3 rounded-full bg-slate-500/20 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
               <Coffee className="w-6 h-6 text-slate-400" />
@@ -193,7 +193,7 @@ export default function HOSTracker() {
       </div>
 
       {/* Recent Logs */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg">Today's Log</CardTitle>
         </CardHeader>
@@ -202,7 +202,7 @@ export default function HOSTracker() {
             <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
           ) : hos?.todayLog?.length === 0 ? (
             <div className="text-center py-8">
-              <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+              <div className="p-4 rounded-full bg-white/[0.04] w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                 <Clock className="w-8 h-8 text-slate-500" />
               </div>
               <p className="text-slate-400">No log entries today</p>

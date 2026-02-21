@@ -48,7 +48,7 @@ export default function FleetCommandCenter() {
   const fv = vehs.filter((v: any) => (!search || v.unitNumber?.toLowerCase().includes(search.toLowerCase()) || v.make?.toLowerCase().includes(search.toLowerCase())) && (sf === "all" || v.status === sf));
   const fd = drvs.filter((d: any) => (!search || d.name?.toLowerCase().includes(search.toLowerCase())) && (sf === "all" || d.status === sf));
 
-  const cc = cn("rounded-2xl border transition-all", L ? "bg-white/80 border-slate-200 shadow-sm hover:shadow-md" : "bg-slate-800/50 border-slate-700/40 hover:border-slate-600/60");
+  const cc = cn("rounded-2xl border transition-all", L ? "bg-white/80 border-slate-200 shadow-sm hover:shadow-md" : "bg-white/[0.02] border-slate-700/40 hover:border-slate-600/60");
   const sb = (s: string) => { const m: Record<string, string> = { active: "bg-green-500/15 text-green-500", driving: "bg-blue-500/15 text-blue-500", maintenance: "bg-yellow-500/15 text-yellow-500", off_duty: "bg-slate-500/15 text-slate-400", inactive: "bg-red-500/15 text-red-500", out_of_service: "bg-red-500/15 text-red-500" }; return <Badge className={cn("border-0 text-[10px] font-bold uppercase", m[s] || "bg-slate-500/15 text-slate-400")}>{s?.replace(/_/g, " ") || "Unknown"}</Badge>; };
 
   const stats = [
@@ -91,7 +91,7 @@ export default function FleetCommandCenter() {
 
       {/* View Switcher + Search */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className={cn("flex gap-1 p-1 rounded-xl", L ? "bg-slate-100" : "bg-slate-800/60")}>
+        <div className={cn("flex gap-1 p-1 rounded-xl", L ? "bg-slate-100" : "bg-white/[0.03]")}>
           {([{ id: "fleet" as ViewMode, l: "Vehicles", I: Truck }, { id: "drivers" as ViewMode, l: "Drivers", I: Users }]).map((t) => (
             <button key={t.id} onClick={() => { setView(t.id); setSearch(""); setSf("all"); }}
               className={cn("flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all",
@@ -99,7 +99,7 @@ export default function FleetCommandCenter() {
               )}><t.I className="w-3.5 h-3.5" />{t.l}</button>
           ))}
         </div>
-        <div className={cn("flex-1 relative max-w-sm rounded-xl border", L ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
+        <div className={cn("flex-1 relative max-w-sm rounded-xl border", L ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}>
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder={`Search...`} className="pl-9 border-0 bg-transparent rounded-xl focus-visible:ring-0" />
         </div>

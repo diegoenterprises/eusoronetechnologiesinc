@@ -95,7 +95,7 @@ export default function SubscriptionPlan() {
       )}
 
       {/* Usage */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Zap className="w-5 h-5 text-yellow-400" />
@@ -143,7 +143,7 @@ export default function SubscriptionPlan() {
       </Card>
 
       {/* Available Plans */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg">Available Plans</CardTitle>
         </CardHeader>
@@ -153,7 +153,7 @@ export default function SubscriptionPlan() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {(plansQuery.data as any)?.map((plan: any) => (
-                <div key={plan.id} className={cn("p-6 rounded-xl border transition-all", plan.id === subscription?.planId ? "bg-cyan-500/10 border-cyan-500/30" : "bg-slate-700/30 border-slate-600/50 hover:border-slate-500/50")}>
+                <div key={plan.id} className={cn("p-6 rounded-xl border transition-all", plan.id === subscription?.planId ? "bg-cyan-500/10 border-cyan-500/30" : "bg-slate-700/30 border-white/[0.06] hover:border-slate-500/50")}>
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-white text-xl font-bold">{plan.name}</p>
                     {plan.popular && <Badge className="bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border-0">Popular</Badge>}

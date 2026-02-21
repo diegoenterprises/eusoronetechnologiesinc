@@ -86,7 +86,7 @@ function AdminSupportView() {
       </div>
 
       {/* ESANG AI Banner */}
-      <div className={cn("p-4 rounded-2xl border", L ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-slate-700/50")}>
+      <div className={cn("p-4 rounded-2xl border", L ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-white/[0.06]")}>
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-xl bg-gradient-to-br from-[#1473FF]/20 to-[#BE01FF]/20 flex-shrink-0"><Bot className="w-7 h-7 text-blue-500" /></div>
           <div className="flex-1 min-w-0">
@@ -117,7 +117,7 @@ function AdminSupportView() {
       </div>
 
       {/* Tabs */}
-      <div className={cn("flex items-center gap-1 p-1 rounded-xl w-fit", L ? "bg-slate-100" : "bg-slate-800/60")}>
+      <div className={cn("flex items-center gap-1 p-1 rounded-xl w-fit", L ? "bg-slate-100" : "bg-white/[0.03]")}>
         {[
           { id: "queue" as const, label: "Ticket Queue", icon: Inbox },
           { id: "kb" as const, label: "Knowledge Base", icon: BookOpen },
@@ -135,10 +135,10 @@ function AdminSupportView() {
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-md">
               <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4", L ? "text-slate-400" : "text-slate-500")} />
-              <Input value={searchQuery} onChange={(e: any) => setSearchQuery(e.target.value)} placeholder="Search tickets..." className={cn("pl-10 rounded-xl", L ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700")} />
+              <Input value={searchQuery} onChange={(e: any) => setSearchQuery(e.target.value)} placeholder="Search tickets..." className={cn("pl-10 rounded-xl", L ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700")} />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className={cn("w-[150px] rounded-xl", L ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700")}><Filter className="w-3.5 h-3.5 mr-1.5" /><SelectValue /></SelectTrigger>
+              <SelectTrigger className={cn("w-[150px] rounded-xl", L ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700")}><Filter className="w-3.5 h-3.5 mr-1.5" /><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="open">Open</SelectItem>
@@ -172,7 +172,7 @@ function AdminSupportView() {
               ) : (
                 <div className={cn("divide-y", L ? "divide-slate-100" : "divide-slate-700/30")}>
                   {tickets.map((ticket: any) => (
-                    <div key={ticket.id} className={cn("p-4 transition-all cursor-pointer group", L ? "hover:bg-blue-50/50" : "hover:bg-slate-700/20")}>
+                    <div key={ticket.id} className={cn("p-4 transition-all cursor-pointer group", L ? "hover:bg-blue-50/50" : "hover:bg-white/[0.04]")}>
                       <div className="flex items-start gap-3">
                         {priorityDot(ticket.priority || "medium")}
                         <div className="min-w-0 flex-1">
@@ -211,7 +211,7 @@ function AdminSupportView() {
             <Card key={i} className={cn(cc, "hover:shadow-md transition-shadow cursor-pointer")}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className={cn("p-2.5 rounded-xl flex-shrink-0", L ? "bg-slate-50" : "bg-slate-800/50")}>{article.icon}</div>
+                  <div className={cn("p-2.5 rounded-xl flex-shrink-0", L ? "bg-slate-50" : "bg-white/[0.02]")}>{article.icon}</div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <p className={cn("font-bold text-sm", vl)}>{article.title}</p>
@@ -282,8 +282,8 @@ function UserSupportView() {
   const summary = summaryQuery.data;
   const tickets: any[] = Array.isArray(ticketsQuery.data) ? ticketsQuery.data : [];
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
-  const cl = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const cl = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
   const vl = cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white");
   const mt = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
   const ic = cn("rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500");
@@ -391,7 +391,7 @@ function UserSupportView() {
           { id: "contact" as Tab, label: "Contact Us", icon: <Headphones className="w-3.5 h-3.5" /> },
         ]).map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)} className={cn("flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all",
-            activeTab === t.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+            activeTab === t.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]"
           )}>{t.icon}{t.label}</button>
         ))}
       </div>
@@ -419,9 +419,9 @@ function UserSupportView() {
                 </div>
               </div>
             ) : (
-              <div className={cn("divide-y", isLight ? "divide-slate-100" : "divide-slate-700/50")}>
+              <div className={cn("divide-y", isLight ? "divide-slate-100" : "divide-white/[0.04]")}>
                 {tickets.map((ticket: any) => (
-                  <div key={ticket.id} className={cn("p-4 transition-colors cursor-pointer", isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20")}>
+                  <div key={ticket.id} className={cn("p-4 transition-colors cursor-pointer", isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.04]")}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -510,7 +510,7 @@ function UserSupportView() {
               <Card key={i} className={cn(cc, "hover:shadow-md transition-shadow cursor-pointer")}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    <div className={cn("p-2.5 rounded-xl flex-shrink-0", isLight ? "bg-slate-50" : "bg-slate-800/50")}>
+                    <div className={cn("p-2.5 rounded-xl flex-shrink-0", isLight ? "bg-slate-50" : "bg-white/[0.02]")}>
                       {article.icon}
                     </div>
                     <div className="min-w-0 flex-1">

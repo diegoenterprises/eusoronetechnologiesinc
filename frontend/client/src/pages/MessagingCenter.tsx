@@ -206,7 +206,7 @@ export default function MessagingCenter() {
               value={searchTerm}
               onChange={(e: any) => setSearchTerm(e.target.value)}
               placeholder="Search conversations..."
-              className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-xl text-sm focus:border-purple-500/50 focus:ring-purple-500/20"
+              className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-xl text-sm focus:border-purple-500/50 focus:ring-purple-500/20"
             />
           </div>
         </div>
@@ -343,7 +343,7 @@ export default function MessagingCenter() {
                 <div className="space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-14 w-3/4 rounded-2xl" />)}</div>
               ) : (messagesQuery.data as any)?.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full">
-                  <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mb-3">
+                  <div className="w-16 h-16 rounded-full bg-white/[0.02] flex items-center justify-center mb-3">
                     <Send className="w-7 h-7 text-slate-600" />
                   </div>
                   <p className="text-slate-500 text-sm">No messages yet</p>
@@ -373,7 +373,7 @@ export default function MessagingCenter() {
                       {/* Unsend button for own messages */}
                       {message.isOwn && !message.metadata?.unsent && (
                         <button
-                          className="self-center p-1.5 rounded-full text-slate-500 hover:text-slate-300 hover:bg-slate-700/80 transition-all flex-shrink-0"
+                          className="self-center p-1.5 rounded-full text-slate-500 hover:text-slate-300 hover:bg-white/[0.06]/80 transition-all flex-shrink-0"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -474,7 +474,7 @@ export default function MessagingCenter() {
                   value={messageText}
                   onChange={(e: any) => setMessageText(e.target.value)}
                   placeholder="Type a message..."
-                  className="flex-1 bg-slate-800/50 border-slate-700/50 rounded-xl text-sm focus:border-purple-500/50 focus:ring-purple-500/20"
+                  className="flex-1 bg-white/[0.02] border-white/[0.06] rounded-xl text-sm focus:border-purple-500/50 focus:ring-purple-500/20"
                   onKeyDown={(e: any) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -515,7 +515,7 @@ export default function MessagingCenter() {
               <X className="w-4 h-4" /> Unsend Message
             </button>
             <button
-              className="w-full text-left px-4 py-2.5 text-sm text-slate-400 hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors"
+              className="w-full text-left px-4 py-2.5 text-sm text-slate-400 hover:bg-white/[0.04] flex items-center gap-2.5 transition-colors"
               onClick={() => { unsendMessageMutation.mutate({ messageId: messageContextMenu.id }); setMessageContextMenu(null); }}
             >
               <Trash2 className="w-4 h-4" /> Delete Message
@@ -529,7 +529,7 @@ export default function MessagingCenter() {
       {showNewConversation && createPortal(
         <div style={{ position: 'fixed', inset: 0, zIndex: 99990 }} className="bg-black/60 backdrop-blur-sm flex items-center justify-center" onClick={() => setShowNewConversation(false)}>
           <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
+            <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
               <h2 className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">New Conversation</h2>
               <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => setShowNewConversation(false)}>
                 <X className="w-4 h-4 text-slate-400" />
@@ -542,7 +542,7 @@ export default function MessagingCenter() {
                   value={userSearchTerm}
                   onChange={(e: any) => setUserSearchTerm(e.target.value)}
                   placeholder="Search by name or email..."
-                  className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-xl text-sm focus:border-purple-500/50"
+                  className="pl-9 bg-white/[0.04] border-white/[0.06] rounded-xl text-sm focus:border-purple-500/50"
                   autoFocus
                 />
               </div>
@@ -558,7 +558,7 @@ export default function MessagingCenter() {
                   (usersQuery.data as any)?.map((user: any) => (
                     <button
                       key={user.id}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700/50 transition-all text-left"
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.04] transition-all text-left"
                       onClick={() => handleStartConversation(user.id)}
                       disabled={createConversationMutation.isPending}
                     >

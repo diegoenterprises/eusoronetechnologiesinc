@@ -141,8 +141,8 @@ export default function ShipperDispatchControl() {
       .some(v => v?.toLowerCase?.()?.includes?.(q));
   });
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
-  const cl = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const cl = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
   const vl = cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white");
   const mt = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
   const ic = cn("rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500");
@@ -163,7 +163,7 @@ export default function ShipperDispatchControl() {
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className={cn("rounded-xl", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")} onClick={() => setLocation("/loads")}>
+        <Button variant="ghost" size="sm" className={cn("rounded-xl", isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]")} onClick={() => setLocation("/loads")}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div className="flex-1">
@@ -205,7 +205,7 @@ export default function ShipperDispatchControl() {
                   className={cn("w-full p-3 rounded-xl border text-left transition-all",
                     selectedLoadId === l.id
                       ? "border-[#1473FF] bg-gradient-to-r from-[#1473FF]/5 to-[#BE01FF]/5 shadow-md"
-                      : isLight ? "border-slate-200 bg-white hover:border-slate-300" : "border-slate-700 bg-slate-800/60 hover:border-slate-600"
+                      : isLight ? "border-slate-200 bg-white hover:border-slate-300" : "border-slate-700 bg-white/[0.03] hover:border-slate-600"
                   )}>
                   <div className="flex items-center justify-between mb-1.5">
                     <p className={cn("font-bold text-xs", vl)}>#{l.loadNumber}</p>

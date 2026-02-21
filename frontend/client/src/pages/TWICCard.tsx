@@ -64,8 +64,8 @@ export default function TWICCard() {
 
   const isLoading = certsQuery.isLoading || profileQuery.isLoading;
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
-  const sc = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const sc = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -82,7 +82,7 @@ export default function TWICCard() {
         <Button
           variant="outline"
           size="sm"
-          className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
+          className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")}
           onClick={() => profileQuery.refetch?.()}
         >
           <RefreshCw className="w-4 h-4" />
@@ -206,7 +206,7 @@ export default function TWICCard() {
               { icon: <Calendar className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/15", value: "5 Years", label: "Validity Period", color: "text-purple-400" },
               { icon: <CreditCard className="w-5 h-5 text-green-400" />, bg: "bg-green-500/15", value: "$125.25", label: "Enrollment Fee", color: "text-green-400" },
             ].map((s) => (
-              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
@@ -241,7 +241,7 @@ export default function TWICCard() {
                     </div>
                     <div className={cn(
                       "flex-1 flex items-start gap-3 p-3 rounded-xl border",
-                      isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+                      isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
                     )}>
                       <div className={cn("p-2 rounded-lg flex-shrink-0", "bg-[#1473FF]/10 text-[#1473FF]")}>
                         {step.icon}
@@ -277,7 +277,7 @@ export default function TWICCard() {
                 ].map((loc, i) => (
                   <div key={i} className={cn(
                     "flex items-center gap-3 p-3 rounded-xl border",
-                    isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+                    isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
                   )}>
                     <div className="p-2 rounded-lg bg-blue-500/10">
                       <Anchor className="w-4 h-4 text-blue-400" />

@@ -44,7 +44,7 @@ export default function SettlementStatements() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><FileText className="w-6 h-6 text-cyan-400" /></div>
@@ -52,7 +52,7 @@ export default function SettlementStatements() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><DollarSign className="w-6 h-6 text-green-400" /></div>
@@ -60,7 +60,7 @@ export default function SettlementStatements() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><DollarSign className="w-6 h-6 text-purple-400" /></div>
@@ -68,7 +68,7 @@ export default function SettlementStatements() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><Clock className="w-6 h-6 text-yellow-400" /></div>
@@ -79,7 +79,7 @@ export default function SettlementStatements() {
       </div>
 
       <Select value={period} onValueChange={setPeriod}>
-        <SelectTrigger className="w-[180px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="w-[180px] bg-white/[0.02] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="current">Current Period</SelectItem>
           <SelectItem value="previous">Previous Period</SelectItem>
@@ -87,7 +87,7 @@ export default function SettlementStatements() {
         </SelectContent>
       </Select>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" />Settlements</CardTitle></CardHeader>
         <CardContent className="p-0">
           {settlementsQuery.isLoading ? (
@@ -95,7 +95,7 @@ export default function SettlementStatements() {
           ) : (settlementsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No settlements found</p></div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(settlementsQuery.data as any)?.map((settlement: any) => (
                 <div key={settlement.id} className={cn("p-4 flex items-center justify-between", settlement.status === "disputed" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center gap-4">
@@ -125,7 +125,7 @@ export default function SettlementStatements() {
                       <p className="text-lg font-bold text-purple-400">${settlement.netSettlement?.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">Net</p>
                     </div>
-                    <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg"><Download className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] rounded-lg"><Download className="w-4 h-4" /></Button>
                   </div>
                 </div>
               ))}

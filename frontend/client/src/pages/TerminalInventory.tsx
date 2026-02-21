@@ -57,7 +57,7 @@ export default function TerminalInventory() {
         </div>
         <div className="flex items-center gap-2">
           <Select value={productFilter} onValueChange={setProductFilter}>
-            <SelectTrigger className="w-40 bg-slate-700/50 border-slate-600/50 rounded-lg">
+            <SelectTrigger className="w-40 bg-white/[0.04] border-white/[0.06] rounded-lg">
               <SelectValue placeholder="Product" />
             </SelectTrigger>
             <SelectContent>
@@ -70,7 +70,7 @@ export default function TerminalInventory() {
           </Select>
           <Button 
             variant="outline" 
-            className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 rounded-lg"
+            className="bg-white/[0.04] border-white/[0.06] hover:bg-slate-600/50 rounded-lg"
             onClick={() => tanksQuery.refetch()}
           >
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -144,7 +144,7 @@ export default function TerminalInventory() {
         )}
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Database className="w-5 h-5 text-blue-400" />
@@ -171,7 +171,7 @@ export default function TerminalInventory() {
                     {getTankStatusBadge(tank.status)}
                   </div>
 
-                  <div className="relative h-24 bg-slate-800/50 rounded-lg mb-3 overflow-hidden">
+                  <div className="relative h-24 bg-white/[0.02] rounded-lg mb-3 overflow-hidden">
                     <div 
                       className={cn(
                         "absolute bottom-0 left-0 right-0 bg-gradient-to-t transition-all duration-500",

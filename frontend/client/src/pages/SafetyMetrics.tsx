@@ -48,7 +48,7 @@ export default function SafetyMetrics() {
         </div>
         <div className="flex items-center gap-2">
           <Select value={timeframe} onValueChange={setTimeframe}>
-            <SelectTrigger className="w-40 bg-slate-700/50 border-slate-600/50 rounded-lg">
+            <SelectTrigger className="w-40 bg-white/[0.04] border-white/[0.06] rounded-lg">
               <SelectValue placeholder="Timeframe" />
             </SelectTrigger>
             <SelectContent>
@@ -155,7 +155,7 @@ export default function SafetyMetrics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-cyan-400" />
@@ -201,7 +201,7 @@ export default function SafetyMetrics() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <Activity className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
@@ -242,7 +242,7 @@ export default function SafetyMetrics() {
         </Card>
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Target className="w-5 h-5 text-yellow-400" />

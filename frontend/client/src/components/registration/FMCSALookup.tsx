@@ -235,7 +235,7 @@ export function FMCSALookup({
                   value={dotNumber}
                   onChange={(e: any) => onDotChange(e.target.value.replace(/\D/g, "").slice(0, 8))}
                   placeholder="1234567"
-                  className="bg-slate-700/50 border-slate-600 text-white font-mono"
+                  className="bg-white/[0.04] border-slate-600 text-white font-mono"
                   maxLength={8}
                 />
                 <Button
@@ -259,7 +259,7 @@ export function FMCSALookup({
                   value={mcNumber}
                   onChange={(e: any) => onMcChange(e.target.value.replace(/[^\dMCmc-]/g, "").slice(0, 12))}
                   placeholder="MC-987654"
-                  className="bg-slate-700/50 border-slate-600 text-white font-mono"
+                  className="bg-white/[0.04] border-slate-600 text-white font-mono"
                 />
                 <Button
                   type="button"

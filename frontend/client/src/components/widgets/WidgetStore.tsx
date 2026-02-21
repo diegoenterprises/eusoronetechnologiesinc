@@ -112,9 +112,9 @@ export default function WidgetStore({ role, activeWidgetIds, onAddWidget, onClos
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Store Panel */}
-      <div className="relative ml-auto w-full max-w-2xl h-full bg-slate-900 border-l border-slate-700/50 shadow-2xl flex flex-col overflow-hidden">
+      <div className="relative ml-auto w-full max-w-2xl h-full bg-slate-900 border-l border-white/[0.06] shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex-shrink-0 p-6 border-b border-slate-700/50 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+        <div className="flex-shrink-0 p-6 border-b border-white/[0.06] bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-gradient-to-br from-[#1473FF] to-[#BE01FF]">
@@ -137,7 +137,7 @@ export default function WidgetStore({ role, activeWidgetIds, onAddWidget, onClos
               value={search}
               onChange={(e: any) => setSearch(e.target.value)}
               placeholder="Search widgets..."
-              className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg text-white placeholder:text-slate-500"
+              className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg text-white placeholder:text-slate-500"
             />
             {search && (
               <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -156,7 +156,7 @@ export default function WidgetStore({ role, activeWidgetIds, onAddWidget, onClos
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
                   activeTab === tab.id
                     ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-purple-500/20"
-                    : "bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50"
+                    : "bg-white/[0.02] text-slate-400 hover:text-white hover:bg-white/[0.04]"
                 )}
               >
                 {tab.id === "premium" && <EsangIcon className="w-3 h-3" />}
@@ -183,11 +183,11 @@ export default function WidgetStore({ role, activeWidgetIds, onAddWidget, onClos
               const isExpanded = expandedCategories.has("all") || expandedCategories.has(category);
 
               return (
-                <div key={category} className="rounded-xl border border-slate-700/50 overflow-hidden">
+                <div key={category} className="rounded-xl border border-white/[0.06] overflow-hidden">
                   {/* Category Header */}
                   <button
                     onClick={() => toggleCategory(category)}
-                    className="w-full flex items-center justify-between p-3 bg-slate-800/30 hover:bg-slate-800/50 transition-colors"
+                    className="w-full flex items-center justify-between p-3 bg-slate-800/30 hover:bg-white/[0.02] transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <Badge className={cn("border text-xs", meta.color)}>{meta.label}</Badge>
@@ -210,12 +210,12 @@ export default function WidgetStore({ role, activeWidgetIds, onAddWidget, onClos
                               "flex items-center gap-3 p-3 rounded-lg border transition-all",
                               isActive
                                 ? "bg-green-500/10 border-green-500/30"
-                                : "bg-slate-800/30 border-slate-700/30 hover:border-slate-600/50 hover:bg-slate-800/50"
+                                : "bg-slate-800/30 border-slate-700/30 hover:border-white/[0.06] hover:bg-white/[0.02]"
                             )}
                           >
                             <div className={cn(
                               "flex-shrink-0 p-2 rounded-lg",
-                              isActive ? "bg-green-500/20" : "bg-slate-700/50"
+                              isActive ? "bg-green-500/20" : "bg-white/[0.04]"
                             )}>
                               <Icon className={cn("w-5 h-5", isActive ? "text-green-400" : "text-slate-400")} />
                             </div>
@@ -261,7 +261,7 @@ export default function WidgetStore({ role, activeWidgetIds, onAddWidget, onClos
         </div>
 
         {/* Footer Stats */}
-        <div className="flex-shrink-0 p-4 border-t border-slate-700/50 bg-slate-900/80">
+        <div className="flex-shrink-0 p-4 border-t border-white/[0.06] bg-slate-900/80">
           <div className="flex items-center justify-between text-xs text-slate-500">
             <span>{activeWidgetIds.length} widgets on your dashboard</span>
             <span>{filteredWidgets.length} shown / {roleWidgets.length} total</span>

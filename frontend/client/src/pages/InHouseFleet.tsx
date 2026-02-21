@@ -27,7 +27,7 @@ export default function InHouseFleet() {
 
       {/* Service Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className={cn("rounded-xl cursor-pointer transition-all", tab === "tracking" ? "border-[#1473FF]/50 bg-[#1473FF]/5" : "bg-slate-800/50 border-slate-700/50")} onClick={() => setTab("tracking")}>
+        <Card className={cn("rounded-xl cursor-pointer transition-all", tab === "tracking" ? "border-[#1473FF]/50 bg-[#1473FF]/5" : "bg-white/[0.02] border-white/[0.06]")} onClick={() => setTab("tracking")}>
           <CardContent className="p-5 text-center">
             <div className="p-3 rounded-full bg-blue-500/20 w-fit mx-auto mb-3"><Navigation className="w-8 h-8 text-blue-400" /></div>
             <h3 className="text-white font-bold text-lg">EUSOTRACK</h3>
@@ -38,7 +38,7 @@ export default function InHouseFleet() {
             </div>
           </CardContent>
         </Card>
-        <Card className={cn("rounded-xl cursor-pointer transition-all", tab === "sms" ? "border-[#BE01FF]/50 bg-[#BE01FF]/5" : "bg-slate-800/50 border-slate-700/50")} onClick={() => setTab("sms")}>
+        <Card className={cn("rounded-xl cursor-pointer transition-all", tab === "sms" ? "border-[#BE01FF]/50 bg-[#BE01FF]/5" : "bg-white/[0.02] border-white/[0.06]")} onClick={() => setTab("sms")}>
           <CardContent className="p-5 text-center">
             <div className="p-3 rounded-full bg-purple-500/20 w-fit mx-auto mb-3"><MessageSquare className="w-8 h-8 text-purple-400" /></div>
             <h3 className="text-white font-bold text-lg">EUSOSMS</h3>
@@ -49,7 +49,7 @@ export default function InHouseFleet() {
             </div>
           </CardContent>
         </Card>
-        <Card className={cn("rounded-xl cursor-pointer transition-all", tab === "payments" ? "border-green-500/50 bg-green-500/5" : "bg-slate-800/50 border-slate-700/50")} onClick={() => setTab("payments")}>
+        <Card className={cn("rounded-xl cursor-pointer transition-all", tab === "payments" ? "border-green-500/50 bg-green-500/5" : "bg-white/[0.02] border-white/[0.06]")} onClick={() => setTab("payments")}>
           <CardContent className="p-5 text-center">
             <div className="p-3 rounded-full bg-green-500/20 w-fit mx-auto mb-3"><CreditCard className="w-8 h-8 text-green-400" /></div>
             <h3 className="text-white font-bold text-lg">EUSOBANK</h3>
@@ -64,7 +64,7 @@ export default function InHouseFleet() {
 
       {/* EUSOTRACK Panel */}
       {tab === "tracking" && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Navigation className="w-5 h-5 text-blue-400" />EUSOTRACK — GPS Tracking & Telematics
@@ -91,7 +91,7 @@ export default function InHouseFleet() {
 
       {/* EUSOSMS Panel */}
       {tab === "sms" && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-purple-400" />EUSOSMS — Messaging Service
@@ -117,7 +117,7 @@ export default function InHouseFleet() {
 
       {/* EUSOBANK Panel */}
       {tab === "payments" && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-green-400" />EUSOBANK — Payment Processing

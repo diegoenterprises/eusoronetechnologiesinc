@@ -53,7 +53,7 @@ export default function ReportBuilder() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><FileText className="w-6 h-6 text-cyan-400" /></div>
@@ -61,7 +61,7 @@ export default function ReportBuilder() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><Clock className="w-6 h-6 text-green-400" /></div>
@@ -69,7 +69,7 @@ export default function ReportBuilder() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><Download className="w-6 h-6 text-purple-400" /></div>
@@ -77,7 +77,7 @@ export default function ReportBuilder() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><FileText className="w-6 h-6 text-yellow-400" /></div>
@@ -89,10 +89,10 @@ export default function ReportBuilder() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search reports..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search reports..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" />Saved Reports</CardTitle></CardHeader>
         <CardContent className="p-0">
           {reportsQuery.isLoading ? (
@@ -100,7 +100,7 @@ export default function ReportBuilder() {
           ) : (reportsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No reports found</p></div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(reportsQuery.data as any)?.map((report: any) => (
                 <div key={report.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -125,7 +125,7 @@ export default function ReportBuilder() {
                     <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 rounded-lg" onClick={() => runMutation.mutate({ id: report.id })}>
                       <Play className="w-4 h-4 mr-1" />Run
                     </Button>
-                    <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg">
+                    <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] rounded-lg">
                       <Download className="w-4 h-4" />
                     </Button>
                   </div>

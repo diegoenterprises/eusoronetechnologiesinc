@@ -184,7 +184,7 @@ export function SignatureCanvas({
   };
 
   return (
-    <Card className={cn("bg-slate-800/50 border-slate-700/50 rounded-xl", className)}>
+    <Card className={cn("bg-white/[0.02] border-white/[0.06] rounded-xl", className)}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-white flex items-center gap-2">
@@ -203,7 +203,7 @@ export function SignatureCanvas({
         )}
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+        <div className="bg-slate-900/50 rounded-lg p-4 border border-white/[0.06]">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-slate-400">Signing as:</span>
             <span className="text-white font-medium">{signerName}</span>
@@ -254,11 +254,11 @@ export function SignatureCanvas({
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex items-center justify-between gap-4 pt-4 border-t border-slate-700/50">
+      <CardFooter className="flex items-center justify-between gap-4 pt-4 border-t border-white/[0.06]">
         <Button
           variant="outline"
           onClick={clearSignature}
-          className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 rounded-lg"
+          className="bg-white/[0.04] border-white/[0.06] hover:bg-slate-600/50 rounded-lg"
           disabled={!hasSignature}
         >
           <RotateCcw className="w-4 h-4 mr-2" />
@@ -269,7 +269,7 @@ export function SignatureCanvas({
             <Button
               variant="outline"
               onClick={onCancel}
-              className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 rounded-lg"
+              className="bg-white/[0.04] border-white/[0.06] hover:bg-slate-600/50 rounded-lg"
             >
               <X className="w-4 h-4 mr-2" />
               Cancel
@@ -335,7 +335,7 @@ export function SignatureField({
         {label} {required && <span className="text-red-400">*</span>}
       </label>
       {value ? (
-        <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
+        <div className="bg-slate-900/50 rounded-lg p-3 border border-white/[0.06]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src={value} alt="Signature" className="h-12 object-contain" />
@@ -358,7 +358,7 @@ export function SignatureField({
         <Button
           variant="outline"
           onClick={() => setShowCanvas(true)}
-          className="w-full h-16 bg-slate-900/50 border-slate-700/50 border-dashed hover:bg-slate-800/50 rounded-lg"
+          className="w-full h-16 bg-slate-900/50 border-white/[0.06] border-dashed hover:bg-white/[0.02] rounded-lg"
         >
           <FileSignature className="w-5 h-5 mr-2 text-purple-400" />
           <span className="text-slate-400">Click to sign</span>

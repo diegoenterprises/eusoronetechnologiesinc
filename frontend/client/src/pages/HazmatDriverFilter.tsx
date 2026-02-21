@@ -72,7 +72,7 @@ export default function HazmatDriverFilter() {
     return result.sort((a, b) => a.milesAway - b.milesAway);
   }, [drivers, searchTerm, requireTWIC, requireTanker, statusFilter, maxDistance]);
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -98,20 +98,20 @@ export default function HazmatDriverFilter() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className={cn("relative rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
+          <div className={cn("relative rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}>
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search by driver name..." className={cn("w-full pl-10 pr-4 py-2.5 rounded-xl text-sm border-0 bg-transparent focus:outline-none", isLight ? "text-slate-800" : "text-white placeholder:text-slate-400")} />
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => setRequireTWIC(!requireTWIC)} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all", requireTWIC ? "bg-[#1473FF]/10 text-[#1473FF] border-[#1473FF]/30" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-slate-800/50 border-slate-700/50 text-slate-500")}>
+            <button onClick={() => setRequireTWIC(!requireTWIC)} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all", requireTWIC ? "bg-[#1473FF]/10 text-[#1473FF] border-[#1473FF]/30" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-white/[0.02] border-white/[0.06] text-slate-500")}>
               {requireTWIC && <CheckCircle className="w-3 h-3 inline mr-1" />} TWIC Required
             </button>
-            <button onClick={() => setRequireTanker(!requireTanker)} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all", requireTanker ? "bg-[#1473FF]/10 text-[#1473FF] border-[#1473FF]/30" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-slate-800/50 border-slate-700/50 text-slate-500")}>
+            <button onClick={() => setRequireTanker(!requireTanker)} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all", requireTanker ? "bg-[#1473FF]/10 text-[#1473FF] border-[#1473FF]/30" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-white/[0.02] border-white/[0.06] text-slate-500")}>
               {requireTanker && <CheckCircle className="w-3 h-3 inline mr-1" />} Tanker Endorsement
             </button>
             {["all", "available", "en_route"].map((s) => (
-              <button key={s} onClick={() => setStatusFilter(s)} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all capitalize", statusFilter === s ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-slate-800/50 border-slate-700/50 text-slate-500")}>
+              <button key={s} onClick={() => setStatusFilter(s)} className={cn("px-4 py-2 rounded-xl border text-xs font-medium transition-all capitalize", statusFilter === s ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent" : isLight ? "bg-white border-slate-200 text-slate-400" : "bg-white/[0.02] border-white/[0.06] text-slate-500")}>
                 {s === "all" ? "All Status" : s.replace("_", " ")}
               </button>
             ))}
@@ -119,7 +119,7 @@ export default function HazmatDriverFilter() {
 
           <div className="flex items-center gap-3">
             <MapPin className="w-4 h-4 text-slate-400" />
-            <Input type="number" value={maxDistance} onChange={(e: any) => setMaxDistance(e.target.value)} placeholder="Max distance (miles)" className={cn("h-10 rounded-xl w-48", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white")} />
+            <Input type="number" value={maxDistance} onChange={(e: any) => setMaxDistance(e.target.value)} placeholder="Max distance (miles)" className={cn("h-10 rounded-xl w-48", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white")} />
           </div>
         </CardContent>
       </Card>

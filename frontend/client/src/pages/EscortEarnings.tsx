@@ -37,7 +37,7 @@ export default function EscortEarnings() {
           <p className="text-slate-400 text-sm mt-1">Track your escort job earnings</p>
         </div>
         <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
+          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
             <Calendar className="w-4 h-4 mr-2" /><SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -78,7 +78,7 @@ export default function EscortEarnings() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -94,7 +94,7 @@ export default function EscortEarnings() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -110,7 +110,7 @@ export default function EscortEarnings() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -126,7 +126,7 @@ export default function EscortEarnings() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -144,7 +144,7 @@ export default function EscortEarnings() {
       </div>
 
       {/* Completed Jobs */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-green-400" />
@@ -160,7 +160,7 @@ export default function EscortEarnings() {
               <p className="text-slate-400">No completed jobs</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(jobsQuery.data as any)?.map((job: any) => (
                 <div key={job.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">

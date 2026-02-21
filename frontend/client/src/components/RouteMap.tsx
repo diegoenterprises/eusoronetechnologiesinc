@@ -184,7 +184,7 @@ export default function RouteMap({
   return (
     <div
       ref={mapContainerRef}
-      className={`rounded-xl overflow-hidden border ${theme === "dark" ? "border-slate-700/50" : "border-slate-200"} ${className}`}
+      className={`rounded-xl overflow-hidden border ${theme === "dark" ? "border-white/[0.06]" : "border-slate-200"} ${className}`}
       style={{ height, width: "100%" }}
     />
   );

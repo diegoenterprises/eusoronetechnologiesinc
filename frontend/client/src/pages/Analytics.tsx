@@ -29,7 +29,7 @@ export default function Analytics() {
 
   const cc = cn("rounded-2xl border backdrop-blur-sm transition-all", L ? "bg-white/80 border-slate-200/80 shadow-sm" : "bg-slate-800/40 border-slate-700/40");
   const titleCls = cn("text-sm font-semibold", L ? "text-slate-800" : "text-white");
-  const cellCls = cn("p-4 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
+  const cellCls = cn("p-4 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
 
   const CI = ({ value }: { value: number | undefined }) => {
     if (!value) return null;
@@ -57,7 +57,7 @@ export default function Analytics() {
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>Business intelligence & performance metrics</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className={cn("flex items-center gap-1 p-1 rounded-xl", L ? "bg-slate-100" : "bg-slate-800/60")}>
+          <div className={cn("flex items-center gap-1 p-1 rounded-xl", L ? "bg-slate-100" : "bg-white/[0.03]")}>
             {["week", "month", "year"].map((t) => (
               <button key={t} onClick={() => setPeriod(t)} className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
                 period === t ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : L ? "text-slate-500" : "text-slate-400"
@@ -90,7 +90,7 @@ export default function Analytics() {
       </div>
 
       {/* ── View Tabs ── */}
-      <div className={cn("flex items-center gap-1 p-1 rounded-xl w-fit", L ? "bg-slate-100" : "bg-slate-800/60")}>
+      <div className={cn("flex items-center gap-1 p-1 rounded-xl w-fit", L ? "bg-slate-100" : "bg-white/[0.03]")}>
         {[{ id: "overview", l: "Overview", I: BarChart3 }, { id: "revenue", l: "Revenue", I: DollarSign }, { id: "loads", l: "Loads", I: Package }].map((tab: any) => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all",
             activeTab === tab.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : L ? "text-slate-500 hover:text-slate-700" : "text-slate-400 hover:text-white"

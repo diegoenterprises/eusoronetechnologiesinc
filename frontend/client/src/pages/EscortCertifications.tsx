@@ -57,7 +57,7 @@ export default function EscortCertifications() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -73,7 +73,7 @@ export default function EscortCertifications() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -89,7 +89,7 @@ export default function EscortCertifications() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -105,7 +105,7 @@ export default function EscortCertifications() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -123,7 +123,7 @@ export default function EscortCertifications() {
       </div>
 
       {/* My Certifications */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Award className="w-5 h-5 text-cyan-400" />
@@ -142,7 +142,7 @@ export default function EscortCertifications() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(certsQuery.data as any)?.map((cert: any) => (
-                <div key={cert.id} className={cn("p-4 rounded-xl border", cert.status === "valid" ? "bg-green-500/5 border-green-500/30" : cert.status === "expiring" ? "bg-yellow-500/5 border-yellow-500/30" : cert.status === "expired" ? "bg-red-500/5 border-red-500/30" : "bg-slate-700/30 border-slate-600/50")}>
+                <div key={cert.id} className={cn("p-4 rounded-xl border", cert.status === "valid" ? "bg-green-500/5 border-green-500/30" : cert.status === "expiring" ? "bg-yellow-500/5 border-yellow-500/30" : cert.status === "expired" ? "bg-red-500/5 border-red-500/30" : "bg-slate-700/30 border-white/[0.06]")}>
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-white font-bold text-lg">{cert.state}</p>
                     {getStatusBadge(cert.status)}
@@ -152,7 +152,7 @@ export default function EscortCertifications() {
                     <Calendar className="w-3 h-3" />
                     <span>Expires: {cert.expiresAt}</span>
                   </div>
-                  <Button size="sm" variant="outline" className="w-full bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+                  <Button size="sm" variant="outline" className="w-full bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
                     <FileText className="w-4 h-4 mr-1" />View
                   </Button>
                 </div>
@@ -163,7 +163,7 @@ export default function EscortCertifications() {
       </Card>
 
       {/* State Requirements */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <MapPin className="w-5 h-5 text-purple-400" />
@@ -174,11 +174,11 @@ export default function EscortCertifications() {
           {statesQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(statesQuery.data as any)?.map((state: any) => (
                 <div key={state.code} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center font-bold", state.certified ? "bg-green-500/20 text-green-400" : "bg-slate-700/50 text-slate-400")}>
+                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center font-bold", state.certified ? "bg-green-500/20 text-green-400" : "bg-white/[0.04] text-slate-400")}>
                       {state.code}
                     </div>
                     <div>
@@ -192,7 +192,7 @@ export default function EscortCertifications() {
                     ) : state.reciprocityFrom ? (
                       <Badge className="bg-purple-500/20 text-purple-400 border-0">Reciprocity: {state.reciprocityFrom}</Badge>
                     ) : state.requiresCert ? (
-                      <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+                      <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
                         <Upload className="w-4 h-4 mr-1" />Get Certified
                       </Button>
                     ) : (

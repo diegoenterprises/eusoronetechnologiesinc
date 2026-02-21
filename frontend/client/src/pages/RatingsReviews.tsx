@@ -85,7 +85,7 @@ export default function RatingsReviews() {
       </div>
 
       {/* Tab Switcher */}
-      <div className={cn("flex items-center gap-1 p-1 rounded-xl w-fit", L ? "bg-slate-100" : "bg-slate-800/60")}>
+      <div className={cn("flex items-center gap-1 p-1 rounded-xl w-fit", L ? "bg-slate-100" : "bg-white/[0.03]")}>
         {([{ id: "received" as const, l: "Received", I: Star }, { id: "given" as const, l: "Given", I: ThumbsUp }, { id: "submit" as const, l: "Write Review", I: Send }]).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} className={cn("flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all",
             tab === t.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : L ? "text-slate-500" : "text-slate-400"
@@ -127,7 +127,7 @@ export default function RatingsReviews() {
               <div>
                 <label className="text-xs text-slate-400 mb-1 block">Who are you reviewing?</label>
                 <select value={submitForm.entityType} onChange={(e) => setSubmitForm({...submitForm, entityType: e.target.value})}
-                  className={cn("w-full px-3 py-2 rounded-xl text-sm border", L ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white")}>
+                  className={cn("w-full px-3 py-2 rounded-xl text-sm border", L ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white")}>
                   <option value="catalyst">Catalyst</option>
                   <option value="shipper">Shipper</option>
                   <option value="driver">Driver</option>
@@ -144,7 +144,7 @@ export default function RatingsReviews() {
               <StarRow value={submitForm.rating} onChange={(v) => setSubmitForm({...submitForm, rating: v})} hover={hoverStar} onHover={setHoverStar} />
             </div>
 
-            <Textarea placeholder="Share your experience..." value={submitForm.comment} onChange={(e: any) => setSubmitForm({...submitForm, comment: e.target.value})} rows={4} className={cn("rounded-xl", L ? "" : "bg-slate-800/50 border-slate-700/50")} />
+            <Textarea placeholder="Share your experience..." value={submitForm.comment} onChange={(e: any) => setSubmitForm({...submitForm, comment: e.target.value})} rows={4} className={cn("rounded-xl", L ? "" : "bg-white/[0.02] border-white/[0.06]")} />
 
             <div className="flex items-center gap-2">
               <input type="checkbox" checked={submitForm.anonymous} onChange={(e) => setSubmitForm({...submitForm, anonymous: e.target.checked})} className="rounded" />
@@ -173,7 +173,7 @@ export default function RatingsReviews() {
           ) : (
             <div className="space-y-2">
               {leaders.map((e: any, i: number) => (
-                <div key={e.entityId || i} className={cn("flex items-center justify-between p-3 rounded-xl", L ? "bg-slate-50" : "bg-slate-800/50")}>
+                <div key={e.entityId || i} className={cn("flex items-center justify-between p-3 rounded-xl", L ? "bg-slate-50" : "bg-white/[0.02]")}>
                   <div className="flex items-center gap-3">
                     <span className={cn("w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
                       i === 0 ? "bg-yellow-500/20 text-yellow-500" : i === 1 ? "bg-slate-400/20 text-slate-400" : i === 2 ? "bg-orange-500/20 text-orange-500" : "bg-slate-500/10 text-slate-400"

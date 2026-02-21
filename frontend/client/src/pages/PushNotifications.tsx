@@ -52,7 +52,7 @@ export default function PushNotifications() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -68,7 +68,7 @@ export default function PushNotifications() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -84,7 +84,7 @@ export default function PushNotifications() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -100,7 +100,7 @@ export default function PushNotifications() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -126,8 +126,8 @@ export default function PushNotifications() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input value={title} onChange={(e: any) => setTitle(e.target.value)} placeholder="Notification title..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
-          <Textarea value={message} onChange={(e: any) => setMessage(e.target.value)} placeholder="Notification message..." className="bg-slate-800/50 border-slate-700/50 rounded-lg min-h-[100px]" />
+          <Input value={title} onChange={(e: any) => setTitle(e.target.value)} placeholder="Notification title..." className="bg-white/[0.02] border-white/[0.06] rounded-lg" />
+          <Textarea value={message} onChange={(e: any) => setMessage(e.target.value)} placeholder="Notification message..." className="bg-white/[0.02] border-white/[0.06] rounded-lg min-h-[100px]" />
           <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => sendMutation.mutate({ title, message })} disabled={!title || !message || sendMutation.isPending}>
             <Send className="w-4 h-4 mr-2" />Send to All Users
           </Button>
@@ -136,7 +136,7 @@ export default function PushNotifications() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Notification Settings */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Settings className="w-5 h-5 text-purple-400" />
@@ -147,7 +147,7 @@ export default function PushNotifications() {
             {settingsQuery.isLoading ? (
               <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : (
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y divide-white/[0.04]">
                 {(settingsQuery.data as any)?.map((setting: any) => (
                   <div key={setting.id} className="p-4 flex items-center justify-between">
                     <div>
@@ -163,7 +163,7 @@ export default function PushNotifications() {
         </Card>
 
         {/* Recent Notifications */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Recent Notifications</CardTitle>
           </CardHeader>
@@ -173,7 +173,7 @@ export default function PushNotifications() {
             ) : (recentQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-8">No recent notifications</p>
             ) : (
-              <div className="divide-y divide-slate-700/50 max-h-[400px] overflow-y-auto">
+              <div className="divide-y divide-white/[0.04] max-h-[400px] overflow-y-auto">
                 {(recentQuery.data as any)?.map((notif: any) => (
                   <div key={notif.id} className="p-4">
                     <div className="flex items-center justify-between mb-1">

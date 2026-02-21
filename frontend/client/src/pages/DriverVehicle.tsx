@@ -59,7 +59,7 @@ export default function DriverVehicle() {
   if (!vehicleQuery.data) {
     return (
       <div className="p-4 md:p-6">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-12 text-center">
             <Truck className="w-16 h-16 text-slate-500 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-white mb-2">No Vehicle Assigned</h2>
@@ -149,7 +149,7 @@ export default function DriverVehicle() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Truck className="w-5 h-5 text-purple-400" />
@@ -210,7 +210,7 @@ export default function DriverVehicle() {
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-cyan-400" />
@@ -243,7 +243,7 @@ export default function DriverVehicle() {
         </div>
 
         <div className="space-y-6">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <ClipboardCheck className="w-5 h-5 text-green-400" />
@@ -288,7 +288,7 @@ export default function DriverVehicle() {
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-cyan-400" />
@@ -312,15 +312,15 @@ export default function DriverVehicle() {
                 <ClipboardCheck className="w-4 h-4 mr-2" />
                 Post-Trip Inspection
               </Button>
-              <Button variant="outline" className="w-full bg-slate-700/50 border-slate-600/50 rounded-lg">
+              <Button variant="outline" className="w-full bg-white/[0.04] border-white/[0.06] rounded-lg">
                 <Wrench className="w-4 h-4 mr-2" />
                 Report Issue
               </Button>
-              <Button variant="outline" className="w-full bg-slate-700/50 border-slate-600/50 rounded-lg">
+              <Button variant="outline" className="w-full bg-white/[0.04] border-white/[0.06] rounded-lg">
                 <Camera className="w-4 h-4 mr-2" />
                 Take Photos
               </Button>
-              <Button variant="outline" className="w-full bg-slate-700/50 border-slate-600/50 rounded-lg">
+              <Button variant="outline" className="w-full bg-white/[0.04] border-white/[0.06] rounded-lg">
                 <FileText className="w-4 h-4 mr-2" />
                 View Documents
               </Button>

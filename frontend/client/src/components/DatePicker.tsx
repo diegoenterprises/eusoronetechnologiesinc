@@ -43,7 +43,7 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
           type="button"
           className={cn(
             "flex h-10 w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-all",
-            "bg-white dark:bg-slate-700/50 border-slate-200 dark:border-slate-600/50",
+            "bg-white dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]",
             "hover:border-purple-300 dark:hover:border-purple-500/40",
             "focus:outline-none focus:ring-2 focus:ring-purple-500/20 dark:focus:ring-purple-500/30",
             "text-slate-900 dark:text-white",

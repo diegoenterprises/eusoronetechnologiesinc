@@ -120,10 +120,10 @@ export default function SpectraMatch() {
   };
 
   // Theme classes
-  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
   const titleCls = cn("text-lg font-semibold", isLight ? "text-slate-800" : "text-white");
   const subtextCls = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
-  const cellCls = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
+  const cellCls = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
   const labelCls = cn("flex items-center gap-2 text-sm font-medium", isLight ? "text-slate-700" : "text-slate-300");
   const valCls = cn("text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent");
 
@@ -179,7 +179,7 @@ export default function SpectraMatch() {
 
               {/* Advanced Toggle */}
               <button
-                className={cn("w-full text-center text-xs font-medium py-2 rounded-lg transition-colors", isLight ? "text-slate-500 hover:bg-slate-100" : "text-slate-400 hover:bg-slate-700/30")}
+                className={cn("w-full text-center text-xs font-medium py-2 rounded-lg transition-colors", isLight ? "text-slate-500 hover:bg-slate-100" : "text-slate-400 hover:bg-white/[0.06]/30")}
                 onClick={() => setShowAdvanced(!showAdvanced)}
               >
                 {showAdvanced ? "Hide" : "Show"} Advanced
@@ -345,7 +345,7 @@ export default function SpectraMatch() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {/* Reasoning */}
-                    <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                    <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                       <div className="flex items-center gap-2 mb-2">
                         <Target className="w-4 h-4 text-blue-500" />
                         <span className={cn("text-sm font-semibold", isLight ? "text-slate-700" : "text-white")}>Reasoning</span>
@@ -373,7 +373,7 @@ export default function SpectraMatch() {
 
                     {/* Market Context */}
                     {result.esangAI.marketContext && (
-                      <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                      <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                         <div className="flex items-center gap-2 mb-2">
                           <TrendingUp className={cn("w-4 h-4", isLight ? "text-emerald-600" : "text-green-400")} />
                           <span className={cn("text-sm font-semibold", isLight ? "text-slate-700" : "text-white")}>Market Context</span>
@@ -409,7 +409,7 @@ export default function SpectraMatch() {
                       value={aiQuestion}
                       onChange={(e: any) => setAiQuestion(e.target.value)}
                       placeholder="Ask anything about this product..."
-                      className={cn("min-h-[60px] resize-none rounded-xl", isLight ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-slate-800/50 border-slate-700/50 text-white")}
+                      className={cn("min-h-[60px] resize-none rounded-xl", isLight ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-white/[0.02] border-white/[0.06] text-white")}
                       onKeyDown={(e: any) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleAskAI())}
                     />
                     <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white px-3 rounded-xl" onClick={handleAskAI} disabled={askAIMutation.isPending || !aiQuestion.trim()}>
@@ -484,7 +484,7 @@ export default function SpectraMatch() {
                       { label: "Avg Confidence", value: `${learningStatsQuery.data?.avgConfidence || 0}%`, color: "" },
                       { label: "Trend", value: learningStatsQuery.data?.recentTrend === "Improving" ? "Up" : learningStatsQuery.data?.recentTrend === "Declining" ? "Down" : "--", color: learningStatsQuery.data?.recentTrend === "Improving" ? (isLight ? "text-emerald-600" : "text-green-400") : learningStatsQuery.data?.recentTrend === "Declining" ? "text-red-500" : (isLight ? "text-slate-400" : "text-yellow-400") },
                     ].map((s) => (
-                      <div key={s.label} className={cn("p-3 rounded-xl text-center", isLight ? "bg-white border border-slate-200" : "bg-slate-800/50")}>
+                      <div key={s.label} className={cn("p-3 rounded-xl text-center", isLight ? "bg-white border border-slate-200" : "bg-white/[0.02]")}>
                         <p className={cn("text-2xl font-bold", s.color || "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent")}>{s.value}</p>
                         <p className={cn("text-[10px]", subtextCls)}>{s.label}</p>
                       </div>

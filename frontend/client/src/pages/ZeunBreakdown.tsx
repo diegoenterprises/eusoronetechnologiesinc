@@ -236,15 +236,15 @@ export default function ZeunBreakdown() {
                   <Phone className="h-6 w-6 text-red-500" />
                   <span className="text-xs font-bold text-red-500">911 Emergency</span>
                 </a>
-                <button onClick={() => setEmergencyDetail("breakdown_highway")} className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border transition-all hover:shadow-md", L ? "border-slate-200 bg-orange-50 hover:border-orange-300" : "border-slate-700/50 bg-orange-500/10 hover:border-orange-500/30")}>
+                <button onClick={() => setEmergencyDetail("breakdown_highway")} className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border transition-all hover:shadow-md", L ? "border-slate-200 bg-orange-50 hover:border-orange-300" : "border-white/[0.06] bg-orange-500/10 hover:border-orange-500/30")}>
                   <ShieldAlert className="h-6 w-6 text-orange-500" />
                   <span className={cn("text-xs font-bold", L ? "text-orange-700" : "text-orange-400")}>Highway Safety</span>
                 </button>
-                <button onClick={() => setEmergencyDetail("engine_fire")} className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border transition-all hover:shadow-md", L ? "border-slate-200 bg-red-50 hover:border-red-300" : "border-slate-700/50 bg-red-500/10 hover:border-red-500/30")}>
+                <button onClick={() => setEmergencyDetail("engine_fire")} className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border transition-all hover:shadow-md", L ? "border-slate-200 bg-red-50 hover:border-red-300" : "border-white/[0.06] bg-red-500/10 hover:border-red-500/30")}>
                   <Flame className="h-6 w-6 text-red-500" />
                   <span className={cn("text-xs font-bold", L ? "text-red-700" : "text-red-400")}>Vehicle Fire</span>
                 </button>
-                <button onClick={() => setEmergencyDetail("medical_emergency")} className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border transition-all hover:shadow-md", L ? "border-slate-200 bg-pink-50 hover:border-pink-300" : "border-slate-700/50 bg-pink-500/10 hover:border-pink-500/30")}>
+                <button onClick={() => setEmergencyDetail("medical_emergency")} className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border transition-all hover:shadow-md", L ? "border-slate-200 bg-pink-50 hover:border-pink-300" : "border-white/[0.06] bg-pink-500/10 hover:border-pink-500/30")}>
                   <Heart className="h-6 w-6 text-pink-500" />
                   <span className={cn("text-xs font-bold", L ? "text-pink-700" : "text-pink-400")}>Medical Help</span>
                 </button>
@@ -282,7 +282,7 @@ export default function ZeunBreakdown() {
                       <p className={cn("text-xs font-bold uppercase tracking-wider mb-2", L ? "text-slate-500" : "text-slate-400")}>Emergency Contacts</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         {emergencyData.emergencyContacts.map((c: any, i: number) => (
-                          <div key={i} className={cn("flex items-center justify-between p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                          <div key={i} className={cn("flex items-center justify-between p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                             <div>
                               <p className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{c.name}</p>
                               <p className="text-xs text-slate-400">{c.description || c.type}</p>
@@ -318,7 +318,7 @@ export default function ZeunBreakdown() {
                 onChange={(e: any) => setDtcCode(e.target.value.toUpperCase())}
                 onKeyDown={(e: any) => e.key === "Enter" && dtcCode.trim() && setDtcSearch(dtcCode.trim())}
                 placeholder="Enter DTC code (e.g. P0300, U0100)..."
-                className={cn("rounded-xl font-mono", L ? "" : "bg-slate-800/50 border-slate-700/50")}
+                className={cn("rounded-xl font-mono", L ? "" : "bg-white/[0.02] border-white/[0.06]")}
               />
               <Button onClick={() => dtcCode.trim() && setDtcSearch(dtcCode.trim())} disabled={!dtcCode.trim() || dtcQuery.isFetching}
                 className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl">
@@ -326,7 +326,7 @@ export default function ZeunBreakdown() {
               </Button>
             </div>
             {dtcQuery.data && (
-              <div className={cn("p-4 rounded-xl border space-y-3", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+              <div className={cn("p-4 rounded-xl border space-y-3", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                 <div className="flex items-center gap-2">
                   <Badge className="border-0 bg-purple-500/15 text-purple-500 text-[10px] font-bold font-mono">{dtcQuery.data.code}</Badge>
                   <span className={cn("font-bold text-sm", L ? "text-slate-800" : "text-white")}>{dtcQuery.data.description || dtcQuery.data.title}</span>
@@ -373,7 +373,7 @@ export default function ZeunBreakdown() {
             ) : myBreakdowns && myBreakdowns.length > 0 ? (
               <div className="space-y-2">
                 {myBreakdowns.map((b: any) => (
-                  <div key={b.id} className={cn("flex items-center justify-between p-3.5 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                  <div key={b.id} className={cn("flex items-center justify-between p-3.5 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                     <div>
                       <p className={cn("font-medium text-sm", L ? "text-slate-800" : "text-white")}>{b.issueCategory.replace(/_/g, " ")}</p>
                       <p className="text-xs text-slate-400 mt-0.5">{b.symptoms?.slice(0, 2).join(", ")}</p>
@@ -418,7 +418,7 @@ export default function ZeunBreakdown() {
               value={vehicleSearch}
               onChange={(e: any) => setVehicleSearch(e.target.value)}
               placeholder="Search by unit number, make, or model..."
-              className={cn("rounded-xl", L ? "" : "bg-slate-800/50 border-slate-700/50")}
+              className={cn("rounded-xl", L ? "" : "bg-white/[0.02] border-white/[0.06]")}
             />
             {fleetLoading ? (
               <div className="space-y-2"><Skeleton className="h-16 w-full rounded-xl" /><Skeleton className="h-16 w-full rounded-xl" /><Skeleton className="h-16 w-full rounded-xl" /></div>
@@ -429,7 +429,7 @@ export default function ZeunBreakdown() {
                   return (
                     <button key={v.id} onClick={() => setSelectedVehicle(v)}
                       className={cn("w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
-                        sel ? "border-blue-500 bg-blue-500/10" : L ? "border-slate-200 hover:border-blue-300 hover:bg-blue-50/50" : "border-slate-700/50 hover:border-blue-500/50 hover:bg-blue-500/5"
+                        sel ? "border-blue-500 bg-blue-500/10" : L ? "border-slate-200 hover:border-blue-300 hover:bg-blue-50/50" : "border-white/[0.06] hover:border-blue-500/50 hover:bg-blue-500/5"
                       )}>
                       <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center", sel ? "bg-blue-500/20" : L ? "bg-slate-100" : "bg-slate-800")}>
                         <Truck className={cn("w-5 h-5", sel ? "text-blue-500" : L ? "text-slate-500" : "text-slate-400")} />
@@ -474,7 +474,7 @@ export default function ZeunBreakdown() {
                 return (
                   <button key={category.value} onClick={() => { setIssueCategory(category.value); setStep(3); }}
                     className={cn("p-4 rounded-xl border-2 text-left transition-all group",
-                      sel ? "border-blue-500 bg-blue-500/10" : L ? "border-slate-200 hover:border-blue-300 hover:bg-blue-50/50" : "border-slate-700/50 hover:border-blue-500/50 hover:bg-blue-500/5"
+                      sel ? "border-blue-500 bg-blue-500/10" : L ? "border-slate-200 hover:border-blue-300 hover:bg-blue-50/50" : "border-white/[0.06] hover:border-blue-500/50 hover:bg-blue-500/5"
                     )}>
                     <Icon className={cn("h-5 w-5 mb-2 transition-colors", sel ? "text-blue-500" : L ? "text-slate-500 group-hover:text-blue-500" : "text-slate-400 group-hover:text-blue-400")} />
                     <div className={cn("font-medium text-sm", L ? "text-slate-700" : "text-slate-200")}>{category.label}</div>
@@ -495,7 +495,7 @@ export default function ZeunBreakdown() {
           </div>
           <CardContent className="p-4 space-y-4">
             <div className="flex gap-2">
-              <Input value={symptomInput} onChange={(e: any) => setSymptomInput(e.target.value)} onKeyDown={(e: any) => e.key === "Enter" && addSymptom(symptomInput)} placeholder="Type a symptom and press Enter" className={cn("rounded-xl", L ? "" : "bg-slate-800/50 border-slate-700/50")} />
+              <Input value={symptomInput} onChange={(e: any) => setSymptomInput(e.target.value)} onKeyDown={(e: any) => e.key === "Enter" && addSymptom(symptomInput)} placeholder="Type a symptom and press Enter" className={cn("rounded-xl", L ? "" : "bg-white/[0.02] border-white/[0.06]")} />
               <Button onClick={() => addSymptom(symptomInput)} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl">Add</Button>
             </div>
 
@@ -548,7 +548,7 @@ export default function ZeunBreakdown() {
                 const colors: Record<string, string> = { LOW: "border-green-500 bg-green-500/10", MEDIUM: "border-yellow-500 bg-yellow-500/10", HIGH: "border-orange-500 bg-orange-500/10", CRITICAL: "border-red-500 bg-red-500/10" };
                 return (
                   <button key={option.value} onClick={() => setSeverity(option.value)}
-                    className={cn("w-full p-3.5 rounded-xl border-2 text-left transition-all", sel ? colors[option.value] || "border-blue-500" : L ? "border-slate-200 hover:border-slate-300" : "border-slate-700/50 hover:border-slate-600")}>
+                    className={cn("w-full p-3.5 rounded-xl border-2 text-left transition-all", sel ? colors[option.value] || "border-blue-500" : L ? "border-slate-200 hover:border-slate-300" : "border-white/[0.06] hover:border-slate-600")}>
                     <Badge className={cn("border-0 text-[10px] font-bold", option.color)}>{option.label}</Badge>
                   </button>
                 );
@@ -560,7 +560,7 @@ export default function ZeunBreakdown() {
               <div className="grid grid-cols-2 gap-3">
                 <button onClick={() => setCanDrive(true)}
                   className={cn("p-4 rounded-xl border-2 text-center transition-all",
-                    canDrive === true ? "border-green-500 bg-green-500/10" : L ? "border-slate-200 hover:border-green-300" : "border-slate-700/50 hover:border-green-500/30"
+                    canDrive === true ? "border-green-500 bg-green-500/10" : L ? "border-slate-200 hover:border-green-300" : "border-white/[0.06] hover:border-green-500/30"
                   )}>
                   <CheckCircle className="h-7 w-7 mx-auto mb-2 text-green-500" />
                   <div className={cn("font-medium text-sm", L ? "text-slate-700" : "text-slate-200")}>Yes, limited</div>
@@ -568,7 +568,7 @@ export default function ZeunBreakdown() {
                 </button>
                 <button onClick={() => setCanDrive(false)}
                   className={cn("p-4 rounded-xl border-2 text-center transition-all",
-                    canDrive === false ? "border-red-500 bg-red-500/10" : L ? "border-slate-200 hover:border-red-300" : "border-slate-700/50 hover:border-red-500/30"
+                    canDrive === false ? "border-red-500 bg-red-500/10" : L ? "border-slate-200 hover:border-red-300" : "border-white/[0.06] hover:border-red-500/30"
                   )}>
                   <XCircle className="h-7 w-7 mx-auto mb-2 text-red-500" />
                   <div className={cn("font-medium text-sm", L ? "text-slate-700" : "text-slate-200")}>No, unsafe</div>
@@ -594,9 +594,9 @@ export default function ZeunBreakdown() {
             <p className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Additional details</p>
           </div>
           <CardContent className="p-4 space-y-5">
-            <Textarea value={driverNotes} onChange={(e: any) => setDriverNotes(e.target.value)} placeholder="Any additional details about the issue..." rows={4} className={cn("rounded-xl", L ? "" : "bg-slate-800/50 border-slate-700/50")} />
+            <Textarea value={driverNotes} onChange={(e: any) => setDriverNotes(e.target.value)} placeholder="Any additional details about the issue..." rows={4} className={cn("rounded-xl", L ? "" : "bg-white/[0.02] border-white/[0.06]")} />
 
-            <div className={cn("p-4 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+            <div className={cn("p-4 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
               <p className={cn("text-xs font-bold uppercase tracking-wider mb-3", L ? "text-slate-500" : "text-slate-400")}>Report Summary</p>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-slate-400 text-xs">Vehicle</span><p className={cn("font-medium", L ? "text-slate-800" : "text-white")}>{selectedVehicle ? `${selectedVehicle.unitNumber} - ${selectedVehicle.make} ${selectedVehicle.model}` : "N/A"}</p></div>
@@ -627,7 +627,7 @@ export default function ZeunBreakdown() {
               <span className={cn("text-sm font-semibold", L ? "text-green-700" : "text-green-400")}>Diagnosis Complete</span>
             </div>
             <CardContent className="p-4 space-y-4">
-              <div className={cn("p-4 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+              <div className={cn("p-4 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                 <h3 className={cn("font-bold text-lg", L ? "text-slate-800" : "text-white")}>{reportResult.diagnosis.issue}</h3>
                 <p className="text-sm text-slate-400 mt-1">{reportResult.diagnosis.description}</p>
                 <div className="mt-3 flex items-center gap-3">
@@ -637,11 +637,11 @@ export default function ZeunBreakdown() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className={cn("p-4 rounded-xl border text-center", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                <div className={cn("p-4 rounded-xl border text-center", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                   <p className="text-[10px] text-slate-400 uppercase tracking-wider">Estimated Cost</p>
                   <p className={cn("text-xl font-bold mt-1", L ? "text-slate-800" : "text-white")}>${reportResult.estimatedCost.min} - ${reportResult.estimatedCost.max}</p>
                 </div>
-                <div className={cn("p-4 rounded-xl border text-center", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                <div className={cn("p-4 rounded-xl border text-center", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                   <p className="text-[10px] text-slate-400 uppercase tracking-wider">Can Drive</p>
                   <p className={cn("text-lg font-bold mt-1 flex items-center justify-center gap-1.5", reportResult.canDrive ? "text-green-500" : "text-red-500")}>
                     {reportResult.canDrive ? <><CheckCircle className="h-4 w-4" /> Limited</> : <><XCircle className="h-4 w-4" /> Need Tow</>}
@@ -699,19 +699,19 @@ export default function ZeunBreakdown() {
               </div>
               <CardContent className="p-4 space-y-3">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                  <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                     <p className="text-[10px] text-slate-400 uppercase tracking-wider">Make / Model</p>
                     <p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{selectedVehicle.make} {selectedVehicle.model}</p>
                   </div>
-                  <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                  <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                     <p className="text-[10px] text-slate-400 uppercase tracking-wider">Year</p>
                     <p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{selectedVehicle.year}</p>
                   </div>
-                  <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                  <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                     <p className="text-[10px] text-slate-400 uppercase tracking-wider">Unit #</p>
                     <p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{selectedVehicle.unitNumber}</p>
                   </div>
-                  <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                  <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                     <p className="text-[10px] text-slate-400 uppercase tracking-wider">Type</p>
                     <p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{selectedVehicle.type || "N/A"}</p>
                   </div>
@@ -759,7 +759,7 @@ export default function ZeunBreakdown() {
               <CardContent className="p-4">
                 <div className="space-y-2">
                   {reportResult.alternativeDiagnoses.map((d: any, i: number) => (
-                    <div key={i} className={cn("flex items-center justify-between p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                    <div key={i} className={cn("flex items-center justify-between p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                       <div>
                         <p className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{d.issue}</p>
                         <Badge className={cn("border-0 text-[10px] font-bold mt-1",
@@ -844,7 +844,7 @@ export default function ZeunBreakdown() {
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tools Required</p>
                         <div className="flex flex-wrap gap-2">
                           {selfRepairQuery.data.tools.map((tool: string, i: number) => (
-                            <Badge key={i} className={cn("border text-xs", L ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-800/50 border-slate-700/30 text-slate-300")}>{tool}</Badge>
+                            <Badge key={i} className={cn("border text-xs", L ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-white/[0.02] border-slate-700/30 text-slate-300")}>{tool}</Badge>
                           ))}
                         </div>
                       </div>
@@ -855,7 +855,7 @@ export default function ZeunBreakdown() {
                         <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider mb-2">Repair Steps</p>
                         <ol className="space-y-3">
                           {selfRepairQuery.data.steps.map((s: any, i: number) => (
-                            <li key={i} className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                            <li key={i} className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                               <div className="flex items-start gap-2">
                                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-[10px] font-bold text-white">{i + 1}</span>
                                 <div>

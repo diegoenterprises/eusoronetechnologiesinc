@@ -65,7 +65,7 @@ export default function BillingSettings() {
                 <p className="text-slate-400">${subscription?.price}/month • Renews {subscription?.renewalDate}</p>
               </div>
               <div className="flex gap-3">
-                <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+                <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
                   Change Plan
                 </Button>
                 <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
@@ -78,7 +78,7 @@ export default function BillingSettings() {
       </Card>
 
       {/* Usage */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg">Usage This Month</CardTitle>
         </CardHeader>
@@ -103,14 +103,14 @@ export default function BillingSettings() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Payment Methods */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-white text-lg flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-cyan-400" />
                 Payment Methods
               </CardTitle>
-              <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+              <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
                 <Plus className="w-4 h-4 mr-1" />Add
               </Button>
             </div>
@@ -140,7 +140,7 @@ export default function BillingSettings() {
         </Card>
 
         {/* Recent Invoices */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
@@ -153,9 +153,9 @@ export default function BillingSettings() {
             ) : (invoicesQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-8">No invoices</p>
             ) : (
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y divide-white/[0.04]">
                 {(invoicesQuery.data as any)?.map((invoice: any) => (
-                  <div key={invoice.id} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors">
+                  <div key={invoice.id} className="p-4 flex items-center justify-between hover:bg-white/[0.04] transition-colors">
                     <div>
                       <p className="text-white font-medium">{invoice.number}</p>
                       <div className="flex items-center gap-2 text-xs text-slate-500">

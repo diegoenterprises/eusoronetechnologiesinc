@@ -42,7 +42,7 @@ export default function TaxDocuments() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><FileText className="w-6 h-6 text-cyan-400" /></div>
@@ -50,7 +50,7 @@ export default function TaxDocuments() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
@@ -58,7 +58,7 @@ export default function TaxDocuments() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><Clock className="w-6 h-6 text-yellow-400" /></div>
@@ -66,7 +66,7 @@ export default function TaxDocuments() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><Download className="w-6 h-6 text-purple-400" /></div>
@@ -77,7 +77,7 @@ export default function TaxDocuments() {
       </div>
 
       <Select value={year} onValueChange={setYear}>
-        <SelectTrigger className="w-[120px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="w-[120px] bg-white/[0.02] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="2024">2024</SelectItem>
           <SelectItem value="2023">2023</SelectItem>
@@ -85,7 +85,7 @@ export default function TaxDocuments() {
         </SelectContent>
       </Select>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" />Tax Documents</CardTitle></CardHeader>
         <CardContent className="p-0">
           {documentsQuery.isLoading ? (
@@ -93,7 +93,7 @@ export default function TaxDocuments() {
           ) : (documentsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No documents found</p></div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(documentsQuery.data as any)?.map((doc: any) => (
                 <div key={doc.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -112,7 +112,7 @@ export default function TaxDocuments() {
                       </div>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg" disabled={doc.status !== "available"}>
+                  <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] rounded-lg" disabled={doc.status !== "available"}>
                     <Download className="w-4 h-4 mr-1" />Download
                   </Button>
                 </div>

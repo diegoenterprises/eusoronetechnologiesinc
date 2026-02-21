@@ -108,28 +108,28 @@ export default function DrugTestingManagement() {
       {/* Random Pool Stats */}
       {pool && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardContent className="p-4 text-center">
               <Users className="w-5 h-5 text-blue-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-blue-400">{pool.poolSize}</p>
               <p className="text-[9px] text-slate-400 uppercase">Pool Size</p>
             </CardContent>
           </Card>
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardContent className="p-4 text-center">
               <Beaker className="w-5 h-5 text-cyan-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-cyan-400">{pool.drugTestsRequired}</p>
               <p className="text-[9px] text-slate-400 uppercase">Drug Tests Req (50%)</p>
             </CardContent>
           </Card>
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardContent className="p-4 text-center">
               <Beaker className="w-5 h-5 text-purple-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-purple-400">{pool.alcoholTestsRequired}</p>
               <p className="text-[9px] text-slate-400 uppercase">Alcohol Tests Req (10%)</p>
             </CardContent>
           </Card>
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardContent className="p-4 text-center">
               <CheckCircle className="w-5 h-5 text-green-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-green-400">{pool.drugTestsCompleted}</p>
@@ -157,7 +157,7 @@ export default function DrugTestingManagement() {
       </div>
 
       {/* Test List */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#1473FF]" />Test Records
@@ -170,9 +170,9 @@ export default function DrugTestingManagement() {
           ) : tests.length === 0 ? (
             <div className="p-8 text-center"><Beaker className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No test records found</p></div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {tests.map((t: any) => (
-                <div key={t.id} className="p-3 flex items-center justify-between hover:bg-slate-700/20 transition-colors">
+                <div key={t.id} className="p-3 flex items-center justify-between hover:bg-white/[0.04] transition-colors">
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-white font-medium text-sm">Test #{t.id}</span>

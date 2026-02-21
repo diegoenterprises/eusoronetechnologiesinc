@@ -78,7 +78,7 @@ export default function PlacardVerification() {
     toast.success("Placard verification confirmed. Safe travels.");
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -164,13 +164,13 @@ export default function PlacardVerification() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                      <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                         <p className={cn("text-[10px] uppercase tracking-wider mb-1", isLight ? "text-slate-400" : "text-slate-500")}>Placard Required</p>
                         <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>
                           {currentClass?.placard || "Unknown"}
                         </p>
                       </div>
-                      <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                      <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                         <p className={cn("text-[10px] uppercase tracking-wider mb-1", isLight ? "text-slate-400" : "text-slate-500")}>Quantity</p>
                         <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>
                           {currentShipment.weight ? `${Number(currentShipment.weight).toLocaleString()} lbs` : "See BOL"}
@@ -193,7 +193,7 @@ export default function PlacardVerification() {
                 </div>
               ) : (
                 <div className="text-center py-10">
-                  <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
+                  <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
                     <Shield className="w-8 h-8 text-slate-400" />
                   </div>
                   <p className={cn("font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No active hazmat shipment</p>
@@ -245,7 +245,7 @@ export default function PlacardVerification() {
                           ? "border-green-500 bg-green-500/20 shadow-lg shadow-green-500/20"
                           : isLight
                             ? "border-slate-300 bg-white hover:border-blue-400"
-                            : "border-slate-500 bg-slate-700/50 hover:border-blue-400"
+                            : "border-slate-500 bg-white/[0.04] hover:border-blue-400"
                       )}>
                         <div className="-rotate-45">
                           {isChecked
@@ -291,7 +291,7 @@ export default function PlacardVerification() {
                         : "bg-green-500/5 border-green-500/20"
                       : isLight
                         ? "bg-white border-slate-200 hover:border-slate-300"
-                        : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
+                        : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
                   )}
                 >
                   <div className={cn(
@@ -331,7 +331,7 @@ export default function PlacardVerification() {
                   ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:from-[#1260DD] hover:to-[#A801DD] text-white shadow-lg shadow-purple-500/20"
                   : isLight
                     ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                    : "bg-slate-700/50 text-slate-500 cursor-not-allowed"
+                    : "bg-white/[0.04] text-slate-500 cursor-not-allowed"
               )}
               disabled={!allChecked}
               onClick={handleVerify}
@@ -343,7 +343,7 @@ export default function PlacardVerification() {
               variant="outline"
               className={cn(
                 "h-12 rounded-xl",
-                isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700"
+                isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]"
               )}
             >
               <Camera className="w-5 h-5 mr-2" />

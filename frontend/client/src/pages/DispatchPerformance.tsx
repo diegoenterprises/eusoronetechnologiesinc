@@ -33,7 +33,7 @@ export default function DispatchPerformance() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Target className="w-6 h-6 text-cyan-400" /></div>
@@ -41,7 +41,7 @@ export default function DispatchPerformance() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
@@ -49,7 +49,7 @@ export default function DispatchPerformance() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><Star className="w-6 h-6 text-yellow-400" /></div>
@@ -57,7 +57,7 @@ export default function DispatchPerformance() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><Clock className="w-6 h-6 text-purple-400" /></div>
@@ -65,7 +65,7 @@ export default function DispatchPerformance() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20"><DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" /></div>
@@ -76,7 +76,7 @@ export default function DispatchPerformance() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><BarChart3 className="w-5 h-5 text-cyan-400" />Performance Metrics</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             {metricsQuery.isLoading ? (
@@ -98,7 +98,7 @@ export default function DispatchPerformance() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Award className="w-5 h-5 text-yellow-400" />Achievements</CardTitle></CardHeader>
           <CardContent>
             {statsQuery.isLoading ? (
@@ -118,7 +118,7 @@ export default function DispatchPerformance() {
         </Card>
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><TrendingUp className="w-5 h-5 text-green-400" />Recent Performance</CardTitle></CardHeader>
         <CardContent className="p-0">
           {historyQuery.isLoading ? (
@@ -126,7 +126,7 @@ export default function DispatchPerformance() {
           ) : !historyQuery.data || (Array.isArray(historyQuery.data) && historyQuery.data.length === 0) ? (
             <div className="text-center py-16"><BarChart3 className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No performance history</p></div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(Array.isArray(historyQuery.data) ? historyQuery.data : []).map((item: any) => (
                 <div key={item.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">

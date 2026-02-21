@@ -37,7 +37,7 @@ export default function BrokerDashboard() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Package className="w-6 h-6 text-cyan-400" /></div>
@@ -45,7 +45,7 @@ export default function BrokerDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><Clock className="w-6 h-6 text-yellow-400" /></div>
@@ -53,7 +53,7 @@ export default function BrokerDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><TrendingUp className="w-6 h-6 text-green-400" /></div>
@@ -61,7 +61,7 @@ export default function BrokerDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><DollarSign className="w-6 h-6 text-purple-400" /></div>
@@ -69,7 +69,7 @@ export default function BrokerDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20"><TrendingUp className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" /></div>
@@ -80,7 +80,7 @@ export default function BrokerDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Package className="w-5 h-5 text-cyan-400" />Shipper Loads</CardTitle></CardHeader>
           <CardContent className="p-0">
             {shipperLoadsQuery.isLoading ? (
@@ -88,7 +88,7 @@ export default function BrokerDashboard() {
             ) : (shipperLoadsQuery.data as any)?.length === 0 ? (
               <div className="p-6 text-center"><Package className="w-8 h-8 text-slate-500 mx-auto mb-2" /><p className="text-slate-400 text-sm">No loads available</p></div>
             ) : (
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y divide-white/[0.04]">
                 {(shipperLoadsQuery.data as any)?.map((load: any) => (
                   <div key={load.id} className="p-3">
                     <div className="flex items-center justify-between mb-1">
@@ -103,7 +103,7 @@ export default function BrokerDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Truck className="w-5 h-5 text-green-400" />Catalyst Capacity</CardTitle></CardHeader>
           <CardContent className="p-0">
             {capacityQuery.isLoading ? (
@@ -111,7 +111,7 @@ export default function BrokerDashboard() {
             ) : (capacityQuery.data as any)?.length === 0 ? (
               <div className="p-6 text-center"><Truck className="w-8 h-8 text-slate-500 mx-auto mb-2" /><p className="text-slate-400 text-sm">No capacity available</p></div>
             ) : (
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y divide-white/[0.04]">
                 {(capacityQuery.data as any)?.map((catalyst: any) => (
                   <div key={catalyst.id} className="p-3">
                     <div className="flex items-center justify-between mb-1">
@@ -126,7 +126,7 @@ export default function BrokerDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><CheckCircle className="w-5 h-5 text-purple-400" />In Progress</CardTitle></CardHeader>
           <CardContent className="p-0">
             {inProgressQuery.isLoading ? (
@@ -134,7 +134,7 @@ export default function BrokerDashboard() {
             ) : (inProgressQuery.data as any)?.length === 0 ? (
               <div className="p-6 text-center"><CheckCircle className="w-8 h-8 text-slate-500 mx-auto mb-2" /><p className="text-slate-400 text-sm">No loads in progress</p></div>
             ) : (
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y divide-white/[0.04]">
                 {(inProgressQuery.data as any)?.map((load: any) => (
                   <div key={load.id} className="p-3">
                     <div className="flex items-center justify-between mb-1">

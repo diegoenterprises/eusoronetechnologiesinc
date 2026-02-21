@@ -46,7 +46,7 @@ export default function UtilizationReport() {
         </div>
         <div className="flex items-center gap-3">
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
+            <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -56,7 +56,7 @@ export default function UtilizationReport() {
               <SelectItem value="year">This Year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+          <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
             <Download className="w-4 h-4 mr-2" />Export
           </Button>
         </div>
@@ -64,7 +64,7 @@ export default function UtilizationReport() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className={cn("rounded-xl", (summary?.fleetUtilization ?? 0) >= 85 ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/30" : "bg-slate-800/50 border-slate-700/50")}>
+        <Card className={cn("rounded-xl", (summary?.fleetUtilization ?? 0) >= 85 ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/30" : "bg-white/[0.02] border-white/[0.06]")}>
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className={cn("p-3 rounded-full", (summary?.fleetUtilization ?? 0) >= 85 ? "bg-green-500/20" : "bg-blue-500/20")}>
@@ -80,7 +80,7 @@ export default function UtilizationReport() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -96,7 +96,7 @@ export default function UtilizationReport() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -112,7 +112,7 @@ export default function UtilizationReport() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className={cn("p-3 rounded-full", (summary?.trend ?? 0) > 0 ? "bg-green-500/20" : "bg-red-500/20")}>
@@ -132,7 +132,7 @@ export default function UtilizationReport() {
       </div>
 
       {/* Goal Progress */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Target className="w-5 h-5 text-cyan-400" />
@@ -159,7 +159,7 @@ export default function UtilizationReport() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* By Vehicle */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Utilization by Vehicle</CardTitle>
           </CardHeader>
@@ -167,7 +167,7 @@ export default function UtilizationReport() {
             {byVehicleQuery.isLoading ? (
               <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y divide-white/[0.04]">
                 {(byVehicleQuery.data as any)?.map((vehicle: any) => (
                   <div key={vehicle.id} className="p-4 flex items-center justify-between">
                     <div>
@@ -186,7 +186,7 @@ export default function UtilizationReport() {
         </Card>
 
         {/* By Driver */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Utilization by Driver</CardTitle>
           </CardHeader>
@@ -194,7 +194,7 @@ export default function UtilizationReport() {
             {byDriverQuery.isLoading ? (
               <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y divide-white/[0.04]">
                 {(byDriverQuery.data as any)?.map((driver: any) => (
                   <div key={driver.id} className="p-4 flex items-center justify-between">
                     <div>
@@ -214,7 +214,7 @@ export default function UtilizationReport() {
       </div>
 
       {/* Weekly Trend */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg">Weekly Utilization Trend</CardTitle>
         </CardHeader>

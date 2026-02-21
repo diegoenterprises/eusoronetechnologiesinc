@@ -321,7 +321,7 @@ export default function TerminalSCADA() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {racks.map((rack: any) => (
               <Card key={rack.id} className={cn(
-                "bg-slate-800/50 border-slate-700 transition-all",
+                "bg-white/[0.02] border-slate-700 transition-all",
                 rack.status === "loading" && "border-blue-500/50"
               )}>
                 <CardContent className="p-4">
@@ -418,7 +418,7 @@ export default function TerminalSCADA() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {tanks.map((tank: any) => (
               <Card key={tank.id} className={cn(
-                "bg-slate-800/50 border-slate-700",
+                "bg-white/[0.02] border-slate-700",
                 tank.lowLevelAlert && "border-yellow-500/50"
               )}>
                 <CardContent className="p-4">
@@ -488,7 +488,7 @@ export default function TerminalSCADA() {
           </div>
 
           {/* Inventory Summary */}
-          <Card className="mt-6 bg-slate-800/50 border-slate-700">
+          <Card className="mt-6 bg-white/[0.02] border-slate-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Droplets className="w-5 h-5 text-blue-400" />
@@ -518,7 +518,7 @@ export default function TerminalSCADA() {
 
         {/* Alarms Tab */}
         <TabsContent value="alarms" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-white/[0.02] border-slate-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Bell className="w-5 h-5 text-yellow-400" />
@@ -571,7 +571,7 @@ export default function TerminalSCADA() {
 
         {/* Throughput Tab */}
         <TabsContent value="throughput" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-white/[0.02] border-slate-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-blue-400" />
@@ -648,7 +648,7 @@ export default function TerminalSCADA() {
             </Card>
 
             {/* Active Rack Product Status */}
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Fuel className="w-5 h-5 text-cyan-400" />
@@ -729,7 +729,7 @@ export default function TerminalSCADA() {
             </Card>
 
             {/* Recent Identifications */}
-            <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700">
+            <Card className="lg:col-span-2 bg-white/[0.02] border-slate-700">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Beaker className="w-5 h-5 text-cyan-400" />
@@ -778,7 +778,7 @@ export default function TerminalSCADA() {
 
           {/* Oil Identification Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4 text-center">
                 <p className="text-3xl font-bold text-purple-400">
                   {spectraMatchHistory?.total || 0}
@@ -786,19 +786,19 @@ export default function TerminalSCADA() {
                 <p className="text-sm text-slate-400">Total IDs Today</p>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4 text-center">
                 <p className="text-3xl font-bold text-green-400">94%</p>
                 <p className="text-sm text-slate-400">Avg Confidence</p>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4 text-center">
                 <p className="text-3xl font-bold text-cyan-400">WTI</p>
                 <p className="text-sm text-slate-400">Most Common</p>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardContent className="p-4 text-center">
                 <p className="text-3xl font-bold text-yellow-400">40.2°</p>
                 <p className="text-sm text-slate-400">Avg API Gravity</p>

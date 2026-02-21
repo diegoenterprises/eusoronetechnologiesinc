@@ -36,7 +36,7 @@ export default function LaneAnalysis() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><MapPin className="w-6 h-6 text-cyan-400" /></div>
@@ -44,7 +44,7 @@ export default function LaneAnalysis() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><DollarSign className="w-6 h-6 text-green-400" /></div>
@@ -52,7 +52,7 @@ export default function LaneAnalysis() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><Package className="w-6 h-6 text-purple-400" /></div>
@@ -60,7 +60,7 @@ export default function LaneAnalysis() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><TrendingUp className="w-6 h-6 text-yellow-400" /></div>
@@ -73,16 +73,16 @@ export default function LaneAnalysis() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-xs">
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-400" />
-          <Input value={origin} onChange={(e: any) => setOrigin(e.target.value)} placeholder="Origin city/state..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={origin} onChange={(e: any) => setOrigin(e.target.value)} placeholder="Origin city/state..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
         </div>
         <ArrowRight className="w-5 h-5 text-slate-500" />
         <div className="relative flex-1 max-w-xs">
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
-          <Input value={destination} onChange={(e: any) => setDestination(e.target.value)} placeholder="Destination city/state..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={destination} onChange={(e: any) => setDestination(e.target.value)} placeholder="Destination city/state..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
         </div>
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><MapPin className="w-5 h-5 text-cyan-400" />Lane Performance</CardTitle></CardHeader>
         <CardContent className="p-0">
           {lanesQuery.isLoading ? (
@@ -90,7 +90,7 @@ export default function LaneAnalysis() {
           ) : (lanesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><MapPin className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No lanes found</p></div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(lanesQuery.data as any)?.map((lane: any) => (
                 <div key={lane.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">

@@ -116,7 +116,7 @@ export default function BrokerMarketplace() {
         )}
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <CardTitle className="text-white flex items-center gap-2">
@@ -130,11 +130,11 @@ export default function BrokerMarketplace() {
                   placeholder="Search loads..."
                   value={search}
                   onChange={(e: any) => setSearch(e.target.value)}
-                  className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg w-64"
+                  className="pl-9 bg-white/[0.04] border-white/[0.06] rounded-lg w-64"
                 />
               </div>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600/50 rounded-lg">
+                <SelectTrigger className="w-32 bg-white/[0.04] border-white/[0.06] rounded-lg">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -146,7 +146,7 @@ export default function BrokerMarketplace() {
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600/50 rounded-lg">
+                <SelectTrigger className="w-32 bg-white/[0.04] border-white/[0.06] rounded-lg">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>

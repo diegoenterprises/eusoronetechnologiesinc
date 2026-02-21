@@ -71,7 +71,7 @@ export default function CustomerFeedback() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -87,7 +87,7 @@ export default function CustomerFeedback() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -103,7 +103,7 @@ export default function CustomerFeedback() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -124,10 +124,10 @@ export default function CustomerFeedback() {
       <div className="flex flex-wrap gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search feedback..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search feedback..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
         </div>
         <Select value={ratingFilter} onValueChange={setRatingFilter}>
-          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
+          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg">
             <SelectValue placeholder="Rating" />
           </SelectTrigger>
           <SelectContent>
@@ -142,19 +142,19 @@ export default function CustomerFeedback() {
       </div>
 
       {/* Feedback List */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardContent className="p-0">
           {feedbackQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
           ) : filteredFeedback?.length === 0 ? (
             <div className="text-center py-16">
-              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <MessageSquare className="w-10 h-10 text-slate-500" />
               </div>
               <p className="text-slate-400 text-lg">No feedback found</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {filteredFeedback?.map((item: any) => (
                 <div key={item.id} className={cn("p-4", item.rating <= 2 && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-start justify-between mb-2">
@@ -174,7 +174,7 @@ export default function CustomerFeedback() {
                       <p className="text-sm text-slate-400">{item.response}</p>
                     </div>
                   ) : (
-                    <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => respondMutation.mutate({ feedbackId: item.id, response: "Thank you for your feedback!" })}>
+                    <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => respondMutation.mutate({ feedbackId: item.id, response: "Thank you for your feedback!" })}>
                       <Reply className="w-3 h-3 mr-1" />Respond
                     </Button>
                   )}

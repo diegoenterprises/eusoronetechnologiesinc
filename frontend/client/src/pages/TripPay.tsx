@@ -32,8 +32,8 @@ export default function TripPay() {
   const completedLoads = loads.filter((l: any) => l.status === "delivered");
   const isLoading = earningsQuery.isLoading || loadsQuery.isLoading;
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
-  const sc = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const sc = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
 
   // Simulate trip pay breakdown from load data
   const buildTripPay = (load: any) => {
@@ -66,7 +66,7 @@ export default function TripPay() {
         <Button
           variant="outline"
           size="sm"
-          className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
+          className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")}
           onClick={() => earningsQuery.refetch?.()}
         >
           <RefreshCw className="w-4 h-4" />
@@ -90,7 +90,7 @@ export default function TripPay() {
               { icon: <TrendingUp className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/15", value: completedLoads.length > 0 ? `$${Math.round((earnings?.totalEarnings || 0) / completedLoads.length).toLocaleString()}` : "$0", label: "Avg Per Trip", color: "text-purple-400" },
               { icon: <Calendar className="w-5 h-5 text-cyan-400" />, bg: "bg-cyan-500/15", value: earnings?.pendingAmount ? `$${Number(earnings.pendingAmount).toLocaleString()}` : "$0", label: "Pending", color: "text-cyan-400" },
             ].map((s) => (
-              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
@@ -108,7 +108,7 @@ export default function TripPay() {
           {completedLoads.length === 0 ? (
             <Card className={cc}>
               <CardContent className="py-16 text-center">
-                <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
+                <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
                   <DollarSign className="w-8 h-8 text-slate-400" />
                 </div>
                 <p className={cn("font-medium text-lg", isLight ? "text-slate-600" : "text-slate-300")}>No Completed Trips Yet</p>

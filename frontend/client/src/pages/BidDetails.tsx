@@ -62,7 +62,7 @@ export default function BidDetails() {
     return (
       <div className="p-4 md:p-6">
         <div className="text-center py-16">
-          <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+          <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
             <DollarSign className="w-10 h-10 text-slate-500" />
           </div>
           <p className="text-slate-400 text-lg">Bid not found</p>
@@ -124,7 +124,7 @@ export default function BidDetails() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Load Info */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Package className="w-5 h-5 text-cyan-400" />
@@ -169,7 +169,7 @@ export default function BidDetails() {
         </Card>
 
         {/* Catalyst Info */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <User className="w-5 h-5 text-cyan-400" />
@@ -216,7 +216,7 @@ export default function BidDetails() {
         </Card>
 
         {/* Bid History */}
-        <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="lg:col-span-2 bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Bid History</CardTitle>
           </CardHeader>

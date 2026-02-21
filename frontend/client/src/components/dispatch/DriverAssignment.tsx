@@ -153,7 +153,7 @@ export function DriverAssignment({ load, availableDrivers, onAssign, onCancel }:
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search drivers..."
-                  className="pl-9 bg-slate-700/50 border-slate-600 text-white"
+                  className="pl-9 bg-white/[0.04] border-slate-600 text-white"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -196,9 +196,9 @@ export function DriverAssignment({ load, availableDrivers, onAssign, onCancel }:
                       key={driver.id}
                       onClick={() => can && setSelectedDriver(driver)}
                       className={cn(
-                        "p-4 border-b border-slate-700/50 cursor-pointer transition-all",
+                        "p-4 border-b border-white/[0.06] cursor-pointer transition-all",
                         isSelected ? "bg-blue-500/20 border-l-2 border-l-blue-500" : 
-                        can ? "hover:bg-slate-700/30" : "opacity-50 cursor-not-allowed"
+                        can ? "hover:bg-white/[0.06]/30" : "opacity-50 cursor-not-allowed"
                       )}
                     >
                       <div className="flex items-start justify-between">
@@ -311,22 +311,22 @@ export function DriverAssignment({ load, availableDrivers, onAssign, onCancel }:
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-2 rounded bg-slate-700/50">
+                      <div className="p-2 rounded bg-white/[0.04]">
                         <p className="text-xs text-slate-400">Safety Score</p>
                         <p className={cn(
                           "text-lg font-bold",
                           selectedDriver.safetyScore >= 90 ? "text-green-400" : "text-yellow-400"
                         )}>{selectedDriver.safetyScore}</p>
                       </div>
-                      <div className="p-2 rounded bg-slate-700/50">
+                      <div className="p-2 rounded bg-white/[0.04]">
                         <p className="text-xs text-slate-400">On-Time Rate</p>
                         <p className="text-lg font-bold text-white">{selectedDriver.onTimeRate}%</p>
                       </div>
-                      <div className="p-2 rounded bg-slate-700/50">
+                      <div className="p-2 rounded bg-white/[0.04]">
                         <p className="text-xs text-slate-400">Completed Loads</p>
                         <p className="text-lg font-bold text-white">{selectedDriver.completedLoads}</p>
                       </div>
-                      <div className="p-2 rounded bg-slate-700/50">
+                      <div className="p-2 rounded bg-white/[0.04]">
                         <p className="text-xs text-slate-400">Distance to Pickup</p>
                         <p className="text-lg font-bold text-white">{selectedDriver.distanceToPickup || "—"} mi</p>
                       </div>

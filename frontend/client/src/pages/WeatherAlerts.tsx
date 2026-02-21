@@ -106,7 +106,7 @@ export default function WeatherAlerts() {
     return Array.isArray(d) ? d : Array.isArray(d?.loads) ? d.loads : [];
   })();
 
-  const cc = cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50");
+  const cc = cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]");
 
   // Get browser geolocation
   useEffect(() => {
@@ -290,14 +290,14 @@ export default function WeatherAlerts() {
             <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>{locationName} — live conditions from NWS</p>
           </div>
         </div>
-        <Button variant="outline" className={cn("rounded-xl", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={fetchWeatherData}>
+        <Button variant="outline" className={cn("rounded-xl", isLight ? "border-slate-200" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")} onClick={fetchWeatherData}>
           <RefreshCw className="w-4 h-4 mr-2" />Refresh
         </Button>
       </div>
 
       {/* Current Conditions Banner */}
       {!loading && currentTemp !== null && (
-        <div className={cn("rounded-xl p-4 flex items-center gap-6 flex-wrap", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border border-slate-700/50")}>
+        <div className={cn("rounded-xl p-4 flex items-center gap-6 flex-wrap", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border border-white/[0.06]")}>
           <div className="flex items-center gap-3">
             <Thermometer className="w-6 h-6 text-orange-400" />
             <div>
@@ -385,7 +385,7 @@ export default function WeatherAlerts() {
             onChange={(e: any) => setLocationSearch(e.target.value)}
             onKeyDown={handleSearchKeyDown}
             placeholder="Search location (e.g. Dallas, TX)..."
-            className={cn("pl-9 pr-20 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}
+            className={cn("pl-9 pr-20 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}
           />
           <Button
             size="sm"
@@ -400,7 +400,7 @@ export default function WeatherAlerts() {
         {alerts.length > 0 && (
           <div className="relative max-w-xs">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Filter alerts..." className={cn("pl-9 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")} />
+            <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Filter alerts..." className={cn("pl-9 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06]")} />
           </div>
         )}
       </div>
@@ -418,14 +418,14 @@ export default function WeatherAlerts() {
               <div className="p-4 space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
             ) : filteredAlerts.length === 0 ? (
               <div className="text-center py-12">
-                <div className={cn("p-4 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
+                <div className={cn("p-4 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
                   <Sun className="w-8 h-8 text-yellow-400" />
                 </div>
                 <p className="text-slate-400 font-medium">All clear!</p>
                 <p className="text-xs text-slate-500 mt-1">No active weather alerts for {locationName}</p>
               </div>
             ) : (
-              <div className={cn("divide-y max-h-96 overflow-y-auto", isLight ? "divide-slate-100" : "divide-slate-700/50")}>
+              <div className={cn("divide-y max-h-96 overflow-y-auto", isLight ? "divide-slate-100" : "divide-white/[0.04]")}>
                 {filteredAlerts.map(alert => (
                   <div key={alert.id} className={cn("p-4", alert.severity === "extreme" && "bg-red-500/5 border-l-2 border-red-500", alert.severity === "severe" && "bg-orange-500/5 border-l-2 border-orange-500")}>
                     <div className="flex items-start justify-between mb-2">
@@ -463,9 +463,9 @@ export default function WeatherAlerts() {
                 <p className="text-xs text-slate-500 mt-1">{alerts.length > 0 ? "None of your active loads overlap with alert zones" : "No active alerts to match against"}</p>
               </div>
             ) : (
-              <div className={cn("divide-y max-h-96 overflow-y-auto", isLight ? "divide-slate-100" : "divide-slate-700/50")}>
+              <div className={cn("divide-y max-h-96 overflow-y-auto", isLight ? "divide-slate-100" : "divide-white/[0.04]")}>
                 {impactedLoads.map((load: any) => (
-                  <div key={load.id} className={cn("p-4 transition-colors", isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20")}>
+                  <div key={load.id} className={cn("p-4 transition-colors", isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.04]")}>
                     <div className="flex items-center justify-between">
                       <div>
                         <p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>#{load.loadNumber || `LOAD-${load.id}`}</p>

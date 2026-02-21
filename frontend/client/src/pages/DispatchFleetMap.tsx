@@ -65,7 +65,7 @@ export default function DispatchFleetMap() {
         </div>
         <div className="flex items-center gap-2">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40 bg-slate-700/50 border-slate-600/50 rounded-lg">
+            <SelectTrigger className="w-40 bg-white/[0.04] border-white/[0.06] rounded-lg">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -78,7 +78,7 @@ export default function DispatchFleetMap() {
           </Select>
           <Button 
             variant="outline" 
-            className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 rounded-lg"
+            className="bg-white/[0.04] border-white/[0.06] hover:bg-slate-600/50 rounded-lg"
             onClick={() => fleetQuery.refetch()}
           >
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -153,7 +153,7 @@ export default function DispatchFleetMap() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl h-[500px]">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl h-[500px]">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-white flex items-center gap-2">
@@ -178,7 +178,7 @@ export default function DispatchFleetMap() {
                         "p-2 rounded-lg text-xs text-center cursor-pointer transition-all",
                         selectedVehicle === v.id 
                           ? "bg-cyan-500/20 border border-cyan-500/50" 
-                          : "bg-slate-700/30 hover:bg-slate-700/50"
+                          : "bg-slate-700/30 hover:bg-white/[0.04]"
                       )}
                       onClick={() => setSelectedVehicle(v.id)}
                     >
@@ -193,7 +193,7 @@ export default function DispatchFleetMap() {
         </div>
 
         <div>
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Truck className="w-5 h-5 text-cyan-400" />

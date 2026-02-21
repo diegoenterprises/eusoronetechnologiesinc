@@ -138,7 +138,7 @@ export default function ZeunMaintenanceTracker() {
             </div>
             <div className="space-y-2">
               {alertsQuery.data.map((alert: any) => (
-                <div key={alert.id} className={cn("flex items-center justify-between p-3 rounded-xl", L ? "bg-white border border-red-100" : "bg-slate-800/50 border border-red-500/10")}>
+                <div key={alert.id} className={cn("flex items-center justify-between p-3 rounded-xl", L ? "bg-white border border-red-100" : "bg-white/[0.02] border border-red-500/10")}>
                   <div className="flex items-center gap-3">
                     <AlertTriangle className="w-4 h-4 text-red-500" />
                     <div>
@@ -219,7 +219,7 @@ export default function ZeunMaintenanceTracker() {
                 ) : (
                   <div className="space-y-2">
                     {(scheduledQuery.data as any)?.slice(0, 5).map((item: any) => (
-                      <div key={item.id} className={cn("flex items-center justify-between p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                      <div key={item.id} className={cn("flex items-center justify-between p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                         <div className="flex items-center gap-3">
                           <Wrench className={cn("w-4 h-4", item.status === "overdue" ? "text-red-500" : "text-yellow-500")} />
                           <div>
@@ -245,10 +245,10 @@ export default function ZeunMaintenanceTracker() {
           <div className="flex items-center gap-3 mb-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search vehicles..." className={cn("pl-9 rounded-xl", L ? "" : "bg-slate-800/50 border-slate-700/50")} />
+              <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search vehicles..." className={cn("pl-9 rounded-xl", L ? "" : "bg-white/[0.02] border-white/[0.06]")} />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className={cn("w-36 rounded-xl", L ? "" : "bg-slate-800/50 border-slate-700/50")}><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectTrigger className={cn("w-36 rounded-xl", L ? "" : "bg-white/[0.02] border-white/[0.06]")}><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="scheduled">Scheduled</SelectItem>
@@ -264,7 +264,7 @@ export default function ZeunMaintenanceTracker() {
                 <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
               ) : (scheduledQuery.data as any)?.length === 0 ? (
                 <div className="p-12 text-center">
-                  <div className={cn("w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center", L ? "bg-slate-100" : "bg-slate-700/50")}>
+                  <div className={cn("w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center", L ? "bg-slate-100" : "bg-white/[0.04]")}>
                     <Wrench className={cn("w-7 h-7", L ? "text-slate-400" : "text-slate-500")} />
                   </div>
                   <p className={cn("font-medium", L ? "text-slate-500" : "text-slate-400")}>No scheduled maintenance</p>
@@ -321,7 +321,7 @@ export default function ZeunMaintenanceTracker() {
               ) : (
                 <div className="space-y-2">
                   {(historyQuery.data as any)?.map((item: any) => (
-                    <div key={item.id} className={cn("flex items-center justify-between p-3.5 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                    <div key={item.id} className={cn("flex items-center justify-between p-3.5 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                       <div className="flex items-center gap-4">
                         <div className={cn("p-2 rounded-xl", L ? "bg-green-50" : "bg-green-500/10")}>
                           <CheckCircle className="w-4 h-4 text-green-500" />

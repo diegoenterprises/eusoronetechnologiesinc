@@ -50,7 +50,7 @@ export default function CSAScoresDashboard() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Compliance, Safety, Accountability BASIC scores</p>
         </div>
-        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => scoresQuery.refetch()}>
+        <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => scoresQuery.refetch()}>
           <RefreshCw className="w-4 h-4 mr-2" />Refresh
         </Button>
       </div>
@@ -85,7 +85,7 @@ export default function CSAScoresDashboard() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -101,7 +101,7 @@ export default function CSAScoresDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -117,7 +117,7 @@ export default function CSAScoresDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -133,7 +133,7 @@ export default function CSAScoresDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -151,7 +151,7 @@ export default function CSAScoresDashboard() {
       </div>
 
       {/* BASIC Scores */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg">BASIC Scores (7 Categories)</CardTitle>
         </CardHeader>

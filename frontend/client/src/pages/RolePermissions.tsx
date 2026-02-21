@@ -43,7 +43,7 @@ export default function RolePermissions() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Shield className="w-6 h-6 text-cyan-400" /></div>
@@ -51,7 +51,7 @@ export default function RolePermissions() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><Lock className="w-6 h-6 text-purple-400" /></div>
@@ -59,7 +59,7 @@ export default function RolePermissions() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><Users className="w-6 h-6 text-green-400" /></div>
@@ -67,7 +67,7 @@ export default function RolePermissions() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><Shield className="w-6 h-6 text-yellow-400" /></div>
@@ -78,15 +78,15 @@ export default function RolePermissions() {
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Roles</CardTitle></CardHeader>
           <CardContent className="p-0">
             {rolesQuery.isLoading ? (
               <div className="p-4 space-y-2">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y divide-white/[0.04]">
                 {(rolesQuery.data as any)?.map((role: any) => (
-                  <div key={role.id} className={`p-4 cursor-pointer hover:bg-slate-700/30 transition-colors ${selectedRole === role.id ? "bg-cyan-500/10 border-l-2 border-cyan-500" : ""}`} onClick={() => setSelectedRole(role.id)}>
+                  <div key={role.id} className={`p-4 cursor-pointer hover:bg-white/[0.06]/30 transition-colors ${selectedRole === role.id ? "bg-cyan-500/10 border-l-2 border-cyan-500" : ""}`} onClick={() => setSelectedRole(role.id)}>
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-white font-medium">{role.name}</p>
@@ -103,7 +103,7 @@ export default function RolePermissions() {
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2 bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="md:col-span-2 bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-white text-lg flex items-center gap-2"><Lock className="w-5 h-5 text-purple-400" />Permissions</CardTitle>
             {selectedRole && (
@@ -124,7 +124,7 @@ export default function RolePermissions() {
                     <p className="text-white font-medium mb-3">{category.name}</p>
                     <div className="grid grid-cols-2 gap-3">
                       {category.permissions?.map((perm: any) => (
-                        <div key={perm.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-800/50">
+                        <div key={perm.id} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02]">
                           <span className="text-sm text-slate-300">{perm.name}</span>
                           <Switch checked={perm.enabled} />
                         </div>

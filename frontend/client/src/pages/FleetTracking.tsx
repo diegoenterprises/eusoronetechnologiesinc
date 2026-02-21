@@ -121,7 +121,7 @@ export default function FleetTracking() {
         {(["all", "moving", "stopped"] as const).map((f) => (
           <button key={f} onClick={() => setViewFilter(f)} className={cn(
             "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all",
-            viewFilter === f ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : L ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800/60 text-slate-400 hover:bg-slate-700"
+            viewFilter === f ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : L ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]"
           )}>
             {f === "all" ? `All (${allLocations.length})` : f === "moving" ? `Moving (${movingCount})` : `Stopped (${stationaryCount})`}
           </button>
@@ -170,7 +170,7 @@ export default function FleetTracking() {
               <div className="flex items-center justify-between mb-2">
                 <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Drivers ({filteredLocations.length})</span>
               </div>
-              <div className={cn("relative rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
+              <div className={cn("relative rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}>
                 <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <Input placeholder="Search..." value={searchQuery} onChange={(e: any) => setSearchQuery(e.target.value)} className="pl-8 h-8 text-xs border-0 bg-transparent rounded-xl focus-visible:ring-0" />
               </div>
@@ -186,7 +186,7 @@ export default function FleetTracking() {
                     <div key={driver.userId} onClick={() => setSelectedDriver(driver.userId)}
                       className={cn("px-4 py-3 cursor-pointer transition-all", selectedDriver === driver.userId
                         ? L ? "bg-blue-50/80 border-l-2 border-l-blue-500" : "bg-blue-500/10 border-l-2 border-l-blue-500"
-                        : L ? "hover:bg-slate-50" : "hover:bg-slate-700/20"
+                        : L ? "hover:bg-slate-50" : "hover:bg-white/[0.04]"
                       )}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
@@ -255,15 +255,15 @@ export default function FleetTracking() {
               <button onClick={() => setSelectedDriver(null)} className="text-xs text-slate-400 hover:text-slate-600">Dismiss</button>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div className={cn("rounded-xl p-3 text-center", L ? "bg-slate-50" : "bg-slate-800/50")}>
+              <div className={cn("rounded-xl p-3 text-center", L ? "bg-slate-50" : "bg-white/[0.02]")}>
                 <p className="text-lg font-bold text-green-500">{selectedData.speed?.toFixed(0) || 0}</p>
                 <p className="text-[10px] text-slate-400 uppercase">mph</p>
               </div>
-              <div className={cn("rounded-xl p-3 text-center", L ? "bg-slate-50" : "bg-slate-800/50")}>
+              <div className={cn("rounded-xl p-3 text-center", L ? "bg-slate-50" : "bg-white/[0.02]")}>
                 <p className="text-lg font-bold text-blue-500">{selectedData.heading ? `${Math.round(selectedData.heading)}°` : "—"}</p>
                 <p className="text-[10px] text-slate-400 uppercase">Heading</p>
               </div>
-              <div className={cn("rounded-xl p-3 text-center", L ? "bg-slate-50" : "bg-slate-800/50")}>
+              <div className={cn("rounded-xl p-3 text-center", L ? "bg-slate-50" : "bg-white/[0.02]")}>
                 <p className={cn("text-lg font-bold", selectedData.isMoving ? "text-green-500" : "text-slate-400")}>{selectedData.isMoving ? "En Route" : "Idle"}</p>
                 <p className="text-[10px] text-slate-400 uppercase">Status</p>
               </div>
@@ -283,7 +283,7 @@ export default function FleetTracking() {
           <CardContent className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {activeAlerts.map((alert: any) => (
-                <div key={alert.id} className={cn("p-3.5 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                <div key={alert.id} className={cn("p-3.5 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
                   <div className="flex items-center justify-between mb-2">
                     <Badge className={cn("border-0 text-[10px] font-bold uppercase",
                       alert.severity === "emergency" || alert.severity === "critical" ? "bg-red-500/15 text-red-500" : "bg-yellow-500/15 text-yellow-500"

@@ -52,7 +52,7 @@ export default function DriverSafetyScorecard() {
           <p className="text-slate-400 text-sm mt-1">Individual driver safety performance</p>
         </div>
         {selectedDriver && (
-          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setSelectedDriver(null)}>
+          <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => setSelectedDriver(null)}>
             Back to List
           </Button>
         )}
@@ -60,7 +60,7 @@ export default function DriverSafetyScorecard() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -76,7 +76,7 @@ export default function DriverSafetyScorecard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -92,7 +92,7 @@ export default function DriverSafetyScorecard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -108,7 +108,7 @@ export default function DriverSafetyScorecard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
@@ -127,7 +127,7 @@ export default function DriverSafetyScorecard() {
 
       {/* Driver Detail */}
       {selectedDriver ? (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           {driverDetailQuery.isLoading ? (
             <div className="p-6 space-y-4">
               <Skeleton className="h-20 w-full" />
@@ -171,7 +171,7 @@ export default function DriverSafetyScorecard() {
                   ) : (
                     <div className="space-y-2">
                       {(driverDetailQuery.data as any)?.recentEvents?.map((event: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-slate-800/50">
+                        <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02]">
                           <div className="flex items-center gap-2">
                             {event.type === "positive" ? <CheckCircle className="w-4 h-4 text-green-400" /> : <AlertTriangle className="w-4 h-4 text-red-400" />}
                             <span className="text-sm text-slate-300">{event.description}</span>
@@ -191,11 +191,11 @@ export default function DriverSafetyScorecard() {
           {/* Search */}
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+            <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
           </div>
 
           {/* Drivers List */}
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2">
                 <User className="w-5 h-5 text-cyan-400" />
@@ -211,9 +211,9 @@ export default function DriverSafetyScorecard() {
                   <p className="text-slate-400">No drivers found</p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-700/50">
+                <div className="divide-y divide-white/[0.04]">
                   {(driversQuery.data as any)?.map((driver: any, idx: number) => (
-                    <div key={driver.id} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => setSelectedDriver(driver.id)}>
+                    <div key={driver.id} className="p-4 flex items-center justify-between hover:bg-white/[0.04] transition-colors cursor-pointer" onClick={() => setSelectedDriver(driver.id)}>
                       <div className="flex items-center gap-4">
                         <div className="w-8 text-center font-bold text-slate-500">#{idx + 1}</div>
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white">

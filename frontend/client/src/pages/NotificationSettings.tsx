@@ -69,7 +69,7 @@ export default function NotificationSettings() {
       </div>
 
       {/* Channel Legend */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardContent className="p-4">
           <div className="flex items-center gap-6">
             <span className="text-slate-400 text-sm">Channels:</span>
@@ -81,7 +81,7 @@ export default function NotificationSettings() {
       </Card>
 
       {/* Load Notifications */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Truck className="w-5 h-5 text-cyan-400" />
@@ -102,7 +102,7 @@ export default function NotificationSettings() {
       </Card>
 
       {/* Financial Notifications */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
@@ -122,7 +122,7 @@ export default function NotificationSettings() {
       </Card>
 
       {/* System Notifications */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Bell className="w-5 h-5 text-purple-400" />

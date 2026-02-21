@@ -43,7 +43,7 @@ export default function Preferences() {
           <p className="text-slate-400 text-sm mt-1">Customize your experience</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => resetMutation.mutate({})}>
+          <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => resetMutation.mutate({})}>
             <RotateCcw className="w-4 h-4 mr-2" />Reset
           </Button>
           <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => updateMutation.mutate(prefs)}>
@@ -57,7 +57,7 @@ export default function Preferences() {
       ) : (
         <div className="space-y-6">
           {/* Appearance */}
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2">
                 <Moon className="w-5 h-5 text-purple-400" />
@@ -83,7 +83,7 @@ export default function Preferences() {
           </Card>
 
           {/* Notifications */}
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2">
                 <Bell className="w-5 h-5 text-cyan-400" />
@@ -116,7 +116,7 @@ export default function Preferences() {
           </Card>
 
           {/* Regional */}
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2">
                 <Globe className="w-5 h-5 text-green-400" />
@@ -130,7 +130,7 @@ export default function Preferences() {
                   <p className="text-xs text-slate-500">Your local timezone</p>
                 </div>
                 <Select value={prefs?.timezone} onValueChange={(value) => updateMutation.mutate({ ...prefs, timezone: value })}>
-                  <SelectTrigger className="w-[200px] bg-slate-700/50 border-slate-600/50 rounded-lg">
+                  <SelectTrigger className="w-[200px] bg-white/[0.04] border-white/[0.06] rounded-lg">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -147,7 +147,7 @@ export default function Preferences() {
                   <p className="text-xs text-slate-500">How dates are displayed</p>
                 </div>
                 <Select value={prefs?.dateFormat} onValueChange={(value) => updateMutation.mutate({ ...prefs, dateFormat: value })}>
-                  <SelectTrigger className="w-[200px] bg-slate-700/50 border-slate-600/50 rounded-lg">
+                  <SelectTrigger className="w-[200px] bg-white/[0.04] border-white/[0.06] rounded-lg">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -163,7 +163,7 @@ export default function Preferences() {
                   <p className="text-xs text-slate-500">Miles or kilometers</p>
                 </div>
                 <Select value={prefs?.distanceUnit} onValueChange={(value) => updateMutation.mutate({ ...prefs, distanceUnit: value })}>
-                  <SelectTrigger className="w-[200px] bg-slate-700/50 border-slate-600/50 rounded-lg">
+                  <SelectTrigger className="w-[200px] bg-white/[0.04] border-white/[0.06] rounded-lg">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

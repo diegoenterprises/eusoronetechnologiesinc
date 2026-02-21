@@ -55,7 +55,7 @@ export default function LanguageSettings() {
     toast.success("Language and locale preferences saved");
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[900px] mx-auto">
@@ -80,7 +80,7 @@ export default function LanguageSettings() {
         </CardHeader>
         <CardContent className="space-y-3">
           {/* Search */}
-          <div className={cn("relative rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
+          <div className={cn("relative rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}>
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={searchTerm}
@@ -101,12 +101,12 @@ export default function LanguageSettings() {
                     ? "bg-[#1473FF]/10 border-[#1473FF]/30 ring-1 ring-[#1473FF]/20"
                     : isLight
                       ? "bg-white border-slate-200 hover:border-slate-300"
-                      : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
+                      : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
                 )}
               >
                 <div className={cn(
                   "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0",
-                  selectedLang === lang.code ? "bg-[#1473FF]/20 text-[#1473FF]" : isLight ? "bg-slate-100 text-slate-500" : "bg-slate-700/50 text-slate-400"
+                  selectedLang === lang.code ? "bg-[#1473FF]/20 text-[#1473FF]" : isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.04] text-slate-400"
                 )}>
                   {lang.flag}
                 </div>
@@ -145,7 +145,7 @@ export default function LanguageSettings() {
                       ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-sm"
                       : isLight
                         ? "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                        : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600"
+                        : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:border-slate-600"
                   )}
                 >
                   {fmt}
@@ -167,7 +167,7 @@ export default function LanguageSettings() {
                       ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-sm"
                       : isLight
                         ? "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                        : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600"
+                        : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:border-slate-600"
                   )}
                 >
                   <Clock className="w-4 h-4" />
@@ -210,7 +210,7 @@ export default function LanguageSettings() {
                     ? "bg-[#1473FF]/10 border-[#1473FF]/30 shadow-md"
                     : isLight
                       ? "bg-white border-slate-200 hover:border-slate-300"
-                      : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
+                      : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
                 )}
               >
                 <div className={cn("p-3 rounded-xl", measurement === sys.id ? "bg-[#1473FF]/15" : isLight ? "bg-slate-100" : "bg-slate-700/30")}>

@@ -45,14 +45,14 @@ export default function Billing() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Manage invoices and payment history</p>
         </div>
-        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+        <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg">
           <Download className="w-4 h-4 mr-2" />Export
         </Button>
       </div>
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -68,7 +68,7 @@ export default function Billing() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -84,7 +84,7 @@ export default function Billing() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -100,7 +100,7 @@ export default function Billing() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -118,27 +118,27 @@ export default function Billing() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-1">
+        <TabsList className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-1">
           <TabsTrigger value="invoices" className="data-[state=active]:bg-slate-700 rounded-md">Invoices</TabsTrigger>
           <TabsTrigger value="payments" className="data-[state=active]:bg-slate-700 rounded-md">Payments</TabsTrigger>
         </TabsList>
 
         <TabsContent value="invoices" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardContent className="p-0">
               {invoicesQuery.isLoading ? (
                 <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
               ) : (invoicesQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-16">
-                  <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                  <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <FileText className="w-10 h-10 text-slate-500" />
                   </div>
                   <p className="text-slate-400 text-lg">No invoices</p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-700/50">
+                <div className="divide-y divide-white/[0.04]">
                   {(invoicesQuery.data as any)?.map((invoice: any) => (
-                    <div key={invoice.id} className="p-4 hover:bg-slate-700/20 transition-colors">
+                    <div key={invoice.id} className="p-4 hover:bg-white/[0.04] transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className={cn("p-3 rounded-xl", invoice.status === "paid" ? "bg-green-500/20" : invoice.status === "overdue" ? "bg-red-500/20" : "bg-yellow-500/20")}>
@@ -174,21 +174,21 @@ export default function Billing() {
         </TabsContent>
 
         <TabsContent value="payments" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardContent className="p-0">
               {paymentsQuery.isLoading ? (
                 <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
               ) : (paymentsQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-16">
-                  <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                  <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <CreditCard className="w-10 h-10 text-slate-500" />
                   </div>
                   <p className="text-slate-400 text-lg">No payments</p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-700/50">
+                <div className="divide-y divide-white/[0.04]">
                   {(paymentsQuery.data as any)?.map((payment: any) => (
-                    <div key={payment.id} className="p-4 hover:bg-slate-700/20 transition-colors">
+                    <div key={payment.id} className="p-4 hover:bg-white/[0.04] transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className="p-3 rounded-xl bg-green-500/20">

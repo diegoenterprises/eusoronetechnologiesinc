@@ -52,7 +52,7 @@ export default function IntegrationSettings() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Plug className="w-6 h-6 text-cyan-400" /></div>
@@ -60,7 +60,7 @@ export default function IntegrationSettings() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
@@ -68,7 +68,7 @@ export default function IntegrationSettings() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><RefreshCw className="w-6 h-6 text-purple-400" /></div>
@@ -76,7 +76,7 @@ export default function IntegrationSettings() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><XCircle className="w-6 h-6 text-yellow-400" /></div>
@@ -86,7 +86,7 @@ export default function IntegrationSettings() {
         </Card>
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Plug className="w-5 h-5 text-cyan-400" />Available Integrations</CardTitle></CardHeader>
         <CardContent>
           {integrationsQuery.isLoading ? (
@@ -112,11 +112,11 @@ export default function IntegrationSettings() {
                     {getStatusBadge(integration.status)}
                     <div className="flex items-center gap-2">
                       {integration.status === "connected" && (
-                        <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg h-7 text-xs" onClick={() => syncMutation.mutate({ id: integration.id })}>
+                        <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] rounded-lg h-7 text-xs" onClick={() => syncMutation.mutate({ id: integration.id })}>
                           <RefreshCw className="w-3 h-3 mr-1" />Sync
                         </Button>
                       )}
-                      <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg h-7 text-xs">
+                      <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] rounded-lg h-7 text-xs">
                         <Settings className="w-3 h-3 mr-1" />Configure
                       </Button>
                     </div>

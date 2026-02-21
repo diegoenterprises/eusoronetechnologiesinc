@@ -127,7 +127,7 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
       </div>
 
       {/* HOS Summary */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-white/[0.02] border-slate-700">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-slate-400">Hours of Service</span>
@@ -211,7 +211,7 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
 
       {/* Current Load */}
       {currentLoad && (
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white/[0.02] border-slate-700">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-white text-base flex items-center gap-2">
@@ -286,7 +286,7 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
 
             {/* Special Instructions */}
             {currentLoad.specialInstructions && (
-              <div className="p-2 rounded bg-slate-700/50 text-xs text-slate-300">
+              <div className="p-2 rounded bg-white/[0.04] text-xs text-slate-300">
                 <p className="text-slate-400 mb-1">Instructions:</p>
                 {currentLoad.specialInstructions}
               </div>
@@ -413,7 +413,7 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
       )}
 
       {/* Earnings */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-white/[0.02] border-slate-700">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-slate-400">Earnings</span>

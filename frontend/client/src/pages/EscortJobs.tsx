@@ -75,7 +75,7 @@ export default function EscortJobs() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -91,7 +91,7 @@ export default function EscortJobs() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -107,7 +107,7 @@ export default function EscortJobs() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20">
@@ -123,7 +123,7 @@ export default function EscortJobs() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
@@ -147,12 +147,12 @@ export default function EscortJobs() {
           value={searchTerm}
           onChange={(e: any) => setSearchTerm(e.target.value)}
           placeholder="Search jobs..."
-          className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
+          className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg focus:border-cyan-500/50"
         />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-1">
+        <TabsList className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-1">
           <TabsTrigger value="available" className="data-[state=active]:bg-slate-700 rounded-md">Available</TabsTrigger>
           <TabsTrigger value="assigned" className="data-[state=active]:bg-slate-700 rounded-md">Assigned</TabsTrigger>
           <TabsTrigger value="in_progress" className="data-[state=active]:bg-slate-700 rounded-md">In Progress</TabsTrigger>
@@ -160,21 +160,21 @@ export default function EscortJobs() {
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardContent className="p-0">
               {jobsQuery.isLoading ? (
                 <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
               ) : filteredJobs?.length === 0 ? (
                 <div className="text-center py-16">
-                  <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                  <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <Car className="w-10 h-10 text-slate-500" />
                   </div>
                   <p className="text-slate-400 text-lg">No jobs found</p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-700/50">
+                <div className="divide-y divide-white/[0.04]">
                   {filteredJobs?.map((job: any) => (
-                    <div key={job.id} className={cn("p-4 hover:bg-slate-700/20 transition-colors", job.urgency === "urgent" && "bg-red-500/5 border-l-2 border-red-500")}>
+                    <div key={job.id} className={cn("p-4 hover:bg-white/[0.04] transition-colors", job.urgency === "urgent" && "bg-red-500/5 border-l-2 border-red-500")}>
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-4">
                           <div className={cn("p-3 rounded-xl", job.status === "available" ? "bg-green-500/20" : job.status === "in_progress" ? "bg-purple-500/20" : "bg-blue-500/20")}>
@@ -213,7 +213,7 @@ export default function EscortJobs() {
                               <CheckCircle className="w-4 h-4 mr-1" />Accept
                             </Button>
                           ) : (
-                            <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation(`/escort-jobs/${job.id}`)}>
+                            <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => setLocation(`/escort-jobs/${job.id}`)}>
                               <Eye className="w-4 h-4 mr-1" />View
                             </Button>
                           )}

@@ -89,8 +89,8 @@ export default function DOT5800Form() {
     toast.success("DOT 5800.1 form submitted to safety management");
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
-  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-400");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const inputCls = cn("h-11 rounded-xl", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white placeholder:text-slate-400");
   const labelCls = cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-500" : "text-slate-400");
 
   if (submitted) {
@@ -183,7 +183,7 @@ export default function DOT5800Form() {
             <div><label className={labelCls}>Type of Incident</label>
               <div className="flex flex-wrap gap-2">
                 {["Spill/Release", "Fire", "Explosion", "Gas Dispersion", "Vehicle Accident", "Loading/Unloading", "In-Transit"].map((t) => (
-                  <button key={t} onClick={() => update("incidentType", t)} className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border transition-all", form.incidentType === t ? "bg-[#1473FF]/10 text-[#1473FF] border-[#1473FF]/30" : isLight ? "bg-white border-slate-200 text-slate-500" : "bg-slate-800/50 border-slate-700/50 text-slate-400")}>{t}</button>
+                  <button key={t} onClick={() => update("incidentType", t)} className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border transition-all", form.incidentType === t ? "bg-[#1473FF]/10 text-[#1473FF] border-[#1473FF]/30" : isLight ? "bg-white border-slate-200 text-slate-500" : "bg-white/[0.02] border-white/[0.06] text-slate-400")}>{t}</button>
                 ))}
               </div>
             </div>
@@ -205,9 +205,9 @@ export default function DOT5800Form() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className={labelCls}>Quantity Released</label><Input value={form.quantityReleased} onChange={(e: any) => update("quantityReleased", e.target.value)} placeholder="50" className={inputCls} /></div>
-              <div><label className={labelCls}>Unit</label><select value={form.quantityUnit} onChange={(e) => update("quantityUnit", e.target.value)} className={cn("w-full h-11 px-3 rounded-xl border text-sm", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white")}><option value="gallons">Gallons</option><option value="pounds">Pounds</option><option value="liters">Liters</option><option value="barrels">Barrels</option></select></div>
+              <div><label className={labelCls}>Unit</label><select value={form.quantityUnit} onChange={(e) => update("quantityUnit", e.target.value)} className={cn("w-full h-11 px-3 rounded-xl border text-sm", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white")}><option value="gallons">Gallons</option><option value="pounds">Pounds</option><option value="liters">Liters</option><option value="barrels">Barrels</option></select></div>
             </div>
-            <div className="flex gap-3"><Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50")} onClick={prev}>Back</Button><Button className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl h-11" onClick={next}>Next: Packaging <ArrowRight className="w-4 h-4 ml-2" /></Button></div>
+            <div className="flex gap-3"><Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-white/[0.04] border-white/[0.06]")} onClick={prev}>Back</Button><Button className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl h-11" onClick={next}>Next: Packaging <ArrowRight className="w-4 h-4 ml-2" /></Button></div>
           </CardContent>
         </Card>
       )}
@@ -223,11 +223,11 @@ export default function DOT5800Form() {
             <div><label className={labelCls}>Type of Failure</label>
               <div className="flex flex-wrap gap-2">
                 {["Valve/Fitting Leak", "Body/Shell Puncture", "Weld Failure", "Corrosion", "Dropped/Fell", "Overturn", "Other"].map((t) => (
-                  <button key={t} onClick={() => update("packagingFailureType", t)} className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border transition-all", form.packagingFailureType === t ? "bg-[#1473FF]/10 text-[#1473FF] border-[#1473FF]/30" : isLight ? "bg-white border-slate-200 text-slate-500" : "bg-slate-800/50 border-slate-700/50 text-slate-400")}>{t}</button>
+                  <button key={t} onClick={() => update("packagingFailureType", t)} className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border transition-all", form.packagingFailureType === t ? "bg-[#1473FF]/10 text-[#1473FF] border-[#1473FF]/30" : isLight ? "bg-white border-slate-200 text-slate-500" : "bg-white/[0.02] border-white/[0.06] text-slate-400")}>{t}</button>
                 ))}
               </div>
             </div>
-            <div className="flex gap-3"><Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50")} onClick={prev}>Back</Button><Button className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl h-11" onClick={next}>Next: Carrier <ArrowRight className="w-4 h-4 ml-2" /></Button></div>
+            <div className="flex gap-3"><Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-white/[0.04] border-white/[0.06]")} onClick={prev}>Back</Button><Button className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl h-11" onClick={next}>Next: Carrier <ArrowRight className="w-4 h-4 ml-2" /></Button></div>
           </CardContent>
         </Card>
       )}
@@ -246,7 +246,7 @@ export default function DOT5800Form() {
               <div><label className={labelCls}>Vehicle Type</label><Input value={form.vehicleType} onChange={(e: any) => update("vehicleType", e.target.value)} placeholder="e.g. Tractor-Trailer" className={inputCls} /></div>
               <div><label className={labelCls}>License Plate</label><Input value={form.vehiclePlate} onChange={(e: any) => update("vehiclePlate", e.target.value)} className={inputCls} /></div>
             </div>
-            <div className="flex gap-3"><Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50")} onClick={prev}>Back</Button><Button className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl h-11" onClick={next}>Next: Consequences <ArrowRight className="w-4 h-4 ml-2" /></Button></div>
+            <div className="flex gap-3"><Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-white/[0.04] border-white/[0.06]")} onClick={prev}>Back</Button><Button className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl h-11" onClick={next}>Next: Consequences <ArrowRight className="w-4 h-4 ml-2" /></Button></div>
           </CardContent>
         </Card>
       )}
@@ -263,12 +263,12 @@ export default function DOT5800Form() {
             </div>
             <div><label className={labelCls}>Est. Property Damage ($)</label><Input value={form.propertyDamage} onChange={(e: any) => update("propertyDamage", e.target.value)} placeholder="50000" className={inputCls} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className={labelCls}>Evacuation?</label><select value={form.evacuationPerformed} onChange={(e) => update("evacuationPerformed", e.target.value)} className={cn("w-full h-11 px-3 rounded-xl border text-sm", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white")}><option value="no">No</option><option value="yes">Yes</option></select></div>
+              <div><label className={labelCls}>Evacuation?</label><select value={form.evacuationPerformed} onChange={(e) => update("evacuationPerformed", e.target.value)} className={cn("w-full h-11 px-3 rounded-xl border text-sm", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white")}><option value="no">No</option><option value="yes">Yes</option></select></div>
               <div><label className={labelCls}>People Evacuated</label><Input type="number" min="0" value={form.evacueeCount} onChange={(e: any) => update("evacueeCount", e.target.value)} className={inputCls} /></div>
             </div>
-            <div><label className={labelCls}>Water Contamination?</label><select value={form.waterContamination} onChange={(e) => update("waterContamination", e.target.value)} className={cn("w-full h-11 px-3 rounded-xl border text-sm", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white")}><option value="no">No</option><option value="yes">Yes</option></select></div>
-            <div><label className={labelCls}>Description of Events</label><Textarea value={form.description} onChange={(e: any) => update("description", e.target.value)} placeholder="Describe the sequence of events, root cause, and corrective actions..." className={cn("rounded-xl min-h-[100px]", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-400")} /></div>
-            <div className="flex gap-3"><Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50")} onClick={prev}>Back</Button><Button className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl h-11" onClick={next}>Review <ArrowRight className="w-4 h-4 ml-2" /></Button></div>
+            <div><label className={labelCls}>Water Contamination?</label><select value={form.waterContamination} onChange={(e) => update("waterContamination", e.target.value)} className={cn("w-full h-11 px-3 rounded-xl border text-sm", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white")}><option value="no">No</option><option value="yes">Yes</option></select></div>
+            <div><label className={labelCls}>Description of Events</label><Textarea value={form.description} onChange={(e: any) => update("description", e.target.value)} placeholder="Describe the sequence of events, root cause, and corrective actions..." className={cn("rounded-xl min-h-[100px]", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white placeholder:text-slate-400")} /></div>
+            <div className="flex gap-3"><Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-white/[0.04] border-white/[0.06]")} onClick={prev}>Back</Button><Button className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl h-11" onClick={next}>Review <ArrowRight className="w-4 h-4 ml-2" /></Button></div>
           </CardContent>
         </Card>
       )}
@@ -297,7 +297,7 @@ export default function DOT5800Form() {
               </div>
             ))}
             <div className="flex gap-3 pt-3">
-              <Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50")} onClick={prev}>Back</Button>
+              <Button variant="outline" className={cn("flex-1 h-11 rounded-xl", isLight ? "border-slate-200" : "bg-white/[0.04] border-white/[0.06]")} onClick={prev}>Back</Button>
               <Button className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl h-11 text-base font-medium" onClick={handleSubmit}>
                 <Send className="w-4 h-4 mr-2" /> Submit Form 5800.1
               </Button>

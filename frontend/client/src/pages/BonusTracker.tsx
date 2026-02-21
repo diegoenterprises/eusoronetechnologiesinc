@@ -65,7 +65,7 @@ export default function BonusTracker() {
   const activeBonuses = bonuses.filter((b) => b.status === "active");
   const earnedBonuses = bonuses.filter((b) => b.status === "earned");
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -79,7 +79,7 @@ export default function BonusTracker() {
             Earn rewards for milestones, safety, and performance
           </p>
         </div>
-        <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => rewardsQuery.refetch?.()}>
+        <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")} onClick={() => rewardsQuery.refetch?.()}>
           <RefreshCw className="w-4 h-4" />
         </Button>
       </div>
@@ -101,7 +101,7 @@ export default function BonusTracker() {
               { icon: <Target className="w-5 h-5 text-blue-400" />, bg: "bg-blue-500/15", value: String(activeBonuses.length), label: "Active Bonuses", color: "text-blue-400" },
               { icon: <Award className="w-5 h-5 text-yellow-400" />, bg: "bg-yellow-500/15", value: String(earnedBonuses.length), label: "Completed", color: "text-yellow-400" },
             ].map((s) => (
-              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
@@ -127,7 +127,7 @@ export default function BonusTracker() {
             <CardContent className="space-y-3">
               {activeBonuses.length === 0 ? (
                 <div className="text-center py-10">
-                  <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
+                  <div className={cn("w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
                     <Gift className="w-8 h-8 text-slate-400" />
                   </div>
                   <p className={cn("font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No active bonuses</p>
@@ -140,7 +140,7 @@ export default function BonusTracker() {
                   return (
                     <div key={bonus.id} className={cn(
                       "p-4 rounded-xl border transition-colors",
-                      isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
+                      isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
                     )}>
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-start gap-3">

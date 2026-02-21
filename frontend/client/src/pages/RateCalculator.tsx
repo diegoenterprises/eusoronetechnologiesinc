@@ -46,7 +46,7 @@ export default function RateCalculator() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Input Form */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Calculator className="w-5 h-5 text-cyan-400" />
@@ -62,7 +62,7 @@ export default function RateCalculator() {
                   value={origin}
                   onChange={(e: any) => setOrigin(e.target.value)}
                   placeholder="City, State"
-                  className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
+                  className="pl-9 bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50"
                 />
               </div>
             </div>
@@ -75,7 +75,7 @@ export default function RateCalculator() {
                   value={destination}
                   onChange={(e: any) => setDestination(e.target.value)}
                   placeholder="City, State"
-                  className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
+                  className="pl-9 bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50"
                 />
               </div>
             </div>
@@ -83,7 +83,7 @@ export default function RateCalculator() {
             <div className="space-y-2">
               <Label className="text-slate-400">Equipment Type</Label>
               <Select value={equipmentType} onValueChange={setEquipmentType}>
-                <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg">
+                <SelectTrigger className="bg-slate-700/30 border-white/[0.06] rounded-lg">
                   <SelectValue placeholder="Select equipment" />
                 </SelectTrigger>
                 <SelectContent>
@@ -103,21 +103,21 @@ export default function RateCalculator() {
                 value={weight}
                 onChange={(e: any) => setWeight(e.target.value)}
                 placeholder="Enter weight"
-                className="bg-slate-700/30 border-slate-600/50 rounded-lg"
+                className="bg-slate-700/30 border-white/[0.06] rounded-lg"
               />
             </div>
           </CardContent>
         </Card>
 
         {/* Results */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Rate Estimate</CardTitle>
           </CardHeader>
           <CardContent>
             {!origin || !destination || !equipmentType ? (
               <div className="text-center py-12">
-                <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                <div className="p-4 rounded-full bg-white/[0.04] w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <Calculator className="w-8 h-8 text-slate-500" />
                 </div>
                 <p className="text-slate-400">Enter route details to calculate rate</p>
@@ -194,7 +194,7 @@ export default function RateCalculator() {
         </Card>
 
         {/* Market Rates */}
-        <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="lg:col-span-2 bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-cyan-400" />

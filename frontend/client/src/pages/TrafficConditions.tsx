@@ -47,14 +47,14 @@ export default function TrafficConditions() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Real-time traffic and road conditions</p>
         </div>
-        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => { incidentsQuery.refetch(); constructionQuery.refetch(); }}>
+        <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => { incidentsQuery.refetch(); constructionQuery.refetch(); }}>
           <RefreshCw className="w-4 h-4 mr-2" />Refresh
         </Button>
       </div>
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -70,7 +70,7 @@ export default function TrafficConditions() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -86,7 +86,7 @@ export default function TrafficConditions() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-orange-500/20">
@@ -102,7 +102,7 @@ export default function TrafficConditions() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -122,12 +122,12 @@ export default function TrafficConditions() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search by location..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search by location..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Traffic Incidents */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -139,13 +139,13 @@ export default function TrafficConditions() {
               <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
             ) : filteredIncidents?.length === 0 ? (
               <div className="text-center py-12">
-                <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                <div className="p-4 rounded-full bg-white/[0.04] w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <Car className="w-8 h-8 text-slate-500" />
                 </div>
                 <p className="text-slate-400">No incidents reported</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-700/50 max-h-96 overflow-y-auto">
+              <div className="divide-y divide-white/[0.04] max-h-96 overflow-y-auto">
                 {filteredIncidents?.map((incident: any) => (
                   <div key={incident.id} className={cn("p-4", incident.severity === "major" && "bg-red-500/5 border-l-2 border-red-500")}>
                     <div className="flex items-start justify-between mb-2">
@@ -167,7 +167,7 @@ export default function TrafficConditions() {
         </Card>
 
         {/* Construction Zones */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Construction className="w-5 h-5 text-orange-400" />
@@ -182,9 +182,9 @@ export default function TrafficConditions() {
                 <p className="text-slate-400">No construction zones</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-700/50 max-h-96 overflow-y-auto">
+              <div className="divide-y divide-white/[0.04] max-h-96 overflow-y-auto">
                 {(constructionQuery.data as any)?.map((zone: any) => (
-                  <div key={zone.id} className="p-4 hover:bg-slate-700/20 transition-colors">
+                  <div key={zone.id} className="p-4 hover:bg-white/[0.04] transition-colors">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-white font-medium">{zone.route}</p>
                       <Badge className="bg-orange-500/20 text-orange-400 border-0">{zone.lanesClosed} lanes closed</Badge>
@@ -203,7 +203,7 @@ export default function TrafficConditions() {
       </div>
 
       {/* Route Delays */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg">Route Delays</CardTitle>
         </CardHeader>
@@ -213,9 +213,9 @@ export default function TrafficConditions() {
           ) : (delaysQuery.data as any)?.routes?.length === 0 ? (
             <p className="text-slate-400 text-center py-8">No significant delays</p>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(delaysQuery.data as any)?.routes?.map((route: any) => (
-                <div key={route.id} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors">
+                <div key={route.id} className="p-4 flex items-center justify-between hover:bg-white/[0.04] transition-colors">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-2 rounded-lg", route.delay > 30 ? "bg-red-500/20" : route.delay > 15 ? "bg-yellow-500/20" : "bg-green-500/20")}>
                       <Clock className={cn("w-5 h-5", route.delay > 30 ? "text-red-400" : route.delay > 15 ? "text-yellow-400" : "text-green-400")} />

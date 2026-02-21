@@ -60,7 +60,7 @@ export default function LaneContractsPage() {
           { label: "Expired", value: stats?.expired || 0, icon: <Clock className="w-5 h-5 text-red-400" />, color: "text-red-400" },
           { label: "Expiring Soon", value: expiring.length, icon: <AlertTriangle className="w-5 h-5 text-yellow-400" />, color: "text-yellow-400" },
         ].map(s => (
-          <Card key={s.label} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card key={s.label} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-slate-700/30">{s.icon}</div>
@@ -107,7 +107,7 @@ export default function LaneContractsPage() {
 
       {/* Detail Panel */}
       {selectedId && detail && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Route className="w-5 h-5 text-[#1473FF]" />
@@ -155,7 +155,7 @@ export default function LaneContractsPage() {
       )}
 
       {/* Lane List */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Route className="w-5 h-5 text-cyan-400" />All Lane Contracts
@@ -168,9 +168,9 @@ export default function LaneContractsPage() {
           ) : lanes.length === 0 ? (
             <div className="p-8 text-center"><Route className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No lane contracts found</p></div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {lanes.map((l: any) => (
-                <button key={l.id} onClick={() => setSelectedId(l.id)} className="w-full p-3 flex items-center justify-between hover:bg-slate-700/20 transition-colors text-left">
+                <button key={l.id} onClick={() => setSelectedId(l.id)} className="w-full p-3 flex items-center justify-between hover:bg-white/[0.04] transition-colors text-left">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <MapPin className="w-4 h-4 text-[#1473FF] shrink-0" />
                     <div className="min-w-0">

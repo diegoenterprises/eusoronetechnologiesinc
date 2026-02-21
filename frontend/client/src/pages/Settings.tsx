@@ -223,9 +223,9 @@ export default function Settings() {
   };
 
   // Shared input style
-  const inputCls = "bg-white dark:bg-slate-700/30 border-slate-200 dark:border-slate-600/50 rounded-lg focus:border-purple-400 dark:focus:border-cyan-500/50 text-slate-900 dark:text-white";
+  const inputCls = "bg-white dark:bg-slate-700/30 border-slate-200 dark:border-white/[0.06] rounded-lg focus:border-purple-400 dark:focus:border-cyan-500/50 text-slate-900 dark:text-white";
   const labelCls = "text-slate-600 dark:text-slate-400 text-sm font-medium";
-  const cardCls = "bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 rounded-xl shadow-sm dark:shadow-none";
+  const cardCls = "bg-white dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] rounded-xl shadow-sm dark:shadow-none";
   const switchRowCls = "flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/40";
   const btnCls = "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] hover:opacity-90 text-white rounded-lg";
 
@@ -241,7 +241,7 @@ export default function Settings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-1">
+        <TabsList className="bg-slate-100 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] rounded-xl p-1">
           <TabsTrigger value="profile" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-lg text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">
             <User className="w-4 h-4 mr-2" />Profile
           </TabsTrigger>

@@ -216,7 +216,7 @@ export default function ClearinghouseDashboard() {
         <TabsContent value="overview" className="mt-6 space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Query Summary */}
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <FileCheck className="w-5 h-5 text-blue-400" />
@@ -244,7 +244,7 @@ export default function ClearinghouseDashboard() {
             </Card>
 
             {/* Upcoming Due Dates */}
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-white/[0.02] border-slate-700">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-white flex items-center gap-2">
                   <Clock className="w-5 h-5 text-yellow-400" />
@@ -302,7 +302,7 @@ export default function ClearinghouseDashboard() {
 
         {/* Query History Tab */}
         <TabsContent value="queries" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-white/[0.02] border-slate-700">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-white">Query History</CardTitle>
@@ -313,7 +313,7 @@ export default function ClearinghouseDashboard() {
                       value={searchTerm}
                       onChange={(e: any) => setSearchTerm(e.target.value)}
                       placeholder="Search drivers..."
-                      className="pl-9 w-64 bg-slate-700/50 border-slate-600"
+                      className="pl-9 w-64 bg-white/[0.04] border-slate-600"
                     />
                   </div>
                   <Button variant="outline" size="sm" className="border-slate-600">
@@ -374,7 +374,7 @@ export default function ClearinghouseDashboard() {
 
         {/* Due for Query Tab */}
         <TabsContent value="due" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-white/[0.02] border-slate-700">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-white">Drivers Due for Annual Query</CardTitle>
@@ -432,7 +432,7 @@ export default function ClearinghouseDashboard() {
 
         {/* Consent Status Tab */}
         <TabsContent value="consent" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-white/[0.02] border-slate-700">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-white">Driver Consent Status</CardTitle>

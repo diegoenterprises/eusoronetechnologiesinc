@@ -50,7 +50,7 @@ export default function Opportunities() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><TrendingUp className="w-6 h-6 text-cyan-400" /></div>
@@ -58,7 +58,7 @@ export default function Opportunities() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20"><Zap className="w-6 h-6 text-red-400" /></div>
@@ -66,7 +66,7 @@ export default function Opportunities() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><DollarSign className="w-6 h-6 text-green-400" /></div>
@@ -74,7 +74,7 @@ export default function Opportunities() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><Star className="w-6 h-6 text-yellow-400" /></div>
@@ -85,7 +85,7 @@ export default function Opportunities() {
       </div>
 
       <Select value={category} onValueChange={setCategory}>
-        <SelectTrigger className="w-[180px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="w-[180px] bg-white/[0.02] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Categories</SelectItem>
           <SelectItem value="hazmat">HazMat</SelectItem>
@@ -95,7 +95,7 @@ export default function Opportunities() {
         </SelectContent>
       </Select>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><TrendingUp className="w-5 h-5 text-cyan-400" />Opportunities</CardTitle></CardHeader>
         <CardContent className="p-0">
           {opportunitiesQuery.isLoading ? (
@@ -103,7 +103,7 @@ export default function Opportunities() {
           ) : !opportunitiesQuery.data || (Array.isArray(opportunitiesQuery.data) && opportunitiesQuery.data.length === 0) ? (
             <div className="text-center py-16"><TrendingUp className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No opportunities found</p></div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(Array.isArray(opportunitiesQuery.data) ? opportunitiesQuery.data : []).map((opp: any) => (
                 <div key={opp.id} className={cn("p-4", opp.urgency === "urgent" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-start justify-between mb-3">

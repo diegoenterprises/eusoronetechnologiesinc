@@ -52,12 +52,12 @@ export default function ERGLookup() {
         </div>
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input value={searchValue} onChange={(e: any) => setSearchValue(e.target.value)} placeholder="Enter UN number (e.g., 1203)..." className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg" onKeyDown={(e: any) => e.key === "Enter" && handleSearch()} />
+              <Input value={searchValue} onChange={(e: any) => setSearchValue(e.target.value)} placeholder="Enter UN number (e.g., 1203)..." className="pl-9 bg-white/[0.04] border-white/[0.06] rounded-lg" onKeyDown={(e: any) => e.key === "Enter" && handleSearch()} />
             </div>
             <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={handleSearch} disabled={lookupMutation.isPending}>
               <Search className="w-4 h-4 mr-2" />Search
@@ -90,16 +90,16 @@ export default function ERGLookup() {
                 <Badge className="bg-orange-500/20 text-orange-400 border-0 text-lg px-4 py-2">Guide {result.guideNumber}</Badge>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">Class</p><p className="text-white font-medium">{result.hazardClass}</p></div>
-                <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">Division</p><p className="text-white font-medium">{result.division || "N/A"}</p></div>
-                <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">Packing Group</p><p className="text-white font-medium">{result.packingGroup || "N/A"}</p></div>
-                <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">Placard</p><p className="text-white font-medium">{result.placard}</p></div>
+                <div className="p-3 rounded-lg bg-white/[0.02]"><p className="text-xs text-slate-500">Class</p><p className="text-white font-medium">{result.hazardClass}</p></div>
+                <div className="p-3 rounded-lg bg-white/[0.02]"><p className="text-xs text-slate-500">Division</p><p className="text-white font-medium">{result.division || "N/A"}</p></div>
+                <div className="p-3 rounded-lg bg-white/[0.02]"><p className="text-xs text-slate-500">Packing Group</p><p className="text-white font-medium">{result.packingGroup || "N/A"}</p></div>
+                <div className="p-3 rounded-lg bg-white/[0.02]"><p className="text-xs text-slate-500">Placard</p><p className="text-white font-medium">{result.placard}</p></div>
               </div>
             </CardContent>
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" />Potential Hazards</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 {result.hazards?.map((hazard: any, i: number) => (
@@ -114,7 +114,7 @@ export default function ERGLookup() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-green-400" />Public Safety</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <div className="p-3 rounded-lg bg-slate-700/30">
@@ -132,7 +132,7 @@ export default function ERGLookup() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Flame className="w-5 h-5 text-orange-400" />Fire Response</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 {result.fireResponse?.map((item: string, i: number) => (
@@ -141,7 +141,7 @@ export default function ERGLookup() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
               <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Droplets className="w-5 h-5 text-blue-400" />Spill Response</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 {result.spillResponse?.map((item: string, i: number) => (
@@ -150,7 +150,7 @@ export default function ERGLookup() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl md:col-span-2">
+            <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl md:col-span-2">
               <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Phone className="w-5 h-5 text-green-400" />Emergency Contacts</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-3 rounded-lg bg-slate-700/30 text-center">
@@ -176,7 +176,7 @@ export default function ERGLookup() {
       )}
 
       {!lookupMutation.isPending && !result && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-12 text-center">
             <FileText className="w-16 h-16 text-slate-500 mx-auto mb-4" />
             <p className="text-slate-400">Enter a UN number to lookup emergency response information</p>

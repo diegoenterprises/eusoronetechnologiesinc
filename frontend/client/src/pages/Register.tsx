@@ -209,7 +209,7 @@ export default function Register() {
         }
       `}</style>
       {/* Header */}
-      <div className={`border-b backdrop-blur-xl ${isLight ? 'border-slate-200 bg-white/70' : 'border-slate-700/50 bg-slate-900/50'}`}>
+      <div className={`border-b backdrop-blur-xl ${isLight ? 'border-slate-200 bg-white/70' : 'border-white/[0.06] bg-slate-900/50'}`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/eusotrip-logo.png" alt="EusoTrip" className="w-10 h-10 object-contain" />
@@ -221,7 +221,7 @@ export default function Register() {
             </Button>
             <button
               onClick={toggleTheme}
-              className={`p-2.5 rounded-full border transition-all duration-300 hover:scale-110 ${isLight ? 'bg-white/80 border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm' : 'bg-slate-800/80 border-slate-600 text-slate-300 hover:bg-slate-700'}`}
+              className={`p-2.5 rounded-full border transition-all duration-300 hover:scale-110 ${isLight ? 'bg-white/80 border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm' : 'bg-slate-800/80 border-slate-600 text-slate-300 hover:bg-white/[0.06]'}`}
               title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
             >
               {isLight ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
@@ -280,7 +280,7 @@ export default function Register() {
             return (
               <Card
                 key={roleData.role}
-                className={`domino-card ${mounted ? "animate" : ""} cursor-pointer group hover:scale-[1.02] transition-all duration-300 ${isLight ? 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-xl hover:shadow-blue-500/5' : 'bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:shadow-xl hover:shadow-blue-500/10'} ${
+                className={`domino-card ${mounted ? "animate" : ""} cursor-pointer group hover:scale-[1.02] transition-all duration-300 ${isLight ? 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-xl hover:shadow-blue-500/5' : 'bg-white/[0.02] border-slate-700 hover:border-slate-500 hover:shadow-xl hover:shadow-blue-500/10'} ${
                   roleData.inviteOnly ? "opacity-70" : ""
                 }`}
                 style={{ animationDelay: `${staggerDelay}s` }}
@@ -311,7 +311,7 @@ export default function Register() {
                       />
                     </div>
                     {roleData.inviteOnly && (
-                      <Badge variant="outline" className="text-xs bg-slate-700/50 text-slate-400">
+                      <Badge variant="outline" className="text-xs bg-white/[0.04] text-slate-400">
                         Invite Only
                       </Badge>
                     )}
@@ -330,12 +330,12 @@ export default function Register() {
                     <p className={`text-xs font-semibold mb-2 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Requirements:</p>
                     <div className="flex flex-wrap gap-1">
                       {roleData.requirements.slice(0, 3).map((req: any, idx: number) => (
-                        <Badge key={idx} variant="secondary" className={`text-xs ${isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-700/50 text-slate-300'}`}>
+                        <Badge key={idx} variant="secondary" className={`text-xs ${isLight ? 'bg-slate-100 text-slate-600' : 'bg-white/[0.04] text-slate-300'}`}>
                           {req}
                         </Badge>
                       ))}
                       {roleData.requirements.length > 3 && (
-                        <Badge variant="secondary" className={`text-xs ${isLight ? 'bg-slate-100 text-slate-400' : 'bg-slate-700/50 text-slate-400'}`}>
+                        <Badge variant="secondary" className={`text-xs ${isLight ? 'bg-slate-100 text-slate-400' : 'bg-white/[0.04] text-slate-400'}`}>
                           +{roleData.requirements.length - 3} more
                         </Badge>
                       )}

@@ -244,7 +244,7 @@ export default function QuoteWidget({
             {(quote.intelligence.originZone || quote.intelligence.destZone) && (
               <div className="flex flex-wrap gap-2">
                 {quote.intelligence.originZone && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/30">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.03] border border-slate-700/30">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     <span className="text-[10px] text-slate-400">Origin:</span>
                     <span className="text-[10px] text-white font-medium">{quote.intelligence.originZone}</span>
@@ -252,7 +252,7 @@ export default function QuoteWidget({
                   </div>
                 )}
                 {quote.intelligence.destZone && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/30">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.03] border border-slate-700/30">
                     <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
                     <span className="text-[10px] text-slate-400">Dest:</span>
                     <span className="text-[10px] text-white font-medium">{quote.intelligence.destZone}</span>

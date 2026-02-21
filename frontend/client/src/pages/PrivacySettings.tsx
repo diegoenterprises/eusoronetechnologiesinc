@@ -44,7 +44,7 @@ export default function PrivacySettings() {
     toast.success("Privacy settings saved");
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[900px] mx-auto">
@@ -73,7 +73,7 @@ export default function PrivacySettings() {
               key={setting.id}
               className={cn(
                 "flex items-center justify-between p-4 rounded-xl border transition-colors",
-                isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
+                isLight ? "bg-white border-slate-200 hover:border-slate-300" : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
               )}
             >
               <div className="flex items-start gap-3 flex-1">
@@ -119,7 +119,7 @@ export default function PrivacySettings() {
           ].map((item) => (
             <div key={item.label} className={cn(
               "flex items-center justify-between p-4 rounded-xl border",
-              isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+              isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
             )}>
               <div className="flex items-center gap-3">
                 <div className={cn("p-2.5 rounded-lg", item.bg, item.color)}>{item.icon}</div>
@@ -131,7 +131,7 @@ export default function PrivacySettings() {
               <Button
                 variant="outline"
                 size="sm"
-                className={cn("rounded-xl text-xs", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
+                className={cn("rounded-xl text-xs", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06]")}
                 onClick={() => toast.info(`${item.action} requested — processing...`)}
               >
                 {item.action} <ChevronRight className="w-3 h-3 ml-1" />

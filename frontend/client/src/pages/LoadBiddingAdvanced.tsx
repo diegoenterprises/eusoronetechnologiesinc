@@ -73,7 +73,7 @@ export default function LoadBiddingAdvanced() {
           { label: "Win Rate", value: `${stats?.winRate || 0}%`, icon: <TrendingUp className="w-5 h-5 text-purple-400" />, color: "text-purple-400" },
           { label: "Auto-Rules", value: rules.length, icon: <Zap className="w-5 h-5 text-cyan-400" />, color: "text-cyan-400" },
         ].map(s => (
-          <Card key={s.label} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card key={s.label} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardContent className="p-3 text-center">
               <div className="flex justify-center mb-1">{s.icon}</div>
               {statsQuery.isLoading ? <Skeleton className="h-6 w-10 mx-auto" /> : <p className={cn("text-lg font-bold", s.color)}>{s.value}</p>}
@@ -95,16 +95,16 @@ export default function LoadBiddingAdvanced() {
 
       {/* My Bids */}
       {tab === "my" && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-0">
             {myBidsQuery.isLoading ? (
               <div className="p-4 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}</div>
             ) : myBids.length === 0 ? (
               <div className="p-8 text-center"><Gavel className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No bids submitted</p></div>
             ) : (
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y divide-white/[0.04]">
                 {myBids.map((b: any) => (
-                  <div key={b.id} className="p-3 flex items-center justify-between hover:bg-slate-700/20">
+                  <div key={b.id} className="p-3 flex items-center justify-between hover:bg-white/[0.04]">
                     <div>
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-white font-medium text-sm">Bid #{b.id}</span>
@@ -128,16 +128,16 @@ export default function LoadBiddingAdvanced() {
 
       {/* Received Bids */}
       {tab === "received" && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-0">
             {receivedQuery.isLoading ? (
               <div className="p-4 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}</div>
             ) : received.length === 0 ? (
               <div className="p-8 text-center"><Gavel className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No bids received on your loads</p></div>
             ) : (
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y divide-white/[0.04]">
                 {received.map((b: any) => (
-                  <div key={b.id} className="p-3 flex items-center justify-between hover:bg-slate-700/20">
+                  <div key={b.id} className="p-3 flex items-center justify-between hover:bg-white/[0.04]">
                     <div>
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-white font-medium text-sm">${Number(b.bidAmount || 0).toLocaleString()}</span>
@@ -161,7 +161,7 @@ export default function LoadBiddingAdvanced() {
 
       {/* Auto-Accept Rules */}
       {tab === "rules" && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-sm flex items-center gap-2">
               <Zap className="w-4 h-4 text-cyan-400" />Auto-Accept Rules
@@ -173,9 +173,9 @@ export default function LoadBiddingAdvanced() {
             ) : rules.length === 0 ? (
               <div className="p-8 text-center"><Settings className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No auto-accept rules configured</p></div>
             ) : (
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y divide-white/[0.04]">
                 {rules.map((r: any) => (
-                  <div key={r.id} className="p-3 flex items-center justify-between hover:bg-slate-700/20">
+                  <div key={r.id} className="p-3 flex items-center justify-between hover:bg-white/[0.04]">
                     <div>
                       <p className="text-white font-medium text-sm">{r.name}</p>
                       <div className="flex items-center gap-2 text-xs text-slate-500">

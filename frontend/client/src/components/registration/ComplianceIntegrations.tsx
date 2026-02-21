@@ -143,7 +143,7 @@ export function ComplianceIntegrations({ role, complianceIds, onChange }: Compli
           value={complianceIds[key]}
           onChange={(e: any) => updateField(key, e.target.value)}
           placeholder={meta.placeholder}
-          className="bg-slate-700/50 border-slate-600 text-white h-9 text-sm"
+          className="bg-white/[0.04] border-slate-600 text-white h-9 text-sm"
         />
         <p className="text-[11px] text-slate-500">{meta.description}</p>
       </div>
@@ -177,7 +177,7 @@ export function ComplianceIntegrations({ role, complianceIds, onChange }: Compli
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700 hover:border-slate-600 transition-colors"
+        className="w-full flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-slate-700 hover:border-slate-600 transition-colors"
       >
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-slate-400" />
@@ -253,20 +253,20 @@ export function PasswordFields({
           value={password}
           onChange={(e: any) => onPasswordChange(e.target.value)}
           placeholder="Create a secure password"
-          className="bg-slate-700/50 border-slate-600 text-white"
+          className="bg-white/[0.04] border-slate-600 text-white"
         />
         {password.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-1">
-            <Badge className={`text-[10px] ${hasMinLength ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-500'}`}>
+            <Badge className={`text-[10px] ${hasMinLength ? 'bg-green-500/20 text-green-400' : 'bg-white/[0.04] text-slate-500'}`}>
               8+ characters
             </Badge>
-            <Badge className={`text-[10px] ${hasUppercase ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-500'}`}>
+            <Badge className={`text-[10px] ${hasUppercase ? 'bg-green-500/20 text-green-400' : 'bg-white/[0.04] text-slate-500'}`}>
               Uppercase
             </Badge>
-            <Badge className={`text-[10px] ${hasNumber ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-500'}`}>
+            <Badge className={`text-[10px] ${hasNumber ? 'bg-green-500/20 text-green-400' : 'bg-white/[0.04] text-slate-500'}`}>
               Number
             </Badge>
-            <Badge className={`text-[10px] ${hasSpecial ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-500'}`}>
+            <Badge className={`text-[10px] ${hasSpecial ? 'bg-green-500/20 text-green-400' : 'bg-white/[0.04] text-slate-500'}`}>
               Special character
             </Badge>
           </div>
@@ -281,7 +281,7 @@ export function PasswordFields({
           value={confirmPassword}
           onChange={(e: any) => onConfirmChange(e.target.value)}
           placeholder="Confirm your password"
-          className="bg-slate-700/50 border-slate-600 text-white"
+          className="bg-white/[0.04] border-slate-600 text-white"
         />
         {confirmPassword.length > 0 && (
           <div className="flex items-center gap-1.5 mt-1">

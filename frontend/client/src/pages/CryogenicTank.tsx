@@ -63,7 +63,7 @@ export default function CryogenicTank() {
     toast.success(totalFail > 0 ? "Inspection submitted — deficiencies noted" : "Cryogenic tank inspection passed");
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   if (submitted) {
     return (
@@ -122,7 +122,7 @@ export default function CryogenicTank() {
       </div>
 
       {/* Progress */}
-      <div className={cn("p-4 rounded-xl", isLight ? "bg-slate-50" : "bg-slate-800/50")}>
+      <div className={cn("p-4 rounded-xl", isLight ? "bg-slate-50" : "bg-white/[0.02]")}>
         <div className="flex items-center justify-between mb-2">
           <p className={cn("text-xs font-medium", isLight ? "text-slate-500" : "text-slate-400")}>Inspection Progress</p>
           <p className={cn("text-xs font-bold", isLight ? "text-slate-700" : "text-white")}>{Math.round((totalChecked / CRYO_CHECKLIST.length) * 100)}%</p>
@@ -151,7 +151,7 @@ export default function CryogenicTank() {
                     "flex items-start justify-between p-4 rounded-xl border transition-colors",
                     status === "pass" ? (isLight ? "bg-green-50 border-green-200" : "bg-green-500/5 border-green-500/20") :
                     status === "fail" ? (isLight ? "bg-red-50 border-red-200" : "bg-red-500/5 border-red-500/20") :
-                    isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
+                    isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30"
                   )}>
                     <div className="flex-1 mr-3">
                       <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{item.label}</p>
@@ -181,12 +181,12 @@ export default function CryogenicTank() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} placeholder="Vacuum readings, hold time observations, or deficiency details..." className={cn("rounded-xl min-h-[80px]", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-400")} />
+          <Textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} placeholder="Vacuum readings, hold time observations, or deficiency details..." className={cn("rounded-xl min-h-[80px]", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06] text-white placeholder:text-slate-400")} />
         </CardContent>
       </Card>
 
       {/* Submit */}
-      <Button className={cn("w-full h-12 rounded-xl text-base font-medium", allChecked ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 shadow-lg shadow-purple-500/20" : isLight ? "bg-slate-100 text-slate-400" : "bg-slate-700/50 text-slate-500")} disabled={!allChecked} onClick={handleSubmit}>
+      <Button className={cn("w-full h-12 rounded-xl text-base font-medium", allChecked ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 shadow-lg shadow-purple-500/20" : isLight ? "bg-slate-100 text-slate-400" : "bg-white/[0.04] text-slate-500")} disabled={!allChecked} onClick={handleSubmit}>
         <Send className="w-5 h-5 mr-2" /> {allChecked ? "Submit Cryogenic Inspection" : `Complete ${CRYO_CHECKLIST.length - totalChecked} remaining items`}
       </Button>
     </div>

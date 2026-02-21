@@ -114,7 +114,7 @@ export default function EvacuationDistance() {
     };
   };
 
-  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
+  const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1100px] mx-auto">
@@ -195,7 +195,7 @@ export default function EvacuationDistance() {
                   ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white"
                   : isLight
                     ? "bg-white text-slate-500 hover:bg-slate-50"
-                    : "bg-slate-800/50 text-slate-400 hover:bg-slate-700/50"
+                    : "bg-white/[0.02] text-slate-400 hover:bg-white/[0.04]"
               )}
             >
               {size === "small" ? "Small Spill" : "Large Spill"}
@@ -215,7 +215,7 @@ export default function EvacuationDistance() {
                   ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white"
                   : isLight
                     ? "bg-white text-slate-500 hover:bg-slate-50"
-                    : "bg-slate-800/50 text-slate-400 hover:bg-slate-700/50"
+                    : "bg-white/[0.02] text-slate-400 hover:bg-white/[0.04]"
               )}
             >
               {tod === "day" ? <Sun className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
@@ -227,7 +227,7 @@ export default function EvacuationDistance() {
         {/* Search */}
         <div className={cn(
           "relative flex-1 rounded-xl border",
-          isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50"
+          isLight ? "bg-white border-slate-200" : "bg-white/[0.03] border-white/[0.06]"
         )}>
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input
@@ -298,7 +298,7 @@ export default function EvacuationDistance() {
                           : "bg-red-500/5 border-red-500/20 ring-1 ring-red-500/30"
                         : isLight
                           ? "bg-white border-slate-200 hover:border-slate-300"
-                          : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600"
+                          : "bg-white/[0.02] border-slate-700/30 hover:border-slate-600"
                     )}
                   >
                     <div className="col-span-1">

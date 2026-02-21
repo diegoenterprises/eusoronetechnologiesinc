@@ -201,13 +201,13 @@ export default function ESANGChat() {
             <p className={cn("text-sm mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>Your intelligent logistics assistant</p>
           </div>
         </div>
-        <Button variant="outline" className={cn("rounded-lg", isLight ? "bg-white border-slate-200 hover:bg-slate-50 text-slate-700" : "bg-slate-800/50 border-slate-700/50 hover:bg-slate-700")} onClick={() => clearMutation.mutate()}>
+        <Button variant="outline" className={cn("rounded-lg", isLight ? "bg-white border-slate-200 hover:bg-slate-50 text-slate-700" : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06]")} onClick={() => clearMutation.mutate()}>
           <Trash2 className="w-4 h-4 mr-2" />Clear Chat
         </Button>
       </div>
 
       <div className="flex-1 flex gap-6 min-h-0">
-        <Card className={cn("rounded-xl flex-1 flex flex-col", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+        <Card className={cn("rounded-xl flex-1 flex flex-col", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
           <CardContent className="flex-1 p-4 overflow-y-auto">
             {historyQuery.isLoading ? (
               <div className="space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className={cn("h-20 w-full rounded-xl", isLight ? "bg-slate-100" : "")} />)}</div>
@@ -228,7 +228,7 @@ export default function ESANGChat() {
                         <Bot className={cn("w-5 h-5", isLight ? "text-purple-600" : "text-purple-400")} />
                       </div>
                     )}
-                    <div className={cn("max-w-[70%] p-4 rounded-2xl", msg.role === "user" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : isLight ? "bg-slate-100 text-slate-700 border border-slate-200" : "bg-slate-700/50 text-slate-200")}>
+                    <div className={cn("max-w-[70%] p-4 rounded-2xl", msg.role === "user" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : isLight ? "bg-slate-100 text-slate-700 border border-slate-200" : "bg-white/[0.04] text-slate-200")}>
                       <div className="text-sm whitespace-pre-wrap">{msg.role === "assistant" ? renderChatMarkdown(msg.content) : msg.content}</div>
                       {msg.role === "assistant" && lastActions.length > 0 && i === messages.length - 1 && (
                         <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-slate-600/30">
@@ -241,7 +241,7 @@ export default function ESANGChat() {
                                 "text-xs h-7 rounded-full",
                                 action.type === "spectra_match" || action.type === "verify_product"
                                   ? "border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
-                                  : isLight ? "border-slate-300 text-slate-600 hover:bg-slate-100" : "border-slate-600 text-slate-300 hover:bg-slate-700"
+                                  : isLight ? "border-slate-300 text-slate-600 hover:bg-slate-100" : "border-slate-600 text-slate-300 hover:bg-white/[0.06]"
                               )}
                               onClick={() => handleAction(action)}
                             >
@@ -264,7 +264,7 @@ export default function ESANGChat() {
                     <div className="p-2 rounded-full bg-purple-500/20 h-fit">
                       <Bot className={cn("w-5 h-5", isLight ? "text-purple-600" : "text-purple-400")} />
                     </div>
-                    <div className={cn("p-4 rounded-2xl", isLight ? "bg-slate-100 border border-slate-200" : "bg-slate-700/50")}>
+                    <div className={cn("p-4 rounded-2xl", isLight ? "bg-slate-100 border border-slate-200" : "bg-white/[0.04]")}>
                       <div className="flex gap-1">
                         <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "0ms" }} />
                         <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -277,9 +277,9 @@ export default function ESANGChat() {
               </div>
             )}
           </CardContent>
-          <div className={cn("p-4 border-t", isLight ? "border-slate-200" : "border-slate-700/50")}>
+          <div className={cn("p-4 border-t", isLight ? "border-slate-200" : "border-white/[0.06]")}>
             <div className="flex gap-2">
-              <Input value={message} onChange={(e: any) => setMessage(e.target.value)} placeholder="Ask ESANG anything..." className={cn("rounded-lg", isLight ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-slate-700/50 border-slate-600/50")} onKeyDown={(e: any) => e.key === "Enter" && !e.shiftKey && handleSend()} />
+              <Input value={message} onChange={(e: any) => setMessage(e.target.value)} placeholder="Ask ESANG anything..." className={cn("rounded-lg", isLight ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-white/[0.04] border-white/[0.06]")} onKeyDown={(e: any) => e.key === "Enter" && !e.shiftKey && handleSend()} />
               <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg" onClick={handleSend} disabled={sendMutation.isPending || !message.trim()}>
                 <Send className="w-4 h-4" />
               </Button>
@@ -288,14 +288,14 @@ export default function ESANGChat() {
         </Card>
 
         <div className="w-72 space-y-4 hidden lg:flex lg:flex-col flex-shrink-0 overflow-y-auto">
-          <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+          <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
             <CardHeader className="pb-3"><CardTitle className={cn("text-sm flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><Lightbulb className="w-4 h-4 text-yellow-400" />Suggestions</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               {suggestionsQuery.isLoading ? (
                 <div className="space-y-2">{[1, 2, 3].map((i: any) => <Skeleton key={i} className={cn("h-10 w-full rounded-lg", isLight ? "bg-slate-100" : "")} />)}</div>
               ) : (
                 (suggestionsQuery.data as any)?.map((suggestion: string, i: number) => (
-                  <Button key={i} variant="outline" className={cn("w-full justify-start text-left text-xs rounded-lg h-auto py-2", isLight ? "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700" : "bg-slate-700/30 border-slate-600/50 hover:bg-slate-700")} onClick={() => handleSuggestion(suggestion)}>
+                  <Button key={i} variant="outline" className={cn("w-full justify-start text-left text-xs rounded-lg h-auto py-2", isLight ? "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700" : "bg-slate-700/30 border-white/[0.06] hover:bg-white/[0.06]")} onClick={() => handleSuggestion(suggestion)}>
                     {suggestion}
                   </Button>
                 ))
@@ -303,7 +303,7 @@ export default function ESANGChat() {
             </CardContent>
           </Card>
 
-          <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+          <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.02] border-white/[0.06]")}>
             <CardHeader className="pb-3">
               <CardTitle className={cn("text-sm flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
                 <Zap className="w-4 h-4 text-cyan-400" />
@@ -322,7 +322,7 @@ export default function ESANGChat() {
                 );
               })}
               {showSpectraMatch && (
-                <div className={cn("pt-2 border-t mt-2", isLight ? "border-slate-200" : "border-slate-700/50")}>
+                <div className={cn("pt-2 border-t mt-2", isLight ? "border-slate-200" : "border-white/[0.06]")}>
                   <p className={cn("font-medium flex items-center gap-1.5 text-xs px-2", isLight ? "text-purple-600" : "text-purple-400")}><Beaker className="w-3.5 h-3.5" /> SPECTRA-MATCH™</p>
                   <div className={cn("mt-1 space-y-0.5 text-xs", isLight ? "text-slate-500" : "text-slate-500")}>
                     <div className="flex items-center gap-2.5 py-1 px-2"><Target className="w-3 h-3 flex-shrink-0 text-purple-400/60" /><span>Product identification</span></div>

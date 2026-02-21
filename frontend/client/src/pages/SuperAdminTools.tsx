@@ -58,7 +58,7 @@ export default function SuperAdminTools() {
               { label: "Revenue MTD", value: `$${Number(pStats?.revenueMTD || 0).toLocaleString()}`, icon: <BarChart3 className="w-5 h-5 text-purple-400" />, color: "text-purple-400" },
               { label: "Alerts", value: pStats?.alerts || 0, icon: <AlertTriangle className="w-5 h-5 text-yellow-400" />, color: "text-yellow-400" },
             ].map(s => (
-              <Card key={s.label} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+              <Card key={s.label} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-full bg-slate-700/30">{s.icon}</div>
@@ -69,7 +69,7 @@ export default function SuperAdminTools() {
             ))}
           </div>
 
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Admin Controls</CardTitle>
             </CardHeader>
@@ -96,7 +96,7 @@ export default function SuperAdminTools() {
 
       {/* System Health */}
       {tab === "system" && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2"><Server className="w-5 h-5 text-green-400" />System Health</CardTitle>
           </CardHeader>
@@ -122,7 +122,7 @@ export default function SuperAdminTools() {
 
       {/* Users */}
       {tab === "users" && (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2"><Users className="w-5 h-5 text-blue-400" />User Management</CardTitle>
           </CardHeader>

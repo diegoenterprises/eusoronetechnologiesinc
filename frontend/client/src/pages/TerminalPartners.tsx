@@ -58,8 +58,8 @@ export default function TerminalPartners() {
       )
     : partners;
 
-  const cardCls = cn("rounded-2xl border transition-all", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
-  const cellCls = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
+  const cardCls = cn("rounded-2xl border transition-all", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const cellCls = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
   const subtextCls = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
 
   const getStatusBadge = (status: string) => {
@@ -201,7 +201,7 @@ export default function TerminalPartners() {
 
       {/* Filter & Search */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className={cn("flex items-center gap-1 p-1 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+        <div className={cn("flex items-center gap-1 p-1 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
           {filterTabs.map((tab) => (
             <button
               key={tab.key}
@@ -217,7 +217,7 @@ export default function TerminalPartners() {
             </button>
           ))}
         </div>
-        <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl border flex-1 max-w-sm", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+        <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl border flex-1 max-w-sm", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-slate-700/30")}>
           <Search className={cn("w-4 h-4", isLight ? "text-slate-400" : "text-slate-500")} />
           <input
             type="text"

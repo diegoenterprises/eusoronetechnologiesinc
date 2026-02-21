@@ -144,7 +144,7 @@ export default function DispatchExceptions() {
         )}
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <CardTitle className="text-white flex items-center gap-2">
@@ -158,11 +158,11 @@ export default function DispatchExceptions() {
                   placeholder="Search exceptions..."
                   value={search}
                   onChange={(e: any) => setSearch(e.target.value)}
-                  className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg w-64"
+                  className="pl-9 bg-white/[0.04] border-white/[0.06] rounded-lg w-64"
                 />
               </div>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-36 bg-slate-700/50 border-slate-600/50 rounded-lg">
+                <SelectTrigger className="w-36 bg-white/[0.04] border-white/[0.06] rounded-lg">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -175,7 +175,7 @@ export default function DispatchExceptions() {
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600/50 rounded-lg">
+                <SelectTrigger className="w-32 bg-white/[0.04] border-white/[0.06] rounded-lg">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -255,7 +255,7 @@ export default function DispatchExceptions() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="bg-slate-700/50 border-slate-600/50 rounded-lg"
+                        className="bg-white/[0.04] border-white/[0.06] rounded-lg"
                       >
                         <Phone className="w-4 h-4 mr-1" />
                         Contact

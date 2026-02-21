@@ -178,7 +178,7 @@ export default function RegisterSafety() {
                 value={formData.firstName}
                 onChange={(e: any) => updateFormData({ firstName: e.target.value })}
                 placeholder="John"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -187,7 +187,7 @@ export default function RegisterSafety() {
                 value={formData.lastName}
                 onChange={(e: any) => updateFormData({ lastName: e.target.value })}
                 placeholder="Smith"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -200,7 +200,7 @@ export default function RegisterSafety() {
                 value={formData.email}
                 onChange={(e: any) => updateFormData({ email: e.target.value })}
                 placeholder="john@company.com"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -210,7 +210,7 @@ export default function RegisterSafety() {
                 value={formData.phone}
                 onChange={(e: any) => updateFormData({ phone: e.target.value })}
                 placeholder="(555) 123-4567"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -238,7 +238,7 @@ export default function RegisterSafety() {
                 value={formData.companyName}
                 onChange={(e: any) => updateFormData({ companyName: e.target.value })}
                 placeholder="ABC Trucking LLC"
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -258,7 +258,7 @@ export default function RegisterSafety() {
             <div className="space-y-2">
               <Label className="text-slate-300">Job Title</Label>
               <Select value={formData.jobTitle} onValueChange={(v: any) => updateFormData({ jobTitle: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="Select title" />
                 </SelectTrigger>
                 <SelectContent>
@@ -273,7 +273,7 @@ export default function RegisterSafety() {
             <div className="space-y-2">
               <Label className="text-slate-300">Years in Safety</Label>
               <Select value={formData.yearsInSafety} onValueChange={(v: any) => updateFormData({ yearsInSafety: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="Select experience" />
                 </SelectTrigger>
                 <SelectContent>
@@ -293,7 +293,7 @@ export default function RegisterSafety() {
               value={formData.reportsTo}
               onChange={(e: any) => updateFormData({ reportsTo: e.target.value })}
               placeholder="CEO, VP Operations, etc."
-              className="bg-slate-700/50 border-slate-600 text-white"
+              className="bg-white/[0.04] border-slate-600 text-white"
             />
           </div>
         </div>
@@ -344,7 +344,7 @@ export default function RegisterSafety() {
                 type="date"
                 value={formData.csaTrainingDate}
                 onChange={(e: any) => updateFormData({ csaTrainingDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -353,7 +353,7 @@ export default function RegisterSafety() {
                 type="date"
                 value={formData.accidentInvestigationDate}
                 onChange={(e: any) => updateFormData({ accidentInvestigationDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-white/[0.04] border-slate-600 text-white"
               />
             </div>
           </div>
@@ -395,7 +395,7 @@ export default function RegisterSafety() {
             <div className="space-y-2">
               <Label className="text-slate-300">Fleet Size (Power Units)</Label>
               <Select value={formData.fleetSize} onValueChange={(v: any) => updateFormData({ fleetSize: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="Select fleet size" />
                 </SelectTrigger>
                 <SelectContent>
@@ -410,7 +410,7 @@ export default function RegisterSafety() {
             <div className="space-y-2">
               <Label className="text-slate-300">Driver Count</Label>
               <Select value={formData.driverCount} onValueChange={(v: any) => updateFormData({ driverCount: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectTrigger className="bg-white/[0.04] border-slate-600 text-white">
                   <SelectValue placeholder="Select driver count" />
                 </SelectTrigger>
                 <SelectContent>

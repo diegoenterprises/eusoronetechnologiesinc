@@ -59,7 +59,7 @@ export default function CookiePolicy() {
       </Card>
 
       {/* Cookie Content */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardContent className="p-6">
           {cookieQuery.isLoading ? (
             <div className="space-y-4">
@@ -92,7 +92,7 @@ export default function CookiePolicy() {
       </Card>
 
       {/* Contact */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardContent className="p-6">
           <div className="flex items-center gap-3">
             <Cookie className="w-5 h-5 text-cyan-400" />

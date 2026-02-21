@@ -51,7 +51,7 @@ export default function DetentionTracking() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20"><Clock className="w-6 h-6 text-red-400" /></div>
@@ -59,7 +59,7 @@ export default function DetentionTracking() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><AlertTriangle className="w-6 h-6 text-yellow-400" /></div>
@@ -67,7 +67,7 @@ export default function DetentionTracking() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><DollarSign className="w-6 h-6 text-green-400" /></div>
@@ -75,7 +75,7 @@ export default function DetentionTracking() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><Clock className="w-6 h-6 text-purple-400" /></div>
@@ -86,7 +86,7 @@ export default function DetentionTracking() {
       </div>
 
       <Select value={status} onValueChange={setStatus}>
-        <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Status</SelectItem>
           <SelectItem value="active">Active</SelectItem>
@@ -96,7 +96,7 @@ export default function DetentionTracking() {
         </SelectContent>
       </Select>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Clock className="w-5 h-5 text-cyan-400" />Detention Events</CardTitle></CardHeader>
         <CardContent className="p-0">
           {detentionsQuery.isLoading ? (
@@ -104,7 +104,7 @@ export default function DetentionTracking() {
           ) : (detentionsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Clock className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No detention events</p></div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(detentionsQuery.data as any)?.map((detention: any) => (
                 <div key={detention.id} className={cn("p-4 flex items-center justify-between", detention.status === "active" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center gap-4">

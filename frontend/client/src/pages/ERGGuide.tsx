@@ -62,7 +62,7 @@ export default function ERGGuide() {
       </div>
 
       {/* Search */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardContent className="p-6">
           <div className="relative max-w-2xl mx-auto">
             <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -70,7 +70,7 @@ export default function ERGGuide() {
               value={searchTerm}
               onChange={(e: any) => setSearchTerm(e.target.value)}
               placeholder="Search by UN number, name, or guide number..."
-              className="pl-12 py-6 text-lg bg-slate-700/30 border-slate-600/50 rounded-xl focus:border-cyan-500/50"
+              className="pl-12 py-6 text-lg bg-slate-700/30 border-white/[0.06] rounded-xl focus:border-cyan-500/50"
             />
           </div>
           
@@ -86,7 +86,7 @@ export default function ERGGuide() {
                   {(searchQuery.data as any)?.map((result: any) => (
                     <div 
                       key={result.id} 
-                      className="p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between"
+                      className="p-4 rounded-xl bg-slate-700/30 hover:bg-white/[0.04] transition-colors cursor-pointer flex items-center justify-between"
                       onClick={() => setSelectedGuide(result.guideNumber)}
                     >
                       <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ export default function ERGGuide() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Guide Details */}
-        <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="lg:col-span-2 bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-cyan-400" />
@@ -120,7 +120,7 @@ export default function ERGGuide() {
           <CardContent>
             {!selectedGuide ? (
               <div className="text-center py-16">
-                <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <div className="p-4 rounded-full bg-white/[0.04] w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                   <BookOpen className="w-10 h-10 text-slate-500" />
                 </div>
                 <p className="text-slate-400 text-lg">Search for a material</p>
@@ -225,7 +225,7 @@ export default function ERGGuide() {
         </Card>
 
         {/* Recent Lookups */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Recent Lookups</CardTitle>
           </CardHeader>
@@ -241,7 +241,7 @@ export default function ERGGuide() {
                 {(recentQuery.data as any)?.map((item: any) => (
                   <div 
                     key={item.id} 
-                    className="p-3 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer"
+                    className="p-3 rounded-xl bg-slate-700/30 hover:bg-white/[0.04] transition-colors cursor-pointer"
                     onClick={() => setSelectedGuide(item.guideNumber)}
                   >
                     <div className="flex items-center gap-2">

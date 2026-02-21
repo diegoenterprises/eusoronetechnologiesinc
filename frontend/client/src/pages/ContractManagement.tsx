@@ -50,7 +50,7 @@ export default function ContractManagement() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><FileText className="w-6 h-6 text-cyan-400" /></div>
@@ -58,7 +58,7 @@ export default function ContractManagement() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
@@ -66,7 +66,7 @@ export default function ContractManagement() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-orange-500/20"><AlertTriangle className="w-6 h-6 text-orange-400" /></div>
@@ -74,7 +74,7 @@ export default function ContractManagement() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><DollarSign className="w-6 h-6 text-purple-400" /></div>
@@ -87,10 +87,10 @@ export default function ContractManagement() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search contracts..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search contracts..." className="pl-9 bg-white/[0.02] border-white/[0.06] rounded-lg" />
         </div>
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[150px] bg-white/[0.02] border-white/[0.06] rounded-lg"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="active">Active</SelectItem>
@@ -101,7 +101,7 @@ export default function ContractManagement() {
         </Select>
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" />Contracts</CardTitle></CardHeader>
         <CardContent className="p-0">
           {contractsQuery.isLoading ? (
@@ -109,7 +109,7 @@ export default function ContractManagement() {
           ) : (contractsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No contracts found</p></div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(contractsQuery.data as any)?.map((contract: any) => (
                 <div key={contract.id} className={cn("p-4 flex items-center justify-between", contract.status === "expiring" && "bg-orange-500/5 border-l-2 border-orange-500")}>
                   <div>
@@ -129,7 +129,7 @@ export default function ContractManagement() {
                       <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${contract.value?.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">${contract.ratePerMile}/mi</p>
                     </div>
-                    <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg">View</Button>
+                    <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] rounded-lg">View</Button>
                   </div>
                 </div>
               ))}

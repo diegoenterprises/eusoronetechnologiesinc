@@ -52,13 +52,13 @@ export default function ScheduledTasks() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Manage cron jobs and scheduled tasks</p>
         </div>
-        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => tasksQuery.refetch()}>
+        <Button variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => tasksQuery.refetch()}>
           <RefreshCw className="w-4 h-4 mr-2" />Refresh
         </Button>
       </div>
 
       {/* Tasks List */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Clock className="w-5 h-5 text-cyan-400" />
@@ -74,12 +74,12 @@ export default function ScheduledTasks() {
               <p className="text-slate-400">No scheduled tasks</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.04]">
               {(tasksQuery.data as any)?.map((task: any) => (
                 <div key={task.id} className={cn("p-4", task.status === "failed" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className={cn("p-3 rounded-xl", task.enabled ? "bg-green-500/20" : "bg-slate-700/50")}>
+                      <div className={cn("p-3 rounded-xl", task.enabled ? "bg-green-500/20" : "bg-white/[0.04]")}>
                         <Clock className={cn("w-5 h-5", task.enabled ? "text-green-400" : "text-slate-400")} />
                       </div>
                       <div>
@@ -96,7 +96,7 @@ export default function ScheduledTasks() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => runNowMutation.mutate({ taskId: task.id })} disabled={task.status === "running"}>
+                      <Button size="sm" variant="outline" className="bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] rounded-lg" onClick={() => runNowMutation.mutate({ taskId: task.id })} disabled={task.status === "running"}>
                         <Play className="w-4 h-4 mr-1" />Run Now
                       </Button>
                       <Switch checked={task.enabled} onCheckedChange={(checked) => toggleMutation.mutate({ taskId: task.id, enabled: checked })} />
@@ -110,7 +110,7 @@ export default function ScheduledTasks() {
       </Card>
 
       {/* Execution History */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Zap className="w-5 h-5 text-yellow-400" />
@@ -126,7 +126,7 @@ export default function ScheduledTasks() {
               <p className="text-slate-400">No execution history</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/50 max-h-[400px] overflow-y-auto">
+            <div className="divide-y divide-white/[0.04] max-h-[400px] overflow-y-auto">
               {(historyQuery.data as any)?.map((execution: any) => (
                 <div key={execution.id} className={cn("p-4 flex items-center justify-between", execution.status === "failed" && "bg-red-500/5")}>
                   <div className="flex items-center gap-3">

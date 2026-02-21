@@ -26,8 +26,8 @@ export default function Profile() {
   const profileQuery = (trpc as any).users.getProfile.useQuery();
   const profile = profileQuery.data;
 
-  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
-  const cellCls = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
+  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
+  const cellCls = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-slate-700/30");
   const valCls = cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white");
 
   return (

@@ -206,7 +206,7 @@ export default function Wallet() {
           <Button
             variant="outline"
             size="sm"
-            className={`rounded-lg ${isLight ? 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700' : 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 text-white'}`}
+            className={`rounded-lg ${isLight ? 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700' : 'bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] text-white'}`}
             onClick={() => {
               aiInsightsMutation.mutate({
                 balance: balance?.available || 0,
@@ -223,7 +223,7 @@ export default function Wallet() {
           <Button
             variant="outline"
             size="sm"
-            className={`rounded-lg ${isLight ? 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700' : 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 text-white'}`}
+            className={`rounded-lg ${isLight ? 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700' : 'bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.06] text-white'}`}
             onClick={() => { balanceQuery.refetch(); transactionsQuery.refetch(); }}
           >
             <RefreshCw className="w-4 h-4 mr-1" />Refresh
@@ -239,7 +239,7 @@ export default function Wallet() {
       </div>
 
       {/* Balance Hero Card — Matte cotton gradient (matches Earnings) */}
-      <div className={`rounded-3xl overflow-hidden border ${isLight ? 'bg-white border-slate-200 shadow-xl shadow-purple-500/5' : 'bg-slate-800/60 border-slate-700/50'}`}>
+      <div className={`rounded-3xl overflow-hidden border ${isLight ? 'bg-white border-slate-200 shadow-xl shadow-purple-500/5' : 'bg-white/[0.03] border-white/[0.06]'}`}>
         <div className="bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 p-6 md:p-8">
 
           <div className="flex items-center justify-between mb-4">
@@ -304,7 +304,7 @@ export default function Wallet() {
               </div>
             )}
             {aiInsights.recommendations?.length > 0 && (
-              <div className={`p-3 rounded-xl ${isLight ? 'bg-white/80' : 'bg-slate-800/50'}`}>
+              <div className={`p-3 rounded-xl ${isLight ? 'bg-white/80' : 'bg-white/[0.02]'}`}>
                 <p className="text-xs font-semibold mb-1">Recommendations</p>
                 {aiInsights.recommendations.map((rec: string, i: number) => (
                   <p key={i} className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>{i + 1}. {rec}</p>
@@ -362,7 +362,7 @@ export default function Wallet() {
               { label: "Active Cards", value: cards.length || 0, icon: <CreditCard className="w-5 h-5" />, color: "text-purple-400", bg: "bg-purple-500/20", isCurrency: false },
               { label: "Bank Accounts", value: bankAccounts.length || 0, icon: <Landmark className="w-5 h-5" />, color: "text-cyan-400", bg: "bg-cyan-500/20", isCurrency: false },
             ].map((stat, i) => (
-              <Card key={i} className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+              <Card key={i} className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className={`p-2.5 rounded-xl ${stat.bg}`}>
@@ -394,7 +394,7 @@ export default function Wallet() {
                 className={`p-4 rounded-xl border transition-all hover:scale-[1.02] flex flex-col items-center gap-2 ${
                   isLight
                     ? 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-md text-slate-700'
-                    : 'bg-slate-800/50 border-slate-700/50 hover:border-slate-500 text-slate-300'
+                    : 'bg-white/[0.02] border-white/[0.06] hover:border-slate-500 text-slate-300'
                 }`}
               >
                 <div className="p-3 rounded-xl bg-gradient-to-br from-[#1473FF]/20 to-[#BE01FF]/20">
@@ -406,7 +406,7 @@ export default function Wallet() {
           </div>
 
           {/* Recent Transactions Preview */}
-          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className={`text-lg ${isLight ? 'text-slate-900' : 'text-white'}`}>Recent Activity</CardTitle>
               <button onClick={() => setActiveTab("history")} className="text-blue-400 text-sm hover:underline flex items-center gap-1">
@@ -420,9 +420,9 @@ export default function Wallet() {
                   <p className={isLight ? 'text-slate-400' : 'text-slate-500'}>No transactions yet</p>
                 </div>
               ) : (
-                <div className={`divide-y ${isLight ? 'divide-slate-100' : 'divide-slate-700/50'}`}>
+                <div className={`divide-y ${isLight ? 'divide-slate-100' : 'divide-white/[0.04]'}`}>
                   {transactions.slice(0, 5).map((t: any) => (
-                    <div key={t.id} className={`px-6 py-3 flex items-center justify-between ${isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-700/20'} transition-colors`}>
+                    <div key={t.id} className={`px-6 py-3 flex items-center justify-between ${isLight ? 'hover:bg-slate-50' : 'hover:bg-white/[0.04]'} transition-colors`}>
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-full ${t.type === 'credit' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
                           {t.type === 'credit' ? <ArrowDownLeft className="w-4 h-4 text-green-400" /> : <ArrowUpRight className="w-4 h-4 text-red-400" />}
@@ -457,7 +457,7 @@ export default function Wallet() {
               { label: "Receivables", value: paySummary?.receivablesTotal || 0, count: paySummary?.receivablesCount || 0, icon: ArrowDownLeft, color: "text-blue-500", bg: "bg-blue-500/15" },
               { label: "Overdue", value: paySummary?.overdueTotal || 0, count: paySummary?.overdueCount || 0, icon: AlertTriangle, color: "text-red-500", bg: "bg-red-500/15" },
             ].map((s) => (
-              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]")}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className={cn("p-2.5 rounded-xl", s.bg)}><s.icon className={cn("w-5 h-5", s.color)} /></div>
@@ -475,23 +475,23 @@ export default function Wallet() {
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-md">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search invoices..." className={cn("pl-9 rounded-lg", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")} />
+              <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search invoices..." className={cn("pl-9 rounded-lg", isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06]")} />
             </div>
             <div className="flex items-center gap-1">
               {["all", "outstanding", "paid", "overdue"].map((f) => (
-                <button key={f} onClick={() => setInvoiceFilter(f)} className={cn("px-3 py-2 rounded-lg text-xs font-medium transition-colors capitalize", invoiceFilter === f ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700")}>{f}</button>
+                <button key={f} onClick={() => setInvoiceFilter(f)} className={cn("px-3 py-2 rounded-lg text-xs font-medium transition-colors capitalize", invoiceFilter === f ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-white/[0.06]")}>{f}</button>
               ))}
             </div>
           </div>
 
           {/* Invoices table */}
-          <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+          <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]")}>
             <CardContent className="p-0">
               {invoicesQuery.isLoading ? (
                 <div className="p-4 space-y-3">{[1,2,3,4].map((i: number) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
               ) : !invoicesQuery.data?.length ? (
                 <div className="text-center py-16">
-                  <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}><FileText className="w-10 h-10 text-slate-400" /></div>
+                  <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-white/[0.04]")}><FileText className="w-10 h-10 text-slate-400" /></div>
                   <p className={cn("text-lg font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No invoices found</p>
                   <p className="text-sm text-slate-400 mt-1">Invoices will appear here when created</p>
                 </div>
@@ -501,7 +501,7 @@ export default function Wallet() {
                     <div className="col-span-3">Invoice</div><div className="col-span-3">Details</div><div className="col-span-2 text-right">Amount</div><div className="col-span-2 text-center">Status</div><div className="col-span-2 text-right">Actions</div>
                   </div>
                   {(invoicesQuery.data as any[]).map((inv: any) => (
-                    <div key={inv.id} className={cn("grid grid-cols-12 gap-4 items-center px-5 py-4 transition-colors", isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20")}>
+                    <div key={inv.id} className={cn("grid grid-cols-12 gap-4 items-center px-5 py-4 transition-colors", isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.04]")}>
                       <div className="col-span-3"><p className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>{inv.invoiceNumber}</p><p className="text-xs text-slate-400 mt-0.5">{inv.loadRef || "—"}</p></div>
                       <div className="col-span-3"><p className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-300")}>{inv.customerName || inv.description}</p><div className="flex items-center gap-2 mt-0.5"><Calendar className="w-3 h-3 text-slate-400" /><span className="text-xs text-slate-400">Due {inv.dueDate}</span>{inv.daysOverdue > 0 && <span className="text-xs text-red-400 font-medium">{inv.daysOverdue}d overdue</span>}</div></div>
                       <div className="col-span-2 text-right"><p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${Number(inv.amount).toLocaleString()}</p></div>
@@ -523,12 +523,12 @@ export default function Wallet() {
 
           {/* Receivables */}
           {receivablesQuery.data?.length > 0 && (
-            <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+            <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]")}>
               <CardHeader className="pb-2 px-5 pt-5"><CardTitle className={cn("text-base font-semibold", isLight ? "text-slate-800" : "text-white")}>Outstanding Receivables</CardTitle></CardHeader>
               <CardContent className="p-0">
                 <div className={cn("divide-y", isLight ? "divide-slate-100" : "divide-slate-700/40")}>
                   {(receivablesQuery.data as any[]).map((r: any) => (
-                    <div key={r.id} className={cn("flex items-center justify-between px-5 py-4", isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20")}>
+                    <div key={r.id} className={cn("flex items-center justify-between px-5 py-4", isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.04]")}>
                       <div className="flex items-center gap-3">
                         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", r.status === "overdue" ? "bg-red-500/15" : "bg-blue-500/15")}><Banknote className={cn("w-5 h-5", r.status === "overdue" ? "text-red-500" : "text-blue-500")} /></div>
                         <div><p className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>{r.invoiceNumber}</p><p className="text-xs text-slate-400">{r.customerName} · Due {r.dueDate}</p></div>
@@ -543,12 +543,12 @@ export default function Wallet() {
 
           {/* Receipts */}
           {receiptsQuery.data?.length > 0 && (
-            <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+            <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-white/[0.03] border-white/[0.06]")}>
               <CardHeader className="pb-2 px-5 pt-5"><CardTitle className={cn("text-base font-semibold", isLight ? "text-slate-800" : "text-white")}>Payment Receipts</CardTitle></CardHeader>
               <CardContent className="p-0">
                 <div className={cn("divide-y", isLight ? "divide-slate-100" : "divide-slate-700/40")}>
                   {(receiptsQuery.data as any[]).map((receipt: any) => (
-                    <div key={receipt.id} className={cn("flex items-center justify-between px-5 py-4", isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20")}>
+                    <div key={receipt.id} className={cn("flex items-center justify-between px-5 py-4", isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.04]")}>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-green-500/15 flex items-center justify-center"><CheckCircle className="w-5 h-5 text-green-500" /></div>
                         <div><p className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>{receipt.invoiceNumber}</p><p className="text-xs text-slate-400">{receipt.description} · Paid {receipt.paidDate}</p></div>
@@ -568,7 +568,7 @@ export default function Wallet() {
       {/* ============================================================ */}
       {activeTab === "send" && (
         <div className="max-w-lg mx-auto space-y-6">
-          <Card className={`rounded-2xl ${isLight ? 'bg-white border-slate-200 shadow-lg' : 'bg-slate-800/70 border-slate-700/50'}`}>
+          <Card className={`rounded-2xl ${isLight ? 'bg-white border-slate-200 shadow-lg' : 'bg-slate-800/70 border-white/[0.06]'}`}>
             <CardHeader>
               <CardTitle className={`flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                 <Send className="w-5 h-5 text-blue-400" />
@@ -665,7 +665,7 @@ export default function Wallet() {
           </Card>
 
           {/* Physical Card Order */}
-          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
                 <div className="p-3 rounded-xl bg-gradient-to-br from-[#1473FF]/20 to-[#BE01FF]/20 flex-shrink-0">
@@ -702,14 +702,14 @@ export default function Wallet() {
 
           {/* Existing Cards List */}
           {cards.length > 0 && (
-            <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+            <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
               <CardHeader className="pb-2">
                 <CardTitle className={`text-lg ${isLight ? 'text-slate-900' : 'text-white'}`}>Your Cards</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className={`divide-y ${isLight ? 'divide-slate-100' : 'divide-slate-700/50'}`}>
+                <div className={`divide-y ${isLight ? 'divide-slate-100' : 'divide-white/[0.04]'}`}>
                   {cards.map((card: any) => (
-                    <div key={card.id} className={`px-6 py-4 flex items-center justify-between ${isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-700/20'} transition-colors`}>
+                    <div key={card.id} className={`px-6 py-4 flex items-center justify-between ${isLight ? 'hover:bg-slate-50' : 'hover:bg-white/[0.04]'} transition-colors`}>
                       <div className="flex items-center gap-3">
                         <CreditCard className={`w-5 h-5 ${card.type === 'physical' ? 'text-purple-400' : 'text-blue-400'}`} />
                         <div>
@@ -737,7 +737,7 @@ export default function Wallet() {
       {/* ============================================================ */}
       {activeTab === "bank" && (
         <div className="space-y-6">
-          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
                 <div className="p-3 rounded-xl bg-cyan-500/20 flex-shrink-0">
@@ -771,14 +771,14 @@ export default function Wallet() {
 
           {/* Connected Accounts */}
           {bankAccounts.length > 0 && (
-            <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+            <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
               <CardHeader className="pb-2">
                 <CardTitle className={`text-lg ${isLight ? 'text-slate-900' : 'text-white'}`}>Connected Accounts</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className={`divide-y ${isLight ? 'divide-slate-100' : 'divide-slate-700/50'}`}>
+                <div className={`divide-y ${isLight ? 'divide-slate-100' : 'divide-white/[0.04]'}`}>
                   {bankAccounts.map((acct: any) => (
-                    <div key={acct.id} className={`px-6 py-4 flex items-center justify-between ${isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-700/20'} transition-colors`}>
+                    <div key={acct.id} className={`px-6 py-4 flex items-center justify-between ${isLight ? 'hover:bg-slate-50' : 'hover:bg-white/[0.04]'} transition-colors`}>
                       <div className="flex items-center gap-3">
                         <Building2 className="w-5 h-5 text-cyan-400" />
                         <div>
@@ -826,7 +826,7 @@ export default function Wallet() {
           </Card>
 
           {/* Active Escrow Holds */}
-          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
             <CardHeader className="pb-2">
               <CardTitle className={`text-lg ${isLight ? 'text-slate-900' : 'text-white'}`}>Active Escrow Holds</CardTitle>
             </CardHeader>
@@ -838,9 +838,9 @@ export default function Wallet() {
                   <p className={`text-xs mt-1 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Escrow funds will appear here when you book loads</p>
                 </div>
               ) : (
-                <div className={`divide-y ${isLight ? 'divide-slate-100' : 'divide-slate-700/50'}`}>
+                <div className={`divide-y ${isLight ? 'divide-slate-100' : 'divide-white/[0.04]'}`}>
                   {escrowHolds.map((hold: any) => (
-                    <div key={hold.id} className={`px-6 py-4 ${isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-700/20'} transition-colors`}>
+                    <div key={hold.id} className={`px-6 py-4 ${isLight ? 'hover:bg-slate-50' : 'hover:bg-white/[0.04]'} transition-colors`}>
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <p className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>{hold.loadRef}</p>
@@ -889,7 +889,7 @@ export default function Wallet() {
               { label: "Loading Fees", value: "$0", color: isLight ? "text-blue-600" : "text-blue-400", bg: isLight ? "bg-blue-50" : "bg-blue-500/10", icon: <Receipt className="w-5 h-5" /> },
               { label: "Accessorial Charges", value: "$0", color: isLight ? "text-purple-600" : "text-purple-400", bg: isLight ? "bg-purple-50" : "bg-purple-500/10", icon: <FileText className="w-5 h-5" /> },
             ].map(k => (
-              <Card key={k.label} className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+              <Card key={k.label} className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl ${k.bg} flex items-center justify-center`}>
@@ -906,7 +906,7 @@ export default function Wallet() {
           </div>
 
           {/* Detention Tracking */}
-          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
             <CardHeader className="pb-3">
               <CardTitle className={`text-sm font-semibold flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>
                 <AlertTriangle className={`w-4 h-4 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
@@ -923,20 +923,20 @@ export default function Wallet() {
           </Card>
 
           {/* Fee Schedule */}
-          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className={`text-sm font-semibold flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>
                   <Receipt className={`w-4 h-4 ${isLight ? 'text-blue-600' : 'text-[#1473FF]'}`} />
                   Fee Schedule
                 </CardTitle>
-                <Button variant="outline" size="sm" className={`rounded-lg text-xs ${isLight ? 'border-slate-200' : 'border-slate-600/50'}`}>
+                <Button variant="outline" size="sm" className={`rounded-lg text-xs ${isLight ? 'border-slate-200' : 'border-white/[0.06]'}`}>
                   Edit Fees
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className={`divide-y ${isLight ? 'divide-slate-100' : 'divide-slate-700/50'}`}>
+              <div className={`divide-y ${isLight ? 'divide-slate-100' : 'divide-white/[0.04]'}`}>
                 {[
                   { fee: "Loading Fee", rate: "$400 / load", desc: "Standard rack loading operation" },
                   { fee: "Unloading Fee", rate: "$350 / load", desc: "Standard unloading operation" },
@@ -947,7 +947,7 @@ export default function Wallet() {
                   { fee: "Rush Loading", rate: "$250 surcharge", desc: "Less than 4-hour notice" },
                   { fee: "No-Show Fee", rate: "$150 / occurrence", desc: "Missed appointment without cancellation" },
                 ].map(item => (
-                  <div key={item.fee} className={`flex items-center justify-between py-3 ${isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-700/20'} transition-colors px-1 rounded-lg`}>
+                  <div key={item.fee} className={`flex items-center justify-between py-3 ${isLight ? 'hover:bg-slate-50' : 'hover:bg-white/[0.04]'} transition-colors px-1 rounded-lg`}>
                     <div>
                       <p className={`text-sm font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{item.fee}</p>
                       <p className={`text-xs ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>{item.desc}</p>
@@ -960,7 +960,7 @@ export default function Wallet() {
           </Card>
 
           {/* Terminal Invoices — Carrier Billing */}
-          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className={`text-sm font-semibold flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>
@@ -999,7 +999,7 @@ export default function Wallet() {
                     ? 'bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white'
                     : isLight
                       ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                      : 'bg-slate-800 text-slate-400 hover:bg-white/[0.06]'
                 }`}
               >
                 {f === 'all' ? 'All' : f === 'credit' ? 'Received' : f === 'debit' ? 'Sent' : 'Escrow'}
@@ -1007,7 +1007,7 @@ export default function Wallet() {
             ))}
           </div>
 
-          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
+          <Card className={`rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
             <CardContent className="p-0">
               {filteredTransactions.length === 0 ? (
                 <div className="text-center py-16">
@@ -1015,9 +1015,9 @@ export default function Wallet() {
                   <p className={`text-lg ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>No transactions</p>
                 </div>
               ) : (
-                <div className={`divide-y ${isLight ? 'divide-slate-100' : 'divide-slate-700/50'}`}>
+                <div className={`divide-y ${isLight ? 'divide-slate-100' : 'divide-white/[0.04]'}`}>
                   {filteredTransactions.map((t: any) => (
-                    <div key={t.id} className={`px-6 py-4 flex items-center justify-between ${isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-700/20'} transition-colors`}>
+                    <div key={t.id} className={`px-6 py-4 flex items-center justify-between ${isLight ? 'hover:bg-slate-50' : 'hover:bg-white/[0.04]'} transition-colors`}>
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-full ${
                           t.type === 'credit' ? 'bg-green-500/20' :

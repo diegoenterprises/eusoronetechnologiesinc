@@ -74,7 +74,7 @@ export default function IncidentReport() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
@@ -90,7 +90,7 @@ export default function IncidentReport() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
@@ -106,7 +106,7 @@ export default function IncidentReport() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
@@ -122,7 +122,7 @@ export default function IncidentReport() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
@@ -141,7 +141,7 @@ export default function IncidentReport() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Report Form */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -153,7 +153,7 @@ export default function IncidentReport() {
               <div className="space-y-2">
                 <label className="text-slate-400 text-sm">Incident Type *</label>
                 <Select value={incidentType} onValueChange={setIncidentType}>
-                  <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg">
+                  <SelectTrigger className="bg-slate-700/30 border-white/[0.06] rounded-lg">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -170,7 +170,7 @@ export default function IncidentReport() {
               <div className="space-y-2">
                 <label className="text-slate-400 text-sm">Severity *</label>
                 <Select value={severity} onValueChange={setSeverity}>
-                  <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg">
+                  <SelectTrigger className="bg-slate-700/30 border-white/[0.06] rounded-lg">
                     <SelectValue placeholder="Select severity" />
                   </SelectTrigger>
                   <SelectContent>
@@ -184,12 +184,12 @@ export default function IncidentReport() {
 
               <div className="space-y-2">
                 <label className="text-slate-400 text-sm">Location</label>
-                <Input value={location} onChange={(e: any) => setLocation(e.target.value)} placeholder="Enter location" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
+                <Input value={location} onChange={(e: any) => setLocation(e.target.value)} placeholder="Enter location" className="bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50" />
               </div>
 
               <div className="space-y-2">
                 <label className="text-slate-400 text-sm">Description *</label>
-                <Textarea value={description} onChange={(e: any) => setDescription(e.target.value)} placeholder="Describe the incident in detail..." className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50 min-h-[120px]" />
+                <Textarea value={description} onChange={(e: any) => setDescription(e.target.value)} placeholder="Describe the incident in detail..." className="bg-slate-700/30 border-white/[0.06] rounded-lg focus:border-cyan-500/50 min-h-[120px]" />
               </div>
 
               <Button className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-xl h-12" onClick={handleSubmit} disabled={submitMutation.isPending}>
@@ -201,7 +201,7 @@ export default function IncidentReport() {
         </Card>
 
         {/* Recent Incidents */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg">Recent Incidents</CardTitle>
           </CardHeader>
