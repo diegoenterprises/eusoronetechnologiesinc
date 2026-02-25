@@ -593,8 +593,10 @@ async function startServer() {
     if (!fs.existsSync(distPath)) {
       console.error(`Could not find the build directory: ${distPath}, make sure to build the client first`);
     }
-    app.use(express.static(distPath));
+    app.use("/assets", express.static(path.resolve(distPath, "assets"), { maxAge: "1y", immutable: true }));
+    app.use(express.static(distPath, { maxAge: "1h" }));
     app.use("*", (_req, res) => {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.sendFile(path.resolve(distPath, "index.html"));
     });
   }
