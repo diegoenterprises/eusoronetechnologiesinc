@@ -664,7 +664,7 @@ export default function DashboardLayout({
       </motion.aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
+      <div className="flex-1 flex flex-col overflow-hidden relative z-10 min-w-0">
         {/* Top Navigation */}
         <motion.header
           initial={{ y: -20, opacity: 0 }}
@@ -901,7 +901,7 @@ export default function DashboardLayout({
         </motion.header>
 
         {/* Main Content Area — Domino Cascade Page Transition */}
-        <main className={`flex-1 overflow-y-auto smooth-scroll ${theme === "light" ? "bg-[#f8f9fb]" : "bg-gray-950/50"}`}>
+        <main className={`flex-1 overflow-y-auto overflow-x-hidden smooth-scroll ${theme === "light" ? "bg-[#f8f9fb]" : "bg-gray-950/50"}`}>
           {/* Approval status banner for pending/suspended users */}
           <ApprovalBanner />
 
