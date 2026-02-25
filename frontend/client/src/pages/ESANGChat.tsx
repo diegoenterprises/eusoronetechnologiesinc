@@ -186,19 +186,19 @@ export default function ESANGChat() {
   return (
     <>
     <motion.div
-      className="p-4 md:p-6 space-y-4 h-[calc(100vh-180px)] flex flex-col overflow-hidden"
+      className="space-y-3 h-[calc(100vh-220px)] max-h-[calc(100vh-220px)] flex flex-col overflow-hidden w-full max-w-full"
       style={{ transformOrigin: 'bottom right' }}
       animate={dissolving ? { opacity: 0, scale: 0.15, filter: 'blur(12px)' } : {}}
       transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+          <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
             <img src="/esang-ai-logo.svg" alt="Esang AI" className="w-full h-full object-cover" />
           </div>
           <div>
-            <h1 className={cn("text-2xl font-semibold tracking-[0.15em] lowercase", isLight ? "text-slate-800" : "text-white")} style={{ fontFamily: "'Inter', 'Gilroy', system-ui, sans-serif", letterSpacing: '0.15em' }}>esang</h1>
-            <p className={cn("text-sm mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>Your intelligent logistics assistant</p>
+            <h1 className={cn("text-lg font-semibold tracking-[0.15em] lowercase", isLight ? "text-slate-800" : "text-white")} style={{ fontFamily: "'Inter', 'Gilroy', system-ui, sans-serif", letterSpacing: '0.15em' }}>esang</h1>
+            <p className={cn("text-xs mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>Your intelligent logistics assistant</p>
           </div>
         </div>
         <Button variant="outline" className={cn("rounded-lg", isLight ? "bg-white border-slate-200 hover:bg-slate-50 text-slate-700" : "bg-slate-800/50 border-slate-700/50 hover:bg-slate-700")} onClick={() => clearMutation.mutate()}>
@@ -206,7 +206,7 @@ export default function ESANGChat() {
         </Button>
       </div>
 
-      <div className="flex-1 flex gap-6 min-h-0">
+      <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
         <Card className={cn("rounded-xl flex-1 flex flex-col", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
           <CardContent className="flex-1 p-4 overflow-y-auto">
             {historyQuery.isLoading ? (
@@ -287,7 +287,7 @@ export default function ESANGChat() {
           </div>
         </Card>
 
-        <div className="w-72 space-y-4 hidden lg:flex lg:flex-col flex-shrink-0 overflow-y-auto">
+        <div className="w-64 space-y-3 hidden xl:flex xl:flex-col flex-shrink-0 overflow-y-auto">
           <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
             <CardHeader className="pb-3"><CardTitle className={cn("text-sm flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><Lightbulb className="w-4 h-4 text-yellow-400" />Suggestions</CardTitle></CardHeader>
             <CardContent className="space-y-2">
