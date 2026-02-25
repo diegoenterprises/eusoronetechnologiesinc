@@ -78,8 +78,9 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
   const isLight = theme === "light";
   const [method, setMethod] = useState<"email" | "sms">("email");
   const [contact, setContact] = useState("");
+  const [targetName, setTargetName] = useState("");
 
-  const inviteMut = (trpc as any).invite?.send?.useMutation?.({
+  const inviteMut = (trpc as any).invite.send.useMutation({
     onSuccess: (res: any) => {
       if (res?.success) {
         toast.success("Invite sent!", { description: `Invitation sent via ${res.method}` });
@@ -90,20 +91,27 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
       }
     },
     onError: (err: any) => toast.error("Invite failed", { description: err?.message || "Unknown error" }),
-  }) || { mutate: () => toast.error("Invite not available"), isPending: false };
+  });
 
   useEffect(() => {
     if (open) {
       // Pre-fill contact based on method
       setContact(method === "email" ? (target.email || "") : (target.phone || ""));
+      setTargetName(target.name || "");
     }
-  }, [open, method, target.email, target.phone]);
+  }, [open, method, target.email, target.phone, target.name]);
 
   if (!open) return null;
 
   const { title, desc, icon: Icon } = contextLabels[context] || contextLabels.GENERAL;
 
+  const resolvedName = targetName.trim() || target.name?.trim() || "";
+
   const handleSend = () => {
+    if (!resolvedName) {
+      toast.error("Enter the carrier or company name");
+      return;
+    }
     if (!contact) {
       toast.error(`Enter ${method === "email" ? "an email address" : "a phone number"}`);
       return;
@@ -112,7 +120,7 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
       context,
       method,
       contact,
-      targetName: target.name,
+      targetName: resolvedName,
       targetDot: target.dot,
       targetMc: target.mc,
       loadNumber: contextData?.loadNumber,
@@ -176,7 +184,7 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
                     target.onPlatform ? (isLight ? "text-emerald-700" : "text-emerald-400")
                     : target.fmcsaVerified ? (isLight ? "text-blue-700" : "text-blue-400")
                     : (isLight ? "text-slate-700" : "text-white")
-                  )}>{target.name}</p>
+                  )}>{target.name || "New Carrier"}</p>
                   {target.onPlatform && (
                     <Badge className={cn("text-[8px] px-1.5 py-0", isLight ? "bg-emerald-100 text-emerald-600" : "bg-emerald-500/20 text-emerald-400")}>
                       On Platform
@@ -222,6 +230,21 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
                       <AlertTriangle className="w-3 h-3 mr-1" />Urgent
                     </Badge>
                   )}
+                </div>
+              )}
+
+              {/* Carrier/Company Name (editable when not pre-filled) */}
+              {!target.name && (
+                <div>
+                  <label className={cn("text-[10px] font-semibold uppercase tracking-wider mb-1.5 block", isLight ? "text-slate-500" : "text-white/40")}>
+                    Carrier / Company Name
+                  </label>
+                  <Input
+                    value={targetName}
+                    onChange={(e) => setTargetName(e.target.value)}
+                    placeholder="e.g. ABC Transport LLC"
+                    className={cn(isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.08]")}
+                  />
                 </div>
               )}
 
@@ -283,7 +306,7 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
           {!target.onPlatform && (
             <Button
               onClick={handleSend}
-              disabled={inviteMut.isPending || !contact}
+              disabled={inviteMut.isPending || !contact || !resolvedName}
               className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm px-6"
             >
               {inviteMut.isPending ? (
