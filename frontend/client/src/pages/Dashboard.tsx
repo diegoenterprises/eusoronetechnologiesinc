@@ -1,12 +1,11 @@
 /**
  * DASHBOARD ROUTER
  * Routes to role-specific dashboard based on user role
+ * All roles use PremiumDashboard (widget system)
  */
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { UserRole } from "@/hooks/useRoleAccess";
-import ShipperDashboard from "./ShipperDashboard";
-import CatalystDashboard from "./CatalystDashboard";
 import PremiumDashboard from "@/components/PremiumDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 

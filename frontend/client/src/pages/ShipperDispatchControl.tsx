@@ -28,6 +28,7 @@ import {
   Calendar, Phone, User, FileText, Zap, Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getLoadTitle } from "@/lib/loadUtils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -247,7 +248,7 @@ export default function ShipperDispatchControl() {
                     <p className={cn("font-bold", vl)}>#{load.loadNumber}</p>
                     <Badge className={cn("border text-[10px]", statusColor(load.status))}>{load.status?.replace(/_/g, " ").toUpperCase()}</Badge>
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">{load.commodity || load.cargoType || "General"} · {load.rate ? `$${parseFloat(load.rate).toLocaleString()}` : "No rate"}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{getLoadTitle(load)} · {load.rate ? `$${parseFloat(load.rate).toLocaleString()}` : "No rate"}</p>
                 </div>
                 <div className="flex gap-2">
                   {!editMode ? (

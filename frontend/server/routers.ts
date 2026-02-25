@@ -164,6 +164,9 @@ import { interstateRouter } from "./routers/interstate";
 import { marketIntelligenceRouter } from "./routers/marketIntelligence";
 import { mlRouter } from "./routers/ml";
 import { supplyChainRouter } from "./routers/supplyChain";
+import { inviteRouter } from "./routers/invite";
+import { rateSheetRouter } from "./routers/rateSheet";
+import { equipmentIntelligenceRouter } from "./routers/equipmentIntelligence";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -824,6 +827,9 @@ export const appRouter = router({
   terminals: terminalsRouter,
   supplyChain: supplyChainRouter,
 
+  // Viral Invite System
+  invite: inviteRouter,
+
   // Escort/Pilot Car Operations
   escorts: escortsRouter,
 
@@ -1012,6 +1018,9 @@ export const appRouter = router({
 
   // Bill of Lading Management
   bol: bolRouter,
+
+  // Rate Sheets & Reconciliation (crude oil hauling payment cycle)
+  rateSheet: rateSheetRouter,
 
   // News Articles
   news: newsRouter,
@@ -1219,6 +1228,9 @@ export const appRouter = router({
 
   // ML Engine — Rate Prediction, Carrier Match, ETA, Demand, Anomaly, Pricing, Reliability, Churn, Bundles, Bids
   ml: mlRouter,
+
+  // Equipment Intelligence — ZEUN Mechanics equipment matching & AI advisory
+  equipmentIntelligence: equipmentIntelligenceRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,

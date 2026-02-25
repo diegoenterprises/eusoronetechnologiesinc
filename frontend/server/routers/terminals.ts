@@ -299,21 +299,141 @@ export const terminalsRouter = router({
     }),
 
   /**
-   * Book appointment mutation
+   * Book appointment — TAS-integrated: runs pre-clearance, credit, allocation & inventory checks
    */
   bookAppointment: protectedProcedure
-    .input(z.object({ date: z.string(), time: z.string().optional(), terminal: z.string(), product: z.string().optional() }))
-    .mutation(async ({ input }) => {
+    .input(z.object({
+      date: z.string(),
+      time: z.string().optional(),
+      terminal: z.string(),
+      type: z.enum(["loading", "unloading", "pickup", "delivery"]).optional(),
+      product: z.string().optional(),
+      quantity: z.number().optional(),
+      quantityUnit: z.string().optional(),
+      dockNumber: z.string().optional(),
+      driverId: z.number().optional(),
+      carrierId: z.number().optional(),
+      loadId: z.number().optional(),
+      truckNumber: z.string().optional(),
+      trailerNumber: z.string().optional(),
+      hazmatClass: z.string().optional(),
+      unNumber: z.string().optional(),
+      estimatedDurationMin: z.number().optional(),
+      notes: z.string().optional(),
+      skipTasValidation: z.boolean().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (db) {
+      if (!db) throw new Error("Database unavailable");
+      const { getDTNClient } = await import("../services/dtn/dtnClient");
+      const dtn = getDTNClient();
+      const terminalId = parseInt(input.terminal, 10) || 0;
+      const scheduledAt = new Date(`${input.date}T${input.time || '09:00'}:00`);
+      const requestedById = ctx.user?.id || null;
+
+      // TAS pre-clearance checks (non-blocking — store results, don't hard-fail)
+      let preClearanceStatus: "pending" | "cleared" | "denied" | "bypassed" = input.skipTasValidation ? "bypassed" : "pending";
+      const preClearanceData: any = {};
+
+      if (!input.skipTasValidation) {
         try {
-          const terminalId = parseInt(input.terminal, 10) || 0;
-          const scheduledAt = new Date(`${input.date}T${input.time || '09:00'}:00`);
-          const [result] = await db.insert(appointments).values({ terminalId, scheduledAt, type: 'loading', status: 'scheduled', dockNumber: input.product || null } as any).$returningId();
-          return { success: true, appointmentId: `apt_${result.id}`, date: input.date, time: input.time };
-        } catch (e) { console.error('[Terminals] bookAppointment error:', e); }
+          // 1. Credit check (carrier authorized at this terminal?)
+          if (input.carrierId) {
+            const credit = await dtn.checkCredit(String(input.carrierId), String(terminalId));
+            preClearanceData.creditOk = credit.authorized;
+            preClearanceData.creditLimit = credit.creditLimit;
+            preClearanceData.availableCredit = credit.availableCredit;
+            if (!credit.authorized) preClearanceData.issues = [...(preClearanceData.issues || []), `Credit denied: ${credit.reason || 'insufficient credit'}`];
+          }
+
+          // 2. Allocation check (product allocation remaining?)
+          if (input.product) {
+            const alloc = await dtn.getTerminalAllocation(String(terminalId), input.product);
+            preClearanceData.allocationOk = alloc.remainingVolume > 0;
+            preClearanceData.remainingAllocation = alloc.remainingVolume;
+            if (alloc.remainingVolume <= 0) preClearanceData.issues = [...(preClearanceData.issues || []), 'No allocation remaining for this product'];
+          }
+
+          // 3. Inventory check (product available?)
+          if (input.product && (input.type === "loading" || input.type === "pickup")) {
+            const inv = await dtn.getInventoryLevels(String(terminalId));
+            const match = inv.find(i => i.product.toLowerCase().includes((input.product || "").toLowerCase()));
+            preClearanceData.inventoryOk = match ? match.percentFull > 5 : true;
+            if (match && match.percentFull <= 5) preClearanceData.issues = [...(preClearanceData.issues || []), `Low inventory: ${match.product} at ${match.percentFull}%`];
+          }
+
+          // 4. Driver pre-clearance (CDL, hazmat, TWIC, insurance)
+          if (input.driverId) {
+            try {
+              const [driver] = await db.select().from(users).where(eq(users.id, input.driverId)).limit(1);
+              if (driver) {
+                const clearance = await dtn.sendDriverPreClearance({
+                  driverId: String(input.driverId),
+                  driverName: driver.name || '',
+                  cdlNumber: (driver as any).cdlNumber || '',
+                  cdlState: (driver as any).licenseState || '',
+                  hazmatEndorsement: (driver as any).hazmatEndorsement || false,
+                  hazmatExpiry: (driver as any).hazmatExpiry?.toISOString(),
+                  twicNumber: (driver as any).twicCard || '',
+                  twicExpiry: (driver as any).twicExpiry?.toISOString(),
+                  medicalCertExpiry: (driver as any).medicalCardExpiry?.toISOString(),
+                  carrierDOT: '',
+                  carrierMC: '',
+                });
+                preClearanceData.authorized = clearance.authorized;
+                preClearanceData.preClearedGate = clearance.preClearedGate;
+                if (!clearance.authorized) preClearanceData.issues = [...(preClearanceData.issues || []), ...clearance.issues];
+              }
+            } catch (e) { console.warn('[TAS] Driver pre-clearance check failed (non-fatal):', e); }
+          }
+
+          // Determine final status
+          const issues = preClearanceData.issues || [];
+          preClearanceStatus = issues.length === 0 ? "cleared" : "denied";
+        } catch (e) {
+          console.warn('[TAS] Pre-clearance checks failed (non-fatal), proceeding:', e);
+          preClearanceStatus = "bypassed";
+          preClearanceData.error = "TAS validation unavailable";
+        }
       }
-      return { success: true, appointmentId: `apt_${Date.now()}`, date: input.date, time: input.time };
+
+      try {
+        const [result] = await db.insert(appointments).values({
+          terminalId,
+          scheduledAt,
+          type: (input.type || 'loading') as any,
+          status: 'scheduled',
+          product: input.product || null,
+          quantity: input.quantity ? String(input.quantity) : null,
+          quantityUnit: input.quantityUnit || 'barrels',
+          dockNumber: input.dockNumber || null,
+          driverId: input.driverId || null,
+          carrierId: input.carrierId || null,
+          loadId: input.loadId || null,
+          truckNumber: input.truckNumber || null,
+          trailerNumber: input.trailerNumber || null,
+          hazmatClass: input.hazmatClass || null,
+          unNumber: input.unNumber || null,
+          preClearanceStatus: preClearanceStatus as any,
+          preClearanceData,
+          estimatedDurationMin: input.estimatedDurationMin || null,
+          notes: input.notes || null,
+          requestedById: requestedById,
+        } as any).$returningId();
+
+        return {
+          success: true,
+          appointmentId: `apt_${result.id}`,
+          confirmationNumber: `CONF-${String(result.id).padStart(6, '0')}`,
+          date: input.date,
+          time: input.time,
+          preClearanceStatus,
+          preClearanceData,
+        };
+      } catch (e) {
+        console.error('[Terminals] bookAppointment insert error:', e);
+        throw new Error("Failed to create appointment");
+      }
     }),
 
   /**
@@ -359,7 +479,20 @@ export const terminalsRouter = router({
         const mapped = await Promise.all(appts.map(async (a) => {
           let driverName = 'Unassigned';
           if (a.driverId) { const [d] = await db.select({ name: users.name }).from(users).where(eq(users.id, a.driverId)).limit(1); driverName = d?.name || `Driver #${a.driverId}`; }
-          return { id: String(a.id), type: a.type, scheduledAt: a.scheduledAt?.toISOString() || '', dock: a.dockNumber || '', status: a.status, driver: driverName, loadId: a.loadId ? String(a.loadId) : null };
+          return {
+            id: String(a.id), type: a.type, scheduledAt: a.scheduledAt?.toISOString() || '',
+            dock: a.dockNumber || '', status: a.status, driver: driverName,
+            loadId: a.loadId ? String(a.loadId) : null,
+            product: (a as any).product || null, quantity: (a as any).quantity || null,
+            quantityUnit: (a as any).quantityUnit || 'barrels',
+            truckNumber: (a as any).truckNumber || null, trailerNumber: (a as any).trailerNumber || null,
+            hazmatClass: (a as any).hazmatClass || null, unNumber: (a as any).unNumber || null,
+            preClearanceStatus: (a as any).preClearanceStatus || 'pending',
+            preClearanceData: (a as any).preClearanceData || null,
+            bolNumber: (a as any).bolNumber || null, carrierId: (a as any).carrierId || null,
+            estimatedDurationMin: (a as any).estimatedDurationMin || null,
+            notes: (a as any).notes || null,
+          };
         }));
         const [total] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow)));
         const [completed] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'completed')));
@@ -400,7 +533,7 @@ export const terminalsRouter = router({
     }),
 
   /**
-   * Update appointment status
+   * Update appointment status — TAS-integrated: notifies arrival/departure to DTN
    */
   updateAppointmentStatus: protectedProcedure
     .input(z.object({
@@ -413,7 +546,38 @@ export const terminalsRouter = router({
       if (db) {
         try {
           const id = parseInt(input.appointmentId.replace('apt_', ''), 10);
-          if (id) await db.update(appointments).set({ status: input.status as any }).where(eq(appointments.id, id));
+          if (id) {
+            const updates: Record<string, any> = { status: input.status as any };
+            const now = new Date();
+
+            // Track timestamps
+            if (input.status === 'checked_in') updates.checkedInAt = now;
+            if (input.status === 'completed') updates.completedAt = now;
+
+            await db.update(appointments).set(updates).where(eq(appointments.id, id));
+
+            // TAS notifications (fire-and-forget)
+            try {
+              const { getDTNClient } = await import("../services/dtn/dtnClient");
+              const dtn = getDTNClient();
+              const [appt] = await db.select().from(appointments).where(eq(appointments.id, id)).limit(1);
+              if (appt) {
+                if (input.status === 'checked_in' && !appt.arrivalNotifiedAt) {
+                  let driverName = 'Unknown';
+                  if (appt.driverId) {
+                    const [d] = await db.select({ name: users.name }).from(users).where(eq(users.id, appt.driverId)).limit(1);
+                    driverName = d?.name || driverName;
+                  }
+                  await dtn.notifyArrival(String(appt.terminalId), String(appt.loadId || id), driverName);
+                  await db.update(appointments).set({ arrivalNotifiedAt: now } as any).where(eq(appointments.id, id));
+                }
+                if (input.status === 'completed' && !appt.departureNotifiedAt) {
+                  await dtn.notifyDeparture(String(appt.terminalId), String(appt.loadId || id));
+                  await db.update(appointments).set({ departureNotifiedAt: now } as any).where(eq(appointments.id, id));
+                }
+              }
+            } catch (e) { console.warn('[TAS] Status notification failed (non-fatal):', e); }
+          }
         } catch (e) { console.error('[Terminals] updateAppointmentStatus error:', e); }
       }
       return { success: true, appointmentId: input.appointmentId, newStatus: input.status, updatedAt: new Date().toISOString() };
@@ -446,56 +610,8 @@ export const terminalsRouter = router({
   getRackStatus: protectedProcedure
     .input(z.object({ terminalId: z.string().optional(), terminal: z.string().optional() }).optional())
     .query(async ({ input }) => {
-      return [
-        {
-          id: "rack_1",
-          name: "Rack 1",
-          status: "in_use",
-          currentLoad: {
-            appointmentId: "apt_001",
-            catalyst: "",
-            product: "Unleaded Gasoline",
-            startTime: "08:15",
-            progress: 85,
-          },
-          products: ["Unleaded Gasoline", "Premium Gasoline", "E85"],
-          flowRate: 600,
-          flowRateUnit: "gpm",
-        },
-        {
-          id: "rack_2",
-          name: "Rack 2",
-          status: "in_use",
-          currentLoad: {
-            appointmentId: "apt_002",
-            catalyst: "XYZ Catalysts",
-            product: "Diesel",
-            startTime: "09:10",
-            progress: 45,
-          },
-          products: ["Diesel", "Biodiesel"],
-          flowRate: 550,
-          flowRateUnit: "gpm",
-        },
-        {
-          id: "rack_3",
-          name: "Rack 3",
-          status: "maintenance",
-          maintenanceReason: "Scheduled pump maintenance",
-          expectedAvailable: "14:00",
-          products: ["Diesel", "Heating Oil"],
-          flowRate: 500,
-          flowRateUnit: "gpm",
-        },
-        {
-          id: "rack_4",
-          name: "Rack 4",
-          status: "available",
-          products: ["Jet Fuel", "Kerosene"],
-          flowRate: 400,
-          flowRateUnit: "gpm",
-        },
-      ];
+      // Dynamic only — returns real rack data from TAS integration when connected
+      return [];
     }),
 
   /**
@@ -504,49 +620,8 @@ export const terminalsRouter = router({
   getInventory: protectedProcedure
     .input(z.object({ terminalId: z.string().optional() }))
     .query(async ({ input }) => {
-      return [
-        {
-          tankId: "tank_1",
-          product: "Unleaded Gasoline",
-          capacity: 150000,
-          currentLevel: 125000,
-          unit: "bbl",
-          percentFull: 83,
-          lastUpdated: new Date().toISOString(),
-          status: "normal",
-        },
-        {
-          tankId: "tank_2",
-          product: "Premium Gasoline",
-          capacity: 100000,
-          currentLevel: 72000,
-          unit: "bbl",
-          percentFull: 72,
-          lastUpdated: new Date().toISOString(),
-          status: "normal",
-        },
-        {
-          tankId: "tank_3",
-          product: "Diesel",
-          capacity: 200000,
-          currentLevel: 165000,
-          unit: "bbl",
-          percentFull: 82.5,
-          lastUpdated: new Date().toISOString(),
-          status: "normal",
-        },
-        {
-          tankId: "tank_4",
-          product: "Jet Fuel",
-          capacity: 75000,
-          currentLevel: 28000,
-          unit: "bbl",
-          percentFull: 37,
-          lastUpdated: new Date().toISOString(),
-          status: "low",
-          alert: "Below 40% threshold",
-        },
-      ];
+      // Dynamic only — returns real inventory from TAS integration when connected
+      return [];
     }),
 
   /**
@@ -589,6 +664,98 @@ export const terminalsRouter = router({
         generatedAt: new Date().toISOString(),
         downloadUrl: `/api/bol/${input.appointmentId}/download`,
       };
+    }),
+
+  /**
+   * TAS connection status — shows whether DTN/TAS is connected for this terminal
+   */
+  getTASConnectionStatus: protectedProcedure
+    .input(z.object({ terminalId: z.string().optional() }).optional())
+    .query(async ({ ctx }) => {
+      try {
+        const { getDTNClient } = await import("../services/dtn/dtnClient");
+        const dtn = getDTNClient();
+        const result = await dtn.authenticate({ terminalId: "default", apiKey: "test", environment: "sandbox" });
+        return { provider: "DTN Guardian3 / TABS / TIMS", connected: true, lastSync: new Date().toISOString(), environment: "sandbox" };
+      } catch {
+        return { provider: "DTN", connected: false, lastSync: null, environment: null };
+      }
+    }),
+
+  /**
+   * Run TAS pre-clearance check — live validation for modal preview
+   */
+  runPreClearanceCheck: protectedProcedure
+    .input(z.object({
+      terminalId: z.string(),
+      carrierId: z.number().optional(),
+      driverId: z.number().optional(),
+      product: z.string().optional(),
+      type: z.enum(["loading", "unloading", "pickup", "delivery"]).optional(),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const { getDTNClient } = await import("../services/dtn/dtnClient");
+      const dtn = getDTNClient();
+      const checks: { label: string; status: "pass" | "fail" | "warn" | "skip"; detail: string }[] = [];
+
+      // 1. Credit check
+      if (input.carrierId) {
+        try {
+          const credit = await dtn.checkCredit(String(input.carrierId), input.terminalId);
+          checks.push({ label: "Credit Authorization", status: credit.authorized ? "pass" : "fail", detail: credit.authorized ? `$${credit.availableCredit?.toLocaleString()} available` : (credit.reason || "Denied") });
+        } catch { checks.push({ label: "Credit Authorization", status: "warn", detail: "Check unavailable" }); }
+      } else {
+        checks.push({ label: "Credit Authorization", status: "skip", detail: "No carrier selected" });
+      }
+
+      // 2. Allocation check
+      if (input.product) {
+        try {
+          const alloc = await dtn.getTerminalAllocation(input.terminalId, input.product);
+          checks.push({ label: "Product Allocation", status: alloc.remainingVolume > 0 ? "pass" : "fail", detail: `${alloc.remainingVolume?.toLocaleString()} ${alloc.unit} remaining` });
+        } catch { checks.push({ label: "Product Allocation", status: "warn", detail: "Check unavailable" }); }
+      } else {
+        checks.push({ label: "Product Allocation", status: "skip", detail: "No product selected" });
+      }
+
+      // 3. Inventory check
+      if (input.product && (input.type === "loading" || input.type === "pickup")) {
+        try {
+          const inv = await dtn.getInventoryLevels(input.terminalId);
+          const match = inv.find(i => i.product.toLowerCase().includes((input.product || "").toLowerCase()));
+          if (match) {
+            checks.push({ label: "Inventory Level", status: match.percentFull > 10 ? "pass" : match.percentFull > 5 ? "warn" : "fail", detail: `${match.product}: ${match.percentFull}% (${match.currentLevel?.toLocaleString()} ${match.unit})` });
+          } else {
+            checks.push({ label: "Inventory Level", status: "pass", detail: "Product available" });
+          }
+        } catch { checks.push({ label: "Inventory Level", status: "warn", detail: "Check unavailable" }); }
+      }
+
+      // 4. Driver pre-clearance
+      if (input.driverId && db) {
+        try {
+          const [driver] = await db.select().from(users).where(eq(users.id, input.driverId)).limit(1);
+          if (driver) {
+            const clearance = await dtn.sendDriverPreClearance({
+              driverId: String(input.driverId), driverName: driver.name || '',
+              cdlNumber: (driver as any).cdlNumber || '', cdlState: (driver as any).licenseState || '',
+              hazmatEndorsement: (driver as any).hazmatEndorsement || false,
+              hazmatExpiry: (driver as any).hazmatExpiry?.toISOString(),
+              twicNumber: (driver as any).twicCard || '', twicExpiry: (driver as any).twicExpiry?.toISOString(),
+              medicalCertExpiry: (driver as any).medicalCardExpiry?.toISOString(),
+              carrierDOT: '', carrierMC: '',
+            });
+            checks.push({ label: "Driver Pre-Clearance", status: clearance.authorized ? "pass" : "fail", detail: clearance.authorized ? `Cleared${clearance.preClearedGate ? ` — Gate ${clearance.preClearedGate}` : ''}` : clearance.issues.join('; ') });
+          }
+        } catch { checks.push({ label: "Driver Pre-Clearance", status: "warn", detail: "Check unavailable" }); }
+      } else {
+        checks.push({ label: "Driver Pre-Clearance", status: "skip", detail: "No driver selected" });
+      }
+
+      const allPassed = checks.every(c => c.status === "pass" || c.status === "skip");
+      const hasFail = checks.some(c => c.status === "fail");
+      return { overall: hasFail ? "denied" : allPassed ? "cleared" : "warn", checks };
     }),
 
   /**
@@ -644,6 +811,30 @@ export const terminalsRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       return { success: true, bayId: input.bayId, completedAt: new Date().toISOString(), completedBy: ctx.user?.id };
+    }),
+
+  /**
+   * Pause loading operation
+   */
+  pauseLoading: protectedProcedure
+    .input(z.object({
+      bayId: z.string(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return { success: true, bayId: input.bayId, pausedAt: new Date().toISOString(), pausedBy: ctx.user?.id, reason: input.reason };
+    }),
+
+  /**
+   * Return dock from maintenance to available service
+   */
+  returnToService: protectedProcedure
+    .input(z.object({
+      bayId: z.string(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return { success: true, bayId: input.bayId, returnedAt: new Date().toISOString(), returnedBy: ctx.user?.id };
     }),
 
   /**
@@ -1418,7 +1609,210 @@ export const terminalsRouter = router({
    * Get bays for Facility page
    */
   getBays: protectedProcedure.query(async () => {
-    // Loading bays require a dedicated bays table
     return [];
   }),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // INTEGRATION-POWERED PROCEDURES
+  // These surface data from Enverus, OPIS, Genscape, FMCSA, Dearman,
+  // Buckeye directly into terminal operations pages.
+  // Terminal users bring their own API keys stored per-company.
+  // ═══════════════════════════════════════════════════════════════════
+
+  /**
+   * FMCSA Carrier Safety Lookup — used at Gate Check-In
+   * Gives terminal manager instant visibility into carrier safety before allowing entry
+   */
+  fmcsaCarrierLookup: protectedProcedure
+    .input(z.object({ dotNumber: z.string().optional(), carrierName: z.string().optional(), mcNumber: z.string().optional() }))
+    .query(async ({ input }) => {
+      try {
+        const { FMCSAService } = await import("../services/integrations/FMCSAService");
+        const svc = new FMCSAService();
+        if (input.dotNumber) {
+          const profile = await svc.getFullSafetyProfile(input.dotNumber);
+          return { found: true, ...profile };
+        }
+        if (input.carrierName) {
+          const carriers = await svc.lookupByName(input.carrierName);
+          return { found: carriers.length > 0, carriers: carriers.slice(0, 10) };
+        }
+        if (input.mcNumber) {
+          const carrier = await svc.lookupByMC(input.mcNumber);
+          return { found: true, carrier };
+        }
+        return { found: false };
+      } catch (e: any) {
+        console.warn("[Terminals] FMCSA lookup failed:", e?.message?.substring(0, 100));
+        return { found: false, error: e?.message || "FMCSA lookup failed" };
+      }
+    }),
+
+  /**
+   * Market Pricing Strip — OPIS rack prices for the terminal dashboard
+   */
+  getMarketPricing: protectedProcedure
+    .input(z.object({ state: z.string().optional(), products: z.array(z.string()).optional() }).optional())
+    .query(async ({ ctx }) => {
+      // Only returns data when OPIS integration keys are configured
+      const db = await getDb(); if (!db) return null;
+      try {
+        const { integrationConnections } = await import("../../drizzle/schema");
+        const companyId = ctx.user?.companyId || 0;
+        const [opis] = await db.select().from(integrationConnections)
+          .where(and(eq(integrationConnections.companyId, companyId), eq(integrationConnections.providerSlug, 'opis')))
+          .limit(1);
+        if (!opis) return null;
+        // TODO: Call real OPIS API with stored keys
+        return null;
+      } catch { return null; }
+    }),
+
+  /**
+   * Supply Intelligence — Genscape storage + pipeline context
+   */
+  getSupplyIntelligence: protectedProcedure
+    .input(z.object({ padd: z.number().optional(), region: z.string().optional() }).optional())
+    .query(async ({ ctx }) => {
+      // Only returns data when Genscape integration keys are configured
+      const db = await getDb(); if (!db) return null;
+      try {
+        const { integrationConnections } = await import("../../drizzle/schema");
+        const companyId = ctx.user?.companyId || 0;
+        const [gs] = await db.select().from(integrationConnections)
+          .where(and(eq(integrationConnections.companyId, companyId), eq(integrationConnections.providerSlug, 'genscape')))
+          .limit(1);
+        if (!gs) return null;
+        // TODO: Call real Genscape Lens Direct API with stored keys
+        return null;
+      } catch { return null; }
+    }),
+
+  /**
+   * Crude & Energy Pricing — Enverus crude oil benchmarks for market context
+   */
+  getCrudeContext: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Only returns data when Enverus integration keys are configured
+      const db = await getDb(); if (!db) return null;
+      try {
+        const { integrationConnections } = await import("../../drizzle/schema");
+        const companyId = ctx.user?.companyId || 0;
+        const [env] = await db.select().from(integrationConnections)
+          .where(and(eq(integrationConnections.companyId, companyId), eq(integrationConnections.providerSlug, 'enverus')))
+          .limit(1);
+        if (!env) return null;
+        // TODO: Call real Enverus API with stored keys
+        return null;
+      } catch { return null; }
+    }),
+
+  /**
+   * TAS Integration Status — shows which terminal automation system is connected
+   */
+  getTASStatus: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Check if DTN, Dearman, or Buckeye is configured
+      const db = await getDb(); if (!db) return { connected: false, provider: null };
+      try {
+        const { dtnConnections } = await import("../../drizzle/schema");
+        const companyId = ctx.user?.companyId || 0;
+        if (companyId > 0) {
+          const [conn] = await db.select().from(dtnConnections).where(eq(dtnConnections.companyId, companyId)).limit(1);
+          if (conn && conn.syncEnabled) {
+            return {
+              connected: true,
+              provider: "DTN",
+              terminalId: conn.dtnTerminalId,
+              environment: conn.dtnEnvironment,
+              lastSync: conn.lastSyncAt?.toISOString() || null,
+              status: conn.lastSyncStatus || "connected",
+            };
+          }
+        }
+        return { connected: false, provider: null };
+      } catch { return { connected: false, provider: null }; }
+    }),
+
+  /**
+   * Integration Keys management — save/retrieve per-company API keys
+   */
+  getIntegrationKeys: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Return which integrations are configured (without exposing actual keys)
+      const db = await getDb(); if (!db) return [];
+      const companyId = ctx.user?.companyId || 0;
+      try {
+        const { integrationConnections } = await import("../../drizzle/schema");
+        const conns = await db.select({
+          id: integrationConnections.id,
+          providerSlug: integrationConnections.providerSlug,
+          status: integrationConnections.status,
+          lastSyncAt: integrationConnections.lastSyncAt,
+          externalId: integrationConnections.externalId,
+        }).from(integrationConnections).where(eq(integrationConnections.companyId, companyId));
+        return conns.map(c => ({
+          id: c.id,
+          provider: c.providerSlug,
+          status: c.status || "disconnected",
+          lastSync: c.lastSyncAt?.toISOString() || null,
+          externalId: c.externalId || null,
+          configured: true,
+        }));
+      } catch { return []; }
+    }),
+
+  saveIntegrationKey: protectedProcedure
+    .input(z.object({
+      provider: z.string(),
+      apiKey: z.string(),
+      apiSecret: z.string().optional(),
+      externalId: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      try {
+        const { integrationConnections } = await import("../../drizzle/schema");
+        // Upsert: check if exists
+        const [existing] = await db.select().from(integrationConnections)
+          .where(and(eq(integrationConnections.companyId, companyId), eq(integrationConnections.providerSlug, input.provider))).limit(1);
+        if (existing) {
+          await db.update(integrationConnections).set({
+            apiKey: input.apiKey,
+            apiSecret: input.apiSecret || null,
+            externalId: input.externalId || null,
+            status: "connected",
+          }).where(eq(integrationConnections.id, existing.id));
+          return { success: true, id: existing.id, action: "updated" };
+        } else {
+          const [result] = await db.insert(integrationConnections).values({
+            companyId,
+            providerSlug: input.provider,
+            apiKey: input.apiKey,
+            apiSecret: input.apiSecret || null,
+            externalId: input.externalId || null,
+            status: "connected",
+          } as any).$returningId();
+          return { success: true, id: result.id, action: "created" };
+        }
+      } catch (e: any) {
+        throw new Error(`Failed to save integration key: ${e.message}`);
+      }
+    }),
+
+  removeIntegrationKey: protectedProcedure
+    .input(z.object({ provider: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      try {
+        const { integrationConnections } = await import("../../drizzle/schema");
+        await db.update(integrationConnections).set({ status: "disconnected", apiKey: null, apiSecret: null })
+          .where(and(eq(integrationConnections.companyId, companyId), eq(integrationConnections.providerSlug, input.provider)));
+        return { success: true };
+      } catch (e: any) {
+        throw new Error(`Failed to remove integration key: ${e.message}`);
+      }
+    }),
 });

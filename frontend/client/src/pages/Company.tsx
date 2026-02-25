@@ -445,6 +445,11 @@ export default function CompanyPage() {
             </div>
           </Card>
 
+          {/* Supply Chain Classification — Shipper / Marketer */}
+          {(user?.role === "SHIPPER" || user?.role === "BROKER" || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && (
+            <SupplyChainClassification isEditing={isEditing} />
+          )}
+
           <Card className="bg-slate-800 border-slate-700 p-6">
             <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
               <Users size={20} className="text-purple-400" />
@@ -744,3 +749,104 @@ export default function CompanyPage() {
   );
 }
 
+function SupplyChainClassification({ isEditing }: { isEditing: boolean }) {
+  const classQuery = (trpc as any).supplyChain?.getCompanyClassification?.useQuery?.(
+    undefined, { staleTime: 60_000 }
+  ) || { data: null, isLoading: false, refetch: () => {} };
+
+  const updateMutation = (trpc as any).supplyChain?.updateCompanyClassification?.useMutation?.({
+    onSuccess: () => { toast.success("Supply chain classification updated"); classQuery.refetch?.(); },
+    onError: (e: any) => toast.error(`Update failed: ${e.message}`),
+  }) || { mutate: () => {}, isPending: false };
+
+  const classification = classQuery.data as any;
+  const [role, setRole] = useState(classification?.supplyChainRole || "");
+  const [mType, setMType] = useState(classification?.marketerType || "");
+
+  useEffect(() => {
+    if (classification) {
+      setRole(classification.supplyChainRole || "");
+      setMType(classification.marketerType || "");
+    }
+  }, [classification]);
+
+  const ROLES = [
+    { v: "PRODUCER", label: "Producer", desc: "Produces or extracts commodities (refineries, wells)" },
+    { v: "MARKETER", label: "Marketer / Jobber", desc: "Buys, sells & directs product movement" },
+    { v: "WHOLESALER", label: "Wholesaler", desc: "Bulk distributor to retailers & end users" },
+    { v: "RETAILER", label: "Retailer", desc: "Sells directly to consumers (gas stations, fleet fueling)" },
+    { v: "REFINER", label: "Refiner", desc: "Processes crude into finished products" },
+  ];
+
+  const MARKETER_TYPES = [
+    { v: "branded", label: "Branded", desc: "Represents a major brand (Shell, Valero, etc.)" },
+    { v: "independent", label: "Independent", desc: "Non-branded, buys from multiple suppliers" },
+    { v: "used_oil", label: "Used Oil", desc: "Collects, processes & resells used petroleum" },
+  ];
+
+  const handleSave = () => {
+    updateMutation.mutate({
+      supplyChainRole: role || null,
+      marketerType: role === "MARKETER" ? (mType || null) : null,
+    });
+  };
+
+  return (
+    <Card className="bg-slate-800 border-slate-700 p-6">
+      <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+        <Target size={20} className="text-emerald-400" />
+        Supply Chain Classification
+      </h2>
+      <p className="text-slate-500 text-sm mb-4">Define your company's role in the petroleum supply chain. Marketers can buy, sell & direct product to terminals for transport.</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
+        {ROLES.map(r => (
+          <button key={r.v} onClick={() => isEditing && setRole(r.v)}
+            disabled={!isEditing}
+            className={`p-3 rounded-xl border text-left transition-all ${
+              role === r.v ? "border-emerald-500 bg-emerald-500/10" : "border-slate-700 bg-slate-700/30 hover:border-slate-600"
+            } ${!isEditing ? "opacity-70 cursor-default" : ""}`}>
+            <p className="text-white text-sm font-semibold">{r.label}</p>
+            <p className="text-slate-500 text-[10px] mt-0.5">{r.desc}</p>
+          </button>
+        ))}
+      </div>
+
+      {role === "MARKETER" && (
+        <div className="mb-4">
+          <p className="text-slate-400 text-sm font-semibold mb-2">Marketer Type</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            {MARKETER_TYPES.map(m => (
+              <button key={m.v} onClick={() => isEditing && setMType(m.v)}
+                disabled={!isEditing}
+                className={`p-3 rounded-xl border text-left transition-all ${
+                  mType === m.v ? "border-purple-500 bg-purple-500/10" : "border-slate-700 bg-slate-700/30 hover:border-slate-600"
+                } ${!isEditing ? "opacity-70 cursor-default" : ""}`}>
+                <p className="text-white text-sm font-semibold">{m.label}</p>
+                <p className="text-slate-500 text-[10px] mt-0.5">{m.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isEditing && (role !== (classification?.supplyChainRole || "") || mType !== (classification?.marketerType || "")) && (
+        <Button onClick={handleSave} disabled={updateMutation.isPending}
+          className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white">
+          <Save size={16} className="mr-2" />
+          Save Classification
+        </Button>
+      )}
+
+      {classification?.supplyChainRole && !isEditing && (
+        <div className="flex items-center gap-2 mt-2">
+          <CheckCircle size={14} className="text-emerald-400" />
+          <span className="text-emerald-400 text-sm font-medium">
+            {ROLES.find(r => r.v === classification.supplyChainRole)?.label || classification.supplyChainRole}
+            {classification.marketerType ? ` · ${MARKETER_TYPES.find(m => m.v === classification.marketerType)?.label || classification.marketerType}` : ""}
+          </span>
+        </div>
+      )}
+    </Card>
+  );
+}

@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { eq, desc, sql } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { gamificationProfiles, badges, userBadges, rewardCrates } from "../../drizzle/schema";
 

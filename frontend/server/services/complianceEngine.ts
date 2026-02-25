@@ -5,12 +5,13 @@
  *  - Driver CDL state
  *  - Operations type (hazmat, tanker, oversize, etc.)
  *  - Equipment types in fleet
+ *  - Products hauled (crude oil, refined fuel, dairy, etc.)
  *  - Operating states (routes)
  *  - Role (DRIVER, CATALYST, SHIPPER, BROKER, etc.)
  *
  * This engine is the single source of truth for "what documents does
  * this company/driver need?" and is consumed by:
- *  - Registration flow (auto-seed)
+ *  - Registration flow (auto-seed + real-time preview)
  *  - Onboarding checklist
  *  - ComplianceDashboard
  *  - Document Center
@@ -19,6 +20,8 @@
 
 import { documentTypesSeed } from "../seeds/documentTypesSeed";
 import { stateRequirementsSeed } from "../seeds/stateRequirementsSeed";
+import { resolveComplianceMatrix, PRODUCT_CATALOG } from "../seeds/complianceMatrix";
+import type { ResolvedRule } from "../seeds/complianceMatrix";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -32,6 +35,7 @@ export interface CompanyProfile {
   tankerEndorsed?: boolean;
   oversizeOps?: boolean;
   equipmentTypes?: string[];  // DRY_VAN, REEFER, FLATBED, TANKER, HOPPER, etc.
+  products?: string[];        // crude_oil, refined_fuel, milk, produce, etc.
   operatingStates?: string[]; // states the company operates in
   fleetSize?: number;
   hasBrokerAuthority?: boolean;
@@ -274,6 +278,38 @@ export function resolveCompanyCompliance(profile: CompanyProfile): CompliancePro
   if (eqTypes.has("HOPPER") || eqTypes.has("PNEUMATIC") || eqTypes.has("DRY_BULK")) {
     reqs.push(docToReq("BULK_LOADING_CERT", "HIGH", "REQUIRED", "Pneumatic loading/unloading training", "Equipment Compliance")!);
     reqs.push(docToReq("HOPPER_INSPECTION", "HIGH", "REQUIRED", "Pneumatic system inspection record", "Equipment Compliance")!);
+  }
+
+  // ── 5b. PRODUCT-AWARE COMPLIANCE (Smart Matrix) ──
+  // Resolves additional requirements based on specific products hauled
+  if (profile.products && profile.products.length > 0) {
+    const matrixResults = resolveComplianceMatrix({
+      trailerTypes: profile.equipmentTypes || [],
+      products: profile.products,
+    });
+
+    for (const mr of matrixResults) {
+      const r = docToReq(
+        mr.rule.documentTypeId,
+        mr.rule.priority,
+        mr.rule.status,
+        mr.rule.reason,
+        mr.rule.group,
+      );
+      if (r) reqs.push(r);
+    }
+
+    // Auto-detect hazmat from products if not explicitly set
+    const hasHazmatProduct = profile.products.some(p => {
+      const def = PRODUCT_CATALOG.find(pc => pc.id === p);
+      return def?.requiresHazmat;
+    });
+    if (hasHazmatProduct && !profile.hazmatAuthorized) {
+      // Add hazmat requirements that would otherwise be missed
+      const hazReq = docToReq("HAZMAT_REGISTRATION", "CRITICAL", "REQUIRED",
+        "Your product selections include hazmat materials — PHMSA registration required", "Hazmat Compliance");
+      if (hazReq) reqs.push(hazReq);
+    }
   }
 
   // ── 6. VEHICLE DOCS (always for carriers) ──

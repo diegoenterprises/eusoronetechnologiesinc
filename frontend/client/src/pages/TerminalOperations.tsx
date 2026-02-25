@@ -25,7 +25,7 @@ export default function TerminalOperations() {
   const docksQuery = (trpc as any).terminals.getDockStatus.useQuery();
 
   const stats = statsQuery.data;
-  const cell = "rounded-2xl border border-white/[0.04] bg-white/[0.02]";
+  const cell = "rounded-2xl border border-slate-200/60 dark:border-white/[0.04] bg-white dark:bg-white/[0.02]";
 
   const getDockStatusColor = (status: string) => {
     switch (status) {
@@ -55,7 +55,7 @@ export default function TerminalOperations() {
           <h1 className="text-[28px] font-semibold tracking-tight text-white">Operations Reports</h1>
           <p className="text-sm text-slate-500 mt-0.5">Terminal performance, dock utilization, and activity log</p>
         </div>
-        <div className="flex gap-1 p-1 rounded-xl bg-white/[0.03]">
+        <div className="flex gap-1 p-1 rounded-xl bg-slate-50 dark:bg-white/[0.03]">
           {["today", "week", "month"].map(t => (
             <button key={t} onClick={() => setTimeframe(t)} className={cn(
               "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
@@ -75,7 +75,7 @@ export default function TerminalOperations() {
           { icon: <AlertTriangle className="w-5 h-5 text-red-400" />, value: stats?.incidents || 0, label: "Incidents", color: "text-red-400" },
         ].map((kpi) => (
           <div key={kpi.label} className={cn("p-5 text-center", cell)}>
-            <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center mx-auto mb-3">{kpi.icon}</div>
+            <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-white/[0.04] flex items-center justify-center mx-auto mb-3">{kpi.icon}</div>
             <p className={cn("text-2xl font-bold", kpi.color)}>{kpi.value}</p>
             <p className="text-[10px] text-slate-500 mt-0.5">{kpi.label}</p>
           </div>
@@ -92,7 +92,7 @@ export default function TerminalOperations() {
           ) : (docksQuery.data as any)?.length > 0 ? (
             <div className="grid grid-cols-4 gap-3">
               {(docksQuery.data as any).map((dock: any) => (
-                <div key={dock.id} className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3 text-center">
+                <div key={dock.id} className="rounded-xl border border-slate-200/60 dark:border-white/[0.04] bg-white dark:bg-white/[0.02] p-3 text-center">
                   <div className={cn("w-2.5 h-2.5 rounded-full mx-auto mb-2", getDockStatusColor(dock.status))} />
                   <p className="text-xs font-semibold text-white">{dock.name}</p>
                   <p className="text-[10px] text-slate-500 capitalize">{dock.status}</p>
@@ -123,7 +123,7 @@ export default function TerminalOperations() {
                   <span className="text-xs text-slate-400">{perf.label}</span>
                   <span className="text-xs font-semibold text-white">{perf.value}%</span>
                 </div>
-                <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                <div className="h-1.5 bg-slate-50 dark:bg-white/[0.04] rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(perf.value, 100)}%`, backgroundColor: perf.color }} />
                 </div>
               </div>
@@ -146,7 +146,7 @@ export default function TerminalOperations() {
             <p className="text-xs text-slate-600">No recent activity</p>
           </div>
         ) : (
-          <div className="divide-y divide-white/[0.03]">
+          <div className="divide-y divide-slate-200/60 dark:divide-white/[0.03]">
             {(Array.isArray(operationsQuery.data) ? operationsQuery.data : []).map((activity: any) => (
               <div key={activity.id} className="flex items-center justify-between px-6 py-3.5">
                 <div className="flex items-center gap-4 min-w-0">

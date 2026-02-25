@@ -541,6 +541,15 @@ export const TRANSITIONS: Transition[] = [
     guards: [
       { type: "document", check: "pre_trip_complete", errorMessage: "Pre-trip inspection must be completed" },
       { type: "hos", check: "driver_has_hours", errorMessage: "Insufficient HOS hours to begin trip" },
+      // Cargo-aware: tanker, hazmat, reefer, oversize, interstate
+      { type: "document", check: "tanker_inspection_valid", errorMessage: "Cargo tank test (49 CFR 180.407) must be current for tanker operations" },
+      { type: "document", check: "hazmat_shipping_papers", errorMessage: "Hazmat shipping papers (49 CFR 172.200) required before departure" },
+      { type: "document", check: "hazmat_security_plan_active", errorMessage: "Hazmat security plan (49 CFR 172.800) must be active" },
+      { type: "document", check: "reefer_pretrip_complete", errorMessage: "Reefer unit pre-trip verification required for temperature-controlled cargo" },
+      { type: "document", check: "oversize_permit_valid", errorMessage: "Oversize/overweight permit required for this load" },
+      { type: "document", check: "route_survey_complete", errorMessage: "Route survey required for oversized loads" },
+      { type: "document", check: "ifta_valid", errorMessage: "IFTA license required for interstate operations" },
+      { type: "document", check: "irp_valid", errorMessage: "IRP registration required for interstate operations" },
     ],
     effects: [
       { type: "notification", action: "trip_started", recipients: ["SHIPPER", "CATALYST", "DISPATCH"] },
@@ -627,6 +636,12 @@ export const TRANSITIONS: Transition[] = [
     guards: [
       { type: "data", check: "has_weight", errorMessage: "Weight must be recorded" },
       { type: "data", check: "has_seal_numbers", errorMessage: "Seal numbers required" },
+      // Cargo-aware: hazmat placards, tank washout, vapor recovery, reefer temp, food safety
+      { type: "document", check: "hazmat_placard_verified", errorMessage: "Hazmat placards must be verified before departure" },
+      { type: "document", check: "tank_washout_valid", errorMessage: "Tank washout certification required between product changes" },
+      { type: "document", check: "vapor_recovery_valid", errorMessage: "Vapor recovery certification required for petroleum/chemical tanker" },
+      { type: "document", check: "reefer_temp_verified", errorMessage: "Reefer temperature must be verified and within range" },
+      { type: "document", check: "fsma_cert_valid", errorMessage: "FSMA sanitary transport certification required (21 CFR 1.908)" },
     ],
     effects: [
       { type: "notification", action: "loading_complete", recipients: ["SHIPPER", "DISPATCH", "CATALYST"] },
@@ -644,6 +659,10 @@ export const TRANSITIONS: Transition[] = [
     guards: [
       { type: "document", check: "bol_signed", errorMessage: "Bill of Lading must be signed before departure" },
       { type: "hos", check: "driver_has_hours", errorMessage: "Insufficient HOS hours" },
+      // Cargo-aware: hazmat route, CARB, weight-distance tax
+      { type: "document", check: "hazmat_route_compliant", errorMessage: "Hazmat route must comply with restricted zone regulations" },
+      { type: "document", check: "carb_compliant", errorMessage: "CARB Truck & Bus compliance required for California operations" },
+      { type: "document", check: "weight_distance_tax", errorMessage: "Weight-distance tax registration required for OR/NM/NY/KY" },
     ],
     effects: [
       { type: "notification", action: "departed_pickup", recipients: ["SHIPPER", "CATALYST", "DISPATCH"] },

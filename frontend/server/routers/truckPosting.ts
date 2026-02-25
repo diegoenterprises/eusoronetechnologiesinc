@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, gte, like, inArray } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { vehicles, drivers, users, companies, loads } from "../../drizzle/schema";
 

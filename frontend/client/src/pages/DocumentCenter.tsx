@@ -872,13 +872,33 @@ export default function DocumentCenter() {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <p className={cn("text-sm font-semibold truncate", isLight ? "text-slate-800" : "text-white")}>{doc.documentTypeName}</p>
                                   {statusBadge(doc.status, isLight)}
+                                  {doc.isStateSpecific && doc.stateCode && (
+                                    <Badge className="bg-blue-500/10 text-blue-400 border-0 text-[9px] gap-0.5 font-mono">
+                                      <MapPin className="w-2.5 h-2.5" /> {doc.stateCode}
+                                    </Badge>
+                                  )}
                                   {doc.isBlocking && doc.status === "NOT_UPLOADED" && (
                                     <Badge className="bg-red-500/10 text-red-400 border-0 text-[9px] gap-0.5">
                                       <Lock className="w-2.5 h-2.5" /> Required
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5">
+                                <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5 flex-wrap">
+                                  {doc.isStateSpecific && doc.stateCode && (
+                                    <span className="inline-flex items-center gap-1">
+                                      <MapPin className="w-3 h-3" />
+                                      <span className="font-semibold text-blue-400">{doc.stateCode}</span>
+                                      {doc.stateIssuingAgency && <span className="truncate max-w-[180px]">{doc.stateIssuingAgency}</span>}
+                                    </span>
+                                  )}
+                                  {doc.isStateSpecific && doc.statePortalUrl && (
+                                    <a href={doc.statePortalUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-blue-400 hover:text-blue-300 hover:underline">
+                                      <ExternalLink className="w-3 h-3" /> Portal
+                                    </a>
+                                  )}
+                                  {doc.requirementReason && doc.requirementReason !== `Required for ${doc.category} role` && (
+                                    <span className="italic truncate max-w-[220px]">{doc.requirementReason}</span>
+                                  )}
                                   {doc.expiresAt && <span>Expires: {doc.expiresAt}</span>}
                                   {doc.daysUntilExpiry !== null && doc.daysUntilExpiry >= 0 && (
                                     <span className={doc.daysUntilExpiry <= 30 ? "text-yellow-400" : ""}>

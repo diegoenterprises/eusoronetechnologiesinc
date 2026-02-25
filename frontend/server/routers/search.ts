@@ -9,7 +9,7 @@
 
 import { z } from "zod";
 import { eq, like, sql, or, and, desc } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, drivers, users, documents, companies } from "../../drizzle/schema";
 
@@ -29,37 +29,45 @@ export const searchRouter = router({
 
       // ── LOADS ──────────────────────────────────────────────────────────
       // Scope: admin/super_admin/broker see all; shipper sees own; catalyst sees assigned; driver sees assigned
+      // Terminal Managers do NOT search loads - they search appointments, facilities, incoming/outgoing
       const isAdminRole = userRole === "SUPER_ADMIN" || userRole === "ADMIN";
-      const loadScope = isAdminRole ? undefined
-        : userRole === "SHIPPER" ? eq(loads.shipperId, userId)
-        : userRole === "CATALYST" ? eq(loads.catalystId, userId)
-        : userRole === "DRIVER" ? eq(loads.driverId, userId)
-        : undefined; // broker see all
-
-      const loadMatch = or(
-        like(loads.loadNumber, q),
-        like(loads.status, q),
-        like(loads.cargoType, q),
-        like(loads.commodityName, q),
-        like(loads.specialInstructions, q),
-        sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.city')) LIKE ${q}`,
-        sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.state')) LIKE ${q}`,
-        sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.address')) LIKE ${q}`,
-        sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.city')) LIKE ${q}`,
-        sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.state')) LIKE ${q}`,
-        sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.address')) LIKE ${q}`,
-      );
-
-      const loadWhere = loadScope ? and(loadScope, loadMatch) : loadMatch;
-
+      const isTerminal = userRole === "TERMINAL_MANAGER";
+      
       let loadResults: any[] = [];
-      try {
-        loadResults = await db.select({
-          id: loads.id, loadNumber: loads.loadNumber, status: loads.status,
-          cargoType: loads.cargoType, commodityName: loads.commodityName,
-          pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
-        }).from(loads).where(loadWhere!).limit(10);
-      } catch (e) { console.error("[search.global] loads query error:", e); }
+      
+      // Skip load search for Terminal Managers - they don't have a load board
+      if (!isTerminal) {
+        const loadScope = isAdminRole ? undefined
+          : userRole === "SHIPPER" ? eq(loads.shipperId, userId)
+          : userRole === "CATALYST" ? eq(loads.catalystId, userId)
+          : userRole === "DRIVER" ? eq(loads.driverId, userId)
+          : userRole === "BROKER" ? undefined // brokers see all
+          : undefined;
+
+        const loadMatch = or(
+          like(loads.loadNumber, q),
+          like(loads.status, q),
+          like(loads.cargoType, q),
+          like(loads.commodityName, q),
+          like(loads.specialInstructions, q),
+          sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.city')) LIKE ${q}`,
+          sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.state')) LIKE ${q}`,
+          sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.address')) LIKE ${q}`,
+          sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.city')) LIKE ${q}`,
+          sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.state')) LIKE ${q}`,
+          sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.address')) LIKE ${q}`,
+        );
+
+        const loadWhere = loadScope ? and(loadScope, loadMatch) : loadMatch;
+
+        try {
+          loadResults = await db.select({
+            id: loads.id, loadNumber: loads.loadNumber, status: loads.status,
+            cargoType: loads.cargoType, commodityName: loads.commodityName,
+            pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
+          }).from(loads).where(loadWhere!).limit(10);
+        } catch (e) { console.error("[search.global] loads query error:", e); }
+      }
 
       for (const l of loadResults) {
         const origin = (l.pickupLocation as any)?.city || "";

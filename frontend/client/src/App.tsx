@@ -158,6 +158,7 @@ import Rewards from "./pages/Rewards";
 import ClearinghouseDashboard from "./pages/ClearinghouseDashboard";
 import TerminalSCADA from "./pages/TerminalSCADA";
 import TerminalPartners from "./pages/TerminalPartners";
+import MyPartners from "./pages/MyPartners";
 import MyTerminals from "./pages/MyTerminals";
 import Leaderboard from "./pages/Leaderboard";
 import DriverOnboarding from "./pages/DriverOnboarding";
@@ -198,6 +199,7 @@ import TerminalOperations from "./pages/TerminalOperations";
 import TerminalAppointments from "./pages/TerminalAppointments";
 import GateOperations from "./pages/GateOperations";
 import DockManagement from "./pages/DockManagement";
+import TerminalCreateLoad from "./pages/TerminalCreateLoad";
 import Violations from "./pages/Violations";
 import Audits from "./pages/Audits";
 import SafetyMetrics from "./pages/SafetyMetrics";
@@ -210,6 +212,7 @@ import TerminalInventory from "./pages/TerminalInventory";
 import BOLGeneration from "./pages/BOLGeneration";
 import DriverCurrentJob from "./pages/DriverCurrentJob";
 import DriverVehicle from "./pages/DriverVehicle";
+import DriverHOS from "./pages/DriverHOS";
 import DispatchFleetMap from "./pages/DispatchFleetMap";
 import DispatchExceptions from "./pages/DispatchExceptions";
 import EscortPermits from "./pages/EscortPermits";
@@ -253,6 +256,9 @@ import FactoringReportsPage from "./pages/factoring/FactoringReports";
 // ── Gold Standard: Final 5 missing screens ──────────────────────────────────
 import ReeferTemperatureLog from "./pages/ReeferTemperatureLog";
 import PerLoadInsurance from "./pages/PerLoadInsurance";
+import InsuranceVerification from "./pages/InsuranceVerification";
+import EquipmentIntelligence from "./pages/EquipmentIntelligence";
+import RateSheetReconciliation from "./pages/RateSheetReconciliation";
 // ── Gold Standard Wiring: 46 previously dead-code pages ─────────────────────
 import BackgroundChecks from "./pages/BackgroundChecks";
 import BOLManagementPage from "./pages/BOLManagement";
@@ -340,6 +346,8 @@ import FacilitySearch from "./pages/FacilitySearch";
 import FacilityProfile from "./pages/FacilityProfile";
 import InboundDashboard from "./pages/InboundDashboard";
 import DTNSyncDashboard from "./pages/DTNSyncDashboard";
+import IntegrationsPortal from "./pages/IntegrationsPortal";
+// IntegrationKeys fused into IntegrationsPortal
 
 function Router() {
   // Role constants for route protection
@@ -403,6 +411,7 @@ function Router() {
       <Route path={"/ai-assistant"} component={guard(ALL, <ESANGChat />)} />
       <Route path={"/erg"} component={guard(ALL, <ErgPage />)} />
       <Route path={"/missions"} component={guard(ALL, <Missions />)} />
+      <Route path={"/partners"} component={guard(ALL, <MyPartners />)} />
       <Route path={"/live-tracking"} component={guard(ALL, <DriverTracking />)} />
       <Route path={"/fleet-tracking"} component={guard(ALL, <FleetTracking />)} />
       <Route path={"/location-intelligence"} component={guard(ALL, <LocationIntelligence />)} />
@@ -423,6 +432,7 @@ function Router() {
       <Route path={"/settings/2fa"} component={guard(ALL, <TwoFactorAuthPage />)} />
       <Route path={"/settings/sessions"} component={guard(ALL, <SessionMgmtPage />)} />
       <Route path={"/bol-management"} component={guard(ALL, <BOLManagementPage />)} />
+      <Route path={"/rate-sheet"} component={guard(ALL, <RateSheetReconciliation />)} />
       <Route path={"/pod"} component={guard(ALL, <PODManagementPage />)} />
       <Route path={"/erg/guide"} component={guard(ALL, <ERGGuidePage />)} />
       <Route path={"/erg/lookup"} component={guard(ALL, <ERGLookupPage />)} />
@@ -430,6 +440,8 @@ function Router() {
       <Route path={"/hazmat/certifications"} component={guard(ALL, <HazmatCertsPage />)} />
       <Route path={"/insurance"} component={guard([...CARR, ...BROK, ...COMP], <InsuranceMgmtPage />)} />
       <Route path={"/insurance/per-load"} component={guard([...CARR, ...SHIP, ...BROK], <PerLoadInsurance />)} />
+      <Route path={"/insurance/verification"} component={guard([...CARR, ...BROK, ...COMP, ...SHIP, ...DRIV], <InsuranceVerification />)} />
+      <Route path={"/equipment-intelligence"} component={guard([...CARR, ...BROK, ...COMP, ...SHIP], <EquipmentIntelligence />)} />
       <Route path={"/inspections"} component={guard([...CARR, ...COMP, ...SAFE], <VehicleInspectionsPage />)} />
       <Route path={"/report-builder"} component={guard([...CARR, ...BROK, ...COMP, ...SAFE, ...ADMN], <ReportBuilderPage />)} />
       {/* Gold Standard Gap Audit: 18 missing routes wired */}
@@ -446,7 +458,7 @@ function Router() {
       {/* SHIPPER ROUTES */}
       {/* ============================================ */}
       <Route path={"/loads"} component={guard(LOAD, <MyLoadsPage />)} />
-      <Route path={"/loads/create"} component={guard([...SHIP, "BROKER", "DISPATCH", "TERMINAL_MANAGER"], <LoadCreationWizard />)} />
+      <Route path={"/loads/create"} component={guard([...SHIP, "BROKER"], <LoadCreationWizard />)} />
       <Route path={"/loads/active"} component={guard(LOAD, <MyLoadsPage />)} />
       <Route path={"/tracking"} component={guard(LOAD, <ShipperDispatchControl />)} />
       <Route path={"/catalysts"} component={guard([...SHIP, "BROKER"], <CatalystsPage />)} />
@@ -506,6 +518,7 @@ function Router() {
       {/* ============================================ */}
       {/* DRIVER ROUTES */}
       {/* ============================================ */}
+      <Route path={"/hos"} component={guard(DRIV, <DriverHOS />)} />
       <Route path={"/jobs"} component={guard(DRIV, <JobsPage />)} />
       <Route path={"/jobs/current"} component={guard(DRIV, <DriverCurrentJob />)} />
       <Route path={"/navigation"} component={guard(DRIV, <LoadTracking />)} />
@@ -627,6 +640,7 @@ function Router() {
       <Route path={"/appointments"} component={guard(TERM, <TerminalAppointments />)} />
       <Route path={"/gate"} component={guard(TERM, <GateOperations />)} />
       <Route path={"/docks"} component={guard(TERM, <DockManagement />)} />
+      <Route path={"/terminal/create-load"} component={guard(TERM, <TerminalCreateLoad />)} />
       <Route path={"/terminal/reports"} component={guard(TERM, <TerminalOperations />)} />
       <Route path={"/loading-bays"} component={guard(TERM, <LoadingBays />)} />
       <Route path={"/terminal-inventory"} component={guard(TERM, <TerminalInventory />)} />
@@ -638,6 +652,8 @@ function Router() {
       <Route path={"/euso-ticket"} component={guard(TERM, <EusoTicket />)} />
       <Route path={"/run-tickets"} component={guard(TERM, <EusoTicket />)} />
       <Route path={"/inbound"} component={guard(TERM, <InboundDashboard />)} />
+      <Route path={"/integrations"} component={guard(TERM, <IntegrationsPortal />)} />
+      {/* integration-keys fused into /integrations */}
       <Route path={"/dtn-sync"} component={guard(TERM, <DTNSyncDashboard />)} />
       <Route path={"/facility-search"} component={guard(ALL, <FacilitySearch />)} />
       <Route path={"/facility/:id"} component={guard(ALL, <FacilityProfile />)} />

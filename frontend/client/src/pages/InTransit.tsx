@@ -13,6 +13,7 @@ import {
   Search, RefreshCw, Eye, FileText, Camera, Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getLoadTitle } from "@/lib/loadUtils";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -184,7 +185,7 @@ export default function InTransitPage() {
                       </div>
                       <div>
                         <p className={cn("font-bold text-sm", isLight ? "text-slate-800" : "text-white")}>Load #{load.loadNumber}</p>
-                        <p className="text-xs text-slate-400 capitalize">{load.cargoType || "General"} Freight</p>
+                        <p className="text-xs text-slate-400">{getLoadTitle(load)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">

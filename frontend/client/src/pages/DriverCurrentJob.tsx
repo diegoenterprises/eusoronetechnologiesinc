@@ -11,14 +11,18 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   Truck, MapPin, Clock, Package, AlertTriangle, Phone,
   Navigation, CheckCircle, FileText, Thermometer, Droplets
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { getEquipmentLabel } from "@/lib/loadUtils";
 
 export default function DriverCurrentJob() {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const jobQuery = (trpc as any).drivers.getCurrentAssignment.useQuery();
   const hosQuery = (trpc as any).drivers.getMyHOSStatus.useQuery();
 
@@ -66,12 +70,12 @@ export default function DriverCurrentJob() {
   if (!jobQuery.data) {
     return (
       <div className="p-4 md:p-6">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
           <CardContent className="p-12 text-center">
-            <Truck className="w-16 h-16 text-slate-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">No Active Assignment</h2>
-            <p className="text-slate-400">You currently have no assigned loads. Check the available loads or contact dispatch.</p>
-            <Button className="mt-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 rounded-lg">
+            <Truck className={cn("w-16 h-16 mx-auto mb-4", isLight ? "text-slate-300" : "text-slate-500")} />
+            <h2 className={cn("text-xl font-bold mb-2", isLight ? "text-slate-900" : "text-white")}>No Active Assignment</h2>
+            <p className={cn(isLight ? "text-slate-500" : "text-slate-400")}>You currently have no assigned loads. Check the available loads or contact dispatch.</p>
+            <Button className="mt-4 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 text-white rounded-lg">
               View Available Loads
             </Button>
           </CardContent>
@@ -89,7 +93,7 @@ export default function DriverCurrentJob() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Current Job
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Load #{job.loadNumber}</p>
+          <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Load #{job.loadNumber}</p>
         </div>
         <div className="flex items-center gap-2">
           {getStatusBadge(job.status)}
@@ -104,30 +108,30 @@ export default function DriverCurrentJob() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Package className="w-5 h-5 text-cyan-400" />
+              <CardTitle className={cn("flex items-center gap-2", isLight ? "text-slate-900" : "text-white")}>
+                <Package className={cn("w-5 h-5", isLight ? "text-blue-600" : "text-cyan-400")} />
                 Load Details
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-xs text-slate-500">Commodity</p>
-                  <p className="text-white font-medium">{job.commodity}</p>
+                  <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Commodity</p>
+                  <p className={cn("font-medium", isLight ? "text-slate-900" : "text-white")}>{job.commodity}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Weight</p>
-                  <p className="text-white font-medium">{job.weight?.toLocaleString()} lbs</p>
+                  <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Weight</p>
+                  <p className={cn("font-medium", isLight ? "text-slate-900" : "text-white")}>{job.weight?.toLocaleString()} lbs</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Quantity</p>
-                  <p className="text-white font-medium">{job.weight?.toLocaleString()} {(job as any).weightUnit || "lbs"}</p>
+                  <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Quantity</p>
+                  <p className={cn("font-medium", isLight ? "text-slate-900" : "text-white")}>{job.weight?.toLocaleString()} {(job as any).weightUnit || "lbs"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Equipment</p>
-                  <p className="text-white font-medium">{job.equipmentType}</p>
+                  <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Equipment</p>
+                  <p className={cn("font-medium", isLight ? "text-slate-900" : "text-white")}>{getEquipmentLabel(job.equipmentType, job.cargoType, job.hazmatClass)}</p>
                 </div>
               </div>
 
@@ -181,47 +185,47 @@ export default function DriverCurrentJob() {
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-green-400" />
+              <CardTitle className={cn("flex items-center gap-2", isLight ? "text-slate-900" : "text-white")}>
+                <MapPin className={cn("w-5 h-5", isLight ? "text-emerald-600" : "text-green-400")} />
                 Route Information
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30">
+                <div className={cn("p-4 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/30 border-slate-600/30")}>
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-3 h-3 rounded-full bg-green-500" />
-                    <span className="text-sm text-slate-400">Pickup</span>
+                    <span className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>Pickup</span>
                   </div>
-                  <p className="text-white font-medium">{job.origin?.name}</p>
-                  <p className="text-sm text-slate-400">{job.origin?.address}</p>
-                  <p className="text-sm text-slate-400">{job.origin?.city}, {job.origin?.state}</p>
-                  <p className="text-xs text-cyan-400 mt-2">
+                  <p className={cn("font-medium", isLight ? "text-slate-900" : "text-white")}>{job.origin?.name}</p>
+                  <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>{job.origin?.address}</p>
+                  <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>{job.origin?.city}, {job.origin?.state}</p>
+                  <p className={cn("text-xs mt-2", isLight ? "text-blue-600" : "text-cyan-400")}>
                     <Clock className="w-3 h-3 inline mr-1" />
                     {job.pickupTime}
                   </p>
                 </div>
-                <div className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30">
+                <div className={cn("p-4 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/30 border-slate-600/30")}>
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-3 h-3 rounded-full bg-red-500" />
-                    <span className="text-sm text-slate-400">Delivery</span>
+                    <span className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>Delivery</span>
                   </div>
-                  <p className="text-white font-medium">{job.destination?.name}</p>
-                  <p className="text-sm text-slate-400">{job.destination?.address}</p>
-                  <p className="text-sm text-slate-400">{job.destination?.city}, {job.destination?.state}</p>
-                  <p className="text-xs text-cyan-400 mt-2">
+                  <p className={cn("font-medium", isLight ? "text-slate-900" : "text-white")}>{job.destination?.name}</p>
+                  <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>{job.destination?.address}</p>
+                  <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>{job.destination?.city}, {job.destination?.state}</p>
+                  <p className={cn("text-xs mt-2", isLight ? "text-blue-600" : "text-cyan-400")}>
                     <Clock className="w-3 h-3 inline mr-1" />
                     {job.deliveryTime}
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30">
+              <div className={cn("p-4 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/30 border-slate-600/30")}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-400">Progress</span>
-                  <span className="text-white font-medium">{(job as any).distanceCompleted || 0} / {job.totalMiles} miles</span>
+                  <span className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>Progress</span>
+                  <span className={cn("font-medium", isLight ? "text-slate-900" : "text-white")}>{(job as any).distanceCompleted || 0} / {job.totalMiles} miles</span>
                 </div>
                 <Progress 
                   value={((job as any).distanceCompleted || 0) / (job.totalMiles || 1) * 100} 
@@ -233,7 +237,7 @@ export default function DriverCurrentJob() {
                 </div>
               </div>
 
-              <Button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg">
+              <Button className="w-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 text-white rounded-lg">
                 <Navigation className="w-4 h-4 mr-2" />
                 Open Navigation
               </Button>
@@ -242,10 +246,10 @@ export default function DriverCurrentJob() {
         </div>
 
         <div className="space-y-6">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Clock className="w-5 h-5 text-yellow-400" />
+              <CardTitle className={cn("flex items-center gap-2", isLight ? "text-slate-900" : "text-white")}>
+                <Clock className={cn("w-5 h-5", isLight ? "text-amber-600" : "text-yellow-400")} />
                 HOS Status
               </CardTitle>
             </CardHeader>
@@ -255,21 +259,21 @@ export default function DriverCurrentJob() {
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                      <p className="text-2xl font-bold text-green-400">{(hosQuery.data as any)?.drivingRemaining}</p>
-                      <p className="text-xs text-slate-400">Drive Time Left</p>
+                    <div className={cn("p-3 rounded-lg text-center", isLight ? "bg-slate-50" : "bg-slate-700/30")}>
+                      <p className={cn("text-2xl font-bold", isLight ? "text-emerald-600" : "text-green-400")}>{(hosQuery.data as any)?.drivingRemaining}</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>Drive Time Left</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                      <p className="text-2xl font-bold text-blue-400">{(hosQuery.data as any)?.onDutyRemaining}</p>
-                      <p className="text-xs text-slate-400">On-Duty Left</p>
+                    <div className={cn("p-3 rounded-lg text-center", isLight ? "bg-slate-50" : "bg-slate-700/30")}>
+                      <p className={cn("text-2xl font-bold", isLight ? "text-blue-600" : "text-blue-400")}>{(hosQuery.data as any)?.onDutyRemaining}</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>On-Duty Left</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                      <p className="text-2xl font-bold text-cyan-400">{(hosQuery.data as any)?.cycleRemaining}</p>
-                      <p className="text-xs text-slate-400">70hr Cycle</p>
+                    <div className={cn("p-3 rounded-lg text-center", isLight ? "bg-slate-50" : "bg-slate-700/30")}>
+                      <p className={cn("text-2xl font-bold", isLight ? "text-cyan-600" : "text-cyan-400")}>{(hosQuery.data as any)?.cycleRemaining}</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>70hr Cycle</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                      <p className="text-2xl font-bold text-purple-400">{(hosQuery.data as any)?.breakRemaining}</p>
-                      <p className="text-xs text-slate-400">Until Break</p>
+                    <div className={cn("p-3 rounded-lg text-center", isLight ? "bg-slate-50" : "bg-slate-700/30")}>
+                      <p className={cn("text-2xl font-bold", isLight ? "text-purple-600" : "text-purple-400")}>{(hosQuery.data as any)?.breakRemaining}</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>Until Break</p>
                     </div>
                   </div>
                   <Badge className={cn(
@@ -286,36 +290,36 @@ export default function DriverCurrentJob() {
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Phone className="w-5 h-5 text-cyan-400" />
+              <CardTitle className={cn("flex items-center gap-2", isLight ? "text-slate-900" : "text-white")}>
+                <Phone className={cn("w-5 h-5", isLight ? "text-blue-600" : "text-cyan-400")} />
                 Contacts
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/30">
-                <p className="text-xs text-slate-500">Dispatch</p>
-                <p className="text-white">{job.dispatch?.name}</p>
-                <p className="text-sm text-cyan-400">{job.dispatch?.phone}</p>
+              <div className={cn("p-3 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/30 border-slate-600/30")}>
+                <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Dispatch</p>
+                <p className={cn(isLight ? "text-slate-900" : "text-white")}>{job.dispatch?.name}</p>
+                <p className={cn("text-sm", isLight ? "text-blue-600" : "text-cyan-400")}>{job.dispatch?.phone}</p>
               </div>
-              <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/30">
-                <p className="text-xs text-slate-500">Shipper</p>
-                <p className="text-white">{job.shipper?.name}</p>
-                <p className="text-sm text-cyan-400">{job.shipper?.phone}</p>
+              <div className={cn("p-3 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/30 border-slate-600/30")}>
+                <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Shipper</p>
+                <p className={cn(isLight ? "text-slate-900" : "text-white")}>{job.shipper?.name}</p>
+                <p className={cn("text-sm", isLight ? "text-blue-600" : "text-cyan-400")}>{job.shipper?.phone}</p>
               </div>
-              <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/30">
-                <p className="text-xs text-slate-500">Receiver</p>
-                <p className="text-white">{job.receiver?.name}</p>
-                <p className="text-sm text-cyan-400">{job.receiver?.phone}</p>
+              <div className={cn("p-3 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/30 border-slate-600/30")}>
+                <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Receiver</p>
+                <p className={cn(isLight ? "text-slate-900" : "text-white")}>{job.receiver?.name}</p>
+                <p className={cn("text-sm", isLight ? "text-blue-600" : "text-cyan-400")}>{job.receiver?.phone}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-400" />
+              <CardTitle className={cn("flex items-center gap-2", isLight ? "text-slate-900" : "text-white")}>
+                <CheckCircle className={cn("w-5 h-5", isLight ? "text-emerald-600" : "text-green-400")} />
                 Load Status Progression
               </CardTitle>
             </CardHeader>
@@ -433,7 +437,7 @@ export default function DriverCurrentJob() {
                 </div>
               )}
 
-              <Button variant="outline" className="w-full bg-slate-700/50 border-slate-600/50 rounded-lg">
+              <Button variant="outline" className={cn("w-full rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50")}>
                 <FileText className="w-4 h-4 mr-2" />
                 View BOL
               </Button>

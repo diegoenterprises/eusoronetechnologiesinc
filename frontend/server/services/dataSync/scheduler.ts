@@ -29,6 +29,7 @@ import { syncECHOHazWaste } from "../../integrations/epa/echoHazWaste";
 import { computeZoneIntelligence } from "./zoneAggregator";
 import { monitorHMSPPermits } from "./hmspMonitor";
 import { computeRouteIntelligence } from "../routeIntelligence";
+import { monitorInsuranceExpirations } from "../insuranceMonitor";
 import { logSync, generateSyncId } from "./syncLogger";
 import { seedMapData } from "./seedMapData";
 
@@ -215,7 +216,12 @@ export function initializeDataSyncScheduler(): void {
     await runSync("HMSP_PERMIT_MONITOR", monitorHMSPPermits);
   });
 
-  console.log("[DataSync] Scheduler v3.2 initialized — 27 data sources, 24+ cron jobs (incl. route intelligence LIDAR)");
+  // Insurance Expiration Monitor - Daily at 1:00 AM
+  cron.schedule("0 1 * * *", async () => {
+    await runSync("INSURANCE_EXPIRATION_MONITOR", monitorInsuranceExpirations);
+  });
+
+  console.log("[DataSync] Scheduler v3.3 initialized — 28 data sources, 25+ cron jobs (incl. insurance monitor)");
 }
 
 /**

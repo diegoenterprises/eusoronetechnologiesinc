@@ -480,7 +480,7 @@ export default function Messages() {
 
                           {/* Unsent message */}
                           {isUnsent ? (
-                            <div className="px-4 py-2.5 rounded-[20px] border border-white/[0.06] bg-white/[0.03]">
+                            <div className="px-4 py-2.5 rounded-[20px] border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.03]">
                               <p className="text-[13px] italic text-slate-500">This message was unsent</p>
                             </div>
                           ) : (message.type === "payment_sent" || message.type === "payment_request") ? (

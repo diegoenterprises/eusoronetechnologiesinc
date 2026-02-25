@@ -49,6 +49,7 @@ interface BrokerFormData {
   suretyBondCatalyst: string;
   bondNumber: string;
   bondExpiration: string;
+  brokersHazmat: boolean;
   
   // Step 5: Insurance
   insuranceCatalyst: string;
@@ -89,6 +90,7 @@ const initialFormData: BrokerFormData = {
   suretyBondCatalyst: "",
   bondNumber: "",
   bondExpiration: "",
+  brokersHazmat: false,
   insuranceCatalyst: "",
   policyNumber: "",
   coverageAmount: "",
@@ -180,7 +182,7 @@ export default function RegisterBroker() {
       suretyBondCarrier: formData.suretyBondCatalyst || undefined,
       suretyBondNumber: formData.bondNumber || undefined,
       bondExpiration: formData.bondExpiration || undefined,
-      brokersHazmat: false,
+      brokersHazmat: formData.brokersHazmat,
       insuranceCarrier: formData.insuranceCatalyst || undefined,
       insurancePolicy: formData.policyNumber || undefined,
       insuranceCoverage: formData.coverageAmount || undefined,
@@ -482,6 +484,17 @@ export default function RegisterBroker() {
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
+          </div>
+
+          <div className="flex items-center space-x-3 p-4 rounded-lg bg-slate-700/30">
+            <Checkbox
+              id="brokersHazmat"
+              checked={formData.brokersHazmat}
+              onCheckedChange={(checked) => updateFormData({ brokersHazmat: !!checked })}
+            />
+            <Label htmlFor="brokersHazmat" className="text-slate-300 cursor-pointer">
+              I broker hazardous materials freight (Class 3+ / PHMSA regulated)
+            </Label>
           </div>
         </div>
       ),

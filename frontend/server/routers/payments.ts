@@ -6,10 +6,11 @@
 
 import { z } from "zod";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { payments, loads, users } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
+import { requireAccess } from "../services/security/rbac/access-check";
 
 // Helper: safe Stripe call (returns null if Stripe not configured)
 async function safeStripe<T>(fn: () => Promise<T>): Promise<T | null> {
@@ -363,6 +364,7 @@ export const paymentsRouter = router({
     }),
 
   getPaymentStats: protectedProcedure.query(async ({ ctx }) => {
+    await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'PAYMENT' }, (ctx as any).req);
     const db = await getDb();
     if (!db) return { totalProcessed: 0, avgPaymentTime: 0, successRate: 0 };
     try {

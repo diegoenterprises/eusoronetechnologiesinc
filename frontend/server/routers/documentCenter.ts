@@ -105,34 +105,98 @@ async function calculateDocumentAwareness(userId: number, userRole: string): Pro
   const allTypes = await db.select().from(documentTypes);
   const typeMap = new Map(allTypes.map((t) => [t.id, t]));
 
-  // 3b. Resolve active condition flags from user metadata (trailer types, endorsements)
-  //     Reads registration metadata → equipmentTypes (array of trailer type IDs)
-  //     and hazmatEndorsed/tankerEndorsed booleans.
+  // 3b. Resolve active condition flags AND state info from user metadata (single query)
+  //     Conditions: trailer types → HAZMAT/TANKER/OVERSIZE flags
+  //     States: registered state, CDL state, operating states from metadata
   const activeConditions = new Set<string>();
+  let registeredState: string | null = null;
+  let cdlState: string | null = null;
+  const operatingStateCodes = new Set<string>();
+
   try {
     const [userRow] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
     if (userRow?.metadata) {
       const meta = typeof userRow.metadata === "string" ? JSON.parse(userRow.metadata) : userRow.metadata;
       const reg = meta?.registration || {};
 
-      // Resolve from equipmentTypes array (catalyst/O-O registration stores trailer type IDs)
+      // --- Condition flags ---
       const trailerTypes: string[] = reg.equipmentTypes || reg.catalystType || [];
       for (const tt of trailerTypes) {
         const conditions = TRAILER_TYPE_CONDITIONS[tt] || [];
         for (const c of conditions) activeConditions.add(c);
       }
-
-      // Also check explicit boolean flags from registration
       if (reg.hazmatEndorsed || reg.hazmatEndorsement || meta?.complianceIds?.dotHazmatPermit) {
         activeConditions.add("HAZMAT");
       }
       if (reg.tankerEndorsed || reg.tankerEndorsement) {
         activeConditions.add("TANKER");
       }
+
+      // --- State info ---
+      registeredState = reg.state || reg.companyState || reg.registeredState || meta?.state || null;
+      cdlState = reg.cdlState || reg.cdlIssuingState || null;
+      const metaOpStates: string[] = reg.operatingStates || [];
+      for (const s of metaOpStates) {
+        if (s && s.length === 2) operatingStateCodes.add(s.toUpperCase());
+      }
     }
   } catch (e) {
-    console.warn("[DocumentCenter] Could not parse user metadata for conditions:", e);
+    console.warn("[DocumentCenter] Could not parse user metadata:", e);
   }
+
+  // Also read from userOperatingStates table
+  try {
+    const opStates = await db.select().from(userOperatingStates).where(eq(userOperatingStates.userId, userId));
+    for (const os of opStates) {
+      operatingStateCodes.add(os.stateCode);
+      if (os.isRegisteredState && !registeredState) registeredState = os.stateCode;
+      if (os.isHomeState && !cdlState) cdlState = os.stateCode;
+    }
+  } catch (e) {
+    console.warn("[DocumentCenter] Could not query userOperatingStates:", e);
+  }
+
+  // The home/registered state is always an operating state
+  if (registeredState) operatingStateCodes.add(registeredState);
+  if (cdlState) operatingStateCodes.add(cdlState);
+
+  // 3d. Query state-specific requirements for all relevant states
+  let stateReqs: any[] = [];
+  const allStateCodes = Array.from(operatingStateCodes);
+  if (allStateCodes.length > 0) {
+    try {
+      stateReqs = await db
+        .select()
+        .from(stateDocRequirements)
+        .where(inArray(stateDocRequirements.stateCode, allStateCodes));
+    } catch (e) {
+      console.warn("[DocumentCenter] Could not query stateDocRequirements:", e);
+    }
+  }
+
+  // Filter state reqs: only include if userRole is in requiredForRoles array
+  // and any conditions (e.g., OVERSIZE) are met by activeConditions.
+  const roleUpper = userRole.toUpperCase();
+  const filteredStateReqs = stateReqs.filter((sr) => {
+    // Check role
+    let roles: string[] = [];
+    if (Array.isArray(sr.requiredForRoles)) {
+      roles = sr.requiredForRoles;
+    } else if (typeof sr.requiredForRoles === "string") {
+      try { roles = JSON.parse(sr.requiredForRoles); } catch { roles = []; }
+    }
+    if (!roles.some((r: string) => r.toUpperCase() === roleUpper)) return false;
+
+    // Check conditions (e.g., oversize permits only for flatbed operators)
+    if (sr.conditions) {
+      const conds = typeof sr.conditions === "string" ? JSON.parse(sr.conditions) : sr.conditions;
+      if (conds.trailerType) {
+        if (!activeConditions.has(conds.trailerType)) return false;
+      }
+    }
+
+    return true;
+  });
 
   // 4. Build status for each required document — filter conditionals
   const today = new Date();
@@ -140,20 +204,24 @@ async function calculateDocumentAwareness(userId: number, userRole: string): Pro
   const required: any[] = [];
   const addedDocs = new Set<string>();
 
-  for (const req of roleReqs) {
-    if (addedDocs.has(req.documentTypeId)) continue;
-
-    // Skip conditional requirements whose condition is not met
-    if (req.conditionType && req.conditionValue != null) {
-      const conditionMet = activeConditions.has(req.conditionType);
-      const expectedValue = req.conditionValue === true || req.conditionValue === "true" || req.conditionValue === 1;
-      if (conditionMet !== expectedValue) continue;
-    }
-
-    addedDocs.add(req.documentTypeId);
-
-    const docType = typeMap.get(req.documentTypeId);
-    const uploaded = uploadedDocs.find((d) => d.documentTypeId === req.documentTypeId);
+  // Helper: build a requirement entry with status from uploaded docs
+  function buildReqEntry(opts: {
+    documentTypeId: string;
+    isRequired: boolean;
+    isBlocking: boolean;
+    priority: number;
+    reason: string;
+    stateCode?: string | null;
+    statePortalUrl?: string | null;
+    stateIssuingAgency?: string | null;
+    stateFormNumber?: string | null;
+    stateFormUrl?: string | null;
+    validityPeriod?: string | null;
+    filingFee?: string | null;
+    notes?: string | null;
+  }) {
+    const docType = typeMap.get(opts.documentTypeId);
+    const uploaded = uploadedDocs.find((d) => d.documentTypeId === opts.documentTypeId);
 
     let status = "NOT_UPLOADED";
     let daysUntilExpiry: number | null = null;
@@ -190,14 +258,14 @@ async function calculateDocumentAwareness(userId: number, userRole: string): Pro
       }
     }
 
-    required.push({
-      documentTypeId: req.documentTypeId,
-      documentTypeName: docType?.name || req.documentTypeId,
+    return {
+      documentTypeId: opts.documentTypeId,
+      documentTypeName: docType?.name || opts.documentTypeId,
       category: docType?.category || "OTHER",
-      isRequired: req.isRequired ?? true,
-      isBlocking: req.isBlocking ?? true,
-      priority: req.priority || 1,
-      requirementReason: `Required for ${userRole} role`,
+      isRequired: opts.isRequired,
+      isBlocking: opts.isBlocking,
+      priority: opts.priority,
+      requirementReason: opts.reason,
       status,
       currentDocumentId: uploaded?.id || null,
       expiresAt: uploaded?.expiresAt || null,
@@ -208,9 +276,72 @@ async function calculateDocumentAwareness(userId: number, userRole: string): Pro
       verifiedAt: uploaded?.verifiedAt || null,
       rejectionReason: uploaded?.rejectionReason || null,
       actionRequired,
-      actionUrl: `/documents/upload/${req.documentTypeId}`,
-      downloadTemplateUrl: docType?.downloadUrl || docType?.sourceUrl || null,
-    });
+      actionUrl: `/documents/upload/${opts.documentTypeId}`,
+      downloadTemplateUrl: opts.stateFormUrl || opts.statePortalUrl || docType?.downloadUrl || docType?.sourceUrl || null,
+      // State-specific metadata (null for federal docs)
+      stateCode: opts.stateCode || null,
+      statePortalUrl: opts.statePortalUrl || null,
+      stateIssuingAgency: opts.stateIssuingAgency || null,
+      stateFormNumber: opts.stateFormNumber || null,
+      validityPeriod: opts.validityPeriod || null,
+      filingFee: opts.filingFee || null,
+      notes: opts.notes || null,
+      isStateSpecific: !!opts.stateCode,
+    };
+  }
+
+  // 4a. Federal role-based requirements
+  for (const req of roleReqs) {
+    if (addedDocs.has(req.documentTypeId)) continue;
+
+    // Skip conditional requirements whose condition is not met
+    if (req.conditionType && req.conditionValue != null) {
+      const conditionMet = activeConditions.has(req.conditionType);
+      const expectedValue = req.conditionValue === true || req.conditionValue === "true" || req.conditionValue === 1;
+      if (conditionMet !== expectedValue) continue;
+    }
+
+    addedDocs.add(req.documentTypeId);
+    required.push(buildReqEntry({
+      documentTypeId: req.documentTypeId,
+      isRequired: req.isRequired ?? true,
+      isBlocking: req.isBlocking ?? true,
+      priority: req.priority || 1,
+      reason: `Required for ${userRole} role`,
+    }));
+  }
+
+  // 4b. State-specific requirements (merged, deduped by stateCode+docTypeId)
+  const addedStateDocs = new Set<string>();
+  for (const sr of filteredStateReqs) {
+    const stateDocKey = `${sr.stateCode}:${sr.documentTypeId}`;
+    if (addedStateDocs.has(stateDocKey)) continue;
+    addedStateDocs.add(stateDocKey);
+
+    // For state docs, use a composite key so the same doc type can appear
+    // for multiple states (e.g., STATE_IFTA for TX and CA)
+    // But don't duplicate if the federal list already has the exact same docTypeId
+    // (state docs are additive — they supplement, not replace)
+    const isHomeState = sr.stateCode === registeredState || sr.stateCode === cdlState;
+    const reason = isHomeState
+      ? `Required by ${sr.stateName} (home state)`
+      : `Required for operations in ${sr.stateName}`;
+
+    required.push(buildReqEntry({
+      documentTypeId: sr.documentTypeId,
+      isRequired: sr.isRequired ?? true,
+      isBlocking: isHomeState,
+      priority: isHomeState ? 1 : 2,
+      reason,
+      stateCode: sr.stateCode,
+      statePortalUrl: sr.statePortalUrl,
+      stateIssuingAgency: sr.stateIssuingAgency,
+      stateFormNumber: sr.stateFormNumber,
+      stateFormUrl: sr.stateFormUrl,
+      validityPeriod: sr.validityPeriod,
+      filingFee: sr.filingFee,
+      notes: sr.notes,
+    }));
   }
 
   // 5. Categorize
@@ -911,6 +1042,7 @@ export const documentCenterRouter = router({
     .input(z.object({
       operatingStates: z.array(z.string()).optional(),
       equipmentTypes: z.array(z.string()).optional(),
+      products: z.array(z.string()).optional(),
     }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -927,6 +1059,7 @@ export const documentCenterRouter = router({
       let hasBrokerAuthority = false;
       let companyId = 0;
       let equipmentTypes: string[] = input?.equipmentTypes || [];
+      let products: string[] = input?.products || [];
       let operatingStates: string[] = input?.operatingStates || [];
 
       if (db) {
@@ -951,6 +1084,7 @@ export const documentCenterRouter = router({
               if (reg.hazmatEndorsed) hazmatAuthorized = true;
               if (reg.tankerEndorsed) tankerEndorsed = true;
               if (reg.equipmentTypes?.length) equipmentTypes = Array.from(new Set([...equipmentTypes, ...reg.equipmentTypes]));
+              if (reg.products?.length) products = Array.from(new Set([...products, ...reg.products]));
               if (reg.processAgentStates?.length) operatingStates = Array.from(new Set([...operatingStates, ...reg.processAgentStates]));
               if (reg.hazmatClasses?.length) hazmatAuthorized = true;
             }
@@ -978,6 +1112,7 @@ export const documentCenterRouter = router({
         tankerEndorsed,
         oversizeOps,
         equipmentTypes,
+        products,
         operatingStates,
         hasBrokerAuthority,
       });

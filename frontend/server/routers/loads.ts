@@ -5,9 +5,9 @@
  */
 
 import { z } from "zod";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { loads, bids, users, companies } from "../../drizzle/schema";
+import { loads, bids, users, companies, terminals } from "../../drizzle/schema";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import {
   emitLoadStatusChange,
@@ -20,6 +20,9 @@ import { emailService } from "../_core/email";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
 import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
 import { feeCalculator } from "../services/feeCalculator";
+import { lookupAndNotify } from "../services/notifications";
+import { requireAccess } from "../services/security/rbac/access-check";
+import { ownershipFilter } from "../services/security/isolation/ownership-verifier";
 
 async function resolveUserId(ctxUser: any): Promise<number> {
   const db = await getDb();
@@ -83,6 +86,7 @@ export const loadsRouter = router({
   create: protectedProcedure
     .input(z.object({
       productName: z.string().optional(),
+      // RBAC checked inside handler
       hazmatClass: z.string().optional(),
       unNumber: z.string().optional(),
       ergGuide: z.number().optional(),
@@ -126,8 +130,11 @@ export const loadsRouter = router({
       pourPoint: z.string().optional(),
       reidVaporPressure: z.string().optional(),
       appearance: z.string().optional(),
+      originTerminalId: z.number().optional(),
+      destinationTerminalId: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'LOAD' }, (ctx as any).req);
       const db = await getDb();
       // Collision-safe load number: date prefix + 8-char crypto-random suffix
       // If a duplicate key collision occurs, retry with a new number (up to 3 times)
@@ -179,6 +186,15 @@ export const loadsRouter = router({
           : []),
       ].filter(Boolean).join("\n");
 
+      // Store equipmentType in structured JSON alongside plain-text notes
+      const siPayload = JSON.stringify({
+        equipmentType: input?.equipment || input?.trailerType || null,
+        unNumber: input?.unNumber || null,
+        packingGroup: null,
+        properShippingName: input?.placardName || null,
+        ergNotes: ergNotes || null,
+      });
+
       if (!db) throw new Error("Database not available — cannot create load");
 
       const dbUserId = await resolveUserId(ctx.user);
@@ -207,7 +223,9 @@ export const loadsRouter = router({
             pickupDate: input?.pickupDate ? new Date(input.pickupDate) : undefined,
             deliveryDate: input?.deliveryDate ? new Date(input.deliveryDate) : undefined,
             rate: input?.rate || null,
-            specialInstructions: ergNotes || null,
+            specialInstructions: siPayload,
+            originTerminalId: input?.originTerminalId || null,
+            destinationTerminalId: input?.destinationTerminalId || null,
           } as any);
           insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
           break; // success
@@ -229,32 +247,35 @@ export const loadsRouter = router({
         updatedBy: String(ctx.user?.id || 0),
       });
 
-      // Send confirmation email to shipper (non-blocking)
-      const userEmail = ctx.user?.email;
-      if (userEmail) {
-        emailService.send({
-          to: userEmail,
-          subject: `Load ${loadNumber} Posted to Marketplace`,
-          html: `
-            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-              <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:30px;text-align:center;border-radius:8px 8px 0 0">
-                <h1 style="margin:0">Load Posted</h1>
-              </div>
-              <div style="background:#f9f9f9;padding:30px;border-radius:0 0 8px 8px">
-                <p>Your load <strong>${loadNumber}</strong> has been posted to the EusoTrip marketplace.</p>
-                <p>Catalysts can now view and bid on your load.</p>
-                ${input?.productName ? `<p><strong>Product:</strong> ${input.productName}</p>` : ""}
-                ${input?.origin ? `<p><strong>Origin:</strong> ${input.origin}</p>` : ""}
-                ${input?.destination ? `<p><strong>Destination:</strong> ${input.destination}</p>` : ""}
-                <p style="text-align:center;margin-top:20px">
-                  <a href="https://eusotrip.com/loads/${insertedId}" style="display:inline-block;background:#667eea;color:white;padding:12px 30px;text-decoration:none;border-radius:6px">View Load</a>
-                </p>
-              </div>
-              <p style="text-align:center;margin-top:20px;color:#666;font-size:12px">EusoTrip - Hazmat Logistics Platform</p>
-            </div>
-          `,
-          text: `Your load ${loadNumber} has been posted to the EusoTrip marketplace.`,
-        }).catch(err => console.warn("[loads.create] Email failed:", err));
+      // Send branded email + SMS to shipper (non-blocking)
+      lookupAndNotify(dbUserId, { type: "load_posted", loadNumber, loadId: String(insertedId), origin: input?.origin, destination: input?.destination, product: input?.productName });
+
+      // Notify Terminal Manager(s) when load originates from their terminal
+      if (input?.originTerminalId && db) {
+        (async () => {
+          try {
+            const terminal = await db.select({ id: terminals.id, name: terminals.name, companyId: terminals.companyId })
+              .from(terminals).where(eq(terminals.id, input.originTerminalId!)).limit(1);
+            const termCompanyId = terminal[0]?.companyId;
+            const termName = terminal[0]?.name || "Terminal";
+            if (termCompanyId) {
+              const tmUsers = await db.select({ id: users.id })
+                .from(users).where(and(eq(users.companyId, termCompanyId), eq(users.role, "TERMINAL_MANAGER")));
+              const shipperInfo = await db.select({ name: users.name }).from(users).where(eq(users.id, dbUserId)).limit(1);
+              const shipperName = shipperInfo[0]?.name || "A shipper";
+              for (const tm of tmUsers) {
+                lookupAndNotify(tm.id, {
+                  type: "terminal_load_originated",
+                  loadNumber, loadId: String(insertedId),
+                  origin: input?.origin, destination: input?.destination,
+                  product: input?.productName, shipperName, terminalName: termName,
+                });
+              }
+            }
+          } catch (err) {
+            console.error("[Loads] Terminal notification error:", err);
+          }
+        })();
       }
 
       // Fire gamification event for load creation
@@ -268,6 +289,7 @@ export const loadsRouter = router({
   update: protectedProcedure
     .input(z.object({ id: z.string(), data: z.any() }).optional())
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'LOAD' }, (ctx as any).req);
       const db = await getDb();
       if (!db || !input?.id) throw new Error("Database not available");
       const loadId = parseInt(input.id, 10);
@@ -297,6 +319,7 @@ export const loadsRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }).optional())
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'DELETE', resource: 'LOAD' }, (ctx as any).req);
       const db = await getDb();
       if (!db || !input?.id) throw new Error("Database not available");
       const loadId = parseInt(input.id, 10);
@@ -412,9 +435,13 @@ export const loadsRouter = router({
         const originStr = [pickup.city, pickup.state].filter(Boolean).join(', ') || 'Unknown';
         const destStr = [delivery.city, delivery.state].filter(Boolean).join(', ') || 'Unknown';
 
-        // Parse product from specialInstructions
-        const notes = load.specialInstructions || '';
-        const product = notes.match(/^Product: (.+)$/m)?.[1] || load.cargoType || 'General Cargo';
+        // Parse product + equipmentType from specialInstructions (JSON or text)
+        const rawSI_track = load.specialInstructions || '';
+        let siJson_track: any = {};
+        let notes_track = rawSI_track;
+        if (typeof rawSI_track === 'string') { try { siJson_track = JSON.parse(rawSI_track); notes_track = ""; } catch { /* text notes */ } }
+        const product = (siJson_track?.ergNotes?.match?.(/^Product: (.+)$/m)?.[1]) || notes_track.match(/^Product: (.+)$/m)?.[1] || (load as any).commodityName || load.cargoType || 'General Cargo';
+        const trackEquip = siJson_track?.equipmentType || notes_track.match(/^Equipment: (.+)$/m)?.[1] || notes_track.match(/^Trailer Type: (.+)$/m)?.[1] || null;
 
         // Build tracking history from load lifecycle
         const history: { status: string; timestamp: string; location: string; notes?: string }[] = [];
@@ -439,7 +466,7 @@ export const loadsRouter = router({
           lastUpdate: load.updatedAt ? new Date(load.updatedAt).toLocaleString() : new Date().toLocaleString(),
           product,
           weight: load.weight ? `${load.weight} ${load.weightUnit || 'lbs'}` : 'N/A',
-          truck: (load as any).equipmentType || load.cargoType || 'Standard',
+          truck: trackEquip || load.cargoType || 'Standard',
           hazmatClass: load.hazmatClass || null,
           rate: load.rate ? parseFloat(String(load.rate)) : 0,
           history: history.reverse(),
@@ -572,6 +599,11 @@ export const loadsRouter = router({
         const driver = row.driverId ? userMap.get(row.driverId) : null;
         const company = shipper?.companyId ? companyMap.get(shipper.companyId) : null;
         const catalystCompany = catalyst?.companyId ? companyMap.get(catalyst.companyId) : null;
+        // Extract equipmentType from specialInstructions (JSON or text)
+        let siList: any = {};
+        const rawSIList = row.specialInstructions || "";
+        if (typeof rawSIList === 'string') { try { siList = JSON.parse(rawSIList); } catch { /* text notes */ } }
+        const listEquip = siList?.equipmentType || (typeof rawSIList === 'string' ? rawSIList.match?.(/^Equipment: (.+)$/m)?.[1] || rawSIList.match?.(/^Trailer Type: (.+)$/m)?.[1] : null) || null;
         return {
           ...row,
           id: String(row.id),
@@ -593,8 +625,10 @@ export const loadsRouter = router({
           catalystCompanyName: catalystCompany?.name || null,
           driverName: driver?.name || null,
           driverPhone: driver?.phone || null,
-          commodity: (row as any).commodityName || row.cargoType || 'General',
-          equipmentType: row.cargoType || 'general',
+          commodity: (row as any).commodityName || null,
+          commodityName: (row as any).commodityName || null,
+          equipmentType: listEquip,
+          cargoType: row.cargoType || 'general',
           spectraMatchVerified: !!(row as any).spectraMatchResult,
         };
       });
@@ -621,16 +655,46 @@ export const loadsRouter = router({
       const rateNum = typeof load.rate === 'number' ? load.rate : Number(load.rate) || 0;
       const pickup = load.pickupLocation as any || {};
       const delivery = load.deliveryLocation as any || {};
-      // Parse ERG/SPECTRA-MATCH data from specialInstructions
-      const notes = load.specialInstructions || "";
+
+      // Compute distance via haversine when DB distance is missing but coords exist
+      let resolvedDistance = load.distance ? parseFloat(String(load.distance)) : 0;
+      if (resolvedDistance <= 0) {
+        const pLat = parseFloat(pickup.lat || pickup.latitude || 0);
+        const pLng = parseFloat(pickup.lng || pickup.longitude || pickup.lon || 0);
+        const dLat = parseFloat(delivery.lat || delivery.latitude || 0);
+        const dLng = parseFloat(delivery.lng || delivery.longitude || delivery.lon || 0);
+        if (pLat && pLng && dLat && dLng) {
+          const R = 3958.8; // Earth radius in miles
+          const dLatR = (dLat - pLat) * Math.PI / 180;
+          const dLngR = (dLng - pLng) * Math.PI / 180;
+          const a = Math.sin(dLatR / 2) ** 2 + Math.cos(pLat * Math.PI / 180) * Math.cos(dLat * Math.PI / 180) * Math.sin(dLngR / 2) ** 2;
+          const haversineMiles = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          // Apply 1.2x road factor to approximate driving distance
+          resolvedDistance = Math.round(haversineMiles * 1.2);
+        }
+      }
+      // Parse specialInstructions — may be JSON (loadBoard) or text notes (wizard)
+      const rawSI = load.specialInstructions || "";
+      let siJson: any = {};
+      let notes = rawSI;
+      if (typeof rawSI === 'string') {
+        try { siJson = JSON.parse(rawSI); notes = ""; } catch { /* plain text notes */ }
+      } else if (typeof rawSI === 'object') {
+        siJson = rawSI; notes = "";
+      }
       const ergProduct = notes.match(/^Product: (.+)$/m)?.[1] || null;
+      const ergEquip = notes.match(/^Equipment: (.+)$/m)?.[1] || null;
+      const ergTrailer = notes.match(/^Trailer Type: (.+)$/m)?.[1] || null;
       const ergGuideMatch = notes.match(/ERG Guide: (\d+)/)?.[1];
       const ergGuide = ergGuideMatch ? parseInt(ergGuideMatch) : null;
+      // Resolve equipmentType: JSON field > text notes > null (never cargoType)
+      const resolvedEquipType = siJson?.equipmentType || ergEquip || ergTrailer || null;
       // Serialize ALL Date fields to ISO strings to prevent React "Objects are not valid as React child" crash
       const safeDate = (d: any) => d instanceof Date ? d.toISOString() : (typeof d === 'string' ? d : null);
       return {
         ...load,
         id: String(load.id),
+        distance: resolvedDistance,
         pickupDate: safeDate(load.pickupDate),
         deliveryDate: safeDate(load.deliveryDate),
         estimatedDeliveryDate: safeDate((load as any).estimatedDeliveryDate),
@@ -642,15 +706,17 @@ export const loadsRouter = router({
         destination: { address: delivery.address || "", city: delivery.city || "", state: delivery.state || "", zip: delivery.zipCode || "" },
         pickupLocation: { city: pickup.city || "", state: pickup.state || "" },
         deliveryLocation: { city: delivery.city || "", state: delivery.state || "" },
-        commodity: (load as any).commodityName || ergProduct || load.cargoType || "General",
+        commodity: (load as any).commodityName || ergProduct || null,
+        commodityName: (load as any).commodityName || ergProduct || null,
         ergGuide,
         biddingEnds: load.pickupDate instanceof Date ? load.pickupDate.toISOString() : (load.pickupDate || new Date().toISOString()),
         suggestedRateMin: rateNum * 0.9,
         suggestedRateMax: rateNum * 1.1,
-        equipmentType: load.cargoType || "general",
+        equipmentType: resolvedEquipType,
+        cargoType: load.cargoType || "general",
         spectraMatchResult: (load as any).spectraMatchResult || null,
         spectraMatchVerified: !!(load as any).spectraMatchResult,
-        notes,
+        notes: notes || "",
         shipperId: load.shipperId,
       };
     }),
@@ -843,6 +909,16 @@ export const loadsRouter = router({
       `);
     } catch (_) { /* non-critical */ }
 
+    // Email + SMS: notify assigned catalyst of cancellation
+    if (load.catalystId) {
+      lookupAndNotify(load.catalystId, { type: "load_cancelled", loadNumber: load.loadNumber, reason: input.reason, cancelledBy: ctx.user?.name || "Shipper" });
+    }
+    // Email + SMS: notify shipper (confirmation)
+    const cancellerUserId = await resolveUserId(ctx.user);
+    if (load.shipperId && load.shipperId !== cancellerUserId) {
+      lookupAndNotify(load.shipperId, { type: "load_cancelled", loadNumber: load.loadNumber, reason: input.reason });
+    }
+
     return {
       success: true,
       loadId: input.loadId,
@@ -978,6 +1054,8 @@ export const loadsRouter = router({
         previousStatus: load.status, newStatus: 'assigned',
         timestamp: new Date().toISOString(), updatedBy: String(ctx.user?.id || 0),
       });
+      // Email + SMS: notify catalyst of assignment
+      lookupAndNotify(input.catalystId, { type: "load_assigned", loadNumber: load.loadNumber || '' });
       return { success: true };
     }),
 
@@ -1772,6 +1850,11 @@ export const bidsRouter = router({
     const delivery = load?.deliveryLocation as any || {};
     const distance = load?.distance ? parseFloat(String(load.distance)) : 0;
     const amount = bid.amount ? parseFloat(String(bid.amount)) : 0;
+    // Extract equipmentType from specialInstructions
+    let siBid: any = {};
+    const rawSIBid = load?.specialInstructions || "";
+    if (typeof rawSIBid === 'string') { try { siBid = JSON.parse(rawSIBid); } catch { /* text */ } }
+    const bidEquip = siBid?.equipmentType || (typeof rawSIBid === 'string' ? rawSIBid.match?.(/^Equipment: (.+)$/m)?.[1] : null) || null;
     
     return {
       id: String(bid.id),
@@ -1787,8 +1870,9 @@ export const bidsRouter = router({
       deliveryDate: load?.deliveryDate?.toISOString() || '',
       distance,
       weight: load?.weight ? parseFloat(String(load.weight)) : 0,
-      equipment: load?.cargoType || 'general',
-      equipmentType: load?.cargoType || 'general',
+      equipment: bidEquip || load?.cargoType || 'general',
+      equipmentType: bidEquip,
+      cargoType: load?.cargoType || 'general',
       catalystName: 'Catalyst',
       mcNumber: '',
       notes: bid.notes || '',
@@ -1960,6 +2044,11 @@ export const bidsRouter = router({
         timestamp: new Date().toISOString(),
       });
 
+      // Email + SMS: notify shipper of new bid (branded)
+      if (load?.shipperId) {
+        lookupAndNotify(load.shipperId, { type: "bid_received", loadNumber: load.loadNumber || '', bidAmount: input.amount, bidderName: ctx.user.name || 'Catalyst' });
+      }
+
       // Fire gamification event for bid submission
       fireGamificationEvent({ userId: catalystId, type: "bid_submitted", value: 1 });
       fireGamificationEvent({ userId: catalystId, type: "platform_action", value: 1 });
@@ -1984,6 +2073,12 @@ export const bidsRouter = router({
     emitLoadStatusChange({ loadId: String(bid.loadId), loadNumber: load?.loadNumber || '', previousStatus: load?.status || '', newStatus: 'assigned', timestamp: new Date().toISOString() });
     emitNotification(String(bid.catalystId), { id: `notif_${Date.now()}`, type: 'bid_accepted', title: 'Bid Accepted!', message: `Your bid of $${Number(bid.amount).toLocaleString()} for load ${load?.loadNumber} has been accepted`, priority: 'high', data: { loadId: String(bid.loadId), bidId: input.bidId }, actionUrl: `/loads/${bid.loadId}`, timestamp: new Date().toISOString() });
     fireGamificationEvent({ userId: bid.catalystId, type: "bid_accepted", value: 1 });
+    // Email + SMS: notify catalyst their bid was accepted
+    lookupAndNotify(bid.catalystId, { type: "bid_accepted", loadNumber: load?.loadNumber || '', bidAmount: Number(bid.amount) });
+    // Email + SMS: notify catalyst of load assignment
+    const pickup = load?.pickupLocation as any || {};
+    const delivery = load?.deliveryLocation as any || {};
+    lookupAndNotify(bid.catalystId, { type: "load_assigned", loadNumber: load?.loadNumber || '', origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : undefined, destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : undefined });
     return { success: true, bidId: input.bidId };
   }),
   reject: protectedProcedure.input(z.object({ bidId: z.string(), reason: z.string().optional() })).mutation(async ({ ctx, input }) => {
@@ -1997,6 +2092,8 @@ export const bidsRouter = router({
     if (load && load.shipperId !== userId) throw new Error("Only the load owner can reject bids");
     await db.update(bids).set({ status: 'rejected' } as any).where(eq(bids.id, bidIdNum));
     emitNotification(String(bid.catalystId), { id: `notif_${Date.now()}`, type: 'bid_rejected', title: 'Bid Declined', message: `Your bid for load ${load?.loadNumber} was declined${input.reason ? ': ' + input.reason : ''}`, priority: 'medium', data: { loadId: String(bid.loadId), bidId: input.bidId }, actionUrl: `/bids`, timestamp: new Date().toISOString() });
+    // Email + SMS: notify catalyst their bid was rejected
+    lookupAndNotify(bid.catalystId, { type: "bid_rejected", loadNumber: load?.loadNumber || '' });
     return { success: true, bidId: input.bidId };
   }),
 
@@ -2089,6 +2186,27 @@ export const bidsRouter = router({
     }
     await db.update(loads).set(updateSet as any).where(eq(loads.id, loadIdNum));
     emitLoadStatusChange({ loadId: input.loadId, loadNumber: load.loadNumber, previousStatus: load.status, newStatus: input.status, timestamp: new Date().toISOString(), updatedBy: String(userId) });
+
+    // Email + SMS: notify all parties of status change
+    const lPickup = load.pickupLocation as any || {};
+    const lDelivery = load.deliveryLocation as any || {};
+    const originStr = lPickup.city && lPickup.state ? `${lPickup.city}, ${lPickup.state}` : undefined;
+    const destStr = lDelivery.city && lDelivery.state ? `${lDelivery.city}, ${lDelivery.state}` : undefined;
+
+    if (input.status === 'delivered') {
+      // Delivered: send specific delivery email to shipper + catalyst
+      if (load.shipperId) lookupAndNotify(load.shipperId, { type: "load_delivered", loadNumber: load.loadNumber, origin: originStr, destination: destStr });
+      if (load.catalystId && load.catalystId !== userId) lookupAndNotify(load.catalystId, { type: "load_delivered", loadNumber: load.loadNumber, origin: originStr, destination: destStr });
+    } else if (input.status === 'cancelled') {
+      // Cancelled: notify both parties
+      if (load.shipperId && load.shipperId !== userId) lookupAndNotify(load.shipperId, { type: "load_cancelled", loadNumber: load.loadNumber, reason: input.notes });
+      if (load.catalystId) lookupAndNotify(load.catalystId, { type: "load_cancelled", loadNumber: load.loadNumber, reason: input.notes });
+    } else {
+      // All other status changes: notify the other party
+      if (load.shipperId && load.shipperId !== userId) lookupAndNotify(load.shipperId, { type: "load_status_changed", loadNumber: load.loadNumber, oldStatus: load.status, newStatus: input.status });
+      if (load.catalystId && load.catalystId !== userId) lookupAndNotify(load.catalystId, { type: "load_status_changed", loadNumber: load.loadNumber, oldStatus: load.status, newStatus: input.status });
+    }
+
     if (input.status === 'delivered') {
       fireGamificationEvent({ userId, type: 'load_delivered', value: 1 });
       if (load.shipperId) {
@@ -2144,6 +2262,11 @@ export const bidsRouter = router({
           const pickup = l.pickupLocation as any || {};
           const delivery = l.deliveryLocation as any || {};
           const bidCount = 0;
+          // Extract equipmentType from specialInstructions
+          let siMkt: any = {};
+          const rawSIMkt = l.specialInstructions || "";
+          if (typeof rawSIMkt === 'string') { try { siMkt = JSON.parse(rawSIMkt); } catch { /* text */ } }
+          const mktEquip = siMkt?.equipmentType || (typeof rawSIMkt === 'string' ? rawSIMkt.match?.(/^Equipment: (.+)$/m)?.[1] : null) || null;
           return {
             id: l.id,
             loadNumber: l.loadNumber,
@@ -2157,10 +2280,11 @@ export const bidsRouter = router({
             deliveryDate: l.deliveryDate?.toISOString() || new Date().toISOString(),
             weight: l.weight ? parseFloat(String(l.weight)) : 0,
             dimensions: 'Standard',
-            equipmentType: l.cargoType || 'general',
+            equipmentType: mktEquip,
+            cargoType: l.cargoType || 'general',
             rate: l.rate ? parseFloat(String(l.rate)) : 0,
-            description: l.specialInstructions || '',
-            requirements: l.specialInstructions ? [l.specialInstructions] : [],
+            description: '',
+            requirements: [],
             bidCount: bidCount,
             status: l.status,
             createdAt: l.createdAt?.toISOString() || new Date().toISOString(),

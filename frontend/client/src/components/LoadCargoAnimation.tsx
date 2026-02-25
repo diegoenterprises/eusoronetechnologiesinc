@@ -15,6 +15,7 @@
  */
 
 import React, { useRef, useEffect, useCallback } from "react";
+import { inferAnimationType } from "@/lib/loadUtils";
 
 // Brand gradient colors
 const BLUE = "#1473FF";
@@ -24,19 +25,23 @@ const VIOLET = "#8B5CF6";
 interface LoadCargoAnimationProps {
   equipmentType?: string | null;
   cargoType?: string | null;
+  hazmatClass?: string | null;
   compartments?: number;
   className?: string;
   height?: number;
   isLight?: boolean;
+  isHazmat?: boolean;
 }
 
 export default function LoadCargoAnimation({
   equipmentType,
   cargoType,
+  hazmatClass,
   compartments = 1,
   className = "",
   height = 120,
   isLight = false,
+  isHazmat = false,
 }: LoadCargoAnimationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
@@ -45,18 +50,11 @@ export default function LoadCargoAnimation({
   const initializedRef = useRef(false);
 
   const getAnimationType = useCallback(() => {
-    const et = (equipmentType || "").toLowerCase();
-    const ct = (cargoType || "").toLowerCase();
-
-    if (et.includes("liquid") || et === "tank" || et === "food_grade_tank" || et === "water_tank" || ct === "petroleum" || ct === "chemicals" || ct === "hazmat" || ct === "liquid" || ct === "milk" || ct === "water" || ct === "juice" || ct === "oil") return "liquid";
-    if (et.includes("gas") || et === "tanker" || ct === "gas" || ct === "lpg" || ct === "lng") return "gas";
-    if (et === "flatbed") return "flatbed";
-    if (et === "reefer" || ct === "refrigerated" || ct === "frozen") return "reefer";
-    if (et.includes("dry") || et === "dry-van" || et === "dry_van") return "dryvan";
-    if (et === "hopper" || ct === "grain" || ct === "cement" || ct === "sand") return "hopper";
-    if (et === "cryogenic") return "cryogenic";
-    return "default";
-  }, [equipmentType, cargoType]);
+    // Use centralized inference: equipmentType → cargoType → hazmatClass
+    const result = inferAnimationType(equipmentType, cargoType, hazmatClass);
+    // Map "default" to "dryvan" for canvas rendering
+    return result === "default" ? "dryvan" : result;
+  }, [equipmentType, cargoType, hazmatClass]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -106,6 +104,21 @@ export default function LoadCargoAnimation({
           break;
         case "cryogenic":
           drawCryogenicMist(ctx, w, h, timeRef.current, particlesRef.current, isLight);
+          break;
+        case "hazmat":
+          drawHazmatCargo(ctx, w, h, timeRef.current, isLight);
+          break;
+        case "autocarrier":
+          drawAutoCarrier(ctx, w, h, timeRef.current, isLight);
+          break;
+        case "livestock":
+          drawLivestock(ctx, w, h, timeRef.current, isLight);
+          break;
+        case "dump":
+          drawDumpTrailer(ctx, w, h, timeRef.current, particlesRef.current, isLight);
+          break;
+        case "intermodal":
+          drawIntermodal(ctx, w, h, timeRef.current, isLight);
           break;
         default:
           drawDefaultCargo(ctx, w, h, timeRef.current, isLight);
@@ -923,7 +936,128 @@ function drawCryogenicMist(ctx: CanvasRenderingContext2D, w: number, h: number, 
 }
 
 // ============================================================================
-// 8. DEFAULT — gradient cargo boxes
+// 8. HAZMAT — warning symbols and hazmat diamonds
+// ============================================================================
+
+function drawHazmatCargo(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, isLight: boolean) {
+  const cx = w / 2;
+  const cy = h * 0.42;
+
+  // Pulsing glow effect
+  const pulse = 0.6 + Math.sin(t * 2) * 0.2;
+  const warningColor = "#ef4444";
+  const warningColorAlt = "#f97316";
+
+  // Draw hazmat diamond (rotated square)
+  const diamondSize = Math.min(w, h) * 0.32;
+  const bobY = Math.sin(t * 1.5) * 2;
+
+  ctx.save();
+  ctx.translate(cx, cy + bobY);
+  ctx.rotate(Math.PI / 4);
+
+  // Diamond outline with glow
+  ctx.shadowColor = warningColor;
+  ctx.shadowBlur = 8 + Math.sin(t * 3) * 4;
+  ctx.strokeStyle = hexAlpha(warningColor, pulse);
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(-diamondSize / 2, -diamondSize / 2, diamondSize, diamondSize);
+
+  // Diamond fill
+  const diamondGrad = ctx.createLinearGradient(-diamondSize / 2, -diamondSize / 2, diamondSize / 2, diamondSize / 2);
+  diamondGrad.addColorStop(0, hexAlpha(warningColor, 0.15));
+  diamondGrad.addColorStop(0.5, hexAlpha(warningColorAlt, 0.2));
+  diamondGrad.addColorStop(1, hexAlpha(warningColor, 0.15));
+  ctx.fillStyle = diamondGrad;
+  ctx.fillRect(-diamondSize / 2, -diamondSize / 2, diamondSize, diamondSize);
+
+  ctx.shadowBlur = 0;
+  ctx.restore();
+
+  // Draw hazmat symbol (trefoil / radiation-like pattern) in center
+  ctx.save();
+  ctx.translate(cx, cy + bobY);
+
+  // Central warning icon - three curved blades
+  const bladeCount = 3;
+  const bladeRadius = diamondSize * 0.22;
+  const innerRadius = bladeRadius * 0.35;
+
+  for (let i = 0; i < bladeCount; i++) {
+    const angle = (Math.PI * 2 / bladeCount) * i - Math.PI / 2 + t * 0.3;
+    const x1 = Math.cos(angle) * innerRadius;
+    const y1 = Math.sin(angle) * innerRadius;
+    const x2 = Math.cos(angle) * bladeRadius;
+    const y2 = Math.sin(angle) * bladeRadius;
+
+    // Draw blade
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.arc(0, 0, bladeRadius, angle - 0.5, angle + 0.5);
+    ctx.lineTo(x1, y1);
+    ctx.closePath();
+    ctx.fillStyle = hexAlpha(warningColor, pulse * 0.9);
+    ctx.fill();
+  }
+
+  // Center circle
+  ctx.beginPath();
+  ctx.arc(0, 0, innerRadius * 0.8, 0, Math.PI * 2);
+  ctx.fillStyle = hexAlpha(warningColorAlt, pulse);
+  ctx.fill();
+
+  ctx.restore();
+
+  // Floating warning particles
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI * 2 / 6) * i + t * 0.5;
+    const radius = diamondSize * 0.55 + Math.sin(t * 2 + i) * 5;
+    const px = cx + Math.cos(angle) * radius;
+    const py = cy + Math.sin(angle) * radius + bobY;
+    const particleAlpha = 0.3 + Math.sin(t * 3 + i * 1.5) * 0.2;
+
+    ctx.beginPath();
+    ctx.arc(px, py, 2 + Math.sin(t * 2 + i) * 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = hexAlpha(i % 2 === 0 ? warningColor : warningColorAlt, particleAlpha);
+    ctx.fill();
+  }
+
+  // Side hazmat class indicators
+  const classBoxSize = 18;
+  const classBoxY = cy - 8;
+
+  // Left class box
+  ctx.fillStyle = hexAlpha(warningColor, 0.2 + Math.sin(t * 2.5) * 0.1);
+  roundRect(ctx, cx - diamondSize - 10, classBoxY, classBoxSize, classBoxSize, 3);
+  ctx.fill();
+  ctx.strokeStyle = hexAlpha(warningColor, 0.5);
+  ctx.lineWidth = 1;
+  roundRect(ctx, cx - diamondSize - 10, classBoxY, classBoxSize, classBoxSize, 3);
+  ctx.stroke();
+  ctx.font = "bold 9px Inter, system-ui, sans-serif";
+  ctx.fillStyle = hexAlpha(warningColor, 0.9);
+  ctx.textAlign = "center";
+  ctx.fillText("3", cx - diamondSize - 10 + classBoxSize / 2, classBoxY + 13);
+
+  // Right class box
+  ctx.fillStyle = hexAlpha(warningColorAlt, 0.2 + Math.sin(t * 2.5 + 1) * 0.1);
+  roundRect(ctx, cx + diamondSize - 8, classBoxY, classBoxSize, classBoxSize, 3);
+  ctx.fill();
+  ctx.strokeStyle = hexAlpha(warningColorAlt, 0.5);
+  roundRect(ctx, cx + diamondSize - 8, classBoxY, classBoxSize, classBoxSize, 3);
+  ctx.stroke();
+  ctx.fillStyle = hexAlpha(warningColorAlt, 0.9);
+  ctx.fillText("UN", cx + diamondSize - 8 + classBoxSize / 2, classBoxY + 13);
+
+  // Label
+  ctx.font = "bold 10px Inter, system-ui, sans-serif";
+  ctx.fillStyle = hexAlpha(warningColor, 0.7 + Math.sin(t * 2) * 0.15);
+  ctx.textAlign = "center";
+  ctx.fillText("HAZARDOUS MATERIAL", w / 2, h * 0.88);
+}
+
+// ============================================================================
+// 9. DEFAULT — gradient cargo boxes
 // ============================================================================
 
 function drawDefaultCargo(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, isLight: boolean) {
@@ -966,6 +1100,344 @@ function drawDefaultCargo(ctx: CanvasRenderingContext2D, w: number, h: number, t
   ctx.fillStyle = isLight ? hexAlpha(BLUE, 0.45) : hexAlpha(BLUE, 0.5);
   ctx.textAlign = "center";
   ctx.fillText("CARGO", w / 2, h * 0.88);
+}
+
+// ============================================================================
+// 10. AUTO CARRIER — multi-level car silhouettes on carrier frame
+// ============================================================================
+
+function drawAutoCarrier(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, isLight: boolean) {
+  const baseY = h * 0.78;
+  const frameW = w * 0.82;
+  const frameX = (w - frameW) / 2;
+
+  // Carrier frame rails
+  ctx.strokeStyle = hexAlpha(BLUE, isLight ? 0.35 : 0.5);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(frameX, baseY);
+  ctx.lineTo(frameX + frameW, baseY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(frameX + frameW * 0.08, baseY - h * 0.32);
+  ctx.lineTo(frameX + frameW * 0.95, baseY - h * 0.32);
+  ctx.stroke();
+  // Ramp supports
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 4; i++) {
+    const sx = frameX + frameW * (0.15 + i * 0.22);
+    ctx.beginPath();
+    ctx.moveTo(sx, baseY);
+    ctx.lineTo(sx + 3, baseY - h * 0.32);
+    ctx.stroke();
+  }
+
+  // Car silhouettes — lower deck (3 cars)
+  for (let i = 0; i < 3; i++) {
+    const cx = frameX + frameW * (0.12 + i * 0.28);
+    const cy = baseY - 6;
+    const cw = frameW * 0.22;
+    const ch = h * 0.12;
+    const bob = Math.sin(t * 1.5 + i * 1.8) * 0.8;
+    const alpha = 0.25 + i * 0.05;
+    const grad = createBrandGradient(ctx, cx, cy - ch + bob, cx + cw, cy + bob, alpha);
+    ctx.fillStyle = grad;
+    // Body
+    roundRect(ctx, cx, cy - ch + bob, cw, ch * 0.6, 3);
+    ctx.fill();
+    // Roof
+    roundRect(ctx, cx + cw * 0.15, cy - ch - ch * 0.25 + bob, cw * 0.7, ch * 0.35, 3);
+    ctx.fill();
+    // Wheels
+    ctx.fillStyle = hexAlpha(isLight ? "#334155" : "#94a3b8", 0.4);
+    ctx.beginPath(); ctx.arc(cx + cw * 0.22, cy + bob, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + cw * 0.78, cy + bob, 3, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Upper deck (2 cars)
+  for (let i = 0; i < 2; i++) {
+    const cx = frameX + frameW * (0.2 + i * 0.32);
+    const cy = baseY - h * 0.32 - 4;
+    const cw = frameW * 0.22;
+    const ch = h * 0.11;
+    const bob = Math.sin(t * 1.3 + i * 2.1 + 1) * 0.6;
+    const alpha = 0.2 + i * 0.05;
+    const grad = createBrandGradient(ctx, cx, cy - ch + bob, cx + cw, cy + bob, alpha);
+    ctx.fillStyle = grad;
+    roundRect(ctx, cx, cy - ch + bob, cw, ch * 0.6, 3);
+    ctx.fill();
+    roundRect(ctx, cx + cw * 0.15, cy - ch - ch * 0.25 + bob, cw * 0.7, ch * 0.35, 3);
+    ctx.fill();
+    ctx.fillStyle = hexAlpha(isLight ? "#334155" : "#94a3b8", 0.4);
+    ctx.beginPath(); ctx.arc(cx + cw * 0.22, cy + bob, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + cw * 0.78, cy + bob, 2.5, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Carrier wheels
+  ctx.fillStyle = hexAlpha(isLight ? "#1e293b" : "#64748b", 0.5);
+  for (const wx of [0.1, 0.25, 0.75, 0.9]) {
+    ctx.beginPath(); ctx.arc(frameX + frameW * wx, baseY + 5, 4, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.font = "bold 10px Inter, system-ui, sans-serif";
+  ctx.fillStyle = isLight ? hexAlpha(BLUE, 0.5) : hexAlpha(BLUE, 0.55);
+  ctx.textAlign = "center";
+  ctx.fillText("AUTO CARRIER", w / 2, baseY + 18);
+}
+
+// ============================================================================
+// 11. LIVESTOCK — ventilated trailer with cattle silhouettes
+// ============================================================================
+
+function drawLivestock(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, isLight: boolean) {
+  const margin = w * 0.1;
+  const boxW = w - margin * 2;
+  const boxH = h * 0.5;
+  const boxY = h * 0.18;
+  const GREEN = "#22c55e";
+
+  // Trailer body
+  ctx.strokeStyle = hexAlpha(GREEN, isLight ? 0.3 : 0.4);
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, margin, boxY, boxW, boxH, 6);
+  ctx.stroke();
+
+  // Ventilation slats
+  ctx.strokeStyle = hexAlpha(GREEN, 0.2);
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < 12; i++) {
+    const sx = margin + 8 + i * (boxW - 16) / 11;
+    ctx.beginPath();
+    ctx.moveTo(sx, boxY + 4);
+    ctx.lineTo(sx, boxY + boxH - 4);
+    ctx.stroke();
+  }
+
+  // Cattle silhouettes (simplified)
+  const cowPositions = [0.18, 0.38, 0.58, 0.78];
+  cowPositions.forEach((px, i) => {
+    const cx = margin + boxW * px;
+    const cy = boxY + boxH * 0.55;
+    const bob = Math.sin(t * 0.8 + i * 1.5) * 1.5;
+    const sway = Math.sin(t * 0.6 + i * 2) * 1;
+    const alpha = 0.35 + i * 0.05;
+
+    ctx.fillStyle = hexAlpha(GREEN, alpha);
+    // Body (oval)
+    ctx.beginPath();
+    ctx.ellipse(cx + sway, cy + bob, 14, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Head
+    ctx.beginPath();
+    ctx.ellipse(cx + 12 + sway, cy - 6 + bob, 5, 4, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    // Legs
+    ctx.strokeStyle = hexAlpha(GREEN, alpha * 0.8);
+    ctx.lineWidth = 1.5;
+    for (const lx of [-8, -3, 5, 10]) {
+      ctx.beginPath();
+      ctx.moveTo(cx + lx + sway, cy + 7 + bob);
+      ctx.lineTo(cx + lx + sway, cy + 16 + bob);
+      ctx.stroke();
+    }
+  });
+
+  // Wheels
+  ctx.fillStyle = hexAlpha(isLight ? "#1e293b" : "#64748b", 0.4);
+  for (const wx of [0.15, 0.3, 0.7, 0.85]) {
+    ctx.beginPath(); ctx.arc(margin + boxW * wx, boxY + boxH + 6, 4, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.font = "bold 10px Inter, system-ui, sans-serif";
+  ctx.fillStyle = isLight ? hexAlpha(GREEN, 0.5) : hexAlpha(GREEN, 0.55);
+  ctx.textAlign = "center";
+  ctx.fillText("LIVESTOCK", w / 2, boxY + boxH + 20);
+}
+
+// ============================================================================
+// 12. DUMP TRAILER — tilted trailer with cascading material
+// ============================================================================
+
+function drawDumpTrailer(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, particles: any[], isLight: boolean) {
+  const AMBER = "#f59e0b";
+  const baseY = h * 0.75;
+  const trailerW = w * 0.55;
+  const trailerH = h * 0.4;
+  const pivotX = w * 0.25;
+  const pivotY = baseY;
+
+  // Tilt angle (oscillates slowly)
+  const tiltAngle = -0.25 - Math.sin(t * 0.4) * 0.08;
+
+  ctx.save();
+  ctx.translate(pivotX, pivotY);
+  ctx.rotate(tiltAngle);
+
+  // Trailer body (tilted)
+  const grad = ctx.createLinearGradient(0, -trailerH, trailerW, 0);
+  grad.addColorStop(0, hexAlpha(AMBER, 0.15));
+  grad.addColorStop(1, hexAlpha(AMBER, 0.25));
+  ctx.fillStyle = grad;
+  roundRect(ctx, 0, -trailerH, trailerW, trailerH, 4);
+  ctx.fill();
+  ctx.strokeStyle = hexAlpha(AMBER, isLight ? 0.3 : 0.45);
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, 0, -trailerH, trailerW, trailerH, 4);
+  ctx.stroke();
+
+  // Material inside (aggregate/gravel fill)
+  ctx.fillStyle = hexAlpha(AMBER, 0.2);
+  ctx.beginPath();
+  ctx.moveTo(4, 0);
+  ctx.lineTo(4, -trailerH * 0.6);
+  ctx.lineTo(trailerW * 0.5, -trailerH * 0.5);
+  ctx.lineTo(trailerW - 4, -trailerH * 0.15);
+  ctx.lineTo(trailerW - 4, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+
+  // Cascading particles from the dump end
+  const dumpX = pivotX + Math.cos(tiltAngle) * trailerW;
+  const dumpY = pivotY + Math.sin(tiltAngle) * trailerW;
+  if (particles.length < 20) {
+    for (let i = particles.length; i < 20; i++) {
+      particles.push({ x: 0, y: 0, vx: Math.random() * 1.5 + 0.5, vy: Math.random() * 0.5, size: Math.random() * 3 + 1, life: 0, maxLife: 40 + Math.random() * 30 });
+    }
+  }
+  particles.forEach(p => {
+    p.life++;
+    if (p.life > p.maxLife) { p.life = 0; p.x = 0; p.y = 0; p.vx = Math.random() * 1.5 + 0.5; p.vy = Math.random() * 0.5; }
+    p.x += p.vx;
+    p.vy += 0.08;
+    p.y += p.vy;
+    const alpha = Math.max(0, 1 - p.life / p.maxLife) * 0.5;
+    ctx.fillStyle = hexAlpha(AMBER, alpha);
+    ctx.beginPath();
+    ctx.arc(dumpX + p.x, dumpY + p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Ground line + pile
+  ctx.fillStyle = hexAlpha(AMBER, 0.15);
+  ctx.beginPath();
+  ctx.moveTo(dumpX + 5, baseY + 3);
+  ctx.quadraticCurveTo(dumpX + 25, baseY - 12, dumpX + 50, baseY + 3);
+  ctx.closePath();
+  ctx.fill();
+
+  // Wheels
+  ctx.fillStyle = hexAlpha(isLight ? "#1e293b" : "#64748b", 0.45);
+  ctx.beginPath(); ctx.arc(pivotX + 15, baseY + 5, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(pivotX + 35, baseY + 5, 5, 0, Math.PI * 2); ctx.fill();
+
+  ctx.font = "bold 10px Inter, system-ui, sans-serif";
+  ctx.fillStyle = isLight ? hexAlpha(AMBER, 0.5) : hexAlpha(AMBER, 0.6);
+  ctx.textAlign = "center";
+  ctx.fillText("DUMP TRAILER", w / 2, baseY + 20);
+}
+
+// ============================================================================
+// 13. INTERMODAL — ISO container on chassis
+// ============================================================================
+
+function drawIntermodal(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, isLight: boolean) {
+  const margin = w * 0.08;
+  const contW = w - margin * 2;
+  const contH = h * 0.52;
+  const contY = h * 0.16;
+  const TEAL = "#14b8a6";
+
+  // Container body
+  const grad = ctx.createLinearGradient(margin, contY, margin + contW, contY + contH);
+  grad.addColorStop(0, hexAlpha(TEAL, isLight ? 0.1 : 0.15));
+  grad.addColorStop(1, hexAlpha(BLUE, isLight ? 0.08 : 0.12));
+  ctx.fillStyle = grad;
+  roundRect(ctx, margin, contY, contW, contH, 4);
+  ctx.fill();
+
+  // Container outline
+  ctx.strokeStyle = hexAlpha(TEAL, isLight ? 0.35 : 0.5);
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, margin, contY, contW, contH, 4);
+  ctx.stroke();
+
+  // Corrugation lines (vertical ribs typical of ISO containers)
+  ctx.strokeStyle = hexAlpha(TEAL, 0.15);
+  ctx.lineWidth = 0.5;
+  const ribCount = 18;
+  for (let i = 1; i < ribCount; i++) {
+    const rx = margin + (contW / ribCount) * i;
+    ctx.beginPath();
+    ctx.moveTo(rx, contY + 3);
+    ctx.lineTo(rx, contY + contH - 3);
+    ctx.stroke();
+  }
+
+  // Door end (right side) — double doors
+  const doorX = margin + contW - contW * 0.12;
+  ctx.strokeStyle = hexAlpha(TEAL, 0.3);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(doorX, contY + 4);
+  ctx.lineTo(doorX, contY + contH - 4);
+  ctx.stroke();
+  // Door handles
+  ctx.fillStyle = hexAlpha(TEAL, 0.4);
+  ctx.fillRect(doorX + 4, contY + contH * 0.35, 3, 8);
+  ctx.fillRect(doorX + 4, contY + contH * 0.55, 3, 8);
+
+  // Corner castings (ISO standard)
+  const castSize = 6;
+  ctx.fillStyle = hexAlpha(TEAL, 0.3);
+  [[margin + 2, contY + 2], [margin + contW - castSize - 2, contY + 2],
+   [margin + 2, contY + contH - castSize - 2], [margin + contW - castSize - 2, contY + contH - castSize - 2]].forEach(([cx, cy]) => {
+    ctx.fillRect(cx, cy, castSize, castSize);
+  });
+
+  // CSC plate
+  ctx.fillStyle = hexAlpha(TEAL, 0.2);
+  ctx.fillRect(margin + 12, contY + contH * 0.7, 22, 10);
+  ctx.font = "bold 5px Inter, system-ui, sans-serif";
+  ctx.fillStyle = hexAlpha(TEAL, 0.5);
+  ctx.textAlign = "left";
+  ctx.fillText("CSC", margin + 14, contY + contH * 0.7 + 7);
+
+  // Container ID
+  ctx.font = "bold 9px Inter, system-ui, sans-serif";
+  ctx.fillStyle = hexAlpha(TEAL, 0.5);
+  ctx.textAlign = "left";
+  const flicker = Math.sin(t * 2) > 0.5 ? 0.6 : 0.45;
+  ctx.fillStyle = hexAlpha(TEAL, flicker);
+  ctx.fillText("EUSU", margin + 10, contY + 16);
+  ctx.fillText("123456-7", margin + 10, contY + 27);
+
+  // Chassis frame
+  const chassisY = contY + contH + 3;
+  ctx.strokeStyle = hexAlpha(isLight ? "#334155" : "#64748b", 0.35);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(margin + 10, chassisY);
+  ctx.lineTo(margin + contW - 10, chassisY);
+  ctx.stroke();
+
+  // Twist locks
+  ctx.fillStyle = hexAlpha(isLight ? "#334155" : "#94a3b8", 0.35);
+  for (const tx of [0.12, 0.88]) {
+    ctx.beginPath(); ctx.arc(margin + contW * tx, chassisY, 3, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Wheels
+  ctx.fillStyle = hexAlpha(isLight ? "#1e293b" : "#64748b", 0.45);
+  for (const wx of [0.15, 0.28, 0.72, 0.85]) {
+    ctx.beginPath(); ctx.arc(margin + contW * wx, chassisY + 7, 4, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.font = "bold 10px Inter, system-ui, sans-serif";
+  ctx.fillStyle = isLight ? hexAlpha(TEAL, 0.5) : hexAlpha(TEAL, 0.55);
+  ctx.textAlign = "center";
+  ctx.fillText("INTERMODAL CONTAINER", w / 2, chassisY + 20);
 }
 
 // ============================================================================

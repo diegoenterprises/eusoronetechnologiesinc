@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { eq, desc, sql, gte, lte, and } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { appointments, loads, users, companies } from "../../drizzle/schema";
 
@@ -158,10 +158,15 @@ export const appointmentsRouter = router({
    */
   checkIn: protectedProcedure
     .input(z.object({ appointmentId: z.string(), driverId: z.string().optional(), vehicleId: z.string().optional(), trailerNumber: z.string().optional(), notes: z.string().optional() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      await db.update(appointments).set({ status: "checked_in" as any }).where(eq(appointments.id, parseInt(input.appointmentId, 10)));
+      const { userId, companyId } = await resolveUserContext(ctx.user);
+      // SECURITY: Verify caller is the assigned driver or belongs to the terminal
+      const apptId = parseInt(input.appointmentId, 10);
+      const [appt] = await db.select({ driverId: appointments.driverId, terminalId: appointments.terminalId }).from(appointments).where(eq(appointments.id, apptId)).limit(1);
+      if (!appt || (appt.driverId !== userId && companyId === 0)) throw new Error("Appointment not found");
+      await db.update(appointments).set({ status: "checked_in" as any }).where(eq(appointments.id, apptId));
       return { success: true, appointmentId: input.appointmentId, checkInTime: new Date().toISOString(), queuePosition: 0, estimatedWait: 0 };
     }),
 
@@ -255,14 +260,26 @@ export const appointmentsRouter = router({
       return { today: total, todayTotal: total, completed: completedCount?.count || 0, inProgress: 0, upcoming: upcomingCount?.count || 0, cancelled: cancelledCount?.count || 0 };
     } catch { return { today: 0, todayTotal: 0, completed: 0, inProgress: 0, upcoming: 0, cancelled: 0 }; }
   }),
-  startLoading: protectedProcedure.input(z.object({ appointmentId: z.string() })).mutation(async ({ input }) => {
+  startLoading: protectedProcedure.input(z.object({ appointmentId: z.string() })).mutation(async ({ ctx, input }) => {
     const db = await getDb();
-    if (db) await db.update(appointments).set({ status: "loading" as any }).where(eq(appointments.id, parseInt(input.appointmentId, 10)));
+    if (!db) throw new Error("Database not available");
+    const { userId, companyId } = await resolveUserContext(ctx.user);
+    // SECURITY: Verify caller has access to this appointment
+    const apptId = parseInt(input.appointmentId, 10);
+    const [appt] = await db.select({ driverId: appointments.driverId }).from(appointments).where(eq(appointments.id, apptId)).limit(1);
+    if (!appt || (appt.driverId !== userId && companyId === 0)) throw new Error("Appointment not found");
+    await db.update(appointments).set({ status: "loading" as any }).where(eq(appointments.id, apptId));
     return { success: true, appointmentId: input.appointmentId };
   }),
-  complete: protectedProcedure.input(z.object({ appointmentId: z.string() })).mutation(async ({ input }) => {
+  complete: protectedProcedure.input(z.object({ appointmentId: z.string() })).mutation(async ({ ctx, input }) => {
     const db = await getDb();
-    if (db) await db.update(appointments).set({ status: "completed" as any }).where(eq(appointments.id, parseInt(input.appointmentId, 10)));
+    if (!db) throw new Error("Database not available");
+    const { userId, companyId } = await resolveUserContext(ctx.user);
+    // SECURITY: Verify caller has access to this appointment
+    const apptId = parseInt(input.appointmentId, 10);
+    const [appt] = await db.select({ driverId: appointments.driverId }).from(appointments).where(eq(appointments.id, apptId)).limit(1);
+    if (!appt || (appt.driverId !== userId && companyId === 0)) throw new Error("Appointment not found");
+    await db.update(appointments).set({ status: "completed" as any }).where(eq(appointments.id, apptId));
     return { success: true, appointmentId: input.appointmentId, completedAt: new Date().toISOString() };
   }),
 

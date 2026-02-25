@@ -1,6 +1,7 @@
 /**
  * SUPER ADMIN DASHBOARD — Platform Command Center
- * Oversight of: Loads, Users, Agreements, Claims, ZEUN, Support, Telemetry
+ * COMPREHENSIVE OVERSIGHT of all platform activity across all user roles
+ * Tracks: Loads, Users, Terminal Ops, Documents, Fleet, Compliance, Financial, Integrations
  */
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,9 @@ import { trpc } from "@/lib/trpc";
 import {
   Users, Building2, Package, Activity, AlertTriangle, CheckCircle, Clock,
   UserCheck, TrendingUp, Wrench, Eye, Settings, BarChart3, Zap, Database,
-  RefreshCw, FileText, DollarSign, PenTool, MapPin, HelpCircle
+  RefreshCw, FileText, DollarSign, PenTool, MapPin, HelpCircle, Truck,
+  Shield, Calendar, Wifi, Globe, Server, FileCheck, Fuel, ClipboardList,
+  Wallet, Send, Link2, ShieldCheck, Car, LayoutGrid
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -54,16 +57,29 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
 export default function SuperAdminDashboard() {
   const [, nav] = useLocation();
   const [actFilter, setActFilter] = useState("all");
+  const [statsPeriod, setStatsPeriod] = useState<"today" | "week" | "month" | "all">("today");
+  
+  // Core queries
   const sq = (trpc as any).admin.getDashboardSummary.useQuery();
   const pq = (trpc as any).approval?.getPendingUsers?.useQuery?.() || { data: null };
   const aq = (trpc as any).admin.getPlatformActivity.useQuery({ limit: 40 });
+  
+  // NEW: Comprehensive platform stats
+  const cq = (trpc as any).admin.getComprehensivePlatformStats?.useQuery?.({ period: statsPeriod }) || { data: null };
+  const hq = (trpc as any).admin.getRealTimePlatformHealth?.useQuery?.() || { data: null };
+  const rq = (trpc as any).admin.getAllRoleActivity?.useQuery?.({ limit: 50 }) || { data: null };
+  
   const s = sq.data;
+  const cs = cq.data; // Comprehensive stats
+  const health = hq.data; // Real-time health
+  const roleActivity = rq.data; // Activity by role
+  
   const pending = (pq.data as any[]) || [];
-  const loading = sq.isLoading;
-  const total = s?.users?.total || 0;
+  const loading = sq.isLoading || cq.isLoading;
+  const total = cs?.users?.total || s?.users?.total || 0;
   const roles = (s?.roleBreakdown || []) as { role: string; count: number }[];
   const recent = (s?.recentUsers || []) as any[];
-  const hOk = s?.systemHealth === "healthy";
+  const hOk = health?.status === "healthy" || s?.systemHealth === "healthy";
   const events = ((aq.data?.events || []) as any[]).filter((e: any) => actFilter === "all" || e.type === actFilter);
   const counts = aq.data?.counts || {};
 
@@ -75,8 +91,17 @@ export default function SuperAdminDashboard() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Platform Command Center</h1>
           <p className="text-slate-400 text-sm mt-1">Full oversight — loads, users, agreements, disputes, support, telemetry</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-700/50 rounded-lg" onClick={() => { sq.refetch(); aq.refetch(); }}>
+        <div className="flex gap-2 items-center">
+          {/* Period Selector */}
+          <div className="flex gap-1 bg-slate-800/50 p-1 rounded-lg border border-slate-700/50">
+            {(["today", "week", "month", "all"] as const).map(p => (
+              <button key={p} onClick={() => setStatsPeriod(p)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${statsPeriod === p ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : "text-slate-400 hover:text-white"}`}>
+                {p === "all" ? "All Time" : p.charAt(0).toUpperCase() + p.slice(1)}
+              </button>
+            ))}
+          </div>
+          <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-700/50 rounded-lg" onClick={() => { sq.refetch(); aq.refetch(); cq.refetch?.(); hq.refetch?.(); }}>
             <RefreshCw className="w-4 h-4 mr-2" />Refresh
           </Button>
           <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 rounded-lg" onClick={() => nav("/admin/approvals")}>
@@ -85,29 +110,59 @@ export default function SuperAdminDashboard() {
         </div>
       </div>
 
-      {/* KPI CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        {[
-          { icon: <Users className="w-5 h-5 text-blue-400" />, bg: "bg-blue-500/20", v: total, label: "Users", c: "text-blue-400" },
-          { icon: <Clock className="w-5 h-5 text-yellow-400" />, bg: "bg-yellow-500/20", v: s?.pendingApprovals || 0, label: "Pending", c: "text-yellow-400" },
-          { icon: <Package className="w-5 h-5 text-cyan-400" />, bg: "bg-cyan-500/20", v: s?.loads?.active || 0, label: "Active Loads", c: "text-cyan-400" },
-          { icon: <Building2 className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/20", v: s?.companies?.total || 0, label: "Companies", c: "text-purple-400" },
-          { icon: <PenTool className="w-5 h-5 text-indigo-400" />, bg: "bg-indigo-500/20", v: counts.agreements || 0, label: "Agreements", c: "text-indigo-400" },
-          { icon: <AlertTriangle className="w-5 h-5 text-red-400" />, bg: "bg-red-500/20", v: counts.claims || 0, label: "Claims", c: "text-red-400" },
-          { icon: <Activity className={`w-5 h-5 ${hOk ? "text-green-400" : "text-slate-400"}`} />, bg: hOk ? "bg-green-500/20" : "bg-slate-500/20", v: s?.systemHealth || "N/A", label: "System", c: hOk ? "text-green-400" : "text-slate-400", cap: true },
-        ].map((k, i) => (
-          <Card key={i} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-full ${k.bg}`}>{k.icon}</div>
-                <div>
-                  {loading ? <Skeleton className="h-7 w-12" /> : <p className={`text-xl font-bold ${k.c} ${(k as any).cap ? "capitalize" : ""}`}>{typeof k.v === "number" ? k.v.toLocaleString() : k.v}</p>}
-                  <p className="text-[11px] text-slate-400">{k.label}</p>
+      {/* COMPREHENSIVE KPI CARDS - 2 ROWS */}
+      <div className="space-y-3">
+        {/* Row 1: Core Platform Metrics */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+          {[
+            { icon: <Users className="w-5 h-5 text-blue-400" />, bg: "bg-blue-500/20", v: total, label: "Users", c: "text-blue-400" },
+            { icon: <Clock className="w-5 h-5 text-yellow-400" />, bg: "bg-yellow-500/20", v: cs?.users?.pendingApproval || s?.pendingApprovals || 0, label: "Pending", c: "text-yellow-400" },
+            { icon: <Package className="w-5 h-5 text-cyan-400" />, bg: "bg-cyan-500/20", v: cs?.loads?.active || s?.loads?.active || 0, label: "Active Loads", c: "text-cyan-400" },
+            { icon: <Building2 className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/20", v: cs?.companies?.total || s?.companies?.total || 0, label: "Companies", c: "text-purple-400" },
+            { icon: <DollarSign className="w-5 h-5 text-emerald-400" />, bg: "bg-emerald-500/20", v: `$${((cs?.loads?.gmv || 0) / 1000).toFixed(0)}k`, label: "GMV", c: "text-emerald-400" },
+            { icon: <BarChart3 className="w-5 h-5 text-indigo-400" />, bg: "bg-indigo-500/20", v: cs?.bids?.total || counts.bids || 0, label: "Bids", c: "text-indigo-400" },
+            { icon: <AlertTriangle className="w-5 h-5 text-red-400" />, bg: "bg-red-500/20", v: counts.claims || 0, label: "Claims", c: "text-red-400" },
+            { icon: <Activity className={`w-5 h-5 ${hOk ? "text-green-400" : "text-red-400"}`} />, bg: hOk ? "bg-green-500/20" : "bg-red-500/20", v: hOk ? "Healthy" : "Check", label: "System", c: hOk ? "text-green-400" : "text-red-400" },
+          ].map((k, i) => (
+            <Card key={i} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <div className={`p-2 rounded-lg ${k.bg}`}>{k.icon}</div>
+                  <div>
+                    {loading ? <Skeleton className="h-6 w-10" /> : <p className={`text-lg font-bold ${k.c}`}>{typeof k.v === "number" ? k.v.toLocaleString() : k.v}</p>}
+                    <p className="text-[10px] text-slate-500">{k.label}</p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Row 2: Operations by Category */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+          {[
+            { icon: <Calendar className="w-5 h-5 text-amber-400" />, bg: "bg-amber-500/20", v: cs?.terminal?.appointments || 0, label: "Appointments", c: "text-amber-400" },
+            { icon: <FileText className="w-5 h-5 text-teal-400" />, bg: "bg-teal-500/20", v: cs?.documents?.uploaded || 0, label: "Docs Uploaded", c: "text-teal-400" },
+            { icon: <Truck className="w-5 h-5 text-blue-400" />, bg: "bg-blue-500/20", v: cs?.fleet?.activeDrivers || 0, label: "Active Drivers", c: "text-blue-400" },
+            { icon: <ShieldCheck className="w-5 h-5 text-green-400" />, bg: "bg-green-500/20", v: cs?.companies?.compliant || 0, label: "Compliant Cos", c: "text-green-400" },
+            { icon: <Send className="w-5 h-5 text-pink-400" />, bg: "bg-pink-500/20", v: cs?.network?.invitesSent || 0, label: "Invites Sent", c: "text-pink-400" },
+            { icon: <Car className="w-5 h-5 text-orange-400" />, bg: "bg-orange-500/20", v: cs?.escorts?.activeJobs || 0, label: "Escort Jobs", c: "text-orange-400" },
+            { icon: <Wifi className="w-5 h-5 text-cyan-400" />, bg: "bg-cyan-500/20", v: cs?.integrations?.hotZonesSyncs || 0, label: "Data Syncs", c: "text-cyan-400" },
+            { icon: <ClipboardList className="w-5 h-5 text-violet-400" />, bg: "bg-violet-500/20", v: cs?.system?.auditLogs || 0, label: "Audit Logs", c: "text-violet-400" },
+          ].map((k, i) => (
+            <Card key={i} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <div className={`p-2 rounded-lg ${k.bg}`}>{k.icon}</div>
+                  <div>
+                    {loading ? <Skeleton className="h-6 w-10" /> : <p className={`text-lg font-bold ${k.c}`}>{typeof k.v === "number" ? k.v.toLocaleString() : k.v}</p>}
+                    <p className="text-[10px] text-slate-500">{k.label}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
       {/* PENDING APPROVALS BANNER */}

@@ -1,0 +1,353 @@
+/**
+ * EUSOTRIP PREMIUM DARK MODE ENHANCEMENT LAYER
+ *
+ * Upgrades all dark-mode surfaces from "muted gray" to the "premium frosted glass"
+ * aesthetic established in GateOperations: ultra-subtle white overlays, whisper borders,
+ * frosted glass cards on a near-black canvas.
+ *
+ * Reference pattern:
+ *   bg-white/[0.02]  →  barely-visible card surface
+ *   border-white/[0.04]  →  whisper-thin border
+ *
+ * SCOPED ENTIRELY TO .dark — zero impact on light mode.
+ * Loaded AFTER index.css so it wins specificity on CSS variables.
+ */
+
+/* ============================================================
+   CSS VARIABLE OVERRIDES — Premium Dark Design Tokens
+   ============================================================ */
+
+.dark {
+  /* Card: near-invisible surface lift */
+  --card: oklch(0.155 0.004 280);
+  --card-foreground: oklch(0.93 0.003 65);
+
+  /* Popover/dropdown: match card */
+  --popover: oklch(0.16 0.004 280);
+  --popover-foreground: oklch(0.93 0.003 65);
+
+  /* Borders: ultra-subtle */
+  --border: oklch(1 0 0 / 6%);
+  --input: oklch(1 0 0 / 8%);
+
+  /* Muted: slightly visible surface */
+  --muted: oklch(0.17 0.003 280);
+  --muted-foreground: oklch(0.65 0.01 280);
+
+  /* Accent/secondary surfaces */
+  --accent: oklch(0.17 0.003 280);
+  --accent-foreground: oklch(0.93 0.003 65);
+  --secondary: oklch(0.16 0.003 280);
+  --secondary-foreground: oklch(0.75 0.005 65);
+
+  /* Sidebar: premium dark panel */
+  --sidebar: oklch(0.145 0.004 280);
+  --sidebar-foreground: oklch(0.88 0.005 65);
+  --sidebar-accent: oklch(0.17 0.003 280);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 5%);
+}
+
+/* ============================================================
+   CARD / SURFACE OVERRIDES — Frosted Glass Effect
+   Converts opaque slate-800/700 cards to premium translucent
+   ============================================================ */
+
+/* slate-800 with opacity (most common card pattern) */
+.dark [class*="bg-slate-800/"] {
+  background-color: rgba(255, 255, 255, 0.025) !important;
+}
+
+/* Solid slate-800 (modals, panels) */
+.dark [class*="bg-slate-800"]:not([class*="bg-slate-800/"]) {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* slate-900 surfaces (modal backgrounds, deep panels) */
+.dark [class*="bg-slate-900"]:not([class*="bg-slate-900/"]):not(aside):not(header) {
+  background-color: rgba(255, 255, 255, 0.015) !important;
+}
+
+/* slate-700 with opacity (inner cells, sub-cards) */
+.dark [class*="bg-slate-700/"] {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Solid slate-700 (step indicators, form cells) */
+.dark [class*="bg-slate-700"]:not([class*="bg-slate-700/"]) {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* ============================================================
+   BORDER OVERRIDES — Whisper-Thin Edges
+   ============================================================ */
+
+.dark [class*="border-slate-700"] {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark [class*="border-slate-600"] {
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+.dark [class*="border-slate-500"] {
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+/* Gray-800 borders (DashboardLayout sidebar/header + cards) */
+.dark [class*="border-gray-800"] {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+.dark [class*="border-gray-700"] {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Divide lines with gray */
+.dark [class*="divide-gray-800"] > * + * {
+  border-color: rgba(255, 255, 255, 0.04) !important;
+}
+.dark [class*="divide-gray-700"] > * + * {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Divide lines inside lists */
+.dark [class*="divide-slate-700"] > * + * {
+  border-color: rgba(255, 255, 255, 0.04) !important;
+}
+.dark [class*="divide-slate-600"] > * + * {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* ============================================================
+   SHADCN CARD COMPONENT — Premium Surface
+   ============================================================ */
+
+.dark [data-slot="card"] {
+  background-color: rgba(255, 255, 255, 0.025) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ============================================================
+   TABLE — Premium Dark Rows
+   ============================================================ */
+
+.dark table {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.dark th {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.dark td {
+  border-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+.dark tr:hover {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* ============================================================
+   DIALOG / MODAL — Premium Dark Overlay
+   ============================================================ */
+
+.dark [role="dialog"] {
+  background-color: rgba(10, 12, 20, 0.98) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* ============================================================
+   SELECT / DROPDOWN / POPOVER — Premium Surface
+   ============================================================ */
+
+.dark [role="listbox"],
+.dark [role="menu"] {
+  background-color: rgba(12, 14, 24, 0.98) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark [data-radix-popper-content-wrapper] > * {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* ============================================================
+   TABS — Premium Dark Treatment
+   ============================================================ */
+
+.dark [role="tablist"] {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+.dark [data-state="active"][role="tab"] {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
+}
+
+.dark [data-state="inactive"][role="tab"] {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ============================================================
+   INPUT / FORM — Premium Dark Fields
+   ============================================================ */
+
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="number"],
+.dark input[type="tel"],
+.dark input[type="url"],
+.dark input[type="search"],
+.dark textarea,
+.dark select {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: rgba(20, 115, 255, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(20, 115, 255, 0.12) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Select trigger (shadcn) */
+.dark [data-slot="select-trigger"],
+.dark [role="combobox"] {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+/* ============================================================
+   SKELETON / LOADING — Premium Dark Shimmer
+   ============================================================ */
+
+.dark [data-slot="skeleton"],
+.dark [class*="bg-muted"] {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* ============================================================
+   RING COLORS — Premium
+   ============================================================ */
+
+.dark [class*="ring-slate-700"] {
+  --tw-ring-color: rgba(255, 255, 255, 0.06) !important;
+}
+.dark [class*="ring-slate-600"] {
+  --tw-ring-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ============================================================
+   HOVER STATES — Premium Glass Hover
+   ============================================================ */
+
+.dark [class*="hover\\:bg-slate-800"]:hover,
+.dark [class*="hover\\:bg-slate-700"]:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ============================================================
+   SEPARATOR / DIVIDER
+   ============================================================ */
+
+.dark [data-slot="separator-root"],
+.dark [role="separator"] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ============================================================
+   SHADOW UPGRADE — Subtle Depth on Premium Dark
+   ============================================================ */
+
+.dark [data-slot="card"],
+.dark [class*="shadow-sm"],
+.dark [class*="shadow-md"],
+.dark [class*="shadow-lg"],
+.dark [class*="shadow-xl"] {
+  --tw-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03), 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark [class*="shadow-2xl"] {
+  --tw-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 8px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ============================================================
+   BACKDROP BLUR — Enhance Frosted Glass
+   ============================================================ */
+
+.dark [class*="backdrop-blur"]:not(aside):not(header):not([class*="bg-black"]) {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* ============================================================
+   BADGE BACKGROUNDS — Slightly More Visible on Premium Dark
+   ============================================================ */
+
+.dark [class*="bg-green-500/20"] { background-color: rgba(34, 197, 94, 0.12) !important; }
+.dark [class*="bg-red-500/20"] { background-color: rgba(239, 68, 68, 0.12) !important; }
+.dark [class*="bg-blue-500/20"] { background-color: rgba(59, 130, 246, 0.12) !important; }
+.dark [class*="bg-yellow-500/20"] { background-color: rgba(234, 179, 8, 0.12) !important; }
+.dark [class*="bg-purple-500/20"] { background-color: rgba(168, 85, 247, 0.12) !important; }
+.dark [class*="bg-cyan-500/20"] { background-color: rgba(6, 182, 212, 0.12) !important; }
+.dark [class*="bg-orange-500/20"] { background-color: rgba(249, 115, 22, 0.12) !important; }
+.dark [class*="bg-emerald-500/20"] { background-color: rgba(16, 185, 129, 0.12) !important; }
+.dark [class*="bg-slate-500/20"] { background-color: rgba(148, 163, 184, 0.10) !important; }
+.dark [class*="bg-indigo-500/20"] { background-color: rgba(99, 102, 241, 0.12) !important; }
+.dark [class*="bg-amber-500/20"] { background-color: rgba(245, 158, 11, 0.12) !important; }
+.dark [class*="bg-teal-500/20"] { background-color: rgba(20, 184, 166, 0.12) !important; }
+
+/* Badge borders — keep visible against premium dark */
+.dark [class*="border-green-500/"] { border-color: rgba(34, 197, 94, 0.2) !important; }
+.dark [class*="border-red-500/"] { border-color: rgba(239, 68, 68, 0.2) !important; }
+.dark [class*="border-blue-500/"] { border-color: rgba(59, 130, 246, 0.2) !important; }
+.dark [class*="border-yellow-500/"] { border-color: rgba(234, 179, 8, 0.2) !important; }
+.dark [class*="border-purple-500/"] { border-color: rgba(168, 85, 247, 0.2) !important; }
+.dark [class*="border-cyan-500/"] { border-color: rgba(6, 182, 212, 0.2) !important; }
+.dark [class*="border-orange-500/"] { border-color: rgba(249, 115, 22, 0.2) !important; }
+.dark [class*="border-emerald-500/"] { border-color: rgba(16, 185, 129, 0.2) !important; }
+
+/* ============================================================
+   SCROLLBAR — Premium Dark Scrollbar
+   ============================================================ */
+
+.dark .smooth-scroll {
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+.dark .smooth-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dark .smooth-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ============================================================
+   SIDEBAR — Premium Dark Enhancement
+   ============================================================ */
+
+/* Sidebar item hover — frosted glass */
+.dark .sidebar-item:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Active sidebar item — brand gradient on premium dark */
+.dark .sidebar-item.active {
+  background: linear-gradient(90deg, rgba(20, 115, 255, 0.12), rgba(190, 1, 255, 0.08)) !important;
+}
+
+/* Notification dot border adapts to premium dark bg */
+.dark .notification-dot::after {
+  border-color: #0a0c14 !important;
+}

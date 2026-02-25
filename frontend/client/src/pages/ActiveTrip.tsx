@@ -291,10 +291,10 @@ function CompliancePanel({ compliance }: { compliance: any }) {
 // ═══════════════════════════════════════════════════════════════
 
 function ZeunMechanicsPanel({ loadId }: { loadId: number }) {
-  const { data: zeunData } = trpc.zeunMechanics.getVehicleHealth.useQuery(
+  const { data: zeunData } = (trpc as any).zeunMechanics?.getVehicleHealth?.useQuery?.(
     { loadId },
     { refetchInterval: 30000, retry: false }
-  );
+  ) || { data: null };
 
   const items = [
     { label: "Engine", icon: Zap, status: zeunData?.engine || "nominal" },
@@ -427,7 +427,7 @@ function MissionProgressIndicator({ loadId }: { loadId: number }) {
         return (
           <div
             key={m.missionId}
-            className="rounded-2xl border border-white/[0.08] p-4"
+            className="rounded-2xl border border-slate-200 dark:border-white/[0.08] p-4"
             style={{
               background: "linear-gradient(135deg, rgba(20,115,255,0.06) 0%, rgba(190,1,255,0.06) 100%)",
               backdropFilter: "blur(20px)",
@@ -469,7 +469,7 @@ function MissionProgressIndicator({ loadId }: { loadId: number }) {
                 </div>
                 <p className="text-[11px] text-zinc-500 leading-tight mt-0.5 truncate">{m.matchReason}</p>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <div className="flex-1 h-[3px] rounded-full bg-white/[0.06] overflow-hidden">
+                  <div className="flex-1 h-[3px] rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
                     <div
                       className="h-full rounded-full"
                       style={{

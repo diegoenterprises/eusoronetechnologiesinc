@@ -9,7 +9,7 @@
 import { z } from "zod";
 import { router, auditedOperationsProcedure, auditedAdminProcedure, sensitiveData } from "../_core/trpc";
 import { getDb } from "../db";
-import { users, drivers, loads, vehicles, inspections, documents, certifications } from "../../drizzle/schema";
+import { users, drivers, loads, vehicles, inspections, documents, certifications, companies } from "../../drizzle/schema";
 import { eq, and, desc, sql, count, avg, gte, or, like } from "drizzle-orm";
 import { getHOSSummary, changeDutyStatus } from "../services/hosEngine";
 
@@ -1819,4 +1819,144 @@ export const driversRouter = router({
 
       return { success: true };
     }),
+
+  /**
+   * getDriverDashboard — Single comprehensive endpoint for the Driver Dashboard
+   * Returns: carrier/company info, HOS, current load, stats, vehicle, recent loads
+   */
+  getDriverDashboard: auditedOperationsProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const userId = ctx.user?.id || 0;
+    const companyId = ctx.user?.companyId || 0;
+
+    const empty = {
+      carrier: null as { id: number; name: string; dotNumber: string | null; mcNumber: string | null; phone: string | null; city: string | null; state: string | null; logo: string | null } | null,
+      hos: { canDrive: true, drivingRemaining: "11h 00m", onDutyRemaining: "14h 00m", cycleRemaining: "70h 00m", status: "off_duty" as string, nextBreakRequired: null as string | null, violations: [] as string[] },
+      currentLoad: null as { id: string; loadNumber: string; status: string; commodity: string; hazmatClass: string | null; origin: { name: string; city: string; state: string }; destination: { name: string; city: string; state: string }; pickupDate: string; deliveryDate: string; rate: number; miles: number; shipper: string } | null,
+      stats: { weeklyEarnings: 0, weeklyMiles: 0, weeklyLoads: 0, monthlyEarnings: 0, monthlyLoads: 0, safetyScore: 100, onTimeRate: 100, totalLoads: 0, totalMiles: 0 },
+      vehicle: null as { id: string; unitNumber: string; make: string; model: string; year: number; equipmentType: string } | null,
+      recentLoads: [] as { id: string; loadNumber: string; status: string; origin: string; destination: string; rate: number; date: string }[],
+      driver: { id: "", name: ctx.user?.name || "", cdlNumber: "", hazmatEndorsement: false, status: "active" },
+    };
+
+    if (!db) return empty;
+
+    try {
+      // 1) Carrier/Company info
+      if (companyId) {
+        const [company] = await db.select({
+          id: companies.id, name: companies.name, dotNumber: companies.dotNumber,
+          mcNumber: companies.mcNumber, phone: companies.phone,
+          city: companies.city, state: companies.state, logo: companies.logo,
+        }).from(companies).where(eq(companies.id, companyId)).limit(1);
+        if (company) empty.carrier = company;
+      }
+
+      // 2) Driver record
+      const [driverRec] = await db.select({
+        id: drivers.id, safetyScore: drivers.safetyScore, status: drivers.status,
+        licenseNumber: drivers.licenseNumber, hazmatEndorsement: drivers.hazmatEndorsement,
+        totalLoads: drivers.totalLoads, totalMiles: drivers.totalMiles,
+      }).from(drivers).where(eq(drivers.userId, userId)).limit(1);
+      if (driverRec) {
+        empty.driver = {
+          id: String(driverRec.id), name: ctx.user?.name || "",
+          cdlNumber: driverRec.licenseNumber || "", hazmatEndorsement: driverRec.hazmatEndorsement || false,
+          status: driverRec.status || "active",
+        };
+        empty.stats.safetyScore = driverRec.safetyScore || 100;
+        empty.stats.totalLoads = driverRec.totalLoads || 0;
+        empty.stats.totalMiles = parseFloat(driverRec.totalMiles || '0');
+      }
+
+      // 3) HOS from engine
+      const hosSummary = getHOSSummary(userId);
+      empty.hos = {
+        canDrive: hosSummary.canDrive,
+        drivingRemaining: hosSummary.drivingRemaining,
+        onDutyRemaining: hosSummary.onDutyRemaining,
+        cycleRemaining: hosSummary.cycleRemaining,
+        status: hosSummary.status,
+        nextBreakRequired: hosSummary.nextBreakRequired || null,
+        violations: hosSummary.violations?.map((v: any) => v.description || v) || [],
+      };
+
+      // 4) Current load
+      const [load] = await db.select().from(loads)
+        .where(and(eq(loads.driverId, userId), sql`${loads.status} NOT IN ('delivered', 'cancelled', 'draft')`))
+        .orderBy(desc(loads.createdAt)).limit(1);
+      if (load) {
+        const pickup = load.pickupLocation as any || {};
+        const delivery = load.deliveryLocation as any || {};
+        const [shipper] = await db.select({ name: users.name, metadata: users.metadata })
+          .from(users).where(eq(users.id, load.shipperId)).limit(1);
+        const shipperMeta = shipper?.metadata ? (typeof shipper.metadata === 'string' ? JSON.parse(shipper.metadata) : shipper.metadata) : {};
+        empty.currentLoad = {
+          id: String(load.id), loadNumber: load.loadNumber || '', status: load.status,
+          commodity: load.commodityName || load.cargoType || 'General',
+          hazmatClass: load.hazmatClass || null,
+          origin: { name: pickup.facility || pickup.city || 'Pickup', city: pickup.city || '', state: pickup.state || '' },
+          destination: { name: delivery.facility || delivery.city || 'Delivery', city: delivery.city || '', state: delivery.state || '' },
+          pickupDate: load.pickupDate?.toISOString() || '', deliveryDate: load.deliveryDate?.toISOString() || '',
+          rate: load.rate ? parseFloat(String(load.rate)) : 0,
+          miles: load.distance ? parseFloat(String(load.distance)) : 0,
+          shipper: shipperMeta?.registration?.companyName || shipper?.name || 'Unknown',
+        };
+      }
+
+      // 5) Weekly & monthly stats
+      const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+      const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
+      const [weekly] = await db.select({
+        count: sql<number>`count(*)`,
+        earnings: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+        miles: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)`,
+      }).from(loads).where(and(eq(loads.driverId, userId), gte(loads.createdAt, weekAgo)));
+      const [monthly] = await db.select({
+        count: sql<number>`count(*)`,
+        earnings: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+      }).from(loads).where(and(eq(loads.driverId, userId), gte(loads.createdAt, monthAgo)));
+      const [delivered] = await db.select({
+        count: sql<number>`count(*)`,
+        total: sql<number>`count(*)`,
+      }).from(loads).where(and(eq(loads.driverId, userId), eq(loads.status, 'delivered'), gte(loads.createdAt, monthAgo)));
+      const monthTotal = monthly?.count || 0;
+      const deliveredCount = delivered?.count || 0;
+      empty.stats.weeklyEarnings = weekly?.earnings || 0;
+      empty.stats.weeklyMiles = weekly?.miles || 0;
+      empty.stats.weeklyLoads = weekly?.count || 0;
+      empty.stats.monthlyEarnings = monthly?.earnings || 0;
+      empty.stats.monthlyLoads = monthly?.count || 0;
+      empty.stats.onTimeRate = monthTotal > 0 ? Math.round((deliveredCount / monthTotal) * 100) : 100;
+
+      // 6) Vehicle
+      const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.currentDriverId, userId)).limit(1);
+      if (vehicle) {
+        empty.vehicle = {
+          id: String(vehicle.id), unitNumber: vehicle.licensePlate || '',
+          make: vehicle.make || '', model: vehicle.model || '', year: vehicle.year || 0,
+          equipmentType: vehicle.vehicleType || '',
+        };
+      }
+
+      // 7) Recent loads
+      const recentRows = await db.select().from(loads).where(eq(loads.driverId, userId)).orderBy(desc(loads.createdAt)).limit(5);
+      empty.recentLoads = recentRows.map(l => {
+        const p = l.pickupLocation as any || {};
+        const d = l.deliveryLocation as any || {};
+        return {
+          id: String(l.id), loadNumber: l.loadNumber || '', status: l.status,
+          origin: p.city && p.state ? `${p.city}, ${p.state}` : 'Unknown',
+          destination: d.city && d.state ? `${d.city}, ${d.state}` : 'Unknown',
+          rate: l.rate ? parseFloat(String(l.rate)) : 0,
+          date: l.createdAt?.toISOString() || '',
+        };
+      });
+
+      return empty;
+    } catch (error) {
+      console.error('[Drivers] getDriverDashboard error:', error);
+      return empty;
+    }
+  }),
 });

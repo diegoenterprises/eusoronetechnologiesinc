@@ -15,11 +15,13 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, or, like, isNull, inArray } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { messages, users, conversations, conversationParticipants, wallets, walletTransactions } from "../../drizzle/schema";
+import { messages, messageAttachments, users, conversations, conversationParticipants, wallets, walletTransactions } from "../../drizzle/schema";
+import { lookupAndNotify } from "../services/notifications";
 import { emitMessage } from "../_core/websocket";
 import { createNotification } from "../_core/createNotification";
+import { requireAccess } from "../services/security/rbac/access-check";
 
 // Resolve ctx.user to a numeric DB user ID (same pattern as loads.ts)
 async function resolveUserId(ctxUser: any): Promise<number> {
@@ -42,6 +44,7 @@ export const messagesRouter = router({
   getConversations: protectedProcedure
     .input(z.object({ search: z.string().optional() }).optional())
     .query(async ({ ctx }) => {
+      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'CONVERSATION' }, (ctx as any).req);
       const db = await getDb();
       if (!db) return [];
 
@@ -280,6 +283,7 @@ export const messagesRouter = router({
       metadata: z.record(z.string(), z.any()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'MESSAGE' }, (ctx as any).req);
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -340,7 +344,7 @@ export const messagesRouter = router({
         } as any);
       } catch {}
 
-      // Create notifications for all OTHER participants
+      // Create notifications for all OTHER participants + email/SMS
       try {
         const otherParticipants = await db.select({ userId: conversationParticipants.userId })
           .from(conversationParticipants)
@@ -357,6 +361,8 @@ export const messagesRouter = router({
             message: input.content.substring(0, 100),
             data: { category: "system", conversationId: String(convId), senderId: String(userId), actionUrl: "/messages" },
           });
+          // Email + SMS notification for the message
+          lookupAndNotify(p.userId, { type: "new_message", senderName: sender?.name || "User", preview: input.content, conversationId: String(convId) });
         }
       } catch {}
 
@@ -874,25 +880,34 @@ export const messagesRouter = router({
 
       // Determine attachment type
       const mime = input.mimeType.toLowerCase();
-      let type = "document";
+      let type: "image" | "document" | "audio" | "video" | "location" = "document";
       if (mime.startsWith("image/")) type = "image";
       else if (mime.startsWith("audio/")) type = "audio";
       else if (mime.startsWith("video/")) type = "video";
 
-      // Insert message via raw SQL
-      const msgResult = await db.execute(
-        sql`INSERT INTO messages (conversationId, senderId, messageType, content, createdAt) VALUES (${convId}, ${userId}, ${type}, ${`📎 ${input.fileName}`}, NOW())`
-      );
-      const messageId = (msgResult as any)[0]?.insertId || 0;
+      // Insert message via Drizzle ORM (avoids raw SQL emoji encoding issues)
+      const msgResult = await db.insert(messages).values({
+        conversationId: convId,
+        senderId: userId,
+        messageType: type as any,
+        content: `[${type}] ${input.fileName}`,
+        readBy: [userId],
+      });
+      const messageId = (msgResult as any)[0]?.insertId || (msgResult as any).insertId || 0;
 
-      // Store attachment via raw SQL
-      const attResult = await db.execute(
-        sql`INSERT INTO message_attachments (messageId, type, fileName, fileUrl, fileSize, mimeType, createdAt) VALUES (${messageId}, ${type}, ${input.fileName}, ${input.fileData}, ${input.fileSize}, ${input.mimeType}, NOW())`
-      );
-      const attachmentId = (attResult as any)[0]?.insertId || 0;
+      // Store attachment via Drizzle ORM
+      const attResult = await db.insert(messageAttachments).values({
+        messageId,
+        type,
+        fileName: input.fileName,
+        fileUrl: input.fileData,
+        fileSize: input.fileSize,
+        mimeType: input.mimeType,
+      });
+      const attachmentId = (attResult as any)[0]?.insertId || (attResult as any).insertId || 0;
 
       // Update conversation timestamp
-      await db.execute(sql`UPDATE conversations SET lastMessageAt = NOW() WHERE id = ${convId}`).catch(() => {});
+      await db.update(conversations).set({ lastMessageAt: new Date() }).where(eq(conversations.id, convId)).catch(() => {});
 
       return {
         success: true,

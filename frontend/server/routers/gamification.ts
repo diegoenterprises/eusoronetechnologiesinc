@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, gte, lte, sql, isNull, or } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, adminProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { emitGamificationEvent, emitNotification } from "../_core/websocket";
 import { WS_EVENTS } from "@shared/websocket-events";
@@ -27,6 +27,42 @@ import {
 import { pickWeeklyMissions, getRewardsCatalogForRole, generateWeeklyMissions, forceRotateMissions } from "../services/missionGenerator";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
 import { canDriverAcceptLoad } from "../services/hosEngine";
+
+/**
+ * Template fallback: when DB missions are empty or table doesn't exist,
+ * generate available missions from the in-memory template pool so users
+ * always see something on The Haul.
+ */
+function templateFallback(
+  userRole: string,
+  input?: { type?: string; category?: string } | null
+) {
+  const picks = pickWeeklyMissions(userRole, 10);
+  let filtered = picks;
+  if (input?.type && input.type !== "all") {
+    filtered = filtered.filter(t => t.tp === input.type);
+  }
+  if (input?.category && input.category !== "all") {
+    filtered = filtered.filter(t => t.cat === input.category);
+  }
+  return filtered.map((t, i) => ({
+    id: -(i + 1), // negative IDs signal template-only (non-startable in DB)
+    code: `tmpl_${userRole.toLowerCase()}_${i}`,
+    name: t.name,
+    description: t.desc.replace("{t}", String(t.tv)),
+    type: t.tp,
+    category: t.cat,
+    targetType: t.tt,
+    targetValue: t.tv,
+    targetUnit: t.tu || null,
+    rewardType: t.rt,
+    rewardValue: t.rv,
+    xpReward: t.xp,
+    currentProgress: 0,
+    status: "not_started",
+    source: "template",
+  }));
+}
 
 export const gamificationRouter = router({
   create: protectedProcedure
@@ -140,6 +176,7 @@ export const gamificationRouter = router({
       return {
         userId,
         name: user?.name || ctx.user?.name || "User",
+        role: user?.role || (ctx.user as any)?.role || "DRIVER",
         level: profile?.level || 1,
         title: profile?.activeTitle || null,
         totalPoints: profile?.totalXp || 0,
@@ -603,21 +640,39 @@ export const gamificationRouter = router({
       const userId = Number(ctx.user?.id) || 0;
       const userRole = ((ctx.user as any)?.role || "DRIVER").toUpperCase();
 
-      if (!db) return { active: [], completed: [], available: [] };
+      if (!db) return { active: [], completed: [], available: templateFallback(userRole, input) };
 
       // Ensure weekly missions are seeded (idempotent)
-      try { await generateWeeklyMissions(); } catch (_) {}
+      try {
+        const seeded = await generateWeeklyMissions();
+        if (seeded > 0) console.log(`[getMissions] Seeded ${seeded} weekly missions`);
+      } catch (err) {
+        console.error("[getMissions] generateWeeklyMissions failed:", err);
+      }
 
       // Get all active missions
-      let missionList = await db.select()
-        .from(missions)
-        .where(eq(missions.isActive, true))
-        .orderBy(missions.sortOrder);
+      let missionList: any[] = [];
+      try {
+        missionList = await db.select()
+          .from(missions)
+          .where(eq(missions.isActive, true))
+          .orderBy(missions.sortOrder);
+      } catch (err) {
+        console.error("[getMissions] DB select failed:", err);
+      }
 
       // Filter by user role — only show missions applicable to this role
+      // Handle JSON column: MySQL may return string or parsed array
       missionList = missionList.filter(m => {
-        if (!m.applicableRoles || (m.applicableRoles as string[]).length === 0) return true;
-        return (m.applicableRoles as string[]).includes(userRole);
+        let roles: string[] = [];
+        if (!m.applicableRoles) return true;
+        if (typeof m.applicableRoles === 'string') {
+          try { roles = JSON.parse(m.applicableRoles); } catch { return true; }
+        } else if (Array.isArray(m.applicableRoles)) {
+          roles = m.applicableRoles;
+        }
+        if (roles.length === 0) return true;
+        return roles.includes(userRole);
       });
 
       if (input?.type && input.type !== "all") {
@@ -628,13 +683,18 @@ export const gamificationRouter = router({
       }
 
       // Get user's mission progress
-      const userProgress = await db.select()
-        .from(missionProgress)
-        .where(eq(missionProgress.userId, userId));
+      let userProgress: any[] = [];
+      try {
+        userProgress = await db.select()
+          .from(missionProgress)
+          .where(eq(missionProgress.userId, userId));
+      } catch (err) {
+        console.error("[getMissions] missionProgress select failed:", err);
+      }
 
-      const progressMap = new Map(userProgress.map(p => [p.missionId, p]));
+      const progressMap = new Map(userProgress.map((p: any) => [p.missionId, p]));
 
-      const formatMission = (m: typeof missionList[0], progress?: typeof userProgress[0]) => ({
+      const formatMission = (m: any, progress?: any) => ({
         id: m.id,
         code: m.code,
         name: m.name,
@@ -649,9 +709,9 @@ export const gamificationRouter = router({
         xpReward: m.xpReward || 0,
         currentProgress: progress?.currentProgress ? parseFloat(progress.currentProgress) : 0,
         status: progress?.status || "not_started",
-        completedAt: progress?.completedAt?.toISOString(),
-        startsAt: m.startsAt?.toISOString(),
-        endsAt: m.endsAt?.toISOString(),
+        completedAt: progress?.completedAt?.toISOString?.(),
+        startsAt: m.startsAt?.toISOString?.(),
+        endsAt: m.endsAt?.toISOString?.(),
       });
 
       const active = missionList
@@ -674,6 +734,12 @@ export const gamificationRouter = router({
           return !progress || progress.status === "not_started" || progress.status === "cancelled" || progress.status === "expired";
         })
         .map(m => formatMission(m));
+
+      // If DB returned no available missions, fall back to template-generated missions
+      if (available.length === 0 && active.length === 0) {
+        console.log(`[getMissions] No DB missions for ${userRole}, using template fallback`);
+        return { active, completed, available: templateFallback(userRole, input) };
+      }
 
       return { active, completed, available };
     }),
@@ -1280,11 +1346,11 @@ export const gamificationRouter = router({
       const userId = Number(ctx.user?.id) || 0;
       const userRole = (ctx.user as any)?.role || "DRIVER";
 
-      if (!db) return [];
+      if (!db) return templateFallback(userRole.toUpperCase()).map(m => ({ ...m, source: "esang_ai", hosCompliant: true }));
 
       try {
         // Ensure weekly missions are seeded (idempotent — skips if already created)
-        await generateWeeklyMissions();
+        try { await generateWeeklyMissions(); } catch (err) { console.error("[getAIMissions] seed failed:", err); }
 
         // Get platform stats for contextual mission descriptions
         let availableLoads = 0;
@@ -1307,10 +1373,17 @@ export const gamificationRouter = router({
           .from(missions)
           .where(sql`isActive = TRUE AND code LIKE 'wk_%' AND startsAt <= NOW() AND endsAt >= NOW()`);
 
-        // Filter to user's role
+        // Filter to user's role — handle JSON string vs parsed array
         const roleMissions = weeklyMissions.filter(m => {
-          if (!m.applicableRoles || m.applicableRoles.length === 0) return true;
-          return m.applicableRoles.includes(userRole.toUpperCase());
+          let roles: string[] = [];
+          if (!m.applicableRoles) return true;
+          if (typeof m.applicableRoles === 'string') {
+            try { roles = JSON.parse(m.applicableRoles as any); } catch { return true; }
+          } else if (Array.isArray(m.applicableRoles)) {
+            roles = m.applicableRoles;
+          }
+          if (roles.length === 0) return true;
+          return roles.includes(userRole.toUpperCase());
         });
 
         // Get user's progress on these missions
@@ -1344,7 +1417,8 @@ export const gamificationRouter = router({
         });
       } catch (err) {
         console.error("[TheHaul] getAIMissions error:", err);
-        return [];
+        // Fallback to templates so user always sees missions
+        return templateFallback(userRole.toUpperCase()).map(m => ({ ...m, source: "esang_ai", hosCompliant: true }));
       }
     }),
 

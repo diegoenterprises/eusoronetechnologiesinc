@@ -20,7 +20,8 @@ import { useParams } from "wouter";
 import {
   Shield, ShieldCheck, ShieldX, Truck, Package, MapPin,
   User, CheckCircle, XCircle, Search, Clock, AlertTriangle,
-  Fuel, KeyRound, Loader2, Navigation, Lock, Eye
+  Fuel, KeyRound, Loader2, Navigation, Lock, Eye,
+  ShieldAlert, BarChart3, Activity,
 } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -47,8 +48,8 @@ function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number)
 const GEOFENCE_RADIUS_METERS = 500;
 
 // ─── Design tokens ───────────────────────────────────────────────────
-const glass = "bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl";
-const glassInner = "bg-white/[0.03] border border-white/[0.04] rounded-xl";
+const glass = "bg-slate-50 dark:bg-white/[0.03] backdrop-blur-xl border border-slate-200 dark:border-white/[0.06] rounded-2xl";
+const glassInner = "bg-slate-50 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/[0.04] rounded-xl";
 
 interface StaffInfo {
   id: number;
@@ -105,7 +106,7 @@ export default function AccessValidation() {
 
   const [loadInput, setLoadInput] = useState("");
   const [lookupStatus, setLookupStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
-  const [loadData, setLoadData] = useState<{ load: any; driver: any; shipper: any } | null>(null);
+  const [loadData, setLoadData] = useState<{ load: any; driver: any; shipper: any; carrierSafety?: any } | null>(null);
 
   const [decision, setDecision] = useState<"pending" | "submitting">("pending");
   const [denyReason, setDenyReason] = useState("");
@@ -236,7 +237,7 @@ export default function AccessValidation() {
             <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-5">
               {phase === "locked" ? <Lock className="w-7 h-7 text-red-400" /> : <ShieldX className="w-7 h-7 text-red-400" />}
             </div>
-            <h2 className="text-lg font-semibold text-white mb-2 tracking-tight">
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-2 tracking-tight">
               {phase === "expired" ? "Link Expired" : phase === "locked" ? "Link Locked" : "Invalid Link"}
             </h2>
             <p className="text-slate-400 text-[13px] leading-relaxed">
@@ -273,7 +274,7 @@ export default function AccessValidation() {
                   value={d}
                   onChange={e => handleCodeInput(i, e.target.value)}
                   onKeyDown={e => handleCodeKeyDown(i, e)}
-                  className="w-12 h-14 text-center text-xl font-semibold bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:border-[#1473FF] focus:ring-1 focus:ring-[#1473FF]/30 focus:outline-none transition-all"
+                  className="w-12 h-14 text-center text-xl font-semibold bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-800 dark:text-white focus:border-[#1473FF] focus:ring-1 focus:ring-[#1473FF]/30 focus:outline-none transition-all"
                 />
               ))}
             </div>
@@ -287,7 +288,7 @@ export default function AccessValidation() {
             <button
               onClick={submitCode}
               disabled={codeDigits.join("").length !== 6 || codeSubmitting}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-semibold text-[14px] transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-[#1473FF]/20 active:scale-[0.98]"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-slate-800 dark:text-white font-semibold text-[14px] transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-[#1473FF]/20 active:scale-[0.98]"
             >
               {codeSubmitting ? <Loader2 className="w-4.5 h-4.5 animate-spin" /> : <KeyRound className="w-4.5 h-4.5" />}
               {codeSubmitting ? "Verifying..." : "Verify Code"}
@@ -324,7 +325,7 @@ export default function AccessValidation() {
 
             <button
               onClick={requestLocation}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-semibold text-[14px] flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-[#1473FF]/20 active:scale-[0.98] transition-all"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-slate-800 dark:text-white font-semibold text-[14px] flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-[#1473FF]/20 active:scale-[0.98] transition-all"
             >
               <MapPin className="w-4.5 h-4.5" />Enable Location
             </button>
@@ -366,11 +367,10 @@ export default function AccessValidation() {
             <p className="text-slate-400 text-[13px]">
               Load #{loadData?.load?.id} &mdash; {isApproved ? "Driver cleared for entry" : (denyReason || "Entry denied")}
             </p>
-            <p className="text-slate-600 text-[11px] mt-2">{new Date().toLocaleString()}</p>
 
             <button
               onClick={() => { setPhase("ready"); setDecision("pending"); setLoadData(null); setLoadInput(""); setLookupStatus("idle"); setDenyReason(""); }}
-              className="mt-6 px-6 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-slate-300 text-[13px] font-medium hover:bg-white/[0.08] transition-all"
+              className="mt-6 px-6 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] text-slate-300 text-[13px] font-medium hover:bg-slate-200 dark:hover:bg-white/[0.08] transition-all"
             >
               Validate Another
             </button>
@@ -388,7 +388,7 @@ export default function AccessValidation() {
       {/* Header */}
       <div className="text-center pt-4 pb-5">
         <img src="/eusotrip-logo.png" alt="EusoTrip" className="w-10 h-10 mx-auto mb-3 object-contain rounded-[10px]" />
-        <h1 className="text-[17px] font-bold text-white tracking-tight">Access Validation</h1>
+        <h1 className="text-[17px] font-bold text-slate-800 dark:text-white tracking-tight">Access Validation</h1>
         {staff && (
           <div className="mt-1.5">
             <p className="text-slate-300 text-[13px] font-medium">{staff.name}</p>
@@ -418,7 +418,7 @@ export default function AccessValidation() {
             : "Located"}
         </span>
         {expiresAt && (
-          <span className="flex items-center gap-1 text-[10px] text-slate-500 bg-white/[0.03] border border-white/[0.04] px-2.5 py-1 rounded-full">
+          <span className="flex items-center gap-1 text-[10px] text-slate-500 bg-slate-50 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/[0.04] px-2.5 py-1 rounded-full">
             <Clock className="w-3 h-3" />{new Date(expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </span>
         )}
@@ -427,7 +427,7 @@ export default function AccessValidation() {
       {/* Load Lookup Card */}
       <div className={`${glass} p-5 mb-4`}>
         <GradientBar />
-        <h2 className="text-white font-semibold text-[14px] mt-4 mb-1 flex items-center gap-2 tracking-tight">
+        <h2 className="text-slate-800 dark:text-white font-semibold text-[14px] mt-4 mb-1 flex items-center gap-2 tracking-tight">
           <Search className="w-4 h-4 text-[#1473FF]" />Look Up Arrival
         </h2>
         <p className="text-slate-500 text-[12px] mb-4">Enter the load number from the driver's paperwork or QR code</p>
@@ -439,12 +439,12 @@ export default function AccessValidation() {
             onChange={e => setLoadInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && lookupLoad()}
             placeholder="Load # (e.g. 1234)"
-            className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 text-white text-[14px] placeholder-slate-600 focus:border-[#1473FF] focus:ring-1 focus:ring-[#1473FF]/20 focus:outline-none transition-all"
+            className="flex-1 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] rounded-xl px-4 py-3 text-slate-800 dark:text-white text-[14px] placeholder-slate-600 focus:border-[#1473FF] focus:ring-1 focus:ring-[#1473FF]/20 focus:outline-none transition-all"
           />
           <button
             onClick={lookupLoad}
             disabled={lookupStatus === "loading"}
-            className="px-5 py-3 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl text-[13px] font-semibold transition-all disabled:opacity-40 hover:shadow-lg hover:shadow-[#1473FF]/20 active:scale-[0.97]"
+            className="px-5 py-3 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-slate-800 dark:text-white rounded-xl text-[13px] font-semibold transition-all disabled:opacity-40 hover:shadow-lg hover:shadow-[#1473FF]/20 active:scale-[0.97]"
           >
             {lookupStatus === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Look Up"}
           </button>
@@ -461,14 +461,14 @@ export default function AccessValidation() {
         <div className={`${glass} p-5 space-y-4`}>
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-white font-semibold text-[14px] flex items-center gap-2 tracking-tight">
+              <h2 className="text-slate-800 dark:text-white font-semibold text-[14px] flex items-center gap-2 tracking-tight">
                 <Truck className="w-4 h-4 text-[#1473FF]" />Load #{loadData.load.id}
               </h2>
               <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium border ${
                 loadData.load.status === "in_transit" ? "bg-blue-500/8 text-blue-400 border-blue-400/10" :
                 loadData.load.status === "at_pickup" ? "bg-amber-500/8 text-amber-400 border-amber-400/10" :
                 loadData.load.status === "delivered" ? "bg-emerald-500/8 text-emerald-400 border-emerald-400/10" :
-                "bg-white/[0.03] text-slate-400 border-white/[0.04]"
+                "bg-slate-50 dark:bg-white/[0.03] text-slate-400 border-slate-200/60 dark:border-white/[0.04]"
               }`}>
                 {loadData.load.status?.replace(/_/g, " ")}
               </span>
@@ -476,28 +476,28 @@ export default function AccessValidation() {
             <div className="grid grid-cols-2 gap-2.5 text-[12px]">
               <div className={`${glassInner} p-3`}>
                 <p className="text-slate-500 mb-1 flex items-center gap-1 text-[11px]"><MapPin className="w-3 h-3" />Origin</p>
-                <p className="text-white font-medium">{loadData.load.pickupCity}, {loadData.load.pickupState}</p>
+                <p className="text-slate-800 dark:text-white font-medium">{loadData.load.pickupLocation?.city || "—"}, {loadData.load.pickupLocation?.state || ""}</p>
               </div>
               <div className={`${glassInner} p-3`}>
                 <p className="text-slate-500 mb-1 flex items-center gap-1 text-[11px]"><MapPin className="w-3 h-3" />Destination</p>
-                <p className="text-white font-medium">{loadData.load.deliveryCity}, {loadData.load.deliveryState}</p>
+                <p className="text-slate-800 dark:text-white font-medium">{loadData.load.deliveryLocation?.city || "—"}, {loadData.load.deliveryLocation?.state || ""}</p>
               </div>
               <div className={`${glassInner} p-3`}>
                 <p className="text-slate-500 mb-1 flex items-center gap-1 text-[11px]"><Package className="w-3 h-3" />Cargo</p>
-                <p className="text-white font-medium">{loadData.load.cargoType || "N/A"} &mdash; {loadData.load.equipmentType || "N/A"}</p>
+                <p className="text-slate-800 dark:text-white font-medium">{loadData.load.cargoType || "N/A"}</p>
               </div>
               <div className={`${glassInner} p-3`}>
                 <p className="text-slate-500 mb-1 text-[11px]">Weight</p>
-                <p className="text-white font-medium">{loadData.load.weight ? `${Number(loadData.load.weight).toLocaleString()} lbs` : "N/A"}</p>
+                <p className="text-slate-800 dark:text-white font-medium">{loadData.load.weight ? `${Number(loadData.load.weight).toLocaleString()} lbs` : "N/A"}</p>
               </div>
             </div>
-            {loadData.load.referenceNumber && <p className="text-slate-600 text-[11px] mt-2">Ref: {loadData.load.referenceNumber}</p>}
+            {loadData.load.loadNumber && <p className="text-slate-600 text-[11px] mt-2">Load# {loadData.load.loadNumber}</p>}
           </div>
 
           {loadData.driver && (
             <div className={`${glassInner} p-3`}>
               <p className="text-slate-500 text-[11px] mb-1 flex items-center gap-1"><User className="w-3 h-3" />Driver</p>
-              <p className="text-white font-medium text-[13px]">{loadData.driver.name}</p>
+              <p className="text-slate-800 dark:text-white font-medium text-[13px]">{loadData.driver.name}</p>
               {loadData.driver.email && <p className="text-slate-500 text-[11px]">{loadData.driver.email}</p>}
             </div>
           )}
@@ -505,7 +505,127 @@ export default function AccessValidation() {
           {loadData.shipper && (
             <div className={`${glassInner} p-3`}>
               <p className="text-slate-500 text-[11px] mb-1">Shipper</p>
-              <p className="text-white font-medium text-[13px]">{loadData.shipper.name}</p>
+              <p className="text-slate-800 dark:text-white font-medium text-[13px]">{loadData.shipper.name}</p>
+            </div>
+          )}
+
+          {/* ═══ FMCSA CARRIER SAFETY INTELLIGENCE ═══ */}
+          {loadData.carrierSafety && (
+            <div className={`rounded-xl border ${
+              loadData.carrierSafety.riskLevel === "high" ? "border-red-500/30 bg-red-500/5" :
+              loadData.carrierSafety.riskLevel === "elevated" ? "border-amber-500/30 bg-amber-500/5" :
+              loadData.carrierSafety.riskLevel === "low" ? "border-emerald-500/20 bg-emerald-500/5" :
+              "border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.03]"
+            } p-4`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                    loadData.carrierSafety.riskLevel === "high" ? "bg-red-500/15" :
+                    loadData.carrierSafety.riskLevel === "elevated" ? "bg-amber-500/15" :
+                    loadData.carrierSafety.riskLevel === "low" ? "bg-emerald-500/15" :
+                    "bg-[#1473FF]/10"
+                  }`}>
+                    {loadData.carrierSafety.riskLevel === "high" ? <ShieldAlert className="w-4 h-4 text-red-400" /> :
+                     loadData.carrierSafety.riskLevel === "elevated" ? <ShieldAlert className="w-4 h-4 text-amber-400" /> :
+                     loadData.carrierSafety.riskLevel === "low" ? <ShieldCheck className="w-4 h-4 text-emerald-400" /> :
+                     <Shield className="w-4 h-4 text-[#1473FF]" />}
+                  </div>
+                  <div>
+                    <p className="text-[12px] font-semibold text-slate-800 dark:text-white">Carrier Safety</p>
+                    <p className="text-[10px] text-slate-500">FMCSA SaferSys</p>
+                  </div>
+                </div>
+                <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${
+                  loadData.carrierSafety.riskLevel === "high" ? "text-red-400 bg-red-500/10 border border-red-500/20" :
+                  loadData.carrierSafety.riskLevel === "elevated" ? "text-amber-400 bg-amber-500/10 border border-amber-500/20" :
+                  loadData.carrierSafety.riskLevel === "low" ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20" :
+                  loadData.carrierSafety.riskLevel === "moderate" ? "text-blue-400 bg-blue-500/10 border border-blue-500/20" :
+                  "text-slate-400 bg-slate-100 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.06]"
+                }`}>
+                  {loadData.carrierSafety.riskLevel === "unknown" ? "No Data" : `${loadData.carrierSafety.riskLevel} risk`}
+                </span>
+              </div>
+
+              {/* Carrier identity */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className={`${glassInner} p-2.5`}>
+                  <p className="text-[10px] text-slate-500 mb-0.5">Carrier</p>
+                  <p className="text-[12px] text-slate-800 dark:text-white font-medium truncate">{loadData.carrierSafety.carrierName || "—"}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className={`${glassInner} p-2.5`}>
+                    <p className="text-[10px] text-slate-500 mb-0.5">DOT#</p>
+                    <p className="text-[12px] text-slate-800 dark:text-white font-medium tabular-nums">{loadData.carrierSafety.dotNumber || "—"}</p>
+                  </div>
+                  <div className={`${glassInner} p-2.5`}>
+                    <p className="text-[10px] text-slate-500 mb-0.5">MC#</p>
+                    <p className="text-[12px] text-slate-800 dark:text-white font-medium tabular-nums">{loadData.carrierSafety.mcNumber || "—"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* BASICs scores — the core of FMCSA safety intelligence */}
+              {loadData.carrierSafety.basics && (
+                <div>
+                  <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold mb-2">BASICs Scores</p>
+                  <div className="space-y-1.5">
+                    {[
+                      { label: "Unsafe Driving", value: loadData.carrierSafety.basics.unsafeDriving, threshold: 65 },
+                      { label: "HOS Compliance", value: loadData.carrierSafety.basics.hoursOfService, threshold: 65 },
+                      { label: "Driver Fitness", value: loadData.carrierSafety.basics.driverFitness, threshold: 80 },
+                      { label: "Substances/Alcohol", value: loadData.carrierSafety.basics.controlledSubstances, threshold: 80 },
+                      { label: "Vehicle Maint.", value: loadData.carrierSafety.basics.vehicleMaintenance, threshold: 80 },
+                      { label: "Crash Indicator", value: loadData.carrierSafety.basics.crashIndicator, threshold: 65 },
+                      { label: "Hazmat", value: loadData.carrierSafety.basics.hazmatCompliance, threshold: 80 },
+                    ].filter(b => b.value !== null).map(b => (
+                      <div key={b.label} className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-500 w-28 shrink-0">{b.label}</span>
+                        <div className="flex-1 h-1.5 bg-slate-200 dark:bg-white/[0.06] rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ${
+                              (b.value || 0) >= b.threshold ? "bg-gradient-to-r from-red-500 to-red-400" :
+                              (b.value || 0) >= b.threshold * 0.7 ? "bg-gradient-to-r from-amber-500 to-amber-400" :
+                              "bg-gradient-to-r from-emerald-500 to-emerald-400"
+                            }`}
+                            style={{ width: `${Math.min(b.value || 0, 100)}%` }}
+                          />
+                        </div>
+                        <span className={`text-[10px] font-medium tabular-nums w-8 text-right ${
+                          (b.value || 0) >= b.threshold ? "text-red-400" :
+                          (b.value || 0) >= b.threshold * 0.7 ? "text-amber-400" :
+                          "text-emerald-400"
+                        }`}>
+                          {b.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Safety rating */}
+              {loadData.carrierSafety.safetyRating && (
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="text-[10px] text-slate-500">Safety Rating:</span>
+                  <span className={`text-[11px] font-semibold ${
+                    loadData.carrierSafety.safetyRating === "Satisfactory" ? "text-emerald-400" :
+                    loadData.carrierSafety.safetyRating === "Conditional" ? "text-amber-400" :
+                    loadData.carrierSafety.safetyRating === "Unsatisfactory" ? "text-red-400" :
+                    "text-slate-300"
+                  }`}>{loadData.carrierSafety.safetyRating}</span>
+                </div>
+              )}
+
+              {/* High risk warning */}
+              {loadData.carrierSafety.riskLevel === "high" && (
+                <div className="mt-3 bg-red-500/10 border border-red-500/20 rounded-lg p-2.5 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-red-400 text-[11px] font-semibold">High-Risk Carrier</p>
+                    <p className="text-red-400/60 text-[10px]">One or more BASICs scores exceed FMCSA intervention thresholds. Exercise elevated caution.</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -526,7 +646,7 @@ export default function AccessValidation() {
                 <>
                   <button
                     onClick={() => submitDecision("approved")}
-                    className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[16px] flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20"
+                    className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-800 dark:text-white font-bold text-[16px] flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20"
                   >
                     <ShieldCheck className="w-5 h-5" />Approve Access
                   </button>
@@ -536,12 +656,12 @@ export default function AccessValidation() {
                       value={denyReason}
                       onChange={e => setDenyReason(e.target.value)}
                       placeholder="Deny reason (required)..."
-                      className="w-full bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2.5 text-white text-[13px] placeholder-slate-600 focus:border-red-500/50 focus:outline-none mb-2 transition-all"
+                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] rounded-xl px-4 py-2.5 text-slate-800 dark:text-white text-[13px] placeholder-slate-600 focus:border-red-500/50 focus:outline-none mb-2 transition-all"
                     />
                     <button
                       onClick={() => submitDecision("denied")}
                       disabled={!denyReason.trim()}
-                      className="w-full py-3 rounded-xl bg-red-500/80 hover:bg-red-500 text-white font-medium text-[14px] flex items-center justify-center gap-2 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                      className="w-full py-3 rounded-xl bg-red-500/80 hover:bg-red-500 text-slate-800 dark:text-white font-medium text-[14px] flex items-center justify-center gap-2 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                       <ShieldX className="w-4.5 h-4.5" />Deny Access
                     </button>

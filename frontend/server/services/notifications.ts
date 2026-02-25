@@ -641,6 +641,481 @@ export async function notifyAccountApproved(params: {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+//  MESSAGE NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * New message received (email + SMS for offline users)
+ */
+export async function notifyNewMessage(params: {
+  email: string;
+  phone?: string;
+  name: string;
+  senderName: string;
+  preview: string;
+  conversationId?: string;
+}) {
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `New message from ${params.senderName} - EusoTrip`,
+    html: emailWrap("New Message", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`<strong style="color:#E2E8F0">${params.senderName}</strong> sent you a message:`)}
+      <div style="background:rgba(20,115,255,0.06);border-left:3px solid #1473FF;padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0">
+        <p style="margin:0;color:#94A3B8;font-size:14px;font-style:italic">"${params.preview.slice(0, 300)}${params.preview.length > 300 ? "..." : ""}"</p>
+      </div>
+      ${btn(`${APP_URL}/messages${params.conversationId ? `?conv=${params.conversationId}` : ""}`, "Open Conversation")}
+    `),
+  }));
+
+  if (params.phone) {
+    safe(() => sendSms({
+      to: params.phone!,
+      message: `EusoTrip: ${params.senderName}: "${params.preview.slice(0, 100)}${params.preview.length > 100 ? "..." : ""}" — Reply at ${APP_URL}/messages`,
+    }));
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  AGREEMENT NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Agreement sent for signature
+ */
+export async function notifyAgreementSentForSignature(params: {
+  email: string;
+  phone?: string;
+  name: string;
+  agreementNumber: string;
+  agreementType?: string;
+  senderName?: string;
+}) {
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `Agreement Ready for Signature - ${params.agreementNumber}`,
+    html: emailWrap("Agreement Ready for Signature", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`${params.senderName ? `<strong style="color:#E2E8F0">${params.senderName}</strong> has sent` : "An"} agreement <strong style="color:#1473FF">${params.agreementNumber}</strong> for your review and signature.`)}
+      ${params.agreementType ? infoTable(infoRow("Type", params.agreementType)) : ""}
+      ${btn(`${APP_URL}/agreements`, "Review & Sign")}
+      ${muted("This agreement uses Gradient Ink™ digital signatures, compliant with the ESIGN Act (15 U.S.C. ch. 96).")}
+    `),
+  }));
+
+  if (params.phone) {
+    safe(() => sendSms({
+      to: params.phone!,
+      message: `EusoTrip: Agreement ${params.agreementNumber} is ready for your signature. Review at ${APP_URL}/agreements`,
+    }));
+  }
+}
+
+/**
+ * Agreement signed by one party (notify the other)
+ */
+export async function notifyAgreementSigned(params: {
+  email: string;
+  phone?: string;
+  name: string;
+  agreementNumber: string;
+  signerName: string;
+}) {
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `Agreement ${params.agreementNumber} Signed - EusoTrip`,
+    html: emailWrap("Agreement Signed", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`<strong style="color:#E2E8F0">${params.signerName}</strong> has signed agreement <strong style="color:#1473FF">${params.agreementNumber}</strong>.`)}
+      ${p("The agreement is now awaiting your signature to become fully executed.")}
+      ${btn(`${APP_URL}/agreements`, "Sign Agreement")}
+    `),
+  }));
+
+  if (params.phone) {
+    safe(() => sendSms({
+      to: params.phone!,
+      message: `EusoTrip: ${params.signerName} signed agreement ${params.agreementNumber}. Your signature is needed: ${APP_URL}/agreements`,
+    }));
+  }
+}
+
+/**
+ * Agreement fully executed (both parties signed)
+ */
+export async function notifyAgreementExecuted(params: {
+  email: string;
+  phone?: string;
+  name: string;
+  agreementNumber: string;
+}) {
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `Agreement ${params.agreementNumber} Fully Executed - EusoTrip`,
+    html: emailWrap("Agreement Fully Executed", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Agreement <strong style="color:#1473FF">${params.agreementNumber}</strong> has been fully executed. Both parties have signed.`)}
+      ${p("The agreement is now active and has been filed to your Documents Center.")}
+      ${btn(`${APP_URL}/agreements`, "View Agreement")}
+      ${muted("Signed with Gradient Ink™ — ESIGN Act compliant.")}
+    `, "#10b981"),
+  }));
+
+  if (params.phone) {
+    safe(() => sendSms({
+      to: params.phone!,
+      message: `EusoTrip: Agreement ${params.agreementNumber} is fully executed and active. View at ${APP_URL}/agreements`,
+    }));
+  }
+}
+
+/**
+ * Agreement terminated
+ */
+export async function notifyAgreementTerminated(params: {
+  email: string;
+  phone?: string;
+  name: string;
+  agreementNumber: string;
+  reason?: string;
+  terminatedBy?: string;
+}) {
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `Agreement ${params.agreementNumber} Terminated - EusoTrip`,
+    html: emailWrap("Agreement Terminated", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Agreement <strong style="color:#E2E8F0">${params.agreementNumber}</strong> has been terminated${params.terminatedBy ? ` by <strong>${params.terminatedBy}</strong>` : ""}.`)}
+      ${params.reason ? infoTable(infoRow("Reason", params.reason)) : ""}
+      ${btn(`${APP_URL}/agreements`, "View Details")}
+    `, "#ef4444"),
+  }));
+
+  if (params.phone) {
+    safe(() => sendSms({
+      to: params.phone!,
+      message: `EusoTrip: Agreement ${params.agreementNumber} has been terminated${params.reason ? `: ${params.reason.slice(0, 60)}` : ""}. Details: ${APP_URL}/agreements`,
+    }));
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  LOAD-SPECIFIC NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Load delivered confirmation
+ */
+export async function notifyLoadDelivered(params: {
+  email: string;
+  phone?: string;
+  name: string;
+  loadNumber: string;
+  origin?: string;
+  destination?: string;
+}) {
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `Load ${params.loadNumber} Delivered - EusoTrip`,
+    html: emailWrap("Load Delivered", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Load <strong style="color:#1473FF">${params.loadNumber}</strong> has been successfully delivered.`)}
+      ${params.origin && params.destination ? infoTable(infoRow("Origin", params.origin) + infoRow("Destination", params.destination)) : ""}
+      ${btn(`${APP_URL}/loads`, "View Load Details")}
+      ${muted("Please review the delivery and submit any required documentation (BOL, POD).")}
+    `, "#10b981"),
+  }));
+
+  if (params.phone) {
+    safe(() => sendSms({
+      to: params.phone!,
+      message: `EusoTrip: Load ${params.loadNumber} delivered${params.destination ? ` to ${params.destination}` : ""}. Review at ${APP_URL}/loads`,
+    }));
+  }
+}
+
+/**
+ * Load cancelled
+ */
+export async function notifyLoadCancelled(params: {
+  email: string;
+  phone?: string;
+  name: string;
+  loadNumber: string;
+  reason?: string;
+  cancelledBy?: string;
+}) {
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `Load ${params.loadNumber} Cancelled - EusoTrip`,
+    html: emailWrap("Load Cancelled", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Load <strong style="color:#E2E8F0">${params.loadNumber}</strong> has been cancelled${params.cancelledBy ? ` by <strong>${params.cancelledBy}</strong>` : ""}.`)}
+      ${params.reason ? infoTable(infoRow("Reason", params.reason)) : ""}
+      ${btn(`${APP_URL}/loads`, "View Loads")}
+    `, "#ef4444"),
+  }));
+
+  if (params.phone) {
+    safe(() => sendSms({
+      to: params.phone!,
+      message: `EusoTrip: Load ${params.loadNumber} has been cancelled${params.reason ? `: ${params.reason.slice(0, 60)}` : ""}`,
+    }));
+  }
+}
+
+/**
+ * Load posted to marketplace (confirmation to shipper — replaces inline template)
+ */
+export async function notifyLoadPosted(params: {
+  email: string;
+  phone?: string;
+  name: string;
+  loadNumber: string;
+  loadId: string | number;
+  origin?: string;
+  destination?: string;
+  product?: string;
+}) {
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `Load ${params.loadNumber} Posted - EusoTrip`,
+    html: emailWrap("Load Posted to Marketplace", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Your load <strong style="color:#1473FF">${params.loadNumber}</strong> has been posted to the EusoTrip marketplace. Catalysts can now view and bid on your load.`)}
+      ${infoTable(
+        (params.origin ? infoRow("Origin", params.origin) : "") +
+        (params.destination ? infoRow("Destination", params.destination) : "") +
+        (params.product ? infoRow("Product", params.product) : "")
+      )}
+      ${btn(`${APP_URL}/loads/${params.loadId}`, "View Load")}
+    `),
+  }));
+
+  if (params.phone) {
+    safe(() => sendSms({
+      to: params.phone!,
+      message: `EusoTrip: Load ${params.loadNumber} posted${params.origin && params.destination ? ` (${params.origin} → ${params.destination})` : ""}. Bids incoming!`,
+    }));
+  }
+}
+
+/**
+ * Terminal load originated — notify Terminal Manager when a load originates from their terminal
+ */
+function notifyTerminalLoadOriginated(params: {
+  email: string;
+  phone?: string;
+  name: string;
+  loadNumber: string;
+  loadId: string | number;
+  origin?: string;
+  destination?: string;
+  product?: string;
+  shipperName?: string;
+  terminalName?: string;
+}) {
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `New Load Originated from ${params.terminalName || "Your Terminal"} — ${params.loadNumber}`,
+    html: emailWrap("Load From Your Terminal", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`<strong style="color:#E2E8F0">${params.shipperName || "A shipper"}</strong> posted a new load originating from <strong style="color:#1473FF">${params.terminalName || "your terminal"}</strong>.`)}
+      ${infoTable(
+        infoRow("Load #", params.loadNumber) +
+        (params.origin ? infoRow("Origin", params.origin) : "") +
+        (params.destination ? infoRow("Destination", params.destination) : "") +
+        (params.product ? infoRow("Product", params.product) : "")
+      )}
+      ${p("Review the load details and prepare for scheduling:")}
+      ${btn(`${APP_URL}/loads/${params.loadId}`, "View Load")}
+    `),
+  }));
+
+  if (params.phone) {
+    safe(() => sendSms({
+      to: params.phone!,
+      message: `EusoTrip: ${params.shipperName || "A shipper"} posted load ${params.loadNumber} from ${params.terminalName || "your terminal"}${params.destination ? ` → ${params.destination}` : ""}. Details: ${APP_URL}/loads/${params.loadId}`,
+    }));
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  CENTRALIZED DISPATCHER — lookupAndNotify()
+//  Resolves user contact info from DB and fires the right notification.
+//  Any router can call this with just a userId + event type.
+// ═══════════════════════════════════════════════════════════════════════
+
+interface UserContactInfo {
+  name: string;
+  email: string;
+  phone?: string;
+}
+
+/**
+ * Resolve user contact info from DB by numeric ID
+ */
+async function resolveUserContact(userId: number): Promise<UserContactInfo | null> {
+  try {
+    const { getDb } = await import("../db");
+    const { users } = await import("../../drizzle/schema");
+    const { eq } = await import("drizzle-orm");
+    const db = await getDb();
+    if (!db || !userId) return null;
+    const [u] = await db.select({ name: users.name, email: users.email, phone: users.phone })
+      .from(users).where(eq(users.id, userId)).limit(1);
+    if (!u?.email) return null;
+    return { name: u.name || "User", email: u.email, phone: u.phone || undefined };
+  } catch { return null; }
+}
+
+export type NotifyEvent =
+  | { type: "load_assigned"; loadNumber: string; origin?: string; destination?: string }
+  | { type: "load_status_changed"; loadNumber: string; oldStatus: string; newStatus: string }
+  | { type: "load_delivered"; loadNumber: string; origin?: string; destination?: string }
+  | { type: "load_cancelled"; loadNumber: string; reason?: string; cancelledBy?: string }
+  | { type: "load_posted"; loadNumber: string; loadId: string | number; origin?: string; destination?: string; product?: string }
+  | { type: "bid_received"; loadNumber: string; bidAmount: number; bidderName: string }
+  | { type: "bid_accepted"; loadNumber: string; bidAmount: number }
+  | { type: "bid_rejected"; loadNumber: string }
+  | { type: "payment_received"; amount: number; fromName: string; reference?: string }
+  | { type: "payment_sent"; amount: number; toName: string; reference?: string }
+  | { type: "account_approved" }
+  | { type: "new_message"; senderName: string; preview: string; conversationId?: string }
+  | { type: "agreement_sent_for_signature"; agreementNumber: string; agreementType?: string; senderName?: string }
+  | { type: "agreement_signed"; agreementNumber: string; signerName: string }
+  | { type: "agreement_executed"; agreementNumber: string }
+  | { type: "agreement_terminated"; agreementNumber: string; reason?: string; terminatedBy?: string }
+  | { type: "terminal_load_originated"; loadNumber: string; loadId: string | number; origin?: string; destination?: string; product?: string; shipperName?: string; terminalName?: string };
+
+/**
+ * Persist a notification to the DB so it shows in the Notification Center.
+ * Maps each NotifyEvent to a title, message, DB type enum, and category.
+ */
+async function persistNotification(userId: number, event: NotifyEvent): Promise<void> {
+  try {
+    const { getDb } = await import("../db");
+    const { notifications } = await import("../../drizzle/schema");
+    const db = await getDb();
+    if (!db || !userId) return;
+
+    const mapping = mapEventToNotification(event);
+    await db.insert(notifications).values({
+      userId,
+      type: mapping.dbType as any,
+      title: mapping.title,
+      message: mapping.message,
+      data: JSON.stringify({ eventType: event.type, category: mapping.category, actionUrl: mapping.actionUrl, ...mapping.extra }),
+      isRead: false,
+    });
+  } catch (e) {
+    console.error("[persistNotification]", e);
+  }
+}
+
+function mapEventToNotification(event: NotifyEvent): {
+  dbType: string; category: string; title: string; message: string; actionUrl?: string; extra?: Record<string, any>;
+} {
+  switch (event.type) {
+    case "load_posted":
+      return { dbType: "load_update", category: "loads", title: `Load ${event.loadNumber} Posted`, message: `Your load has been posted to the marketplace${event.origin && event.destination ? ` (${event.origin} → ${event.destination})` : ""}.`, actionUrl: `/loads/${event.loadId}`, extra: { loadNumber: event.loadNumber } };
+    case "load_assigned":
+      return { dbType: "load_update", category: "loads", title: `Load ${event.loadNumber} Assigned`, message: `You have been assigned to load ${event.loadNumber}${event.origin && event.destination ? ` (${event.origin} → ${event.destination})` : ""}.`, extra: { loadNumber: event.loadNumber } };
+    case "load_status_changed":
+      return { dbType: "load_update", category: "loads", title: `Load ${event.loadNumber} — ${formatStatus(event.newStatus)}`, message: `Status changed from ${formatStatus(event.oldStatus)} to ${formatStatus(event.newStatus)}.`, extra: { loadNumber: event.loadNumber, oldStatus: event.oldStatus, newStatus: event.newStatus } };
+    case "load_delivered":
+      return { dbType: "load_update", category: "loads", title: `Load ${event.loadNumber} Delivered`, message: `Load has been delivered${event.destination ? ` to ${event.destination}` : ""}.`, extra: { loadNumber: event.loadNumber } };
+    case "load_cancelled":
+      return { dbType: "load_update", category: "loads", title: `Load ${event.loadNumber} Cancelled`, message: `Load has been cancelled${event.reason ? `: ${event.reason}` : ""}.`, extra: { loadNumber: event.loadNumber } };
+    case "bid_received":
+      return { dbType: "bid_received", category: "bids", title: `New Bid on ${event.loadNumber}`, message: `${event.bidderName} bid $${event.bidAmount.toLocaleString()} on your load.`, extra: { loadNumber: event.loadNumber, bidAmount: event.bidAmount } };
+    case "bid_accepted":
+      return { dbType: "bid_received", category: "bids", title: `Bid Accepted — ${event.loadNumber}`, message: `Your bid of $${event.bidAmount.toLocaleString()} has been accepted!`, extra: { loadNumber: event.loadNumber, bidAmount: event.bidAmount } };
+    case "bid_rejected":
+      return { dbType: "bid_received", category: "bids", title: `Bid Rejected — ${event.loadNumber}`, message: `Your bid on load ${event.loadNumber} was not selected.`, extra: { loadNumber: event.loadNumber } };
+    case "payment_received":
+      return { dbType: "payment_received", category: "payments", title: `Payment Received — $${event.amount.toLocaleString()}`, message: `${event.fromName} sent you a payment${event.reference ? ` (ref: ${event.reference})` : ""}.`, extra: { amount: event.amount } };
+    case "payment_sent":
+      return { dbType: "payment_received", category: "payments", title: `Payment Sent — $${event.amount.toLocaleString()}`, message: `You sent a payment to ${event.toName}${event.reference ? ` (ref: ${event.reference})` : ""}.`, extra: { amount: event.amount } };
+    case "account_approved":
+      return { dbType: "system", category: "account", title: "Account Approved", message: "Your EusoTrip account has been approved. You now have full access to all platform features." };
+    case "new_message":
+      return { dbType: "message", category: "messages", title: `New Message from ${event.senderName}`, message: event.preview || "You have a new message.", actionUrl: event.conversationId ? `/messages?conversation=${event.conversationId}` : "/messages", extra: { senderName: event.senderName } };
+    case "agreement_sent_for_signature":
+      return { dbType: "system", category: "agreements", title: `Agreement ${event.agreementNumber} — Signature Requested`, message: `${event.senderName || "A party"} sent agreement ${event.agreementNumber} for your signature.`, actionUrl: "/agreements", extra: { agreementNumber: event.agreementNumber } };
+    case "agreement_signed":
+      return { dbType: "system", category: "agreements", title: `Agreement ${event.agreementNumber} — Signed`, message: `${event.signerName} has signed agreement ${event.agreementNumber}.`, actionUrl: "/agreements", extra: { agreementNumber: event.agreementNumber } };
+    case "agreement_executed":
+      return { dbType: "system", category: "agreements", title: `Agreement ${event.agreementNumber} — Fully Executed`, message: `Agreement ${event.agreementNumber} has been fully executed by both parties.`, actionUrl: "/agreements", extra: { agreementNumber: event.agreementNumber } };
+    case "agreement_terminated":
+      return { dbType: "system", category: "agreements", title: `Agreement ${event.agreementNumber} — Terminated`, message: `Agreement ${event.agreementNumber} has been terminated${event.reason ? `: ${event.reason}` : ""}.`, actionUrl: "/agreements", extra: { agreementNumber: event.agreementNumber } };
+    case "terminal_load_originated":
+      return { dbType: "load_update", category: "loads", title: `New Load from Your Terminal`, message: `${event.shipperName || "A shipper"} posted load ${event.loadNumber} originating from ${event.terminalName || "your terminal"}${event.origin && event.destination ? ` (${event.origin} → ${event.destination})` : ""}.`, actionUrl: `/loads/${event.loadId}`, extra: { loadNumber: event.loadNumber, terminalName: event.terminalName } };
+    default:
+      return { dbType: "system", category: "system", title: "Notification", message: "You have a new notification." };
+  }
+}
+
+/**
+ * CENTRALIZED NOTIFICATION DISPATCHER
+ * Resolves user contact info from DB, then fires the branded email + SMS
+ * AND persists the notification to the DB for the Notification Center.
+ * Fire-and-forget (non-blocking). Swallows errors gracefully.
+ *
+ * Usage from any router:
+ *   import { lookupAndNotify } from "../services/notifications";
+ *   lookupAndNotify(userId, { type: "bid_accepted", loadNumber: "LD-123", bidAmount: 5000 });
+ */
+export function lookupAndNotify(userId: number, event: NotifyEvent): void {
+  if (!userId) return;
+
+  // 1. Persist to DB (for Notification Center) — fire and forget
+  safe(() => persistNotification(userId, event));
+
+  // 2. Send email + SMS — fire and forget
+  resolveUserContact(userId).then(contact => {
+    if (!contact) return;
+    const base = { email: contact.email, phone: contact.phone, name: contact.name };
+    switch (event.type) {
+      case "load_assigned":
+        return notifyLoadAssigned({ ...base, loadNumber: event.loadNumber, origin: event.origin, destination: event.destination });
+      case "load_status_changed":
+        return notifyLoadStatusChanged({ ...base, loadNumber: event.loadNumber, oldStatus: event.oldStatus, newStatus: event.newStatus });
+      case "load_delivered":
+        return notifyLoadDelivered({ ...base, loadNumber: event.loadNumber, origin: event.origin, destination: event.destination });
+      case "load_cancelled":
+        return notifyLoadCancelled({ ...base, loadNumber: event.loadNumber, reason: event.reason, cancelledBy: event.cancelledBy });
+      case "load_posted":
+        return notifyLoadPosted({ ...base, loadNumber: event.loadNumber, loadId: event.loadId, origin: event.origin, destination: event.destination, product: event.product });
+      case "bid_received":
+        return notifyBidReceived({ ...base, loadNumber: event.loadNumber, bidAmount: event.bidAmount, bidderName: event.bidderName });
+      case "bid_accepted":
+        return notifyBidAccepted({ ...base, loadNumber: event.loadNumber, bidAmount: event.bidAmount });
+      case "bid_rejected":
+        return notifyBidRejected({ ...base, loadNumber: event.loadNumber });
+      case "payment_received":
+        return notifyPaymentReceived({ ...base, amount: event.amount, fromName: event.fromName, reference: event.reference });
+      case "payment_sent":
+        return notifyPaymentSent({ ...base, amount: event.amount, toName: event.toName, reference: event.reference });
+      case "account_approved":
+        return notifyAccountApproved(base);
+      case "new_message":
+        return notifyNewMessage({ ...base, senderName: event.senderName, preview: event.preview, conversationId: event.conversationId });
+      case "agreement_sent_for_signature":
+        return notifyAgreementSentForSignature({ ...base, agreementNumber: event.agreementNumber, agreementType: event.agreementType, senderName: event.senderName });
+      case "agreement_signed":
+        return notifyAgreementSigned({ ...base, agreementNumber: event.agreementNumber, signerName: event.signerName });
+      case "agreement_executed":
+        return notifyAgreementExecuted({ ...base, agreementNumber: event.agreementNumber });
+      case "agreement_terminated":
+        return notifyAgreementTerminated({ ...base, agreementNumber: event.agreementNumber, reason: event.reason, terminatedBy: event.terminatedBy });
+      case "terminal_load_originated":
+        return notifyTerminalLoadOriginated({ ...base, loadNumber: event.loadNumber, loadId: event.loadId, origin: event.origin, destination: event.destination, product: event.product, shipperName: event.shipperName, terminalName: event.terminalName });
+    }
+  }).catch(e => console.error("[lookupAndNotify]", e));
+}
+
 // ─── Exported Branded Email Builders ─────────────────────────────────
 
 /**

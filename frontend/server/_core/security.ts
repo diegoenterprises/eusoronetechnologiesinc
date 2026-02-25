@@ -21,7 +21,7 @@ const DEFAULT_CONFIG: SecurityConfig = {
   enableXSS: true,
   enableNoSniff: true,
   enableFrameGuard: true,
-  hstsMaxAge: 31536000, // 1 year
+  hstsMaxAge: 63072000, // 2 years (per Security Architecture spec)
   cspDirectives: {
     'default-src': ["'self'"],
     'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://js.stripe.com', 'https://maps.googleapis.com'],
@@ -75,9 +75,9 @@ export function securityHeaders(config: Partial<SecurityConfig> = {}): (req: Req
       res.setHeader('X-Content-Type-Options', 'nosniff');
     }
 
-    // Clickjacking protection
+    // Clickjacking protection — DENY per Security Architecture spec
     if (finalConfig.enableFrameGuard) {
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      res.setHeader('X-Frame-Options', 'DENY');
     }
 
     // Additional security headers
@@ -133,7 +133,7 @@ export function corsConfig(): {
       ? allowedOrigins.length > 0 ? allowedOrigins : false
       : true,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'OPTIONS'], // tRPC only uses GET (queries) and POST (mutations)
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
     exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
     maxAge: 86400, // 24 hours

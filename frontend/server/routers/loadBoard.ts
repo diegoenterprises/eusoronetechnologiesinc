@@ -15,7 +15,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { isolatedApprovedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, companies, vehicles, bids, drivers, users, loadBids, bidAutoAcceptRules, negotiations, negotiationMessages, laneContracts, agreements } from "../../drizzle/schema";
 import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
@@ -682,9 +682,12 @@ export const loadBoardRouter = router({
               rate: l.rate ? parseFloat(String(l.rate)) : 0,
               distance: l.distance ? parseFloat(String(l.distance)) : 0,
               weight: l.weight ? parseFloat(String(l.weight)) : 0,
-              equipmentType: l.cargoType || '',
+              weightUnit: 'lbs',
+              cargoType: l.cargoType || '',
+              equipmentType: (si as any)?.equipmentType || null,
               hazmat: !!l.hazmatClass,
               hazmatClass: l.hazmatClass || null,
+              commodityName: l.commodityName || '',
               unNumber: (si as any)?.unNumber || null,
               packingGroup: (si as any)?.packingGroup || null,
               properShippingName: (si as any)?.properShippingName || null,
@@ -765,22 +768,40 @@ export const loadBoardRouter = router({
         const classReqs = HAZMAT_CLASS_REQUIREMENTS[input.hazmatClass];
         if (!classReqs) console.warn(`[LoadBoard] Unknown hazmat class: ${input.hazmatClass}`);
       }
-      const hazmatMeta = isHazmat ? JSON.stringify({
+
+      // ── Derive cargoType from equipment type (never lose trailer info) ──
+      const EQUIP_TO_CARGO: Record<string, "general" | "hazmat" | "refrigerated" | "oversized" | "liquid" | "gas" | "chemicals" | "petroleum"> = {
+        tanker: "petroleum", gas_tank: "gas", cryogenic: "gas",
+        food_grade_tank: "liquid", water_tank: "liquid",
+        reefer: "refrigerated",
+        flatbed: "general", step_deck: "oversized", lowboy: "oversized", double_drop: "oversized",
+        dry_van: "general", hazmat_van: "general", conestoga: "general", curtainside: "general", intermodal: "general",
+        bulk_hopper: "general", dump_trailer: "general",
+        auto_carrier: "general", livestock: "general",
+      };
+      let derivedCargo = EQUIP_TO_CARGO[input.equipmentType] || "general";
+      // Hazmat + chemicals override
+      if (isHazmat && derivedCargo === "general") derivedCargo = "hazmat";
+      if (isHazmat && input.hazmatClass?.startsWith("8")) derivedCargo = "chemicals";
+
+      // ── Store everything in specialInstructions JSON (including equipmentType) ──
+      const meta = JSON.stringify({
+        equipmentType: input.equipmentType,
         unNumber: input.unNumber || null,
         packingGroup: input.packingGroup || null,
         properShippingName: input.properShippingName || null,
-      }) : null;
+      });
       const loadNumber = `LB-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
       const [result] = await db.insert(loads).values({
         shipperId: profile.userId,
         loadNumber,
         status: "posted",
-        cargoType: isHazmat ? "hazmat" as const : "general" as const,
+        cargoType: derivedCargo,
         hazmatClass: isHazmat ? (input.hazmatClass || "9") : null,
         commodityName: input.commodity,
         weight: String(input.weight),
         rate: String(input.rate),
-        specialInstructions: hazmatMeta,
+        specialInstructions: meta,
         pickupLocation: { address: input.origin.address, city: input.origin.city, state: input.origin.state, zipCode: input.origin.zip, lat: 0, lng: 0 },
         deliveryLocation: { address: input.destination.address, city: input.destination.city, state: input.destination.state, zipCode: input.destination.zip, lat: 0, lng: 0 },
         pickupDate: new Date(input.pickupDate),
@@ -953,6 +974,7 @@ export const loadBoardRouter = router({
         return rows.map(l => {
           const pickup = l.pickupLocation as any || {};
           const delivery = l.deliveryLocation as any || {};
+          const si = typeof l.specialInstructions === 'string' ? (() => { try { return JSON.parse(l.specialInstructions); } catch { return {}; } })() : (l.specialInstructions || {});
           return {
             id: String(l.id),
             loadNumber: l.loadNumber,
@@ -967,7 +989,7 @@ export const loadBoardRouter = router({
             weightUnit: 'lbs',
             distanceUnit: 'mi',
             cargoType: l.cargoType || '',
-            equipmentType: l.cargoType || '',
+            equipmentType: (si as any)?.equipmentType || null,
             hazmatClass: l.hazmatClass || null,
             commodityName: l.commodityName || '',
             specialInstructions: l.specialInstructions || '',
@@ -1288,6 +1310,12 @@ export const loadBoardRouter = router({
           // Only include if score is positive
           if (score <= 0) continue;
 
+          // Extract equipmentType from specialInstructions
+          let siMatch: any = {};
+          const rawSIMatch = load.specialInstructions || "";
+          if (typeof rawSIMatch === 'string') { try { siMatch = JSON.parse(rawSIMatch); } catch { /* text */ } }
+          const matchEquip = siMatch?.equipmentType || null;
+
           matches.push({
             loadId: String(load.id),
             loadNumber: load.loadNumber || `LOAD-${load.id}`,
@@ -1301,7 +1329,8 @@ export const loadBoardRouter = router({
             weight: loadWeight,
             hazmat: isHazmat,
             hazmatClass: load.hazmatClass || null,
-            equipmentType: load.cargoType || '',
+            equipmentType: matchEquip,
+            cargoType: load.cargoType || '',
             postedAt: load.createdAt?.toISOString() || '',
           });
         }
@@ -1611,7 +1640,8 @@ export const loadBoardRouter = router({
               destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : '',
               rate: l.rate ? parseFloat(String(l.rate)) : 0,
               weight: l.weight ? parseFloat(String(l.weight)) : 0,
-              equipmentType: l.cargoType || '',
+              equipmentType: (si as any)?.equipmentType || null,
+              cargoType: l.cargoType || '',
               requiredEndorsement: classReqs?.endorsement || 'H',
               requiredTrailers: classReqs?.trailerTypes || [],
               requiredInsurance: classReqs?.insuranceMinimum || 1000000,
@@ -2598,6 +2628,12 @@ export const loadBoardRouter = router({
 
           if (score <= 0) continue;
 
+          // Extract equipmentType from specialInstructions
+          let siAdv: any = {};
+          const rawSIAdv = load.specialInstructions || "";
+          if (typeof rawSIAdv === 'string') { try { siAdv = JSON.parse(rawSIAdv); } catch { /* text */ } }
+          const advEquip = siAdv?.equipmentType || null;
+
           matches.push({
             loadId: String(load.id),
             loadNumber: load.loadNumber || `LOAD-${load.id}`,
@@ -2611,7 +2647,8 @@ export const loadBoardRouter = router({
             weight: loadWeight,
             hazmat: isHazmat,
             hazmatClass: load.hazmatClass || null,
-            equipmentType: load.cargoType || '',
+            equipmentType: advEquip,
+            cargoType: load.cargoType || '',
             laneContracted,
             contractedRate,
             msaActive,

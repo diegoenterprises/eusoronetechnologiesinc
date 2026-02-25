@@ -594,14 +594,20 @@ export const brokersRouter = router({
           const delivery = l.deliveryLocation as any || {};
           const origin = pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown';
           const destination = delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown';
+          // Extract equipmentType from specialInstructions
+          let siBrk: any = {};
+          const rawSIBrk = l.specialInstructions || "";
+          if (typeof rawSIBrk === 'string') { try { siBrk = JSON.parse(rawSIBrk); } catch { /* text */ } }
+          const brkEquip = siBrk?.equipmentType || null;
           return {
             id: `load_${l.id}`,
             loadNumber: l.loadNumber,
             shipper: shipper?.name || 'Unknown',
             origin,
             destination,
-            equipmentType: l.cargoType || 'general',
-            commodity: l.commodityName || l.cargoType || '',
+            equipmentType: brkEquip,
+            cargoType: l.cargoType || 'general',
+            commodity: l.commodityName || '',
             weight: l.weight ? parseFloat(String(l.weight)) : 0,
             rate: l.rate ? parseFloat(String(l.rate)) : 0,
             pickupDate: l.pickupDate?.toISOString().split('T')[0] || '',

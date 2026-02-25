@@ -100,7 +100,7 @@ export default function HazmatRouteRestrictions({
 
   if (!data) return null;
 
-  const status = STATUS_CONFIG[data.routeStatus] || STATUS_CONFIG.CLEAR;
+  const status = (STATUS_CONFIG as any)[data.routeStatus] || STATUS_CONFIG.CLEAR;
   const StatusIcon = status.icon;
 
   const grouped = {

@@ -313,11 +313,15 @@ class MLEngine {
 
         if (rpm > 0) { totalRPM += rpm; rpmCount++; }
 
-        // Transit time estimate
+        // Transit time estimate — sanity-checked against distance
         let transitDays = 0;
         if (load.pickupDate && load.deliveryDate) {
           transitDays = (new Date(load.deliveryDate).getTime() - new Date(load.pickupDate).getTime()) / (1000 * 60 * 60 * 24);
-          if (transitDays > 0 && transitDays < 30) { totalTransit += transitDays; transitCount++; }
+          // Only learn from realistic transit times: positive, < 30 days,
+          // AND reasonable for the distance (max 1 day per 200 miles + 1 day buffer)
+          const maxReasonableDays = dist > 0 ? Math.max(1, dist / 200) + 1 : 5;
+          if (transitDays > 0 && transitDays < 30 && transitDays <= maxReasonableDays) { totalTransit += transitDays; transitCount++; }
+          else { transitDays = 0; } // discard unrealistic data point
         }
 
         let ls = laneMap.get(lane);
@@ -333,14 +337,21 @@ class MLEngine {
         }
 
         ls.sampleCount++;
-        ls.recentRates.push(rate);
-        if (ls.recentRates.length > 100) ls.recentRates.shift();
-        ls.avgRate = ls.recentRates.reduce((a, b) => a + b, 0) / ls.recentRates.length;
-        ls.avgDistance = ((ls.avgDistance * (ls.sampleCount - 1)) + dist) / ls.sampleCount;
-        ls.avgWeight = ((ls.avgWeight * (ls.sampleCount - 1)) + wt) / ls.sampleCount;
+        // Only learn rates from loads with real rate and distance data
+        if (rate > 0) {
+          ls.recentRates.push(rate);
+          if (ls.recentRates.length > 100) ls.recentRates.shift();
+          ls.avgRate = ls.recentRates.reduce((a, b) => a + b, 0) / ls.recentRates.length;
+        }
+        if (dist > 0) ls.avgDistance = ((ls.avgDistance * (ls.sampleCount - 1)) + dist) / ls.sampleCount;
+        if (wt > 0) ls.avgWeight = ((ls.avgWeight * (ls.sampleCount - 1)) + wt) / ls.sampleCount;
         if (dist > 0 && rate > 0) ls.avgRatePerMile = ls.avgRate / Math.max(ls.avgDistance, 1);
-        if (transitDays > 0 && transitDays < 30) {
-          ls.avgTransitDays = ((ls.avgTransitDays * (transitCount > 1 ? transitCount - 1 : 0)) + transitDays) / transitCount;
+        // Per-lane transit average (not global counter)
+        if (transitDays > 0) {
+          const prevLaneTransitCount = ls.avgTransitDays > 0 ? Math.max(1, Math.round(ls.sampleCount * 0.5)) : 0;
+          ls.avgTransitDays = prevLaneTransitCount > 0
+            ? (ls.avgTransitDays * prevLaneTransitCount + transitDays) / (prevLaneTransitCount + 1)
+            : transitDays;
         }
         if (load.cargoType) ls.cargoTypes[load.cargoType] = (ls.cargoTypes[load.cargoType] || 0) + 1;
 
@@ -384,7 +395,14 @@ class MLEngine {
         const delivered = carrierLoads.filter(l => l.status === "delivered");
         const onTime = delivered.filter(l => {
           if (!l.deliveryDate || !l.pickupDate) return true; // assume on time if no dates
-          return true; // simplified — would check against estimated delivery
+          const scheduled = new Date(l.deliveryDate).getTime();
+          // Estimate actual: for delivered loads, updatedAt is roughly actual delivery
+          // We consider on-time if the actual isn't more than 1 day past scheduled
+          const actual = l.pickupDate ? new Date(l.pickupDate).getTime() : scheduled;
+          const dist = l.distance ? parseFloat(String(l.distance)) : 0;
+          const expectedTransitMs = Math.max(1, dist / 400) * 24 * 60 * 60 * 1000; // ~400mi/day
+          const estimatedArrival = actual + expectedTransitMs;
+          return estimatedArrival <= scheduled + (24 * 60 * 60 * 1000); // 1-day grace
         });
 
         // Lane experience
@@ -486,14 +504,26 @@ class MLEngine {
     if (urgencyMul !== 1.0) factors.push({ name: "Urgency", impact: Math.round((urgencyMul - 1) * 100), direction: urgencyMul > 1 ? "up" : "down" });
 
     const stdDev = ls?.stdDevRate || spotRate * 0.15;
-    const marketCondition = seasonal > 1.08 ? "SELLER" : seasonal < 0.97 ? "BUYER" : "BALANCED";
+    // Market condition: blend seasonal + lane-level trend + demand signals
+    let marketSignal = seasonal;
+    if (ls && ls.recentRates.length >= 5) {
+      const recent3 = ls.recentRates.slice(-3);
+      const older3 = ls.recentRates.slice(-6, -3);
+      if (older3.length > 0) {
+        const recentAvg = recent3.reduce((a, b) => a + b, 0) / recent3.length;
+        const olderAvg = older3.reduce((a, b) => a + b, 0) / older3.length;
+        const trendRatio = olderAvg > 0 ? recentAvg / olderAvg : 1.0;
+        marketSignal = marketSignal * 0.5 + trendRatio * 0.5; // blend seasonal + trend
+      }
+    }
+    const marketCondition = marketSignal > 1.06 ? "SELLER" : marketSignal < 0.95 ? "BUYER" : "BALANCED";
 
     return {
       predictedSpotRate: spotRate,
       predictedContractRate: contractRate,
       confidence: Math.round(confidence),
       priceRange: {
-        low: Math.round((spotRate - stdDev) * 100) / 100,
+        low: Math.max(0, Math.round((spotRate - stdDev) * 100) / 100),
         high: Math.round((spotRate + stdDev) * 100) / 100,
       },
       factors,
@@ -598,24 +628,35 @@ class MLEngine {
   }): ETAPrediction {
     const lane = `${p.originState.toUpperCase()}-${p.destState.toUpperCase()}`;
     const ls = this.state.laneStats.get(lane);
+    const dist = Math.max(p.distance, 1);
 
-    // Base: industry avg 47 mph effective speed (includes stops, fuel, rest)
-    const baseHours = p.distance / 47;
+    // Base: effective speed 47 mph (includes HOS breaks, fuel, rest)
+    // For short hauls (<300 mi): same-day, add 2h for loading/unloading
+    // For long hauls: 500 mi/day (11h driving at 47 mph per HOS)
+    const driveHours = dist / 47;
+    const hosRestDays = Math.floor(driveHours / 11); // mandatory 10h rest per 11h driving
+    const baseHours = driveHours + (hosRestDays * 10) + 2; // +2h for load/unload
 
-    // Learn from historical lane data
-    let learnedHours = baseHours;
+    // Blend with historical lane data (weighted, never replace distance-based anchor)
+    let blendedHours = baseHours;
     let confidence = 40;
     if (ls && ls.avgTransitDays > 0) {
-      learnedHours = ls.avgTransitDays * 24;
-      confidence = Math.min(90, 45 + ls.sampleCount * 2);
+      const historicalHours = ls.avgTransitDays * 24;
+      // Sanity check: historical data must be within 3x of distance-based estimate
+      const maxReasonable = baseHours * 3;
+      const sanitizedHistorical = Math.min(historicalHours, maxReasonable);
+      // Weight: more samples = more trust in historical data (max 40% blend)
+      const histWeight = Math.min(0.4, ls.sampleCount * 0.04);
+      blendedHours = baseHours * (1 - histWeight) + sanitizedHistorical * histWeight;
+      confidence = Math.min(85, 45 + ls.sampleCount * 2);
     }
 
     // Adjustments
     const factors: ETAPrediction["factors"] = [];
-    let adjustedHours = learnedHours;
+    let adjustedHours = blendedHours;
 
     // Equipment speed factor
-    const eqFactor = p.equipmentType === "tanker" ? 1.15 : p.equipmentType === "oversized" ? 1.30 : 1.0;
+    const eqFactor = p.equipmentType === "tanker" ? 1.10 : p.equipmentType === "oversized" ? 1.25 : 1.0;
     if (eqFactor !== 1.0) {
       adjustedHours *= eqFactor;
       factors.push({ name: "Equipment type", impact: `+${Math.round((eqFactor - 1) * 100)}% transit time` });
@@ -623,29 +664,34 @@ class MLEngine {
 
     // Hazmat requires more stops
     if (p.cargoType === "hazmat" || p.cargoType === "chemicals" || p.cargoType === "gas") {
-      adjustedHours *= 1.10;
-      factors.push({ name: "Hazmat restrictions", impact: "+10% for route restrictions and inspections" });
+      adjustedHours *= 1.08;
+      factors.push({ name: "Hazmat restrictions", impact: "+8% for route restrictions and inspections" });
     }
 
     // Day of week (pickups on Friday = weekend delay)
     if (p.pickupDate) {
       const dow = new Date(p.pickupDate).getDay();
       if (dow === 5 || dow === 6) {
-        adjustedHours += 24;
-        factors.push({ name: "Weekend pickup", impact: "+24h for weekend scheduling" });
+        adjustedHours += 12; // half-day delay, not full 24h
+        factors.push({ name: "Weekend pickup", impact: "+12h for weekend scheduling" });
       }
     }
 
     // Month — winter adds time
     const month = new Date().getMonth() + 1;
     if (month >= 11 || month <= 2) {
-      adjustedHours *= 1.08;
-      factors.push({ name: "Winter conditions", impact: "+8% for weather delays" });
+      adjustedHours *= 1.05;
+      factors.push({ name: "Winter conditions", impact: "+5% for weather delays" });
     }
+
+    // Hard cap: no transit should exceed distance/250 days (250 mi/day worst case)
+    const maxDays = Math.max(1, dist / 250);
+    const maxHours = maxDays * 24;
+    if (adjustedHours > maxHours) adjustedHours = maxHours;
 
     const bestCase = adjustedHours * 0.85;
     const worstCase = adjustedHours * 1.35;
-    const riskLevel = adjustedHours > 72 ? "HIGH" : adjustedHours > 36 ? "MODERATE" : "LOW";
+    const riskLevel = adjustedHours > 48 ? "HIGH" : adjustedHours > 24 ? "MODERATE" : "LOW";
 
     return {
       estimatedHours: Math.round(adjustedHours),
@@ -672,16 +718,24 @@ class MLEngine {
 
     if (lane !== "ALL") {
       const ls = this.state.laneStats.get(lane);
-      if (ls) {
+      if (ls && ls.weeklyVolumes.length > 0) {
         currentVol = ls.weeklyVolumes[0] || 0;
 
-        // Exponential smoothing forecast
+        // Exponential smoothing: process oldest→newest (reverse array), then project forward
         const alpha = 0.3;
-        let forecast = currentVol;
+        const reversed = [...ls.weeklyVolumes].reverse(); // oldest first
+        let smoothed = reversed[0] || 0;
+        for (let i = 1; i < reversed.length; i++) {
+          smoothed = alpha * reversed[i] + (1 - alpha) * smoothed;
+        }
+        // smoothed now reflects the trend up to current week
+        // Project forward 4 weeks with momentum
+        const momentum = reversed.length >= 2
+          ? (reversed[reversed.length - 1] - reversed[reversed.length - 2]) * 0.5
+          : 0;
         for (let w = 0; w < 4; w++) {
-          const actual = ls.weeklyVolumes[w] || forecast;
-          forecast = alpha * actual + (1 - alpha) * forecast;
-          weekForecasts.push(Math.round(forecast));
+          smoothed = smoothed + momentum * 0.5; // dampen momentum each week
+          weekForecasts.push(Math.max(0, Math.round(smoothed)));
         }
       }
     }
@@ -700,22 +754,29 @@ class MLEngine {
       topLanes.push({ lane: lk, volume: vol, trend });
     }
 
-    const overall = currentVol > 0 && weekForecasts[0]
-      ? weekForecasts[0] > currentVol * 1.05 ? "RISING"
-        : weekForecasts[0] < currentVol * 0.95 ? "DECLINING" : "STABLE"
+    // Trend: compare forecast to current
+    const nextWeek = weekForecasts[0] || currentVol;
+    const overall = currentVol > 0
+      ? nextWeek > currentVol * 1.08 ? "RISING"
+        : nextWeek < currentVol * 0.92 ? "DECLINING" : "STABLE"
       : "STABLE";
 
     const month = new Date().getMonth() + 1;
     const seasonal = this.state.seasonalFactors[month] || 1.0;
 
+    // Confidence based on actual data depth
+    const lsForConf = lane !== "ALL" ? this.state.laneStats.get(lane) : null;
+    const dataWeeks = lsForConf?.weeklyVolumes?.length || 0;
+    const confidence = dataWeeks >= 8 ? 75 : dataWeeks >= 4 ? 55 : dataWeeks >= 2 ? 40 : 25;
+
     return {
       lane,
       currentWeekVolume: currentVol,
-      nextWeekForecast: weekForecasts[0] || currentVol,
+      nextWeekForecast: nextWeek,
       next4WeekForecast: weekForecasts.length > 0 ? weekForecasts : [0, 0, 0, 0],
       trend: overall,
       seasonalFactor: seasonal,
-      confidence: this.state.totalLoadsAnalyzed > 50 ? 70 : 35,
+      confidence,
       topLanes,
     };
   }
@@ -766,6 +827,32 @@ class MLEngine {
           score: 65,
           suggestedAction: "Verify the rate. Extremely low rates may signal quality or reliability issues.",
         });
+      }
+
+      // Extremely high rate check (even without lane data)
+      if (rpm > this.state.globalAvgRatePerMile * 3.0) {
+        alerts.push({
+          type: "RATE", severity: "WARNING",
+          message: `Rate per mile ($${rpm.toFixed(2)}) is 3x+ above platform average ($${this.state.globalAvgRatePerMile.toFixed(2)}/mi)`,
+          details: "May indicate premium service, data entry error, or inflated pricing",
+          score: 60,
+          suggestedAction: "Confirm rate accuracy. Compare with similar loads on this lane.",
+        });
+      }
+
+      // Global fallback when no lane data exists
+      if (!ls && this.state.globalAvgRatePerMile > 0) {
+        const globalExpected = this.state.globalAvgRatePerMile * p.distance;
+        const deviation = Math.abs(p.rate - globalExpected) / globalExpected;
+        if (deviation > 0.5) {
+          alerts.push({
+            type: "RATE", severity: "INFO",
+            message: `No lane history for ${lane}. Rate $${p.rate} is ${Math.round(deviation * 100)}% from platform average ($${globalExpected.toFixed(0)})`,
+            details: "Limited data — comparison is against platform-wide average",
+            score: Math.min(50, Math.round(deviation * 40)),
+            suggestedAction: "First load on this lane. Rate comparison is approximate.",
+          });
+        }
       }
     }
 
@@ -825,28 +912,57 @@ class MLEngine {
 
     // Demand multiplier from forecast
     const forecast = this.forecastDemand({ originState: p.originState, destState: p.destState });
-    const demandMul = forecast.trend === "RISING" ? 1.05 : forecast.trend === "DECLINING" ? 0.95 : 1.0;
+    const demandMul = forecast.trend === "RISING" ? 1.08 : forecast.trend === "DECLINING" ? 0.93 : 1.0;
 
-    const recommended = Math.round(prediction.predictedSpotRate * demandMul * 100) / 100;
+    // Time-to-pickup urgency: loads picking up soon command premium
+    let timePremium = 1.0;
+    const explanationParts: string[] = [];
+    if (p.pickupDate) {
+      const daysUntilPickup = (new Date(p.pickupDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+      if (daysUntilPickup <= 1) { timePremium = 1.15; explanationParts.push("Same-day/next-day pickup: +15% urgency premium"); }
+      else if (daysUntilPickup <= 3) { timePremium = 1.08; explanationParts.push("3-day pickup window: +8% premium"); }
+      else if (daysUntilPickup > 14) { timePremium = 0.95; explanationParts.push("14+ days out: -5% advance booking discount"); }
+    }
+
+    // Day-of-week factor: Friday/Monday pickups are busier
+    const dow = p.pickupDate ? new Date(p.pickupDate).getDay() : new Date().getDay();
+    const dowFactor = (dow === 1 || dow === 5) ? 1.03 : (dow === 0 || dow === 6) ? 0.95 : 1.0;
+    if (dowFactor !== 1.0) explanationParts.push(dowFactor > 1 ? "Mon/Fri pickup premium" : "Weekend discount");
+
+    // Lane supply/demand imbalance from volume data
+    const lane = `${p.originState.toUpperCase()}-${p.destState.toUpperCase()}`;
+    const reverseLane = `${p.destState.toUpperCase()}-${p.originState.toUpperCase()}`;
+    const outLS = this.state.laneStats.get(lane);
+    const inLS = this.state.laneStats.get(reverseLane);
+    let imbalanceFactor = 1.0;
+    if (outLS && inLS && outLS.sampleCount > 3 && inLS.sampleCount > 3) {
+      const ratio = outLS.sampleCount / inLS.sampleCount;
+      if (ratio > 2.0) { imbalanceFactor = 1.06; explanationParts.push("High outbound demand on this lane"); }
+      else if (ratio < 0.5) { imbalanceFactor = 0.94; explanationParts.push("Low outbound demand — backhaul opportunity"); }
+    }
+
     const marketAvg = prediction.predictedSpotRate;
-    const savingsVsMarket = prediction.predictedContractRate - recommended;
+    const dynamicMultiplier = demandMul * timePremium * dowFactor * imbalanceFactor;
+    const recommended = Math.round(marketAvg * dynamicMultiplier * 100) / 100;
+    const savingsVsMarket = Math.round((marketAvg - recommended) * 100) / 100; // positive = below market
 
     let position: DynamicPrice["competitivePosition"] = "AT_MARKET";
-    if (recommended < marketAvg * 0.95) position = "BELOW_MARKET";
-    if (recommended > marketAvg * 1.05) position = "ABOVE_MARKET";
+    if (recommended < marketAvg * 0.97) position = "BELOW_MARKET";
+    if (recommended > marketAvg * 1.03) position = "ABOVE_MARKET";
+
+    explanationParts.unshift(`Based on ${prediction.basedOnSamples} historical loads`);
+    explanationParts.push(`Market is ${prediction.marketCondition.toLowerCase()}`);
+    if (forecast.trend !== "STABLE") explanationParts.push(`Demand ${forecast.trend.toLowerCase()} on this lane`);
 
     return {
       recommendedRate: recommended,
       ratePerMile: Math.round((recommended / Math.max(p.distance, 1)) * 100) / 100,
       urgencyMultiplier: urgencyMul,
-      demandMultiplier: demandMul,
+      demandMultiplier: Math.round(dynamicMultiplier * 100) / 100,
       seasonalMultiplier: seasonal,
       competitivePosition: position,
-      savingsVsMarket: Math.round(savingsVsMarket * 100) / 100,
-      explanation: `Based on ${prediction.basedOnSamples} historical loads. `
-        + `Market is ${prediction.marketCondition.toLowerCase()}. `
-        + (forecast.trend !== "STABLE" ? `Demand is ${forecast.trend.toLowerCase()} on this lane. ` : "")
-        + (urgencyMul > 1 ? `${Math.round((urgencyMul - 1) * 100)}% urgency premium applied. ` : ""),
+      savingsVsMarket,
+      explanation: explanationParts.join(". ") + ".",
     };
   }
 
@@ -1068,14 +1184,14 @@ class MLEngine {
 
     // Historical win rate on this lane
     let historicalWinRate = 0;
-    let totalBidsOnLane = 0;
+    let carriersOnLane = 0;
     for (const [, cp] of Array.from(this.state.carrierProfiles)) {
-      if (cp.lanes[lane]) {
-        totalBidsOnLane += cp.bidCount;
+      if (cp.lanes[lane] && cp.lanes[lane] > 0) {
         historicalWinRate += cp.winRate;
+        carriersOnLane++;
       }
     }
-    historicalWinRate = totalBidsOnLane > 0 ? historicalWinRate / this.state.carrierProfiles.size : 0;
+    historicalWinRate = carriersOnLane > 0 ? historicalWinRate / carriersOnLane : 0;
 
     return {
       suggestedBid: suggested,

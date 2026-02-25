@@ -6,8 +6,9 @@
  */
 
 import { z } from "zod";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { requireAccess } from "../services/security/rbac/access-check";
 import { drivers, loads, users } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { emitDispatchEvent, emitDriverStatusChange, emitLoadStatusChange, emitNotification } from "../_core/websocket";
@@ -242,6 +243,9 @@ export const dispatchRouter = router({
         const boardLoads = rows.map(l => {
           const p = l.pickupLocation as any || {};
           const d = l.deliveryLocation as any || {};
+          let siDisp: any = {};
+          const rawSIDisp = l.specialInstructions || "";
+          if (typeof rawSIDisp === 'string') { try { siDisp = JSON.parse(rawSIDisp); } catch { /* text */ } }
           return {
             id: String(l.id), loadNumber: l.loadNumber, status: l.status,
             origin: p.city && p.state ? `${p.city}, ${p.state}` : 'Unknown',
@@ -250,8 +254,9 @@ export const dispatchRouter = router({
             deliveryDate: l.deliveryDate?.toISOString() || '',
             driverId: l.driverId ? String(l.driverId) : null,
             rate: l.rate ? parseFloat(String(l.rate)) : 0,
-            commodity: l.commodityName || l.cargoType || '',
-            equipmentType: l.cargoType || '',
+            commodity: l.commodityName || '',
+            equipmentType: siDisp?.equipmentType || null,
+            cargoType: l.cargoType || '',
             hazmatClass: l.hazmatClass || null,
             weight: l.weight ? parseFloat(String(l.weight)) : 0,
           };
@@ -363,6 +368,7 @@ export const dispatchRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'DISPATCH', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'LOAD' }, (ctx as any).req);
       const db = await getDb();
       if (!db) throw new Error('Database unavailable');
 
@@ -546,7 +552,7 @@ export const dispatchRouter = router({
             driverId: drivers.id, userId: drivers.userId,
             driverName: users.name, driverStatus: drivers.status,
             loadId: loads.id, loadNumber: loads.loadNumber, loadStatus: loads.status,
-            cargoType: loads.cargoType,
+            cargoType: loads.cargoType, specialInstructions: loads.specialInstructions,
             pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
           })
           .from(drivers)
@@ -567,7 +573,7 @@ export const dispatchRouter = router({
             status: d.driverStatus || 'off_duty',
             loadNumber: d.loadNumber || null,
             loadStatus: d.loadStatus || null,
-            equipmentType: d.cargoType || null,
+            equipmentType: (() => { try { return JSON.parse(d.specialInstructions || '{}')?.equipmentType || null; } catch { return null; } })(),
             cargoType: d.cargoType || null,
             lastKnownLocation: null, // TODO: integrate with GPS/ELD telemetry table
             origin: pickup.city ? `${pickup.city}, ${pickup.state || ''}` : null,

@@ -25,6 +25,7 @@ export interface MenuItem {
   description?: string; // Tooltip description
   requiresAuth?: boolean; // Default true
   requiresApproval?: boolean; // If true, item is locked until account is approved
+  children?: MenuItem[]; // Sub-menu items (collapsible)
 }
 
 export type UserRole = 
@@ -81,6 +82,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Terminal rack access, partnerships & supply chain"
     },
     { 
+      icon: "Handshake", 
+      label: "My Partners", 
+      path: "/partners", 
+      badge: 0,
+      description: "Carriers, brokers & terminals in your supply chain"
+    },
+    { 
       icon: "Database", 
       label: "Facility Intelligence", 
       path: "/facility-search", 
@@ -127,7 +135,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Documents", 
       path: "/documents", 
       badge: 0,
-      description: "BOL, invoices, contracts, receipts & signatures"
+      description: "Issue BOLs for drivers, invoices, contracts & signatures"
+    },
+    {
+      icon: "Scale",
+      label: "Rate Sheet",
+      path: "/rate-sheet",
+      badge: 0,
+      description: "Per-barrel rates, surcharges & reconciliation statements"
     },
     { 
       icon: "Wallet", 
@@ -222,7 +237,16 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Fleet", 
       path: "/fleet", 
       badge: 0,
-      description: "Manage vehicles"
+      description: "Manage vehicles",
+      children: [
+        {
+          icon: "ShieldCheck",
+          label: "Insurance Verification",
+          path: "/insurance/verification",
+          badge: 0,
+          description: "AI document scanning, FMCSA cross-verification & compliance"
+        },
+      ],
     },
     { 
       icon: "MapPin", 
@@ -230,6 +254,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/fleet-tracking", 
       badge: 0,
       description: "Real-time fleet GPS tracking"
+    },
+    { 
+      icon: "Handshake", 
+      label: "My Partners", 
+      path: "/partners", 
+      badge: 0,
+      description: "Shippers, brokers, drivers & terminals in your network"
     },
     { 
       icon: "Database", 
@@ -264,7 +295,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Documents", 
       path: "/documents", 
       badge: 0,
-      description: "Compliance documents, permits & certifications"
+      description: "Run tickets, BOLs received, compliance docs & certifications"
+    },
+    {
+      icon: "Scale",
+      label: "Rate Sheet",
+      path: "/rate-sheet",
+      badge: 0,
+      description: "Per-barrel rates, surcharges & reconciliation statements"
     },
     { 
       icon: "BarChart3", 
@@ -390,6 +428,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Shipper accounts"
     },
     { 
+      icon: "Handshake", 
+      label: "My Partners", 
+      path: "/partners", 
+      badge: 0,
+      description: "Shippers, carriers & terminals you connect"
+    },
+    { 
       icon: "Shield", 
       label: "Authority Verify", 
       path: "/authority", 
@@ -409,6 +454,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/documents", 
       badge: 0,
       description: "Authority docs, surety bond & compliance"
+    },
+    {
+      icon: "Scale",
+      label: "Rate Sheet",
+      path: "/rate-sheet",
+      badge: 0,
+      description: "Per-barrel rates, surcharges & reconciliation statements"
     },
     { 
       icon: "BarChart3", 
@@ -487,6 +539,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Daily overview, schedule & availability"
     },
     { 
+      icon: "Clock", 
+      label: "Hours of Service", 
+      path: "/hos", 
+      badge: 0,
+      description: "HOS compliance, driving & on-duty clocks, violations"
+    },
+    { 
       icon: "Search", 
       label: "Find Loads", 
       path: "/marketplace", 
@@ -519,14 +578,37 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Vehicle", 
       path: "/vehicle", 
       badge: 0,
-      description: "Vehicle info, hazmat safety, spill & fire response"
+      description: "Vehicle info, hazmat safety, spill & fire response",
+      children: [
+        {
+          icon: "Wrench",
+          label: "ZEUN Mechanics",
+          path: "/zeun-breakdown",
+          badge: 0,
+          description: "Breakdown reporting and diagnostics"
+        },
+        {
+          icon: "ShieldCheck",
+          label: "Insurance Verification",
+          path: "/insurance/verification",
+          badge: 0,
+          description: "AI document scanning, FMCSA cross-verification & compliance"
+        },
+      ],
     },
     { 
       icon: "FileText", 
       label: "Documents", 
       path: "/documents", 
       badge: 0,
-      description: "License, permits & compliance docs"
+      description: "Run tickets, BOLs received, license, permits & compliance docs"
+    },
+    {
+      icon: "Scale",
+      label: "Rate Sheet",
+      path: "/rate-sheet",
+      badge: 0,
+      description: "Per-barrel rates, surcharges & reconciliation statements"
     },
     { 
       icon: "Shield", 
@@ -534,6 +616,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/authority", 
       badge: 0,
       description: "Authority you operate under & lease status"
+    },
+    { 
+      icon: "Handshake", 
+      label: "My Partners", 
+      path: "/partners", 
+      badge: 0,
+      description: "Your carrier & dispatch contacts"
     },
     { 
       icon: "Navigation", 
@@ -562,13 +651,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/messages", 
       badge: 0,
       description: "Communication & emergency alerts"
-    },
-    { 
-      icon: "Wrench", 
-      label: "ZEUN Mechanics", 
-      path: "/zeun-breakdown", 
-      badge: 0,
-      description: "Breakdown reporting and diagnostics"
     },
     { 
       icon: "Radio", 
@@ -632,13 +714,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Your expertise areas"
     },
     { 
-      icon: "Plus", 
-      label: "Create Load", 
-      path: "/loads/create", 
-      badge: 0,
-      description: "Post a new load to the board"
-    },
-    { 
       icon: "Search", 
       label: "Find Loads", 
       path: "/marketplace", 
@@ -665,6 +740,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/fleet-tracking", 
       badge: 0,
       description: "Fleet positions, hazmat drivers, equipment & route compliance"
+    },
+    { 
+      icon: "Handshake", 
+      label: "My Partners", 
+      path: "/partners", 
+      badge: 0,
+      description: "Carriers, shippers & drivers you coordinate"
     },
     { 
       icon: "Shield", 
@@ -790,6 +872,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Escort personnel"
     },
     { 
+      icon: "Handshake", 
+      label: "My Partners", 
+      path: "/partners", 
+      badge: 0,
+      description: "Carriers you provide escort services for"
+    },
+    { 
       icon: "Navigation", 
       label: "Live Tracking", 
       path: "/live-tracking", 
@@ -901,12 +990,55 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "AlertTriangle", label: "Chargebacks", path: "/factoring/chargebacks", badge: 0, description: "Chargeback management" },
     { icon: "Users", label: "Debtors", path: "/factoring/debtors", badge: 0, description: "Debtor accounts" },
     { icon: "TrendingUp", label: "Reports", path: "/factoring/reports", badge: 0, description: "Factoring reports" },
-    { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "EIN, W-9, NDA & compliance docs" },
-    { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, demand heatmaps & surge pricing" },
-    { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Messaging" },
-    { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Funding disbursements, collections & payments" },
-    { icon: "Settings", label: "Settings", path: "/factoring/settings", badge: 0, description: "Account settings" },
-    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
+    { 
+      icon: "Handshake", 
+      label: "My Partners", 
+      path: "/partners", 
+      badge: 0,
+      description: "Carriers, shippers & brokers you factor for"
+    },
+    { 
+      icon: "FileText", 
+      label: "Documents", 
+      path: "/documents", 
+      badge: 0,
+      description: "EIN, W-9, NDA & compliance docs"
+    },
+    { 
+      icon: "TrendingUp", 
+      label: "Market Intelligence", 
+      path: "/market-pricing", 
+      badge: 0,
+      description: "Freight rates, demand heatmaps & surge pricing"
+    },
+    { 
+      icon: "MessageSquare", 
+      label: "Messages", 
+      path: "/messages", 
+      badge: 0,
+      description: "Messaging"
+    },
+    { 
+      icon: "Wallet", 
+      label: "EusoWallet", 
+      path: "/wallet", 
+      badge: 0,
+      description: "Funding disbursements, collections & payments"
+    },
+    { 
+      icon: "Settings", 
+      label: "Settings", 
+      path: "/factoring/settings", 
+      badge: 0,
+      description: "Account settings"
+    },
+    { 
+      icon: "HelpCircle", 
+      label: "Support", 
+      path: "/support", 
+      badge: 0,
+      description: "Help & support"
+    },
   ],
 
   // TERMINAL_MANAGER: Full terminal operations sidebar per journey doc
@@ -916,25 +1048,124 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "Shield", label: "Gate Operations", path: "/gate", badge: 0, description: "Check-in, verify & route trucks" },
     { icon: "Container", label: "Dock Management", path: "/docks", badge: 0, description: "Bay status, assignment & loading operations" },
     { icon: "Eye", label: "Inbound Visibility", path: "/inbound", badge: 0, description: "Real-time approaching trucks & demand forecast" },
-    { icon: "Zap", label: "DTN Integration", path: "/dtn-sync", badge: 0, description: "DTN sync status, inventory & rack pricing" },
+    { icon: "Plug2", label: "Integrations", path: "/integrations", badge: 0, description: "Connect DTN, Enverus, OPIS & third-party systems" },
+    
     { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities" },
     { icon: "Building2", label: "Terminal Profile", path: "/facility", badge: 0, description: "Identity, compliance, operations & SpectraMatch" },
-    { icon: "Plus", label: "Create Load", path: "/loads/create", badge: 0, description: "Post new outbound shipment" },
-    { icon: "Users", label: "Supply Chain", path: "/supply-chain", badge: 0, description: "Shipper, marketer & transporter partnerships" },
-    { icon: "Truck", label: "Incoming", path: "/incoming", badge: 0, description: "Arriving shipments" },
-    { icon: "MapPin", label: "Tracking", path: "/fleet-tracking", badge: 0, description: "Track incoming vehicles" },
-    { icon: "Package", label: "Outgoing", path: "/outgoing", badge: 0, description: "Departing shipments" },
-    { icon: "Users", label: "Staff", path: "/staff", badge: 0, description: "Access controllers & validation links" },
-    { icon: "PenTool", label: "Agreements", path: "/agreements", badge: 0, description: "Terminal access & service agreements" },
-    { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Permits, compliance docs & certifications" },
-    { icon: "BarChart3", label: "Reports", path: "/terminal/reports", badge: 0, description: "Operations reports & analytics" },
-    { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates & demand heatmaps" },
-    { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Communication" },
-    { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Billing, detention fees, invoices & payments" },
-    { icon: "Settings", label: "Settings", path: "/settings", badge: 0, description: "Profile, preferences & security" },
-    { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
-    { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
-    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+    { icon: "Fuel", label: "Dispatch Load", path: "/terminal/create-load", badge: 0, description: "Create load from TAS inventory, generate BOL & EusoTicket run tickets" },
+    { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates, surcharges & reconciliation statements" },
+    { 
+      icon: "Handshake", 
+      label: "My Partners", 
+      path: "/partners", 
+      badge: 0,
+      description: "Generalized supply chain partner management"
+    },
+    { 
+      icon: "Users", 
+      label: "Supply Chain", 
+      path: "/supply-chain", 
+      badge: 0,
+      description: "Shipper, marketer & transporter partnerships"
+    },
+    { 
+      icon: "Truck", 
+      label: "Incoming", 
+      path: "/incoming", 
+      badge: 0,
+      description: "Arriving shipments"
+    },
+    { 
+      icon: "MapPin", 
+      label: "Tracking", 
+      path: "/fleet-tracking", 
+      badge: 0,
+      description: "Track incoming vehicles"
+    },
+    { 
+      icon: "Package", 
+      label: "Outgoing", 
+      path: "/outgoing", 
+      badge: 0,
+      description: "Departing shipments"
+    },
+    { 
+      icon: "Users", 
+      label: "Staff", 
+      path: "/staff", 
+      badge: 0,
+      description: "Access controllers & validation links"
+    },
+    { 
+      icon: "PenTool", 
+      label: "Agreements", 
+      path: "/agreements", 
+      badge: 0,
+      description: "Terminal access & service agreements"
+    },
+    { 
+      icon: "FileText", 
+      label: "Documents", 
+      path: "/documents", 
+      badge: 0,
+      description: "Permits, compliance docs & certifications"
+    },
+    { 
+      icon: "BarChart3", 
+      label: "Reports", 
+      path: "/terminal/reports", 
+      badge: 0,
+      description: "Operations reports & analytics"
+    },
+    { 
+      icon: "TrendingUp", 
+      label: "Market Intelligence", 
+      path: "/market-pricing", 
+      badge: 0,
+      description: "Freight rates & demand heatmaps"
+    },
+    { 
+      icon: "MessageSquare", 
+      label: "Messages", 
+      path: "/messages", 
+      badge: 0,
+      description: "Communication"
+    },
+    { 
+      icon: "Wallet", 
+      label: "EusoWallet", 
+      path: "/wallet", 
+      badge: 0,
+      description: "Billing, detention fees, invoices & payments"
+    },
+    { 
+      icon: "Settings", 
+      label: "Settings", 
+      path: "/settings", 
+      badge: 0,
+      description: "Profile, preferences & security"
+    },
+    { 
+      icon: "Radio", 
+      label: "Company Channels", 
+      path: "/company-channels", 
+      badge: 0,
+      description: "Team communication channels"
+    },
+    { 
+      icon: "Newspaper", 
+      label: "News", 
+      path: "/news", 
+      badge: 0,
+      description: "Platform news and updates"
+    },
+    { 
+      icon: "HelpCircle", 
+      label: "Support", 
+      path: "/support", 
+      badge: 0,
+      description: "Help"
+    },
   ],
 
   // COMPLIANCE_OFFICER: Regulatory compliance and safety oversight
@@ -987,6 +1218,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/driver-compliance", 
       badge: 0,
       description: "Driver certifications"
+    },
+    { 
+      icon: "Handshake", 
+      label: "My Partners", 
+      path: "/partners", 
+      badge: 0,
+      description: "Companies in your compliance network"
     },
     { 
       icon: "BarChart3", 
@@ -1089,6 +1327,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/training", 
       badge: 0,
       description: "Safety training programs"
+    },
+    { 
+      icon: "Handshake", 
+      label: "My Partners", 
+      path: "/partners", 
+      badge: 0,
+      description: "Companies in your safety program"
     },
     { 
       icon: "BarChart3", 
@@ -1373,7 +1618,12 @@ export function getMenuForRoleWithApproval(role?: string | UserRole): MenuItem[]
   return items.map(item => {
     const accessible = ALWAYS_ACCESSIBLE.has(item.path) ||
       ALWAYS_ACCESSIBLE_PREFIXES.some(p => item.path.startsWith(p));
-    return { ...item, requiresApproval: !accessible };
+    const children = item.children?.map(child => {
+      const childAccessible = ALWAYS_ACCESSIBLE.has(child.path) ||
+        ALWAYS_ACCESSIBLE_PREFIXES.some(p => child.path.startsWith(p));
+      return { ...child, requiresApproval: !childAccessible };
+    });
+    return { ...item, requiresApproval: !accessible, children };
   });
 }
 
@@ -1385,7 +1635,7 @@ export function getMenuForRoleWithApproval(role?: string | UserRole): MenuItem[]
  */
 export function hasAccessToPath(role: string | UserRole, path: string): boolean {
   const menu = getMenuForRole(role);
-  return menu.some(item => item.path === path);
+  return menu.some(item => item.path === path || item.children?.some(c => c.path === path));
 }
 
 /**

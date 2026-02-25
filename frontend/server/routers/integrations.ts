@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, inArray } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, adminProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import { fmcsaService } from "../services/fmcsa";
 import { eldService } from "../services/eld";
 import { clearinghouseService } from "../services/clearinghouse";
@@ -53,23 +53,31 @@ export const integrationsRouter = router({
       syncEnabled: z.boolean().optional(),
       apiKey: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      // SECURITY: Verify ownership — only allow updating connections owned by caller's company
+      const [existing] = await db.select({ id: integrationConnections.id }).from(integrationConnections)
+        .where(and(eq(integrationConnections.id, input.id), eq(integrationConnections.companyId, companyId)))
+        .limit(1);
+      if (!existing) throw new Error("Integration connection not found");
       const updates: Record<string, any> = {};
       if (input.status) updates.status = input.status;
       if (input.syncEnabled !== undefined) updates.syncEnabled = input.syncEnabled;
       if (input.apiKey) updates.apiKey = input.apiKey;
       if (Object.keys(updates).length > 0) {
-        await db.update(integrationConnections).set(updates).where(eq(integrationConnections.id, input.id));
+        await db.update(integrationConnections).set(updates).where(and(eq(integrationConnections.id, input.id), eq(integrationConnections.companyId, companyId)));
       }
       return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
-      await db.update(integrationConnections).set({ status: "disconnected", syncEnabled: false }).where(eq(integrationConnections.id, input.id));
+      const companyId = ctx.user?.companyId || 0;
+      // SECURITY: Verify ownership — only allow disconnecting connections owned by caller's company
+      await db.update(integrationConnections).set({ status: "disconnected", syncEnabled: false }).where(and(eq(integrationConnections.id, input.id), eq(integrationConnections.companyId, companyId)));
       return { success: true, id: input.id };
     }),
 

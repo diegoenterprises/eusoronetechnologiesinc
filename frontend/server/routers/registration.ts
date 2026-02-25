@@ -8,12 +8,13 @@ import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
 import { router, auditedPublicProcedure, auditedProtectedProcedure, sensitiveData } from "../_core/trpc";
 import { getDb } from "../db";
-import { users, companies, documents } from "../../drizzle/schema";
+import { users, companies, documents, userOperatingStates } from "../../drizzle/schema";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { initNewUserGamification } from "../services/missionGenerator";
 import { notifyRegistration } from "../services/notifications";
 import { emailService } from "../_core/email";
+import { fmcsaService } from "../services/fmcsa";
 
 const hazmatClassSchema = z.enum(["2", "3", "4", "5", "6", "7", "8", "9"]);
 
@@ -113,6 +114,34 @@ async function storeRegistrationMetadata(db: any, userId: number, data: {
 // Backward compat alias
 async function storeComplianceIds(db: any, userId: number, complianceIds: any) {
   await storeRegistrationMetadata(db, userId, { complianceIds });
+}
+
+/**
+ * Seed userOperatingStates table after registration.
+ * homeState = the user's or company's registered state.
+ * operatingStates = additional states the user/company operates in.
+ */
+async function seedUserOperatingStates(db: any, userId: number, homeState: string | null, operatingStates: string[] = []) {
+  try {
+    const allStates = new Set<string>();
+    if (homeState) allStates.add(homeState.toUpperCase());
+    for (const s of operatingStates) {
+      if (s && s.length === 2) allStates.add(s.toUpperCase());
+    }
+    for (const sc of Array.from(allStates)) {
+      try {
+        await db.insert(userOperatingStates).values({
+          userId,
+          stateCode: sc,
+          isHomeState: sc === homeState?.toUpperCase(),
+          isRegisteredState: sc === homeState?.toUpperCase(),
+          isOperatingState: true,
+        }).onDuplicateKeyUpdate({ set: { isOperatingState: true } });
+      } catch {}
+    }
+  } catch (e) {
+    console.warn("[Registration] Could not seed userOperatingStates:", e);
+  }
 }
 
 /**
@@ -244,6 +273,12 @@ export const registrationRouter = router({
           contactTitle: input.contactTitle,
           billingEmail: input.billingEmail,
           country: input.country,
+          // Flat convenience keys for compliance engine
+          state: input.state,
+          companyState: input.state,
+          registeredState: input.state,
+          operatingStates: [input.state],
+          hazmatEndorsed: (input.hazmatClasses && input.hazmatClasses.length > 0) || false,
           phmsaNumber: input.phmsaNumber,
           phmsaExpiration: input.phmsaExpiration,
           epaId: input.epaId,
@@ -261,6 +296,7 @@ export const registrationRouter = router({
         },
       });
 
+      seedUserOperatingStates(db, userId, input.state, []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.contactEmail, phone: input.contactPhone, name: input.contactName, role: "SHIPPER" }).catch(() => {});
 
@@ -310,6 +346,7 @@ export const registrationRouter = router({
       tankerEndorsed: z.boolean().default(false),
       catalystType: z.array(z.string()).optional(),
       equipmentTypes: z.array(z.string()).optional(),
+      products: z.array(z.string()).optional(),
       liabilityCarrier: z.string().optional(),
       liabilityPolicy: z.string().optional(),
       liabilityCoverage: z.string().optional(),
@@ -378,16 +415,24 @@ export const registrationRouter = router({
           contactTitle: input.contactTitle,
           dispatchEmail: input.dispatchEmail,
           dispatchPhone: input.dispatchPhone,
+          // Flat convenience keys for compliance engine
+          state: input.state,
+          companyState: input.state,
+          registeredState: input.state,
+          operatingStates: input.processAgentStates || [input.state],
           phmsaNumber: input.phmsaNumber,
           hmspPermitNumber: input.hmspPermitNumber,
           fleetSize: input.fleetSize,
           hazmatEndorsed: input.hazmatEndorsed,
+          hazmatEndorsement: input.hazmatEndorsed,
           hazmatAuthorityNumber: input.hazmatAuthorityNumber,
           hazmatClasses: input.hazmatClasses,
           hazmatCertifiedDrivers: input.hazmatCertifiedDrivers,
           tankerEndorsed: input.tankerEndorsed,
+          tankerEndorsement: input.tankerEndorsed,
           catalystType: input.catalystType,
           equipmentTypes: input.equipmentTypes,
+          products: input.products,
           liability: { carrier: input.liabilityCarrier, policy: input.liabilityPolicy, coverage: input.liabilityCoverage, expiration: input.liabilityExpiration },
           cargo: { carrier: input.cargoCarrier, policy: input.cargoPolicy, coverage: input.cargoCoverage, expiration: input.cargoExpiration },
           drugAlcoholConsortium: input.drugAlcoholConsortium,
@@ -403,6 +448,7 @@ export const registrationRouter = router({
         },
       });
 
+      seedUserOperatingStates(db, userId, input.state, input.processAgentStates || []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.contactEmail, phone: input.contactPhone, name: input.contactName, role: "CATALYST" }).catch(() => {});
 
@@ -507,13 +553,20 @@ export const registrationRouter = router({
           dateOfBirth: input.dateOfBirth,
           ssn: input.ssn ? sensitiveData.encrypt(input.ssn) : undefined,
           address: { street: input.streetAddress, city: input.city, state: input.state, zipCode: input.zipCode },
+          // Flat convenience keys for compliance engine
+          state: input.state,
+          cdlState: input.cdlState,
+          registeredState: input.state,
+          operatingStates: [input.state, input.cdlState].filter(Boolean),
           employmentType: input.employmentType,
           catalystUsdot: input.catalystUsdot,
           catalystName: input.catalystName,
           cdl: { number: input.cdlNumber, state: input.cdlState, class: input.cdlClass, expiration: input.cdlExpiration, endorsements: input.cdlEndorsements, restrictions: input.cdlRestrictions },
           hazmatEndorsement: input.hazmatEndorsement,
+          hazmatEndorsed: input.hazmatEndorsement,
           hazmatExpiration: input.hazmatExpiration,
           tankerEndorsement: input.tankerEndorsement,
+          tankerEndorsed: input.tankerEndorsement,
           doublesTriples: input.doublesTriples,
           twicCard: input.twicCard,
           twicNumber: input.twicNumber,
@@ -530,6 +583,7 @@ export const registrationRouter = router({
         },
       });
 
+      seedUserOperatingStates(db, userId, input.state, [input.cdlState]).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: `${input.firstName} ${input.lastName}`, role: "DRIVER" }).catch(() => {});
 
@@ -617,6 +671,12 @@ export const registrationRouter = router({
           yearEstablished: input.yearEstablished,
           contactTitle: input.contactTitle,
           brokerAuthority: input.brokerAuthority,
+          // Flat convenience keys for compliance engine
+          state: input.state,
+          companyState: input.state,
+          registeredState: input.state,
+          operatingStates: [input.state],
+          hazmatEndorsed: input.brokersHazmat,
           suretyBond: { amount: input.suretyBondAmount, carrier: input.suretyBondCarrier, number: input.suretyBondNumber, expiration: input.bondExpiration },
           brokersHazmat: input.brokersHazmat,
           insurance: { carrier: input.insuranceCarrier, policy: input.insurancePolicy, coverage: input.insuranceCoverage, expiration: input.insuranceExpiration },
@@ -626,6 +686,7 @@ export const registrationRouter = router({
           expiry: input.insuranceExpiration || input.bondExpiration,
         },
       });
+      seedUserOperatingStates(db, userId, input.state, []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.contactEmail, phone: input.contactPhone, name: input.contactName, role: "BROKER" }).catch(() => {});
       return { success: true, userId, companyId, verificationRequired: true };
@@ -683,9 +744,24 @@ export const registrationRouter = router({
         isActive: true,
       }).$returningId();
       const userId = Number(userResult[0]?.id);
+      // Resolve company state for compliance engine
+      let companyState: string | null = null;
+      if (companyId) {
+        try {
+          const [co] = await db.select({ state: companies.state }).from(companies).where(eq(companies.id, companyId)).limit(1);
+          if (co?.state) companyState = co.state;
+        } catch {}
+      }
+
       await storeRegistrationMetadata(db, userId, {
         complianceIds: input.complianceIds,
         registration: {
+          // Flat convenience keys for compliance engine
+          state: companyState,
+          companyState,
+          registeredState: companyState,
+          operatingStates: companyState ? [companyState] : [],
+          hazmatEndorsed: input.hazmatTrainingCompleted,
           employmentType: input.employmentType,
           employerCompanyName: input.employerCompanyName,
           companyUsdot: input.companyUsdot,
@@ -700,6 +776,7 @@ export const registrationRouter = router({
           otherCertifications: input.otherCertifications,
         },
       });
+      if (companyState) seedUserOperatingStates(db, userId, companyState, []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: `${input.firstName} ${input.lastName}`, role: "DISPATCH" }).catch(() => {});
       return { success: true, userId, verificationRequired: true };
@@ -768,6 +845,10 @@ export const registrationRouter = router({
         registration: {
           dateOfBirth: input.dateOfBirth,
           address: { street: input.streetAddress, city: input.city, state: input.state, zipCode: input.zipCode },
+          // Flat convenience keys for compliance engine
+          state: input.state,
+          registeredState: input.state,
+          operatingStates: input.certifiedStates || [input.state],
           serviceRadius: input.serviceRadius,
           driversLicense: { number: input.driversLicenseNumber, state: input.driversLicenseState, expiration: input.driversLicenseExpiration, class: input.driversLicenseClass },
           stateCertifications: { states: input.certifiedStates, numbers: input.certificationNumbers, expirations: input.certificationExpirations },
@@ -780,6 +861,7 @@ export const registrationRouter = router({
           certifications: input.certifications,
         },
       });
+      seedUserOperatingStates(db, userId, input.state, input.certifiedStates || []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: `${input.firstName} ${input.lastName}`, role: "ESCORT" }).catch(() => {});
       return { success: true, userId, verificationRequired: true };
@@ -856,6 +938,10 @@ export const registrationRouter = router({
         complianceIds: input.complianceIds,
         companyId,
         registration: {
+          // Flat convenience keys for compliance engine
+          state: input.state,
+          registeredState: input.state,
+          operatingStates: [input.state],
           jobTitle: input.jobTitle,
           facilityType: input.facilityType,
           ownerCompany: input.ownerCompany,
@@ -871,6 +957,7 @@ export const registrationRouter = router({
           oshaCompliant: input.oshaCompliant,
         },
       });
+      seedUserOperatingStates(db, userId, input.state, []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: input.managerName, role: "TERMINAL_MANAGER" }).catch(() => {});
       return { success: true, userId, companyId, verificationRequired: true };
@@ -926,9 +1013,23 @@ export const registrationRouter = router({
         isActive: true,
       }).$returningId();
       const userId = Number(userResult[0]?.id);
+      // Resolve company state for compliance engine
+      let coState: string | null = null;
+      if (companyId) {
+        try {
+          const [co] = await db.select({ state: companies.state }).from(companies).where(eq(companies.id, companyId)).limit(1);
+          if (co?.state) coState = co.state;
+        } catch {}
+      }
+
       await storeRegistrationMetadata(db, userId, {
         complianceIds: input.complianceIds,
         registration: {
+          // Flat convenience keys for compliance engine
+          state: coState,
+          companyState: coState,
+          registeredState: coState,
+          operatingStates: coState ? [coState] : [],
           employerCompanyName: input.employerCompanyName,
           companyUsdot: input.companyUsdot,
           jobTitle: input.jobTitle,
@@ -942,6 +1043,7 @@ export const registrationRouter = router({
           responsibilities: input.responsibilities,
         },
       });
+      if (coState) seedUserOperatingStates(db, userId, coState, []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: `${input.firstName} ${input.lastName}`, role: "COMPLIANCE_OFFICER" }).catch(() => {});
       return { success: true, userId, verificationRequired: true };
@@ -997,9 +1099,23 @@ export const registrationRouter = router({
         isActive: true,
       }).$returningId();
       const userId = Number(userResult[0]?.id);
+      // Resolve company state for compliance engine
+      let smState: string | null = null;
+      if (companyId) {
+        try {
+          const [co] = await db.select({ state: companies.state }).from(companies).where(eq(companies.id, companyId)).limit(1);
+          if (co?.state) smState = co.state;
+        } catch {}
+      }
+
       await storeRegistrationMetadata(db, userId, {
         complianceIds: input.complianceIds,
         registration: {
+          // Flat convenience keys for compliance engine
+          state: smState,
+          companyState: smState,
+          registeredState: smState,
+          operatingStates: smState ? [smState] : [],
           employerCompanyName: input.employerCompanyName,
           employerUsdotNumber: input.employerUsdotNumber,
           jobTitle: input.jobTitle,
@@ -1013,6 +1129,7 @@ export const registrationRouter = router({
           driverCount: input.driverCount,
         },
       });
+      if (smState) seedUserOperatingStates(db, userId, smState, []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: `${input.firstName} ${input.lastName}`, role: "SAFETY_MANAGER" }).catch(() => {});
       return { success: true, userId, verificationRequired: true };
@@ -1212,6 +1329,68 @@ export const registrationRouter = router({
         .where(eq(users.id, input.userId));
 
       return { success: true, message: "Registration rejected" };
+    }),
+
+  /**
+   * FMCSA Pre-fill — Lookup carrier data by DOT/MC to auto-populate registration
+   * Used during registration to pre-fill company info for FMCSA-registered carriers
+   */
+  fmcsaPrefill: auditedPublicProcedure
+    .input(z.object({
+      dotNumber: z.string().optional(),
+      mcNumber: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      if (!input.dotNumber && !input.mcNumber) {
+        return { found: false, error: "Provide DOT or MC number" };
+      }
+
+      try {
+        let carrier: any = null;
+
+        if (input.dotNumber) {
+          carrier = await fmcsaService.getCatalystByDOT(input.dotNumber);
+        } else if (input.mcNumber) {
+          carrier = await fmcsaService.getCatalystByMC(input.mcNumber.replace(/[^\d]/g, ''));
+        }
+
+        if (!carrier) {
+          return { found: false, error: "Carrier not found in FMCSA database" };
+        }
+
+        // Return pre-fill data (excluding compliance docs — user must still upload those)
+        return {
+          found: true,
+          prefill: {
+            companyName: carrier.legalName || "",
+            dba: carrier.dbaName || "",
+            streetAddress: carrier.phyStreet || "",
+            city: carrier.phyCity || "",
+            state: carrier.phyState || "",
+            zipCode: carrier.phyZipcode || "",
+            country: carrier.phyCountry || "USA",
+            contactPhone: carrier.telephone || "",
+            contactEmail: carrier.emailAddress || "",
+            dotNumber: carrier.dotNumber?.toString() || input.dotNumber || "",
+            powerUnits: carrier.nbr_power_unit || 0,
+            driverCount: carrier.driver_total || 0,
+            hazmatAuthorized: carrier.hmFlag === "Y",
+            passengerCarrier: carrier.pcFlag === "Y",
+            mcs150Date: carrier.mcs150Date || "",
+            mcs150Mileage: carrier.mcs150Mileage || 0,
+          },
+          // Note to frontend: Documents still required
+          docsRequired: [
+            "MC Authority Letter",
+            "Certificate of Insurance",
+            "W-9",
+            carrier.hmFlag === "Y" ? "Hazmat Registration" : null,
+          ].filter(Boolean),
+        };
+      } catch (error) {
+        console.error("[Registration] FMCSA prefill error:", error);
+        return { found: false, error: "FMCSA lookup failed" };
+      }
     }),
 });
 

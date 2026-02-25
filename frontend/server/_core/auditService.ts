@@ -11,6 +11,7 @@
  *   CC8.1 - Data integrity (encryption events, data exports)
  */
 
+import crypto from "crypto";
 import { getDb } from "../db";
 import { auditLogs } from "../../drizzle/schema";
 import type { Request } from "express";
@@ -128,36 +129,70 @@ function getUserAgent(req?: Request): string {
 }
 
 /**
+ * In-memory chain tip cache — avoids a DB read on every audit insert.
+ * Initialized lazily on first call. Thread-safe for single Node.js process.
+ */
+let _chainTipHash: string | null = null;
+
+function genesisHash(): string {
+  return crypto.createHash("sha256").update("EUSOTRIP_GENESIS_BLOCK_2025").digest("hex");
+}
+
+function computeEntryHash(
+  previousHash: string,
+  timestamp: string,
+  userId: string | null,
+  action: string,
+  entityType: string,
+  entityId: string | null,
+  metadataStr: string
+): string {
+  const payload = [previousHash, timestamp, userId || "", action, entityType, entityId || "", metadataStr].join("|");
+  return crypto.createHash("sha256").update(payload).digest("hex");
+}
+
+/**
  * Record an audit event to the database.
  * Non-blocking — failures are logged but do not throw.
+ * Computes SHA-256 hash chain for tamper-evident integrity (SOC 2 CC1.5).
  */
 export async function recordAuditEvent(event: AuditEvent, req?: Request): Promise<void> {
   try {
     const db = await getDb();
     if (!db) {
-      // Fallback to console logging if DB unavailable
       console.log(`[AUDIT] ${event.category}/${event.action} | entity=${event.entityType}:${event.entityId || "N/A"} | user=${event.userId || "anonymous"} | severity=${event.severity || "LOW"}`);
       return;
     }
 
+    const now = new Date();
+    const actionStr = `${event.category}:${event.action}`;
+    const uidStr = event.userId ? String(event.userId) : null;
+    const eidStr = event.entityId ? String(event.entityId) : null;
+    const metaStr = JSON.stringify(event.metadata || {});
+    const severity = event.severity || "LOW";
+
+    // Hash chain: get previous tip, compute this entry's hash
+    const previousHash = _chainTipHash ?? genesisHash();
+    const entryHash = computeEntryHash(
+      previousHash, now.toISOString(), uidStr, actionStr, event.entityType, eidStr, metaStr
+    );
+
     await db.insert(auditLogs).values({
       userId: event.userId ? (typeof event.userId === "string" ? parseInt(event.userId, 10) || null : event.userId as number) : null,
-      action: `${event.category}:${event.action}`,
+      action: actionStr,
       entityType: event.entityType,
       entityId: event.entityId ? (typeof event.entityId === "string" ? parseInt(event.entityId, 10) || null : event.entityId as number) : null,
-      changes: event.changes ? {
-        ...event.changes,
-        _metadata: event.metadata || {},
-        _severity: event.severity || "LOW",
-        _category: event.category,
-      } : {
-        _metadata: event.metadata || {},
-        _severity: event.severity || "LOW",
-        _category: event.category,
-      },
+      changes: event.changes || null,
+      metadata: event.metadata || null,
+      severity,
       ipAddress: event.ipAddress || getClientIP(req),
       userAgent: event.userAgent || getUserAgent(req),
-    });
+      previousHash,
+      entryHash,
+    } as any);
+
+    // Advance the chain tip
+    _chainTipHash = entryHash;
   } catch (error) {
     // Audit logging must never crash the application
     console.error(`[AUDIT] Failed to record event ${event.category}:${event.action}:`, error);

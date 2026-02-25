@@ -53,9 +53,10 @@ export default function CreateLoad() {
       deliveryLocation: { address: "", city: formData.destinationCity, state: formData.destinationState, zipCode: "", lat: 0, lng: 0 },
       pickupDate: new Date(formData.pickupDate),
       deliveryDate: new Date(formData.deliveryDate),
-      
-      weight: parseInt(formData.weight) || 0, cargoType: "general" as const,
+      weight: parseInt(formData.weight) || 0,
       rate: parseFloat(formData.rate) || 0,
+      equipment: formData.equipmentType,
+      productName: formData.commodity || undefined,
     } as any);
   };
 
@@ -146,11 +147,25 @@ export default function CreateLoad() {
                   <SelectValue placeholder="Select equipment" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="dry_van">Dry Van</SelectItem>
-                  <SelectItem value="flatbed">Flatbed</SelectItem>
-                  <SelectItem value="reefer">Reefer</SelectItem>
-                  <SelectItem value="tanker">Tanker</SelectItem>
-                  <SelectItem value="step_deck">Step Deck</SelectItem>
+                  <SelectItem value="dry_van">Dry Van (53ft)</SelectItem>
+                  <SelectItem value="flatbed">Standard Flatbed</SelectItem>
+                  <SelectItem value="reefer">Refrigerated (Reefer)</SelectItem>
+                  <SelectItem value="tanker">Petroleum Tank (MC-306)</SelectItem>
+                  <SelectItem value="gas_tank">Pressurized Gas Tank (MC-331)</SelectItem>
+                  <SelectItem value="cryogenic">Cryogenic Tank (MC-338)</SelectItem>
+                  <SelectItem value="food_grade_tank">Food-Grade Liquid Tank</SelectItem>
+                  <SelectItem value="water_tank">Water Tank</SelectItem>
+                  <SelectItem value="step_deck">Step Deck / Drop Deck</SelectItem>
+                  <SelectItem value="lowboy">Lowboy / RGN</SelectItem>
+                  <SelectItem value="double_drop">Double Drop / Stretch</SelectItem>
+                  <SelectItem value="hazmat_van">Hazmat-Rated Dry Van</SelectItem>
+                  <SelectItem value="conestoga">Conestoga (Rolling-Tarp)</SelectItem>
+                  <SelectItem value="curtainside">Curtainside / Tautliner</SelectItem>
+                  <SelectItem value="bulk_hopper">Dry Bulk / Pneumatic Hopper</SelectItem>
+                  <SelectItem value="dump_trailer">End Dump / Bottom Dump</SelectItem>
+                  <SelectItem value="intermodal">Intermodal Container Chassis</SelectItem>
+                  <SelectItem value="auto_carrier">Auto Carrier / Car Hauler</SelectItem>
+                  <SelectItem value="livestock">Livestock / Cattle Pot</SelectItem>
                 </SelectContent>
               </Select>
             </div>

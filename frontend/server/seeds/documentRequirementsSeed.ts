@@ -55,6 +55,12 @@ export const documentRequirementsSeed = [
   { documentTypeId: 'ELD_TRAINING', requiredForRole: 'DRIVER', requiredForEmploymentType: 'W2_EMPLOYEE', isRequired: true, isBlocking: false, priority: 2, gracePeriodDays: 30 },
   { documentTypeId: 'DVIR_TRAINING', requiredForRole: 'DRIVER', requiredForEmploymentType: 'W2_EMPLOYEE', isRequired: true, isBlocking: false, priority: 2, gracePeriodDays: 30 },
   { documentTypeId: 'TERMS_OF_SERVICE', requiredForRole: 'DRIVER', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
+  // Driver — additional safety & compliance
+  { documentTypeId: 'DOT_ALCOHOL_TEST', requiredForRole: 'DRIVER', requiredForEmploymentType: 'W2_EMPLOYEE', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'DRIVER_SAFETY_TRAINING', requiredForRole: 'DRIVER', requiredForEmploymentType: 'W2_EMPLOYEE', isRequired: true, isBlocking: false, priority: 2, gracePeriodDays: 30 },
+  { documentTypeId: 'DEFENSIVE_DRIVING', requiredForRole: 'DRIVER', requiredForEmploymentType: 'W2_EMPLOYEE', isRequired: false, isBlocking: false, priority: 3 },
+  { documentTypeId: 'ANNUAL_MVR_REVIEW', requiredForRole: 'DRIVER', requiredForEmploymentType: 'W2_EMPLOYEE', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'PRIVACY_POLICY_ACK', requiredForRole: 'DRIVER', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
   // Driver — hazmat trailer conditionals
   { documentTypeId: 'HAZMAT_ENDORSEMENT', requiredForRole: 'DRIVER', isRequired: true, isBlocking: true, priority: 1, conditionType: 'HAZMAT', conditionValue: true },
   { documentTypeId: 'TWIC', requiredForRole: 'DRIVER', isRequired: true, isBlocking: true, priority: 1, conditionType: 'HAZMAT', conditionValue: true },
@@ -109,6 +115,18 @@ export const documentRequirementsSeed = [
   { documentTypeId: 'FORM_2290', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: false, priority: 2 },
   { documentTypeId: 'IFTA_LICENSE', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: true, priority: 1 },
   { documentTypeId: 'IRP_CAB_CARD', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: true, priority: 1 },
+  // O/O — additional safety, training & compliance
+  { documentTypeId: 'OO_LEASE_AGREEMENT', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
+  { documentTypeId: 'EIN_VERIFICATION', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'DOT_ALCOHOL_TEST', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'DRUG_ALCOHOL_POLICY', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'DRIVER_SAFETY_TRAINING', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: false, priority: 2, gracePeriodDays: 30 },
+  { documentTypeId: 'DEFENSIVE_DRIVING', requiredForRole: 'OWNER_OPERATOR', isRequired: false, isBlocking: false, priority: 3 },
+  { documentTypeId: 'ANNUAL_MVR_REVIEW', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'ELD_TRAINING', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: false, priority: 2, gracePeriodDays: 30 },
+  { documentTypeId: 'DVIR_TRAINING', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: false, priority: 2, gracePeriodDays: 30 },
+  { documentTypeId: 'PRIVACY_POLICY_ACK', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
+  { documentTypeId: 'BACKGROUND_CHECK_AUTH', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
   // O/O — hazmat trailer conditionals
   { documentTypeId: 'HAZMAT_ENDORSEMENT', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: true, priority: 1, conditionType: 'HAZMAT', conditionValue: true },
   { documentTypeId: 'TWIC', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: true, priority: 1, conditionType: 'HAZMAT', conditionValue: true },
@@ -142,6 +160,11 @@ export const documentRequirementsSeed = [
   // O/O — water tank conditionals
   { documentTypeId: 'POTABLE_WATER_CERT', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: false, priority: 2, conditionType: 'WATER', conditionValue: true },
   { documentTypeId: 'WATER_QUALITY_TEST', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: false, priority: 2, conditionType: 'WATER', conditionValue: true },
+  // O/O — hazmat safety permit & BOL template
+  { documentTypeId: 'HAZMAT_SAFETY_PERMIT', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: true, priority: 1, conditionType: 'HAZMAT', conditionValue: true },
+  { documentTypeId: 'HAZMAT_BOL_TEMPLATE', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: false, priority: 2, conditionType: 'HAZMAT', conditionValue: true },
+  // O/O — vapor recovery (tanker in CARB states)
+  { documentTypeId: 'VAPOR_RECOVERY_CERT', requiredForRole: 'OWNER_OPERATOR', isRequired: true, isBlocking: false, priority: 2, conditionType: 'TANKER', conditionValue: true },
   // O/O — reefer pharma conditional
   { documentTypeId: 'PHARMA_GDP_CERT', requiredForRole: 'OWNER_OPERATOR', isRequired: false, isBlocking: false, priority: 3, conditionType: 'REEFER', conditionValue: true },
 
@@ -169,6 +192,21 @@ export const documentRequirementsSeed = [
   { documentTypeId: 'DRUG_ALCOHOL_POLICY', requiredForRole: 'CATALYST', isRequired: true, isBlocking: false, priority: 2 },
   { documentTypeId: 'BROKER_CARRIER_AGREEMENT', requiredForRole: 'CATALYST', isRequired: true, isBlocking: true, priority: 1 },
   { documentTypeId: 'TERMS_OF_SERVICE', requiredForRole: 'CATALYST', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
+  // --- Catalyst additional vehicle, tax, compliance & operations ---
+  { documentTypeId: 'VEHICLE_REGISTRATION', requiredForRole: 'CATALYST', isRequired: true, isBlocking: true, priority: 1 },
+  { documentTypeId: 'VEHICLE_TITLE', requiredForRole: 'CATALYST', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'ANNUAL_INSPECTION', requiredForRole: 'CATALYST', isRequired: true, isBlocking: true, priority: 1 },
+  { documentTypeId: 'TRAILER_REGISTRATION', requiredForRole: 'CATALYST', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'FORM_2290', requiredForRole: 'CATALYST', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'CLEARINGHOUSE_QUERY', requiredForRole: 'CATALYST', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'NEW_ENTRANT_AUDIT', requiredForRole: 'CATALYST', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'SAFETY_RATING', requiredForRole: 'CATALYST', isRequired: false, isBlocking: false, priority: 3 },
+  { documentTypeId: 'PRIVACY_POLICY_ACK', requiredForRole: 'CATALYST', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
+  { documentTypeId: 'PHYSICAL_DAMAGE', requiredForRole: 'CATALYST', isRequired: false, isBlocking: false, priority: 3 },
+  { documentTypeId: 'UMBRELLA_LIABILITY', requiredForRole: 'CATALYST', isRequired: false, isBlocking: false, priority: 3 },
+  { documentTypeId: 'BOL_TEMPLATE', requiredForRole: 'CATALYST', isRequired: false, isBlocking: false, priority: 3 },
+  { documentTypeId: 'RATE_CONFIRMATION', requiredForRole: 'CATALYST', isRequired: false, isBlocking: false, priority: 3 },
+  { documentTypeId: 'CARRIER_PACKET', requiredForRole: 'CATALYST', isRequired: false, isBlocking: false, priority: 3 },
   // --- Catalyst hazmat trailer conditionals (liquid_tank | gas_tank | hazmat_van | cryogenic) ---
   { documentTypeId: 'HAZMAT_REGISTRATION', requiredForRole: 'CATALYST', isRequired: true, isBlocking: true, priority: 1, conditionType: 'HAZMAT', conditionValue: true },
   { documentTypeId: 'HAZMAT_SAFETY_PERMIT', requiredForRole: 'CATALYST', isRequired: true, isBlocking: true, priority: 1, conditionType: 'HAZMAT', conditionValue: true },
@@ -180,12 +218,15 @@ export const documentRequirementsSeed = [
   { documentTypeId: 'FOOD_SAFETY_CERT', requiredForRole: 'CATALYST', isRequired: true, isBlocking: false, priority: 2, conditionType: 'REEFER', conditionValue: true },
   // --- Catalyst flatbed/oversize trailer conditionals ---
   { documentTypeId: 'OVERSIZE_PERMIT', requiredForRole: 'CATALYST', isRequired: true, isBlocking: false, priority: 2, conditionType: 'OVERSIZE', conditionValue: true },
-  // --- Catalyst hazmat EPA ID (hazardous waste transport) ---
+  // --- Catalyst hazmat EPA ID, safety permit & BOL template ---
   { documentTypeId: 'EPA_ID', requiredForRole: 'CATALYST', isRequired: true, isBlocking: false, priority: 2, conditionType: 'HAZMAT', conditionValue: true },
+  { documentTypeId: 'HAZMAT_BOL_TEMPLATE', requiredForRole: 'CATALYST', isRequired: true, isBlocking: false, priority: 2, conditionType: 'HAZMAT', conditionValue: true },
   // --- Catalyst food-grade tanker conditionals ---
   { documentTypeId: 'FOOD_SAFETY_CERT', requiredForRole: 'CATALYST', isRequired: true, isBlocking: false, priority: 2, conditionType: 'FOOD_GRADE', conditionValue: true },
   { documentTypeId: 'KOSHER_CERT', requiredForRole: 'CATALYST', isRequired: false, isBlocking: false, priority: 3, conditionType: 'FOOD_GRADE', conditionValue: true },
   { documentTypeId: 'ORGANIC_CERT', requiredForRole: 'CATALYST', isRequired: false, isBlocking: false, priority: 3, conditionType: 'FOOD_GRADE', conditionValue: true },
+  // --- Catalyst vapor recovery (tanker in CARB states) ---
+  { documentTypeId: 'VAPOR_RECOVERY_CERT', requiredForRole: 'CATALYST', isRequired: true, isBlocking: false, priority: 2, conditionType: 'TANKER', conditionValue: true },
   // --- Catalyst tanker inspection conditionals (all tank trailers) ---
   { documentTypeId: 'CARGO_TANK_TEST', requiredForRole: 'CATALYST', isRequired: true, isBlocking: true, priority: 1, conditionType: 'TANKER', conditionValue: true },
   { documentTypeId: 'TANK_WASHOUT_CERT', requiredForRole: 'CATALYST', isRequired: true, isBlocking: false, priority: 2, conditionType: 'TANKER', conditionValue: true },
@@ -215,6 +256,14 @@ export const documentRequirementsSeed = [
   { documentTypeId: 'W9', requiredForRole: 'BROKER', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
   { documentTypeId: 'GENERAL_LIABILITY', requiredForRole: 'BROKER', isRequired: true, isBlocking: false, priority: 2 },
   { documentTypeId: 'ACH_AUTH', requiredForRole: 'BROKER', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'VOIDED_CHECK', requiredForRole: 'BROKER', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'CONTINGENT_CARGO', requiredForRole: 'BROKER', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'ERRORS_OMISSIONS', requiredForRole: 'BROKER', isRequired: false, isBlocking: false, priority: 3 },
+  { documentTypeId: 'NDA', requiredForRole: 'BROKER', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'BROKER_CARRIER_AGREEMENT', requiredForRole: 'BROKER', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'CARRIER_PACKET', requiredForRole: 'BROKER', isRequired: false, isBlocking: false, priority: 3 },
+  { documentTypeId: 'RATE_CONFIRMATION', requiredForRole: 'BROKER', isRequired: false, isBlocking: false, priority: 3 },
+  { documentTypeId: 'PRIVACY_POLICY_ACK', requiredForRole: 'BROKER', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
   { documentTypeId: 'TERMS_OF_SERVICE', requiredForRole: 'BROKER', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
 
   // ═══════════════════════════════════════════════════════════════
@@ -230,9 +279,13 @@ export const documentRequirementsSeed = [
   { documentTypeId: 'GENERAL_LIABILITY', requiredForRole: 'SHIPPER', isRequired: true, isBlocking: false, priority: 2 },
   { documentTypeId: 'CARGO_INSURANCE', requiredForRole: 'SHIPPER', isRequired: false, isBlocking: false, priority: 3 },
   { documentTypeId: 'NDA', requiredForRole: 'SHIPPER', isRequired: true, isBlocking: false, priority: 3 },
+  { documentTypeId: 'BOL_TEMPLATE', requiredForRole: 'SHIPPER', isRequired: false, isBlocking: false, priority: 3 },
+  { documentTypeId: 'RATE_CONFIRMATION', requiredForRole: 'SHIPPER', isRequired: false, isBlocking: false, priority: 3 },
   // Shipper hazmat conditionals (ships hazmat products)
   { documentTypeId: 'HAZMAT_TRAINING_CERT', requiredForRole: 'SHIPPER', isRequired: true, isBlocking: true, priority: 1, conditionType: 'HAZMAT', conditionValue: true },
   { documentTypeId: 'HAZMAT_BOL_TEMPLATE', requiredForRole: 'SHIPPER', isRequired: true, isBlocking: false, priority: 2, conditionType: 'HAZMAT', conditionValue: true },
+  { documentTypeId: 'HAZMAT_REGISTRATION', requiredForRole: 'SHIPPER', isRequired: true, isBlocking: true, priority: 1, conditionType: 'HAZMAT', conditionValue: true },
+  { documentTypeId: 'HAZMAT_SECURITY_PLAN', requiredForRole: 'SHIPPER', isRequired: true, isBlocking: false, priority: 2, conditionType: 'HAZMAT', conditionValue: true },
 
   // ═══════════════════════════════════════════════════════════════
   // DISPATCH (role stored as "DISPATCH" in DB)
@@ -286,12 +339,38 @@ export const documentRequirementsSeed = [
   // ═══════════════════════════════════════════════════════════════
   // TERMINAL_MANAGER (Terminal/Facility Manager)
   // ═══════════════════════════════════════════════════════════════
+  // --- Business & Legal ---
   { documentTypeId: 'EIN_VERIFICATION', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
-  { documentTypeId: 'EPA_ID', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: false, priority: 2 },
-  { documentTypeId: 'GENERAL_LIABILITY', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1 },
+  { documentTypeId: 'W9', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
+  { documentTypeId: 'BUSINESS_LICENSE', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
+  { documentTypeId: 'ACH_AUTH', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'VOIDED_CHECK', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: false, priority: 2 },
   { documentTypeId: 'NDA', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: false, priority: 2 },
   { documentTypeId: 'TERMS_OF_SERVICE', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
+  { documentTypeId: 'PRIVACY_POLICY_ACK', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1, requiredAtOnboarding: true },
+  // --- Insurance ---
+  { documentTypeId: 'GENERAL_LIABILITY', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1 },
+  { documentTypeId: 'WORKERS_COMP', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1 },
+  { documentTypeId: 'PROPERTY_INSURANCE', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1 },
+  { documentTypeId: 'ENVIRONMENTAL_LIABILITY', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'UMBRELLA_LIABILITY', requiredForRole: 'TERMINAL_MANAGER', isRequired: false, isBlocking: false, priority: 3 },
+  // --- Environmental / Regulatory ---
+  { documentTypeId: 'EPA_ID', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'SPCC_PLAN', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1 },
+  { documentTypeId: 'STORMWATER_PERMIT', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: false, priority: 2 },
+  { documentTypeId: 'AIR_QUALITY_PERMIT', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: false, priority: 2 },
+  // --- Safety ---
+  { documentTypeId: 'EMERGENCY_RESPONSE_PLAN', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1 },
+  { documentTypeId: 'FIRE_PREVENTION_PLAN', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1 },
+  { documentTypeId: 'BACKGROUND_CHECK_RESULT', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: false, priority: 2 },
+  // --- Tank / Storage ---
+  { documentTypeId: 'TANK_INTEGRITY_TEST', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1 },
+  // --- Operations ---
+  { documentTypeId: 'DETENTION_FORM', requiredForRole: 'TERMINAL_MANAGER', isRequired: false, isBlocking: false, priority: 3 },
   // Terminal hazmat conditionals (facilities handling hazmat)
   { documentTypeId: 'HAZMAT_SECURITY_PLAN', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1, conditionType: 'HAZMAT', conditionValue: true },
   { documentTypeId: 'HAZMAT_REGISTRATION', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1, conditionType: 'HAZMAT', conditionValue: true },
+  { documentTypeId: 'HAZMAT_TRAINING_CERT', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1, conditionType: 'HAZMAT', conditionValue: true },
+  { documentTypeId: 'TWIC', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: true, priority: 1, conditionType: 'HAZMAT', conditionValue: true },
+  { documentTypeId: 'DRUG_ALCOHOL_POLICY', requiredForRole: 'TERMINAL_MANAGER', isRequired: true, isBlocking: false, priority: 2, conditionType: 'HAZMAT', conditionValue: true },
 ];

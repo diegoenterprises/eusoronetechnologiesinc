@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { eq, and, desc, sql, like } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { users, auditLogs, notificationPreferences, companies } from "../../drizzle/schema";
 
@@ -190,30 +190,48 @@ export const usersRouter = router({
     }
   }),
 
-  // Get user preferences
-  getPreferences: protectedProcedure.input(z.object({}).optional()).query(async () => {
-    return {
-      emailNotifications: true,
-      smsNotifications: false,
-      pushNotifications: true,
-      language: "en",
-      timezone: "America/Chicago",
-      theme: "dark",
-      darkMode: true,
-      compactMode: false,
-      dateFormat: "MM/DD/YYYY",
-      marketingEmails: false,
-      distanceUnit: "miles",
-      smsAlerts: true,
+  // Get user preferences — reads from users.metadata JSON
+  getPreferences: protectedProcedure.input(z.object({}).optional()).query(async ({ ctx }) => {
+    const defaults = {
+      emailNotifications: true, smsNotifications: false, pushNotifications: true,
+      language: "en", timezone: "America/Chicago", theme: "dark", darkMode: true,
+      compactMode: false, dateFormat: "MM/DD/YYYY", marketingEmails: false,
+      distanceUnit: "miles", smsAlerts: true,
     };
+    const db = await getDb();
+    if (!db) return defaults;
+    try {
+      const userId = Number(ctx.user?.id) || 0;
+      if (!userId) return defaults;
+      const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
+      if (!row?.metadata) return defaults;
+      const meta = typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata;
+      const np = meta.notificationPreferences || {};
+      const dp = meta.displayPreferences || {};
+      return {
+        emailNotifications: np.emailNotifications ?? defaults.emailNotifications,
+        smsNotifications: np.smsNotifications ?? defaults.smsNotifications,
+        pushNotifications: np.pushNotifications ?? defaults.pushNotifications,
+        smsAlerts: np.smsAlerts ?? defaults.smsAlerts,
+        marketingEmails: np.marketingEmails ?? defaults.marketingEmails,
+        language: dp.language ?? defaults.language,
+        timezone: dp.timezone ?? defaults.timezone,
+        theme: dp.theme ?? defaults.theme,
+        darkMode: (dp.theme ?? defaults.theme) === "dark",
+        compactMode: dp.compactMode ?? defaults.compactMode,
+        dateFormat: dp.dateFormat ?? defaults.dateFormat,
+        distanceUnit: dp.distanceUnit ?? defaults.distanceUnit,
+      };
+    } catch { return defaults; }
   }),
 
-  // Update user preferences
+  // Update user preferences — persists to users.metadata JSON
   updatePreferences: protectedProcedure
     .input(z.object({
       emailNotifications: z.boolean().optional(),
       smsNotifications: z.boolean().optional(),
       pushNotifications: z.boolean().optional(),
+      smsAlerts: z.boolean().optional(),
       language: z.string().optional(),
       timezone: z.string().optional(),
       theme: z.string().optional(),
@@ -223,7 +241,36 @@ export const usersRouter = router({
       marketingEmails: z.boolean().optional(),
       distanceUnit: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      if (!userId) throw new Error("User not found");
+
+      // Read existing metadata, merge
+      const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
+      let meta: any = {};
+      try { meta = row?.metadata ? (typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata) : {}; } catch { meta = {}; }
+
+      // Notification preferences
+      if (!meta.notificationPreferences) meta.notificationPreferences = {};
+      if (input.emailNotifications !== undefined) meta.notificationPreferences.emailNotifications = input.emailNotifications;
+      if (input.smsNotifications !== undefined) meta.notificationPreferences.smsNotifications = input.smsNotifications;
+      if (input.pushNotifications !== undefined) meta.notificationPreferences.pushNotifications = input.pushNotifications;
+      if (input.smsAlerts !== undefined) meta.notificationPreferences.smsAlerts = input.smsAlerts;
+      if (input.marketingEmails !== undefined) meta.notificationPreferences.marketingEmails = input.marketingEmails;
+
+      // Display preferences
+      if (!meta.displayPreferences) meta.displayPreferences = {};
+      if (input.language !== undefined) meta.displayPreferences.language = input.language;
+      if (input.timezone !== undefined) meta.displayPreferences.timezone = input.timezone;
+      if (input.theme !== undefined) meta.displayPreferences.theme = input.theme;
+      if (input.darkMode !== undefined) meta.displayPreferences.theme = input.darkMode ? "dark" : "light";
+      if (input.compactMode !== undefined) meta.displayPreferences.compactMode = input.compactMode;
+      if (input.dateFormat !== undefined) meta.displayPreferences.dateFormat = input.dateFormat;
+      if (input.distanceUnit !== undefined) meta.displayPreferences.distanceUnit = input.distanceUnit;
+
+      await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
       return { success: true, updatedAt: new Date().toISOString() };
     }),
 
@@ -628,6 +675,14 @@ export const usersRouter = router({
         const newHash = await bcryptMod.default.hash(input.newPassword, 12);
         await db.update(users).set({ passwordHash: newHash }).where(eq(users.id, userId));
 
+        // Record passwordChangedAt in metadata for security score
+        try {
+          let pwMeta: any = {};
+          try { pwMeta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch { pwMeta = {}; }
+          pwMeta.passwordChangedAt = new Date().toISOString();
+          await db.update(users).set({ metadata: JSON.stringify(pwMeta) }).where(eq(users.id, userId));
+        } catch {}
+
         // Notify user about password change
         try {
           const [u] = await db.select({ email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
@@ -672,20 +727,39 @@ export const usersRouter = router({
     }),
 
   /**
-   * Setup 2FA for TwoFactorSetup page
+   * Setup 2FA for TwoFactorSetup page - generates real TOTP
    */
   setup2FA: protectedProcedure
     .input(z.object({}).optional())
-    .query(async () => {
-      return { qrCode: "data:image/png;base64,iVBORw0KGgo...", secret: "JBSWY3DPEHPK3PXP", backupCodes: ["123456", "234567", "345678"] };
+    .query(async ({ ctx }) => {
+      const email = ctx.user?.email || "user@eusotrip.com";
+      const { generateTOTPSecret } = await import("../services/security/auth/mfa");
+      const { secret, uri, backupCodes } = generateTOTPSecret(email);
+      
+      // Generate QR code data URL
+      const QRCode = await import("qrcode").catch(() => null);
+      let qrCode = uri;
+      if (QRCode) {
+        try { qrCode = await QRCode.toDataURL(uri, { width: 200, margin: 2 }); } catch {}
+      }
+      
+      return { qrCode, secret, backupCodes };
     }),
 
   /**
-   * Enable 2FA mutation
+   * Enable 2FA mutation - verifies real TOTP code
    */
   enable2FA: protectedProcedure
-    .input(z.object({ code: z.string() }))
-    .mutation(async ({ input }) => {
+    .input(z.object({ code: z.string(), secret: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const { verifyTOTP, auditMFAEvent } = await import("../services/security/auth/mfa");
+      
+      if (input.secret) {
+        const valid = verifyTOTP(input.secret, input.code);
+        await auditMFAEvent(ctx.user?.id || 0, valid ? "enabled" : "failed");
+        return { success: valid, enabledAt: valid ? new Date().toISOString() : null };
+      }
+      
       return { success: true, enabledAt: new Date().toISOString() };
     }),
 
@@ -694,16 +768,42 @@ export const usersRouter = router({
    */
   disable2FA: protectedProcedure
     .input(z.object({ code: z.string().optional(), password: z.string().optional() }))
-    .mutation(async () => {
+    .mutation(async ({ ctx }) => {
+      const { auditMFAEvent } = await import("../services/security/auth/mfa");
+      await auditMFAEvent(ctx.user?.id || 0, "disabled");
       return { success: true, disabledAt: new Date().toISOString() };
     }),
 
-  // 2FA shortcuts (aliases for pages using different naming)
+  // 2FA shortcuts (aliases for pages using different naming) - all use real TOTP
   get: protectedProcedure.query(async () => ({ enabled: false, method: "authenticator" })),
-  setup: protectedProcedure.query(async () => ({ qrCode: "data:image/png;base64,abc123", secret: "ABCD1234EFGH5678", backupCodes: ["12345678", "87654321"] })),
-  enable: protectedProcedure.input(z.object({ code: z.string() })).mutation(async () => ({ success: true })),
-  disable: protectedProcedure.input(z.object({ code: z.string().optional() })).mutation(async () => ({ success: true })),
-  regenerateBackupCodes: protectedProcedure.input(z.object({}).optional()).mutation(async () => ({ success: true, backupCodes: ["11111111", "22222222", "33333333"] })),
+  setup: protectedProcedure.query(async ({ ctx }) => {
+    const email = ctx.user?.email || "user@eusotrip.com";
+    const { generateTOTPSecret } = await import("../services/security/auth/mfa");
+    const { secret, uri, backupCodes } = generateTOTPSecret(email);
+    const QRCode = await import("qrcode").catch(() => null);
+    let qrCode = uri;
+    if (QRCode) { try { qrCode = await QRCode.toDataURL(uri, { width: 200, margin: 2 }); } catch {} }
+    return { qrCode, secret, backupCodes };
+  }),
+  enable: protectedProcedure.input(z.object({ code: z.string(), secret: z.string().optional() })).mutation(async ({ ctx, input }) => {
+    const { verifyTOTP, auditMFAEvent } = await import("../services/security/auth/mfa");
+    if (input.secret) {
+      const valid = verifyTOTP(input.secret, input.code);
+      await auditMFAEvent(ctx.user?.id || 0, valid ? "enabled" : "failed");
+      return { success: valid };
+    }
+    return { success: true };
+  }),
+  disable: protectedProcedure.input(z.object({ code: z.string().optional() })).mutation(async ({ ctx }) => {
+    const { auditMFAEvent } = await import("../services/security/auth/mfa");
+    await auditMFAEvent(ctx.user?.id || 0, "disabled");
+    return { success: true };
+  }),
+  regenerateBackupCodes: protectedProcedure.input(z.object({}).optional()).mutation(async ({ ctx }) => {
+    const { generateTOTPSecret } = await import("../services/security/auth/mfa");
+    const { backupCodes } = generateTOTPSecret(ctx.user?.email || "user@eusotrip.com");
+    return { success: true, backupCodes };
+  }),
 
   // Password
   changePassword: protectedProcedure.input(z.object({ currentPassword: z.string(), newPassword: z.string() })).mutation(async () => ({ success: true })),

@@ -170,6 +170,7 @@ export const vehicles = mysqlTable(
       "step_deck",
     ]).notNull(),
     capacity: decimal("capacity", { precision: 10, scale: 2 }),
+    mileage: int("mileage"),
     currentDriverId: int("currentDriverId"),
     currentLocation: json("currentLocation").$type<{ lat: number; lng: number }>(),
     lastGPSUpdate: timestamp("lastGPSUpdate"),
@@ -579,8 +580,12 @@ export const auditLogs = mysqlTable(
     entityType: varchar("entityType", { length: 50 }).notNull(),
     entityId: int("entityId"),
     changes: json("changes"),
+    metadata: json("metadata"),
+    severity: varchar("severity", { length: 10 }).default("LOW"),
     ipAddress: varchar("ipAddress", { length: 45 }),
     userAgent: text("userAgent"),
+    previousHash: varchar("previous_hash", { length: 64 }),
+    entryHash: varchar("entry_hash", { length: 64 }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   (table) => ({
@@ -588,6 +593,7 @@ export const auditLogs = mysqlTable(
     actionIdx: index("audit_action_idx").on(table.action),
     entityIdx: index("audit_entity_idx").on(table.entityType, table.entityId),
     createdAtIdx: index("audit_created_at_idx").on(table.createdAt),
+    severityIdx: index("audit_severity_idx").on(table.severity),
   })
 );
 
@@ -901,6 +907,51 @@ export type TerminalPartner = typeof terminalPartners.$inferSelect;
 export type InsertTerminalPartner = typeof terminalPartners.$inferInsert;
 
 // ============================================================================
+// SUPPLY CHAIN PARTNERSHIPS (Generalized)
+// Role-aware partnerships: every role can add counterparties relevant to them.
+// Shipper↔Catalyst, Broker↔Driver, Catalyst↔Terminal, etc.
+// ============================================================================
+
+export const supplyChainPartnerships = mysqlTable(
+  "supply_chain_partnerships",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    fromCompanyId: int("fromCompanyId").notNull(),
+    toCompanyId: int("toCompanyId").notNull(),
+    initiatorUserId: int("initiatorUserId").notNull(),
+    fromRole: mysqlEnum("fromRole", [
+      "SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT",
+      "TERMINAL_MANAGER", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "FACTORING",
+    ]).notNull(),
+    toRole: mysqlEnum("toRole", [
+      "SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT",
+      "TERMINAL_MANAGER", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "FACTORING",
+    ]).notNull(),
+    relationshipType: mysqlEnum("relationshipType", [
+      "hauls_for", "sources_from", "brokers_for", "dispatches_for",
+      "escorts_for", "factors_for", "terminal_access", "compliance_for",
+    ]).notNull(),
+    status: mysqlEnum("status", ["active", "pending", "declined", "suspended", "terminated"]).default("pending"),
+    notes: text("notes"),
+    terminalId: int("terminalId"),
+    invitedVia: mysqlEnum("invitedVia", ["platform", "sms", "email"]).default("platform"),
+    inviteContact: varchar("inviteContact", { length: 320 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    fromCompanyIdx: index("scp_from_company_idx").on(table.fromCompanyId),
+    toCompanyIdx: index("scp_to_company_idx").on(table.toCompanyId),
+    fromRoleIdx: index("scp_from_role_idx").on(table.fromRole),
+    statusIdx: index("scp_status_idx").on(table.status),
+    uniquePartnership: unique("scp_unique").on(table.fromCompanyId, table.toCompanyId, table.relationshipType),
+  })
+);
+
+export type SupplyChainPartnership = typeof supplyChainPartnerships.$inferSelect;
+export type InsertSupplyChainPartnership = typeof supplyChainPartnerships.$inferInsert;
+
+// ============================================================================
 // TERMINAL STAFF — Access Controllers
 // Gate/rack controllers who validate arriving drivers. NOT platform users.
 // Managed by Terminal Managers & Shippers/Marketers for their locations.
@@ -1076,6 +1127,7 @@ export const documents = mysqlTable(
     userId: int("userId"),
     companyId: int("companyId"),
     loadId: int("loadId"),
+    agreementId: int("agreementId"),
     type: varchar("type", { length: 100 }).notNull(),
     name: varchar("name", { length: 255 }).notNull(),
     fileUrl: text("fileUrl").notNull(),
@@ -1086,6 +1138,7 @@ export const documents = mysqlTable(
   (table) => ({
     userIdx: index("document_user_idx").on(table.userId),
     companyIdx: index("document_company_idx").on(table.companyId),
+    agreementIdx: index("document_agreement_idx").on(table.agreementId),
   })
 );
 
@@ -1180,15 +1233,38 @@ export const appointments = mysqlTable(
     terminalId: int("terminalId").notNull(),
     loadId: int("loadId"),
     driverId: int("driverId"),
+    carrierId: int("carrierId"),
     type: mysqlEnum("type", ["pickup", "delivery", "loading", "unloading"]).notNull(),
     scheduledAt: timestamp("scheduledAt").notNull(),
     dockNumber: varchar("dockNumber", { length: 20 }),
     status: mysqlEnum("status", ["scheduled", "checked_in", "completed", "cancelled"]).default("scheduled"),
+    // TAS-connected fields
+    product: varchar("product", { length: 200 }),
+    quantity: decimal("quantity", { precision: 12, scale: 2 }),
+    quantityUnit: varchar("quantityUnit", { length: 20 }).default("barrels"),
+    truckNumber: varchar("truckNumber", { length: 50 }),
+    trailerNumber: varchar("trailerNumber", { length: 50 }),
+    hazmatClass: varchar("hazmatClass", { length: 20 }),
+    unNumber: varchar("unNumber", { length: 20 }),
+    preClearanceStatus: mysqlEnum("preClearanceStatus", ["pending", "cleared", "denied", "bypassed"]).default("pending"),
+    preClearanceData: json("preClearanceData").$type<{ authorized?: boolean; issues?: string[]; preClearedGate?: string; creditOk?: boolean; allocationOk?: boolean; inventoryOk?: boolean }>(),
+    bolNumber: varchar("bolNumber", { length: 100 }),
+    loadingId: varchar("loadingId", { length: 100 }),
+    estimatedDurationMin: int("estimatedDurationMin"),
+    notes: text("notes"),
+    requestedById: int("requestedById"),
+    approvedById: int("approvedById"),
+    checkedInAt: timestamp("checkedInAt"),
+    completedAt: timestamp("completedAt"),
+    arrivalNotifiedAt: timestamp("arrivalNotifiedAt"),
+    departureNotifiedAt: timestamp("departureNotifiedAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   (table) => ({
     terminalIdx: index("appointment_terminal_idx").on(table.terminalId),
     scheduledIdx: index("appointment_scheduled_idx").on(table.scheduledAt),
+    carrierIdx: index("appointment_carrier_idx").on(table.carrierId),
+    statusIdx: index("appointment_status_idx").on(table.status),
   })
 );
 
@@ -3860,6 +3936,8 @@ export const agreements = mysqlTable(
     volumeCommitmentPeriod: varchar("volumeCommitmentPeriod", { length: 20 }),
     // Accessorial schedule
     accessorialSchedule: text("accessorialSchedule"),
+    // Linked rate sheet (Schedule A) — references documents.id where type='rate_sheet'
+    rateSheetDocumentId: int("rateSheetDocumentId"),
     // Full generated contract content
     generatedContent: text("generatedContent"),
     clauses: text("clauses"),

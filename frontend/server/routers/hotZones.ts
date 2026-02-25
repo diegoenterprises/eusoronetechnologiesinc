@@ -5,7 +5,7 @@
  * sync orchestrator with admin controls, freshness metadata per response
  */
 import { z } from "zod";
-import { router, auditedProtectedProcedure as protectedProcedure, auditedAdminProcedure as adminProcedure } from "../_core/trpc";
+import { router, isolatedProcedure as protectedProcedure, isolatedAdminProcedure as adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { sql, count } from "drizzle-orm";
 import { loads, hzZoneIntelligence, hzWeatherAlerts, hzFuelPrices, hzDataSyncLog, hzSeismicEvents, hzWildfires, hzHazmatIncidents, hzEpaFacilities, hzFemaDisasters, hzLockStatus, hzEmissions, hzRcraHandlers, hzCarrierSafety } from "../../drizzle/schema";
@@ -1280,6 +1280,92 @@ export const hotZonesRouter = router({
       } catch (e) { console.error("[RouteIntel] carriers:", e); }
 
       result.timestamp = new Date().toISOString();
+      return result;
+    }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // INTEGRATION-SOURCED INTELLIGENCE
+  // Aggregates data from connected terminals' integrations
+  // (OPIS pricing, Genscape supply, FMCSA safety, facility data)
+  // Every terminal that connects their API keys enriches this layer
+  // ═══════════════════════════════════════════════════════════════
+  getTerminalIntelligence: protectedProcedure
+    .query(async () => {
+      const db = await getDb();
+      if (!db) return { connectedTerminals: 0, rackPricing: [], supplyHubs: [], carrierSafety: { total: 0, highRisk: 0, satisfactory: 0 }, timestamp: new Date().toISOString() };
+
+      const result: any = { timestamp: new Date().toISOString() };
+
+      // Count connected terminal integrations (shows network growth)
+      try {
+        const { integrationConnections } = await import("../../drizzle/schema");
+        const [countRow] = await db.execute(
+          sql`SELECT COUNT(DISTINCT company_id) as cnt FROM integration_connections WHERE status = 'connected'`
+        ) as any;
+        result.connectedTerminals = Number((countRow || [])[0]?.cnt || 0);
+      } catch { result.connectedTerminals = 0; }
+
+      // Aggregate carrier safety from hz_carrier_safety (FMCSA data)
+      try {
+        const [safetyRows] = await db.execute(
+          sql`SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN safety_rating = 'Satisfactory' THEN 1 END) as satisfactory,
+                COUNT(CASE WHEN safety_rating IN ('Conditional','Unsatisfactory') THEN 1 END) as high_risk,
+                AVG(CAST(unsafe_driving_score AS DECIMAL(5,2))) as avg_unsafe_driving,
+                AVG(CAST(crash_indicator_score AS DECIMAL(5,2))) as avg_crash_indicator
+              FROM hz_carrier_safety`
+        ) as any;
+        const row = (safetyRows || [])[0];
+        result.carrierSafety = {
+          total: Number(row?.total || 0),
+          satisfactory: Number(row?.satisfactory || 0),
+          highRisk: Number(row?.high_risk || 0),
+          avgUnsafeDriving: row?.avg_unsafe_driving ? Number(Number(row.avg_unsafe_driving).toFixed(1)) : null,
+          avgCrashIndicator: row?.avg_crash_indicator ? Number(Number(row.avg_crash_indicator).toFixed(1)) : null,
+        };
+      } catch { result.carrierSafety = { total: 0, satisfactory: 0, highRisk: 0 }; }
+
+      // Aggregate carrier safety by state for map overlay
+      try {
+        const [stateRows] = await db.execute(
+          sql`SELECT physical_state as state,
+                     COUNT(*) as total,
+                     COUNT(CASE WHEN safety_rating IN ('Conditional','Unsatisfactory') THEN 1 END) as high_risk,
+                     AVG(CAST(unsafe_driving_score AS DECIMAL(5,2))) as avg_risk
+              FROM hz_carrier_safety
+              WHERE physical_state IS NOT NULL
+              GROUP BY physical_state
+              ORDER BY COUNT(*) DESC
+              LIMIT 51`
+        ) as any;
+        result.carriersByState = (stateRows || []).map((r: any) => ({
+          state: r.state,
+          total: Number(r.total),
+          highRisk: Number(r.high_risk),
+          avgRisk: r.avg_risk ? Number(Number(r.avg_risk).toFixed(1)) : null,
+        }));
+      } catch { result.carriersByState = []; }
+
+      // Facility throughput from facilities table (connected terminals)
+      try {
+        const [facRows] = await db.execute(
+          sql`SELECT state, COUNT(*) as cnt, 
+                     SUM(CAST(COALESCE(storage_capacity_bbl, 0) AS DECIMAL(15,2))) as total_capacity
+              FROM facilities 
+              WHERE facility_type IN ('TERMINAL','RACK','BULK_PLANT')
+              AND state IS NOT NULL
+              GROUP BY state
+              ORDER BY cnt DESC
+              LIMIT 51`
+        ) as any;
+        result.terminalsByState = (facRows || []).map((r: any) => ({
+          state: r.state,
+          count: Number(r.cnt),
+          totalCapacity: Number(r.total_capacity || 0),
+        }));
+      } catch { result.terminalsByState = []; }
+
       return result;
     }),
 

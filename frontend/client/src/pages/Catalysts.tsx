@@ -12,14 +12,16 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  Truck, Search, Star, Shield, Eye, Phone, CheckCircle, Users
+  Truck, Search, Star, Shield, Eye, Phone, CheckCircle, Users, UserPlus
 } from "lucide-react";
+import { InviteModal } from "@/components/InviteModal";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
 
 export default function Catalysts() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
+  const [showInvite, setShowInvite] = useState(false);
 
   const catalystsQuery = (trpc as any).catalysts.list.useQuery({ limit: 50 });
 
@@ -44,18 +46,37 @@ export default function Catalysts() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header with Gradient Title */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Catalysts & Bids
           </h1>
           <p className="text-slate-400 text-sm mt-1">Manage catalyst bids and select the best options for your loads</p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-yellow-500/20 border border-yellow-500/30">
-          <span className="text-yellow-400 text-sm font-medium">Pending Bids</span>
-          <span className="text-yellow-400 font-bold">0</span>
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowInvite(true)}
+            className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Invite Carrier
+          </Button>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-yellow-500/20 border border-yellow-500/30">
+            <span className="text-yellow-400 text-sm font-medium">Pending Bids</span>
+            <span className="text-yellow-400 font-bold">0</span>
+          </div>
         </div>
       </div>
+
+      {/* Invite Modal - Shippers invite Carriers/Catalysts to haul their loads */}
+      <InviteModal
+        open={showInvite}
+        onClose={() => setShowInvite(false)}
+        context="CARRIER_SEARCH"
+        target={{ name: "", onPlatform: false }}
+      />
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -1360,4 +1360,336 @@ export const adminRouter = router({
         return { events, counts: { loads: 0, bids: 0, agreements: 0, claims: 0, support: 0, users: 0, zeun: 0 } };
       }
     }),
+
+  /**
+   * ═══════════════════════════════════════════════════════════════════════════
+   * COMPREHENSIVE PLATFORM OVERSIGHT - All Activity Across All Roles
+   * Tracks everything happening on the platform for Super Admin command center
+   * ═══════════════════════════════════════════════════════════════════════════
+   */
+  getComprehensivePlatformStats: auditedSuperAdminProcedure
+    .input(z.object({ period: z.enum(["today", "week", "month", "all"]).default("today") }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const period = input?.period || "today";
+      const since = period === "today" ? new Date(new Date().setHours(0, 0, 0, 0)) :
+                   period === "week" ? new Date(Date.now() - 7 * 86400000) :
+                   period === "month" ? new Date(Date.now() - 30 * 86400000) :
+                   new Date(0);
+
+      const stats = {
+        // Core platform metrics
+        users: { total: 0, active: 0, newPeriod: 0, pendingApproval: 0, suspended: 0 },
+        companies: { total: 0, compliant: 0, pending: 0, nonCompliant: 0 },
+        loads: { total: 0, active: 0, completed: 0, cancelled: 0, gmv: 0 },
+        bids: { total: 0, accepted: 0, rejected: 0, pending: 0 },
+
+        // Terminal operations
+        terminal: { appointments: 0, gateCheckIns: 0, loadingOrders: 0, bolsGenerated: 0, tasConnected: 0 },
+
+        // Documents & compliance
+        documents: { uploaded: 0, digitized: 0, bolsIssued: 0, runTickets: 0, expiringSoon: 0 },
+        compliance: { compliantUsers: 0, nonCompliantUsers: 0, documentsExpiring: 0, verificationsPending: 0 },
+
+        // Fleet & drivers
+        fleet: { activeDrivers: 0, activeTrips: 0, driverCheckIns: 0, safetyAlerts: 0 },
+
+        // Financial
+        financial: { walletTransactions: 0, factoringRequests: 0, detentionCharges: 0, totalRevenue: 0 },
+
+        // Network & invites
+        network: { invitesSent: 0, invitesAccepted: 0, partnersConnected: 0 },
+
+        // Escort operations
+        escorts: { activeJobs: 0, completed: 0, convoys: 0 },
+
+        // Integrations & sync
+        integrations: { tasConnections: 0, fmcsaSyncs: 0, hotZonesSyncs: 0, lastSyncTime: "" },
+
+        // System health
+        system: { auditLogs: 0, errors: 0, apiCalls: 0, avgResponseTime: 0 },
+      };
+
+      if (!db) return stats;
+
+      try {
+        // ─── User Stats ───
+        const [userTotal] = await db.select({ c: sql<number>`count(*)` }).from(users);
+        const [userActive] = await db.select({ c: sql<number>`count(*)` }).from(users).where(and(eq(users.isActive, true), eq(users.isVerified, true)));
+        const [userNew] = await db.select({ c: sql<number>`count(*)` }).from(users).where(gte(users.createdAt, since));
+        const [userPending] = await db.select({ c: sql<number>`count(*)` }).from(users).where(eq(users.isVerified, false));
+        const [userSuspended] = await db.select({ c: sql<number>`count(*)` }).from(users).where(eq(users.isActive, false));
+        stats.users = { total: userTotal?.c || 0, active: userActive?.c || 0, newPeriod: userNew?.c || 0, pendingApproval: userPending?.c || 0, suspended: userSuspended?.c || 0 };
+
+        // ─── Company Stats ───
+        const [companyTotal] = await db.select({ c: sql<number>`count(*)` }).from(companies);
+        const [companyCompliant] = await db.select({ c: sql<number>`count(*)` }).from(companies).where(eq(companies.complianceStatus, "compliant"));
+        const [companyPending] = await db.select({ c: sql<number>`count(*)` }).from(companies).where(eq(companies.complianceStatus, "pending"));
+        const [companyNonCompliant] = await db.select({ c: sql<number>`count(*)` }).from(companies).where(eq(companies.complianceStatus, "non_compliant"));
+        stats.companies = { total: companyTotal?.c || 0, compliant: companyCompliant?.c || 0, pending: companyPending?.c || 0, nonCompliant: companyNonCompliant?.c || 0 };
+
+        // ─── Load Stats ───
+        const { loads: loadsTable } = await import("../../drizzle/schema");
+        const [loadTotal] = await db.select({ c: sql<number>`count(*)` }).from(loadsTable);
+        const [loadActive] = await db.select({ c: sql<number>`count(*)` }).from(loadsTable).where(sql`status IN ('posted','bidding','assigned','in_transit','at_pickup','loading','at_delivery','unloading')`);
+        const [loadCompleted] = await db.select({ c: sql<number>`count(*)` }).from(loadsTable).where(eq(loadsTable.status, "delivered"));
+        const [loadCancelled] = await db.select({ c: sql<number>`count(*)` }).from(loadsTable).where(eq(loadsTable.status, "cancelled"));
+        const [loadGMV] = await db.select({ s: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loadsTable).where(eq(loadsTable.status, "delivered"));
+        stats.loads = { total: loadTotal?.c || 0, active: loadActive?.c || 0, completed: loadCompleted?.c || 0, cancelled: loadCancelled?.c || 0, gmv: Math.round(loadGMV?.s || 0) };
+
+        // ─── Bid Stats ───
+        try {
+          const { bids } = await import("../../drizzle/schema");
+          const [bidTotal] = await db.select({ c: sql<number>`count(*)` }).from(bids);
+          const [bidAccepted] = await db.select({ c: sql<number>`count(*)` }).from(bids).where(eq(bids.status, "accepted"));
+          const [bidRejected] = await db.select({ c: sql<number>`count(*)` }).from(bids).where(eq(bids.status, "rejected"));
+          const [bidPending] = await db.select({ c: sql<number>`count(*)` }).from(bids).where(eq(bids.status, "pending"));
+          stats.bids = { total: bidTotal?.c || 0, accepted: bidAccepted?.c || 0, rejected: bidRejected?.c || 0, pending: bidPending?.c || 0 };
+        } catch {}
+
+        // ─── Terminal Stats ───
+        try {
+          const { appointments } = await import("../../drizzle/schema");
+          const [apptTotal] = await db.select({ c: sql<number>`count(*)` }).from(appointments).where(gte(appointments.createdAt, since));
+          stats.terminal.appointments = apptTotal?.c || 0;
+        } catch {}
+
+        // ─── Document Stats ───
+        try {
+          const { documents } = await import("../../drizzle/schema");
+          const [docTotal] = await db.select({ c: sql<number>`count(*)` }).from(documents).where(gte(documents.createdAt, since));
+          stats.documents.uploaded = docTotal?.c || 0;
+        } catch {}
+
+        // ─── Fleet Stats (active drivers) ───
+        const [activeDrivers] = await db.select({ c: sql<number>`count(*)` }).from(users).where(and(eq(users.role, "DRIVER" as any), eq(users.isActive, true)));
+        stats.fleet.activeDrivers = activeDrivers?.c || 0;
+
+        // ─── Audit Log Stats ───
+        const [auditTotal] = await db.select({ c: sql<number>`count(*)` }).from(auditLogs).where(gte(auditLogs.createdAt, since));
+        stats.system.auditLogs = auditTotal?.c || 0;
+
+        // ─── Integration sync status ───
+        try {
+          const { hzDataSyncLog } = await import("../../drizzle/schema");
+          const [syncCount] = await db.select({ c: sql<number>`count(*)` }).from(hzDataSyncLog).where(gte(hzDataSyncLog.startedAt, since));
+          stats.integrations.hotZonesSyncs = syncCount?.c || 0;
+          const lastSync = await db.select({ t: hzDataSyncLog.completedAt }).from(hzDataSyncLog).orderBy(desc(hzDataSyncLog.completedAt)).limit(1);
+          stats.integrations.lastSyncTime = lastSync[0]?.t?.toISOString() || "";
+        } catch {}
+
+        return stats;
+      } catch (error) {
+        console.error("[Admin] getComprehensivePlatformStats error:", error);
+        return stats;
+      }
+    }),
+
+  /**
+   * Get all activity across all user roles for complete oversight
+   */
+  getAllRoleActivity: auditedSuperAdminProcedure
+    .input(z.object({ limit: z.number().default(100) }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const limit = input?.limit || 100;
+      const activities: Array<{
+        id: string; role: string; action: string; description: string;
+        user: string; userId: number; timestamp: string; severity: string;
+        category: string; metadata?: any;
+      }> = [];
+
+      if (!db) return { activities, byRole: {} };
+
+      try {
+        // Get all audit logs with user role info
+        const logs = await db.select({
+          id: auditLogs.id,
+          userId: auditLogs.userId,
+          action: auditLogs.action,
+          entityType: auditLogs.entityType,
+          entityId: auditLogs.entityId,
+          changes: auditLogs.changes,
+          createdAt: auditLogs.createdAt,
+        }).from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(limit);
+
+        // Get user details for all referenced users
+        const userIds = Array.from(new Set(logs.map(l => l.userId).filter(Boolean))) as number[];
+        const userMap: Record<number, { name: string; role: string }> = {};
+        if (userIds.length > 0) {
+          const userRows = await db.select({ id: users.id, name: users.name, role: users.role }).from(users)
+            .where(sql`${users.id} IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})`);
+          for (const u of userRows) userMap[u.id] = { name: u.name || `User #${u.id}`, role: u.role || "UNKNOWN" };
+        }
+
+        // Categorize actions
+        const getCategory = (action: string): string => {
+          if (action.includes("load")) return "loads";
+          if (action.includes("bid")) return "marketplace";
+          if (action.includes("user") || action.includes("verification")) return "users";
+          if (action.includes("document") || action.includes("bol") || action.includes("ticket")) return "documents";
+          if (action.includes("terminal") || action.includes("appointment") || action.includes("gate")) return "terminal";
+          if (action.includes("payment") || action.includes("invoice") || action.includes("wallet")) return "financial";
+          if (action.includes("driver") || action.includes("fleet") || action.includes("vehicle")) return "fleet";
+          if (action.includes("compliance") || action.includes("safety")) return "compliance";
+          if (action.includes("escort") || action.includes("convoy")) return "escorts";
+          if (action.includes("mfa") || action.includes("login") || action.includes("auth")) return "security";
+          return "system";
+        };
+
+        const getSeverity = (action: string): string => {
+          if (action.includes("delete") || action.includes("suspend") || action.includes("reject")) return "critical";
+          if (action.includes("failed") || action.includes("error") || action.includes("cancel")) return "warning";
+          if (action.includes("approved") || action.includes("complete") || action.includes("delivered")) return "success";
+          return "info";
+        };
+
+        for (const log of logs) {
+          const user = log.userId ? userMap[log.userId] : { name: "System", role: "SYSTEM" };
+          activities.push({
+            id: String(log.id),
+            role: user?.role || "UNKNOWN",
+            action: log.action,
+            description: `${log.action.replace(/_/g, " ")} on ${log.entityType || "entity"} ${log.entityId ? `#${log.entityId}` : ""}`,
+            user: user?.name || "System",
+            userId: log.userId || 0,
+            timestamp: log.createdAt?.toISOString() || new Date().toISOString(),
+            severity: getSeverity(log.action),
+            category: getCategory(log.action),
+            metadata: log.changes ? JSON.parse(log.changes as string) : undefined,
+          });
+        }
+
+        // Group by role
+        const byRole: Record<string, number> = {};
+        for (const a of activities) {
+          byRole[a.role] = (byRole[a.role] || 0) + 1;
+        }
+
+        return { activities, byRole };
+      } catch (error) {
+        console.error("[Admin] getAllRoleActivity error:", error);
+        return { activities, byRole: {} };
+      }
+    }),
+
+  /**
+   * Get real-time platform health including all integrations
+   */
+  getRealTimePlatformHealth: auditedSuperAdminProcedure.query(async () => {
+    const db = await getDb();
+    const health = {
+      status: "healthy" as "healthy" | "degraded" | "down",
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      timestamp: new Date().toISOString(),
+
+      services: {
+        database: { status: "connected", latency: 0 },
+        auth: { status: "active", sessions: 0 },
+        websocket: { status: "active", connections: 0 },
+        stripe: { status: "connected" },
+        twilio: { status: "connected" },
+      },
+
+      integrations: {
+        tas: { connected: 0, providers: [] as string[] },
+        fmcsa: { lastSync: "", status: "idle" },
+        hotZones: { sources: 0, lastSync: "", status: "idle" },
+        opis: { status: "idle" },
+        genscape: { status: "idle" },
+      },
+
+      queues: {
+        pending: 0,
+        processing: 0,
+        failed: 0,
+      },
+    };
+
+    if (db) {
+      try {
+        // Check database latency
+        const start = Date.now();
+        await db.select({ c: sql<number>`1` }).from(users).limit(1);
+        health.services.database.latency = Date.now() - start;
+
+        // Check Hot Zones sync status
+        try {
+          const { hzDataSyncLog } = await import("../../drizzle/schema");
+          const [lastSync] = await db.select({ t: hzDataSyncLog.completedAt, s: hzDataSyncLog.sourceName }).from(hzDataSyncLog)
+            .orderBy(desc(hzDataSyncLog.completedAt)).limit(1);
+          if (lastSync?.t) {
+            health.integrations.hotZones.lastSync = lastSync.t.toISOString();
+            health.integrations.hotZones.status = "active";
+          }
+          const [sourceCount] = await db.select({ c: sql<number>`COUNT(DISTINCT source_name)` }).from(hzDataSyncLog);
+          health.integrations.hotZones.sources = sourceCount?.c || 0;
+        } catch {}
+
+      } catch (error) {
+        health.status = "degraded";
+        health.services.database.status = "error";
+      }
+    } else {
+      health.status = "down";
+      health.services.database.status = "disconnected";
+    }
+
+    return health;
+  }),
+
+  /**
+   * Get activity breakdown by user role for role-specific oversight
+   */
+  getActivityByRole: auditedSuperAdminProcedure
+    .input(z.object({ role: z.string(), limit: z.number().default(50) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { activities: [], stats: {} };
+
+      try {
+        // Get users with this role
+        const roleUsers = await db.select({ id: users.id }).from(users).where(eq(users.role, input.role as any));
+        const userIds = roleUsers.map(u => u.id);
+
+        if (userIds.length === 0) return { activities: [], stats: { total: 0 } };
+
+        // Get audit logs for these users
+        const logs = await db.select({
+          id: auditLogs.id, userId: auditLogs.userId, action: auditLogs.action,
+          entityType: auditLogs.entityType, entityId: auditLogs.entityId, createdAt: auditLogs.createdAt,
+        }).from(auditLogs)
+          .where(sql`${auditLogs.userId} IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})`)
+          .orderBy(desc(auditLogs.createdAt))
+          .limit(input.limit);
+
+        // Get user names
+        const userMap: Record<number, string> = {};
+        const userRows = await db.select({ id: users.id, name: users.name }).from(users)
+          .where(sql`${users.id} IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})`);
+        for (const u of userRows) userMap[u.id] = u.name || `User #${u.id}`;
+
+        const activities = logs.map(l => ({
+          id: String(l.id),
+          user: l.userId ? userMap[l.userId] || `User #${l.userId}` : "System",
+          action: l.action,
+          entity: l.entityType,
+          entityId: l.entityId ? String(l.entityId) : "",
+          timestamp: l.createdAt?.toISOString() || "",
+        }));
+
+        return {
+          activities,
+          stats: {
+            total: logs.length,
+            usersInRole: userIds.length,
+            role: input.role,
+          },
+        };
+      } catch (error) {
+        console.error("[Admin] getActivityByRole error:", error);
+        return { activities: [], stats: {} };
+      }
+    }),
 });

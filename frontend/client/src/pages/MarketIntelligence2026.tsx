@@ -205,23 +205,23 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
           <div className="mb-3">
             <p className="text-[11px] text-slate-500 mb-2">C.H. Robinson, WWEX Group, Magaya industry data</p>
             <div className="flex items-center gap-2 text-xs flex-wrap">
-              <select value={laneOrigin} onChange={e => setLaneOrigin(e.target.value)} className="bg-white/[0.06] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80">
+              <select value={laneOrigin} onChange={e => setLaneOrigin(e.target.value)} className="bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80">
                 {["TX","CA","FL","IL","GA","OH","PA","NJ","NY","WA","LA","CO","AZ","NV","TN","NC"].map(s => <option key={s} value={s}>{s}</option>)}
               </select>
               <ChevronRight className="w-3 h-3 text-white/30" />
-              <select value={laneDest} onChange={e => setLaneDest(e.target.value)} className="bg-white/[0.06] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80">
+              <select value={laneDest} onChange={e => setLaneDest(e.target.value)} className="bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80">
                 {["CA","TX","FL","IL","GA","OH","PA","NJ","NY","WA","LA","CO","AZ","NV","TN","NC"].map(s => <option key={s} value={s}>{s}</option>)}
               </select>
-              <input type="number" value={distance} onChange={e => setDistance(Number(e.target.value))} className="w-16 bg-white/[0.06] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80" />
+              <input type="number" value={distance} onChange={e => setDistance(Number(e.target.value))} className="w-16 bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80" />
               <span className="text-white/30">mi</span>
               <span className="text-white/10">|</span>
-              <select value={equipment} onChange={e => setEquipment(e.target.value)} className="bg-white/[0.06] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80">
+              <select value={equipment} onChange={e => setEquipment(e.target.value)} className="bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80">
                 <option value="dry_van">Dry Van</option>
                 <option value="reefer">Reefer</option>
                 <option value="flatbed">Flatbed</option>
                 <option value="tanker">Tanker</option>
               </select>
-              <select value={commodity} onChange={e => setCommodity(e.target.value)} className="bg-white/[0.06] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80">
+              <select value={commodity} onChange={e => setCommodity(e.target.value)} className="bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80">
                 <option value="general">General Freight</option>
                 <option value="electronics">Electronics</option>
                 <option value="pharmaceuticals">Pharmaceuticals</option>
@@ -232,14 +232,14 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                 <option value="building materials">Building Materials</option>
                 <option value="metals">Metals</option>
               </select>
-              <input type="number" value={weight} onChange={e => setWeight(Number(e.target.value))} className="w-20 bg-white/[0.06] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80" />
+              <input type="number" value={weight} onChange={e => setWeight(Number(e.target.value))} className="w-20 bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80" />
               <span className="text-white/30">lbs</span>
             </div>
           </div>
           <div className="flex gap-1 overflow-x-auto pb-1">
             {tabs.map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeTab === t.id ? "bg-white/[0.08] text-white" : "text-white/40 hover:text-white/70 hover:bg-white/[0.04]"}`}>
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeTab === t.id ? "bg-slate-200 dark:bg-white/[0.08] text-white" : "text-white/40 hover:text-white/70 hover:bg-slate-50 dark:hover:bg-white/[0.04]"}`}>
                 <t.icon className={`w-3.5 h-3.5 ${activeTab === t.id ? t.color : ""}`} />
                 {t.label}
               </button>

@@ -8,6 +8,12 @@ import { CanopyConnectService } from "./CanopyConnectService";
 import { ISNetworldService } from "./ISNetworldService";
 import { VeriforceService } from "./VeriforceService";
 import { MotiveELDService } from "./MotiveELDService";
+import { EnverusService } from "./EnverusService";
+import { OPISService } from "./OPISService";
+import { GenscapeService } from "./GenscapeService";
+import { BuckeyeTASService } from "./BuckeyeTASService";
+import { FMCSAService } from "./FMCSAService";
+import { DearmanService } from "./DearmanService";
 
 const serviceRegistry: Record<string, new () => BaseIntegrationService> = {
   canopy_connect: CanopyConnectService,
@@ -15,6 +21,13 @@ const serviceRegistry: Record<string, new () => BaseIntegrationService> = {
   veriforce: VeriforceService,
   keeptruckin: MotiveELDService,
   motive: MotiveELDService,
+  enverus: EnverusService,
+  opis: OPISService,
+  genscape: GenscapeService,
+  buckeye_tas: BuckeyeTASService,
+  buckeye: BuckeyeTASService,
+  fmcsa: FMCSAService,
+  dearman: DearmanService,
 };
 
 /**
@@ -48,3 +61,9 @@ export { CanopyConnectService } from "./CanopyConnectService";
 export { ISNetworldService } from "./ISNetworldService";
 export { VeriforceService } from "./VeriforceService";
 export { MotiveELDService } from "./MotiveELDService";
+export { EnverusService, enverusService, ENVERUS_ENDPOINTS } from "./EnverusService";
+export { OPISService, opisService, OPIS_ENDPOINTS } from "./OPISService";
+export { GenscapeService, genscapeService, GENSCAPE_ENDPOINTS } from "./GenscapeService";
+export { BuckeyeTASService, buckeyeTASService, BUCKEYE_ENDPOINTS } from "./BuckeyeTASService";
+export { FMCSAService, fmcsaService, FMCSA_ENDPOINTS } from "./FMCSAService";
+export { DearmanService, dearmanService, DEARMAN_ENDPOINTS } from "./DearmanService";

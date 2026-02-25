@@ -22,7 +22,7 @@ import {
   Package, MapPin, Truck, DollarSign, Calendar, ArrowLeft,
   Phone, Navigation, Clock, User, AlertTriangle, CheckCircle, Shield,
   Building2, Scale, FileText, Loader2, ChevronRight, Info,
-  CloudRain, Flame, Fuel, Radio, Activity,
+  CloudRain, Flame, Fuel, Radio, Activity, Receipt, Droplets, ArrowRight, Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 import LoadStatusTimeline from "@/components/tracking/LoadStatusTimeline";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { getEquipmentLabel, getLoadTitle } from "@/lib/loadUtils";
 
 import LoadStatusBadge from "@/components/load/LoadStatusBadge";
 import LoadProgressTimeline from "@/components/load/LoadProgressTimeline";
@@ -83,6 +84,9 @@ export default function LoadDetails() {
   const isAssignedDriver = load?.driverId && authUser?.id && Number(load.driverId) === Number(authUser.id);
   const isDispatchOrAdmin = ["DISPATCH", "ADMIN", "SUPER_ADMIN"].includes(userRole);
   const canUpdateStatus = isAssignedCatalyst || isAssignedDriver || isDispatchOrAdmin;
+  const isInvolvedParty = isLoadOwner || isAssignedCatalyst || isAssignedDriver || isDispatchOrAdmin;
+  const loadStatus = (load?.status || "").toLowerCase();
+  const isPostAssignment = !["draft", "posted", "bidding", "awarded", "accepted", "declined", "lapsed", "expired"].includes(loadStatus);
   const isInExecution = EXECUTION_STATES.has(load?.status || "");
   const isInFinancial = FINANCIAL_STATES.has(load?.status || "");
 
@@ -137,9 +141,23 @@ export default function LoadDetails() {
     { enabled: !!load && Number(load?.rate) > 0 && Number(load?.distance) > 0, staleTime: 60_000 }
   ) || { data: null };
   const mlDynamicPrice = (trpc as any).ml?.getDynamicPrice?.useQuery?.(
-    { originState: oState, destState: dState, distance: Number(load?.distance) || 0, weight: Number(load?.weight) || undefined, equipmentType: load?.equipmentType || "dry_van", cargoType: load?.cargoType || "general" },
+    { originState: oState, destState: dState, distance: Number(load?.distance) || 0, weight: Number(load?.weight) || undefined, equipmentType: load?.equipmentType || "dry_van", cargoType: load?.cargoType || "general", pickupDate: load?.pickupDate },
     { enabled: !!load && oState.length >= 2 && dState.length >= 2 && Number(load?.distance) > 0, staleTime: 120_000 }
   ) || { data: null };
+
+  // ── EusoTicket: Schedule A Rate + Platform Fee + Documents ──
+  const scheduleARateQuery = (trpc as any).rateSheet?.calculateRate?.useQuery?.(
+    { netBarrels: Number(load?.quantity) || 180, oneWayMiles: Number(load?.distance) || 0, waitTimeHours: 0, isSplitLoad: false, isReject: false, travelSurchargeMiles: 0 },
+    { enabled: !!load && Number(load?.distance) > 0 && ((load?.equipmentType || "").toLowerCase().includes("tank")), staleTime: 120_000 }
+  ) || { data: null };
+  const platformFeeQuery = (trpc as any).rateSheet?.previewPlatformFee?.useQuery?.(
+    { grossAmount: Number(load?.rate) || 0 },
+    { enabled: !!load && Number(load?.rate) > 0, staleTime: 60_000 }
+  ) || { data: null };
+  const eusoTicketDocsQuery = (trpc as any).rateSheet?.getEusoTicketDocuments?.useQuery?.(
+    { type: "all", limit: 10 },
+    { enabled: !!load, staleTime: 60_000 }
+  ) || { data: null, isLoading: false };
 
   const availableTransitions = (transitionsQuery.data || []) as any[];
   const stateHistory = (stateHistoryQuery.data || []) as any[];
@@ -181,6 +199,68 @@ export default function LoadDetails() {
     activeTimersQuery.refetch();
     financialSummaryQuery.refetch();
     pendingApprovalsQuery.refetch();
+  }, []);
+
+  // ── Download EusoTicket document ──
+  const downloadDocument = useCallback((doc: any) => {
+    let meta: any = {};
+    try { meta = typeof doc.fileUrl === "string" && doc.fileUrl.startsWith("{") ? JSON.parse(doc.fileUrl) : {}; } catch { meta = {}; }
+    const date = doc.createdAt ? new Date(doc.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
+    const bg = "#0c1222"; const cardBg = "#111827"; const cardBorder = "rgba(255,255,255,0.06)";
+    const textPrimary = "#f1f5f9"; const textMuted = "#64748b"; const accent = "#1473FF"; const accentPurple = "#BE01FF";
+    const rowBorderColor = "rgba(255,255,255,0.06)";
+    const logoSvg = `<svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1473FF"/><stop offset="100%" stop-color="#BE01FF"/></linearGradient></defs><path d="M50 5C50 5 30 25 25 45C20 65 30 85 50 95C70 85 80 65 75 45C70 25 50 5 50 5Z" fill="url(#lg)" opacity="0.9"/><path d="M50 25C50 25 40 38 37 50C34 62 40 75 50 82C60 75 66 62 63 50C60 38 50 25 50 25Z" fill="none" stroke="white" stroke-width="3"/><circle cx="50" cy="52" r="8" fill="none" stroke="white" stroke-width="2.5"/></svg>`;
+    const row = (l: string, v: string) => `<tr><td style="padding:10px 16px;font-size:12px;color:${textMuted};border-bottom:1px solid ${rowBorderColor};width:200px">${l}</td><td style="padding:10px 16px;font-size:13px;color:${textPrimary};font-weight:500;border-bottom:1px solid ${rowBorderColor}">${v}</td></tr>`;
+    const header = `<div style="text-align:center;padding:32px 0 24px;border-bottom:1px solid ${cardBorder};margin-bottom:28px"><div style="display:inline-block;margin-bottom:12px">${logoSvg}</div><h1 style="margin:0;font-size:28px;font-weight:800;color:transparent;font-size:0;line-height:0;overflow:hidden">.</h1><svg width="160" height="34" viewBox="0 0 160 34" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto"><defs><linearGradient id="etg2" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="${accent}"/><stop offset="100%" stop-color="${accentPurple}"/></linearGradient></defs><text x="80" y="28" text-anchor="middle" fill="url(#etg2)" font-family="-apple-system,BlinkMacSystemFont,Inter,sans-serif" font-size="30" font-weight="800" letter-spacing="-0.5">EusoTrip</text></svg><p style="margin:4px 0 0;font-size:11px;color:${textMuted};letter-spacing:2px;text-transform:uppercase">EusoTicket Document System</p><div style="margin-top:16px;display:flex;justify-content:center;gap:24px"><span style="font-size:12px;color:${textMuted}">${date}</span><span style="font-size:12px;color:${textMuted}">Doc #${doc.id || "N/A"}</span></div></div>`;
+    const footer = `<div style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:12px 0"><p style="font-size:8px;color:${textMuted}">Generated by EusoTrip EusoTicket &middot; ${new Date().toLocaleString()}</p><p style="font-size:7px;color:${textMuted};margin-top:2px">Designed by Eusorone Technologies, Inc.</p></div>`;
+    let body = "";
+    if (doc.type === "bol") {
+      body = `<div style="background:${cardBg};border:1px solid ${cardBorder};border-radius:16px;padding:24px"><h2 style="margin:0 0 20px;font-size:20px;color:${textPrimary};font-weight:700">Bill of Lading</h2><table style="width:100%;border-collapse:collapse">${row("BOL Number", doc.name || "N/A")}${row("Shipper", meta.shipperName || "N/A")}${row("Carrier", meta.carrierName || "N/A")}${row("Driver", meta.driverName || "N/A")}${row("Origin", meta.origin || "N/A")}${row("Destination", meta.destination || "N/A")}${row("Product", meta.productType || "Crude Oil")}${row("Volume", (meta.grossBarrels || "N/A") + " BBL")}${row("Date", date)}</table></div>`;
+    } else if (doc.type === "run_ticket") {
+      body = `<div style="background:${cardBg};border:1px solid ${cardBorder};border-radius:16px;padding:24px"><h2 style="margin:0 0 20px;font-size:20px;color:${textPrimary};font-weight:700">Run Ticket</h2><table style="width:100%;border-collapse:collapse">${row("Ticket #", doc.name || "N/A")}${row("Driver", meta.driverName || "N/A")}${row("Origin", meta.origin || "N/A")}${row("Destination", meta.destination || "N/A")}${row("Product", meta.productType || "Petroleum")}${row("Gross BBL", String(meta.grossBarrels || "N/A"))}${row("Net BBL", String(meta.netBarrels || "N/A"))}${row("BS&W", (meta.bsw || "N/A") + "%")}${row("Date", date)}</table></div>`;
+    } else if (doc.type === "rate_sheet") {
+      const tiers = meta.rateTiers || [];
+      const sc = meta.surcharges || {};
+      // Build rate tier rows in a multi-column layout (4 columns of tier pairs)
+      let tierRows = "";
+      if (tiers.length > 0) {
+        const colCount = 4;
+        const perCol = Math.ceil(tiers.length / colCount);
+        const cols: string[] = [];
+        for (let c = 0; c < colCount; c++) {
+          const slice = tiers.slice(c * perCol, (c + 1) * perCol);
+          let colHtml = `<td style="vertical-align:top;padding:0 4px"><table style="width:100%;border-collapse:collapse;font-size:11px">`;
+          colHtml += `<tr><th style="text-align:left;padding:4px 8px;color:${textMuted};font-weight:600;border-bottom:1px solid ${rowBorderColor}">Miles</th><th style="text-align:right;padding:4px 8px;color:${textMuted};font-weight:600;border-bottom:1px solid ${rowBorderColor}">$/BBL</th></tr>`;
+          for (const t of slice) {
+            colHtml += `<tr><td style="padding:3px 8px;color:${textPrimary}">${t.minMiles}-${t.maxMiles}</td><td style="text-align:right;padding:3px 8px;color:#10b981;font-weight:600;font-family:monospace">$${(t.ratePerBarrel ?? t.ratePerUnit ?? 0).toFixed(2)}</td></tr>`;
+          }
+          colHtml += `</table></td>`;
+          cols.push(colHtml);
+        }
+        tierRows = `<table style="width:100%;border-collapse:collapse"><tr>${cols.join("")}</tr></table>`;
+      }
+      // Build surcharges grid
+      const scItems: [string, string][] = [];
+      if (sc.fscEnabled !== undefined) scItems.push(["Fuel Surcharge", sc.fscEnabled ? "Enabled" : "Disabled"]);
+      if (sc.fscBaselineDieselPrice) scItems.push(["FSC Baseline", `$${Number(sc.fscBaselineDieselPrice).toFixed(2)}/gal`]);
+      if (sc.fscMilesPerGallon) scItems.push(["FSC MPG", `${sc.fscMilesPerGallon} mpg`]);
+      if (sc.waitTimeRatePerHour) scItems.push(["Wait Time", `$${sc.waitTimeRatePerHour}/hr`]);
+      if (sc.waitTimeFreeHours !== undefined) scItems.push(["Free Hours", `${sc.waitTimeFreeHours} hr`]);
+      if (sc.splitLoadFee) scItems.push(["Split Load Fee", `$${sc.splitLoadFee}`]);
+      if (sc.rejectFee) scItems.push(["Reject Fee", `$${sc.rejectFee}`]);
+      if (sc.minimumBarrels) scItems.push(["Minimum BBL", `${sc.minimumBarrels} BBL`]);
+      if (sc.travelSurchargePerMile) scItems.push(["Travel Surcharge", `$${Number(sc.travelSurchargePerMile).toFixed(2)}/mi`]);
+      let scHtml = "";
+      if (scItems.length > 0) {
+        scHtml = `<div style="margin-top:20px"><h3 style="font-size:14px;color:${textPrimary};font-weight:600;margin:0 0 12px">Surcharges &amp; Fees</h3><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${scItems.map(([l, v]) => `<div style="background:rgba(255,255,255,0.03);border:1px solid ${rowBorderColor};border-radius:8px;padding:8px 12px"><div style="font-size:10px;color:${textMuted};text-transform:uppercase;letter-spacing:0.5px">${l}</div><div style="font-size:14px;color:${textPrimary};font-weight:600;margin-top:2px">${v}</div></div>`).join("")}</div></div>`;
+      }
+      body = `<div style="background:${cardBg};border:1px solid ${cardBorder};border-radius:16px;padding:24px"><h2 style="margin:0 0 20px;font-size:20px;color:${textPrimary};font-weight:700">Rate Sheet &mdash; Schedule A</h2><table style="width:100%;border-collapse:collapse">${row("Name", meta.name || doc.name || "N/A")}${row("Region", meta.region || "N/A")}${row("Product Type", meta.productType || "Crude Oil")}${row("Trailer Type", (meta.trailerType || "Tanker").replace(/^\w/, (c: string) => c.toUpperCase()))}${row("Rate Unit", (meta.rateUnit || "per_barrel").replace(/_/g, " "))}${meta.effectiveDate ? row("Effective", meta.effectiveDate) : ""}${meta.expirationDate ? row("Expires", meta.expirationDate) : ""}${row("Date", date)}</table></div>${tiers.length > 0 ? `<div style="background:${cardBg};border:1px solid ${cardBorder};border-radius:16px;padding:24px;margin-top:16px"><h3 style="font-size:14px;color:${textPrimary};font-weight:600;margin:0 0 12px">Mileage Rate Tiers (${tiers.length} bands)</h3>${tierRows}</div>` : ""}${scHtml ? `<div style="background:${cardBg};border:1px solid ${cardBorder};border-radius:16px;padding:24px;margin-top:16px">${scHtml}</div>` : ""}${meta.notes ? `<div style="background:${cardBg};border:1px solid ${cardBorder};border-radius:16px;padding:24px;margin-top:16px"><h3 style="font-size:14px;color:${textPrimary};font-weight:600;margin:0 0 8px">Notes</h3><p style="font-size:12px;color:${textMuted};line-height:1.6;margin:0">${meta.notes}</p></div>` : ""}`;
+    } else {
+      body = `<div style="background:${cardBg};border:1px solid ${cardBorder};border-radius:16px;padding:24px"><h2 style="margin:0 0 20px;font-size:20px;color:${textPrimary};font-weight:700">${doc.name || "Document"}</h2><pre style="font-size:11px;background:rgba(255,255,255,0.03);padding:16px;border-radius:8px;overflow:auto;color:#94a3b8">${JSON.stringify(meta, null, 2)}</pre></div>`;
+    }
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${doc.name || "EusoTicket"}</title><style>@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}button,.no-print{display:none!important}}*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:900px;margin:0 auto;padding:32px 24px;background:${bg};color:${textPrimary}}</style></head><body>${header}${body}${footer}<div class="no-print" style="text-align:center;margin-top:28px"><button onclick="window.print()" style="background:linear-gradient(135deg,${accent},${accentPurple});color:white;border:none;padding:12px 32px;border-radius:10px;font-size:13px;cursor:pointer;font-weight:600">Print / Save as PDF</button></div></body></html>`;
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(html); w.document.close(); } else toast.error("Pop-up blocked");
   }, []);
   const { isConnected: wsConnected, lastEvent: wsLastEvent } = useLoadSocket(loadId, {
     onStateChange: refetchAll,
@@ -497,8 +577,8 @@ export default function LoadDetails() {
             </div>
             <div>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Equipment</p>
-              <p className={cn("text-2xl font-bold capitalize", isLight ? "text-slate-800" : "text-white")}>{load.equipmentType || "—"}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{load.commodity || "General"}</p>
+              <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass)}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{getLoadTitle(load)}</p>
             </div>
           </div>
         </div>
@@ -883,14 +963,14 @@ export default function LoadDetails() {
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: "Equipment", value: load.equipmentType || "N/A", icon: <Truck className="w-4 h-4 text-blue-500" /> },
-                { label: "Weight", value: `${Number(load.weight || 0).toLocaleString()} ${load.weightUnit || "lbs"}`, icon: <Package className="w-4 h-4 text-purple-500" /> },
-                { label: "Commodity", value: load.commodity || "General Freight", icon: <Package className="w-4 h-4 text-orange-500" /> },
-                { label: "Cargo Type", value: load.cargoType || "General", icon: <FileText className="w-4 h-4 text-cyan-500" /> },
+                { label: "Equipment", value: getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass), icon: <Truck className="w-4 h-4 text-blue-500" /> },
+                { label: "Weight", value: `${Number(load.weight || 0).toLocaleString()} ${load.weightUnit || "Lbs"}`, icon: <Package className="w-4 h-4 text-purple-500" /> },
+                { label: "Commodity", value: getLoadTitle(load), icon: <Package className="w-4 h-4 text-orange-500" /> },
+                { label: "Cargo Type", value: (load.cargoType || "general").charAt(0).toUpperCase() + (load.cargoType || "general").slice(1), icon: <FileText className="w-4 h-4 text-cyan-500" /> },
               ].map((item) => (
                 <div key={item.label} className={cellCls}>
                   <div className="flex items-center gap-2 mb-1">{item.icon}<span className="text-[10px] text-slate-400 uppercase">{item.label}</span></div>
-                  <p className={cn(valCls, "capitalize")}>{item.value}</p>
+                  <p className={valCls}>{item.value}</p>
                 </div>
               ))}
             </div>
@@ -996,6 +1076,180 @@ export default function LoadDetails() {
             </CardContent>
           </Card>
         )}
+
+        {/* ═══════════ EUSOTICKET RECEIPT ═══════════ */}
+        <Card className={cn("lg:col-span-2 rounded-2xl border overflow-hidden", isLight ? "bg-white border-slate-200 shadow-md" : "bg-slate-800/60 border-slate-700/50")}>
+          <CardHeader className="pb-3">
+            <CardTitle className={cn(titleCls, "flex items-center gap-2")}>
+              <Receipt className="w-5 h-5 text-emerald-500" />EusoTicket Receipt
+              <Badge className="ml-auto bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-[10px]">
+                {load.loadNumber || `#${String(load.id).slice(0, 8)}`}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Rate & Settlement Summary */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className={cellCls}>
+                <div className="flex items-center gap-1.5 mb-1"><DollarSign className="w-3.5 h-3.5 text-emerald-500" /><span className="text-[10px] text-slate-400 uppercase">Agreed Rate</span></div>
+                <p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${rate.toLocaleString()}</p>
+                <p className="text-[10px] text-slate-400">${ratePerMile}/mi</p>
+              </div>
+              {isInvolvedParty && <div className={cellCls}>
+                <div className="flex items-center gap-1.5 mb-1"><Scale className="w-3.5 h-3.5 text-purple-500" /><span className="text-[10px] text-slate-400 uppercase">Platform Fee</span></div>
+                {platformFeeQuery.data ? (
+                  <>
+                    <p className={cn("text-lg font-bold", isLight ? "text-purple-600" : "text-purple-400")}>${platformFeeQuery.data.platformFeeAmount?.toFixed(2)}</p>
+                    <p className="text-[10px] text-slate-400">{platformFeeQuery.data.platformFeePercent}% + ${platformFeeQuery.data.paymentProcessingFee?.toFixed(2)} processing</p>
+                  </>
+                ) : (
+                  <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>--</p>
+                )}
+              </div>}
+              {isInvolvedParty && <div className={cellCls}>
+                <div className="flex items-center gap-1.5 mb-1"><ArrowRight className="w-3.5 h-3.5 text-emerald-500" /><span className="text-[10px] text-slate-400 uppercase">Carrier Receives</span></div>
+                {platformFeeQuery.data ? (
+                  <p className="text-lg font-bold text-emerald-500">${platformFeeQuery.data.carrierReceives?.toFixed(2)}</p>
+                ) : (
+                  <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>--</p>
+                )}
+              </div>}
+              {isInvolvedParty && <div className={cellCls}>
+                <div className="flex items-center gap-1.5 mb-1"><DollarSign className="w-3.5 h-3.5 text-red-500" /><span className="text-[10px] text-slate-400 uppercase">Shipper Owes</span></div>
+                {platformFeeQuery.data ? (
+                  <p className={cn("text-lg font-bold", isLight ? "text-red-600" : "text-red-400")}>${platformFeeQuery.data.shipperPays?.toFixed(2)}</p>
+                ) : (
+                  <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>--</p>
+                )}
+              </div>}
+            </div>
+
+            {/* Schedule A Rate Reference (tanker/barrel loads) */}
+            {scheduleARateQuery.data && distance > 0 && (
+              <div className={cn("p-4 rounded-xl border", isLight ? "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200" : "bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-amber-500/20")}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Scale className="w-4 h-4 text-amber-500" />
+                  <span className={cn("text-xs font-bold uppercase tracking-wider", isLight ? "text-amber-700" : "text-amber-300")}>Schedule A Reference Rate</span>
+                </div>
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-400 uppercase">Rate/BBL</p>
+                    <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>${scheduleARateQuery.data.ratePerBarrel?.toFixed(2)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-400 uppercase">Base</p>
+                    <p className={cn("text-sm font-bold", isLight ? "text-amber-600" : "text-amber-300")}>${scheduleARateQuery.data.baseAmount?.toFixed(2)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-400 uppercase">FSC</p>
+                    <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{scheduleARateQuery.data.fsc > 0 ? `$${scheduleARateQuery.data.fsc.toFixed(2)}` : "$0"}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-400 uppercase">Sched A Total</p>
+                    <p className="text-sm font-bold text-emerald-500">${scheduleARateQuery.data.totalAmount?.toFixed(2)}</p>
+                  </div>
+                </div>
+                {rate > 0 && scheduleARateQuery.data.totalAmount > 0 && (
+                  <div className={cn("mt-2 text-[10px] flex items-center gap-1", rate >= scheduleARateQuery.data.totalAmount ? (isLight ? "text-emerald-600" : "text-emerald-400") : (isLight ? "text-red-600" : "text-red-400"))}>
+                    <CheckCircle className="w-3 h-3" />
+                    Agreed rate ${rate.toLocaleString()} is {rate >= scheduleARateQuery.data.totalAmount ? "at or above" : "below"} Schedule A reference (${scheduleARateQuery.data.totalAmount.toFixed(2)})
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Product Requirement Verification */}
+            <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/40 border-slate-700/30")}>
+              <p className={cn("text-[10px] font-semibold uppercase tracking-wider mb-2", isLight ? "text-slate-500" : "text-slate-400")}>Product & Equipment Verification</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className={cn("w-3.5 h-3.5", load.commodity ? "text-emerald-500" : "text-slate-400")} />
+                  <span className={cn("text-xs", isLight ? "text-slate-600" : "text-slate-300")}>{load.commodity || "Product TBD"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className={cn("w-3.5 h-3.5", load.equipmentType ? "text-emerald-500" : "text-slate-400")} />
+                  <span className={cn("text-xs capitalize", isLight ? "text-slate-600" : "text-slate-300")}>{load.equipmentType || "Equipment TBD"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {load.hazmatClass ? <AlertTriangle className="w-3.5 h-3.5 text-red-500" /> : <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />}
+                  <span className={cn("text-xs", isLight ? "text-slate-600" : "text-slate-300")}>{load.hazmatClass ? `Hazmat Class ${load.hazmatClass}` : "Non-Hazmat"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className={cn("w-3.5 h-3.5", Number(load.weight) > 0 ? "text-emerald-500" : "text-slate-400")} />
+                  <span className={cn("text-xs", isLight ? "text-slate-600" : "text-slate-300")}>{Number(load.weight || 0).toLocaleString()} {load.weightUnit || "lbs"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* EusoTicket Documents — only for involved parties */}
+            {isInvolvedParty && eusoTicketDocsQuery.data?.documents?.length > 0 && (
+              <div>
+                <p className={cn("text-[10px] font-semibold uppercase tracking-wider mb-2", isLight ? "text-slate-500" : "text-slate-400")}>Related Documents</p>
+                <div className="space-y-1.5">
+                  {eusoTicketDocsQuery.data.documents.slice(0, 5).map((doc: any) => {
+                    const typeIcon: Record<string, React.ReactNode> = {
+                      bol: <FileText className="w-3.5 h-3.5 text-blue-500" />,
+                      run_ticket: <Droplets className="w-3.5 h-3.5 text-amber-500" />,
+                      rate_sheet: <Scale className="w-3.5 h-3.5 text-purple-500" />,
+                      reconciliation: <Receipt className="w-3.5 h-3.5 text-emerald-500" />,
+                    };
+                    const typeLabel: Record<string, string> = { bol: "BOL", run_ticket: "Run Ticket", rate_sheet: "Rate Sheet", reconciliation: "Reconciliation" };
+                    return (
+                      <div key={doc.id} className={cn("flex items-center justify-between px-3 py-2 rounded-lg border", isLight ? "bg-white border-slate-200 hover:bg-slate-50" : "bg-slate-800/50 border-slate-700/30 hover:bg-slate-700/20")}>
+                        <div className="flex items-center gap-2">
+                          {typeIcon[doc.type] || <FileText className="w-3.5 h-3.5 text-slate-400" />}
+                          <span className={cn("text-xs", isLight ? "text-slate-700" : "text-slate-300")}>{doc.name}</span>
+                          <Badge className={cn("text-[8px] border-0", doc.type === "bol" ? "bg-blue-500/15 text-blue-500" : doc.type === "run_ticket" ? "bg-amber-500/15 text-amber-500" : doc.type === "rate_sheet" ? "bg-purple-500/15 text-purple-500" : "bg-emerald-500/15 text-emerald-500")}>
+                            {typeLabel[doc.type] || doc.type}
+                          </Badge>
+                        </div>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-400 hover:text-white" onClick={() => downloadDocument(doc)}><Download className="w-3 h-3" /></Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Settlement Flow — only for involved parties */}
+            {isInvolvedParty && platformFeeQuery.data && rate > 0 && (
+              <div className={cn("p-3 rounded-xl border", isLight ? "bg-gradient-to-r from-blue-50/50 to-purple-50/50 border-blue-200/50" : "bg-gradient-to-r from-blue-500/5 to-purple-500/5 border-blue-500/20")}>
+                <p className={cn("text-[10px] font-semibold uppercase tracking-wider mb-2", isLight ? "text-slate-500" : "text-slate-400")}>Settlement Flow</p>
+                <div className="flex items-center justify-between text-xs">
+                  <div className="text-center">
+                    <p className={cn("font-semibold", isLight ? "text-slate-700" : "text-slate-300")}>Shipper</p>
+                    <p className={cn("text-[10px]", isLight ? "text-red-600" : "text-red-400")}>${platformFeeQuery.data.shipperPays?.toFixed(2)}</p>
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                  <div className="text-center">
+                    <p className="font-semibold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">EusoTrip</p>
+                    <p className={cn("text-[10px]", isLight ? "text-purple-600" : "text-purple-400")}>${platformFeeQuery.data.platformFeeAmount?.toFixed(2)} fee</p>
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                  <div className="text-center">
+                    <p className={cn("font-semibold", isLight ? "text-slate-700" : "text-slate-300")}>Carrier</p>
+                    <p className="text-[10px] text-emerald-500">${platformFeeQuery.data.carrierReceives?.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Actions — only for involved parties on assigned+ loads */}
+            {isInvolvedParty && isPostAssignment && (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className={cn("rounded-lg text-xs", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-700 hover:bg-slate-700")} onClick={() => setLocation("/docks")}>
+                  <FileText className="w-3.5 h-3.5 mr-1.5" />Generate BOL
+                </Button>
+                <Button variant="outline" size="sm" className={cn("rounded-lg text-xs", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-700 hover:bg-slate-700")} onClick={() => setLocation("/docks")}>
+                  <Droplets className="w-3.5 h-3.5 mr-1.5" />Create Run Ticket
+                </Button>
+                <Button variant="outline" size="sm" className={cn("rounded-lg text-xs", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-700 hover:bg-slate-700")} onClick={() => setLocation("/rate-sheet")}>
+                  <Receipt className="w-3.5 h-3.5 mr-1.5" />Reconciliation
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* ── Assigned Driver ── */}
         {load.driver && (

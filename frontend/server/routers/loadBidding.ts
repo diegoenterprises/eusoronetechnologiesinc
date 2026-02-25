@@ -7,8 +7,9 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, or, gte, lte } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { requireAccess } from "../services/security/rbac/access-check";
 import {
   loadBids,
   bidAutoAcceptRules,
@@ -183,6 +184,7 @@ export const loadBiddingRouter = router({
       expiresInHours: z.number().default(24),
     }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'BID' }, (ctx as any).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
@@ -268,6 +270,7 @@ export const loadBiddingRouter = router({
   accept: protectedProcedure
     .input(z.object({ bidId: z.number() }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'APPROVE', resource: 'BID' }, (ctx as any).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 

@@ -6,13 +6,13 @@
  */
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte, or } from "drizzle-orm";
-import { router, auditedProtectedProcedure as protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, isolatedProcedure as protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   facilities, facilityRatings, facilityRequirements, facilityStatsCache,
   dtnConnections, dtnSyncLog, detentionGpsRecords, loads, users,
 } from "../../drizzle/schema";
-import { searchFacilities, getNearbyFacilities, getFacilityById, getFacilityCountsByState, seedFacilityDatabase } from "../services/facilities/facilityService";
+import { searchFacilities, getNearbyFacilities, getFacilityById, getFacilityCountsByState, seedFacilityDatabase, importPipelineStations } from "../services/facilities/facilityService";
 import { getDTNClient } from "../services/dtn/dtnClient";
 
 // ── Helper: resolve user ID from context ───────────────────────────
@@ -598,11 +598,206 @@ export const facilityIntelligenceRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════
+  // PIPELINE & TARIFF INTELLIGENCE
+  // ═══════════════════════════════════════════════════════════════════
+
+  getPipelineTariffs: publicProcedure
+    .input(z.object({ facilityId: z.number() }))
+    .query(async ({ input }) => {
+      const fac = await getFacilityById(input.facilityId);
+      if (!fac) return null;
+      const f = fac as any;
+      const operator = (f.operatorName || f.facilityName || "").toUpperCase();
+      const state = f.state || "";
+
+      // ── Curated pipeline operator knowledge base ──
+      // Major US petroleum pipeline operators → FERC tariff data
+      const PIPELINE_KB: Record<string, {
+        company: string;
+        systems: { name: string; type: string; ferc: string[]; products: string[]; states: string[] }[];
+        tariffIndices: { name: string; date: string; ferc?: string }[];
+        prorationPolicy?: { name: string; date?: string };
+        website?: string;
+      }> = {
+        CITGO: {
+          company: "CITGO Petroleum Corporation",
+          systems: [
+            { name: "Lakemont Pipeline System", type: "Refined Products", ferc: ["FERC 16-16-0"], products: ["Gasoline", "Diesel", "Jet Fuel"], states: ["IL", "IN"] },
+            { name: "Casa Refined Products Pipeline System", type: "Refined Products", ferc: ["FERC No. 36"], products: ["Gasoline", "Diesel", "Heating Oil"], states: ["LA", "TX"] },
+            { name: "Sour Lake Crude Pipeline System", type: "Crude Oil", ferc: ["FERC 71-20-0", "FERC 70-12-0", "FERC 72-11-0", "FERC 74-11-0", "FERC 75-12-0"], products: ["Crude Oil"], states: ["TX"] },
+          ],
+          tariffIndices: [
+            { name: "CITGO Products Pipeline Co. Tariff Index", date: "July 1, 2022", ferc: "FERC 16-16-0" },
+            { name: "CITGO Pipeline Co. Tariff Index", date: "July 1, 2022" },
+          ],
+          prorationPolicy: { name: "Proration Policy", date: "January 2019" },
+          website: "https://www.citgo.com/operations/terminals-pipelines",
+        },
+        "ENTERPRISE PRODUCTS": {
+          company: "Enterprise Products Partners",
+          systems: [
+            { name: "TEPPCO Pipeline", type: "NGL/Petrochemicals", ferc: ["FERC 25-17-0"], products: ["NGL", "Propane", "Butane", "Ethane"], states: ["TX", "LA", "MS", "AL", "GA", "TN", "IN", "IL"] },
+            { name: "Dixie Pipeline", type: "NGL", ferc: ["FERC 18-12-0"], products: ["Propane", "Butane"], states: ["TX", "LA", "MS", "AL", "GA"] },
+            { name: "Seminole Pipeline", type: "NGL", ferc: ["FERC 50-5-0"], products: ["NGL", "Condensate"], states: ["NM", "TX", "OK"] },
+            { name: "Mid-America Pipeline", type: "NGL", ferc: ["FERC 88-16-0"], products: ["NGL"], states: ["NM", "TX", "KS", "NE", "IA", "IL"] },
+          ],
+          tariffIndices: [
+            { name: "TEPPCO Pipeline Tariff Index", date: "July 1, 2024" },
+            { name: "Dixie Pipeline Tariff Index", date: "July 1, 2024" },
+          ],
+          website: "https://www.enterpriseproducts.com",
+        },
+        MAGELLAN: {
+          company: "Magellan Midstream Partners (ONEOK)",
+          systems: [
+            { name: "Magellan Refined Products Pipeline", type: "Refined Products", ferc: ["FERC 138-9-0"], products: ["Gasoline", "Diesel", "Jet Fuel", "LPG"], states: ["TX", "OK", "KS", "NE", "IA", "MO", "WI", "MN", "CO", "NM", "AZ", "AK"] },
+            { name: "Longhorn Pipeline", type: "Crude Oil", ferc: ["FERC 4-5-0"], products: ["Crude Oil"], states: ["TX"] },
+          ],
+          tariffIndices: [
+            { name: "Magellan Pipeline Tariff Index", date: "July 1, 2024" },
+          ],
+          website: "https://www.magellanlp.com",
+        },
+        "COLONIAL PIPELINE": {
+          company: "Colonial Pipeline Company",
+          systems: [
+            { name: "Colonial Pipeline System", type: "Refined Products", ferc: ["FERC 99-41-0"], products: ["Gasoline", "Diesel", "Jet Fuel", "Heating Oil", "Kerosene"], states: ["TX", "LA", "MS", "AL", "GA", "SC", "NC", "VA", "MD", "PA", "NJ", "NY"] },
+          ],
+          tariffIndices: [
+            { name: "Colonial Pipeline Tariff Index", date: "January 1, 2025" },
+          ],
+          prorationPolicy: { name: "Proration & Allocation Policy", date: "2024" },
+          website: "https://www.colpipe.com",
+        },
+        BUCKEYE: {
+          company: "Buckeye Partners LP",
+          systems: [
+            { name: "Buckeye Pipe Line", type: "Refined Products", ferc: ["FERC 57-24-0"], products: ["Gasoline", "Diesel", "Jet Fuel", "LPG"], states: ["PA", "NY", "NJ", "OH", "IN", "IL", "MI", "WI"] },
+            { name: "Laurel Pipe Line", type: "Refined Products", ferc: ["FERC 154-14-0"], products: ["Gasoline", "Diesel"], states: ["PA"] },
+            { name: "Buckeye Gulf Coast Pipeline", type: "Refined Products", ferc: ["FERC 8-4-0"], products: ["Gasoline", "Diesel", "Jet Fuel"], states: ["TX", "LA"] },
+          ],
+          tariffIndices: [
+            { name: "Buckeye Pipe Line Tariff Index", date: "July 1, 2024" },
+            { name: "Laurel Pipe Line Tariff Index", date: "July 1, 2024" },
+          ],
+          website: "https://www.buckeye.com",
+        },
+        KINDER: {
+          company: "Kinder Morgan",
+          systems: [
+            { name: "Products (SE) Pipeline", type: "Refined Products", ferc: ["FERC 76-11-0"], products: ["Gasoline", "Diesel", "Jet Fuel"], states: ["TX", "LA", "MS", "AL", "GA", "FL", "SC", "NC", "TN"] },
+            { name: "Plantation Pipeline", type: "Refined Products", ferc: ["FERC 20-19-0"], products: ["Gasoline", "Diesel", "Jet Fuel"], states: ["LA", "MS", "AL", "GA", "SC", "NC", "VA"] },
+            { name: "CALNEV Pipeline", type: "Refined Products", ferc: ["FERC 30-5-0"], products: ["Gasoline", "Diesel", "Jet Fuel"], states: ["CA", "NV", "AZ"] },
+            { name: "SFPP (West)", type: "Refined Products", ferc: ["FERC 148-17-0"], products: ["Gasoline", "Diesel", "Jet Fuel"], states: ["CA", "AZ", "NV", "OR"] },
+          ],
+          tariffIndices: [
+            { name: "Kinder Morgan Products Pipeline Tariff", date: "July 1, 2024" },
+          ],
+          website: "https://www.kindermorgan.com",
+        },
+        "NUSTAR": {
+          company: "NuStar Energy (Sunoco LP)",
+          systems: [
+            { name: "NuStar Pipeline System", type: "Refined Products & Crude", ferc: ["FERC 41-9-0"], products: ["Gasoline", "Diesel", "Crude Oil", "Residual Fuel"], states: ["TX", "OK", "NM", "CO", "KS"] },
+          ],
+          tariffIndices: [{ name: "NuStar Pipeline Tariff Index", date: "July 1, 2024" }],
+          website: "https://www.nustarenergy.com",
+        },
+        PLAINS: {
+          company: "Plains All American Pipeline",
+          systems: [
+            { name: "Basin Pipeline", type: "Crude Oil", ferc: ["FERC 100-8-0"], products: ["Crude Oil"], states: ["TX", "NM"] },
+            { name: "Capline Pipeline", type: "Crude Oil", ferc: ["FERC 155-11-0"], products: ["Crude Oil"], states: ["LA", "MS", "TN", "IL"] },
+            { name: "Red River Pipeline", type: "Crude Oil", ferc: ["FERC 60-6-0"], products: ["Crude Oil"], states: ["TX", "OK"] },
+          ],
+          tariffIndices: [{ name: "Plains All American Pipeline Tariff", date: "July 1, 2024" }],
+          website: "https://www.plainsallamerican.com",
+        },
+        PHILLIPS: {
+          company: "Phillips 66 Partners",
+          systems: [
+            { name: "Sweeny to Pasadena Pipeline", type: "NGL/Crude", ferc: ["FERC 4-3-0"], products: ["NGL", "Crude Oil"], states: ["TX"] },
+            { name: "Gold Line Pipeline", type: "Refined Products", ferc: ["FERC 7-4-0"], products: ["Gasoline", "Diesel"], states: ["TX", "OK", "KS", "MO", "IL"] },
+          ],
+          tariffIndices: [{ name: "Phillips 66 Pipeline Tariff", date: "July 1, 2024" }],
+          website: "https://www.phillips66.com",
+        },
+        MARATHON: {
+          company: "Marathon Pipe Line LLC (MPLX)",
+          systems: [
+            { name: "Marathon Pipeline System", type: "Crude & Refined Products", ferc: ["FERC 210-9-0"], products: ["Crude Oil", "Gasoline", "Diesel"], states: ["OH", "MI", "IN", "IL", "KY", "TN"] },
+          ],
+          tariffIndices: [{ name: "Marathon Pipeline Tariff Index", date: "July 1, 2024" }],
+          website: "https://www.marathonpetroleum.com",
+        },
+        SUNOCO: {
+          company: "Sunoco Pipeline LP",
+          systems: [
+            { name: "Sunoco / ETP Pipeline", type: "Crude & Refined Products", ferc: ["FERC 65-14-0"], products: ["Crude Oil", "Gasoline", "Diesel", "Ethanol"], states: ["TX", "PA", "OH", "MI", "NJ", "NY"] },
+            { name: "Mariner East Pipeline", type: "NGL", ferc: ["FERC 2-2-0"], products: ["Ethane", "Propane", "Butane"], states: ["PA", "OH", "WV"] },
+          ],
+          tariffIndices: [{ name: "Sunoco Pipeline Tariff Index", date: "July 1, 2024" }],
+          website: "https://www.sunocologistics.com",
+        },
+        VALERO: {
+          company: "Valero Energy Corporation",
+          systems: [
+            { name: "McKee to El Paso Pipeline", type: "Refined Products", ferc: ["FERC 12-8-0"], products: ["Gasoline", "Diesel", "Jet Fuel"], states: ["TX", "NM"] },
+          ],
+          tariffIndices: [{ name: "Valero Pipeline Tariff Index", date: "July 1, 2024" }],
+          website: "https://www.valero.com",
+        },
+        HOLLY: {
+          company: "HollyFrontier / HF Sinclair",
+          systems: [
+            { name: "Holly Pipeline System", type: "Crude & Refined Products", ferc: ["FERC 22-7-0"], products: ["Crude Oil", "Gasoline", "Diesel"], states: ["NM", "TX", "UT", "WY", "MT"] },
+          ],
+          tariffIndices: [{ name: "HollyFrontier Pipeline Tariff", date: "July 1, 2024" }],
+          website: "https://www.hfsinclair.com",
+        },
+      };
+
+      // Match operator to pipeline knowledge base
+      let match: typeof PIPELINE_KB[string] | null = null;
+      for (const [key, val] of Object.entries(PIPELINE_KB)) {
+        if (operator.includes(key)) {
+          // Filter systems to those that operate in the facility's state
+          const relevantSystems = state
+            ? val.systems.filter(s => s.states.includes(state) || s.states.length === 0)
+            : val.systems;
+          match = {
+            ...val,
+            systems: relevantSystems.length > 0 ? relevantSystems : val.systems,
+          };
+          break;
+        }
+      }
+
+      // Also check if the facility receives pipeline — show generic FERC info
+      const receivesPipeline = f.receivesPipeline;
+
+      return {
+        facilityId: input.facilityId,
+        operatorName: f.operatorName,
+        facilityName: f.facilityName,
+        state,
+        receivesPipeline: !!receivesPipeline,
+        pipelineOperator: match,
+        fercInfoUrl: "https://www.ferc.gov/industries-data/oil/tariffs-oil-pipeline-tariffs",
+      };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════
   // ADMIN: ETL Seed
   // ═══════════════════════════════════════════════════════════════════
 
   seedDatabase: protectedProcedure
     .mutation(async () => {
       return seedFacilityDatabase();
+    }),
+
+  seedPipelineStations: protectedProcedure
+    .mutation(async () => {
+      return importPipelineStations();
     }),
 });

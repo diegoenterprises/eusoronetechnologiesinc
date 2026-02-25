@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { getLoadTitle, getEquipmentLabel, isHazmatLoad } from "@/lib/loadUtils";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
@@ -258,8 +259,8 @@ export default function LoadBoard() {
             const destState = load.destination?.state || "";
             const isActive = ["in_transit", "assigned"].includes(load.status);
             const canBid = load.status === "posted";
-            const hazmat = load.hazmatClass || (["hazmat", "chemicals", "petroleum"].includes(load.cargoType) ? "Hazardous" : null);
-            const companyName = load.companyName || load.shipperName || (load.cargoType === "petroleum" ? "Petroleum Load" : load.cargoType === "chemicals" ? "Chemical Load" : "General Cargo");
+            const hazmat = isHazmatLoad(load);
+            const companyName = load.companyName || load.shipperName || getLoadTitle(load);
 
             return (
               <Card key={load.id} className={cn(
@@ -303,16 +304,7 @@ export default function LoadBoard() {
                       <div className="flex items-center gap-2">
                         <Truck className="w-4 h-4 text-slate-400" />
                         <span className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-300")}>
-                          {load.equipmentType === "tank" || load.equipmentType === "liquid_tank" ? "Liquid Tank Trailer"
-                            : load.equipmentType === "tanker" || load.equipmentType === "gas_tank" ? "Gas Tank Trailer"
-                            : load.equipmentType === "flatbed" ? "Flatbed"
-                            : load.equipmentType === "reefer" ? "Refrigerated (Reefer)"
-                            : load.equipmentType === "dry-van" || load.equipmentType === "dry_van" ? "Dry Van"
-                            : load.equipmentType === "hopper" ? "Dry Bulk / Hopper"
-                            : load.equipmentType === "cryogenic" ? "Cryogenic Tank"
-                            : load.equipmentType === "food_grade_tank" ? "Food-Grade Liquid Tank"
-                            : load.equipmentType === "water_tank" ? "Water Tank"
-                            : "Semi Truck"}
+                          {getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass)}
                         </span>
                         <span className="text-slate-400 text-xs">|</span>
                         <span className="text-xs text-slate-400">{(load.compartments || 1) > 1 ? `${load.compartments} compartments` : "Single compartment"}</span>
@@ -325,14 +317,24 @@ export default function LoadBoard() {
                     {/* Tags Row */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 flex-wrap">
+                        {(load.commodity || load.commodityName) && (
+                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-bold border", isLight ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-blue-500/15 border-blue-500/30 text-blue-400")}>
+                            {load.commodity || load.commodityName}
+                          </span>
+                        )}
+                        {load.cargoType && load.cargoType !== "general" && (
+                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-purple-50 border-purple-200 text-purple-600" : "bg-purple-500/15 border-purple-500/30 text-purple-400")}>
+                            {load.cargoType.charAt(0).toUpperCase() + load.cargoType.slice(1)}
+                          </span>
+                        )}
+                        {load.hazmatClass && (
+                          <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-red-500/15 text-red-500 border border-red-500/30">
+                            Hazmat Class {load.hazmatClass}
+                          </span>
+                        )}
                         {load.weight > 0 && (
                           <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>
                             {Number(load.weight).toLocaleString()} {load.weightUnit || "lbs"}
-                          </span>
-                        )}
-                        {hazmat && (
-                          <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-red-500/15 text-red-500 border border-red-500/30">
-                            Hazardous
                           </span>
                         )}
                       </div>
@@ -348,6 +350,7 @@ export default function LoadBoard() {
                     <LoadCargoAnimation
                       equipmentType={load.equipmentType}
                       cargoType={load.cargoType}
+                      hazmatClass={load.hazmatClass}
                       compartments={load.compartments || 1}
                       height={110}
                       isLight={isLight}

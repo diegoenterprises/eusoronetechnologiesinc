@@ -167,10 +167,14 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
     await addColIfMissing("loads", "distance", "DECIMAL(10,2) DEFAULT NULL");
 
     // --- documents table columns ---
+    await addColIfMissing("documents", "agreementId", "INT DEFAULT NULL");
     await addColIfMissing("documents", "expiryDate", "TIMESTAMP NULL DEFAULT NULL");
     await addColIfMissing("documents", "status", "VARCHAR(50) DEFAULT 'active'");
     await addColIfMissing("documents", "type", "VARCHAR(50) DEFAULT 'other'");
     await addColIfMissing("documents", "deletedAt", "TIMESTAMP NULL DEFAULT NULL");
+
+    // --- agreements table columns ---
+    await addColIfMissing("agreements", "rateSheetDocumentId", "INT DEFAULT NULL");
 
     // --- users table columns ---
     await addColIfMissing("users", "companyId", "INT DEFAULT NULL");
@@ -192,6 +196,9 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
     await addColIfMissing("bids", "estimatedDelivery", "TIMESTAMP NULL DEFAULT NULL");
     await addColIfMissing("bids", "message", "TEXT DEFAULT NULL");
     await addColIfMissing("bids", "expiresAt", "TIMESTAMP NULL DEFAULT NULL");
+
+    // --- vehicles table columns ---
+    await addColIfMissing("vehicles", "mileage", "INT DEFAULT NULL");
 
     // --- audit_logs table ---
     await ensureTable("audit_logs", `CREATE TABLE audit_logs (
@@ -526,6 +533,47 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX idx_dgr_carrier (dgr_carrier_id),
       INDEX idx_dgr_status (dgr_status),
       INDEX idx_dgr_arrival (arrival_timestamp)
+    )`);
+
+    // --- Support Tickets ---
+    await ensureTable("support_tickets", `CREATE TABLE support_tickets (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      ticketNumber VARCHAR(20) NOT NULL,
+      userId INT NOT NULL,
+      userName VARCHAR(255) DEFAULT NULL,
+      userEmail VARCHAR(255) DEFAULT NULL,
+      userRole VARCHAR(50) DEFAULT NULL,
+      subject VARCHAR(500) NOT NULL,
+      message TEXT NOT NULL,
+      category VARCHAR(50) DEFAULT 'general',
+      priority VARCHAR(20) DEFAULT 'medium',
+      status VARCHAR(30) DEFAULT 'open',
+      assignedTo INT DEFAULT NULL,
+      loadId INT DEFAULT NULL,
+      satisfaction INT DEFAULT NULL,
+      feedback TEXT DEFAULT NULL,
+      resolvedAt TIMESTAMP NULL DEFAULT NULL,
+      closedAt TIMESTAMP NULL DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_st_user (userId),
+      INDEX idx_st_status (status),
+      INDEX idx_st_priority (priority),
+      INDEX idx_st_created (createdAt),
+      UNIQUE INDEX idx_st_number (ticketNumber)
+    )`);
+
+    await ensureTable("support_replies", `CREATE TABLE support_replies (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      ticketId INT NOT NULL,
+      userId INT NOT NULL,
+      userName VARCHAR(255) DEFAULT NULL,
+      userRole VARCHAR(50) DEFAULT NULL,
+      message TEXT NOT NULL,
+      isStaff BOOLEAN DEFAULT FALSE,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_sr_ticket (ticketId),
+      INDEX idx_sr_user (userId)
     )`);
 
     console.log("[SchemaSync] Done.");

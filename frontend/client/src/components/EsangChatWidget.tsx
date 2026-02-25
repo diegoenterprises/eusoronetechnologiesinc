@@ -33,9 +33,11 @@ interface EsangChatWidgetProps {
   open: boolean;
   onClose: () => void;
   dissolving?: boolean;
+  isFullScreen?: boolean;
+  onToggleFullScreen?: () => void;
 }
 
-export default function EsangChatWidget({ open, onClose, dissolving }: EsangChatWidgetProps) {
+export default function EsangChatWidget({ open, onClose, dissolving, isFullScreen, onToggleFullScreen }: EsangChatWidgetProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const { user } = useAuth();
@@ -294,7 +296,9 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
             : { duration: 0.25, ease: 'easeOut' }
           }
           className={cn(
-            "fixed bottom-24 right-6 z-50 w-[380px] h-[560px] rounded-2xl border overflow-hidden flex flex-col",
+            isFullScreen
+              ? "fixed inset-4 md:inset-6 z-50 rounded-2xl border overflow-hidden flex flex-col"
+              : "fixed bottom-24 right-6 z-50 w-[380px] h-[560px] rounded-2xl border overflow-hidden flex flex-col",
             panelBg
           )}
           style={{ transformOrigin: 'bottom right' }}
@@ -324,14 +328,18 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
               </button>
               <button
                 onClick={() => {
-                  if (location !== '/esang' && location !== '/ai-assistant') {
-                    sessionStorage.setItem('esang-prev-page', location);
+                  if (onToggleFullScreen) {
+                    onToggleFullScreen();
+                  } else {
+                    if (location !== '/esang' && location !== '/ai-assistant') {
+                      sessionStorage.setItem('esang-prev-page', location);
+                    }
+                    onClose();
+                    navigate("/esang");
                   }
-                  onClose();
-                  navigate("/esang");
                 }}
                 className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-white/10")}
-                title="Open full chat"
+                title={isFullScreen ? "Minimize chat" : "Expand chat"}
               >
                 <Maximize2 className="w-3.5 h-3.5" style={{ stroke: "url(#esangIconGrad)" }} />
               </button>

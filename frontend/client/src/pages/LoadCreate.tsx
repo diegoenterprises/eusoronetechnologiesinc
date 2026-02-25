@@ -4,19 +4,21 @@
  * Professional 5-step flow with validation and real-time preview
  */
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import {
   Package, MapPin, Calendar, DollarSign, FileText,
   ArrowRight, ArrowLeft, Check, AlertCircle, Truck,
-  Info, Upload, X
+  Info, Upload, X, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { EsangIcon } from "@/components/EsangIcon";
 
 type Step = "details" | "locations" | "schedule" | "pricing" | "review";
 
@@ -24,6 +26,23 @@ export default function LoadCreatePage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState<Step>("details");
+
+  // ERG search (ESANG AI powered)
+  const [ergQ, setErgQ] = useState("");
+  const [showErg, setShowErg] = useState(false);
+  const ergSuggestRef = useRef<HTMLDivElement>(null);
+  const ergRes = (trpc as any).erg?.search?.useQuery?.(
+    { query: ergQ, limit: 8 },
+    { enabled: ergQ.length >= 2, staleTime: 30000 }
+  ) || { data: null, isLoading: false };
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ergSuggestRef.current && !ergSuggestRef.current.contains(e.target as Node)) setShowErg(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   // Form state
   const [formData, setFormData] = useState<{
@@ -276,14 +295,53 @@ export default function LoadCreatePage() {
                         className="bg-gray-800 border-gray-700"
                       />
                     </div>
-                    <div>
+                    <div ref={ergSuggestRef} className="relative">
                       <label className="block text-sm font-medium mb-2 text-slate-300">UN Number *</label>
-                      <Input
-                        value={formData.unNumber}
-                        onChange={(e: any) => setFormData({ ...formData, unNumber: e.target.value })}
-                        placeholder="e.g., UN1203"
-                        className="bg-gray-800 border-gray-700"
-                      />
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                          <Input
+                            value={formData.unNumber}
+                            onChange={(e: any) => {
+                              setFormData({ ...formData, unNumber: e.target.value });
+                              const v = e.target.value.replace(/^un/i, "").trim();
+                              if (v.length >= 2) { setErgQ(v); setShowErg(true); } else setShowErg(false);
+                            }}
+                            onFocus={() => { if (ergQ.length >= 2) setShowErg(true); }}
+                            placeholder="e.g., UN1203"
+                            className="bg-gray-800 border-gray-700 pl-10"
+                          />
+                        </div>
+                        <Button variant="outline" size="sm" className="bg-purple-500/20 border-purple-500/30 text-purple-400 hover:bg-purple-500/30" onClick={() => {
+                          if (formData.unNumber?.trim().length >= 2) { setErgQ(formData.unNumber.replace(/^un/i, "").trim()); setShowErg(true); }
+                        }}>
+                          <EsangIcon className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {showErg && ergRes?.data?.results?.length > 0 && (
+                        <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-56 overflow-y-auto">
+                          <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2024 — {ergRes.data.count} results</div>
+                          {ergRes.data.results.map((m: any, i: number) => (
+                            <button key={`${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors" onClick={() => {
+                              setFormData({ ...formData, unNumber: `UN${m.unNumber}`, hazmatClass: `Class ${m.hazardClass}` });
+                              setShowErg(false);
+                              toast.success("ESANG AI — Product Verified", { description: `${m.name} — UN${m.unNumber} (Class ${m.hazardClass}) Guide ${m.guide}` });
+                            }}>
+                              <div className="flex-1 min-w-0"><p className="text-white text-sm font-medium truncate">{m.name}</p></div>
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
+                                <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
+                                <Badge variant="outline" className="text-[10px] border-slate-500/30 text-slate-400">G{m.guide}</Badge>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {showErg && ergQ.length >= 2 && ergRes?.isLoading && (
+                        <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-3">
+                          <div className="flex items-center gap-2 text-slate-400 text-sm"><EsangIcon className="w-4 h-4 animate-spin" />Searching ERG 2024...</div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

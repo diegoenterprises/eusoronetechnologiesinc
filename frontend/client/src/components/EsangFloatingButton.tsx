@@ -48,6 +48,7 @@ export default function EsangFloatingButton() {
   const [hovered, setHovered] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatFullScreen, setChatFullScreen] = useState(false);
   const [chatDissolving, setChatDissolving] = useState(false);
   const [chatParticles, setChatParticles] = useState<Array<{startX: number; startY: number; delay: number; size: number; color: string; dur: number}>>([] );
   const [location, navigate] = useLocation();
@@ -331,7 +332,13 @@ export default function EsangFloatingButton() {
       </motion.div>
 
       {/* Chat Widget — outside transformed parent so fixed positioning works */}
-      <EsangChatWidget open={(chatOpen || chatDissolving) && !isOnEsang} onClose={() => setChatOpen(false)} dissolving={chatDissolving} />
+      <EsangChatWidget
+        open={(chatOpen || chatDissolving) && !isOnEsang}
+        onClose={() => { setChatOpen(false); setChatFullScreen(false); }}
+        dissolving={chatDissolving}
+        isFullScreen={chatFullScreen}
+        onToggleFullScreen={() => setChatFullScreen(prev => !prev)}
+      />
 
       {/* Mini chat dissolution particles — outside transformed parent so fixed inset-0 covers viewport */}
       {chatDissolving && (

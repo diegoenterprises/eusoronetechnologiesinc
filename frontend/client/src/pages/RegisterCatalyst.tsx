@@ -11,6 +11,7 @@ import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplian
 import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import { FMCSALookup } from "@/components/registration/FMCSALookup";
 import type { FMCSAData } from "@/components/registration/FMCSALookup";
+import { ProductPicker, CompliancePreview } from "@/components/registration/CompliancePreview";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -44,8 +45,13 @@ interface CatalystFormData {
   // Step 3: Authority & Endorsements
   hasHazmatAuthority: boolean;
   hazmatAuthorityNumber: string;
+  hazmatClasses: string[];
   catalystType: string[];
   equipmentTypes: string[];
+  products: string[];
+  
+  // Step 3b: Operating States
+  processAgentStates: string[];
   
   // Step 4: Contact Information
   primaryContactName: string;
@@ -103,8 +109,11 @@ const initialFormData: CatalystFormData = {
   saferVerified: false,
   hasHazmatAuthority: false,
   hazmatAuthorityNumber: "",
+  hazmatClasses: [],
   catalystType: [],
   equipmentTypes: [],
+  products: [],
+  processAgentStates: [],
   primaryContactName: "",
   primaryContactTitle: "",
   primaryContactEmail: "",
@@ -145,6 +154,25 @@ const EQUIPMENT_TYPES = [
   { value: "cryogenic", label: "Cryogenic Tank (MC-338)", hazmat: true },
   { value: "food_grade_tank", label: "Food-Grade Liquid Tank (Milk, Juice, Oil)", hazmat: false },
   { value: "water_tank", label: "Water Tank (Potable / Non-Potable)", hazmat: false },
+];
+
+const US_STATES = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+];
+
+const HAZMAT_CLASSES = [
+  { value: "2", label: "Class 2 - Gases" },
+  { value: "3", label: "Class 3 - Flammable Liquids" },
+  { value: "4", label: "Class 4 - Flammable Solids" },
+  { value: "5", label: "Class 5 - Oxidizers & Organic Peroxides" },
+  { value: "6", label: "Class 6 - Toxic & Infectious" },
+  { value: "7", label: "Class 7 - Radioactive" },
+  { value: "8", label: "Class 8 - Corrosives" },
+  { value: "9", label: "Class 9 - Miscellaneous" },
 ];
 
 export default function RegisterCatalyst() {
@@ -243,10 +271,14 @@ export default function RegisterCatalyst() {
       hazmatEndorsed: formData.hasHazmatAuthority,
       hazmatAuthorityNumber: formData.hazmatAuthorityNumber || undefined,
       hazmatCertifiedDrivers: Number(formData.hazmatCertifiedDrivers) || undefined,
-      hazmatClasses: [],
-      tankerEndorsed: false,
+      hazmatClasses: formData.hazmatClasses.length > 0
+        ? formData.hazmatClasses.filter(c => ["2","3","4","5","6","7","8","9"].includes(c)) as any
+        : formData.hasHazmatAuthority ? ["3" as const] : [],
+      tankerEndorsed: formData.equipmentTypes.some((t: string) => ["liquid_tank","gas_tank","cryogenic","food_grade_tank","water_tank"].includes(t)),
       catalystType: formData.catalystType.length > 0 ? formData.catalystType : undefined,
       equipmentTypes: formData.equipmentTypes.length > 0 ? formData.equipmentTypes : undefined,
+      products: formData.products.length > 0 ? formData.products : undefined,
+      processAgentStates: formData.processAgentStates.length > 0 ? formData.processAgentStates : undefined,
       liabilityCarrier: formData.liabilityCatalyst || undefined,
       liabilityPolicy: formData.liabilityPolicy || undefined,
       liabilityCoverage: formData.liabilityCoverage || undefined,
@@ -381,6 +413,77 @@ export default function RegisterCatalyst() {
               ))}
             </div>
           </div>
+
+          {formData.hasHazmatAuthority && (
+            <div className="space-y-2">
+              <Label className="text-slate-300">Hazmat Classes Transported</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {HAZMAT_CLASSES.map((hc: any) => (
+                  <div key={hc.value} className="flex items-center space-x-2 p-2 rounded bg-slate-700/30">
+                    <Checkbox
+                      id={`hc-${hc.value}`}
+                      checked={formData.hazmatClasses.includes(hc.value)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          updateFormData({ hazmatClasses: [...formData.hazmatClasses, hc.value] });
+                        } else {
+                          updateFormData({ hazmatClasses: formData.hazmatClasses.filter((c: any) => c !== hc.value) });
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`hc-${hc.value}`} className="text-xs text-slate-300 cursor-pointer">
+                      {hc.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ─── Product Picker — filtered by selected equipment ─── */}
+          <ProductPicker
+            trailerTypes={formData.equipmentTypes}
+            selectedProducts={formData.products}
+            onProductsChange={(products) => updateFormData({ products })}
+          />
+
+          <div className="space-y-2">
+            <Label className="text-slate-300">Operating States</Label>
+            <p className="text-xs text-slate-500">Select all states where your fleet operates. This determines state-specific compliance documents (IFTA, weight-distance tax, oversize permits, CARB, etc.)</p>
+            <div className="flex flex-wrap gap-1.5">
+              {US_STATES.map((st: any) => (
+                <Badge
+                  key={st}
+                  variant={formData.processAgentStates.includes(st) ? "default" : "outline"}
+                  className={`cursor-pointer text-xs px-2 py-1 transition-all ${
+                    formData.processAgentStates.includes(st)
+                      ? "bg-blue-500/20 text-blue-300 border-blue-500/40 hover:bg-blue-500/30"
+                      : "bg-slate-700/30 text-slate-400 border-slate-600 hover:border-slate-400 hover:text-slate-300"
+                  }`}
+                  onClick={() => {
+                    if (formData.processAgentStates.includes(st)) {
+                      updateFormData({ processAgentStates: formData.processAgentStates.filter((s: any) => s !== st) });
+                    } else {
+                      updateFormData({ processAgentStates: [...formData.processAgentStates, st] });
+                    }
+                  }}
+                >
+                  {st}
+                </Badge>
+              ))}
+            </div>
+            {formData.processAgentStates.length > 0 && (
+              <p className="text-xs text-blue-400">{formData.processAgentStates.length} state(s) selected</p>
+            )}
+          </div>
+
+          {/* ─── Smart Compliance Preview — updates in real-time ─── */}
+          <CompliancePreview
+            trailerTypes={formData.equipmentTypes}
+            products={formData.products}
+            operatingStates={formData.processAgentStates}
+            hasHazmat={formData.hasHazmatAuthority}
+          />
         </div>
       ),
     },

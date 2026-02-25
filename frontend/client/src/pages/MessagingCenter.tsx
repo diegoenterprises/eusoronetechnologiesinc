@@ -396,7 +396,7 @@ export default function MessagingCenter() {
                               ? "bg-gradient-to-br from-emerald-600/90 to-emerald-800/90 text-white rounded-[20px] shadow-lg"
                               : message.isOwn
                                 ? "bg-gradient-to-br from-[#1473FF] via-[#3B5FFF] to-[#BE01FF] text-white rounded-[20px] rounded-br-[6px] shadow-lg shadow-blue-500/15"
-                                : "bg-white/[0.06] backdrop-blur-md text-white/90 rounded-[20px] rounded-bl-[6px] border border-white/[0.08]"
+                                : "bg-slate-100 dark:bg-white/[0.06] backdrop-blur-md text-white/90 rounded-[20px] rounded-bl-[6px] border border-slate-200 dark:border-white/[0.08]"
                           )}
                           onContextMenu={(e) => { e.preventDefault(); if (message.isOwn) setMessageContextMenu({ id: String(message.id), x: e.clientX, y: e.clientY }); }}
                         >
@@ -448,7 +448,7 @@ export default function MessagingCenter() {
               {isTyping && (
                 <div className="flex gap-2 justify-start">
                   <div className="w-8 flex-shrink-0" />
-                  <div className="bg-white/[0.06] backdrop-blur-md rounded-[20px] rounded-bl-[6px] border border-white/[0.08] px-4 py-3">
+                  <div className="bg-slate-100 dark:bg-white/[0.06] backdrop-blur-md rounded-[20px] rounded-bl-[6px] border border-slate-200 dark:border-white/[0.08] px-4 py-3">
                     <div className="flex items-center gap-1">
                       <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
                       <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />

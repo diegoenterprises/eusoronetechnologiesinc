@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
-import { router, auditedProtectedProcedure as protectedProcedure } from "../_core/trpc";
+import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { conversations, messages, users } from "../../drizzle/schema";
 
@@ -56,8 +56,12 @@ export const messagingRouter = router({
       id: z.number(),
       name: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = await resolveUserId(ctx.user);
+      // SECURITY: Verify caller is a participant in this conversation
+      const [conv] = await db.select({ participants: conversations.participants }).from(conversations).where(eq(conversations.id, input.id)).limit(1);
+      if (!conv || !(conv.participants as number[])?.includes(userId)) throw new Error("Conversation not found");
       if (input.name) {
         await db.update(conversations).set({ name: input.name }).where(eq(conversations.id, input.id));
       }
@@ -66,8 +70,12 @@ export const messagingRouter = router({
 
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = await resolveUserId(ctx.user);
+      // SECURITY: Verify caller is a participant before allowing delete
+      const [conv] = await db.select({ participants: conversations.participants }).from(conversations).where(eq(conversations.id, input.id)).limit(1);
+      if (!conv || !(conv.participants as number[])?.includes(userId)) throw new Error("Conversation not found");
       // Soft-delete by clearing participants
       await db.update(conversations).set({ participants: [] }).where(eq(conversations.id, input.id));
       return { success: true, id: input.id };

@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { getLoadTitle, getEquipmentLabel, isHazmatLoad } from "@/lib/loadUtils";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
@@ -346,8 +347,8 @@ export default function MyLoads() {
             const originState = load.origin?.state || "";
             const destCity = load.destination?.city || "Destination";
             const destState = load.destination?.state || "";
-            const hazmatClass = load.hazmatClass || (load.cargoType === "hazmat" || load.cargoType === "chemicals" || load.cargoType === "petroleum" ? "Hazardous" : null);
-            const productName = load.specialInstructions?.split("\n")?.find((l: string) => l.startsWith("Product:"))?.replace("Product: ", "") || (load.cargoType === "petroleum" ? "Petroleum crude oil" : load.cargoType === "chemicals" ? "Chemical Load" : "General Cargo");
+            const hazmatClass = isHazmatLoad(load);
+            const productName = load.specialInstructions?.split("\n")?.find((l: string) => l.startsWith("Product:"))?.replace("Product: ", "") || getLoadTitle(load);
             const companyName = load.companyName || load.shipperName || productName;
 
             return (
@@ -392,16 +393,7 @@ export default function MyLoads() {
                       <div className="flex items-center gap-2">
                         <Truck className="w-4 h-4 text-slate-400" />
                         <span className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-300")}>
-                          {load.equipmentType === "tank" || load.equipmentType === "liquid_tank" ? "Liquid Tank Trailer"
-                            : load.equipmentType === "tanker" || load.equipmentType === "gas_tank" ? "Gas Tank Trailer"
-                            : load.equipmentType === "flatbed" ? "Flatbed"
-                            : load.equipmentType === "reefer" ? "Refrigerated (Reefer)"
-                            : load.equipmentType === "dry-van" || load.equipmentType === "dry_van" ? "Dry Van"
-                            : load.equipmentType === "hopper" ? "Dry Bulk / Hopper"
-                            : load.equipmentType === "cryogenic" ? "Cryogenic Tank"
-                            : load.equipmentType === "food_grade_tank" ? "Food-Grade Liquid Tank"
-                            : load.equipmentType === "water_tank" ? "Water Tank"
-                            : "Semi Truck"}
+                          {getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass)}
                         </span>
                         <span className="text-slate-400 text-xs">|</span>
                         <span className="text-xs text-slate-400">{(load.compartments || 1) > 1 ? `${load.compartments} compartments` : "Single compartment"}</span>
@@ -447,6 +439,7 @@ export default function MyLoads() {
                     <LoadCargoAnimation
                       equipmentType={load.equipmentType}
                       cargoType={load.cargoType}
+                      hazmatClass={load.hazmatClass}
                       compartments={load.compartments || 1}
                       height={110}
                       isLight={isLight}

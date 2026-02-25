@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getLoadTitle, getEquipmentLabel } from "@/lib/loadUtils";
 import {
   MapPin, DollarSign, Clock, Briefcase, AlertCircle, CheckCircle,
   TrendingUp, TrendingDown, Minus, Filter, Search, Star,
@@ -111,20 +112,20 @@ export default function JobsPage() {
   // Transform loads data from tRPC
   const loads: Load[] = (loadsData || []).map((load: any) => ({
     id: load.id.toString(),
-    title: load.specialInstructions ? `${load.cargoType} - ${load.specialInstructions.substring(0, 30)}` : `${load.cargoType} Transport`,
+    title: getLoadTitle({ cargoType: load.cargoType, hazmatClass: load.hazmatClass, commodityName: load.commodityName, commodity: load.commodity }),
     origin: typeof load.pickupLocation === 'object' ? `${(load.pickupLocation as any)?.city || ''}, ${(load.pickupLocation as any)?.state || ''}` : 'Unknown',
     destination: typeof load.deliveryLocation === 'object' ? `${(load.deliveryLocation as any)?.city || ''}, ${(load.deliveryLocation as any)?.state || ''}` : 'Unknown',
     pickupDate: load.pickupDate ? new Date(load.pickupDate).toISOString().split('T')[0] : "",
     deliveryDate: load.deliveryDate ? new Date(load.deliveryDate).toISOString().split('T')[0] : "",
     pay: load.rate ? parseFloat(String(load.rate)) : 0,
     distance: load.distance ? parseFloat(String(load.distance)) : 0,
-    type: (load.cargoType === 'hazmat' ? "HAZMAT" : load.cargoType === 'refrigerated' ? "REEFER" : load.cargoType === 'liquid' ? "TANKER" : "DRY_VAN") as Load['type'],
+    type: (load.cargoType === 'hazmat' ? "HAZMAT" : load.cargoType === 'refrigerated' ? "REEFER" : ['liquid', 'petroleum', 'gas', 'chemicals'].includes(load.cargoType) ? "TANKER" : load.cargoType === 'oversized' ? "FLATBED" : "DRY_VAN") as Load['type'],
     status: (load.status === 'posted' ? "AVAILABLE" : load.status === 'bidding' ? "BIDDING" : load.status === 'assigned' ? "ASSIGNED" : load.status === 'in_transit' ? "IN_TRANSIT" : "AVAILABLE") as Load['status'],
     hazmatClass: load.hazmatClass || undefined,
     unNumber: load.unNumber || undefined,
     requiredCerts: load.cargoType === 'hazmat' ? ["CDL-A", "HazMat", "Tanker"] : ["CDL-A"],
     weight: load.weight ? parseFloat(String(load.weight)) : 0,
-    commodity: load.specialInstructions || load.cargoType || "",
+    commodity: load.commodityName || load.commodity || "",
     bidsCount: 0,
     myBid: undefined,
     fairnessScore: "FAIR" as const,

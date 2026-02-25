@@ -306,7 +306,7 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
 
             {/* Load Status Progression Actions — Trailer-type-aware */}
             {(() => {
-              const eq = (currentLoad.equipmentType || currentLoad.cargoType || "").toLowerCase();
+              const eq = ((currentLoad as any).equipmentType || currentLoad.cargoType || "").toLowerCase();
               const isHaz = !!(currentLoad.hazmatClass || currentLoad.unNumber);
               const isRfr = eq.includes("reefer") || eq.includes("refrigerat");
               const isFlat = eq.includes("flatbed");

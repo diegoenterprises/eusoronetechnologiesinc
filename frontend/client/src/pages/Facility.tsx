@@ -19,7 +19,8 @@ import {
   Droplets, Gauge, Edit, Save, X, Globe, Phone, Mail, Handshake,
   AlertTriangle, Container, Layers, ArrowRight, Beaker, Target,
   TrendingUp, BarChart3, CircleDot, Workflow, FileText, Clock,
-  XCircle, Upload, Truck, Package,
+  XCircle, Upload, Truck, Package, Plug2, Zap, Fuel, Shield,
+  Database, Radio, Wifi, WifiOff, Settings, Lock, Key, Eye, EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +38,7 @@ const STATUS_STYLE: Record<string, { icon: any; cls: string; label: string }> = 
   EXPIRING_SOON:  { icon: AlertTriangle, cls: "text-amber-400 bg-amber-400/10",     label: "Expiring" },
   EXPIRED:        { icon: XCircle,       cls: "text-red-400 bg-red-400/10",         label: "Expired" },
   REJECTED:       { icon: XCircle,       cls: "text-red-400 bg-red-400/10",         label: "Rejected" },
-  MISSING:        { icon: AlertTriangle, cls: "text-slate-500 bg-white/[0.03]",     label: "Missing" },
+  MISSING:        { icon: AlertTriangle, cls: "text-slate-500 bg-slate-50 dark:bg-white/[0.03]",     label: "Missing" },
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -65,6 +66,38 @@ export default function FacilityPage() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<any>(null);
   const [compFilter, setCompFilter] = useState<string>("all");
+  const [keyModal, setKeyModal] = useState<string | null>(null);
+  const [keyForm, setKeyForm] = useState<Record<string, string>>({});
+  const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+
+  // Field definitions per integration for the API key modal
+  const INT_FIELDS: Record<string, { key: string; label: string; placeholder: string; secret?: boolean }[]> = {
+    dtn: [
+      { key: "apiKey", label: "API Key", placeholder: "dtn_xxxxxx", secret: true },
+      { key: "apiSecret", label: "API Secret", placeholder: "••••••••", secret: true },
+      { key: "externalId", label: "Terminal ID", placeholder: "DTN terminal identifier" },
+    ],
+    buckeye_tas: [
+      { key: "apiKey", label: "API Key", placeholder: "bkt_xxxxxx", secret: true },
+      { key: "apiSecret", label: "API Secret", placeholder: "••••••••", secret: true },
+      { key: "externalId", label: "Terminal Code", placeholder: "Buckeye terminal code" },
+    ],
+    dearman: [
+      { key: "apiKey", label: "API Key", placeholder: "dm_xxxxxx", secret: true },
+      { key: "externalId", label: "Account ID", placeholder: "Dearman account ID" },
+    ],
+    opis: [
+      { key: "apiKey", label: "API Key", placeholder: "opis_xxxxxx", secret: true },
+      { key: "apiSecret", label: "Client Secret", placeholder: "••••••••", secret: true },
+    ],
+    enverus: [
+      { key: "apiKey", label: "Secret Key", placeholder: "env_xxxxxx", secret: true },
+      { key: "apiSecret", label: "API Secret", placeholder: "••••••••", secret: true },
+    ],
+    genscape: [
+      { key: "apiKey", label: "API Key", placeholder: "gs_xxxxxx", secret: true },
+    ],
+  };
 
   const utils = (trpc as any).useUtils();
   const pq = (trpc as any).terminals.getTerminalProfile.useQuery();
@@ -73,6 +106,38 @@ export default function FacilityPage() {
   const shipQ = (trpc as any).terminals?.getShipments?.useQuery?.({ date: new Date().toISOString().split("T")[0] }) || { data: null };
   const historyQ = (trpc as any).spectraMatch?.getHistory?.useQuery?.({ limit: 5 }) || { data: null };
   const learningQ = (trpc as any).spectraMatch?.getLearningStats?.useQuery?.() || { data: null };
+
+  // Integration ecosystem queries
+  const intKeysQ = (trpc as any).terminals?.getIntegrationKeys?.useQuery?.() || { data: null };
+  const tasQ = (trpc as any).terminals?.getTASStatus?.useQuery?.() || { data: null };
+  const intKeys = (intKeysQ.data || []) as { provider: string; configured: boolean; lastSync?: string; status?: string }[];
+  const tasStatus = tasQ.data as { connected: boolean; provider: string | null; lastSync?: string | null } | null;
+
+  const saveKeyMut = (trpc as any).terminals.saveIntegrationKey.useMutation({
+    onSuccess: (d: any) => {
+      toast.success(`${d?.action === "created" ? "Connected" : "Updated"} successfully`);
+      setKeyModal(null);
+      setKeyForm({});
+      utils.terminals?.getIntegrationKeys?.invalidate?.();
+    },
+    onError: (e: any) => toast.error(e?.message || "Failed to save"),
+  });
+
+  const openKeyModal = (slug: string) => {
+    setKeyModal(slug);
+    setKeyForm({});
+    setShowSecrets({});
+  };
+
+  const handleSaveKey = () => {
+    if (!keyModal || !keyForm.apiKey) { toast.error("API Key is required"); return; }
+    saveKeyMut.mutate({
+      provider: keyModal,
+      apiKey: keyForm.apiKey,
+      apiSecret: keyForm.apiSecret || undefined,
+      externalId: keyForm.externalId || undefined,
+    });
+  };
 
   const saveMut = (trpc as any).terminals.updateTerminalProfile.useMutation({
     onSuccess: () => { toast.success("Profile saved"); utils.terminals.getTerminalProfile.invalidate(); utils.terminals?.getStats?.invalidate?.(); setEditing(false); },
@@ -101,6 +166,32 @@ export default function FacilityPage() {
   const byType = partners.reduce((a: any, p: any) => { a[p.partnerType] = (a[p.partnerType] || 0) + 1; return a; }, {} as Record<string, number>);
   const byAccess = partners.reduce((a: any, p: any) => { a[p.rackAccessLevel || "scheduled"] = (a[p.rackAccessLevel || "scheduled"] || 0) + 1; return a; }, {} as Record<string, number>);
   const products = (t?.productsHandled || []) as string[];
+
+  // Integration ecosystem catalog — maps provider slugs to their capabilities
+  const INT_CATALOG = [
+    { id: "dtn", name: "DTN", icon: <Zap className="w-4 h-4" />, brandFrom: "#0EA5E9", brandTo: "#06B6D4", category: "Terminal Automation",
+      powers: ["Rack Operations", "Loading Progress", "Inventory Levels", "Driver Pre-Clearance", "Rack Pricing", "BOL Generation"],
+      feeds: ["Dock Management", "Gate Operations", "Dispatch Load"] },
+    { id: "buckeye_tas", name: "Buckeye TAS", icon: <Database className="w-4 h-4" />, brandFrom: "#6366F1", brandTo: "#4F46E5", category: "Terminal Automation",
+      powers: ["Scheduling", "Allocation Mgmt", "Rack Queue", "Loading Events", "BOL Generation", "Gate Check-In"],
+      feeds: ["Dock Management", "Appointments", "Dispatch Load"] },
+    { id: "dearman", name: "Dearman", icon: <Settings className="w-4 h-4" />, brandFrom: "#64748B", brandTo: "#475569", category: "Terminal Automation",
+      powers: ["Load Authorization", "Order Management", "Tank Gauging", "Transactions", "Contracts & Pricing", "Invoicing", "Reports"],
+      feeds: ["Dock Management", "Gate Operations", "Dispatch Load"] },
+    { id: "opis", name: "OPIS", icon: <Fuel className="w-4 h-4" />, brandFrom: "#F59E0B", brandTo: "#EA580C", category: "Market Data",
+      powers: ["Rack Pricing (Current)", "Spot Market Prices", "Retail Benchmarks", "Market Assessments", "Terminal Directory"],
+      feeds: ["Market Intelligence", "Terminal Dashboard", "Dispatch Load"] },
+    { id: "enverus", name: "Enverus", icon: <TrendingUp className="w-4 h-4" />, brandFrom: "#10B981", brandTo: "#059669", category: "Market Data",
+      powers: ["Crude Benchmarks (WTI/Brent)", "Basin Production", "Pipeline Flows", "Rig Activity", "Frac Schedules"],
+      feeds: ["Market Intelligence", "Hot Zones", "Terminal Dashboard"] },
+    { id: "genscape", name: "Genscape", icon: <Activity className="w-4 h-4" />, brandFrom: "#8B5CF6", brandTo: "#7C3AED", category: "Supply Analytics",
+      powers: ["Storage Levels (Cushing/PADD)", "Pipeline Utilization", "Refinery Status", "Supply/Demand", "Vessel Tracking"],
+      feeds: ["Market Intelligence", "Hot Zones", "Terminal Dashboard"] },
+  ];
+  const isConnected = (slug: string) => intKeys.some(k => k.provider === slug && k.configured);
+  const connectedCount = INT_CATALOG.filter(c => isConnected(c.id)).length;
+  const activeTAS = INT_CATALOG.filter(c => ["dtn", "buckeye_tas", "dearman"].includes(c.id) && isConnected(c.id));
+  const activeMarket = INT_CATALOG.filter(c => ["opis", "enverus", "genscape"].includes(c.id) && isConnected(c.id));
   const capacity = t?.throughputCapacity ? Number(t.throughputCapacity) : 0;
   const docks = t?.dockCount || 0;
   const tanks = t?.tankCount || 0;
@@ -120,8 +211,8 @@ export default function FacilityPage() {
   const shipments = (shipQ.data || []) as any[];
 
   // Cell style
-  const cell = "rounded-2xl border border-white/[0.04] bg-white/[0.02]";
-  const inp = "bg-white/[0.04] border-white/[0.06] rounded-xl text-white placeholder:text-slate-500";
+  const cell = "rounded-2xl border border-slate-200/60 dark:border-white/[0.04] bg-white dark:bg-white/[0.02]";
+  const inp = "bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] rounded-xl text-slate-800 dark:text-white placeholder:text-slate-500";
 
   if (pq.isLoading) return (
     <div className="p-6 md:p-8 space-y-8 max-w-[1200px] mx-auto">
@@ -138,11 +229,11 @@ export default function FacilityPage() {
       {/* ─── Header ─── */}
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-[28px] font-semibold tracking-tight text-white">Terminal Profile</h1>
+          <h1 className="text-[28px] font-semibold tracking-tight text-slate-800 dark:text-white">Terminal Profile</h1>
           <p className="text-sm text-slate-500 mt-0.5">{t ? `${t.name}${t.code ? ` \u00B7 ${t.code}` : ""}` : "Configure your facility identity"}</p>
         </div>
         {!editing ? (
-          <Button onClick={startEdit} size="sm" className="rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-white border border-white/[0.08] shadow-none h-9 px-4 text-xs font-medium">
+          <Button onClick={startEdit} size="sm" className="rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-white/[0.1] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.08] shadow-none h-9 px-4 text-xs font-medium">
             <Edit className="w-3.5 h-3.5 mr-1.5" />Edit
           </Button>
         ) : (
@@ -172,9 +263,9 @@ export default function FacilityPage() {
             </div>
           ) : (
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-semibold text-white tracking-tight">{t?.name || "No Terminal Registered"}</h2>
+              <h2 className="text-xl font-semibold text-slate-800 dark:text-white tracking-tight">{t?.name || "No Terminal Registered"}</h2>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                {t?.code && <span className="text-xs text-slate-400 font-mono bg-white/[0.04] px-2 py-0.5 rounded-md">{t.code}</span>}
+                {t?.code && <span className="text-xs text-slate-400 font-mono bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 rounded-md">{t.code}</span>}
                 {t?.terminalType && <span className="text-xs text-slate-500">{TYPE_LABELS[t.terminalType] || t.terminalType}</span>}
                 <span className="text-[10px] text-slate-600">|</span>
                 <span className={cn("text-xs font-medium", t?.status === "active" ? "text-emerald-400" : "text-red-400")}>{(t?.status || "active").charAt(0).toUpperCase() + (t?.status || "active").slice(1)}</span>
@@ -186,11 +277,11 @@ export default function FacilityPage() {
 
       {/* ─── Tabs ─── */}
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="bg-transparent border-b border-white/[0.06] rounded-none p-0 h-auto gap-0">
-          {["overview", "compliance", "operations", "spectra-match", "partnerships"].map(v => (
+        <TabsList className="bg-transparent border-b border-slate-200 dark:border-white/[0.06] rounded-none p-0 h-auto gap-0">
+          {["overview", "intelligence", "compliance", "operations", "spectra-match", "partnerships"].map(v => (
             <TabsTrigger key={v} value={v} className={cn(
               "rounded-none border-b-2 border-transparent data-[state=active]:border-[#1473FF] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-3 pt-1 text-xs font-medium transition-colors",
-              "text-slate-500 data-[state=active]:text-white hover:text-slate-300"
+              "text-slate-500 data-[state=active]:text-slate-800 dark:text-white hover:text-slate-300"
             )}>
               {v === "spectra-match" ? "SpectraMatch" : v.charAt(0).toUpperCase() + v.slice(1)}
             </TabsTrigger>
@@ -202,7 +293,7 @@ export default function FacilityPage() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {/* Left: Location */}
             <div className={cn("lg:col-span-3 p-6 space-y-5", cell)}>
-              <div className="flex items-center gap-2 mb-1"><MapPin className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-white">Location</span></div>
+              <div className="flex items-center gap-2 mb-1"><MapPin className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-slate-800 dark:text-white">Location</span></div>
               {editing ? (
                 <div className="space-y-3">
                   <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Address</label><Input value={form.address} onChange={(e: any) => setForm({ ...form, address: e.target.value })} className={inp} /></div>
@@ -238,14 +329,14 @@ export default function FacilityPage() {
 
             {/* Right: Company */}
             <div className={cn("lg:col-span-2 p-6 space-y-4", cell)}>
-              <div className="flex items-center gap-2 mb-1"><Building2 className="w-4 h-4 text-purple-400" /><span className="text-sm font-medium text-white">Company</span></div>
+              <div className="flex items-center gap-2 mb-1"><Building2 className="w-4 h-4 text-purple-400" /><span className="text-sm font-medium text-slate-800 dark:text-white">Company</span></div>
               <Row label="Name" value={co?.name || "---"} bold />
               {co?.phone && <div className="flex items-center gap-2 text-sm"><Phone className="w-3.5 h-3.5 text-slate-600" /><span className="text-slate-300">{co.phone}</span></div>}
               {co?.email && <div className="flex items-center gap-2 text-sm"><Mail className="w-3.5 h-3.5 text-slate-600" /><span className="text-slate-300 truncate">{co.email}</span></div>}
               {co?.website && <div className="flex items-center gap-2 text-sm"><Globe className="w-3.5 h-3.5 text-slate-600" /><span className="text-[#1473FF]">{co.website}</span></div>}
 
               {/* Quick Stats */}
-              <div className="pt-3 mt-3 border-t border-white/[0.04] grid grid-cols-2 gap-3">
+              <div className="pt-3 mt-3 border-t border-slate-200/60 dark:border-white/[0.04] grid grid-cols-2 gap-3">
                 <Stat value={stats.appointmentsLast30 || 0} label="Appts (30d)" color="text-[#1473FF]" />
                 <Stat value={`${stats.completionRate || 0}%`} label="Completion" color="text-emerald-400" />
                 <Stat value={d?.staffCount || 0} label="Staff" color="text-slate-300" />
@@ -258,7 +349,7 @@ export default function FacilityPage() {
           <div className="mt-6">
             <div className="flex items-center gap-2 mb-4 pl-1">
               <Handshake className="w-4 h-4 text-[#1473FF]" />
-              <span className="text-sm font-medium text-white">Service Capabilities</span>
+              <span className="text-sm font-medium text-slate-800 dark:text-white">Service Capabilities</span>
               <span className="text-[10px] text-slate-600 ml-auto">Agreement-backed terminal services</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -270,7 +361,7 @@ export default function FacilityPage() {
                     <Truck className="w-4 h-4 text-[#1473FF]" />
                   </div>
                   <div>
-                    <p className="text-[13px] font-semibold text-white">Terminal Access</p>
+                    <p className="text-[13px] font-semibold text-slate-800 dark:text-white">Terminal Access</p>
                     <p className="text-[10px] text-slate-500">Facility access agreements</p>
                   </div>
                 </div>
@@ -281,7 +372,7 @@ export default function FacilityPage() {
                   <CapRow label="Product Custody Transfer" desc="BOL verification + SPECTRA-MATCH" />
                   <CapRow label="Driver Check-In" desc="CDL, docs, and appointment validation" />
                 </div>
-                <div className="pt-2 border-t border-white/[0.04]">
+                <div className="pt-2 border-t border-slate-200/60 dark:border-white/[0.04]">
                   <span className="text-[10px] text-[#1473FF] font-medium group-hover:underline">Create Terminal Access Agreement</span>
                 </div>
               </div>
@@ -293,7 +384,7 @@ export default function FacilityPage() {
                     <Gauge className="w-4 h-4 text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-[13px] font-semibold text-white">Throughput</p>
+                    <p className="text-[13px] font-semibold text-slate-800 dark:text-white">Throughput</p>
                     <p className="text-[10px] text-slate-500">Volume commitment agreements</p>
                   </div>
                 </div>
@@ -304,7 +395,7 @@ export default function FacilityPage() {
                   <CapRow label="Pipeline & Rack Receipt" desc="Multi-modal interconnections" />
                   <CapRow label="Product Quality / ASTM" desc="Incoming spec testing + SPECTRA-MATCH" />
                 </div>
-                <div className="pt-2 border-t border-white/[0.04]">
+                <div className="pt-2 border-t border-slate-200/60 dark:border-white/[0.04]">
                   <span className="text-[10px] text-purple-400 font-medium group-hover:underline">Create Throughput Agreement</span>
                 </div>
               </div>
@@ -316,7 +407,7 @@ export default function FacilityPage() {
                     <Layers className="w-4 h-4 text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-[13px] font-semibold text-white">Storage & Service</p>
+                    <p className="text-[13px] font-semibold text-slate-800 dark:text-white">Storage & Service</p>
                     <p className="text-[10px] text-slate-500">Tank storage & blending agreements</p>
                   </div>
                 </div>
@@ -327,12 +418,263 @@ export default function FacilityPage() {
                   <CapRow label="Product Integrity" desc="API 653 inspection + contamination controls" />
                   <CapRow label="Title & Risk Allocation" desc="Custody transfer at interconnection" />
                 </div>
-                <div className="pt-2 border-t border-white/[0.04]">
+                <div className="pt-2 border-t border-slate-200/60 dark:border-white/[0.04]">
                   <span className="text-[10px] text-emerald-400 font-medium group-hover:underline">Create Storage & Service Agreement</span>
                 </div>
               </div>
 
             </div>
+          </div>
+
+          {/* ─── Integration Ecosystem ─── */}
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-4 pl-1">
+              <Plug2 className="w-4 h-4 text-[#1473FF]" />
+              <span className="text-sm font-medium text-slate-800 dark:text-white">Integration Ecosystem</span>
+              <span className={cn("ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                connectedCount >= 4 ? "text-emerald-400 bg-emerald-400/10" :
+                connectedCount >= 2 ? "text-amber-400 bg-amber-400/10" :
+                connectedCount >= 1 ? "text-[#1473FF] bg-[#1473FF]/10" :
+                "text-slate-500 bg-slate-50 dark:bg-white/[0.04]"
+              )}>{connectedCount}/6 Connected</span>
+              <button onClick={() => setTab("intelligence")} className="text-[10px] text-[#1473FF] hover:underline ml-auto">View Details →</button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              {INT_CATALOG.map(intg => {
+                const live = isConnected(intg.id);
+                return (
+                  <div key={intg.id} className={cn(
+                    "relative group rounded-2xl border p-4 text-center transition-all duration-300 cursor-pointer",
+                    live
+                      ? "border-transparent bg-white dark:bg-white/[0.03] shadow-sm hover:shadow-md"
+                      : "border-dashed border-slate-200 dark:border-white/[0.06] bg-slate-50/50 dark:bg-white/[0.01] hover:border-slate-300 dark:hover:border-white/[0.1]"
+                  )} onClick={() => !live ? navigate("/integrations") : setTab("intelligence")}>
+                    {live && <div className="absolute inset-x-0 top-0 h-0.5 rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${intg.brandFrom}, ${intg.brandTo})` }} />}
+                    <div className={cn("w-9 h-9 rounded-xl mx-auto mb-2.5 flex items-center justify-center transition-all",
+                      live ? "" : "bg-slate-100 dark:bg-white/[0.04]"
+                    )} style={live ? { background: `linear-gradient(135deg, ${intg.brandFrom}20, ${intg.brandTo}20)` } : undefined}>
+                      <span style={live ? { color: intg.brandFrom } : undefined} className={live ? "" : "text-slate-400 dark:text-white/20"}>
+                        {intg.icon}
+                      </span>
+                    </div>
+                    <p className={cn("text-[11px] font-semibold", live ? "text-slate-800 dark:text-white" : "text-slate-400 dark:text-white/30")}>{intg.name}</p>
+                    <p className={cn("text-[9px] mt-0.5", live ? "text-slate-500" : "text-slate-400 dark:text-white/15")}>{intg.category}</p>
+                    {live ? (
+                      <div className="flex items-center justify-center gap-1 mt-2">
+                        <Wifi className="w-2.5 h-2.5 text-emerald-400" />
+                        <span className="text-[9px] text-emerald-400 font-medium">Live</span>
+                      </div>
+                    ) : (
+                      <p className="text-[9px] text-slate-400 dark:text-white/15 mt-2">Not connected</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ════════════════ INTELLIGENCE ════════════════ */}
+        <TabsContent value="intelligence" className="mt-8 space-y-6">
+          {/* Data Richness Score */}
+          <div className={cn("p-6", cell)}>
+            <div className="flex items-center gap-6 flex-wrap">
+              <div className="relative shrink-0">
+                <Ring value={Math.round((connectedCount / 6) * 100)} size={80} stroke={5} color={connectedCount >= 4 ? "#34d399" : connectedCount >= 2 ? "#fbbf24" : "#1473FF"} />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-lg font-bold text-slate-800 dark:text-white">{connectedCount}<span className="text-xs text-slate-400">/6</span></span>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-slate-800 dark:text-white font-medium">Data Intelligence Score</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {connectedCount === 0 ? "Connect integrations to unlock real-time terminal intelligence across your operation." :
+                   connectedCount <= 2 ? "Good start. Adding more integrations enriches pricing, supply, and operational visibility." :
+                   connectedCount <= 4 ? "Strong coverage. Your terminal has real-time data flowing from multiple industry sources." :
+                   "Full spectrum intelligence. Your terminal is operating with maximum market visibility."}
+                </p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md",
+                    activeTAS.length > 0 ? "text-emerald-400 bg-emerald-400/10" : "text-slate-500 bg-slate-50 dark:bg-white/[0.04]"
+                  )}>{activeTAS.length > 0 ? `TAS: ${activeTAS.map(t => t.name).join(", ")}` : "No TAS Connected"}</span>
+                  <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md",
+                    activeMarket.length > 0 ? "text-[#1473FF] bg-[#1473FF]/10" : "text-slate-500 bg-slate-50 dark:bg-white/[0.04]"
+                  )}>{activeMarket.length > 0 ? `Market: ${activeMarket.map(t => t.name).join(", ")}` : "No Market Data"}</span>
+                </div>
+              </div>
+              <Button size="sm" onClick={() => navigate("/integrations")} className="rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 shadow-none h-9 px-4 text-xs font-medium shrink-0">
+                <Key className="w-3.5 h-3.5 mr-1.5" />Manage Integrations
+              </Button>
+            </div>
+          </div>
+
+          {/* TAS Integration Layer */}
+          <div>
+            <div className="flex items-center gap-2 mb-4 pl-1">
+              <Radio className="w-4 h-4 text-cyan-400" />
+              <span className="text-sm font-medium text-slate-800 dark:text-white">Terminal Automation</span>
+              <span className="text-[10px] text-slate-500 ml-1">Real-time rack, gate, and loading operations</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {INT_CATALOG.filter(c => ["dtn", "buckeye_tas", "dearman"].includes(c.id)).map(intg => {
+                const live = isConnected(intg.id);
+                return (
+                  <div key={intg.id} className={cn("rounded-2xl border overflow-hidden transition-all duration-300", cell,
+                    live ? "hover:shadow-lg hover:shadow-black/[0.03]" : "opacity-60"
+                  )}>
+                    {live && <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${intg.brandFrom}, ${intg.brandTo})` }} />}
+                    <div className="p-5">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", !live && "bg-slate-100 dark:bg-white/[0.04]")}
+                          style={live ? { background: `linear-gradient(135deg, ${intg.brandFrom}20, ${intg.brandTo}20)` } : undefined}>
+                          <span style={live ? { color: intg.brandFrom } : undefined} className={!live ? "text-slate-400" : ""}>{intg.icon}</span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-slate-800 dark:text-white">{intg.name}</p>
+                            {live ? (
+                              <span className="flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full font-medium"><Wifi className="w-2.5 h-2.5" />Connected</span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-[9px] text-slate-400 bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 rounded-full"><WifiOff className="w-2.5 h-2.5" />Offline</span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-500">{intg.category}</p>
+                        </div>
+                      </div>
+                      <IntgPowerList powers={intg.powers} live={live} />
+                      {live && (
+                        <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-white/[0.04]">
+                          <p className="text-[9px] text-slate-400 uppercase tracking-wider mb-1.5">Enhances</p>
+                          <div className="flex flex-wrap gap-1">
+                            {intg.feeds.map(f => (
+                              <span key={f} className="text-[9px] font-medium px-1.5 py-0.5 rounded" style={{ color: intg.brandFrom, backgroundColor: `${intg.brandFrom}10` }}>{f}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {!live && (
+                        <button onClick={() => openKeyModal(intg.id)} className="mt-4 w-full text-[11px] font-medium text-[#1473FF] hover:text-[#1473FF]/80 py-2 rounded-xl border border-dashed border-[#1473FF]/20 hover:border-[#1473FF]/40 transition-colors">
+                          Connect {intg.name}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Market Intelligence Layer */}
+          <div>
+            <div className="flex items-center gap-2 mb-4 pl-1">
+              <BarChart3 className="w-4 h-4 text-amber-400" />
+              <span className="text-sm font-medium text-slate-800 dark:text-white">Market Intelligence</span>
+              <span className="text-[10px] text-slate-500 ml-1">Pricing, crude benchmarks, and supply chain analytics</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {INT_CATALOG.filter(c => ["opis", "enverus", "genscape"].includes(c.id)).map(intg => {
+                const live = isConnected(intg.id);
+                return (
+                  <div key={intg.id} className={cn("rounded-2xl border overflow-hidden transition-all duration-300", cell,
+                    live ? "hover:shadow-lg hover:shadow-black/[0.03]" : "opacity-60"
+                  )}>
+                    {live && <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${intg.brandFrom}, ${intg.brandTo})` }} />}
+                    <div className="p-5">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", !live && "bg-slate-100 dark:bg-white/[0.04]")}
+                          style={live ? { background: `linear-gradient(135deg, ${intg.brandFrom}20, ${intg.brandTo}20)` } : undefined}>
+                          <span style={live ? { color: intg.brandFrom } : undefined} className={!live ? "text-slate-400" : ""}>{intg.icon}</span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-slate-800 dark:text-white">{intg.name}</p>
+                            {live ? (
+                              <span className="flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full font-medium"><Wifi className="w-2.5 h-2.5" />Connected</span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-[9px] text-slate-400 bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 rounded-full"><WifiOff className="w-2.5 h-2.5" />Offline</span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-500">{intg.category}</p>
+                        </div>
+                      </div>
+                      <IntgPowerList powers={intg.powers} live={live} />
+                      {live && (
+                        <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-white/[0.04]">
+                          <p className="text-[9px] text-slate-400 uppercase tracking-wider mb-1.5">Enhances</p>
+                          <div className="flex flex-wrap gap-1">
+                            {intg.feeds.map(f => (
+                              <span key={f} className="text-[9px] font-medium px-1.5 py-0.5 rounded" style={{ color: intg.brandFrom, backgroundColor: `${intg.brandFrom}10` }}>{f}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {!live && (
+                        <button onClick={() => openKeyModal(intg.id)} className="mt-4 w-full text-[11px] font-medium text-[#1473FF] hover:text-[#1473FF]/80 py-2 rounded-xl border border-dashed border-[#1473FF]/20 hover:border-[#1473FF]/40 transition-colors">
+                          Connect {intg.name}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Data Flow Map */}
+          <div className={cn("p-6", cell)}>
+            <div className="flex items-center gap-2 mb-5">
+              <Workflow className="w-4 h-4 text-purple-400" />
+              <span className="text-sm font-medium text-slate-800 dark:text-white">Data Flow Architecture</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 py-6 overflow-x-auto">
+              {/* Sources */}
+              <div className="space-y-2 shrink-0">
+                {INT_CATALOG.map(intg => (
+                  <div key={intg.id} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all",
+                    isConnected(intg.id) ? "bg-white dark:bg-white/[0.04] shadow-sm border border-slate-200/60 dark:border-white/[0.06]" : "bg-slate-50 dark:bg-white/[0.01] text-slate-400 dark:text-white/20"
+                  )}>
+                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: isConnected(intg.id) ? intg.brandFrom : "#94a3b8" }} />
+                    <span className={isConnected(intg.id) ? "text-slate-700 dark:text-white/70" : ""}>{intg.name}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Arrows */}
+              <div className="flex flex-col items-center gap-1 px-3">
+                {[0,1,2,3,4,5].map(i => (
+                  <ArrowRight key={i} className={cn("w-4 h-4", i < connectedCount ? "text-[#1473FF]" : "text-slate-200 dark:text-white/[0.06]")} />
+                ))}
+              </div>
+              {/* EusoTrip Hub */}
+              <div className="px-6 py-5 rounded-2xl bg-gradient-to-br from-[#1473FF]/10 to-[#BE01FF]/10 border border-[#1473FF]/20 text-center shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center mx-auto mb-2">
+                  <img src="/eusotrip-logo.png" alt="EusoTrip" className="w-7 h-7 brightness-0 invert" />
+                </div>
+                <p className="text-sm font-bold text-slate-800 dark:text-white">{t?.name || "EusoTrip"}</p>
+                <p className="text-[10px] text-slate-500">Terminal Hub</p>
+                <p className="text-[9px] text-[#1473FF] mt-1 font-medium">{connectedCount * 5}+ data points/min</p>
+              </div>
+              {/* Output arrows */}
+              <div className="flex flex-col items-center gap-1 px-3">
+                {[0,1,2,3].map(i => (
+                  <ArrowRight key={i} className="w-4 h-4 text-[#BE01FF]/40" />
+                ))}
+              </div>
+              {/* Destinations */}
+              <div className="space-y-2 shrink-0">
+                {[
+                  { label: "Terminal Dashboard", icon: <BarChart3 className="w-3 h-3" /> },
+                  { label: "Dock Management", icon: <Container className="w-3 h-3" /> },
+                  { label: "Market Intelligence", icon: <TrendingUp className="w-3 h-3" /> },
+                  { label: "Hot Zones", icon: <Globe className="w-3 h-3" /> },
+                ].map(d => (
+                  <div key={d.label} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-medium bg-white dark:bg-white/[0.04] shadow-sm border border-slate-200/60 dark:border-white/[0.06] text-slate-700 dark:text-white/70">
+                    <span className="text-[#BE01FF]">{d.icon}</span>
+                    {d.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="text-center text-[10px] text-slate-400 mt-2">Every connected integration enriches all downstream screens in real time</p>
           </div>
         </TabsContent>
 
@@ -349,7 +691,7 @@ export default function FacilityPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-white font-medium">Company Compliance</p>
+                  <p className="text-slate-800 dark:text-white font-medium">Company Compliance</p>
                   {!canOperate && <span className="text-[9px] text-red-400 bg-red-400/10 px-2 py-0.5 rounded-md font-semibold">BLOCKED</span>}
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -360,10 +702,10 @@ export default function FacilityPage() {
                   <span className="text-[10px] text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-md">{compStatus.totalPending || 0} Pending</span>
                   <span className="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md">{compStatus.totalExpiring || 0} Expiring</span>
                   {(compStatus.totalExpired || 0) > 0 && <span className="text-[10px] text-red-400 bg-red-400/10 px-2 py-0.5 rounded-md">{compStatus.totalExpired} Expired</span>}
-                  <span className="text-[10px] text-slate-400 bg-white/[0.04] px-2 py-0.5 rounded-md">{compStatus.totalMissing || 0} Missing</span>
+                  <span className="text-[10px] text-slate-400 bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 rounded-md">{compStatus.totalMissing || 0} Missing</span>
                 </div>
               </div>
-              <Button size="sm" onClick={() => navigate("/documents")} className="rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-white border border-white/[0.08] shadow-none h-9 px-4 text-xs font-medium shrink-0">
+              <Button size="sm" onClick={() => navigate("/documents")} className="rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-white/[0.1] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.08] shadow-none h-9 px-4 text-xs font-medium shrink-0">
                 <FileText className="w-3.5 h-3.5 mr-1.5" />Upload Documents
               </Button>
             </div>
@@ -379,7 +721,7 @@ export default function FacilityPage() {
             ].map(f => (
               <button key={f.key} onClick={() => setCompFilter(f.key)} className={cn(
                 "text-[10px] px-3 py-1.5 rounded-lg font-medium transition-colors",
-                compFilter === f.key ? "bg-[#1473FF]/15 text-[#1473FF]" : "bg-white/[0.03] text-slate-500 hover:text-slate-300"
+                compFilter === f.key ? "bg-[#1473FF]/15 text-[#1473FF]" : "bg-slate-50 dark:bg-white/[0.03] text-slate-500 hover:text-slate-300"
               )}>{f.label}</button>
             ))}
           </div>
@@ -396,7 +738,7 @@ export default function FacilityPage() {
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{group}</p>
                 <span className="text-[10px] text-slate-600">{items.length}</span>
               </div>
-              <div className={cn("divide-y divide-white/[0.03]", cell)}>
+              <div className={cn("divide-y divide-slate-200/60 dark:divide-white/[0.03]", cell)}>
                 {items.map((r: any) => {
                   const st = STATUS_STYLE[r.docStatus] || STATUS_STYLE.MISSING;
                   const Icon = st.icon;
@@ -405,13 +747,13 @@ export default function FacilityPage() {
                       <div className="flex items-center gap-3 min-w-0">
                         <Icon className={cn("w-4 h-4 shrink-0", st.cls.split(" ")[0])} />
                         <div className="min-w-0">
-                          <p className="text-[13px] text-white truncate">{r.name}</p>
+                          <p className="text-[13px] text-slate-800 dark:text-white truncate">{r.name}</p>
                           {r.reason && <p className="text-[10px] text-slate-600 truncate mt-0.5">{r.reason}</p>}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {r.priority === "CRITICAL" && r.docStatus === "MISSING" && <span className="text-[9px] text-red-400 font-semibold">CRITICAL</span>}
-                        {r.stateCode && <span className="text-[9px] text-slate-500 bg-white/[0.04] px-1.5 py-0.5 rounded font-mono">{r.stateCode}</span>}
+                        {r.stateCode && <span className="text-[9px] text-slate-500 bg-slate-50 dark:bg-white/[0.04] px-1.5 py-0.5 rounded font-mono">{r.stateCode}</span>}
                         <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md", st.cls)}>{st.label}</span>
                       </div>
                     </div>
@@ -432,7 +774,7 @@ export default function FacilityPage() {
                   <Gauge className="w-5 h-5 text-amber-400" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-white font-medium">Configure your facility infrastructure</p>
+                  <p className="text-slate-800 dark:text-white font-medium">Configure your facility infrastructure</p>
                   <p className="text-xs text-slate-500 mt-1">
                     Set your throughput capacity, number of loading docks/racks, and storage tanks so counterparties can see your capabilities.
                   </p>
@@ -447,9 +789,9 @@ export default function FacilityPage() {
           {/* Infrastructure */}
           <div className={cn("p-6", cell)}>
             <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2"><Gauge className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-white">Infrastructure</span></div>
+              <div className="flex items-center gap-2"><Gauge className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-slate-800 dark:text-white">Infrastructure</span></div>
               {!editing && !infraNotConfigured && (
-                <button onClick={startEdit} className="text-[10px] text-slate-500 hover:text-white transition-colors">Edit</button>
+                <button onClick={startEdit} className="text-[10px] text-slate-500 hover:text-slate-800 dark:text-white transition-colors">Edit</button>
               )}
             </div>
             {editing ? (
@@ -471,17 +813,17 @@ export default function FacilityPage() {
                 </div>
                 <div className="text-center">
                   <Container className="w-5 h-5 text-[#1473FF] mx-auto mb-1" />
-                  <p className="text-xl font-bold text-white">{docks}</p>
+                  <p className="text-xl font-bold text-slate-800 dark:text-white">{docks}</p>
                   <p className="text-[10px] text-slate-500">Docks / Racks</p>
                 </div>
                 <div className="text-center">
                   <Layers className="w-5 h-5 text-purple-400 mx-auto mb-1" />
-                  <p className="text-xl font-bold text-white">{tanks}</p>
+                  <p className="text-xl font-bold text-slate-800 dark:text-white">{tanks}</p>
                   <p className="text-[10px] text-slate-500">Storage Tanks</p>
                 </div>
                 <div className="text-center">
                   <Users className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-                  <p className="text-xl font-bold text-white">{d?.staffCount || 0}</p>
+                  <p className="text-xl font-bold text-slate-800 dark:text-white">{d?.staffCount || 0}</p>
                   <p className="text-[10px] text-slate-500">Active Staff</p>
                 </div>
               </div>
@@ -491,14 +833,14 @@ export default function FacilityPage() {
           {/* Today's Activity + 30-Day Performance */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className={cn("p-6", cell)}>
-              <div className="flex items-center gap-2 mb-4"><Activity className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-white">Today's Activity</span></div>
+              <div className="flex items-center gap-2 mb-4"><Activity className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-slate-800 dark:text-white">Today's Activity</span></div>
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <Stat value={opsStats.activeShipments || 0} label="Shipments" color="text-[#1473FF]" />
                 <Stat value={opsStats.incomingToday || 0} label="Incoming" color="text-emerald-400" />
                 <Stat value={opsStats.outgoingToday || 0} label="Outgoing" color="text-purple-400" />
               </div>
               {shipments.length > 0 ? (
-                <div className="space-y-2 pt-3 border-t border-white/[0.04]">
+                <div className="space-y-2 pt-3 border-t border-slate-200/60 dark:border-white/[0.04]">
                   <p className="text-[10px] text-slate-500 uppercase tracking-wider">Recent</p>
                   {shipments.slice(0, 5).map((s: any) => (
                     <div key={s.id} className="flex items-center justify-between py-1.5">
@@ -509,27 +851,27 @@ export default function FacilityPage() {
                       <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md",
                         s.status === "completed" ? "text-emerald-400 bg-emerald-400/10" :
                         s.status === "loading" ? "text-blue-400 bg-blue-400/10" :
-                        "text-slate-400 bg-white/[0.04]"
+                        "text-slate-400 bg-slate-50 dark:bg-white/[0.04]"
                       )}>{s.status}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="pt-3 border-t border-white/[0.04] text-center py-4">
+                <div className="pt-3 border-t border-slate-200/60 dark:border-white/[0.04] text-center py-4">
                   <p className="text-xs text-slate-600">No shipments today</p>
                 </div>
               )}
             </div>
 
             <div className={cn("p-6", cell)}>
-              <div className="flex items-center gap-2 mb-4"><TrendingUp className="w-4 h-4 text-emerald-400" /><span className="text-sm font-medium text-white">30-Day Performance</span></div>
+              <div className="flex items-center gap-2 mb-4"><TrendingUp className="w-4 h-4 text-emerald-400" /><span className="text-sm font-medium text-slate-800 dark:text-white">30-Day Performance</span></div>
               <div className="space-y-4">
                 <PerfRow label="Appointments" current={stats.completedLast30 || 0} total={stats.appointmentsLast30 || 0} pct={stats.completionRate || 0} color="#1473FF" />
                 <PerfRow label="Partner Coverage" current={activePartners.length} total={partners.length || 1} pct={partners.length > 0 ? Math.round((activePartners.length / partners.length) * 100) : 0} color="#a855f7" />
                 <PerfRow label="Compliance" current={compStatus.totalVerified || 0} total={compReqs.length || 1} pct={compScore} color={compScore >= 80 ? "#34d399" : compScore >= 50 ? "#fbbf24" : "#f87171"} />
-                <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between">
+                <div className="pt-2 border-t border-slate-200/60 dark:border-white/[0.04] flex items-center justify-between">
                   <span className="text-xs text-slate-500">Volume Committed</span>
-                  <span className="text-sm font-semibold text-white">{totalVolume > 0 ? `${totalVolume.toLocaleString()} bbl/mo` : "---"}</span>
+                  <span className="text-sm font-semibold text-slate-800 dark:text-white">{totalVolume > 0 ? `${totalVolume.toLocaleString()} bbl/mo` : "---"}</span>
                 </div>
               </div>
             </div>
@@ -538,7 +880,7 @@ export default function FacilityPage() {
           {/* Product Mix */}
           {products.length > 0 && (
             <div className={cn("p-6", cell)}>
-              <div className="flex items-center gap-2 mb-4"><Droplets className="w-4 h-4 text-cyan-400" /><span className="text-sm font-medium text-white">Product Mix</span></div>
+              <div className="flex items-center gap-2 mb-4"><Droplets className="w-4 h-4 text-cyan-400" /><span className="text-sm font-medium text-slate-800 dark:text-white">Product Mix</span></div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {products.map((p, i) => (
                   <div key={p} className="flex items-center gap-2">
@@ -557,7 +899,7 @@ export default function FacilityPage() {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
                 <Beaker className="w-4 h-4 text-purple-400" />
-                <span className="text-sm font-medium text-white">Product Verification</span>
+                <span className="text-sm font-medium text-slate-800 dark:text-white">Product Verification</span>
               </div>
               <Badge className="bg-gradient-to-r from-[#BE01FF]/15 to-[#1473FF]/15 text-purple-300 border-0 text-[10px]">
                 <EsangIcon className="w-3 h-3 mr-1" />ESANG AI
@@ -573,14 +915,14 @@ export default function FacilityPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Learning Stats */}
             <div className={cn("p-6", cell)}>
-              <div className="flex items-center gap-2 mb-4"><BarChart3 className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-white">Identification Stats</span></div>
+              <div className="flex items-center gap-2 mb-4"><BarChart3 className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-slate-800 dark:text-white">Identification Stats</span></div>
               <div className="grid grid-cols-3 gap-3">
                 <Stat value={learningQ.data?.totalIdentifications || 0} label="Total IDs" color="text-[#1473FF]" />
                 <Stat value={`${learningQ.data?.avgConfidence || 0}%`} label="Avg Confidence" color="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
                 <Stat value={learningQ.data?.recentTrend === "Improving" ? "Up" : learningQ.data?.recentTrend === "Declining" ? "Down" : "---"} label="Trend" color={learningQ.data?.recentTrend === "Improving" ? "text-emerald-400" : "text-slate-500"} />
               </div>
               {learningQ.data?.topProducts?.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-white/[0.04]">
+                <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-white/[0.04]">
                   <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Most Identified</p>
                   {learningQ.data.topProducts.slice(0, 3).map((p: any) => (
                     <div key={p.product} className="flex items-center justify-between py-1.5">
@@ -594,13 +936,13 @@ export default function FacilityPage() {
 
             {/* Recent History */}
             <div className={cn("p-6", cell)}>
-              <div className="flex items-center gap-2 mb-4"><Target className="w-4 h-4 text-purple-400" /><span className="text-sm font-medium text-white">Recent Identifications</span></div>
+              <div className="flex items-center gap-2 mb-4"><Target className="w-4 h-4 text-purple-400" /><span className="text-sm font-medium text-slate-800 dark:text-white">Recent Identifications</span></div>
               {(historyQ.data as any)?.identifications?.length > 0 ? (
                 <div className="space-y-2">
                   {(historyQ.data as any).identifications.map((item: any) => (
                     <div key={item.id} className="flex items-center justify-between py-2 border-b border-white/[0.03] last:border-0">
                       <div>
-                        <p className="text-sm text-white">{item.crudeType}</p>
+                        <p className="text-sm text-slate-800 dark:text-white">{item.crudeType}</p>
                         <p className="text-[10px] text-slate-600">API {item.apiGravity} | BS&W {item.bsw}%</p>
                       </div>
                       <span className={cn("text-xs font-semibold", item.confidence >= 90 ? "text-emerald-400" : item.confidence >= 75 ? "text-amber-400" : "text-orange-400")}>{item.confidence}%</span>
@@ -621,7 +963,7 @@ export default function FacilityPage() {
         <TabsContent value="partnerships" className="mt-8 space-y-6">
           {/* Value Chain Overview */}
           <div className={cn("p-6", cell)}>
-            <div className="flex items-center gap-2 mb-5"><Workflow className="w-4 h-4 text-purple-400" /><span className="text-sm font-medium text-white">Value Chain Position</span></div>
+            <div className="flex items-center gap-2 mb-5"><Workflow className="w-4 h-4 text-purple-400" /><span className="text-sm font-medium text-slate-800 dark:text-white">Value Chain Position</span></div>
             {/* Flow visualization */}
             <div className="flex items-center justify-center gap-2 py-4 overflow-x-auto">
               <ChainNode label="Producers" count={byType.shipper || 0} color="#1473FF" sub="Shippers" />
@@ -629,7 +971,7 @@ export default function FacilityPage() {
               <ChainNode label="Marketers" count={byType.marketer || 0} color="#a855f7" sub="Volume" />
               <ArrowRight className="w-4 h-4 text-slate-600 shrink-0" />
               <div className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 border border-[#1473FF]/20 text-center">
-                <p className="text-xs font-semibold text-white">{t?.name || "Your Terminal"}</p>
+                <p className="text-xs font-semibold text-slate-800 dark:text-white">{t?.name || "Your Terminal"}</p>
                 <p className="text-[10px] text-slate-400">{TYPE_LABELS[t?.terminalType || "storage"]}</p>
               </div>
               <ArrowRight className="w-4 h-4 text-slate-600 shrink-0" />
@@ -642,7 +984,7 @@ export default function FacilityPage() {
           {/* Aggregate Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className={cn("p-5 text-center", cell)}>
-              <p className="text-2xl font-bold text-white">{partners.length}</p>
+              <p className="text-2xl font-bold text-slate-800 dark:text-white">{partners.length}</p>
               <p className="text-[10px] text-slate-500 mt-0.5">Total Partners</p>
             </div>
             <div className={cn("p-5 text-center", cell)}>
@@ -660,7 +1002,7 @@ export default function FacilityPage() {
           </div>
 
           {/* Partner Directory */}
-          <div className={cn("divide-y divide-white/[0.03]", cell)}>
+          <div className={cn("divide-y divide-slate-200/60 dark:divide-white/[0.03]", cell)}>
             {partners.length === 0 ? (
               <div className="text-center py-16 px-4">
                 <Handshake className="w-8 h-8 text-slate-700 mx-auto mb-3" />
@@ -678,7 +1020,7 @@ export default function FacilityPage() {
                     )} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{p.companyName || `Company #${p.companyId}`}</p>
+                    <p className="text-sm font-medium text-slate-800 dark:text-white truncate">{p.companyName || `Company #${p.companyId}`}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[10px] text-slate-500 capitalize">{p.partnerType}</span>
                       <CircleDot className={cn("w-2.5 h-2.5", p.status === "active" ? "text-emerald-400" : "text-amber-400")} />
@@ -687,7 +1029,7 @@ export default function FacilityPage() {
                 </div>
                 <div className="text-right shrink-0 pl-4">
                   <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md",
-                    p.rackAccessLevel === "full" ? "text-emerald-400 bg-emerald-400/10" : p.rackAccessLevel === "limited" ? "text-amber-400 bg-amber-400/10" : "text-slate-400 bg-white/[0.04]"
+                    p.rackAccessLevel === "full" ? "text-emerald-400 bg-emerald-400/10" : p.rackAccessLevel === "limited" ? "text-amber-400 bg-amber-400/10" : "text-slate-400 bg-slate-50 dark:bg-white/[0.04]"
                   )}>{(p.rackAccessLevel || "scheduled").charAt(0).toUpperCase() + (p.rackAccessLevel || "scheduled").slice(1)}</span>
                   {p.monthlyVolumeCommitment > 0 && (
                     <p className="text-[10px] text-slate-600 mt-1">{Number(p.monthlyVolumeCommitment).toLocaleString()} bbl/mo</p>
@@ -698,6 +1040,72 @@ export default function FacilityPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* ═══ API KEY INPUT MODAL ═══ */}
+      {keyModal && (() => {
+        const intg = INT_CATALOG.find(c => c.id === keyModal);
+        const fields = INT_FIELDS[keyModal] || [{ key: "apiKey", label: "API Key", placeholder: "Enter API key", secret: true }];
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setKeyModal(null)}>
+            <div className="border border-slate-700 rounded-2xl w-full max-w-md mx-4 shadow-2xl" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
+              {intg && <div className="h-1 w-full rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${intg.brandFrom}, ${intg.brandTo})` }} />}
+              <div className="px-6 pt-6 pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {intg && (
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${intg.brandFrom}20, ${intg.brandTo}20)` }}>
+                        <span style={{ color: intg.brandFrom }}>{intg.icon}</span>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-white text-lg font-semibold">Connect {intg?.name || keyModal}</p>
+                      <p className="text-slate-500 text-[10px]">{intg?.category || "Integration"}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setKeyModal(null)} className="text-slate-400 hover:text-white transition-colors"><X className="w-4 h-4" /></button>
+                </div>
+              </div>
+              <div className="px-6 pb-6 space-y-4">
+                {fields.map(f => (
+                  <div key={f.key}>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">{f.label}</label>
+                    <div className="relative">
+                      <Input
+                        type={f.secret && !showSecrets[f.key] ? "password" : "text"}
+                        value={keyForm[f.key] || ""}
+                        onChange={(e: any) => setKeyForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                        placeholder={f.placeholder}
+                        className="bg-slate-800/50 border-slate-700/50 rounded-xl pr-10 text-sm"
+                      />
+                      {f.secret && (
+                        <button
+                          type="button"
+                          onClick={() => setShowSecrets(prev => ({ ...prev, [f.key]: !prev[f.key] }))}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                        >
+                          {showSecrets[f.key] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-800/30 border border-slate-700/30">
+                  <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <p className="text-[10px] text-slate-500">Credentials are encrypted at rest with AES-256 and never logged</p>
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button variant="outline" onClick={() => setKeyModal(null)} className="bg-slate-800/50 border-slate-700/50 rounded-xl text-sm">Cancel</Button>
+                  <Button onClick={handleSaveKey} disabled={!keyForm.apiKey || saveKeyMut.isPending}
+                    className="rounded-xl text-sm text-white border-0"
+                    style={{ background: intg ? `linear-gradient(135deg, ${intg.brandFrom}, ${intg.brandTo})` : 'linear-gradient(135deg, #1473FF, #BE01FF)' }}>
+                    {saveKeyMut.isPending ? "Connecting..." : `Connect ${intg?.name || ""}`}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -707,7 +1115,7 @@ function Row({ label, value, mono, bold }: { label: string; value: string; mono?
   return (
     <div>
       <span className="text-[10px] text-slate-500 uppercase tracking-wider">{label}</span>
-      <p className={cn("text-sm mt-0.5", bold ? "text-white font-semibold" : "text-slate-300", mono && "font-mono")}>{value}</p>
+      <p className={cn("text-sm mt-0.5", bold ? "text-slate-800 dark:text-white font-semibold" : "text-slate-300", mono && "font-mono")}>{value}</p>
     </div>
   );
 }
@@ -723,9 +1131,9 @@ function Stat({ value, label, color }: { value: string | number; label: string; 
 
 function InfraCard({ icon, value, label, sub }: { icon: React.ReactNode; value: string | number; label: string; sub: string }) {
   return (
-    <div className="rounded-2xl border border-white/[0.04] bg-white/[0.02] p-5 text-center">
-      <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center mx-auto mb-3">{icon}</div>
-      <p className="text-2xl font-bold text-white">{value}</p>
+    <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.04] bg-white dark:bg-white/[0.02] p-5 text-center">
+      <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-white/[0.04] flex items-center justify-center mx-auto mb-3">{icon}</div>
+      <p className="text-2xl font-bold text-slate-800 dark:text-white">{value}</p>
       <p className="text-xs text-slate-400 mt-0.5">{label}</p>
       <p className="text-[10px] text-slate-600">{sub}</p>
     </div>
@@ -737,9 +1145,9 @@ function PerfRow({ label, current, total, pct, color }: { label: string; current
     <div>
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-xs text-slate-400">{label}</span>
-        <span className="text-xs font-semibold text-white">{current} / {total}</span>
+        <span className="text-xs font-semibold text-slate-800 dark:text-white">{current} / {total}</span>
       </div>
-      <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-slate-50 dark:bg-white/[0.04] rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: color }} />
       </div>
     </div>
@@ -758,13 +1166,26 @@ function CapRow({ label, desc }: { label: string; desc: string }) {
   );
 }
 
+function IntgPowerList({ powers, live }: { powers: string[]; live: boolean }) {
+  return (
+    <div className="space-y-1.5">
+      {powers.map(p => (
+        <div key={p} className="flex items-center gap-2">
+          <CheckCircle className={cn("w-3 h-3 shrink-0", live ? "text-emerald-400" : "text-slate-300 dark:text-white/10")} />
+          <span className={cn("text-[11px]", live ? "text-slate-600 dark:text-white/50" : "text-slate-400 dark:text-white/20")}>{p}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ChainNode({ label, count, color, sub }: { label: string; count: number; color: string; sub: string }) {
   return (
     <div className="text-center shrink-0">
       <div className="w-10 h-10 rounded-xl mx-auto mb-1 flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
         <span className="text-sm font-bold" style={{ color }}>{count}</span>
       </div>
-      <p className="text-[11px] text-white font-medium">{label}</p>
+      <p className="text-[11px] text-slate-800 dark:text-white font-medium">{label}</p>
       <p className="text-[9px] text-slate-600">{sub}</p>
     </div>
   );

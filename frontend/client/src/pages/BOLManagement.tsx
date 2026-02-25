@@ -40,7 +40,7 @@ export default function BOLManagement() {
   };
 
   const filteredBOLs = (bolsQuery.data as any)?.filter((bol: any) =>
-    !searchTerm || bol.bolNumber?.toLowerCase().includes(searchTerm.toLowerCase()) || bol.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+    !searchTerm || bol.number?.toLowerCase().includes(searchTerm.toLowerCase()) || bol.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase()) || bol.productName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -169,21 +169,24 @@ export default function BOLManagement() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="text-white font-medium">{bol.bolNumber}</p>
+                        <p className="text-white font-medium">{bol.number}</p>
                         {getStatusBadge(bol.status)}
+                        {bol.bolType && bol.bolType !== "standard" && (
+                          <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]">{bol.bolType}</Badge>
+                        )}
                       </div>
                       <p className="text-sm text-slate-400">Load: {bol.loadNumber}</p>
-                      <p className="text-sm text-slate-400">{bol.origin} → {bol.destination}</p>
+                      <p className="text-sm text-slate-400">Product: {bol.productName || "N/A"}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-white font-medium">{bol.pieces} pieces</p>
-                      <p className="text-xs text-slate-500">{bol.weight?.toLocaleString()} lbs</p>
+                      <p className="text-white font-medium">{bol.quantity ? `${bol.quantity.toLocaleString()} gal` : "--"}</p>
+                      <p className="text-xs text-slate-500">{bol.createdAt}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-4 text-xs text-slate-500">
-                      <span>Shipper: {bol.shipperName}</span>
-                      <span>Consignee: {bol.consigneeName}</span>
+                      <span>Shipper: {bol.shipper || "N/A"}</span>
+                      <span>Carrier: {bol.catalyst || "N/A"}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white">

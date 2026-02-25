@@ -8,7 +8,7 @@
  */
 
 import { z } from "zod";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getProductsForTrailer, searchProducts } from "../_core/trailerProducts";
 
 export const trailerRegulatoryRouter = router({

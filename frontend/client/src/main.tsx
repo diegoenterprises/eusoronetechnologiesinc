@@ -8,6 +8,7 @@ import App from "./App";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { getLoginUrl } from "./const";
 import "./index.css";
+import "./styles/theme-dark-premium.css";
 import "./styles/theme-light.css";
 
 const queryClient = new QueryClient();

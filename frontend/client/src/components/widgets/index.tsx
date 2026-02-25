@@ -36,11 +36,7 @@ const premiumRow = "flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] backd
 
 // Tasks Widget
 export const TasksWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const [tasks, setTasks] = usePersistentState('tasks', [
-    { id: 1, text: 'Review shipment quotes', done: false },
-    { id: 2, text: 'Update catalyst contracts', done: true },
-    { id: 3, text: 'Schedule team meeting', done: false },
-  ]);
+  const [tasks, setTasks] = usePersistentState('tasks', [] as { id: number; text: string; done: boolean }[]);
   const [newTask, setNewTask] = useState('');
 
   const addTask = () => {
@@ -338,7 +334,7 @@ export const PerformanceSummaryWidget: React.FC<{ compact?: boolean }> = ({ comp
 // Search Widget — enhanced with keyboard shortcut hint and recent searches
 export const SearchWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const [query, setQuery] = useState('');
-  const [recentSearches] = usePersistentState<string[]>('recent_searches', ['LOAD-45901', 'ABC Transport', 'Dallas terminal']);
+  const [recentSearches] = usePersistentState<string[]>('recent_searches', []);
 
   return (
     <div className="space-y-3">
@@ -371,48 +367,13 @@ export const SearchWidget: React.FC<{ compact?: boolean }> = ({ compact = false 
 
 // Messages Widget — enhanced with online indicators and unread badges
 export const MessagesWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const messages = [
-    { from: 'John Davis', message: 'ETA updated to 3:00 PM — on schedule', time: '5m', initials: 'JD', online: true, unread: 2, gradient: 'from-blue-500/30 to-cyan-500/20' },
-    { from: 'ABC Transport', message: 'Rate confirmation signed and returned', time: '20m', initials: 'AT', online: true, unread: 0, gradient: 'from-emerald-500/30 to-green-500/20' },
-    { from: 'Sarah Miller', message: 'POD uploaded for LOAD-45892', time: '1h', initials: 'SM', online: false, unread: 1, gradient: 'from-purple-500/30 to-pink-500/20' },
-    { from: 'Dispatch Ops', message: 'Driver reassignment for tomorrow', time: '2h', initials: 'DO', online: true, unread: 0, gradient: 'from-amber-500/30 to-orange-500/20' },
-  ];
-
-  const totalUnread = messages.reduce((sum, m) => sum + m.unread, 0);
-
   return (
     <div className="space-y-2">
-      {totalUnread > 0 && (
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-[11px] text-gray-500 font-medium">{totalUnread} unread</span>
-          </div>
-          <button className="text-[11px] text-purple-400 hover:text-purple-300 font-medium transition-colors">Mark all read</button>
-        </div>
-      )}
-      {messages.slice(0, compact ? 2 : 4).map((m, i) => (
-        <div key={i} className={`${premiumRow} cursor-pointer group`}>
-          <div className="relative flex-shrink-0">
-            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${m.gradient} flex items-center justify-center border border-white/[0.08]`}>
-              <span className="text-[10px] font-bold text-white/90">{m.initials}</span>
-            </div>
-            {m.online && <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-900" />}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold text-white tracking-wide truncate">{m.from}</p>
-              {m.unread > 0 && (
-                <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[9px] font-bold text-white">{m.unread}</span>
-                </div>
-              )}
-            </div>
-            <p className="text-[11px] text-gray-500 truncate group-hover:text-gray-400 transition-colors">{m.message}</p>
-          </div>
-          <span className="text-[10px] text-gray-600 font-medium tabular-nums flex-shrink-0">{m.time}</span>
-        </div>
-      ))}
+      <div className="flex flex-col items-center justify-center py-6 text-gray-500">
+        <MessageSquare className="w-8 h-8 mb-2 opacity-40" />
+        <p className="text-xs">No messages yet</p>
+        <p className="text-[10px] text-gray-600 mt-1">Messages from your network will appear here</p>
+      </div>
     </div>
   );
 };
@@ -423,20 +384,6 @@ export const CalendarWidget: React.FC<{ compact?: boolean }> = ({ compact = fals
   const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
   const dateStr = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-  const events = [
-    { title: 'Load #45901 Pickup', time: '9:00 AM', endTime: '10:00 AM', color: 'blue', type: 'pickup' },
-    { title: 'Catalyst Rate Review', time: '11:30 AM', endTime: '12:00 PM', color: 'purple', type: 'meeting' },
-    { title: 'Load #45905 Delivery', time: '2:00 PM', endTime: '3:00 PM', color: 'cyan', type: 'delivery' },
-    { title: 'Safety Briefing', time: '4:30 PM', endTime: '5:00 PM', color: 'amber', type: 'meeting' },
-  ];
-
-  const colorMap: Record<string, { bar: string; bg: string; icon: string }> = {
-    blue: { bar: 'bg-blue-400', bg: 'bg-blue-500/10', icon: 'text-blue-400' },
-    purple: { bar: 'bg-purple-400', bg: 'bg-purple-500/10', icon: 'text-purple-400' },
-    cyan: { bar: 'bg-cyan-400', bg: 'bg-cyan-500/10', icon: 'text-cyan-400' },
-    amber: { bar: 'bg-amber-400', bg: 'bg-amber-500/10', icon: 'text-amber-400' },
-  };
-
   return (
     <div className="space-y-3">
       {!compact && (
@@ -446,27 +393,14 @@ export const CalendarWidget: React.FC<{ compact?: boolean }> = ({ compact = fals
             <p className="text-[11px] text-gray-500">{dayName}</p>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-            <span className="text-[11px] text-gray-500 font-medium">{events.length} events today</span>
+            <span className="text-[11px] text-gray-500 font-medium">0 events today</span>
           </div>
         </div>
       )}
-      <div className="space-y-1.5">
-        {events.slice(0, compact ? 2 : 4).map((e, i) => {
-          const c = colorMap[e.color] || colorMap.blue;
-          return (
-            <div key={i} className={`${premiumRow} group cursor-pointer`}>
-              <div className={`w-1 h-10 rounded-full flex-shrink-0 ${c.bar}`} />
-              <div className={`p-1.5 rounded-lg ${c.bg} flex-shrink-0`}>
-                <CalendarIcon className={`w-3.5 h-3.5 ${c.icon}`} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-white font-medium tracking-wide truncate group-hover:text-purple-200 transition-colors">{e.title}</p>
-                <p className="text-[11px] text-gray-500 mt-0.5 tabular-nums">{e.time} — {e.endTime}</p>
-              </div>
-            </div>
-          );
-        })}
+      <div className="flex flex-col items-center justify-center py-6 text-gray-500">
+        <CalendarIcon className="w-8 h-8 mb-2 opacity-40" />
+        <p className="text-xs">No events scheduled</p>
+        <p className="text-[10px] text-gray-600 mt-1">Your appointments and loads will appear here</p>
       </div>
     </div>
   );

@@ -6,19 +6,38 @@ import {
   BarChart3, Zap, Shield, Activity, Radio, XCircle, ChevronDown,
 } from "lucide-react";
 
-const DATA_FLOWS = [
-  { label: "Truck ETA / GPS Position", direction: "TO_DTN", frequency: "Real-time" },
-  { label: "Driver Compliance Pre-Clearance", direction: "TO_DTN", frequency: "Per appointment" },
-  { label: "Appointment Requests", direction: "TO_DTN", frequency: "On creation" },
-  { label: "Delivery Confirmations", direction: "TO_DTN", frequency: "On delivery" },
-  { label: "Detention Records (GPS-verified)", direction: "TO_DTN", frequency: "On departure" },
-  { label: "BOL Data", direction: "FROM_DTN", frequency: "On generation" },
-  { label: "Allocation Status", direction: "FROM_DTN", frequency: "Real-time" },
-  { label: "Rack Pricing", direction: "FROM_DTN", frequency: "Every 15 min" },
-  { label: "Inventory Levels", direction: "FROM_DTN", frequency: "On load event" },
-  { label: "Credit Authorizations", direction: "FROM_DTN", frequency: "Per request" },
-  { label: "Loading Progress", direction: "FROM_DTN", frequency: "Real-time" },
-];
+// Provider-specific data flow configs
+const PROVIDER_META: Record<string, { label: string; icon: string }> = {
+  DTN: { label: "DTN", icon: "Zap" },
+  Buckeye: { label: "Buckeye TAS", icon: "Database" },
+  Dearman: { label: "Dearman Systems", icon: "Settings" },
+};
+
+function getDataFlows(provider: string) {
+  const p = provider || "TAS";
+  return [
+    { label: "Truck ETA / GPS Position", direction: "OUTBOUND", frequency: "Real-time" },
+    { label: "Driver Compliance Pre-Clearance", direction: "OUTBOUND", frequency: "Per appointment" },
+    { label: "Appointment Requests", direction: "OUTBOUND", frequency: "On creation" },
+    { label: "Delivery Confirmations", direction: "OUTBOUND", frequency: "On delivery" },
+    { label: "Detention Records (GPS-verified)", direction: "OUTBOUND", frequency: "On departure" },
+    { label: "BOL Data", direction: "INBOUND", frequency: "On generation" },
+    { label: "Allocation Status", direction: "INBOUND", frequency: "Real-time" },
+    { label: "Rack Pricing", direction: "INBOUND", frequency: "Every 15 min" },
+    { label: "Inventory Levels", direction: "INBOUND", frequency: "On load event" },
+    { label: "Credit Authorizations", direction: "INBOUND", frequency: "Per request" },
+    { label: "Loading Progress", direction: "INBOUND", frequency: "Real-time" },
+    ...(provider === "Buckeye" ? [
+      { label: "Gate Check-In Events", direction: "INBOUND", frequency: "Real-time" },
+      { label: "Loading Rack Assignment", direction: "INBOUND", frequency: "Per load" },
+    ] : []),
+    ...(provider === "Dearman" ? [
+      { label: "Load Authorization", direction: "INBOUND", frequency: "Per request" },
+      { label: "Gate Event Notifications", direction: "INBOUND", frequency: "Real-time" },
+      { label: "Order Status Updates", direction: "INBOUND", frequency: "On change" },
+    ] : []),
+  ];
+}
 
 export default function DTNSyncDashboard() {
   const [facilityId, setFacilityId] = useState<number>(0);
@@ -64,24 +83,29 @@ export default function DTNSyncDashboard() {
     { key: "pricing" as const, label: "Rack Pricing", icon: <BarChart3 className="w-3 h-3" /> },
   ];
 
+  // Detect connected TAS provider
+  const detectedProvider = (connectionStatus as any)?.provider || "DTN";
+  const providerLabel = PROVIDER_META[detectedProvider]?.label || detectedProvider;
+  const dataFlows = getDataFlows(detectedProvider);
+
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white px-4 py-6 max-w-7xl mx-auto">
+    <div className="min-h-screen px-4 py-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
             <Zap className="w-6 h-6 text-blue-400" />
-            DTN Integration
+            Terminal Automation
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            {activeFacility ? activeFacility.facilityName : "Terminal automation sync"}
+            {activeFacility ? `${activeFacility.facilityName} · ${providerLabel}` : "Connect DTN, Buckeye TAS, or Dearman"}
           </p>
         </div>
         {myFacilities && (myFacilities as any[]).length > 1 && (
           <select
             value={activeFacilityId}
             onChange={(e) => setFacilityId(parseInt(e.target.value))}
-            className="bg-white/[0.06] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white outline-none"
+            className="bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.06] rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white outline-none"
           >
             {(myFacilities as any[]).map((f: any) => (
               <option key={f.id} value={f.id} className="bg-slate-900">{f.facilityName}</option>
@@ -91,15 +115,15 @@ export default function DTNSyncDashboard() {
       </div>
 
       {/* Connection Banner */}
-      <div className={`rounded-xl p-4 mb-6 border ${isConnected ? "bg-emerald-500/5 border-emerald-500/20" : "bg-white/[0.02] border-white/[0.05]"}`}>
+      <div className={`rounded-xl p-4 mb-6 border ${isConnected ? "bg-emerald-500/5 border-emerald-500/20" : "bg-white dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.05]"}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isConnected ? "bg-emerald-500/10" : "bg-white/[0.06]"}`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isConnected ? "bg-emerald-500/10" : "bg-slate-100 dark:bg-white/[0.06]"}`}>
               {isConnected ? <Wifi className="w-5 h-5 text-emerald-400" /> : <WifiOff className="w-5 h-5 text-slate-500" />}
             </div>
             <div>
-              <p className="text-sm font-medium text-white flex items-center gap-2">
-                CONNECTION STATUS:
+              <p className="text-sm font-medium text-slate-800 dark:text-white flex items-center gap-2">
+                {providerLabel} STATUS:
                 {isConnected ? (
                   <span className="text-emerald-400 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Connected</span>
                 ) : (
@@ -108,7 +132,7 @@ export default function DTNSyncDashboard() {
               </p>
               {connectionStatus?.dtnTerminalId && (
                 <p className="text-xs text-slate-500">
-                  DTN Terminal ID: <span className="text-slate-300">{connectionStatus.dtnTerminalId}</span>
+                  Terminal ID: <span className="text-slate-300">{connectionStatus.dtnTerminalId}</span>
                   {connectionStatus.lastSyncAt && (
                     <> | Last sync: {new Date(connectionStatus.lastSyncAt).toLocaleTimeString()}</>
                   )}
@@ -120,7 +144,7 @@ export default function DTNSyncDashboard() {
             <button
               onClick={() => activeFacilityId && testMutation.mutate({ facilityId: activeFacilityId })}
               disabled={testMutation.isPending}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white/[0.06] border border-white/[0.06] rounded-lg text-slate-300 hover:text-white transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.06] rounded-lg text-slate-300 hover:text-slate-800 dark:text-white transition-colors"
             >
               {testMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Activity className="w-3 h-3" />}
               Test Connection
@@ -137,45 +161,45 @@ export default function DTNSyncDashboard() {
       {/* Today's Stats */}
       {syncStats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3">
+          <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <ArrowUpRight className="w-3.5 h-3.5 text-blue-400" />
-              <span className="text-[10px] text-slate-500">Sent to DTN</span>
+              <span className="text-[10px] text-slate-500">Sent to {providerLabel}</span>
             </div>
-            <p className="text-xl font-semibold text-white">{(syncStats as any).sentToDtn || 0}</p>
+            <p className="text-xl font-semibold text-slate-800 dark:text-white">{(syncStats as any).sentToDtn || 0}</p>
           </div>
-          <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3">
+          <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-400" />
               <span className="text-[10px] text-slate-500">Received</span>
             </div>
-            <p className="text-xl font-semibold text-white">{(syncStats as any).receivedFromDtn || 0}</p>
+            <p className="text-xl font-semibold text-slate-800 dark:text-white">{(syncStats as any).receivedFromDtn || 0}</p>
           </div>
-          <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3">
+          <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <FileText className="w-3.5 h-3.5 text-amber-400" />
               <span className="text-[10px] text-slate-500">BOLs Synced</span>
             </div>
-            <p className="text-xl font-semibold text-white">{(syncStats as any).bolsSynced || 0}</p>
+            <p className="text-xl font-semibold text-slate-800 dark:text-white">{(syncStats as any).bolsSynced || 0}</p>
           </div>
-          <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3">
+          <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <AlertCircle className="w-3.5 h-3.5 text-red-400" />
               <span className="text-[10px] text-slate-500">Errors</span>
             </div>
-            <p className="text-xl font-semibold text-white">{(syncStats as any).errors || 0}</p>
+            <p className="text-xl font-semibold text-slate-800 dark:text-white">{(syncStats as any).errors || 0}</p>
           </div>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-white/[0.02] border border-white/[0.04] rounded-xl p-1">
+      <div className="flex gap-1 mb-6 bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.04] rounded-xl p-1">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-lg transition-colors ${
-              activeTab === tab.key ? "bg-white/[0.08] text-white" : "text-slate-500 hover:text-slate-300"
+              activeTab === tab.key ? "bg-slate-200 dark:bg-white/[0.08] text-slate-800 dark:text-white" : "text-slate-500 hover:text-slate-300"
             }`}
           >
             {tab.icon} {tab.label}
@@ -185,27 +209,27 @@ export default function DTNSyncDashboard() {
 
       {/* Connection Status Tab */}
       {activeTab === "status" && (
-        <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-white/[0.04]">
+        <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-200/60 dark:border-white/[0.04]">
             <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider">Data Flow Configuration</h3>
           </div>
-          <div className="divide-y divide-white/[0.04]">
-            {DATA_FLOWS.map((flow, i) => (
+          <div className="divide-y divide-slate-200/60 dark:divide-white/[0.04]">
+            {dataFlows.map((flow, i) => (
               <div key={i} className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-3">
                   <div className={`w-6 h-6 rounded flex items-center justify-center ${
-                    flow.direction === "TO_DTN" ? "bg-blue-500/10" : "bg-emerald-500/10"
+                    flow.direction === "OUTBOUND" ? "bg-blue-500/10" : "bg-emerald-500/10"
                   }`}>
-                    {flow.direction === "TO_DTN" ? (
+                    {flow.direction === "OUTBOUND" ? (
                       <ArrowUpRight className="w-3.5 h-3.5 text-blue-400" />
                     ) : (
                       <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-400" />
                     )}
                   </div>
-                  <span className="text-sm text-white">{flow.label}</span>
+                  <span className="text-sm text-slate-800 dark:text-white">{flow.label}</span>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="text-[10px] text-slate-500">{flow.direction === "TO_DTN" ? "EusoTrip -> DTN" : "DTN -> EusoTrip"}</span>
+                  <span className="text-[10px] text-slate-500">{flow.direction === "OUTBOUND" ? `EusoTrip → ${providerLabel}` : `${providerLabel} → EusoTrip`}</span>
                   <span className={`flex items-center gap-1 text-xs ${isConnected ? "text-emerald-400" : "text-slate-600"}`}>
                     {isConnected ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                     {isConnected ? "Live" : "Off"}
@@ -223,7 +247,7 @@ export default function DTNSyncDashboard() {
         <div className="space-y-2">
           {syncLog && (syncLog as any[]).length > 0 ? (
             (syncLog as any[]).map((entry: any) => (
-              <div key={entry.id} className="bg-white/[0.03] border border-white/[0.05] rounded-xl px-4 py-3 flex items-center justify-between">
+              <div key={entry.id} className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-6 h-6 rounded flex items-center justify-center ${
                     entry.direction === "TO_DTN" ? "bg-blue-500/10" : "bg-emerald-500/10"
@@ -235,7 +259,7 @@ export default function DTNSyncDashboard() {
                     )}
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-white">{entry.eventType}</p>
+                    <p className="text-xs font-medium text-slate-800 dark:text-white">{entry.eventType}</p>
                     <p className="text-[10px] text-slate-500">{new Date(entry.createdAt).toLocaleString()}</p>
                   </div>
                 </div>
@@ -253,7 +277,7 @@ export default function DTNSyncDashboard() {
             <div className="text-center py-16">
               <FileText className="w-8 h-8 text-slate-700 mx-auto mb-2" />
               <p className="text-sm text-slate-500">No sync events yet</p>
-              <p className="text-xs text-slate-600 mt-1">Events will appear here as data flows between EusoTrip and DTN</p>
+              <p className="text-xs text-slate-600 mt-1">Events will appear here as data flows between EusoTrip and {providerLabel}</p>
             </div>
           )}
         </div>
@@ -264,12 +288,12 @@ export default function DTNSyncDashboard() {
         <div className="space-y-3">
           {inventory && (inventory as any[]).length > 0 ? (
             (inventory as any[]).map((item: any, i: number) => (
-              <div key={i} className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-4">
+              <div key={i} className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-white">{item.product}</span>
+                  <span className="text-sm font-medium text-slate-800 dark:text-white">{item.product}</span>
                   <span className="text-xs text-slate-400">{item.percentFull}% full</span>
                 </div>
-                <div className="w-full h-3 bg-white/[0.06] rounded-full overflow-hidden mb-2">
+                <div className="w-full h-3 bg-slate-100 dark:bg-white/[0.06] rounded-full overflow-hidden mb-2">
                   <div
                     className={`h-full rounded-full transition-all ${
                       item.percentFull > 80 ? "bg-emerald-500" : item.percentFull > 40 ? "bg-blue-500" : "bg-amber-500"
@@ -287,7 +311,7 @@ export default function DTNSyncDashboard() {
             <div className="text-center py-16">
               <Database className="w-8 h-8 text-slate-700 mx-auto mb-2" />
               <p className="text-sm text-slate-500">No inventory data</p>
-              <p className="text-xs text-slate-600 mt-1">Connect DTN TIMS to see real-time inventory levels</p>
+              <p className="text-xs text-slate-600 mt-1">Connect {providerLabel} to see real-time inventory levels</p>
             </div>
           )}
         </div>
@@ -306,15 +330,15 @@ export default function DTNSyncDashboard() {
                   return acc;
                 }, {} as Record<string, any[]>)
               ).map(([product, prices]) => (
-                <div key={product} className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-4">
-                  <h3 className="text-sm font-medium text-white mb-3">{product}</h3>
+                <div key={product} className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl p-4">
+                  <h3 className="text-sm font-medium text-slate-800 dark:text-white mb-3">{product}</h3>
                   <div className="space-y-2">
                     {(prices as any[]).map((p: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between py-1.5 border-b border-white/[0.03] last:border-0">
+                      <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-white/[0.03] last:border-0">
                         <span className="text-xs text-slate-400">{p.supplierName}</span>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <p className="text-sm font-medium text-white">${p.grossPrice.toFixed(3)}</p>
+                            <p className="text-sm font-medium text-slate-800 dark:text-white">${p.grossPrice.toFixed(3)}</p>
                             <p className="text-[10px] text-slate-600">Net: ${p.netPrice.toFixed(3)} | Tax: ${p.taxes.toFixed(3)}</p>
                           </div>
                         </div>
@@ -328,7 +352,7 @@ export default function DTNSyncDashboard() {
             <div className="text-center py-16">
               <BarChart3 className="w-8 h-8 text-slate-700 mx-auto mb-2" />
               <p className="text-sm text-slate-500">No pricing data</p>
-              <p className="text-xs text-slate-600 mt-1">Connect DTN Fuel Buyer to see real-time rack pricing</p>
+              <p className="text-xs text-slate-600 mt-1">Connect {providerLabel} to see real-time rack pricing</p>
             </div>
           )}
         </div>

@@ -120,6 +120,25 @@ export function haversineDistanceMeters(a: LatLng, b: LatLng): number {
 // ANTI-SPOOF (Section 5.3)
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Known mountain passes where large altitude changes are expected (suppress false positives)
+const MOUNTAIN_PASS_CORRIDORS: Array<{ name: string; lat: number; lng: number; radiusMi: number; maxAltFt: number }> = [
+  { name: "Eisenhower Tunnel, CO", lat: 39.6808, lng: -105.9139, radiusMi: 15, maxAltFt: 12000 },
+  { name: "Donner Pass, CA", lat: 39.3157, lng: -120.3297, radiusMi: 15, maxAltFt: 8000 },
+  { name: "Snoqualmie Pass, WA", lat: 47.4281, lng: -121.4153, radiusMi: 12, maxAltFt: 4000 },
+  { name: "Raton Pass, NM/CO", lat: 36.9917, lng: -104.7608, radiusMi: 10, maxAltFt: 8000 },
+  { name: "Monteagle, TN", lat: 35.2388, lng: -85.8397, radiusMi: 10, maxAltFt: 3000 },
+  { name: "Cabbage Patch, OR", lat: 42.8486, lng: -122.3733, radiusMi: 12, maxAltFt: 5000 },
+  { name: "Tehachapi Pass, CA", lat: 35.1319, lng: -118.4762, radiusMi: 12, maxAltFt: 5000 },
+  { name: "Vail Pass, CO", lat: 39.5314, lng: -106.2156, radiusMi: 10, maxAltFt: 11000 },
+  { name: "Cajon Pass, CA", lat: 34.3128, lng: -117.4611, radiusMi: 10, maxAltFt: 5000 },
+];
+
+function isNearMountainPass(point: LatLng): boolean {
+  return MOUNTAIN_PASS_CORRIDORS.some(p =>
+    haversineDistance(point, { lat: p.lat, lng: p.lng }) <= p.radiusMi
+  );
+}
+
 export function detectSpoofing(
   current: LocationPoint,
   previous: LocationPoint | null,
@@ -127,8 +146,16 @@ export function detectSpoofing(
 ): SpoofingResult {
   const checks: SpoofingResult["checks"] = [];
 
+  // 1. Mock location provider (catches 90% of spoofing apps)
   if (isMockLocation) {
     checks.push({ check: "MOCK_LOCATION", severity: "CRITICAL", detail: "Device is using mock location provider" });
+  }
+
+  // 2. GPS age / staleness — possible replay attack
+  const gpsAgeMs = Date.now() - new Date(current.timestamp).getTime();
+  if (gpsAgeMs > 60_000) {
+    const ageSec = Math.round(gpsAgeMs / 1000);
+    checks.push({ check: "GPS_STALE", severity: ageSec > 300 ? "HIGH" : "MEDIUM", detail: `GPS point is ${ageSec}s old — possible replay or cached data` });
   }
 
   if (previous) {
@@ -137,21 +164,31 @@ export function detectSpoofing(
       { lat: previous.lat, lng: previous.lng }
     ) * 1.60934; // mi to km
     const timeDiffHours = (new Date(current.timestamp).getTime() - new Date(previous.timestamp).getTime()) / 3600000;
+
+    // 3. Two-tier teleportation detection (governed trucks max 65-75 mph)
     if (timeDiffHours > 0) {
       const impliedSpeedMph = (distKm * 0.621371) / timeDiffHours;
-      if (impliedSpeedMph > 120) {
-        checks.push({ check: "TELEPORTATION", severity: "HIGH", detail: `Implied speed: ${Math.round(impliedSpeedMph)} mph over ${Math.round(distKm)} km` });
+      if (impliedSpeedMph > 150) {
+        checks.push({ check: "TELEPORTATION", severity: "CRITICAL", detail: `Implied speed: ${Math.round(impliedSpeedMph)} mph — definite spoofing` });
+      } else if (impliedSpeedMph > 90) {
+        checks.push({ check: "TELEPORTATION", severity: "HIGH", detail: `Implied speed: ${Math.round(impliedSpeedMph)} mph — exceeds governed truck limits` });
       }
     }
 
+    // 4. Suspicious accuracy (spoofing apps report artificially precise coords)
     if (current.accuracy !== undefined && current.accuracy < 3 && !current.isCharging) {
       checks.push({ check: "SUSPICIOUS_ACCURACY", severity: "MEDIUM", detail: `Accuracy ${current.accuracy}m seems artificially precise` });
     }
 
+    // 5. Altitude jump — suppressed near known mountain passes
     if (previous.altitude && current.altitude) {
       const altDiff = Math.abs(current.altitude - previous.altitude);
-      if (altDiff > 5000 && timeDiffHours < 1) {
-        checks.push({ check: "ALTITUDE_JUMP", severity: "MEDIUM", detail: `Altitude changed ${altDiff}ft in ${Math.round(timeDiffHours * 60)} minutes` });
+      const nearPass = isNearMountainPass({ lat: current.lat, lng: current.lng });
+      if (altDiff > 5000 && timeDiffHours < 1 && !nearPass) {
+        checks.push({ check: "ALTITUDE_JUMP", severity: "MEDIUM", detail: `Altitude changed ${altDiff}ft in ${Math.round(timeDiffHours * 60)} min` });
+      } else if (altDiff > 8000 && timeDiffHours < 1) {
+        // Even near a pass, >8,000ft in <1hr is suspicious
+        checks.push({ check: "ALTITUDE_JUMP", severity: "HIGH", detail: `Extreme altitude change ${altDiff}ft in ${Math.round(timeDiffHours * 60)} min${nearPass ? " (near mountain pass)" : ""}` });
       }
     }
   }
@@ -395,16 +432,25 @@ export async function getGeotagsForDriver(driverId: number, limit = 50) {
 // GEOFENCE FACTORY (Section 4.4)
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Default radii — configurable per facility
+const DEFAULT_APPROACH_RADIUS_M = 8047; // 5 miles
+const DEFAULT_FACILITY_RADIUS_M = 150;  // ~500ft (small terminals)
+const LARGE_FACILITY_RADIUS_M = 500;    // ~1,640ft (refineries, chemical plants)
+
 export async function createGeofencesForLoad(load: {
   id: number;
   pickupLat: number; pickupLng: number; pickupFacilityName?: string;
+  pickupFacilityRadiusM?: number; // Override for large/complex facilities
   deliveryLat: number; deliveryLng: number; deliveryFacilityName?: string;
+  deliveryFacilityRadiusM?: number; // Override for large/complex facilities
   waypoints?: Array<{ lat: number; lng: number; name?: string }>;
   createdBy?: number;
 }): Promise<number[]> {
   const db = await getDb();
   if (!db) return [];
 
+  const pickupFacilityRadius = load.pickupFacilityRadiusM || DEFAULT_FACILITY_RADIUS_M;
+  const deliveryFacilityRadius = load.deliveryFacilityRadiusM || DEFAULT_FACILITY_RADIUS_M;
   const fenceIds: number[] = [];
 
   // 1. PICKUP_APPROACH — 5 mile circle (8047 meters)
@@ -413,7 +459,7 @@ export async function createGeofencesForLoad(load: {
     type: "pickup",
     shape: "circle",
     center: { lat: load.pickupLat, lng: load.pickupLng },
-    radiusMeters: 8047,
+    radiusMeters: DEFAULT_APPROACH_RADIUS_M,
     loadId: load.id,
     createdBy: load.createdBy || null,
     alertOnEnter: true, alertOnExit: false, alertOnDwell: false,
@@ -422,19 +468,19 @@ export async function createGeofencesForLoad(load: {
   }).$returningId();
   fenceIds.push(pa.id);
 
-  // 2. PICKUP_FACILITY — tight circle 150m (~500ft)
+  // 2. PICKUP_FACILITY — configurable radius (default 150m, override for large refineries/plants)
   const [pf] = await db.insert(geofences).values({
     name: `Pickup Facility — Load #${load.id}`,
     type: "pickup",
     shape: "circle",
     center: { lat: load.pickupLat, lng: load.pickupLng },
-    radiusMeters: 150,
+    radiusMeters: pickupFacilityRadius,
     loadId: load.id,
     createdBy: load.createdBy || null,
     alertOnEnter: true, alertOnExit: true, alertOnDwell: true,
     dwellThresholdSeconds: 7200,
     isActive: true,
-    actions: [{ type: "PICKUP_FACILITY", config: { facilityName: load.pickupFacilityName } }],
+    actions: [{ type: "PICKUP_FACILITY", config: { facilityName: load.pickupFacilityName, radiusM: pickupFacilityRadius } }],
   }).$returningId();
   fenceIds.push(pf.id);
 
@@ -444,7 +490,7 @@ export async function createGeofencesForLoad(load: {
     type: "delivery",
     shape: "circle",
     center: { lat: load.deliveryLat, lng: load.deliveryLng },
-    radiusMeters: 8047,
+    radiusMeters: DEFAULT_APPROACH_RADIUS_M,
     loadId: load.id,
     createdBy: load.createdBy || null,
     alertOnEnter: true, alertOnExit: false, alertOnDwell: false,
@@ -453,19 +499,19 @@ export async function createGeofencesForLoad(load: {
   }).$returningId();
   fenceIds.push(da.id);
 
-  // 4. DELIVERY_FACILITY — tight circle 150m
+  // 4. DELIVERY_FACILITY — configurable radius
   const [df] = await db.insert(geofences).values({
     name: `Delivery Facility — Load #${load.id}`,
     type: "delivery",
     shape: "circle",
     center: { lat: load.deliveryLat, lng: load.deliveryLng },
-    radiusMeters: 150,
+    radiusMeters: deliveryFacilityRadius,
     loadId: load.id,
     createdBy: load.createdBy || null,
     alertOnEnter: true, alertOnExit: true, alertOnDwell: true,
     dwellThresholdSeconds: 7200,
     isActive: true,
-    actions: [{ type: "DELIVERY_FACILITY", config: { facilityName: load.deliveryFacilityName } }],
+    actions: [{ type: "DELIVERY_FACILITY", config: { facilityName: load.deliveryFacilityName, radiusM: deliveryFacilityRadius } }],
   }).$returningId();
   fenceIds.push(df.id);
 
@@ -496,6 +542,78 @@ export async function deactivateGeofencesForLoad(loadId: number): Promise<void> 
   const db = await getDb();
   if (!db) return;
   await db.update(geofences).set({ isActive: false }).where(eq(geofences.loadId, loadId));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SIGNAL LOSS HANDLER (Section 4.5)
+// ═══════════════════════════════════════════════════════════════════════════
+// Handles GPS signal loss inside facilities (metal buildings, underground).
+// If a driver's last known position was INSIDE a geofence and signal is lost
+// for <30 minutes, we treat them as still inside (grace period).
+// If signal regains inside the same geofence, no false EXIT→ENTER is emitted.
+
+const SIGNAL_LOSS_GRACE_SECONDS = 1800; // 30 minutes
+
+export interface SignalLossState {
+  driverId: number;
+  loadId?: number;
+  lastGeofenceId: number | null;
+  lastGeofenceType: string | null;
+  wasInsideGeofence: boolean;
+  lastKnownLat: number;
+  lastKnownLng: number;
+  lastSignalTimestamp: Date;
+  signalLostAt: Date | null;
+}
+
+// In-memory signal loss tracker (per driver)
+const signalLossMap = new Map<number, SignalLossState>();
+
+export function reportSignalLoss(driverId: number, loadId?: number): void {
+  const existing = signalLossMap.get(driverId);
+  if (existing && !existing.signalLostAt) {
+    existing.signalLostAt = new Date();
+    console.log(`[LocationEngine] Signal lost for driver ${driverId} at ${existing.lastKnownLat},${existing.lastKnownLng} (was inside geofence: ${existing.wasInsideGeofence})`);
+  }
+}
+
+export function updateDriverGeofenceState(
+  driverId: number,
+  lat: number, lng: number,
+  geofenceId: number | null, geofenceType: string | null,
+  isInside: boolean, loadId?: number,
+): void {
+  signalLossMap.set(driverId, {
+    driverId,
+    loadId,
+    lastGeofenceId: geofenceId,
+    lastGeofenceType: geofenceType,
+    wasInsideGeofence: isInside,
+    lastKnownLat: lat,
+    lastKnownLng: lng,
+    lastSignalTimestamp: new Date(),
+    signalLostAt: null,
+  });
+}
+
+export function shouldSuppressGeofenceExit(driverId: number, geofenceId: number): boolean {
+  const state = signalLossMap.get(driverId);
+  if (!state || !state.signalLostAt || !state.wasInsideGeofence) return false;
+  if (state.lastGeofenceId !== geofenceId) return false;
+
+  const lostDurationSec = (Date.now() - state.signalLostAt.getTime()) / 1000;
+  if (lostDurationSec <= SIGNAL_LOSS_GRACE_SECONDS) {
+    console.log(`[LocationEngine] Suppressing EXIT for driver ${driverId} — signal lost ${Math.round(lostDurationSec)}s ago, within ${SIGNAL_LOSS_GRACE_SECONDS}s grace`);
+    return true;
+  }
+  return false;
+}
+
+export function clearSignalLoss(driverId: number): void {
+  const state = signalLossMap.get(driverId);
+  if (state) {
+    state.signalLostAt = null;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -569,6 +687,9 @@ export async function processGeofenceEvent(event: GeofenceEventData): Promise<Tr
 
     case "PICKUP_FACILITY":
       if (event.action === "ENTER") {
+        // Track driver is inside this geofence (for signal loss grace)
+        updateDriverGeofenceState(event.driverId, event.location.lat, event.location.lng, event.geofenceId, geofenceType, true, event.loadId);
+        clearSignalLoss(event.driverId);
         if (event.loadId) await transitionLoadStatus(event.loadId, "at_pickup");
         if (event.loadId) await startDetentionClock(event.loadId, "pickup", event.driverId, event.geofenceId, event.timestamp);
         triggers.push(
@@ -584,6 +705,13 @@ export async function processGeofenceEvent(event: GeofenceEventData): Promise<Tr
         );
       }
       if (event.action === "EXIT") {
+        // Signal loss grace: if GPS dropped inside facility (metal building, underground),
+        // suppress false EXIT for up to 30 minutes
+        if (shouldSuppressGeofenceExit(event.driverId, event.geofenceId)) {
+          triggers.push({ type: "signal_loss_suppressed", target: "system", data: { loadId: event.loadId, geofenceId: event.geofenceId, driverId: event.driverId } });
+          break;
+        }
+        updateDriverGeofenceState(event.driverId, event.location.lat, event.location.lng, null, null, false, event.loadId);
         if (event.loadId) await transitionLoadStatus(event.loadId, "in_transit");
         if (event.loadId) await stopDetentionClock(event.loadId, "pickup", event.timestamp);
         triggers.push(
@@ -623,6 +751,8 @@ export async function processGeofenceEvent(event: GeofenceEventData): Promise<Tr
 
     case "DELIVERY_FACILITY":
       if (event.action === "ENTER") {
+        updateDriverGeofenceState(event.driverId, event.location.lat, event.location.lng, event.geofenceId, geofenceType, true, event.loadId);
+        clearSignalLoss(event.driverId);
         if (event.loadId) await transitionLoadStatus(event.loadId, "at_delivery");
         if (event.loadId) await startDetentionClock(event.loadId, "delivery", event.driverId, event.geofenceId, event.timestamp);
         triggers.push(
@@ -638,6 +768,12 @@ export async function processGeofenceEvent(event: GeofenceEventData): Promise<Tr
         );
       }
       if (event.action === "EXIT") {
+        // Signal loss grace: suppress false EXIT inside delivery facility
+        if (shouldSuppressGeofenceExit(event.driverId, event.geofenceId)) {
+          triggers.push({ type: "signal_loss_suppressed", target: "system", data: { loadId: event.loadId, geofenceId: event.geofenceId, driverId: event.driverId } });
+          break;
+        }
+        updateDriverGeofenceState(event.driverId, event.location.lat, event.location.lng, null, null, false, event.loadId);
         if (event.loadId) await transitionLoadStatus(event.loadId, "delivered");
         if (event.loadId) await stopDetentionClock(event.loadId, "delivery", event.timestamp);
         if (event.loadId) await deactivateGeofencesForLoad(event.loadId);

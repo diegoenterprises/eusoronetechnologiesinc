@@ -17,10 +17,11 @@ import { trpc } from "@/lib/trpc";
 import {
   DollarSign, MapPin, Truck, AlertTriangle, CheckCircle, Calendar,
   Package, ArrowRight, ArrowLeft, Navigation, Building2,
-  User, Clock, Shield, FileText, Loader2, Gavel, Droplets, FlaskConical
+  User, Clock, Shield, FileText, Loader2, Gavel, Droplets, FlaskConical, Scale
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
+import { getLoadTitle, getEquipmentLabel } from "@/lib/loadUtils";
 import { toast } from "sonner";
 import { useParams, useLocation } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -97,6 +98,26 @@ export default function CatalystBidSubmission() {
   const mlETA = (trpc as any).ml?.predictETA?.useQuery?.(
     { originState: mlOriginState, destState: mlDestState, distance, equipmentType: load?.equipmentType || "dry_van", cargoType: load?.cargoType || "general" },
     { enabled: !!load && distance > 0 && !!mlOriginState && !!mlDestState, staleTime: 120_000 }
+  ) || { data: null };
+
+  // Schedule A Rate Sheet — barrel/tanker rate intelligence
+  const isTankerLoad = (load?.equipmentType || "").toLowerCase().includes("tank") || SPECTRA_KEYWORDS.some(k => (load?.commodity || "").toLowerCase().includes(k));
+  const scheduleARateQuery = (trpc as any).rateSheet?.calculateRate?.useQuery?.(
+    {
+      netBarrels: Number(load?.quantity) || 180,
+      oneWayMiles: distance,
+      waitTimeHours: 0,
+      isSplitLoad: false,
+      isReject: false,
+      travelSurchargeMiles: 0,
+    },
+    { enabled: !!load && distance > 0 && isTankerLoad, staleTime: 120_000 }
+  ) || { data: null };
+
+  // Platform fee preview for the bid amount
+  const platformFeePreview = (trpc as any).rateSheet?.previewPlatformFee?.useQuery?.(
+    { grossAmount: parseFloat(bidAmount) || 0 },
+    { enabled: !!bidAmount && parseFloat(bidAmount) > 0, staleTime: 30_000 }
   ) || { data: null };
 
   // ESANG AI Rate Intelligence calculations
@@ -235,9 +256,9 @@ export default function CatalystBidSubmission() {
                 </div>
                 <div>
                   <p className={cn("font-bold", isLight ? "text-slate-800" : "text-white")}>
-                    {load.cargoType === "petroleum" ? "Petroleum Load" : load.cargoType === "chemicals" ? "Chemical Load" : load.commodity || "General Cargo"}
+                    {getLoadTitle(load)}
                   </p>
-                  <p className="text-xs text-slate-400">{load.equipmentType ? `${load.equipmentType.charAt(0).toUpperCase() + load.equipmentType.slice(1)} Required` : "Standard Equipment"}</p>
+                  <p className="text-xs text-slate-400">{getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass)} Required</p>
                 </div>
                 {hazmat && <Badge className="bg-red-500/15 text-red-500 border border-red-500/30 ml-auto">Hazmat</Badge>}
               </div>
@@ -277,7 +298,7 @@ export default function CatalystBidSubmission() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { label: "Weight", value: `${Number(load.weight || 0).toLocaleString()} ${load.weightUnit || "lbs"}`, icon: <Package className="w-4 h-4" />, color: "blue" },
-                  { label: "Equipment", value: load.equipmentType || "Standard", icon: <Truck className="w-4 h-4" />, color: "purple" },
+                  { label: "Equipment", value: getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass), icon: <Truck className="w-4 h-4" />, color: "purple" },
                   { label: "Target Rate", value: `$${targetRate.toLocaleString()}`, icon: <DollarSign className="w-4 h-4" />, color: "green" },
                   { label: "Rate/Mile", value: targetRate && distance ? `$${(targetRate / distance).toFixed(2)}` : "—", icon: <Navigation className="w-4 h-4" />, color: "cyan" },
                 ].map((stat) => (
@@ -425,6 +446,46 @@ export default function CatalystBidSubmission() {
                 </div>
               )}
 
+              {/* Schedule A Rate Sheet — for tanker/barrel loads */}
+              {scheduleARateQuery.data && distance > 0 && (
+                <div className={cn("p-4 rounded-xl border", isLight ? "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200" : "bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/20")}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Scale className="w-4 h-4 text-amber-500" />
+                    <span className={cn("text-xs font-bold uppercase tracking-wider", isLight ? "text-amber-700" : "text-amber-300")}>Schedule A Rate Sheet</span>
+                    <span className="ml-auto text-[10px] text-slate-500">{distance} mi one-way</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3 mb-3">
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-400 uppercase">Rate/BBL</p>
+                      <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${scheduleARateQuery.data.ratePerBarrel?.toFixed(2)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-400 uppercase">Base</p>
+                      <p className={cn("text-lg font-bold", isLight ? "text-amber-600" : "text-amber-300")}>${scheduleARateQuery.data.baseAmount?.toFixed(2)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-400 uppercase">FSC</p>
+                      <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{scheduleARateQuery.data.fsc > 0 ? `$${scheduleARateQuery.data.fsc.toFixed(2)}` : "$0"}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-400 uppercase">Total</p>
+                      <p className="text-lg font-bold text-emerald-500">${scheduleARateQuery.data.totalAmount?.toFixed(2)}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => {
+                    setBidAmount(String(scheduleARateQuery.data.totalAmount));
+                    if (distance) setRatePerMileInput((scheduleARateQuery.data.totalAmount / distance).toFixed(2));
+                    toast.success("Schedule A rate applied to bid");
+                  }}
+                    className={cn("w-full px-3 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90", isLight ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white" : "bg-gradient-to-r from-amber-500 to-orange-500 text-white")}>
+                    Use Schedule A Rate: ${scheduleARateQuery.data.totalAmount?.toFixed(2)}
+                  </button>
+                  <p className={cn("text-[10px] mt-2 italic", isLight ? "text-slate-500" : "text-slate-500")}>
+                    Based on Schedule A mileage tiers. {Number(load?.quantity) || 180} BBL at {distance} miles.
+                  </p>
+                </div>
+              )}
+
               {/* Rate Summary Card */}
               {bidAmount && distance > 0 && (
                 <div className={cn("p-4 rounded-xl border", isLight ? "bg-gradient-to-r from-emerald-50 to-cyan-50 border-emerald-200" : "bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border-emerald-500/20")}>
@@ -433,6 +494,26 @@ export default function CatalystBidSubmission() {
                     <div><p className="text-[10px] text-slate-400 uppercase">Distance</p><p className={cn("text-xl font-bold", isLight ? "text-slate-800" : "text-white")}>{distance} mi</p></div>
                     <div><p className="text-[10px] text-slate-400 uppercase">Rate/Mile</p><p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${ratePerMile}</p></div>
                   </div>
+                  {/* Platform fee preview */}
+                  {platformFeePreview.data && (
+                    <div className={cn("mt-3 pt-3 border-t grid grid-cols-3 gap-3 text-center", isLight ? "border-emerald-200" : "border-emerald-500/20")}>
+                      <div>
+                        <p className="text-[10px] text-slate-400 uppercase">Platform Fee</p>
+                        <p className={cn("text-sm font-semibold", isLight ? "text-purple-600" : "text-purple-400")}>${platformFeePreview.data.platformFeeAmount?.toFixed(2)}</p>
+                        <p className="text-[9px] text-slate-500">{platformFeePreview.data.platformFeePercent}%</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 uppercase">You Receive</p>
+                        <p className="text-sm font-bold text-emerald-500">${platformFeePreview.data.carrierReceives?.toFixed(2)}</p>
+                        <p className="text-[9px] text-slate-500">After fee</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 uppercase">Shipper Pays</p>
+                        <p className={cn("text-sm font-semibold", isLight ? "text-slate-700" : "text-slate-300")}>${platformFeePreview.data.shipperPays?.toFixed(2)}</p>
+                        <p className="text-[9px] text-slate-500">Total w/ fees</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -554,7 +635,7 @@ export default function CatalystBidSubmission() {
                   <div className="flex items-center gap-2">
                     <Truck className="w-4 h-4 text-blue-500" />
                     <span className={cn("text-sm font-medium", isLight ? "text-blue-700" : "text-blue-400")}>
-                      This load requires: <span className="font-bold">{load.equipmentType === "tanker" ? "Tanker Truck" : load.equipmentType === "flatbed" ? "Flatbed" : load.equipmentType === "reefer" ? "Reefer" : "Standard Truck"}</span>
+                      This load requires: <span className="font-bold">{getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass)}</span>
                     </span>
                   </div>
                   {hazmat && (
@@ -649,8 +730,8 @@ export default function CatalystBidSubmission() {
                 {[
                   { label: "Load", value: load.loadNumber || `#${String(load.id).slice(0, 8)}` },
                   { label: "Route", value: `${originCity} → ${destCity}` },
-                  { label: "Equipment", value: load.equipmentType || "Standard" },
-                  { label: "Commodity", value: load.commodity || load.cargoType || "General" },
+                  { label: "Equipment", value: getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass) },
+                  { label: "Commodity", value: getLoadTitle(load) },
                   { label: "Target Rate", value: `$${targetRate.toLocaleString()}` },
                   { label: "Your Bid vs Target", value: targetRate > 0 ? `${((parseFloat(bidAmount) / targetRate) * 100).toFixed(0)}%` : "—" },
                   ...(selectedDriver ? [{ label: "Driver", value: (driversQuery.data as any)?.find((d: any) => String(d.id) === selectedDriver)?.firstName || "Assigned" }] : []),

@@ -16,6 +16,21 @@ import { pciRequestGuard } from "./pciCompliance";
 import { recordAuditEvent, AuditCategory, AuditAction } from "./auditService";
 import { apiRateLimiter, authRateLimiter } from "./rateLimiting";
 
+// FMCSA risk level calculator for AccessValidation carrier safety
+function getRiskLevel(cached: any): "low" | "moderate" | "elevated" | "high" | "unknown" {
+  const scores = [
+    cached.unsafeDrivingScore, cached.hosComplianceScore, cached.driverFitnessScore,
+    cached.controlledSubstancesScore, cached.vehicleMaintenanceScore,
+    cached.hazmatComplianceScore, cached.crashIndicatorScore,
+  ].filter(Boolean).map(Number);
+  if (scores.length === 0) return "unknown";
+  const max = Math.max(...scores);
+  if (max >= 80) return "high";
+  if (max >= 60) return "elevated";
+  if (max >= 40) return "moderate";
+  return "low";
+}
+
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
     const server = net.createServer();
@@ -338,17 +353,15 @@ async function startServer() {
 
       const [load] = await db.select({
         id: loads.id,
-        referenceNumber: loads.referenceNumber,
+        loadNumber: loads.loadNumber,
         status: loads.status,
-        pickupCity: loads.pickupCity,
-        pickupState: loads.pickupState,
-        deliveryCity: loads.deliveryCity,
-        deliveryState: loads.deliveryState,
+        pickupLocation: loads.pickupLocation,
+        deliveryLocation: loads.deliveryLocation,
         cargoType: loads.cargoType,
-        equipmentType: loads.equipmentType,
         weight: loads.weight,
         driverId: loads.driverId,
         shipperId: loads.shipperId,
+        catalystId: loads.catalystId,
       }).from(loads).where(eq(loads.id, loadId)).limit(1);
 
       if (!load) return res.status(404).json({ error: "Load not found" });
@@ -365,7 +378,75 @@ async function startServer() {
         shipperInfo = shipper || null;
       }
 
-      res.json({ load, driver: driverInfo, shipper: shipperInfo });
+      // ═══ FMCSA Carrier Safety Intelligence ═══
+      // Resolve the carrier company via catalystId → user → company → dotNumber
+      // Then look up cached FMCSA safety data for real-time gate vetting
+      let carrierSafety: any = null;
+      try {
+        let carrierDot: string | null = null;
+        let carrierCompanyName: string | null = null;
+
+        if (load.catalystId) {
+          const [catalystUser] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, load.catalystId)).limit(1);
+          if (catalystUser?.companyId) {
+            const [company] = await db.select({
+              name: companies.name,
+              dotNumber: companies.dotNumber,
+              mcNumber: companies.mcNumber,
+            }).from(companies).where(eq(companies.id, catalystUser.companyId)).limit(1);
+            carrierDot = company?.dotNumber || null;
+            carrierCompanyName = company?.name || null;
+
+            // Check hzCarrierSafety cache first (fastest)
+            if (carrierDot) {
+              try {
+                const { hzCarrierSafety } = await import("../../drizzle/schema");
+                const [cached] = await db.select().from(hzCarrierSafety).where(eq(hzCarrierSafety.dotNumber, carrierDot)).limit(1);
+                if (cached) {
+                  carrierSafety = {
+                    source: "FMCSA",
+                    dotNumber: carrierDot,
+                    mcNumber: company?.mcNumber || null,
+                    carrierName: cached.legalName || carrierCompanyName,
+                    safetyRating: cached.safetyRating || null,
+                    riskLevel: getRiskLevel(cached),
+                    basics: {
+                      unsafeDriving: cached.unsafeDrivingScore ? Number(cached.unsafeDrivingScore) : null,
+                      hoursOfService: cached.hosComplianceScore ? Number(cached.hosComplianceScore) : null,
+                      driverFitness: cached.driverFitnessScore ? Number(cached.driverFitnessScore) : null,
+                      controlledSubstances: cached.controlledSubstancesScore ? Number(cached.controlledSubstancesScore) : null,
+                      vehicleMaintenance: cached.vehicleMaintenanceScore ? Number(cached.vehicleMaintenanceScore) : null,
+                      hazmatCompliance: cached.hazmatComplianceScore ? Number(cached.hazmatComplianceScore) : null,
+                      crashIndicator: cached.crashIndicatorScore ? Number(cached.crashIndicatorScore) : null,
+                    },
+                    lastUpdated: cached.lastUpdate?.toISOString() || null,
+                  };
+                }
+              } catch (safetyErr) {
+                console.warn("[AccessValidation] FMCSA cache lookup failed:", (safetyErr as any)?.message?.substring(0, 80));
+              }
+            }
+
+            // If no cached data, return minimal carrier info so UI can still show it
+            if (!carrierSafety && carrierDot) {
+              carrierSafety = {
+                source: "FMCSA",
+                dotNumber: carrierDot,
+                mcNumber: company?.mcNumber || null,
+                carrierName: carrierCompanyName,
+                safetyRating: null,
+                riskLevel: "unknown",
+                basics: null,
+                lastUpdated: null,
+              };
+            }
+          }
+        }
+      } catch (carrierErr) {
+        console.warn("[AccessValidation] Carrier safety enrichment failed:", (carrierErr as any)?.message?.substring(0, 80));
+      }
+
+      res.json({ load, driver: driverInfo, shipper: shipperInfo, carrierSafety });
     } catch (err: any) {
       console.error("[AccessValidation] lookup error:", err);
       res.status(500).json({ error: "Lookup failed" });
@@ -609,10 +690,9 @@ async function startServer() {
           }
           console.log(`[DocumentCenter] Upserted ${tc} document types`);
 
-          // Always re-seed requirements (roles may have changed: CARRIER→CATALYST, DISPATCHER→DISPATCH)
-          // Delete stale rows with old role names, then re-insert all
+          // Truncate and re-seed requirements (idempotent: clean slate every startup)
           const { sql: rawSql } = await import("drizzle-orm");
-          try { await db.execute(rawSql`DELETE FROM document_requirements WHERE required_for_role IN ('CARRIER','DISPATCHER','FLEET_MANAGER','FACTORING_COMPANY')`); } catch {}
+          try { await db.execute(rawSql`DELETE FROM document_requirements`); } catch {}
           console.log("[DocumentCenter] Seeding document requirements...");
           let rc = 0;
           for (const seed of documentRequirementsSeed) {
@@ -633,6 +713,48 @@ async function startServer() {
             } catch {}
           }
           console.log(`[DocumentCenter] Seeded ${rc} document requirements`);
+
+          // Auto-seed state-specific requirements (CDL portals, IFTA, weight-distance, CARB, oversize)
+          const { stateDocRequirements } = await import("../../drizzle/schema");
+          const { stateRequirementsSeed } = await import("../seeds/stateRequirementsSeed");
+          console.log("[DocumentCenter] Seeding state requirements...");
+          let sc = 0;
+          for (const seed of stateRequirementsSeed) {
+            try {
+              await db.insert(stateDocRequirements).values({
+                stateCode: seed.stateCode,
+                stateName: seed.stateName,
+                documentTypeId: seed.documentTypeId,
+                stateFormNumber: seed.stateFormNumber || null,
+                stateFormName: seed.stateFormName || null,
+                stateIssuingAgency: seed.stateIssuingAgency,
+                statePortalUrl: seed.statePortalUrl || null,
+                stateFormUrl: seed.stateFormUrl || null,
+                stateInstructionsUrl: seed.stateInstructionsUrl || null,
+                isRequired: seed.isRequired ?? true,
+                requiredForRoles: seed.requiredForRoles || null,
+                conditions: seed.conditions || null,
+                filingFee: seed.filingFee || null,
+                renewalFee: seed.renewalFee || null,
+                lateFee: seed.lateFee || null,
+                validityPeriod: seed.validityPeriod || null,
+                renewalWindow: seed.renewalWindow || null,
+                notes: seed.notes || null,
+              }).onDuplicateKeyUpdate({
+                set: {
+                  stateIssuingAgency: seed.stateIssuingAgency,
+                  statePortalUrl: seed.statePortalUrl || null,
+                  stateFormUrl: seed.stateFormUrl || null,
+                  requiredForRoles: seed.requiredForRoles || null,
+                  conditions: seed.conditions || null,
+                  validityPeriod: seed.validityPeriod || null,
+                  notes: seed.notes || null,
+                },
+              });
+              sc++;
+            } catch {}
+          }
+          console.log(`[DocumentCenter] Seeded ${sc} state requirements`);
         }
       } catch (err) {
         console.error("[DocumentCenter] Auto-seed failed:", err);
@@ -658,6 +780,16 @@ async function startServer() {
         console.error("[GamificationSync] Failed to start:", err);
       }
     }, 12000);
+
+    // Auto-seed facility database from EIA if empty (terminals + refineries)
+    setTimeout(async () => {
+      try {
+        const { autoSeedIfEmpty } = await import("../services/facilities/facilityService");
+        await autoSeedIfEmpty();
+      } catch (err) {
+        console.error("[FacilityService] Auto-seed startup error:", err);
+      }
+    }, 20000);
 
     // Start Hot Zones data sync v5.0 — orchestrator + scheduler (22+ data sources)
     setTimeout(async () => {

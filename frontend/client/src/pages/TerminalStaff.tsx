@@ -269,15 +269,15 @@ export default function TerminalStaff() {
       {/* Add Staff Modal */}
       {showAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowAdd(false)}>
-          <Card className="bg-slate-900 border-slate-700 rounded-2xl w-full max-w-lg mx-4 shadow-2xl" onClick={(e: any) => e.stopPropagation()}>
-            <CardHeader className="pb-4">
+          <div className="border border-slate-700 rounded-2xl w-full max-w-lg mx-4 shadow-2xl" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
+            <div className="px-6 pt-6 pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Add Access Controller</CardTitle>
+                <div className="text-white text-lg font-semibold flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Add Access Controller</div>
                 <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></Button>
               </div>
-              <p className="text-slate-400 text-xs">{isShipper ? "This person will validate arriving drivers at your warehouse, dock, or pickup location" : "This person will validate arriving drivers at your terminal"}</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              <p className="text-slate-400 text-xs mt-2">{isShipper ? "This person will validate arriving drivers at your warehouse, dock, or pickup location" : "This person will validate arriving drivers at your terminal"}</p>
+            </div>
+            <div className="px-6 pb-6 space-y-4">
               {/* Location section — Shipper/Marketer only */}
               {isShipper && (
                 <div className="bg-slate-800/30 rounded-xl p-4 space-y-3 border border-slate-700/30">
@@ -384,23 +384,23 @@ export default function TerminalStaff() {
                   {addMutation.isPending ? "Adding..." : "Add Controller"}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Edit Staff Modal */}
       {editingStaff && editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setEditingStaff(null); setEditForm(null); }}>
-          <Card className="bg-slate-900 border-slate-700 rounded-2xl w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e: any) => e.stopPropagation()}>
-            <CardHeader className="pb-4">
+          <div className="border border-slate-700 rounded-2xl w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] overflow-y-auto" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
+            <div className="px-6 pt-6 pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-white text-lg flex items-center gap-2"><Pencil className="w-5 h-5 text-cyan-400" />Edit Staff</CardTitle>
+                <div className="text-white text-lg font-semibold flex items-center gap-2"><Pencil className="w-5 h-5 text-cyan-400" />Edit Staff</div>
                 <Button size="sm" variant="ghost" onClick={() => { setEditingStaff(null); setEditForm(null); }} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></Button>
               </div>
-              <p className="text-slate-400 text-xs">Update details for {editingStaff.name}</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              <p className="text-slate-400 text-xs mt-2">Update details for {editingStaff.name}</p>
+            </div>
+            <div className="px-6 pb-6 space-y-4">
               {/* Location section — Shipper/Marketer only */}
               {isShipper && (
                 <div className="bg-slate-800/30 rounded-xl p-4 space-y-3 border border-slate-700/30">
@@ -507,8 +507,8 @@ export default function TerminalStaff() {
                   {updateMutation.isPending ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
 

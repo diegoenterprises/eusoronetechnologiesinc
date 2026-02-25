@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { getLoadTitle } from "@/lib/loadUtils";
 
 export default function AssignedLoadsPage() {
   const { user } = useAuth();
@@ -149,7 +150,7 @@ export default function AssignedLoadsPage() {
                       </div>
                       <div>
                         <p className="font-semibold text-lg">Load #{load.loadNumber}</p>
-                        <p className="text-sm text-slate-400 capitalize">{load.cargoType} Freight</p>
+                        <p className="text-sm text-slate-400">{getLoadTitle(load)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">

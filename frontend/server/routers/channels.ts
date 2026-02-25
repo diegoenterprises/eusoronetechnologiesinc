@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { groupChannels, channelMembers, messages, users, messageAttachments } from "../../drizzle/schema";
 import { sql, eq, desc, and, count, inArray } from "drizzle-orm";
@@ -487,24 +487,33 @@ export const channelsRouter = router({
       const channelNumericId = parseInt(input.channelId) || 0;
       if (!channelNumericId) throw new Error("Invalid channel");
 
-      // Use raw SQL to avoid Drizzle column-mapping issues
-      const msgResult = await db.execute(
-        sql`INSERT INTO messages (conversationId, senderId, messageType, content, createdAt) VALUES (${channelNumericId}, ${userId}, 'image', ${`📎 ${input.fileName}`}, NOW())`
-      );
-      const messageId = (msgResult as any)[0]?.insertId || 0;
-
-      // Determine type
+      // Determine type from MIME
       const mime = input.mimeType.toLowerCase();
       let type: "image" | "document" | "audio" | "video" | "location" = "document";
       if (mime.startsWith("image/")) type = "image";
       else if (mime.startsWith("audio/")) type = "audio";
       else if (mime.startsWith("video/")) type = "video";
 
-      // Store the attachment via raw SQL
-      const attResult = await db.execute(
-        sql`INSERT INTO message_attachments (messageId, type, fileName, fileUrl, fileSize, mimeType, createdAt) VALUES (${messageId}, ${type}, ${input.fileName}, ${input.fileData}, ${input.fileSize}, ${input.mimeType}, NOW())`
-      );
-      const attachmentId = (attResult as any)[0]?.insertId || 0;
+      // Insert message via Drizzle ORM (avoids raw SQL emoji encoding issues)
+      const msgResult = await db.insert(messages).values({
+        conversationId: channelNumericId,
+        senderId: userId,
+        messageType: type as any,
+        content: `[${type}] ${input.fileName}`,
+        readBy: [userId],
+      });
+      const messageId = (msgResult as any)[0]?.insertId || (msgResult as any).insertId || 0;
+
+      // Store attachment via Drizzle ORM
+      const attResult = await db.insert(messageAttachments).values({
+        messageId,
+        type,
+        fileName: input.fileName,
+        fileUrl: input.fileData,
+        fileSize: input.fileSize,
+        mimeType: input.mimeType,
+      });
+      const attachmentId = (attResult as any)[0]?.insertId || (attResult as any).insertId || 0;
 
       return {
         success: true,

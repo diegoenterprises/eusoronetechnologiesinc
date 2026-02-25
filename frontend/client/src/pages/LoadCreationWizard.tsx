@@ -15,11 +15,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  Package, MapPin, Truck, DollarSign, CheckCircle,
+  Package, MapPin, Truck, DollarSign, CheckCircle, Building2,
   ArrowRight, ArrowLeft, AlertTriangle, Info, Search,
   Droplets, Wind, Box, Thermometer, Snowflake,
   Scale, Link2, Plus, Trash2, Calculator,
-  GlassWater, MilkOff, Clock, Zap
+  GlassWater, MilkOff, Clock, Zap, Users, User
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
@@ -275,6 +275,29 @@ export default function LoadCreationWizard() {
     { enabled: !!(formData.assignmentType === "direct_catalyst" || formData.assignmentType === "broker") }
   ) ?? { data: null, isLoading: false };
   const agreementsList: any[] = Array.isArray(agreementsQueryRaw.data) ? agreementsQueryRaw.data : (agreementsQueryRaw.data?.agreements ?? []);
+
+  // Supply Chain: Get partnered terminals for origin/destination picker
+  const myTerminalsQuery = (trpc as any).supplyChain?.getTerminalsForLoadCreation?.useQuery?.(
+    undefined,
+    { staleTime: 60_000 }
+  ) || { data: null, isLoading: false };
+  const myTerminals: any[] = myTerminalsQuery.data || [];
+
+  // Supply Chain: Partners for Direct Catalyst / Via Broker assignment
+  const myPartnersQuery = (trpc as any).supplyChain?.getMyPartners?.useQuery?.(
+    { status: "active" },
+    { staleTime: 60_000 }
+  ) || { data: null, isLoading: false };
+  const myPartners: any[] = myPartnersQuery.data || [];
+  const catalystPartners = myPartners.filter((p: any) => p.toRole === "CATALYST" || p.fromRole === "CATALYST");
+  const brokerPartners = myPartners.filter((p: any) => p.toRole === "BROKER" || p.fromRole === "BROKER");
+
+  // Fleet: Drivers for Own Fleet assignment
+  const myDriversQuery = (trpc as any).fleet?.getDrivers?.useQuery?.(
+    { status: "active" },
+    { enabled: formData.assignmentType === "own_fleet", staleTime: 60_000 }
+  ) || { data: null, isLoading: false };
+  const myDrivers: any[] = myDriversQuery.data || [];
 
   const selectedTrailer = TRAILER_TYPES.find(t => t.id === formData.trailerType);
   const isHazmat = selectedTrailer?.hazmat ?? false;
@@ -546,6 +569,31 @@ export default function LoadCreationWizard() {
   const dynamicTrailerTypesQuery = (trpc as any).loadBoard.getTrailerTypes.useQuery({ category: "all" });
   const dynamicHazmatClassesQuery = (trpc as any).loadBoard.getHazmatClassRequirements.useQuery({});
 
+  // Schedule A Rate Sheet intelligence — fires when distance + barrels known
+  const isBarrelLoad = (formData.quantityUnit || "").toLowerCase() === "barrels" || currentUnit === "Barrels";
+  const scheduleAQuery = (trpc as any).rateSheet?.calculateRate?.useQuery?.(
+    {
+      netBarrels: Number(formData.quantity) || 180,
+      oneWayMiles: formData.distance || 0,
+      waitTimeHours: 0,
+      isSplitLoad: false,
+      isReject: false,
+      travelSurchargeMiles: 0,
+    },
+    { enabled: rs >= 6 && (formData.distance || 0) > 0 && isBarrelLoad, staleTime: 120_000 }
+  ) || { data: null };
+  const scheduleANonBarrelQuery = (trpc as any).rateSheet?.calculateRate?.useQuery?.(
+    {
+      netBarrels: 180,
+      oneWayMiles: formData.distance || 0,
+      waitTimeHours: 0,
+      isSplitLoad: false,
+      isReject: false,
+      travelSurchargeMiles: 0,
+    },
+    { enabled: rs >= 6 && (formData.distance || 0) > 0 && !isBarrelLoad && isTanker, staleTime: 120_000 }
+  ) || { data: null };
+
   // Hot Zones-powered instant rate intelligence (fires on Step 6 when origin/dest available)
   const originParts = (formData.origin || "").split(",").map((s: string) => s.trim());
   const destParts = (formData.destination || "").split(",").map((s: string) => s.trim());
@@ -656,6 +704,9 @@ export default function LoadCreationWizard() {
       rate: formData.rate,
       ratePerMile: formData.ratePerMile,
       assignmentType: formData.assignmentType || "open_market",
+      assignedCatalystId: formData.assignedCatalystId || undefined,
+      assignedBrokerId: formData.assignedBrokerId || undefined,
+      assignedDriverId: formData.assignedDriverId || undefined,
       linkedAgreementId: linkedAgreementId && linkedAgreementId !== "none" ? linkedAgreementId : undefined,
       minSafetyScore: formData.minSafetyScore,
       endorsements: formData.endorsements,
@@ -667,6 +718,8 @@ export default function LoadCreationWizard() {
       pourPoint: formData.pourPoint,
       reidVaporPressure: formData.reidVaporPressure,
       appearance: formData.appearance,
+      originTerminalId: formData.originTerminalId || undefined,
+      destinationTerminalId: formData.destinationTerminalId || undefined,
     });
   };
 
@@ -739,7 +792,7 @@ export default function LoadCreationWizard() {
           {rs === 1 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               {isHazmat ? (<>
-                <div ref={suggestRef} className="relative">
+                <div ref={suggestRef} className="relative z-50">
                   <label className="text-sm text-slate-400 mb-1 block">Product Name</label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
@@ -753,10 +806,10 @@ export default function LoadCreationWizard() {
                     </Button>
                   </div>
                   {showSuggestions && ergSearch.data?.results?.length > 0 && (
-                    <div className="absolute z-50 left-0 right-16 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                    <div className="absolute z-50 left-0 right-16 mt-1 bg-[#1e293b] border border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
                       <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2020 -- {ergSearch.data.count} results from 1,980 materials</div>
                       {ergSearch.data.results.map((m: any, i: number) => (
-                        <button key={`${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
+                        <button key={`${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-[#334155] flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
                           <div className="flex-1 min-w-0">
                             <p className="text-white text-sm font-medium truncate">{m.name}</p>
                             {m.alternateNames?.length > 0 && <p className="text-slate-500 text-[10px] truncate">Also: {m.alternateNames.slice(0, 2).join(", ")}</p>}
@@ -772,7 +825,7 @@ export default function LoadCreationWizard() {
                     </div>
                   )}
                   {showSuggestions && searchQuery.length >= 2 && ergSearch.isLoading && (
-                    <div className="absolute z-50 left-0 right-16 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-3">
+                    <div className="absolute z-50 left-0 right-16 mt-1 bg-[#1e293b] border border-slate-600/50 rounded-lg shadow-xl p-3">
                       <div className="flex items-center gap-2 text-slate-400 text-sm"><EsangIcon className="w-4 h-4 animate-spin" />Searching ERG 2020 database...</div>
                     </div>
                   )}
@@ -784,7 +837,7 @@ export default function LoadCreationWizard() {
                     <SelectContent>{getClassesForTrailer(formData.trailerType).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div ref={unSuggestRef} className="relative">
+                <div ref={unSuggestRef} className="relative z-40">
                   <label className="text-sm text-slate-400 mb-1 block">UN Number (auto-detects product as you type)</label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -792,10 +845,10 @@ export default function LoadCreationWizard() {
                       placeholder="e.g., 1203, UN1223" className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10" />
                   </div>
                   {showUNSuggestions && ergUNSearch.data?.results?.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                    <div className="absolute z-50 left-0 right-0 mt-1 bg-[#1e293b] border border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
                       <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2020 -- UN Number Matches</div>
                       {ergUNSearch.data.results.map((m: any, i: number) => (
-                        <button key={`un-${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
+                        <button key={`un-${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-[#334155] flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
                           <div className="flex-1 min-w-0"><p className="text-white text-sm font-medium truncate">{m.name}</p></div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
@@ -1336,12 +1389,51 @@ export default function LoadCreationWizard() {
             </div>
           )}
 
-          {/* STEP 4: Origin & Destination with Google Maps */}
+          {/* STEP 4: Origin & Destination with Google Maps + Terminal Picker */}
           {rs === 4 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              {/* Terminal Picker — Origin */}
+              {myTerminals.length > 0 && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500/5 to-purple-500/5 border border-blue-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Building2 className="w-4 h-4 text-[#1473FF]" />
+                    <span className="text-white font-semibold text-sm">Select Origin Terminal</span>
+                    <Badge variant="outline" className="text-[10px] border-[#1473FF]/30 text-[#1473FF]">Supply Chain</Badge>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {myTerminals.map((t: any) => (
+                      <button key={t.terminalId} onClick={() => {
+                        const addr = `${t.city || ""}, ${t.state || ""}`;
+                        setFormData((prev: any) => ({ ...prev, origin: addr, originTerminalId: t.terminalId }));
+                        if (originRef.current) originRef.current.value = addr;
+                      }}
+                        className={cn("p-3 rounded-xl border text-left transition-all",
+                          formData.originTerminalId === t.terminalId
+                            ? "border-[#1473FF] bg-[#1473FF]/10"
+                            : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
+                        )}>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-xs font-semibold truncate">{t.terminalName || "Terminal"} {t.terminalCode ? `(${t.terminalCode})` : ""}</p>
+                            <p className="text-slate-500 text-[10px]">{t.city}, {t.state} · {t.terminalType || "Terminal"} · {t.rackAccessLevel} access</p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  {formData.originTerminalId && (
+                    <button onClick={() => setFormData((prev: any) => ({ ...prev, originTerminalId: undefined }))}
+                      className="mt-2 text-[10px] text-slate-500 hover:text-slate-300 transition-colors">
+                      Clear terminal selection
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="text-sm text-slate-400 mb-1 block flex items-center gap-2"><MapPin className="w-4 h-4 text-green-400" />Origin / Pickup</label>
-                <Input ref={originRef} value={formData.origin || ""} onChange={(e: any) => updateField("origin", e.target.value)}
+                <Input ref={originRef} value={formData.origin || ""} onChange={(e: any) => { updateField("origin", e.target.value); if (formData.originTerminalId) updateField("originTerminalId", undefined); }}
                   placeholder={mapsLoaded ? "Start typing an address..." : "City, State or full address"} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               <div>
@@ -1412,6 +1504,119 @@ export default function LoadCreationWizard() {
                   ))}
                 </div>
               </div>
+
+              {/* Direct Catalyst — Select which carrier to assign */}
+              {formData.assignmentType === "direct_catalyst" && (
+                <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/20 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Truck className="w-4 h-4 text-orange-400" />
+                    <span className="text-white font-semibold text-sm">Select Carrier / Catalyst</span>
+                    {!formData.assignedCatalystId && <Badge variant="outline" className="text-[10px] border-orange-500/30 text-orange-400">Required</Badge>}
+                  </div>
+                  {catalystPartners.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {catalystPartners.map((p: any) => (
+                        <button key={p.id} onClick={() => { updateField("assignedCatalystId", p.partnerCompanyId); updateField("assignedCatalystName", p.companyName); }}
+                          className={cn("p-3 rounded-xl border text-left transition-all flex items-center gap-3",
+                            formData.assignedCatalystId === p.partnerCompanyId
+                              ? "border-orange-500 bg-orange-500/15"
+                              : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
+                          )}>
+                          <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center shrink-0">
+                            <Truck className="w-4 h-4 text-orange-400" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-white text-xs font-semibold truncate">{p.companyName || "Unknown"}</p>
+                            <p className="text-[10px] text-slate-500">{[p.companyDot && `DOT ${p.companyDot}`, p.companyCity && `${p.companyCity}, ${p.companyState}`].filter(Boolean).join(" • ") || "Carrier"}</p>
+                          </div>
+                          {formData.assignedCatalystId === p.partnerCompanyId && <CheckCircle className="w-4 h-4 text-orange-400 ml-auto shrink-0" />}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-slate-400 text-xs">No carrier partners found.</p>
+                      <a href="/partners" className="text-[#1473FF] text-xs font-semibold hover:underline mt-1 inline-block">+ Add a carrier partner first</a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Via Broker — Select which broker to coordinate */}
+              {formData.assignmentType === "broker" && (
+                <div className="p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Building2 className="w-4 h-4 text-cyan-400" />
+                    <span className="text-white font-semibold text-sm">Select Broker</span>
+                    {!formData.assignedBrokerId && <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">Required</Badge>}
+                  </div>
+                  {brokerPartners.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {brokerPartners.map((p: any) => (
+                        <button key={p.id} onClick={() => { updateField("assignedBrokerId", p.partnerCompanyId); updateField("assignedBrokerName", p.companyName); }}
+                          className={cn("p-3 rounded-xl border text-left transition-all flex items-center gap-3",
+                            formData.assignedBrokerId === p.partnerCompanyId
+                              ? "border-cyan-500 bg-cyan-500/15"
+                              : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
+                          )}>
+                          <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center shrink-0">
+                            <Building2 className="w-4 h-4 text-cyan-400" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-white text-xs font-semibold truncate">{p.companyName || "Unknown"}</p>
+                            <p className="text-[10px] text-slate-500">{[p.companyMc && `MC ${p.companyMc}`, p.companyCity && `${p.companyCity}, ${p.companyState}`].filter(Boolean).join(" • ") || "Broker"}</p>
+                          </div>
+                          {formData.assignedBrokerId === p.partnerCompanyId && <CheckCircle className="w-4 h-4 text-cyan-400 ml-auto shrink-0" />}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-slate-400 text-xs">No broker partners found.</p>
+                      <a href="/partners" className="text-[#1473FF] text-xs font-semibold hover:underline mt-1 inline-block">+ Add a broker partner first</a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Own Fleet — Select driver */}
+              {formData.assignmentType === "own_fleet" && (
+                <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Users className="w-4 h-4 text-emerald-400" />
+                    <span className="text-white font-semibold text-sm">Assign Driver</span>
+                    <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400">Optional — assign later</Badge>
+                  </div>
+                  {myDrivers.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {myDrivers.slice(0, 10).map((d: any) => (
+                        <button key={d.id} onClick={() => { updateField("assignedDriverId", formData.assignedDriverId === d.id ? null : d.id); updateField("assignedDriverName", formData.assignedDriverId === d.id ? null : d.name); }}
+                          className={cn("p-3 rounded-xl border text-left transition-all flex items-center gap-3",
+                            formData.assignedDriverId === d.id
+                              ? "border-emerald-500 bg-emerald-500/15"
+                              : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
+                          )}>
+                          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
+                            <User className="w-4 h-4 text-emerald-400" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-white text-xs font-semibold truncate">{d.name || "Driver"}</p>
+                            <p className="text-[10px] text-slate-500">{d.email || d.phone || "Active"}</p>
+                          </div>
+                          {formData.assignedDriverId === d.id && <CheckCircle className="w-4 h-4 text-emerald-400 ml-auto shrink-0" />}
+                        </button>
+                      ))}
+                    </div>
+                  ) : myDriversQuery.isLoading ? (
+                    <p className="text-slate-400 text-xs text-center py-4">Loading drivers...</p>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-slate-400 text-xs">No active drivers found in your fleet.</p>
+                      <p className="text-slate-500 text-[10px] mt-1">You can assign a driver after the load is created.</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Agreement/Contract Linking */}
               {(formData.assignmentType === "direct_catalyst" || formData.assignmentType === "broker") && (
@@ -1516,6 +1721,58 @@ export default function LoadCreationWizard() {
                     </button>
                   </div>
                   <p className="text-[10px] text-slate-500 mt-2 italic">{mlRatePrediction.data.recommendation}</p>
+                </div>
+              )}
+
+              {/* Schedule A Rate Sheet Intelligence — barrel/tanker loads */}
+              {(scheduleAQuery.data || scheduleANonBarrelQuery.data) && formData.distance > 0 && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Scale className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">Schedule A Rate Sheet</span>
+                    <span className="ml-auto text-[10px] text-slate-500">{formData.distance} mi one-way</span>
+                  </div>
+                  {(() => {
+                    const sa = scheduleAQuery.data || scheduleANonBarrelQuery.data;
+                    if (!sa) return null;
+                    const bbls = isBarrelLoad ? (Number(formData.quantity) || 180) : 180;
+                    return (
+                      <>
+                        <div className="grid grid-cols-4 gap-3 mb-3">
+                          <div className="text-center">
+                            <p className="text-[10px] text-slate-500 uppercase">Rate/BBL</p>
+                            <p className="text-white text-lg font-bold">${sa.ratePerBarrel?.toFixed(2)}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[10px] text-slate-500 uppercase">Base Amount</p>
+                            <p className="text-amber-300 text-lg font-bold">${sa.baseAmount?.toFixed(2)}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[10px] text-slate-500 uppercase">FSC</p>
+                            <p className="text-white text-lg font-bold">{sa.fsc > 0 ? `$${sa.fsc.toFixed(2)}` : "$0"}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[10px] text-slate-500 uppercase">Total</p>
+                            <p className="text-emerald-400 text-lg font-bold">${sa.totalAmount?.toFixed(2)}</p>
+                          </div>
+                        </div>
+                        {sa.breakdown?.length > 0 && (
+                          <div className="text-[10px] text-slate-400 mb-3 space-y-0.5">
+                            {sa.breakdown.map((b: string, i: number) => <p key={i}>{b}</p>)}
+                          </div>
+                        )}
+                        <button onClick={() => {
+                          updateField("rate", String(sa.totalAmount));
+                          if (formData.distance) updateField("ratePerMile", (sa.totalAmount / formData.distance).toFixed(2));
+                          toast.success("Schedule A rate applied", { description: `$${sa.ratePerBarrel?.toFixed(2)}/BBL x ${bbls} BBL = $${sa.totalAmount?.toFixed(2)}` });
+                        }}
+                          className="w-full px-3 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:opacity-90 transition-opacity">
+                          Use Schedule A Rate: ${sa.totalAmount?.toFixed(2)}
+                        </button>
+                        <p className="text-[10px] text-slate-500 mt-2 italic">Based on Permian Crude Transport Schedule A rate tiers. {isBarrelLoad ? `${bbls} BBL` : "Est. 180 BBL"} at {formData.distance} miles.</p>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -1763,6 +2020,30 @@ export default function LoadCreationWizard() {
                   {formData.assignmentType?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Open Market"}
                 </Badge>
               </div>
+
+              {/* Assignment Details Banner */}
+              {(formData.assignedCatalystName || formData.assignedBrokerName || formData.assignedDriverName) && (
+                <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/40 flex items-center gap-3 flex-wrap">
+                  {formData.assignedCatalystName && (
+                    <div className="flex items-center gap-2">
+                      <Truck className="w-3.5 h-3.5 text-orange-400" />
+                      <span className="text-xs text-slate-300">Assigned to: <strong className="text-orange-400">{formData.assignedCatalystName}</strong></span>
+                    </div>
+                  )}
+                  {formData.assignedBrokerName && (
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+                      <span className="text-xs text-slate-300">Broker: <strong className="text-cyan-400">{formData.assignedBrokerName}</strong></span>
+                    </div>
+                  )}
+                  {formData.assignedDriverName && (
+                    <div className="flex items-center gap-2">
+                      <User className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-xs text-slate-300">Driver: <strong className="text-emerald-400">{formData.assignedDriverName}</strong></span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* ── SPECTRA-MATCH Verified Banner ── */}
               {formData.spectraVerified && (

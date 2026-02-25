@@ -139,7 +139,7 @@ export default function RecurringLoadScheduler() {
 
                 if (createLoadMutation) {
                   await createLoadMutation.mutateAsync({
-                    cargoType: "general" as const,
+                    equipment: pattern.equipmentType,
                     pickupLocation: {
                       address: `${pattern.originCity}, ${pattern.originState}`,
                       city: pattern.originCity,

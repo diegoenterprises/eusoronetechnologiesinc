@@ -34,6 +34,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("CREATE", "POD", "OWN"),
     p("READ", "POD", "OWN"),
     // Financial
+    p("CREATE", "WALLET", "OWN"),
     p("READ", "WALLET", "OWN"),
     p("READ", "INVOICE", "OWN"),
     p("READ", "PAYMENT", "OWN"),
@@ -66,6 +67,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("CREATE", "GEOTAG", "OWN"),
     p("READ", "GEOTAG", "OWN"),
     p("READ", "ROUTE", "OWN"),
+    p("CREATE", "WALLET", "OWN"),
     p("READ", "WALLET", "OWN"),
     p("READ", "INVOICE", "OWN"),
     p("READ", "PAYMENT", "OWN"),
@@ -86,11 +88,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 
   // ─── TIER 3: BUSINESS OPERATORS ───────────────────────────────────────────
   CATALYST: [
-    // Loads (company fleet)
-    p("CREATE", "LOAD", "COMPANY"),
+    // Loads — carriers view awarded loads & update status (no create/delete)
     p("READ", "LOAD", "COMPANY"),
     p("UPDATE", "LOAD", "COMPANY"),
-    p("DELETE", "LOAD", "COMPANY"),
     // Bids
     p("CREATE", "BID", "COMPANY"),
     p("READ", "BID", "COMPANY"),
@@ -116,6 +116,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("READ", "GEOFENCE", "COMPANY"),
     p("READ", "ROUTE", "COMPANY"),
     // Financial
+    p("CREATE", "WALLET", "OWN"),
     p("READ", "WALLET", "OWN"),
     p("CREATE", "INVOICE", "COMPANY"),
     p("READ", "INVOICE", "COMPANY"),
@@ -169,6 +170,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("READ", "GPS_BREADCRUMB", "LINKED"),
     p("READ", "GEOTAG", "LINKED"),
     p("READ", "ROUTE", "LINKED"),
+    p("CREATE", "WALLET", "OWN"),
     p("READ", "WALLET", "OWN"),
     p("CREATE", "PAYMENT", "COMPANY"),
     p("READ", "PAYMENT", "COMPANY"),
@@ -217,6 +219,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("READ", "GPS_BREADCRUMB", "LINKED"),
     p("READ", "GEOTAG", "LINKED"),
     p("READ", "ROUTE", "LINKED"),
+    p("CREATE", "WALLET", "OWN"),
     p("READ", "WALLET", "OWN"),
     p("CREATE", "INVOICE", "COMPANY"),
     p("READ", "INVOICE", "COMPANY"),
@@ -259,6 +262,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("CREATE", "GEOFENCE", "COMPANY"),
     p("READ", "GEOFENCE", "COMPANY"),
     p("READ", "ROUTE", "COMPANY"),
+    p("CREATE", "WALLET", "OWN"),
     p("READ", "WALLET", "OWN"),
     p("READ", "PAYMENT", "OWN"),
     p("CREATE", "MESSAGE", "OWN"),
@@ -281,6 +285,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("UPDATE", "INVOICE", "LINKED"),
     p("CREATE", "PAYMENT", "LINKED"),
     p("READ", "PAYMENT", "LINKED"),
+    p("CREATE", "WALLET", "OWN"),
     p("READ", "WALLET", "OWN"),
     p("READ", "GEOTAG", "LINKED"),
     p("READ", "BANK_ACCOUNT", "COMPANY"),
@@ -310,6 +315,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("READ", "GEOFENCE", "COMPANY"),
     p("UPDATE", "GEOFENCE", "COMPANY"),
     p("DELETE", "GEOFENCE", "COMPANY"),
+    p("CREATE", "WALLET", "OWN"),
     p("READ", "WALLET", "OWN"),
     p("CREATE", "USER", "COMPANY"),
     p("READ", "USER", "COMPANY"),
@@ -353,6 +359,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("READ", "AUDIT_LOG", "COMPANY"),
     p("READ", "DOCUMENT", "COMPANY"),
     p("READ", "USER", "COMPANY"),
+    p("CREATE", "WALLET", "OWN"),
     p("READ", "WALLET", "OWN"),
     p("CREATE", "MESSAGE", "OWN"),
     p("READ", "MESSAGE", "OWN"),
@@ -383,6 +390,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("READ", "GEOFENCE", "COMPANY"),
     p("READ", "DOCUMENT", "COMPANY"),
     p("READ", "USER", "COMPANY"),
+    p("CREATE", "WALLET", "OWN"),
     p("READ", "WALLET", "OWN"),
     p("CREATE", "MESSAGE", "OWN"),
     p("READ", "MESSAGE", "OWN"),

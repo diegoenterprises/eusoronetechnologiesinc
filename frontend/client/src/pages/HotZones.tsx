@@ -79,6 +79,8 @@ const DATA_LAYERS: Record<string, { label: string; icon: typeof Flame; color: st
   factoring_risk: { label: "Credit Risk", icon: AlertTriangle, color: "#F97316" },
   safety_score: { label: "Safety Score", icon: Shield, color: "#22D3EE" },
   driver_hos: { label: "HOS Availability", icon: Clock, color: "#A855F7" },
+  terminal_network: { label: "Terminal Network", icon: Zap, color: "#1473FF" },
+  carrier_fmcsa: { label: "FMCSA Carrier Risk", icon: Shield, color: "#F43F5E" },
 };
 
 const DEMAND_COLORS: Record<string, { bg: string; text: string; ring: string; glow: string }> = {
@@ -113,6 +115,9 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
     undefined,
     { refetchInterval: 60000, staleTime: 30000 }
   );
+
+  // Terminal integration intelligence — enriched by connected terminals' API keys
+  const { data: termIntel } = (trpc as any).hotZones?.getTerminalIntelligence?.useQuery?.(undefined, { refetchInterval: 120000, staleTime: 60000 }) || { data: null };
 
   const zones = data?.zones || [];
   const coldZones = data?.coldZones || [];
@@ -260,6 +265,47 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
           )}
         </div>
       </div>
+      )}
+
+      {/* ── TERMINAL NETWORK INTELLIGENCE — powered by connected terminals ── */}
+      {!embedded && termIntel && termIntel.connectedTerminals > 0 && (
+        <div className={`border-b ${isLight ? "bg-gradient-to-r from-blue-50/80 to-violet-50/80 border-slate-200/60" : "bg-gradient-to-r from-[#1473FF]/[0.04] to-[#BE01FF]/[0.04] border-white/[0.04]"}`}>
+          <div className="max-w-[1600px] mx-auto px-6 py-2.5 flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center">
+                <Zap className="w-3 h-3 text-white" />
+              </div>
+              <span className={`text-[11px] font-medium ${isLight ? "text-slate-600" : "text-white/50"}`}>
+                Terminal Network
+              </span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${isLight ? "bg-blue-100 text-blue-600" : "bg-[#1473FF]/15 text-[#1473FF]"}`}>
+                {termIntel.connectedTerminals} connected
+              </span>
+            </div>
+            {termIntel.carrierSafety?.total > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Shield className={`w-3 h-3 ${isLight ? "text-slate-400" : "text-white/30"}`} />
+                <span className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>Carriers vetted</span>
+                <span className={`text-[11px] font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>{termIntel.carrierSafety.total.toLocaleString()}</span>
+                {termIntel.carrierSafety.highRisk > 0 && (
+                  <span className="text-[10px] text-red-400 font-medium">({termIntel.carrierSafety.highRisk} high-risk)</span>
+                )}
+              </div>
+            )}
+            {termIntel.terminalsByState?.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <BarChart3 className={`w-3 h-3 ${isLight ? "text-slate-400" : "text-white/30"}`} />
+                <span className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>Facilities mapped</span>
+                <span className={`text-[11px] font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>
+                  {termIntel.terminalsByState.reduce((sum: number, s: any) => sum + s.count, 0).toLocaleString()}
+                </span>
+              </div>
+            )}
+            <span className={`ml-auto text-[9px] ${isLight ? "text-slate-400" : "text-white/20"}`}>
+              Enriched by terminal integrations
+            </span>
+          </div>
+        </div>
       )}
 
       {/* ── LAYER TOGGLES — expandable pill row ── */}

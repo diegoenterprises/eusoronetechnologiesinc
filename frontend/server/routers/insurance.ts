@@ -1031,4 +1031,339 @@ export const insuranceRouter = router({
         return [];
       }
     }),
+
+  // ============================================================================
+  // GEMINI DOCUMENT SCANNING & EXTRACTION
+  // ============================================================================
+
+  /**
+   * Scan an insurance document (Dec Page, ACORD 25/24) with Gemini Vision.
+   * Accepts base64-encoded file data.
+   * Returns structured extraction for user review before saving.
+   */
+  scanDocument: protectedProcedure
+    .input(z.object({
+      fileBase64: z.string().min(100, "File data required"),
+      mimeType: z.enum(["application/pdf", "image/png", "image/jpeg", "image/jpg"]),
+      filename: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const { scanInsuranceDocument } = await import("../services/insuranceScanner");
+        const extraction = await scanInsuranceDocument(input.fileBase64, input.mimeType);
+
+        // Log the scan attempt in insurance_verifications
+        const db = await getDb();
+        const companyId = ctx.user?.companyId;
+        if (db && companyId) {
+          try {
+            await db.insert(insuranceVerifications).values({
+              requestedByCompanyId: companyId,
+              targetCompanyId: companyId,
+              verificationType: "pre_dispatch",
+              verificationStatus: "pending",
+              verificationMethod: "gemini_extraction",
+              verifiedPolicies: [],
+              requiredCoverages: [],
+              notes: `Gemini scan of ${input.filename || "document"} — confidence: ${extraction.confidence}`,
+            });
+          } catch { /* non-critical */ }
+        }
+
+        return {
+          success: true,
+          extraction,
+        };
+      } catch (error: any) {
+        console.error("[Insurance] scanDocument error:", error);
+        return {
+          success: false,
+          error: error?.message || "Document scanning failed",
+          extraction: null,
+        };
+      }
+    }),
+
+  /**
+   * Confirm a Gemini extraction and save the policy to the database.
+   * Accepts the extraction data (possibly with user corrections).
+   */
+  confirmExtraction: protectedProcedure
+    .input(z.object({
+      extraction: z.object({
+        documentType: z.string(),
+        confidence: z.number(),
+        policy: z.object({
+          number: z.string(),
+          effectiveDate: z.string(),
+          expirationDate: z.string(),
+          insurerName: z.string(),
+          insurerNAIC: z.string().optional(),
+          namedInsured: z.string(),
+          namedInsuredAddress: z.string().optional(),
+        }),
+        coverages: z.array(z.object({
+          type: z.string(),
+          limits: z.record(z.string(), z.any()),
+        })),
+        endorsements: z.object({
+          mcs90: z.boolean(),
+          mcs90Filed: z.boolean().optional(),
+          additionalInsured: z.boolean(),
+          waiverOfSubrogation: z.boolean(),
+          primaryNonContributory: z.boolean(),
+          hazmatCoverage: z.boolean(),
+          pollutionLiability: z.boolean(),
+        }),
+        producer: z.object({
+          name: z.string(),
+          phone: z.string(),
+          address: z.string().optional(),
+        }).optional().nullable(),
+        vehicles: z.array(z.object({
+          vin: z.string(),
+          year: z.number(),
+          make: z.string(),
+          model: z.string(),
+        })).optional(),
+      }),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId;
+      if (!companyId) throw new Error("Company required");
+
+      const { extraction } = input;
+      const savedPolicyIds: number[] = [];
+
+      // Save one policy per coverage type found
+      for (const cov of extraction.coverages) {
+        const typeMap: Record<string, string> = {
+          AUTO_LIABILITY: "auto_liability",
+          GENERAL_LIABILITY: "general_liability",
+          CARGO: "cargo",
+          WORKERS_COMP: "workers_compensation",
+          UMBRELLA: "umbrella_excess",
+          POLLUTION: "pollution_liability",
+        };
+        const policyType = typeMap[cov.type] || "other";
+
+        const endorsementsList: string[] = [];
+        if (extraction.endorsements.mcs90) endorsementsList.push("MCS-90");
+        if (extraction.endorsements.additionalInsured) endorsementsList.push("Additional Insured");
+        if (extraction.endorsements.waiverOfSubrogation) endorsementsList.push("Waiver of Subrogation");
+        if (extraction.endorsements.primaryNonContributory) endorsementsList.push("Primary & Non-Contributory");
+        if (extraction.endorsements.hazmatCoverage) endorsementsList.push("Hazmat Coverage");
+        if (extraction.endorsements.pollutionLiability) endorsementsList.push("Pollution Liability");
+
+        const [result] = await db.insert(insurancePolicies).values({
+          companyId,
+          policyNumber: extraction.policy.number,
+          policyType: policyType as any,
+          providerName: extraction.policy.insurerName,
+          effectiveDate: new Date(extraction.policy.effectiveDate),
+          expirationDate: new Date(extraction.policy.expirationDate),
+          combinedSingleLimit: cov.limits.combinedSingleLimit ? String(cov.limits.combinedSingleLimit) : null,
+          bodilyInjuryPerPerson: cov.limits.bodilyInjuryPerPerson ? String(cov.limits.bodilyInjuryPerPerson) : null,
+          bodilyInjuryPerAccident: cov.limits.bodilyInjuryPerAccident ? String(cov.limits.bodilyInjuryPerAccident) : null,
+          propertyDamageLimit: cov.limits.propertyDamage ? String(cov.limits.propertyDamage) : null,
+          perOccurrenceLimit: cov.limits.eachOccurrence ? String(cov.limits.eachOccurrence) : (cov.limits.combinedSingleLimit ? String(cov.limits.combinedSingleLimit) : null),
+          aggregateLimit: cov.limits.aggregate ? String(cov.limits.aggregate) : null,
+          cargoLimit: cov.limits.cargoLimit ? String(cov.limits.cargoLimit) : null,
+          deductible: cov.limits.deductible ? String(cov.limits.deductible) : null,
+          namedInsureds: [extraction.policy.namedInsured],
+          endorsements: endorsementsList,
+          hazmatCoverage: extraction.endorsements.hazmatCoverage,
+          pollutionCoverage: extraction.endorsements.pollutionLiability,
+          fmcsaFilingNumber: extraction.endorsements.mcs90Filed ? "MCS-90 Filed" : null,
+          filingStatus: extraction.endorsements.mcs90Filed ? "filed" : "pending",
+          verificationSource: "gemini_extraction",
+          verifiedAt: new Date(),
+          status: "active",
+        }).$returningId();
+
+        savedPolicyIds.push(result.id);
+      }
+
+      return {
+        success: true,
+        savedPolicyIds,
+        message: `Saved ${savedPolicyIds.length} policy/policies from ${extraction.documentType} document`,
+      };
+    }),
+
+  /**
+   * Verify carrier insurance with FMCSA SAFER database.
+   * Cross-references extracted policies with FMCSA filing records.
+   */
+  verifyWithFMCSA: protectedProcedure
+    .input(z.object({
+      dotNumber: z.string().min(1, "DOT number required"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const { fmcsaService } = await import("../services/fmcsa");
+
+        // Parallel fetch: carrier info, safety rating, authorities, insurance filings
+        const [carrier, safetyRating, authorities, insurance] = await Promise.all([
+          fmcsaService.getCatalystByDOT(input.dotNumber),
+          fmcsaService.getSafetyRating(input.dotNumber),
+          fmcsaService.getAuthorities(input.dotNumber),
+          fmcsaService.getInsurance(input.dotNumber),
+        ]);
+
+        if (!carrier) {
+          return {
+            success: false,
+            error: `No FMCSA record found for DOT# ${input.dotNumber}`,
+            result: null,
+          };
+        }
+
+        const discrepancies: string[] = [];
+        const warnings: string[] = [];
+
+        // Check authority status
+        const activeAuthorities = authorities.filter((a: any) =>
+          a.authorityStatus === "ACTIVE" || a.authStatus === "A"
+        );
+        if (activeAuthorities.length === 0) {
+          discrepancies.push("No active operating authority found with FMCSA");
+        }
+
+        // Check insurance filings
+        const hasLiabilityFiling = insurance.some((i: any) =>
+          i.insuranceType?.includes("BIPD") || i.insuranceType?.includes("LIABILITY")
+        );
+        const hasCargoFiling = insurance.some((i: any) =>
+          i.insuranceType?.includes("CARGO")
+        );
+        if (!hasLiabilityFiling) {
+          discrepancies.push("No BIPD liability insurance filing on record with FMCSA");
+        }
+        if (!hasCargoFiling) {
+          warnings.push("No cargo insurance filing on record with FMCSA");
+        }
+
+        // Check safety rating
+        const rating = (safetyRating as any)?.rating || "None";
+        if (rating === "Unsatisfactory") {
+          discrepancies.push("FMCSA safety rating: Unsatisfactory");
+        } else if (rating === "Conditional") {
+          warnings.push("FMCSA safety rating: Conditional");
+        }
+
+        // Check allowed to operate
+        const allowedToOperate = (carrier as any).allowedToOperate === "Y" || (carrier as any).allowedToOperate === true;
+        if (!allowedToOperate) {
+          discrepancies.push("Carrier is NOT allowed to operate per FMCSA");
+        }
+
+        // Log the verification
+        const db = await getDb();
+        const companyId = ctx.user?.companyId;
+        if (db && companyId) {
+          try {
+            await db.insert(insuranceVerifications).values({
+              requestedByCompanyId: companyId,
+              targetCompanyId: companyId,
+              verificationType: "periodic",
+              verificationStatus: discrepancies.length === 0 ? "verified" : "failed",
+              verificationMethod: "fmcsa_api",
+              verifiedPolicies: [],
+              requiredCoverages: [],
+              verifiedAt: new Date(),
+              notes: JSON.stringify({ discrepancies, warnings, carrier: carrier.legalName }),
+            });
+          } catch { /* non-critical */ }
+        }
+
+        return {
+          success: true,
+          result: {
+            dotNumber: input.dotNumber,
+            legalName: carrier.legalName || "",
+            dbaName: carrier.dbaName || null,
+            allowedToOperate,
+            safetyRating: rating,
+            hmFlag: carrier.hmFlag || "N",
+            totalAuthorities: authorities.length,
+            activeAuthorities: activeAuthorities.length,
+            insuranceFilings: insurance.length,
+            hasLiabilityFiling,
+            hasCargoFiling,
+            discrepancies,
+            warnings,
+            compliant: discrepancies.length === 0,
+            verifiedAt: new Date().toISOString(),
+          },
+        };
+      } catch (error: any) {
+        console.error("[Insurance] verifyWithFMCSA error:", error);
+        return {
+          success: false,
+          error: error?.message || "FMCSA verification failed",
+          result: null,
+        };
+      }
+    }),
+
+  /**
+   * Check if a carrier's current insurance meets requirements for a specific hazmat load.
+   */
+  checkLoadCompliance: protectedProcedure
+    .input(z.object({
+      hazmatClass: z.string().optional(),
+      isHRCQ: z.boolean().optional(),
+      isBulk: z.boolean().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      try {
+        const db = await getDb();
+        if (!db) return { compliant: false, deficiencies: ["Database unavailable"], requiredLiability: 0, currentLiability: 0 };
+        const companyId = ctx.user?.companyId;
+        if (!companyId) return { compliant: false, deficiencies: ["No company associated"], requiredLiability: 0, currentLiability: 0 };
+
+        // Get active policies
+        const policies = await db.select().from(insurancePolicies)
+          .where(and(eq(insurancePolicies.companyId, companyId), eq(insurancePolicies.status, "active")));
+
+        // Calculate aggregate limits
+        const autoLiabilityLimit = policies
+          .filter(p => p.policyType === "auto_liability")
+          .reduce((sum, p) => sum + parseFloat(String(p.combinedSingleLimit || p.perOccurrenceLimit || 0)), 0);
+        const cargoLimit = policies
+          .filter(p => p.policyType === "cargo" || p.policyType === "motor_truck_cargo")
+          .reduce((sum, p) => sum + parseFloat(String(p.cargoLimit || p.perOccurrenceLimit || 0)), 0);
+        const hasMcs90 = policies.some(p => (p.endorsements as string[] || []).includes("MCS-90"));
+        const hasHazmat = policies.some(p => p.hazmatCoverage);
+        const hasPollution = policies.some(p => p.pollutionCoverage);
+
+        const { checkCoverageCompliance } = await import("../services/insuranceScanner");
+        const result = checkCoverageCompliance({
+          autoLiabilityLimit,
+          cargoLimit,
+          hasMcs90,
+          hasHazmatCoverage: hasHazmat,
+          hasPollutionLiability: hasPollution,
+          hazmatClass: input.hazmatClass,
+          isHRCQ: input.isHRCQ,
+          isBulk: input.isBulk,
+        });
+
+        return {
+          ...result,
+          autoLiabilityLimit,
+          cargoLimit,
+          hasMcs90,
+          hasHazmatCoverage: hasHazmat,
+          hasPollutionLiability: hasPollution,
+          totalPolicies: policies.length,
+        };
+      } catch (error: any) {
+        console.error("[Insurance] checkLoadCompliance error:", error);
+        return { compliant: false, deficiencies: [error?.message || "Check failed"], requiredLiability: 0, currentLiability: 0 };
+      }
+    }),
 });

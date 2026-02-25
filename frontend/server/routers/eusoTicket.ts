@@ -14,7 +14,7 @@
 
 import { z } from "zod";
 import { eq, sql, desc, and } from "drizzle-orm";
-import { router, auditedProtectedProcedure as protectedProcedure } from "../_core/trpc";
+import { router, isolatedApprovedProcedure as protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, documents, users, vehicles } from "../../drizzle/schema";
 

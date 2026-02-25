@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { getLoadTitle, getEquipmentLabel, isHazmatLoad } from "@/lib/loadUtils";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
@@ -284,7 +285,7 @@ export default function FindLoads() {
             const originState = load.origin?.state || "";
             const destCity = load.destination?.city || "Destination";
             const destState = load.destination?.state || "";
-            const hazmat = load.hazmatClass || (["hazmat", "chemicals", "petroleum"].includes(load.cargoType) ? "Hazardous" : null);
+            const hazmat = isHazmatLoad(load);
             const ratePerMile = load.distance > 0 && load.rate > 0 ? (load.rate / load.distance).toFixed(2) : null;
 
             return (
@@ -307,7 +308,7 @@ export default function FindLoads() {
                       </div>
                       <div>
                         <p className={cn("font-bold text-sm", isLight ? "text-slate-800" : "text-white")}>
-                          {load.cargoType === "petroleum" ? "Petroleum Load" : load.cargoType === "chemicals" ? "Chemical Load" : load.cargoType === "hazmat" ? "Hazmat Load" : load.cargoType === "liquid" ? "Liquid Load" : load.cargoType === "gas" ? "Gas Load" : load.cargoType === "refrigerated" ? "Refrigerated Load" : load.cargoType === "oversized" ? "Oversized Load" : load.commodityName || "Cargo Load"}
+                          {getLoadTitle(load)}
                         </p>
                         <p className="text-xs text-slate-400">{load.pickupDate ? new Date(load.pickupDate).toLocaleDateString() : load.createdAt ? new Date(load.createdAt).toLocaleDateString() : "Pickup TBD"}</p>
                       </div>
@@ -325,15 +326,25 @@ export default function FindLoads() {
                     <div className="flex items-center gap-2 mb-3">
                       <Truck className="w-4 h-4 text-slate-400" />
                       <span className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-300")}>
-                        {load.equipmentType === "tanker" ? "Tanker Truck" : load.equipmentType === "flatbed" ? "Flatbed" : load.equipmentType === "reefer" ? "Reefer" : "Semi Truck"}
+                        {getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass)}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {load.distance > 0 && (
-                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>
-                            {load.distance} miles
+                        {(load.commodity || load.commodityName) && (
+                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-bold border", isLight ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-blue-500/15 border-blue-500/30 text-blue-400")}>
+                            {load.commodity || load.commodityName}
+                          </span>
+                        )}
+                        {load.cargoType && load.cargoType !== 'general' && (
+                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-purple-50 border-purple-200 text-purple-600" : "bg-purple-500/15 border-purple-500/30 text-purple-400")}>
+                            {load.cargoType.charAt(0).toUpperCase() + load.cargoType.slice(1)}
+                          </span>
+                        )}
+                        {load.hazmatClass && (
+                          <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-red-500/15 text-red-500 border border-red-500/30">
+                            Hazmat Class {load.hazmatClass}
                           </span>
                         )}
                         {load.weight > 0 && (
@@ -341,9 +352,9 @@ export default function FindLoads() {
                             {Number(load.weight).toLocaleString()} {load.weightUnit || "lbs"}
                           </span>
                         )}
-                        {hazmat && (
-                          <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-red-500/15 text-red-500 border border-red-500/30">
-                            Hazardous
+                        {load.distance > 0 && (
+                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>
+                            {load.distance} miles
                           </span>
                         )}
                       </div>
@@ -359,9 +370,11 @@ export default function FindLoads() {
                     <LoadCargoAnimation
                       equipmentType={load.equipmentType}
                       cargoType={load.cargoType}
+                      hazmatClass={load.hazmatClass}
                       compartments={1}
                       height={110}
                       isLight={isLight}
+                      isHazmat={!!load.hazmatClass || ["hazmat", "chemicals"].includes(load.cargoType)}
                     />
                   </div>
 

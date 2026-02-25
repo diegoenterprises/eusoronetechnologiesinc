@@ -398,6 +398,11 @@ export default function Documents() {
   const [showUpload, setShowUpload] = useState(false);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
 
+  // Role-based document generation permissions
+  const userRole = user?.role || "";
+  const canIssueBOL = ["SHIPPER", "TERMINAL_MANAGER", "BROKER", "DISPATCH"].includes(userRole);
+  const canGenerateRunTicket = ["CATALYST", "DRIVER"].includes(userRole);
+
   const docsQuery = (trpc as any).documents.getAll.useQuery(
     { search: searchTerm || undefined, category: activeCategory === "all" ? undefined : activeCategory },
     { refetchInterval: 30000 }
@@ -539,7 +544,25 @@ export default function Documents() {
             Securely store, digitize, and manage all your operational and compliance documents
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {/* BOL Generation - Shippers, Terminals, Brokers, Dispatch issue BOLs */}
+          {canIssueBOL && (
+            <Button
+              onClick={() => window.location.href = "/docks"}
+              className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 rounded-lg shadow-lg"
+            >
+              <FileText className="w-4 h-4 mr-2" />Issue BOL
+            </Button>
+          )}
+          {/* Run Ticket - Catalysts/Drivers generate as receipt for completed jobs */}
+          {canGenerateRunTicket && (
+            <Button
+              onClick={() => window.location.href = "/docks"}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 rounded-lg shadow-lg"
+            >
+              <Receipt className="w-4 h-4 mr-2" />Create Run Ticket
+            </Button>
+          )}
           <Button
             onClick={() => setShowUpload(true)}
             className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 rounded-lg shadow-lg shadow-purple-900/20"

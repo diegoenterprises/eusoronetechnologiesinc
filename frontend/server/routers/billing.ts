@@ -6,10 +6,11 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
-import { auditedProtectedProcedure, auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedApprovedProcedure, isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { payments, loads, users, vehicles, companies, detentionClaims, factoringInvoices, wallets, walletTransactions } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
+import { requireAccess } from "../services/security/rbac/access-check";
 
 const invoiceStatusSchema = z.enum(["draft", "pending", "paid", "overdue", "cancelled"]);
 const transactionTypeSchema = z.enum(["payment", "receipt", "refund", "fee", "withdrawal"]);
@@ -28,6 +29,7 @@ export const billingRouter = router({
   // SUBSCRIPTION — real company data
   // ════════════════════════════════════════════════════════════════
   getSubscription: protectedProcedure.query(async ({ ctx }) => {
+    await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'INVOICE' }, (ctx as any).req);
     const db = await getDb();
     const fallback = { plan: "Starter", planId: "starter", planName: "Starter", status: "active", billingCycle: "monthly", nextBilling: "", nextBillingDate: "", renewalDate: "", price: 0 };
     if (!db) return fallback;

@@ -12,7 +12,7 @@
 
 import { z } from "zod";
 import { eq, desc, sql, and } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { drivers, vehicles } from "../../drizzle/schema";
 

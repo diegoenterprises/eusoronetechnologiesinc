@@ -13,6 +13,7 @@ import {
   MapPin, Truck, Clock, CheckCircle, AlertTriangle, XCircle
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { getLoadTitle } from "@/lib/loadUtils";
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   posted: { label: "Posted", color: "text-blue-400", bg: "bg-blue-500/20", icon: <Package className="w-3.5 h-3.5" /> },
@@ -127,7 +128,7 @@ export default function PlatformLoadsOversight() {
                       <p className="text-white text-sm font-medium truncate">
                         {originCity || originState || "Origin"} <span className="text-slate-500 mx-1">-&gt;</span> {destCity || destState || "Dest"}
                       </p>
-                      <p className="text-[10px] text-slate-500 truncate">{l.commodity || l.cargoType || "General"} {l.weight ? `| ${l.weight} lbs` : ""}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{getLoadTitle(l)} {l.weight ? `| ${l.weight} lbs` : ""}</p>
                     </div>
                     <div className="col-span-2">
                       <div className="flex items-center gap-2">

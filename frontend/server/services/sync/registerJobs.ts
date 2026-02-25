@@ -27,6 +27,7 @@ import { fetchNDProduction } from "../../integrations/stateProduction/ndDMR";
 import { syncCleanAirMarkets } from "../../integrations/epa/cleanAirMarkets";
 import { syncECHOHazWaste } from "../../integrations/epa/echoHazWaste";
 import { computeZoneIntelligence } from "../dataSync/zoneAggregator";
+import { monitorInsuranceExpirations } from "../insuranceMonitor";
 
 export function registerAllSyncJobs(): void {
   // ── CRITICAL: Real-time (1-5 min) ──
@@ -274,5 +275,16 @@ export function registerAllSyncJobs(): void {
     maxConsecutiveFailures: 3,
   });
 
-  console.log("[SyncOrchestrator] Registered 24 sync jobs");
+  // ── INSURANCE: Expiration monitoring ──
+  syncOrchestrator.registerJob({
+    id: "INSURANCE_EXPIRATION_MONITOR",
+    label: "Insurance Expiration Monitor",
+    dataType: "INSURANCE_COMPLIANCE",
+    schedule: "0 1 * * *",
+    syncFn: monitorInsuranceExpirations,
+    enabled: true,
+    maxConsecutiveFailures: 3,
+  });
+
+  console.log("[SyncOrchestrator] Registered 25 sync jobs");
 }

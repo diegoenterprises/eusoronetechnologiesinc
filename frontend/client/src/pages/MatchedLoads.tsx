@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getEquipmentLabel } from "@/lib/loadUtils";
 import { trpc } from "@/lib/trpc";
 import {
   Target, Search, MapPin, DollarSign, Truck,
@@ -114,7 +115,7 @@ export default function MatchedLoads() {
                       <div className="flex items-center gap-2 mb-1">
                         <p className="text-white font-bold">Load #{load.loadNumber}</p>
                         {getMatchScoreBadge(load.matchScore)}
-                        <Badge className="bg-slate-500/20 text-slate-400 border-0">{load.equipmentType}</Badge>
+                        <Badge className="bg-slate-500/20 text-slate-400 border-0">{getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass)}</Badge>
                       </div>
                       <p className="text-sm text-slate-400">{load.commodity}</p>
                     </div>

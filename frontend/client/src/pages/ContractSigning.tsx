@@ -21,6 +21,7 @@ import {
 import { EsangIcon } from "@/components/EsangIcon";
 import { downloadAgreementPdf } from "@/lib/agreementPdf";
 import { cn } from "@/lib/utils";
+import { getLoadTitle, getEquipmentLabel } from "@/lib/loadUtils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
@@ -265,9 +266,9 @@ export default function ContractSigning() {
           {/* Load Details Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: "Commodity", value: load.commodity || load.cargoType || "General" },
+              { label: "Commodity", value: getLoadTitle(load) },
               { label: "Weight", value: load.weight ? `${load.weight} ${load.weightUnit || "lbs"}` : "TBD" },
-              { label: "Equipment", value: load.equipmentType || "Dry Van" },
+              { label: "Equipment", value: getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass) },
               { label: "Distance", value: load.distance ? `${load.distance} mi` : "TBD" },
             ].map((item) => (
               <div key={item.label} className={cellCls}>

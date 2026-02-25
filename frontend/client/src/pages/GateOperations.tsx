@@ -24,8 +24,8 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const cell = "rounded-2xl border border-white/[0.04] bg-white/[0.02]";
-const inp = "bg-white/[0.04] border-white/[0.06] rounded-xl text-white placeholder:text-slate-500";
+const cell = "rounded-2xl border border-slate-200/60 dark:border-white/[0.04] bg-white dark:bg-white/[0.02]";
+const inp = "bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] rounded-xl text-slate-800 dark:text-white placeholder:text-slate-500";
 
 export default function GateOperations() {
   const [, navigate] = useLocation();
@@ -71,7 +71,7 @@ export default function GateOperations() {
       {/* Header */}
       <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-[28px] font-semibold tracking-tight text-white">Gate Operations</h1>
+          <h1 className="text-[28px] font-semibold tracking-tight text-slate-800 dark:text-white">Gate Operations</h1>
           <p className="text-sm text-slate-500 mt-0.5">Check-in, verify, and route trucks through the facility</p>
         </div>
         <div className="flex items-center gap-2">
@@ -79,7 +79,7 @@ export default function GateOperations() {
             <Radio className="w-3.5 h-3.5" />
             <span className="font-medium">{staffStats.onDuty} Staff On Duty</span>
           </div>
-          <Button onClick={() => navigate("/staff")} size="sm" className="rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-white border border-white/[0.08] shadow-none h-9 px-4 text-xs font-medium">
+          <Button onClick={() => navigate("/staff")} size="sm" className="rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.08] shadow-none h-9 px-4 text-xs font-medium">
             <User className="w-3.5 h-3.5 mr-1.5" />Manage Staff
           </Button>
         </div>
@@ -92,7 +92,7 @@ export default function GateOperations() {
           { label: "In Yard", value: checkedIn.length, color: "text-blue-400", icon: Truck },
           { label: "At Dock", value: summary.currentlyLoading, color: "text-purple-400", icon: Package },
           { label: "Completed", value: completed.length, color: "text-emerald-400", icon: CheckCircle },
-          { label: "Today Total", value: summary.todayAppointments, color: "text-white", icon: FileText },
+          { label: "Today Total", value: summary.todayAppointments, color: "text-slate-800 dark:text-white", icon: FileText },
         ].map(k => {
           const Icon = k.icon;
           return (
@@ -115,7 +115,7 @@ export default function GateOperations() {
           {(["gate", "yard", "expected", "history"] as const).map(v => (
             <button key={v} onClick={() => setTab(v)} className={cn(
               "text-[11px] px-3 py-1.5 rounded-lg font-medium transition-colors",
-              tab === v ? "bg-[#1473FF]/15 text-[#1473FF]" : "bg-white/[0.03] text-slate-500 hover:text-slate-300"
+              tab === v ? "bg-[#1473FF]/15 text-[#1473FF]" : "bg-slate-50 dark:bg-white/[0.03] text-slate-500 hover:text-slate-300"
             )}>{v === "gate" ? `Gate Queue (${scheduled.length})` : v === "yard" ? `In Yard (${checkedIn.length})` : v === "expected" ? "Expected Arrivals" : "History"}</button>
           ))}
         </div>
@@ -145,7 +145,7 @@ export default function GateOperations() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold text-white">{a.driver || "Unknown Driver"}</p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-white">{a.driver || "Unknown Driver"}</p>
                         <span className="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md font-medium">Appointment #{a.id}</span>
                       </div>
                       <div className="flex items-center gap-4 mt-1.5 flex-wrap">
@@ -164,7 +164,7 @@ export default function GateOperations() {
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 shrink-0">
-                    <Button size="sm" onClick={() => setCheckInId(a.id)} className="h-8 px-3 text-[11px] rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 shadow-none font-medium">
+                    <Button size="sm" onClick={() => setCheckInId(a.id)} className="h-8 px-3 text-[11px] rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-slate-800 dark:text-white border-0 shadow-none font-medium">
                       <UserCheck className="w-3.5 h-3.5 mr-1" />Check In
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => updateMut.mutate({ appointmentId: a.id, status: "cancelled" })} className="h-8 px-3 text-[11px] text-red-400 hover:bg-red-400/10">
@@ -183,10 +183,10 @@ export default function GateOperations() {
                 <Navigation className="w-4 h-4 text-[#1473FF]" />
               </div>
               <div className="flex-1">
-                <p className="text-xs text-white font-medium">Gate Staff Verification Active</p>
+                <p className="text-xs text-slate-800 dark:text-white font-medium">Gate Staff Verification Active</p>
                 <p className="text-[10px] text-slate-500 mt-0.5">Staff members use their validation links to verify drivers at the gate with QR scan, access codes, and GPS geofencing</p>
               </div>
-              <Button size="sm" onClick={() => navigate("/staff")} className="h-8 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-white border border-white/[0.08] shadow-none text-[10px]">
+              <Button size="sm" onClick={() => navigate("/staff")} className="h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.08] shadow-none text-[10px]">
                 View Staff Links
               </Button>
             </div>
@@ -212,7 +212,7 @@ export default function GateOperations() {
                     <Truck className="w-5 h-5 text-blue-400" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-white">{a.driver || "Unknown"}</p>
+                    <p className="text-sm font-medium text-slate-800 dark:text-white">{a.driver || "Unknown"}</p>
                     <div className="flex items-center gap-3 mt-0.5">
                       <span className="text-[11px] text-slate-400"><Clock className="w-3 h-3 inline mr-1" />{time}</span>
                       <span className="text-[11px] text-slate-500">{a.type}</span>
@@ -250,7 +250,7 @@ export default function GateOperations() {
               <p className="text-sm text-slate-500">No completed check-ins today</p>
             </div>
           ) : (
-            <div className={cn("divide-y divide-white/[0.03]", cell)}>
+            <div className={cn("divide-y divide-slate-200/60 dark:divide-white/[0.03]", cell)}>
               {completed.map((a: any) => {
                 const time = a.scheduledAt ? new Date(a.scheduledAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "";
                 return (
@@ -258,7 +258,7 @@ export default function GateOperations() {
                     <div className="flex items-center gap-3">
                       <CheckCircle className="w-4 h-4 text-emerald-400" />
                       <div>
-                        <p className="text-sm text-white">{a.driver || "Unknown"}</p>
+                        <p className="text-sm text-slate-800 dark:text-white">{a.driver || "Unknown"}</p>
                         <p className="text-[10px] text-slate-500">{time} - {a.type}</p>
                       </div>
                     </div>
@@ -274,10 +274,10 @@ export default function GateOperations() {
       {/* Check-In Modal */}
       {checkInId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setCheckInId(null)}>
-          <div className={cn("w-full max-w-lg p-6 space-y-5 mx-4", cell, "bg-[#0B1120] border-white/[0.08]")} onClick={e => e.stopPropagation()}>
+          <div className={cn("w-full max-w-lg p-6 space-y-5 mx-4", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Driver Check-In</h2>
-              <button onClick={() => setCheckInId(null)} className="text-slate-500 hover:text-white"><XCircle className="w-5 h-5" /></button>
+              <h2 className="text-lg font-semibold text-slate-800 dark:text-white">Driver Check-In</h2>
+              <button onClick={() => setCheckInId(null)} className="text-slate-500 hover:text-slate-800 dark:hover:text-white"><XCircle className="w-5 h-5" /></button>
             </div>
             <div className="h-[2px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] rounded-full" />
 
@@ -312,7 +312,7 @@ export default function GateOperations() {
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setCheckInId(null)} className="h-9 text-xs text-red-400 hover:bg-red-400/10">Deny Entry</Button>
-              <Button onClick={handleCheckIn} disabled={checkInMut.isPending} className="h-9 rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-xs font-medium px-5">
+              <Button onClick={handleCheckIn} disabled={checkInMut.isPending} className="h-9 rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-slate-800 dark:text-white border-0 text-xs font-medium px-5">
                 {checkInMut.isPending ? "Processing..." : "Complete Check-In"}
               </Button>
             </div>

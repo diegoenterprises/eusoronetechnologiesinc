@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { eq, sql } from "drizzle-orm";
-import { publicProcedure, auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import * as eusotrack from "../services/eusotrack";
 import * as eusosms from "../services/eusosms";

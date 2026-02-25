@@ -3,7 +3,7 @@
  * 7-step wizard: Hazmat → Quantity → Origin/Dest → Equipment → Catalyst Req → Pricing → Review
  * 100% Dynamic - No mock data
  */
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { getEquipmentLabel } from "@/lib/loadUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { Package, MapPin, Truck, Shield, DollarSign, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle, Loader2, Calendar, Repeat, Info, Calculator, Plus, Trash2, FileText, Scale, Link2 } from "lucide-react";
@@ -86,6 +87,20 @@ export default function CreateLoad() {
   const updateField = (field: string, value: any) => setFormData(prev => ({ ...prev, [field]: value }));
   const nextStep = () => step < 8 && setStep(step + 1);
   const prevStep = () => step > 1 && setStep(step - 1);
+
+  // ERG search (ESANG AI powered)
+  const [ergQ, setErgQ] = useState("");
+  const [showErg, setShowErg] = useState(false);
+  const ergRef = useRef<HTMLDivElement>(null);
+  const ergRes = (trpc as any).erg?.search?.useQuery?.(
+    { query: ergQ, limit: 8 },
+    { enabled: ergQ.length >= 2, staleTime: 30000 }
+  ) || { data: null, isLoading: false };
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ergRef.current && !ergRef.current.contains(e.target as Node)) setShowErg(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
 
   // Truck roster helpers
   const addTruck = () => setTrucks(prev => [...prev, { id: `t${Date.now()}`, name: `Truck ${prev.length + 1}`, capacity: 200, fill: 190 }]);
@@ -237,7 +252,7 @@ export default function CreateLoad() {
               {formData.isHazmat && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30">
                   <div><Label>Hazmat Class</Label>{(hazmatQuery as any).isLoading || (hazmatQuery as any).isPending ? <Skeleton className="h-10" /> : <Select value={formData.hazmatClass} onValueChange={v => updateField("hazmatClass", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select class" /></SelectTrigger><SelectContent><SelectItem value="1">Class 1 - Explosives</SelectItem><SelectItem value="2">Class 2 - Gases</SelectItem><SelectItem value="3">Class 3 - Flammable Liquids</SelectItem><SelectItem value="4">Class 4 - Flammable Solids</SelectItem><SelectItem value="5">Class 5 - Oxidizers</SelectItem><SelectItem value="6">Class 6 - Poisons</SelectItem><SelectItem value="7">Class 7 - Radioactive</SelectItem><SelectItem value="8">Class 8 - Corrosives</SelectItem><SelectItem value="9">Class 9 - Misc</SelectItem></SelectContent></Select>}</div>
-                  <div><Label>UN Number</Label><Input value={formData.unNumber} onChange={e => updateField("unNumber", e.target.value)} placeholder="UN1234" className="bg-slate-700/50" /></div>
+                  <div ref={ergRef} className="relative"><Label>UN Number</Label><div className="flex gap-1.5"><Input value={formData.unNumber} onChange={e => { updateField("unNumber", e.target.value); const v = e.target.value.replace(/^un/i, "").trim(); if (v.length >= 2) { setErgQ(v); setShowErg(true); } else setShowErg(false); }} onFocus={() => { if (ergQ.length >= 2) setShowErg(true); }} placeholder="UN1234" className="bg-slate-700/50" /><Button variant="outline" size="sm" className="bg-purple-500/10 border-purple-500/20 text-purple-400 hover:bg-purple-500/20 px-2" onClick={() => { if (formData.unNumber?.trim().length >= 2) { setErgQ(formData.unNumber.replace(/^un/i, "").trim()); setShowErg(true); } }}><EsangIcon className="w-4 h-4" /></Button></div>{showErg && ergRes?.data?.results?.length > 0 && (<div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-56 overflow-y-auto"><div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2024 — {ergRes.data.count} results</div>{ergRes.data.results.map((m: any, i: number) => (<button key={`${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0" onClick={() => { updateField("unNumber", `UN${m.unNumber}`); updateField("hazmatClass", m.hazardClass); updateField("packingGroup", m.packingGroup || ""); setShowErg(false); toast.success("ESANG AI — Product Verified", { description: `${m.name} — UN${m.unNumber} (Class ${m.hazardClass}) Guide ${m.guide}` }); }}><div className="flex-1 min-w-0"><p className="text-white text-sm font-medium truncate">{m.name}</p></div><div className="flex items-center gap-1.5 flex-shrink-0"><Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge><Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge></div></button>))}</div>)}{showErg && ergQ.length >= 2 && ergRes?.isLoading && (<div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-3"><div className="flex items-center gap-2 text-slate-400 text-sm"><EsangIcon className="w-4 h-4 animate-spin" />Searching ERG 2024...</div></div>)}</div>
                   <div><Label>Packing Group</Label><Select value={formData.packingGroup} onValueChange={v => updateField("packingGroup", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="I">I - Great Danger</SelectItem><SelectItem value="II">II - Medium Danger</SelectItem><SelectItem value="III">III - Minor Danger</SelectItem></SelectContent></Select></div>
                 </div>
               )}
@@ -520,7 +535,7 @@ export default function CreateLoad() {
               <div className={cn("grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700")}>
                 <div><p className="text-slate-400 text-xs">Product</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{formData.productName || "N/A"}</p></div>
                 <div><p className="text-slate-400 text-xs">Hazmat</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{formData.isHazmat ? `Class ${formData.hazmatClass} (${formData.unNumber})` : "No"}</p></div>
-                <div><p className="text-slate-400 text-xs">Equipment</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{formData.equipmentType || "N/A"}</p></div>
+                <div><p className="text-slate-400 text-xs">Equipment</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{formData.equipmentType ? getEquipmentLabel(formData.equipmentType) : "N/A"}</p></div>
                 <div><p className="text-slate-400 text-xs">Tanker Config</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{calc.hasRoster ? `${trucks.length} trucks (variable)` : `${formData.actualFill} bbl fill / ${formData.tankerCapacity} bbl max`}</p></div>
                 <div><p className="text-slate-400 text-xs">Weight Per Load</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{calc.totalLoads > 0 ? Math.round(calc.totalWeightLbs / calc.totalLoads).toLocaleString() : 0} lbs</p></div>
                 <div><p className="text-slate-400 text-xs">Total Weight</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{Math.round(calc.totalWeightLbs).toLocaleString()} lbs</p></div>

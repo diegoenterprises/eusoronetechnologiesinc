@@ -129,6 +129,22 @@ export default function SpectraMatch() {
 
   const result = identifyMutation.data;
 
+  // Integration-powered: auto-detect products from connected TAS
+  const catalogQ = (trpc as any).spectraMatch?.getTerminalProductCatalog?.useQuery?.(undefined, { staleTime: 60000 }) || { data: null };
+  const autoIdMut = (trpc as any).spectraMatch?.autoIdentifyFromTerminal?.useMutation?.({
+    onSuccess: (data: any) => {
+      if (data?.matched && data.suggestedParams) {
+        setApiGravity(data.suggestedParams.apiGravity || 39.6);
+        setBsw(data.suggestedParams.bsw || 0.3);
+        if (data.suggestedParams.sulfur) setSulfur(data.suggestedParams.sulfur);
+        toast.success(`Auto-populated specs for ${data.crudeName}`, { description: `${data.confidence}% match from TAS inventory` });
+      }
+    },
+  }) || { mutate: () => {}, isPending: false };
+
+  const catalog = catalogQ.data as any;
+  const hasTAS = catalog?.connected && catalog?.products?.length > 0;
+
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1200px] mx-auto">
 
@@ -139,11 +155,64 @@ export default function SpectraMatch() {
           <p className={subtextCls}>Multi-modal adaptive crude oil identification</p>
         </div>
         <div className="flex items-center gap-2">
+          {hasTAS && (
+            <Badge className={cn("text-xs border", isLight ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20")}>
+              <Activity className="w-3 h-3 mr-1" />{catalog.providerLabel} Connected
+            </Badge>
+          )}
           <Badge className="bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white border-0 text-xs">
             <EsangIcon className="w-3 h-3 mr-1" />ESANG AI Powered
           </Badge>
         </div>
       </div>
+
+      {/* ═══ TAS PRODUCT CATALOG — Auto-populate from connected integrations ═══ */}
+      {hasTAS && (
+        <div className={cn("rounded-2xl border p-4", isLight ? "bg-blue-50/50 border-blue-200/60" : "bg-blue-500/[0.04] border-blue-500/10")}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1473FF]/20 to-[#BE01FF]/20 flex items-center justify-center">
+              <Target className="w-4 h-4 text-[#1473FF]" />
+            </div>
+            <div>
+              <p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>
+                Auto-Detect from {catalog.providerLabel}
+              </p>
+              <p className={cn("text-[10px]", isLight ? "text-slate-500" : "text-white/40")}>
+                Click a product to auto-populate SpectraMatch parameters
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(catalog.products as any[]).map((p: any) => (
+              <button
+                key={p.name}
+                onClick={() => autoIdMut.mutate({ productName: p.name })}
+                disabled={autoIdMut.isPending}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                  p.spectraMatchReady
+                    ? isLight
+                      ? "bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300"
+                      : "bg-white/[0.06] border border-blue-500/20 text-blue-400 hover:bg-blue-500/10"
+                    : isLight
+                      ? "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                      : "bg-white/[0.04] border border-white/[0.06] text-white/50 hover:bg-white/[0.08]"
+                )}
+              >
+                {p.spectraMatchReady && <Activity className="w-3 h-3" />}
+                {p.name}
+                {p.percentFull != null && (
+                  <span className={cn("text-[9px] px-1.5 py-0.5 rounded-md",
+                    p.percentFull > 60 ? "bg-emerald-500/10 text-emerald-500" : p.percentFull > 20 ? "bg-amber-500/10 text-amber-500" : "bg-red-500/10 text-red-500"
+                  )}>
+                    {p.percentFull}%
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 

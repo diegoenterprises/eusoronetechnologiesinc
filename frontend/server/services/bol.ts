@@ -15,8 +15,142 @@ import { z } from "zod";
 // TYPE DEFINITIONS
 // ============================================================================
 
-export type BOLType = "straight" | "order" | "hazmat" | "tanker" | "food_grade";
+export type BOLType = "straight" | "order" | "hazmat" | "tanker" | "food_grade" | "crude_oil";
 export type BOLStatus = "draft" | "pending_signature" | "signed" | "completed" | "void";
+
+// ── REAL-WORLD CRUDE OIL GAUGE DATA (from actual BOL/Run Ticket documents) ──
+
+export interface GaugeReading {
+  feet: number;
+  inches: number;
+  fraction: number; // 1/4 inch fractions (0, 1, 2, 3)
+}
+
+export interface TankGaugeData {
+  tankNumber: string;
+  tankCapacity?: string; // e.g., "16FT/500BBLS" or "500 Barrels"
+  tankSize?: number; // barrels
+  // Open/Close or High/Low gauge readings
+  openGauge?: GaugeReading;
+  closeGauge?: GaugeReading;
+  highGauge?: GaugeReading;
+  lowGauge?: GaugeReading;
+  // Bottom measurement
+  bottomFeet?: number;
+  bottomInches?: number;
+  // Temperatures at each reading
+  openTemp?: number;
+  closeTemp?: number;
+  highTemp?: number;
+  lowTemp?: number;
+  obsTemp?: number;
+  // Gravity
+  obsGravity?: number;
+  gravityAt60F?: number;
+  // BS&W (Basic Sediment & Water)
+  bswPercent?: number;
+  bswFeet?: number;
+  bswInches?: number;
+  bswFraction?: number;
+  // Volumes (Government Standard)
+  openGOV?: number; // Government Observed Volume
+  closeGOV?: number;
+  estGOV?: number; // Estimated GOV
+  estGSV?: number; // Estimated Gross Standard Volume
+  estNSV?: number; // Estimated Net Standard Volume
+  // Meter readings
+  meterOn?: number;
+  meterOff?: number;
+  meterFactor?: number;
+  avgLineTemp?: number;
+  // Quality
+  qualityNote?: string; // e.g., "Good Oil"
+}
+
+export interface CrudeOilOrigin {
+  locationName: string;
+  operatorName?: string;
+  producerName?: string;
+  shipperName?: string;
+  leaseNumber?: string;
+  stateProvince?: string;
+  county?: string;
+  station?: string;
+  legalDescription?: string;
+  plantLeaseNumber?: string;
+}
+
+export interface CrudeOilDestination {
+  facilityName: string;
+  station?: string;
+  stateProvince?: string;
+  bolNumber?: string;
+  arriveTime?: string;
+  departTime?: string;
+  estGOV?: number;
+  estNSV?: number;
+  destinationDriverName?: string;
+}
+
+export interface CarrierIdentity {
+  name: string;
+  dotNumber?: string;
+  mcNumber?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  phone?: string;
+  fax?: string;
+  emergencyContact?: string;
+}
+
+export interface CrudeOilBOLData {
+  carrierOrderNumber?: string;
+  shipperPO?: string;
+  jobNumber?: string;
+  // Product
+  product: string; // e.g., "UN1267, Petroleum Crude Oil, 3, PG I"
+  unNumber?: string;
+  hazmatClass?: string;
+  packingGroup?: string;
+  // Driver/Equipment
+  driverName: string;
+  driverNumber?: string;
+  truckNumber?: string;
+  trailerNumber?: string;
+  // Origin
+  origin: CrudeOilOrigin;
+  // Gauge/Run Ticket data
+  gaugeData?: TankGaugeData;
+  // Destination
+  destination: CrudeOilDestination;
+  // Seals
+  sealOff?: string;
+  sealOn?: string;
+  originSealOff?: string;
+  originSealOn?: string;
+  destSealOff?: string;
+  destSealOn?: string;
+  // Notes
+  rejectNotes?: string;
+  waitNotes?: string; // e.g., "2: Slow loading"
+  waitTimeHours?: number;
+  driverNotes?: string;
+  // Origin/Destination drivers (can differ)
+  originDriverName?: string;
+  destinationDriverName?: string;
+  // Carrier identity
+  carrier?: CarrierIdentity;
+  // Times
+  arriveOriginTime?: string;
+  departOriginTime?: string;
+  arriveDestTime?: string;
+  departDestTime?: string;
+  // Driver ON/OFF times (Papa Trucklines style)
+  driverOnTime?: string;
+  driverOffTime?: string;
+}
 
 export interface BOLParty {
   name: string;
@@ -103,6 +237,9 @@ export interface BOLDocument {
   // Tanker info (non-hazmat liquid loads: food-grade, water, etc.)
   tankerInfo?: TankerInfo;
   
+  // ── CRUDE OIL SPECIFIC (real-world BOL data) ──
+  crudeOilData?: CrudeOilBOLData;
+  
   // Charges
   freightCharges: "prepaid" | "collect" | "third_party";
   declaredValue?: number;
@@ -116,15 +253,22 @@ export interface BOLDocument {
   poNumber?: string;
   proNumber?: string;
   orderNumber?: string;
+  referenceNumber?: string; // R Number from reconciliation
   
   // Signatures
   shipperSignature?: SignatureInfo;
   catalystSignature?: SignatureInfo;
   consigneeSignature?: SignatureInfo;
+  operatorWitnessSignature?: SignatureInfo; // Lease operator witness
   
   // Tracking
   pickupConfirmed: boolean;
   deliveryConfirmed: boolean;
+  
+  // Seal tracking
+  sealNumbers?: string[];
+  sealOff?: string;
+  sealOn?: string;
 }
 
 export interface SignatureInfo {

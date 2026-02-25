@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { isolatedApprovedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, users } from "../../drizzle/schema";
 import { mlEngine } from "../services/mlEngine";
@@ -561,7 +561,7 @@ export const quotesRouter = router({
           origin: { city: p.city || '', state: p.state || '', address: p.address || '', zip: p.zip || '' },
           destination: { city: d.city || '', state: d.state || '', address: d.address || '', zip: d.zip || '' },
           distance: load.distance ? parseFloat(String(load.distance)) : 0,
-          equipmentType: load.cargoType || '', commodity: load.commodityName || '',
+          equipmentType: (() => { try { return JSON.parse(load.specialInstructions || '{}')?.equipmentType || null; } catch { return null; } })(), cargoType: load.cargoType || '', commodity: load.commodityName || '',
           weight: load.weight ? parseFloat(String(load.weight)) : 0, hazmat: false,
           pickupDate: load.pickupDate?.toISOString() || '',
           deliveryDate: load.deliveryDate?.toISOString() || '',

@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import * as rssService from "../services/rssService";
 
 const feedCategorySchema = z.enum([

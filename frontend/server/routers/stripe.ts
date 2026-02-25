@@ -12,11 +12,12 @@
 
 import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { users, companies, wallets, walletTransactions, payments } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
 import { SUBSCRIPTION_PRODUCTS, PLATFORM_FEE_PERCENTAGE, MINIMUM_PLATFORM_FEE, calculatePlatformFee } from "../stripe/products";
+import { requireAccess } from "../services/security/rbac/access-check";
 import { feeCalculator } from "../services/feeCalculator";
 
 // Helper: resolve user by email (primary) — select only safe columns (openId may not exist in DB)
@@ -151,6 +152,7 @@ export const stripeRouter = router({
    */
   getCustomer: protectedProcedure
     .query(async ({ ctx }) => {
+      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'PAYMENT' }, (ctx as any).req);
       const customerId = await getOrCreateStripeCustomer(
         ctx.user.id,
         ctx.user.email || "",

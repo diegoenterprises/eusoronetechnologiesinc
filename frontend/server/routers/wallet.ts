@@ -8,7 +8,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, and, desc, gte, lte, sql, or } from "drizzle-orm";
-import { router, auditedProtectedProcedure, auditedAdminProcedure, sensitiveData, pci } from "../_core/trpc";
+import { router, isolatedApprovedProcedure as auditedProtectedProcedure, isolatedAdminProcedure as auditedAdminProcedure, sensitiveData, pci } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   wallets,
@@ -22,6 +22,7 @@ import {
   conversations,
 } from "../../drizzle/schema";
 import { feeCalculator } from "../services/feeCalculator";
+import { requireAccess } from "../services/security/rbac/access-check";
 
 const transactionTypeSchema = z.enum([
   "earnings", "payout", "fee", "refund", "bonus", "adjustment", "transfer", "deposit"
@@ -40,6 +41,7 @@ export const walletRouter = router({
       loadId: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'WALLET' }, (ctx as any).req);
       const { walletTransactions } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const userId = Number(ctx.user?.id) || 0;
@@ -67,6 +69,7 @@ export const walletRouter = router({
       status: transactionStatusSchema.optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'WALLET' }, (ctx as any).req);
       const { walletTransactions } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const userId = Number(ctx.user?.id) || 0;
@@ -89,6 +92,7 @@ export const walletRouter = router({
   delete: auditedProtectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'DELETE', resource: 'WALLET' }, (ctx as any).req);
       const { walletTransactions } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const userId = Number(ctx.user?.id) || 0;
@@ -106,6 +110,7 @@ export const walletRouter = router({
    */
   getBalance: auditedProtectedProcedure
     .query(async ({ ctx }) => {
+      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'WALLET' }, (ctx as any).req);
       const db = await getDb();
       const userId = Number(ctx.user?.id) || 0;
 

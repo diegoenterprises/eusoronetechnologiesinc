@@ -504,10 +504,19 @@ export class NotificationService {
 
     if (!user?.email) return false;
 
-    // In production, this would integrate with email service
-    console.log(`[Email] Sending to ${user.email}: ${payload.title}`);
-
-    return true;
+    try {
+      const { emailService } = await import("../_core/email");
+      const sent = await emailService.send({
+        to: user.email,
+        subject: `${payload.title} - EusoTrip`,
+        html: `<div style="font-family:sans-serif;padding:20px"><h2>${payload.title}</h2><p>${payload.message}</p></div>`,
+        text: `${payload.title}: ${payload.message}`,
+      });
+      return sent;
+    } catch (err) {
+      console.error(`[NotificationService] Email send failed for user ${payload.userId}:`, err);
+      return false;
+    }
   }
 
   private async sendSmsNotification(payload: NotificationPayload): Promise<boolean> {
@@ -521,10 +530,18 @@ export class NotificationService {
 
     if (!user?.phone) return false;
 
-    // In production, this would integrate with SMS service
-    console.log(`[SMS] Sending to ${user.phone}: ${payload.title}`);
-
-    return true;
+    try {
+      const { sendSms } = await import("./eusosms");
+      const result = await sendSms({
+        to: user.phone,
+        message: `EusoTrip: ${payload.title} — ${payload.message}`.slice(0, 160),
+        userId: payload.userId,
+      });
+      return result.status !== "FAILED";
+    } catch (err) {
+      console.error(`[NotificationService] SMS send failed for user ${payload.userId}:`, err);
+      return false;
+    }
   }
 }
 

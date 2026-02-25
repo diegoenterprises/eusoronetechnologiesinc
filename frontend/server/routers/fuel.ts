@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { eq, desc, sql, and } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { vehicles, loads, fuelTransactions, users } from "../../drizzle/schema";
 import { findNearbyStations, getRegionalPrices, getNationalAverages, getPriceTrends } from "../services/fuelPriceService";

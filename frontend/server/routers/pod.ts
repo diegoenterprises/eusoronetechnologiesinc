@@ -6,12 +6,14 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { requireAccess } from "../services/security/rbac/access-check";
 import { documents, loads, users } from "../../drizzle/schema";
 
 export const podRouter = router({
   getSummary: protectedProcedure.query(async ({ ctx }) => {
+    await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'POD' }, (ctx as any).req);
     const db = await getDb();
     if (!db) return { pending: 0, completed: 0, avgUploadTime: 0, total: 0, received: 0, missing: 0 };
     const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);

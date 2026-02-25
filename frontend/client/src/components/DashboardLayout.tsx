@@ -1,3 +1,4 @@
+import React from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useDisplayUser } from "@/hooks/useDisplayUser";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -74,6 +75,7 @@ import {
   Scale,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Menu,
   Lock,
   X,
@@ -81,6 +83,11 @@ import {
   Banknote,
   UserCheck,
   Radio,
+  Plug2,
+  CalendarDays,
+  Container,
+  Eye,
+  Handshake,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -153,6 +160,11 @@ const iconMap: Record<string, React.ReactNode> = {
   Radio: <Radio size={20} />,
   Percent: <Percent size={20} />,
   Siren: <Siren size={20} />,
+  Plug2: <Plug2 size={20} />,
+  CalendarDays: <CalendarDays size={20} />,
+  Container: <Container size={20} />,
+  Eye: <Eye size={20} />,
+  Handshake: <Handshake size={20} />,
 };
 
 // --- Notification Bell Component ---
@@ -234,6 +246,7 @@ export default function DashboardLayout({
   const { theme, mode, setMode, toggleTheme } = useTheme();
   const [location, navigate] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -370,8 +383,19 @@ export default function DashboardLayout({
     badge: badgeCounts[item.path] || 0,
   }));
 
-  // Determine active menu item based on current location
-  const activeMenuItem = menuItems.find((item) => item.path === location);
+  // Determine active menu item based on current location (includes children)
+  const activeMenuItem = menuItems.find((item) => 
+    item.path === location || item.children?.some(c => c.path === location)
+  );
+
+  // Auto-expand parent if a child route is active
+  useEffect(() => {
+    for (const item of menuItems) {
+      if (item.children?.some(c => c.path === location)) {
+        setExpandedParents(prev => { const n = new Set(prev); n.add(item.path); return n; });
+      }
+    }
+  }, [location]);
 
   if (loading) {
     return <DashboardLayoutSkeleton />;
@@ -399,7 +423,7 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="flex h-screen bg-gray-950 text-white relative overflow-hidden">
+    <div className={`flex h-screen relative overflow-hidden ${theme === "light" ? "bg-[#f8f9fb] text-slate-900" : "bg-gray-950 text-white"}`}>
       {/* Ambient background glow */}
       <AmbientGlow />
 
@@ -416,12 +440,12 @@ export default function DashboardLayout({
         initial={false}
         animate={{ width: sidebarOpen ? 256 : 72 }}
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className={`bg-gray-900/80 backdrop-blur-xl border-r border-gray-800/50 flex flex-col overflow-hidden relative z-30 flex-shrink-0 ${
+        className={`backdrop-blur-xl border-r flex flex-col overflow-hidden relative z-30 flex-shrink-0 ${theme === "light" ? "bg-white/95 border-slate-200/80" : "bg-gray-900/80 border-gray-800/50"} ${
           sidebarOpen ? "fixed inset-y-0 left-0 md:relative" : "hidden md:flex"
         }`}
       >
         {/* Logo */}
-        <div className="p-4 border-b border-gray-800/50 flex items-center gap-3">
+        <div className={`p-4 border-b flex items-center gap-3 ${theme === "light" ? "border-slate-200/80" : "border-gray-800/50"}`}>
           <motion.img
             src="/eusotrip-logo.png"
             alt="EusoTrip"
@@ -447,14 +471,21 @@ export default function DashboardLayout({
         {/* Menu Items */}
         <nav className="flex-1 overflow-y-auto smooth-scroll p-3 space-y-1">
           {menuItems.map((item, index) => {
-            const isActive = activeMenuItem?.path === item.path;
+            const hasChildren = item.children && item.children.length > 0;
+            const isParentExpanded = expandedParents.has(item.path);
+            const isActive = item.path === location || (!hasChildren && activeMenuItem?.path === item.path);
+            const isChildActive = hasChildren && item.children!.some(c => c.path === location);
             const isLocked = !isApproved && item.requiresApproval;
             return (
+              <div key={item.path}>
               <motion.button
-                key={item.path}
                 onClick={() => {
-                  if (isLocked) {
-                    // Navigate to a gated page — ApprovalGate will show the overlay
+                  if (hasChildren && sidebarOpen) {
+                    setExpandedParents(prev => {
+                      const n = new Set(prev);
+                      if (n.has(item.path)) n.delete(item.path); else n.add(item.path);
+                      return n;
+                    });
                     handleMobileNavigate(item.path);
                   } else {
                     handleMobileNavigate(item.path);
@@ -468,14 +499,14 @@ export default function DashboardLayout({
                 className={`sidebar-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg relative ${
                   isLocked
                     ? "text-gray-600 cursor-default"
-                    : isActive
+                    : (isActive || isChildActive)
                     ? "active text-white"
                     : "text-gray-400 hover:text-white"
                 }`}
               >
                 <motion.div
                   className="flex-shrink-0 relative"
-                  animate={isActive && !isLocked ? { scale: [1, 1.15, 1] } : {}}
+                  animate={(isActive || isChildActive) && !isLocked ? { scale: [1, 1.15, 1] } : {}}
                   transition={{ duration: 0.3 }}
                 >
                   {iconMap[item.icon] || item.icon}
@@ -497,6 +528,10 @@ export default function DashboardLayout({
                       <span className={`flex-1 text-left text-sm whitespace-nowrap ${isLocked ? "text-gray-600" : ""}`}>{item.label}</span>
                       {isLocked ? (
                         <Lock className="w-3.5 h-3.5 text-gray-600 flex-shrink-0" />
+                      ) : hasChildren && sidebarOpen ? (
+                        <motion.div animate={{ rotate: isParentExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                          <ChevronDown className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                        </motion.div>
                       ) : item.badge ? (
                         <motion.span
                           initial={{ scale: 0 }}
@@ -511,7 +546,7 @@ export default function DashboardLayout({
                 </AnimatePresence>
 
                 {/* Active indicator glow */}
-                {isActive && !isLocked && (
+                {(isActive || isChildActive) && !isLocked && (
                   <motion.div
                     layoutId="sidebar-active-glow"
                     className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/10 to-purple-600/10"
@@ -519,17 +554,52 @@ export default function DashboardLayout({
                   />
                 )}
               </motion.button>
+
+              {/* Children sub-items */}
+              <AnimatePresence>
+                {hasChildren && isParentExpanded && sidebarOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="ml-6 pl-3 border-l border-gray-700/40 space-y-0.5 mt-0.5">
+                      {item.children!.map((child) => {
+                        const childActive = child.path === location;
+                        const childLocked = !isApproved && item.requiresApproval;
+                        return (
+                          <motion.button
+                            key={child.path}
+                            onClick={() => handleMobileNavigate(child.path)}
+                            whileHover={{ x: childLocked ? 0 : 3 }}
+                            whileTap={{ scale: childLocked ? 1 : 0.97 }}
+                            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] transition-colors ${
+                              childLocked ? "text-gray-600 cursor-default" : childActive ? "text-white font-medium" : "text-gray-500 hover:text-gray-300"
+                            }`}
+                          >
+                            <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center [&>svg]:w-[15px] [&>svg]:h-[15px]">{iconMap[child.icon] || null}</span>
+                            <span className="truncate">{child.label}</span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              </div>
             );
           })}
         </nav>
 
         {/* Sidebar Toggle */}
-        <div className="p-2 border-t border-gray-800/50">
+        <div className={`p-2 border-t ${theme === "light" ? "border-slate-200/80" : "border-gray-800/50"}`}>
           <motion.button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="w-full flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800/50 transition-colors"
+            className={`w-full flex items-center justify-center p-2 rounded-lg transition-colors ${theme === "light" ? "text-slate-400 hover:text-slate-800 hover:bg-slate-100" : "text-gray-500 hover:text-white hover:bg-gray-800/50"}`}
           >
             <motion.div
               animate={{ rotate: sidebarOpen ? 0 : 180 }}
@@ -541,7 +611,7 @@ export default function DashboardLayout({
         </div>
 
         {/* User Profile Footer */}
-        <div className="p-3 border-t border-gray-800/50">
+        <div className={`p-3 border-t ${theme === "light" ? "border-slate-200/80" : "border-gray-800/50"}`}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <motion.button
@@ -568,8 +638,8 @@ export default function DashboardLayout({
                       transition={{ duration: 0.2 }}
                       className="flex-1 text-left text-sm overflow-hidden"
                     >
-                      <p className="font-semibold truncate text-gray-200">{displayName}</p>
-                      <p className="text-gray-500 text-xs truncate">{displayRole}</p>
+                      <p className={`font-semibold truncate ${theme === "light" ? "text-slate-800" : "text-gray-200"}`}>{displayName}</p>
+                      <p className={`text-xs truncate ${theme === "light" ? "text-slate-500" : "text-gray-500"}`}>{displayRole}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -678,7 +748,7 @@ export default function DashboardLayout({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -4, scale: 0.98 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-gray-900/95 backdrop-blur-xl border border-gray-700/60 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-50"
+                    className={`absolute top-full left-0 right-0 mt-2 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden z-50 ${theme === "light" ? "bg-white/95 border border-slate-200 shadow-slate-200/50" : "bg-gray-900/95 border border-gray-700/60 shadow-black/40"}`}
                   >
                     <div className="h-0.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" />
                     <div className="p-2 max-h-[360px] overflow-y-auto">
@@ -831,7 +901,7 @@ export default function DashboardLayout({
         </motion.header>
 
         {/* Main Content Area — Domino Cascade Page Transition */}
-        <main className="flex-1 overflow-y-auto smooth-scroll bg-gray-950/50">
+        <main className={`flex-1 overflow-y-auto smooth-scroll ${theme === "light" ? "bg-[#f8f9fb]" : "bg-gray-950/50"}`}>
           {/* Approval status banner for pending/suspended users */}
           <ApprovalBanner />
 
@@ -849,7 +919,7 @@ export default function DashboardLayout({
           <EsangFloatingButton />
 
           {/* Security Compliance Footer */}
-          <footer className="border-t border-gray-800/50 bg-gray-900/40 backdrop-blur-sm px-4 py-4 mt-4">
+          <footer className={`border-t backdrop-blur-sm px-4 py-4 mt-4 ${theme === "light" ? "border-slate-200/60 bg-white/80" : "border-gray-800/50 bg-gray-900/40"}`}>
             <div className="max-w-7xl mx-auto">
               <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-3">
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-500/10 border border-green-500/20">

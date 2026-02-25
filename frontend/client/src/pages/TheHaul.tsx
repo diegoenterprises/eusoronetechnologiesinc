@@ -267,7 +267,7 @@ export default function TheHaul() {
                   </div>
                 </div>); })}</CardContent></Card>)}
 
-          <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><Target className="w-5 h-5 text-cyan-400" />Available Missions<Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]"><EsangIcon className="w-2.5 h-2.5 mr-0.5" />AI + Shipper</Badge></CardTitle></CardHeader>
+          <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><Target className="w-5 h-5 text-cyan-400" />Available Missions<Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]"><EsangIcon className="w-2.5 h-2.5 mr-0.5" />AI + {profile?.role || "All"}</Badge></CardTitle></CardHeader>
             <CardContent>{missionsQ.isLoading ? <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
               : allAvail.length === 0 ? <div className="text-center py-8"><Target className="w-10 h-10 text-slate-500 mx-auto mb-2" /><p className="text-slate-400">No missions available</p></div>
               : <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{allAvail.map((m: any, i: number) => (
@@ -278,7 +278,7 @@ export default function TheHaul() {
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-2"><Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-[10px]">{m.category}</Badge><Badge className="bg-slate-500/20 text-slate-400 border-0 text-[10px]">{m.type}</Badge>{m.hosCompliant && <Badge className="bg-green-500/20 text-green-400 border-0 text-[10px]">HOS</Badge>}</div>
                     <div className="flex items-center gap-2"><span className="text-xs font-bold text-yellow-400">+{m.xpReward} XP</span>
-                      {(typeof m.id === "number" || (typeof m.id === "string" && !String(m.id).startsWith("ai-gen-"))) && <Button size="sm" className="h-6 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" onClick={() => startMut.mutate({ missionId: Number(m.id) })}>Start</Button>}
+                      {(typeof m.id === "number" && m.id > 0) && <Button size="sm" className="h-6 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" onClick={() => startMut.mutate({ missionId: Number(m.id) })}>Start</Button>}
                     </div>
                   </div>
                 </div>))}</div>}</CardContent></Card>

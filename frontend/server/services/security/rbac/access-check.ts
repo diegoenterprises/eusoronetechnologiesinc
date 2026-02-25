@@ -58,10 +58,21 @@ export async function checkAccess(input: AccessCheckInput): Promise<AccessCheckR
     };
   }
 
-  // 3. Resolve scope context (company memberships, linked companies)
-  const scopeCtx = await resolveScopeContext(uid, role, companyId);
+  // 3. When NO target IDs are supplied the caller is using requireAccess as
+  //    a permission gate ("does this role have action+resource?").
+  //    Instance-level data isolation is enforced by the RLS / isolation
+  //    middleware, so we grant access if the permission exists at any scope.
+  //    When target IDs ARE supplied we do the full scope check.
+  const hasTarget = targetOwnerId != null || targetCompanyId != null;
 
-  // 4. Check each matching permission's scope
+  if (!hasTarget) {
+    // Permission exists (matching.length > 0) — grant at the widest scope found
+    const widest = matching[0];
+    return { allowed: true, matchedScope: widest.scope, reason: "Access granted (permission gate)" };
+  }
+
+  // 4. Full scope check — target IDs provided
+  const scopeCtx = await resolveScopeContext(uid, role, companyId);
   const tOwnerId = targetOwnerId ? Number(targetOwnerId) : null;
   const tCompanyId = targetCompanyId ? Number(targetCompanyId) : null;
 

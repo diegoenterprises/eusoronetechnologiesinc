@@ -19,6 +19,20 @@ const HAPPY_PATH: string[] = [
   "INVOICED", "PAID", "COMPLETE",
 ];
 
+const GRADIENT_BG = "linear-gradient(135deg, #1473FF, #BE01FF)";
+const GRADIENT_TEXT: Record<string, string> = { background: GRADIENT_BG, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" };
+const GRAD_GLOW = "0 0 14px rgba(20,115,255,0.5), 0 0 14px rgba(190,1,255,0.3)";
+const GradSvgDefs = () => (
+  <svg width="0" height="0" aria-hidden="true" className="absolute pointer-events-none">
+    <defs>
+      <linearGradient id="tl-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#1473FF" />
+        <stop offset="100%" stopColor="#BE01FF" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
 interface HistoryEntry {
   fromState?: string;
   toState: string;
@@ -64,7 +78,8 @@ export default function LoadProgressTimeline({
 
   if (variant === "vertical") {
     return (
-      <div className={`flex flex-col gap-0 ${className}`}>
+      <div className={`relative flex flex-col gap-0 ${className}`}>
+        <GradSvgDefs />
         {milestones.map((state, i) => {
           const meta = STATE_META[state];
           if (!meta) return null;
@@ -76,45 +91,42 @@ export default function LoadProgressTimeline({
           const ts = timestamps[state];
 
           return (
-            <div key={state} className="flex items-stretch gap-3">
+            <div key={state} className={`flex items-stretch gap-3 ${isFuture ? "opacity-40" : ""}`}>
               {/* Connector line + dot */}
               <div className="flex flex-col items-center w-6">
                 {i > 0 && (
                   <div
-                    className="w-0.5 flex-1 min-h-[12px]"
-                    style={{ backgroundColor: isPast || isCompleted ? meta.color : "#334155" }}
+                    className={`w-0.5 flex-1 min-h-[12px] ${isPast || isCompleted ? "" : "bg-slate-300 dark:bg-slate-700"}`}
+                    style={isPast || isCompleted ? { background: GRADIENT_BG } : undefined}
                   />
                 )}
                 <motion.div
                   className="w-3 h-3 rounded-full flex-shrink-0"
                   style={{
-                    backgroundColor: isCurrent ? meta.color : isCompleted ? meta.color : "#334155",
-                    border: isCurrent ? `2px solid ${meta.color}` : "none",
-                    boxShadow: isCurrent ? `0 0 8px ${meta.color}60` : "none",
+                    background: GRADIENT_BG,
+                    boxShadow: isCurrent ? GRAD_GLOW : "none",
                   }}
                   animate={isCurrent ? { scale: [1, 1.3, 1] } : {}}
                   transition={isCurrent ? { duration: 2, repeat: Infinity } : {}}
                 />
                 {i < milestones.length - 1 && (
                   <div
-                    className="w-0.5 flex-1 min-h-[12px]"
-                    style={{ backgroundColor: isPast || isCompleted ? meta.color : "#334155" }}
+                    className={`w-0.5 flex-1 min-h-[12px] ${isPast || isCompleted ? "" : "bg-slate-300 dark:bg-slate-700"}`}
+                    style={isPast || isCompleted ? { background: GRADIENT_BG } : undefined}
                   />
                 )}
               </div>
 
               {/* Label */}
-              <div className={`pb-3 pt-1 ${isFuture ? "opacity-40" : ""}`}>
+              <div className="pb-3 pt-1">
                 <div className="flex items-center gap-1.5">
-                  {(() => { const IC = ICON_MAP[meta.icon] || HelpCircle; return <IC size={14} />; })()}
-                  <span
-                    className={`text-sm font-medium ${isCurrent ? "text-white" : isCompleted ? "text-gray-300" : "text-gray-500"}`}
-                  >
+                  {(() => { const IC = ICON_MAP[meta.icon] || HelpCircle; return <IC size={14} style={{ color: meta.color }} />; })()}
+                  <span className="text-sm font-medium" style={GRADIENT_TEXT}>
                     {meta.displayName}
                   </span>
                 </div>
                 {ts && (
-                  <p className="text-[10px] text-gray-500 mt-0.5 pl-6">
+                  <p className="text-[10px] text-slate-500 dark:text-gray-500 mt-0.5 pl-6">
                     {new Date(ts).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     {actors[state] ? ` · ${actors[state]}` : ""}
                   </p>
@@ -129,7 +141,8 @@ export default function LoadProgressTimeline({
 
   // Horizontal variant
   return (
-    <div className={`flex items-center gap-0 overflow-x-auto pb-2 ${className}`}>
+    <div className={`relative flex items-center gap-0 overflow-x-auto pb-2 ${className}`}>
+      <GradSvgDefs />
       {milestones.map((state, i) => {
         const meta = STATE_META[state];
         if (!meta) return null;
@@ -144,22 +157,22 @@ export default function LoadProgressTimeline({
             {/* Node */}
             <div className={`flex flex-col items-center ${isFuture ? "opacity-30" : ""}`}>
               <motion.div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-sm"
+                className="w-8 h-8 rounded-full p-[2px]"
                 style={{
-                  backgroundColor: isCurrent ? meta.bgColor : isCompleted ? `${meta.color}20` : "#1e293b",
-                  border: `2px solid ${isCurrent ? meta.color : isCompleted ? meta.color : "#334155"}`,
-                  boxShadow: isCurrent ? `0 0 12px ${meta.color}40` : "none",
+                  background: GRADIENT_BG,
+                  boxShadow: isCurrent ? GRAD_GLOW : "none",
                 }}
                 animate={isCurrent ? { scale: [1, 1.1, 1] } : {}}
                 transition={isCurrent ? { duration: 2, repeat: Infinity } : {}}
               >
-                {(() => { const IC = ICON_MAP[meta.icon] || HelpCircle; return <IC size={14} />; })()}
+                <div className="w-full h-full rounded-full flex items-center justify-center bg-white dark:bg-slate-900">
+                  {(() => { const IC = ICON_MAP[meta.icon] || HelpCircle; return <IC size={14} style={{ color: meta.color }} />; })()}
+                </div>
               </motion.div>
               {!compact && (
                 <span
-                  className={`text-[9px] mt-1 font-medium text-center max-w-[56px] leading-tight ${
-                    isCurrent ? "text-white" : isCompleted ? "text-gray-400" : "text-gray-600"
-                  }`}
+                  className="text-[9px] mt-1 font-medium text-center max-w-[56px] leading-tight"
+                  style={GRADIENT_TEXT}
                 >
                   {meta.displayName}
                 </span>
@@ -169,10 +182,8 @@ export default function LoadProgressTimeline({
             {/* Connector */}
             {i < milestones.length - 1 && (
               <div
-                className="h-0.5 w-4 mx-0.5 flex-shrink-0"
-                style={{
-                  backgroundColor: isPast || isCompleted ? meta.color : "#334155",
-                }}
+                className={`h-0.5 w-4 mx-0.5 flex-shrink-0 ${isPast || isCompleted ? "" : "bg-slate-300 dark:bg-slate-700"}`}
+                style={isPast || isCompleted ? { background: GRADIENT_BG } : undefined}
               />
             )}
           </div>

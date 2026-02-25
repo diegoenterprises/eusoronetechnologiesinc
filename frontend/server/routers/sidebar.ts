@@ -5,7 +5,7 @@
  * Scoped to the authenticated user's company and role
  */
 
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { sql, eq, and, count } from "drizzle-orm";
 import { loads, bids, notifications } from "../../drizzle/schema";

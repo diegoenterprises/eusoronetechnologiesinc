@@ -398,7 +398,7 @@ export default function CompanyChannels() {
                 const showAvatar = !prevMsg || (prevMsg as any).author !== message.author;
 
                 return (
-                <div key={message.id} className={`group flex gap-3 px-2 py-1 rounded-xl hover:bg-white/[0.03] transition-colors ${showAvatar ? "mt-3" : ""}`}>
+                <div key={message.id} className={`group flex gap-3 px-2 py-1 rounded-xl hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors ${showAvatar ? "mt-3" : ""}`}>
                   {showAvatar ? (
                     (message as any).authorAvatar ? (
                       <img
@@ -443,7 +443,7 @@ export default function CompanyChannels() {
                         {(message as any).attachments.map((att: { name: string }, idx: number) => (
                           <div
                             key={idx}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/[0.05] rounded-lg border border-white/[0.08] text-[12px] text-slate-300 hover:bg-white/[0.08] hover:border-blue-500/30 cursor-pointer transition-all"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-white/[0.05] rounded-lg border border-slate-200 dark:border-white/[0.08] text-[12px] text-slate-300 hover:bg-slate-200 dark:hover:bg-white/[0.08] hover:border-blue-500/30 cursor-pointer transition-all"
                           >
                             <Paperclip size={12} className="text-blue-400" />
                             {att.name}
@@ -458,7 +458,7 @@ export default function CompanyChannels() {
                           ([reaction, count]) => (
                             <button
                               key={reaction}
-                              className="px-2.5 py-1 bg-white/[0.05] rounded-full text-[12px] hover:bg-white/[0.1] border border-white/[0.06] hover:border-blue-500/30 transition-all text-slate-300"
+                              className="px-2.5 py-1 bg-slate-100 dark:bg-white/[0.05] rounded-full text-[12px] hover:bg-slate-200 dark:hover:bg-white/[0.1] border border-slate-200 dark:border-white/[0.06] hover:border-blue-500/30 transition-all text-slate-300"
                             >
                               {reaction} <span className="text-slate-500 ml-0.5">{String(count)}</span>
                             </button>
@@ -468,7 +468,7 @@ export default function CompanyChannels() {
                     )}
                   </div>
 
-                  <button className="p-1.5 hover:bg-white/[0.06] rounded-lg opacity-0 group-hover:opacity-100 transition-all self-start mt-0.5">
+                  <button className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-lg opacity-0 group-hover:opacity-100 transition-all self-start mt-0.5">
                     <MoreVertical size={14} className="text-slate-500" />
                   </button>
                 </div>

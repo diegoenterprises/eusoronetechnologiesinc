@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, or, like, gte, lte, inArray } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
 import {
@@ -22,6 +22,8 @@ import {
 import { encryptField, decryptField, encryptJSON, decryptJSON } from "../_core/encryption";
 import { esangAI } from "../_core/esangAI";
 import { fmcsaService } from "../services/fmcsa";
+import { lookupAndNotify } from "../services/notifications";
+import { requireAccess } from "../services/security/rbac/access-check";
 
 // Encryption version tag for forward compatibility
 const ENC_VERSION = "v1";
@@ -563,6 +565,7 @@ export const agreementsRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'AGREEMENT' }, (ctx as any).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
@@ -717,14 +720,16 @@ export const agreementsRouter = router({
         }
       }
 
-      // 5) Hazmat authority check
+      // 5) Hazmat authority check — warn but don't hard-block
+      // The agreement will include a hazmat compliance clause flagging the risk.
+      // Hard-blocking here prevents legitimate agreements where the catalyst
+      // is in the process of obtaining hazmat authorization.
       if (input.hazmatRequired && partyBVerification?.catalyst) {
         if (partyBVerification.catalyst.hmFlag !== "Y") {
-          fmcsaVerification.blockers.push("Party B is not registered for hazmat with FMCSA but agreement requires hazmat");
-          throw new Error(
-            "Agreement generation blocked: Party B (catalyst) is not registered for hazardous materials " +
-            "with FMCSA, but this agreement requires hazmat authorization. " +
-            "The catalyst must obtain hazmat authorization before proceeding."
+          fmcsaVerification.warnings.push(
+            "Party B (catalyst) is not currently registered for hazardous materials with FMCSA. " +
+            "This agreement requires hazmat authorization — a compliance clause will be included " +
+            "requiring Party B to obtain hazmat authorization before commencing hazmat operations."
           );
         }
       }
@@ -996,6 +1001,7 @@ export const agreementsRouter = router({
   update: protectedProcedure
     .input(z.object({
       id: z.number(),
+      // RBAC checked inside handler
       status: z.string().optional(),
       baseRate: z.number().optional(),
       paymentTermDays: z.number().optional(),
@@ -1011,6 +1017,7 @@ export const agreementsRouter = router({
       })).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'AGREEMENT' }, (ctx as any).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
@@ -1036,24 +1043,40 @@ export const agreementsRouter = router({
   /** Send agreement for review */
   sendForReview: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      // SECURITY: Verify agreement belongs to caller's company
       await db.update(agreements)
         .set({ status: "pending_review" })
-        .where(eq(agreements.id, input.id));
+        .where(and(eq(agreements.id, input.id), or(eq(agreements.partyACompanyId, companyId), eq(agreements.partyBCompanyId, companyId))));
       return { success: true, status: "pending_review" };
     }),
 
   /** Send for signature */
   sendForSignature: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      // SECURITY: Verify agreement belongs to caller's company
       await db.update(agreements)
         .set({ status: "pending_signature" })
-        .where(eq(agreements.id, input.id));
+        .where(and(eq(agreements.id, input.id), or(eq(agreements.partyACompanyId, companyId), eq(agreements.partyBCompanyId, companyId))));
+
+      // Email + SMS: notify both parties
+      try {
+        const [agr] = await db.select({ agreementNumber: agreements.agreementNumber, agreementType: agreements.agreementType, partyAUserId: agreements.partyAUserId, partyBUserId: agreements.partyBUserId })
+          .from(agreements).where(eq(agreements.id, input.id)).limit(1);
+        if (agr) {
+          const signerUserId = await resolveUserId(ctx.user);
+          const otherParty = agr.partyAUserId === signerUserId ? agr.partyBUserId : agr.partyAUserId;
+          if (otherParty) lookupAndNotify(otherParty, { type: "agreement_sent_for_signature", agreementNumber: agr.agreementNumber || `#${input.id}`, agreementType: agr.agreementType || undefined, senderName: ctx.user?.name || undefined });
+        }
+      } catch {}
+
       return { success: true, status: "pending_signature" };
     }),
 
@@ -1061,12 +1084,14 @@ export const agreementsRouter = router({
   sign: protectedProcedure
     .input(z.object({
       agreementId: z.number(),
+      // RBAC checked inside handler
       signatureData: z.string().describe("Base64 Gradient Ink signature image"),
       signatureRole: z.string(),
       signerName: z.string().optional(),
       signerTitle: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'AGREEMENT' }, (ctx as any).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
@@ -1096,6 +1121,12 @@ export const agreementsRouter = router({
       const sigs = await db.select().from(agreementSignatures)
         .where(eq(agreementSignatures.agreementId, input.agreementId));
 
+      // Get agreement details for notifications
+      const [agr] = await db.select({ agreementNumber: agreements.agreementNumber, partyAUserId: agreements.partyAUserId, partyBUserId: agreements.partyBUserId })
+        .from(agreements).where(eq(agreements.id, input.agreementId)).limit(1);
+      const agrNum = agr?.agreementNumber || `#${input.agreementId}`;
+      const signerName = input.signerName || ctx.user?.name || "A party";
+
       if (sigs.length >= 2) {
         // Both parties signed — activate the agreement
         await db.update(agreements)
@@ -1104,6 +1135,10 @@ export const agreementsRouter = router({
 
         // Auto-file to Documents Center for both parties
         await fileAgreementToDocuments(input.agreementId, "active");
+
+        // Email + SMS: notify BOTH parties of fully executed agreement
+        if (agr?.partyAUserId) lookupAndNotify(agr.partyAUserId, { type: "agreement_executed", agreementNumber: agrNum });
+        if (agr?.partyBUserId) lookupAndNotify(agr.partyBUserId, { type: "agreement_executed", agreementNumber: agrNum });
 
         return {
           success: true,
@@ -1119,6 +1154,10 @@ export const agreementsRouter = router({
           },
         };
       }
+
+      // Email + SMS: notify the OTHER party that one party has signed
+      const otherPartyId = agr?.partyAUserId === sigUserId ? agr?.partyBUserId : agr?.partyAUserId;
+      if (otherPartyId) lookupAndNotify(otherPartyId, { type: "agreement_signed", agreementNumber: agrNum, signerName });
 
       return {
         success: true,
@@ -1141,12 +1180,26 @@ export const agreementsRouter = router({
       id: z.number(),
       reason: z.string(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      // SECURITY: Verify agreement belongs to caller's company
       await db.update(agreements)
         .set({ status: "terminated", terminationDate: new Date() })
-        .where(eq(agreements.id, input.id));
+        .where(and(eq(agreements.id, input.id), or(eq(agreements.partyACompanyId, companyId), eq(agreements.partyBCompanyId, companyId))));
+
+      // Email + SMS: notify both parties of termination
+      try {
+        const [agr] = await db.select({ agreementNumber: agreements.agreementNumber, partyAUserId: agreements.partyAUserId, partyBUserId: agreements.partyBUserId })
+          .from(agreements).where(eq(agreements.id, input.id)).limit(1);
+        if (agr) {
+          const agrNum = agr.agreementNumber || `#${input.id}`;
+          if (agr.partyAUserId) lookupAndNotify(agr.partyAUserId, { type: "agreement_terminated", agreementNumber: agrNum, reason: input.reason, terminatedBy: ctx.user?.name || undefined });
+          if (agr.partyBUserId) lookupAndNotify(agr.partyBUserId, { type: "agreement_terminated", agreementNumber: agrNum, reason: input.reason, terminatedBy: ctx.user?.name || undefined });
+        }
+      } catch {}
+
       return { success: true, status: "terminated" };
     }),
 
@@ -1246,6 +1299,123 @@ export const agreementsRouter = router({
           .orderBy(agreements.expirationDate)
           .limit(20);
       } catch (e) { return []; }
+    }),
+
+  // --------------------------------------------------------------------------
+  // RATE SHEET LINKAGE (Schedule A ↔ Agreement)
+  // --------------------------------------------------------------------------
+
+  /** Link a rate sheet (documents.id where type='rate_sheet') to an agreement.
+   *  Sets agreements.rateSheetDocumentId AND documents.agreementId bidirectionally. */
+  linkRateSheet: protectedProcedure
+    .input(z.object({
+      agreementId: z.number(),
+      rateSheetDocumentId: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const userId = await resolveUserId(ctx.user);
+
+      // Verify agreement exists and user is a party
+      const [agreement] = await db.select({ id: agreements.id, partyAUserId: agreements.partyAUserId, partyBUserId: agreements.partyBUserId })
+        .from(agreements).where(eq(agreements.id, input.agreementId)).limit(1);
+      if (!agreement) throw new Error("Agreement not found");
+      if (agreement.partyAUserId !== userId && agreement.partyBUserId !== userId) {
+        const role = await resolveUserRole(ctx.user);
+        if (!isAdminRole(role)) throw new Error("Not authorized to modify this agreement");
+      }
+
+      // Verify rate sheet exists and is a rate_sheet type
+      const [sheet] = await db.select({ id: documents.id, type: documents.type })
+        .from(documents).where(eq(documents.id, input.rateSheetDocumentId)).limit(1);
+      if (!sheet) throw new Error("Rate sheet not found");
+      if (sheet.type !== "rate_sheet") throw new Error("Document is not a rate sheet");
+
+      // Bidirectional link
+      await Promise.all([
+        db.update(agreements)
+          .set({ rateSheetDocumentId: input.rateSheetDocumentId } as any)
+          .where(eq(agreements.id, input.agreementId)),
+        db.update(documents)
+          .set({ agreementId: input.agreementId } as any)
+          .where(eq(documents.id, input.rateSheetDocumentId)),
+      ]);
+
+      console.log(`[EUSOCONTRACT] Linked rate sheet #${input.rateSheetDocumentId} to agreement #${input.agreementId}`);
+      return { success: true, agreementId: input.agreementId, rateSheetDocumentId: input.rateSheetDocumentId };
+    }),
+
+  /** Unlink a rate sheet from an agreement (clears both sides) */
+  unlinkRateSheet: protectedProcedure
+    .input(z.object({ agreementId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const userId = await resolveUserId(ctx.user);
+      const [agreement] = await db.select({ id: agreements.id, partyAUserId: agreements.partyAUserId, partyBUserId: agreements.partyBUserId, rateSheetDocumentId: agreements.rateSheetDocumentId })
+        .from(agreements).where(eq(agreements.id, input.agreementId)).limit(1);
+      if (!agreement) throw new Error("Agreement not found");
+      if (agreement.partyAUserId !== userId && agreement.partyBUserId !== userId) {
+        const role = await resolveUserRole(ctx.user);
+        if (!isAdminRole(role)) throw new Error("Not authorized");
+      }
+
+      const ops: Promise<any>[] = [
+        db.update(agreements)
+          .set({ rateSheetDocumentId: null } as any)
+          .where(eq(agreements.id, input.agreementId)),
+      ];
+      if (agreement.rateSheetDocumentId) {
+        ops.push(
+          db.update(documents)
+            .set({ agreementId: null } as any)
+            .where(eq(documents.id, agreement.rateSheetDocumentId)),
+        );
+      }
+      await Promise.all(ops);
+
+      return { success: true };
+    }),
+
+  /** Get the linked rate sheet for an agreement (full tier + surcharge data) */
+  getLinkedRateSheet: protectedProcedure
+    .input(z.object({ agreementId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      try {
+        const [agreement] = await db.select({ rateSheetDocumentId: agreements.rateSheetDocumentId })
+          .from(agreements).where(eq(agreements.id, input.agreementId)).limit(1);
+        if (!agreement?.rateSheetDocumentId) return null;
+
+        const [row] = await db.select().from(documents)
+          .where(and(eq(documents.id, agreement.rateSheetDocumentId), eq(documents.type, "rate_sheet")))
+          .limit(1);
+        if (!row) return null;
+
+        let meta: any = {};
+        try { meta = typeof row.fileUrl === "string" && row.fileUrl.startsWith("{") ? JSON.parse(row.fileUrl) : {}; } catch { meta = {}; }
+
+        return {
+          id: row.id,
+          name: row.name,
+          status: row.status,
+          createdAt: row.createdAt?.toISOString() || "",
+          region: meta.region || null,
+          productType: meta.productType || "Crude Oil",
+          trailerType: meta.trailerType || "tanker",
+          rateUnit: meta.rateUnit || "per_barrel",
+          effectiveDate: meta.effectiveDate || null,
+          expirationDate: meta.expirationDate || null,
+          rateTiers: meta.rateTiers || [],
+          surcharges: meta.surcharges || {},
+          notes: meta.notes || null,
+          version: meta.version || 1,
+        };
+      } catch (e) { console.error("[EUSOCONTRACT] getLinkedRateSheet error:", e); return null; }
     }),
 });
 

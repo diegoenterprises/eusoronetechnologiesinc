@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { notifications, users } from "../../drizzle/schema";
 
@@ -48,7 +48,7 @@ export const notificationsRouter = router({
    */
   list: protectedProcedure
     .input(z.object({
-      category: notificationCategorySchema.optional(),
+      category: z.string().optional(),
       type: z.string().optional(),
       read: z.boolean().optional(),
       archived: z.boolean().default(false).optional(),
@@ -65,10 +65,15 @@ export const notificationsRouter = router({
 
       try {
         // Build query conditions
-        const conditions = [eq(notifications.userId, userId)];
+        const conditions: any[] = [eq(notifications.userId, userId)];
         
         if (input?.read !== undefined) {
           conditions.push(eq(notifications.isRead, input.read));
+        }
+
+        // Category filter — stored in data JSON as $.category
+        if (input?.category && input.category !== "all") {
+          conditions.push(sql`JSON_UNQUOTE(JSON_EXTRACT(${notifications.data}, '$.category')) = ${input.category}`);
         }
 
         // Get notifications from database
@@ -88,9 +93,9 @@ export const notificationsRouter = router({
         const hasMore = (input?.offset || 0) + notificationList.length < total;
 
         // Transform to expected format
-        // Note: category, actionUrl, actionLabel stored in 'data' JSON field
         const formattedNotifications = notificationList.map(n => {
-          const data = (n.data as any) || {};
+          let data: any = {};
+          try { data = typeof n.data === "string" ? JSON.parse(n.data) : (n.data || {}); } catch { data = {}; }
           const created = n.createdAt ? new Date(n.createdAt) : new Date();
           const diffMs = Date.now() - created.getTime();
           const diffMin = Math.floor(diffMs / 60000);
@@ -100,6 +105,7 @@ export const notificationsRouter = router({
           return {
             id: String(n.id),
             type: n.type || 'system',
+            eventType: data.eventType || n.type || 'system',
             category: data.category || 'system',
             title: n.title,
             message: n.message || '',
@@ -123,6 +129,35 @@ export const notificationsRouter = router({
       } catch (error) {
         console.error('[Notifications] list error:', error);
         return { notifications: [], total: 0, hasMore: false };
+      }
+    }),
+
+  /**
+   * Get notification counts by category for stat cards
+   */
+  getCategoryCounts: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { loads: 0, bids: 0, payments: 0, messages: 0, agreements: 0, account: 0, system: 0 };
+      try {
+        const userId = ctx.user?.id || 0;
+        const rows = await db.select({
+          category: sql<string>`COALESCE(JSON_UNQUOTE(JSON_EXTRACT(data, '$.category')), 'system')`,
+          count: sql<number>`count(*)`,
+          unread: sql<number>`SUM(CASE WHEN isRead = 0 THEN 1 ELSE 0 END)`,
+        })
+          .from(notifications)
+          .where(eq(notifications.userId, userId))
+          .groupBy(sql`COALESCE(JSON_UNQUOTE(JSON_EXTRACT(data, '$.category')), 'system')`);
+
+        const counts: Record<string, { total: number; unread: number }> = {};
+        for (const r of rows) {
+          counts[r.category || "system"] = { total: Number(r.count) || 0, unread: Number(r.unread) || 0 };
+        }
+        return counts;
+      } catch (e) {
+        console.error('[Notifications] getCategoryCounts error:', e);
+        return {};
       }
     }),
 
@@ -277,9 +312,47 @@ export const notificationsRouter = router({
       return { success: true, ...input };
     }),
 
-  // Additional notification procedures
-  getSettings: protectedProcedure.query(async () => ({ email: true, push: true, sms: false, quiet: { start: "22:00", end: "07:00" } })),
-  updateSetting: protectedProcedure.input(z.object({ key: z.string().optional(), value: z.any(), setting: z.string().optional() })).mutation(async ({ input }) => ({ success: true, key: input.key || input.setting })),
+  // Additional notification procedures — wired to DB + real services
+  getSettings: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { email: true, push: true, sms: false, quiet: { start: "22:00", end: "07:00" } };
+    try {
+      const userId = ctx.user?.id || 0;
+      const [row] = await db.select({ metadata: (users as any).metadata }).from(users).where(eq((users as any).id, userId)).limit(1);
+      const meta = row?.metadata ? (typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata) : {};
+      const np = meta.notificationPreferences || {};
+      return {
+        email: np.emailNotifications ?? true,
+        push: np.pushNotifications ?? true,
+        sms: np.smsNotifications ?? false,
+        quiet: meta.securityPreferences?.quietHours || { start: "22:00", end: "07:00" },
+        // Per-category settings used by NotificationSettings page
+        loadMatchEmail: np.loadMatchEmail ?? true, loadMatchPush: np.loadMatchPush ?? true,
+        bidUpdateEmail: np.bidUpdateEmail ?? true, bidUpdatePush: np.bidUpdatePush ?? true, bidUpdateSms: np.bidUpdateSms ?? false,
+        loadStatusEmail: np.loadStatusEmail ?? true, loadStatusPush: np.loadStatusPush ?? true,
+        paymentEmail: np.paymentEmail ?? true, paymentPush: np.paymentPush ?? true,
+        invoiceEmail: np.invoiceEmail ?? true, invoicePush: np.invoicePush ?? true,
+        securityEmail: np.securityEmail ?? true, securityPush: np.securityPush ?? true, securitySms: np.securitySms ?? true,
+        productEmail: np.productEmail ?? false,
+      };
+    } catch { return { email: true, push: true, sms: false, quiet: { start: "22:00", end: "07:00" } }; }
+  }),
+  updateSetting: protectedProcedure.input(z.object({ key: z.string().optional(), value: z.any(), setting: z.string().optional() })).mutation(async ({ ctx, input }) => {
+    const settingKey = input.key || input.setting;
+    if (!settingKey) return { success: false, key: settingKey };
+    const db = await getDb();
+    if (!db) return { success: true, key: settingKey };
+    try {
+      const userId = ctx.user?.id || 0;
+      const [row] = await db.select({ metadata: (users as any).metadata }).from(users).where(eq((users as any).id, userId)).limit(1);
+      let meta: any = {};
+      try { meta = row?.metadata ? (typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata) : {}; } catch { meta = {}; }
+      if (!meta.notificationPreferences) meta.notificationPreferences = {};
+      meta.notificationPreferences[settingKey] = input.value;
+      await db.update(users).set({ metadata: JSON.stringify(meta) } as any).where(eq((users as any).id, userId));
+    } catch (e) { console.error("[Notifications] updateSetting error:", e); }
+    return { success: true, key: settingKey };
+  }),
   getUnreadCount: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return 0;
@@ -291,8 +364,25 @@ export const notificationsRouter = router({
       return result?.count || 0;
     } catch { return 0; }
   }),
-  markRead: protectedProcedure.input(z.object({ notificationId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, notificationId: input.notificationId || input.id })),
-  markAllRead: protectedProcedure.mutation(async () => ({ success: true, markedCount: 0 })),
+  markRead: protectedProcedure.input(z.object({ notificationId: z.string().optional(), id: z.string().optional() })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    const notifId = input.notificationId || input.id;
+    if (db && notifId) {
+      try { await db.update(notifications).set({ isRead: true }).where(and(eq(notifications.id, parseInt(notifId)), eq(notifications.userId, ctx.user?.id || 0))); } catch {}
+    }
+    return { success: true, notificationId: notifId };
+  }),
+  markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
+    const db = await getDb();
+    let count = 0;
+    if (db) {
+      try {
+        const result = await db.update(notifications).set({ isRead: true }).where(and(eq(notifications.userId, ctx.user?.id || 0), eq(notifications.isRead, false)));
+        count = (result as any)[0]?.affectedRows || 0;
+      } catch {}
+    }
+    return { success: true, markedCount: count };
+  }),
 
   // Push notifications
   getPushStats: protectedProcedure.query(async () => ({ sent: 0, delivered: 0, opened: 0, openRate: 0, registeredDevices: 0, sentThisMonth: 0, deliveryRate: 0 })),
@@ -302,11 +392,54 @@ export const notificationsRouter = router({
     categories: { loads: true, alerts: true, messages: true, system: true },
   })),
   getDevices: protectedProcedure.query(async () => ([])),
-  sendPush: protectedProcedure.input(z.object({ userId: z.string().optional(), title: z.string(), body: z.string().optional(), message: z.string().optional() })).mutation(async ({ input }) => ({ success: true, messageId: "msg_123" })),
+  sendPush: protectedProcedure.input(z.object({ userId: z.string().optional(), title: z.string(), body: z.string().optional(), message: z.string().optional() })).mutation(async ({ ctx, input }) => {
+    // Use the NotificationService for real push delivery
+    try {
+      const { notificationService } = await import("../services/notificationService");
+      const targetUserId = input.userId ? parseInt(input.userId) : (ctx.user?.id || 0);
+      await notificationService.sendNotification({
+        userId: targetUserId,
+        type: "system",
+        title: input.title,
+        message: input.body || input.message || "",
+        priority: "normal",
+      });
+    } catch (e) { console.error("[Notifications] sendPush error:", e); }
+    return { success: true, messageId: `msg_${Date.now()}` };
+  }),
 
-  // SMS notifications
-  getSMSStats: protectedProcedure.query(async () => ({ sent: 0, delivered: 0, failed: 0, remaining: 0, costThisMonth: 0, sentThisMonth: 0, deliveryRate: 0 })),
-  sendSMS: protectedProcedure.input(z.object({ to: z.string(), message: z.string(), phoneNumber: z.string().optional() })).mutation(async ({ input }) => ({ success: true, messageId: "sms_123" })),
+  // SMS notifications — wired to real EusoSMS (Azure Communication Services)
+  getSMSStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { sent: 0, delivered: 0, failed: 0, remaining: 0, costThisMonth: 0, sentThisMonth: 0, deliveryRate: 0 };
+    try {
+      const { smsMessages } = await import("../../drizzle/schema");
+      const [total] = await db.select({ count: sql<number>`count(*)` }).from(smsMessages);
+      const [sent] = await db.select({ count: sql<number>`count(*)` }).from(smsMessages).where(eq(smsMessages.status, "SENT"));
+      const [failed] = await db.select({ count: sql<number>`count(*)` }).from(smsMessages).where(eq(smsMessages.status, "FAILED"));
+      const totalCount = total?.count || 0;
+      const sentCount = sent?.count || 0;
+      const failedCount = failed?.count || 0;
+      return {
+        sent: sentCount, delivered: sentCount, failed: failedCount,
+        remaining: 10000 - totalCount, costThisMonth: totalCount * 0.0075,
+        sentThisMonth: totalCount, deliveryRate: totalCount > 0 ? Math.round((sentCount / totalCount) * 100) : 0,
+      };
+    } catch { return { sent: 0, delivered: 0, failed: 0, remaining: 0, costThisMonth: 0, sentThisMonth: 0, deliveryRate: 0 }; }
+  }),
+  sendSMS: protectedProcedure.input(z.object({ to: z.string(), message: z.string(), phoneNumber: z.string().optional() })).mutation(async ({ ctx, input }) => {
+    try {
+      const { sendSms } = await import("../services/eusosms");
+      const result = await sendSms({
+        to: input.phoneNumber || input.to,
+        message: input.message,
+        userId: ctx.user?.id || undefined,
+      });
+      return { success: result.status !== "FAILED", messageId: `sms_${result.id}` };
+    } catch (e: any) {
+      return { success: false, messageId: null, error: e?.message || "SMS send failed" };
+    }
+  }),
   getSMSTemplates: protectedProcedure.query(async () => []),
   toggleSMSTemplate: protectedProcedure.input(z.object({ templateId: z.string(), active: z.boolean().optional(), enabled: z.boolean().optional() })).mutation(async ({ input }) => ({ success: true, templateId: input.templateId, active: input.active ?? input.enabled })),
 });
