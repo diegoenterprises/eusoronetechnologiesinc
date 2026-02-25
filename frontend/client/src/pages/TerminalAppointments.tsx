@@ -120,7 +120,17 @@ export default function TerminalAppointments() {
   }) || { mutate: () => {}, isPending: false };
 
   const updateMut = (trpc as any).terminals?.updateAppointmentStatus?.useMutation?.({
-    onSuccess: () => { toast.success("Status updated"); utils.terminals?.getAppointmentsDetailed?.invalidate?.(); utils.terminals?.getAppointmentStats?.invalidate?.(); },
+    onSuccess: (data: any) => {
+      if (data?.bolNumber) {
+        toast.success("Appointment Completed — BOL Generated", { description: `BOL: ${data.bolNumber}` });
+      } else {
+        toast.success("Status updated");
+      }
+      if (data?.detention?.exceeded) {
+        toast.warning(`Detention Alert: ${data.detention.minutes} minutes over free time`, { description: "Detention charges may apply" });
+      }
+      utils.terminals?.getAppointmentsDetailed?.invalidate?.(); utils.terminals?.getAppointmentStats?.invalidate?.();
+    },
     onError: (e: any) => toast.error(e.message),
   }) || { mutate: () => {}, isPending: false };
 

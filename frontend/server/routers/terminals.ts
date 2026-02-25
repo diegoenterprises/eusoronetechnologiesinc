@@ -533,7 +533,8 @@ export const terminalsRouter = router({
     }),
 
   /**
-   * Update appointment status — TAS-integrated: notifies arrival/departure to DTN
+   * Update appointment status — TAS-integrated: notifies arrival/departure to DTN,
+   * auto-generates BOL on completion, tracks detention time
    */
   updateAppointmentStatus: protectedProcedure
     .input(z.object({
@@ -543,6 +544,10 @@ export const terminalsRouter = router({
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
+      let bolNumber: string | null = null;
+      let detentionMinutes: number | null = null;
+      let detentionExceeded = false;
+
       if (db) {
         try {
           const id = parseInt(input.appointmentId.replace('apt_', ''), 10);
@@ -554,7 +559,33 @@ export const terminalsRouter = router({
             if (input.status === 'checked_in') updates.checkedInAt = now;
             if (input.status === 'completed') updates.completedAt = now;
 
+            // BOL generation on completion
+            if (input.status === 'completed') {
+              bolNumber = `BOL-${now.getFullYear()}-${String(id).padStart(6, '0')}`;
+              updates.bolNumber = bolNumber;
+            }
+
             await db.update(appointments).set(updates).where(eq(appointments.id, id));
+
+            // Detention tracking on completion
+            if (input.status === 'completed') {
+              try {
+                const [apptData] = await db.select().from(appointments).where(eq(appointments.id, id)).limit(1);
+                if (apptData) {
+                  const checkedIn = (apptData as any).checkedInAt;
+                  const completed = (apptData as any).completedAt;
+                  const estDuration = (apptData as any).estimatedDurationMin || 120; // default 2hr free time
+                  if (checkedIn && completed) {
+                    const actualMinutes = Math.round((new Date(completed).getTime() - new Date(checkedIn).getTime()) / 60000);
+                    detentionMinutes = Math.max(0, actualMinutes - estDuration);
+                    detentionExceeded = detentionMinutes > 0;
+                    if (detentionExceeded) {
+                      console.log(`[Detention] Appointment ${id}: ${detentionMinutes}min over ${estDuration}min free time (actual: ${actualMinutes}min)`);
+                    }
+                  }
+                }
+              } catch (e) { console.warn('[Detention] Tracking failed (non-fatal):', e); }
+            }
 
             // TAS notifications (fire-and-forget)
             try {
@@ -580,7 +611,11 @@ export const terminalsRouter = router({
           }
         } catch (e) { console.error('[Terminals] updateAppointmentStatus error:', e); }
       }
-      return { success: true, appointmentId: input.appointmentId, newStatus: input.status, updatedAt: new Date().toISOString() };
+      return {
+        success: true, appointmentId: input.appointmentId, newStatus: input.status,
+        updatedAt: new Date().toISOString(), bolNumber,
+        detention: detentionMinutes !== null ? { minutes: detentionMinutes, exceeded: detentionExceeded } : null,
+      };
     }),
 
   /**
