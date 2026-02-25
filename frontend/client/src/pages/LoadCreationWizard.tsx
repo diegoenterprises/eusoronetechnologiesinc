@@ -607,11 +607,25 @@ export default function LoadCreationWizard() {
   // Hot Zones-powered instant rate intelligence (fires on Step 6 when origin/dest available)
   const originParts = (formData.origin || "").split(",").map((s: string) => s.trim());
   const destParts = (formData.destination || "").split(",").map((s: string) => s.trim());
+  // Map trailer ID → precise equipment key for EQUIPMENT_RATES + ML engine
+  const rateEquipmentType = (() => {
+    switch (formData.trailerType) {
+      case "liquid_tank": return "tanker";
+      case "gas_tank": return "mc331";
+      case "cryogenic": return "mc338";
+      case "food_grade_tank": return "food_grade";
+      case "water_tank": return "tanker";
+      case "hazmat_van": return "hazmat_van";
+      case "bulk_hopper": return "hopper";
+      default: return selectedTrailer?.equipment || "dry_van";
+    }
+  })();
+
   const hzQuoteQuery = (trpc as any).quotes.getInstant.useQuery(
     {
       origin: { city: originParts[0] || "", state: originParts[1] || "", lat: formData.originLat || undefined, lng: formData.originLng || undefined },
       destination: { city: destParts[0] || "", state: destParts[1] || "", lat: formData.destLat || undefined, lng: formData.destLng || undefined },
-      equipmentType: selectedTrailer?.equipment === "tank" ? "tanker" : selectedTrailer?.equipment || "dry_van",
+      equipmentType: rateEquipmentType,
       hazmat: !!(selectedTrailer?.hazmat && formData.hazmatClass),
       hazmatClass: formData.hazmatClass || undefined,
       pickupDate: formData.pickupDate || new Date().toISOString(),
@@ -622,13 +636,12 @@ export default function LoadCreationWizard() {
   // ML Engine — rate prediction + ETA + anomaly detection
   const mlOriginState = (originParts[1] || originParts[0] || "").replace(/\s+/g, "").substring(0, 2).toUpperCase();
   const mlDestState = (destParts[1] || destParts[0] || "").replace(/\s+/g, "").substring(0, 2).toUpperCase();
-  const mlEquipment = selectedTrailer?.equipment === "tank" ? "tanker" : selectedTrailer?.equipment || "dry_van";
   const mlRatePrediction = (trpc as any).ml?.predictRate?.useQuery?.(
-    { originState: mlOriginState, destState: mlDestState, distance: formData.distance || 0, weight: Number(formData.weight) || undefined, equipmentType: mlEquipment, cargoType: selectedTrailer?.hazmat ? "hazmat" : "general" },
+    { originState: mlOriginState, destState: mlDestState, distance: formData.distance || 0, weight: Number(formData.weight) || undefined, equipmentType: rateEquipmentType, cargoType: selectedTrailer?.hazmat ? "hazmat" : "general" },
     { enabled: rs >= 6 && !!mlOriginState && !!mlDestState && (formData.distance || 0) > 0, staleTime: 120_000 }
   ) || { data: null };
   const mlETA = (trpc as any).ml?.predictETA?.useQuery?.(
-    { originState: mlOriginState, destState: mlDestState, distance: formData.distance || 0, equipmentType: mlEquipment, cargoType: selectedTrailer?.hazmat ? "hazmat" : "general", pickupDate: formData.pickupDate },
+    { originState: mlOriginState, destState: mlDestState, distance: formData.distance || 0, equipmentType: rateEquipmentType, cargoType: selectedTrailer?.hazmat ? "hazmat" : "general", pickupDate: formData.pickupDate },
     { enabled: rs >= 5 && !!mlOriginState && !!mlDestState && (formData.distance || 0) > 0, staleTime: 120_000 }
   ) || { data: null };
   const mlAnomalies = (trpc as any).ml?.detectAnomalies?.useQuery?.(

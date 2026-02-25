@@ -216,6 +216,7 @@ class MLEngine {
     equipmentMultipliers: {
       dry_van: 1.0, reefer: 1.25, flatbed: 1.15, tanker: 1.35,
       hopper: 1.20, step_deck: 1.18, lowboy: 1.40, cryogenic: 1.50,
+      mc338: 1.50, mc331: 1.40, food_grade: 1.15, hazmat_van: 1.30,
     },
     cargoRiskFactors: {
       general: 1.0, hazmat: 1.45, refrigerated: 1.20, liquid: 1.30,
