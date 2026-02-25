@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -141,8 +142,8 @@ export default function Catalysts() {
         </div>
       </div>
 
-      {/* Invite Carrier Modal — MyPartners-style */}
-      {showInvite && (
+      {/* Invite Carrier Modal — MyPartners-style (portaled to body) */}
+      {showInvite && createPortal(
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm">
           <div className="flex min-h-full items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) { setShowInvite(false); resetInviteForm(); } }}>
           <div className={cn("w-full max-w-3xl rounded-2xl border shadow-2xl flex flex-col", isLight ? "bg-white border-slate-200" : "bg-[#12121a] border-white/[0.08]")}>
@@ -323,7 +324,8 @@ export default function Catalysts() {
             </div>
           </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Stats Row */}
