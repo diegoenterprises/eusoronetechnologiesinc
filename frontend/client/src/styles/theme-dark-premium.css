@@ -201,11 +201,35 @@
 .dark input[type="tel"],
 .dark input[type="url"],
 .dark input[type="search"],
-.dark textarea,
-.dark select {
+.dark textarea {
   background-color: rgba(255, 255, 255, 0.03) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
   color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* Native <select> — slightly more opaque so closed state is visible */
+.dark select {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  border-radius: 0.75rem;
+}
+
+/* Native <option> elements — MUST be opaque (OS dropdown ignores rgba) */
+.dark select option {
+  background-color: #1a1d2e !important;
+  color: #e2e8f0 !important;
+}
+.dark select option:checked {
+  background-color: #2d3048 !important;
+  color: #ffffff !important;
+}
+.dark select option:hover {
+  background-color: #252840 !important;
+}
+.dark select optgroup {
+  background-color: #1a1d2e !important;
+  color: #94a3b8 !important;
 }
 
 .dark input:focus,

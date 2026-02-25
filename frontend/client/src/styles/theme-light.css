@@ -102,6 +102,22 @@ html[data-theme="light"] .placeholder-slate-500::placeholder { color: #94a3b8 !i
 html[data-theme="light"] .placeholder-gray-500::placeholder { color: #94a3b8 !important; }
 html[data-theme="light"] input::placeholder { color: #94a3b8 !important; }
 
+/* Native <select> — proper light mode styling */
+html[data-theme="light"] select {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  border-radius: 0.75rem;
+}
+html[data-theme="light"] select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+html[data-theme="light"] select option:checked {
+  background-color: #ede9fe !important;
+  color: #1e1b4b !important;
+}
+
 /* ============================================================
    BORDER OVERRIDES
    ============================================================ */
