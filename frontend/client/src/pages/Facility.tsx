@@ -1046,8 +1046,9 @@ export default function FacilityPage() {
         const intg = INT_CATALOG.find(c => c.id === keyModal);
         const fields = INT_FIELDS[keyModal] || [{ key: "apiKey", label: "API Key", placeholder: "Enter API key", secret: true }];
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setKeyModal(null)}>
-            <div className="border border-slate-700 rounded-2xl w-full max-w-md mx-4 shadow-2xl" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setKeyModal(null)}>
+            <div className="flex min-h-full items-center justify-center p-4">
+            <div className="border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
               {intg && <div className="h-1 w-full rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${intg.brandFrom}, ${intg.brandTo})` }} />}
               <div className="px-6 pt-6 pb-4">
                 <div className="flex items-center justify-between">
@@ -1102,6 +1103,7 @@ export default function FacilityPage() {
                   </Button>
                 </div>
               </div>
+            </div>
             </div>
           </div>
         );

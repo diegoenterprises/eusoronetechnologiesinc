@@ -161,7 +161,8 @@ export default function FleetCommandCenter() {
 
       {/* ADD DRIVER MODAL */}
       {showAD && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowAD(false)}>
+        <div className="fixed inset-0 z-50 bg-black/50 overflow-y-auto" onClick={() => setShowAD(false)}>
+          <div className="flex min-h-full items-center justify-center p-4">
           <div className={cn("w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl backdrop-blur-2xl", L ? "bg-white/90 border border-slate-200" : "bg-slate-900/70 border border-white/10 ring-1 ring-white/5")} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between"><h2 className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Add Driver</h2><button onClick={() => setShowAD(false)}><X className="w-5 h-5 text-slate-400" /></button></div>
             <Input placeholder="Full Name" value={nd.name} onChange={(e: any) => setNd({...nd, name: e.target.value})} />
@@ -170,12 +171,14 @@ export default function FleetCommandCenter() {
             <Input placeholder="CDL Number" value={nd.cdlNumber} onChange={(e: any) => setNd({...nd, cdlNumber: e.target.value})} />
             <Button className="w-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl" disabled={!nd.name || adM.isPending} onClick={() => adM.mutate({ data: nd })}>{adM.isPending ? "Adding..." : "Add Driver"}</Button>
           </div>
+          </div>
         </div>
       )}
 
       {/* ADD VEHICLE MODAL */}
       {showAV && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowAV(false)}>
+        <div className="fixed inset-0 z-50 bg-black/50 overflow-y-auto" onClick={() => setShowAV(false)}>
+          <div className="flex min-h-full items-center justify-center p-4">
           <div className={cn("w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl backdrop-blur-2xl", L ? "bg-white/90 border border-slate-200" : "bg-slate-900/70 border border-white/10 ring-1 ring-white/5")} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between"><h2 className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Add Vehicle</h2><button onClick={() => setShowAV(false)}><X className="w-5 h-5 text-slate-400" /></button></div>
             <Input placeholder="Unit Number" value={nv.unitNumber} onChange={(e: any) => setNv({...nv, unitNumber: e.target.value})} />
@@ -186,6 +189,7 @@ export default function FleetCommandCenter() {
             </div>
             <Input placeholder="Year" value={nv.year} onChange={(e: any) => setNv({...nv, year: e.target.value})} />
             <Button className="w-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl" disabled={!nv.unitNumber || avM.isPending} onClick={() => avM.mutate({ data: nv })}>{avM.isPending ? "Adding..." : "Add Vehicle"}</Button>
+          </div>
           </div>
         </div>
       )}

@@ -268,8 +268,9 @@ export default function TerminalStaff() {
 
       {/* Add Staff Modal */}
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowAdd(false)}>
-          <div className="border border-slate-700 rounded-2xl w-full max-w-lg mx-4 shadow-2xl" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowAdd(false)}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <div className="border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
             <div className="px-6 pt-6 pb-4">
               <div className="flex items-center justify-between">
                 <div className="text-white text-lg font-semibold flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Add Access Controller</div>
@@ -386,13 +387,15 @@ export default function TerminalStaff() {
               </div>
             </div>
           </div>
+          </div>
         </div>
       )}
 
       {/* Edit Staff Modal */}
       {editingStaff && editForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setEditingStaff(null); setEditForm(null); }}>
-          <div className="border border-slate-700 rounded-2xl w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] overflow-y-auto" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => { setEditingStaff(null); setEditForm(null); }}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <div className="border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
             <div className="px-6 pt-6 pb-4">
               <div className="flex items-center justify-between">
                 <div className="text-white text-lg font-semibold flex items-center gap-2"><Pencil className="w-5 h-5 text-cyan-400" />Edit Staff</div>
@@ -508,6 +511,7 @@ export default function TerminalStaff() {
                 </Button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       )}

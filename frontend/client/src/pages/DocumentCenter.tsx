@@ -260,7 +260,8 @@ function UploadModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="flex min-h-full items-center justify-center p-4">
       <div
         className={cn("w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col", isLight ? "bg-white border border-slate-200" : "bg-slate-900 border border-slate-700")}
         style={{ maxHeight: "85vh" }}
@@ -426,6 +427,7 @@ function UploadModal({
             </Button>
           </div>
         </div>
+      </div>
       </div>
     </div>,
     document.body
@@ -989,8 +991,9 @@ export default function DocumentCenter() {
 
       {/* Document Preview Modal */}
       {previewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => { if (previewDoc?.blobUrl) URL.revokeObjectURL(previewDoc.blobUrl); setPreviewDoc(null); }}>
-          <div className={cn("rounded-2xl w-full max-w-4xl mx-4 shadow-2xl flex flex-col border", isLight ? "bg-white border-slate-200" : "bg-slate-900 border-slate-700")} style={{ height: '85vh' }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm" onClick={() => { if (previewDoc?.blobUrl) URL.revokeObjectURL(previewDoc.blobUrl); setPreviewDoc(null); }}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <div className={cn("rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col border", isLight ? "bg-white border-slate-200" : "bg-slate-900 border-slate-700")} style={{ height: '85vh' }} onClick={e => e.stopPropagation()}>
             <div className={cn("flex items-center justify-between p-4 border-b shrink-0", isLight ? "border-slate-200" : "border-slate-800")}>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="p-2 rounded-lg bg-blue-500/15">
@@ -1020,6 +1023,7 @@ export default function DocumentCenter() {
                 </div>
               )}
             </div>
+          </div>
           </div>
         </div>
       )}

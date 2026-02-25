@@ -559,8 +559,9 @@ export default function ERG2024Module() {
 
       {/* Guide Detail Modal */}
       {showGuideDetail && selectedGuide && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-          <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto ${isEmergencyMode ? 'bg-red-900' : 'bg-white'} rounded-t-3xl sm:rounded-3xl shadow-2xl`}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto">
+          <div className="flex min-h-full items-end sm:items-center justify-center p-4">
+          <div className={`w-full max-w-2xl ${isEmergencyMode ? 'bg-red-900' : 'bg-white'} rounded-t-3xl sm:rounded-3xl shadow-2xl`}>
             {/* Modal Header */}
             <div className="sticky top-0 z-10 p-4 border-b border-slate-200" style={{ backgroundColor: selectedGuide.color || '#6B7280' }}>
               <div className="flex items-center justify-between">
@@ -732,6 +733,7 @@ export default function ERG2024Module() {
                 Call CHEMTREC: 1-800-424-9300
               </a>
             </div>
+          </div>
           </div>
         </div>
       )}

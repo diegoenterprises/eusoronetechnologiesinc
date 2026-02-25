@@ -273,8 +273,9 @@ export default function GateOperations() {
 
       {/* Check-In Modal */}
       {checkInId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setCheckInId(null)}>
-          <div className={cn("w-full max-w-lg p-6 space-y-5 mx-4", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setCheckInId(null)}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <div className={cn("w-full max-w-lg p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-slate-800 dark:text-white">Driver Check-In</h2>
               <button onClick={() => setCheckInId(null)} className="text-slate-500 hover:text-slate-800 dark:hover:text-white"><XCircle className="w-5 h-5" /></button>
@@ -316,6 +317,7 @@ export default function GateOperations() {
                 {checkInMut.isPending ? "Processing..." : "Complete Check-In"}
               </Button>
             </div>
+          </div>
           </div>
         </div>
       )}

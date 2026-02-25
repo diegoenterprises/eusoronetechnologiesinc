@@ -351,8 +351,9 @@ export default function ERG2024Module() {
 
       {/* Guide Detail Modal */}
       {showModal && selectedGuide && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center" onClick={() => setShowModal(false)}>
-          <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto ${emergency ? 'bg-red-900' : 'bg-white'} rounded-t-3xl sm:rounded-3xl shadow-2xl`} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto" onClick={() => setShowModal(false)}>
+          <div className="flex min-h-full items-end sm:items-center justify-center p-4">
+          <div className={`w-full max-w-2xl ${emergency ? 'bg-red-900' : 'bg-white'} rounded-t-3xl sm:rounded-3xl shadow-2xl`} onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 z-10 p-4 border-b border-slate-200" style={{ backgroundColor: selectedGuide.color }}>
               <div className="flex items-center justify-between">
                 <div className="text-white">
@@ -456,6 +457,7 @@ export default function ERG2024Module() {
                 <Phone className="w-5 h-5 inline mr-2" /> Call {primaryContact?.name || 'Emergency Contact'}: {primaryContact?.phone || ''}
               </a>
             </div>
+          </div>
           </div>
         </div>
       )}

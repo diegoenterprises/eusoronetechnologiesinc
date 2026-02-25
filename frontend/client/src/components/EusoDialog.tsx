@@ -66,15 +66,17 @@ function DialogCard({ dialog, onClose }: { dialog: DialogState; onClose: (result
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
+      className="fixed inset-0 z-[9999] overflow-y-auto"
       style={{ animation: "eusoDialogFadeIn 0.2s ease-out" }}
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
         onClick={() => onClose(false)}
       />
 
+      {/* Centering wrapper */}
+      <div className="flex min-h-full items-center justify-center p-4 relative">
       {/* Card — dark solid card, no border, subtle top glow */}
       <div
         className="relative rounded-2xl overflow-hidden min-w-[420px] max-w-[540px] outline-none"
@@ -122,6 +124,7 @@ function DialogCard({ dialog, onClose }: { dialog: DialogState; onClose: (result
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {/* Keyframe animations injected once */}

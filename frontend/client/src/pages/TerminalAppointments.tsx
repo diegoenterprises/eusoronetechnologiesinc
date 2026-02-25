@@ -387,8 +387,9 @@ export default function TerminalAppointments() {
 
       {/* Create Modal — 2-Step TAS-Integrated */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setShowCreate(false); resetForm(); }}>
-          <div className={cn("w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-4 mx-4", cell, isLight ? "bg-white border-slate-200" : "bg-[#0B1120] border-white/[0.08]")} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => { setShowCreate(false); resetForm(); }}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <div className={cn("w-full max-w-2xl p-6 space-y-4", cell, isLight ? "bg-white border-slate-200" : "bg-[#0B1120] border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             {/* Modal Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -649,6 +650,7 @@ export default function TerminalAppointments() {
                 </div>
               </div>
             )}
+          </div>
           </div>
         </div>
       )}

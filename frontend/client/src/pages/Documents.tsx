@@ -187,8 +187,9 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl mx-4 shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="flex min-h-full items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Modal header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-800 shrink-0">
           <div>
@@ -349,6 +350,7 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
             </Button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
@@ -817,8 +819,9 @@ export default function Documents() {
 
       {/* Document Preview Modal */}
       {previewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => { if (previewDoc?.blobUrl) URL.revokeObjectURL(previewDoc.blobUrl); setPreviewDoc(null); }}>
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl mx-4 shadow-2xl flex flex-col" style={{ height: '85vh' }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm" onClick={() => { if (previewDoc?.blobUrl) URL.revokeObjectURL(previewDoc.blobUrl); setPreviewDoc(null); }}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col" style={{ height: '85vh' }} onClick={e => e.stopPropagation()}>
             {/* Preview Header */}
             <div className="flex items-center justify-between p-4 border-b border-slate-800 shrink-0">
               <div className="flex items-center gap-3 min-w-0">
@@ -873,6 +876,7 @@ export default function Documents() {
                 </div>
               )}
             </div>
+          </div>
           </div>
         </div>
       )}

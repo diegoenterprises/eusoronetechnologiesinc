@@ -196,11 +196,12 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
+      <div className="flex min-h-full items-center justify-center p-4">
       <div className={cn(
-        "w-full max-w-md rounded-2xl border shadow-2xl flex flex-col max-h-[90vh]",
+        "w-full max-w-md rounded-2xl border shadow-2xl flex flex-col",
         isLight ? "bg-white border-slate-200" : "bg-[#12121a] border-white/[0.08]"
       )}>
         {/* Header */}
@@ -462,6 +463,7 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
             </Button>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

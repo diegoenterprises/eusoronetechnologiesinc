@@ -433,7 +433,8 @@ export default function TerminalPartners() {
       </Card>
       {/* Add Partner Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}>
+          <div className="flex min-h-full items-center justify-center p-4">
           <div className={cn("w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden", isLight ? "bg-white border-slate-200" : "bg-[#12121a] border-white/[0.08]")}>
             {/* Modal Header */}
             <div className="px-6 py-4 border-b" style={{ borderColor: isLight ? "#e2e8f0" : "rgba(255,255,255,0.04)" }}>
@@ -663,6 +664,7 @@ export default function TerminalPartners() {
                 </Button>
               )}
             </div>
+          </div>
           </div>
         </div>
       )}

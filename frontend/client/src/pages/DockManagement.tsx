@@ -528,8 +528,9 @@ export default function DockManagement() {
       )}
       {/* ═══ CONFIGURE MODAL ═══ */}
       {showConfig && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowConfig(false)}>
-          <div className={cn("w-full max-w-lg mx-4 rounded-2xl border p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowConfig(false)}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <div className={cn("w-full max-w-lg rounded-2xl border p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-slate-800 dark:text-white">Dock Configuration</h2>
               <button onClick={() => setShowConfig(false)} className="text-slate-500 hover:text-slate-800 dark:hover:text-white"><XCircle className="w-5 h-5" /></button>
@@ -564,13 +565,15 @@ export default function DockManagement() {
               </Button>
             </div>
           </div>
+          </div>
         </div>
       )}
 
       {/* ═══ GENERATE BOL MODAL ═══ */}
       {showBOL && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-8" onClick={() => setShowBOL(false)}>
-          <div className={cn("w-full max-w-2xl mx-4 rounded-2xl border p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowBOL(false)}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <div className={cn("w-full max-w-2xl rounded-2xl border p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-800 dark:text-white">Generate Bill of Lading</h2>
@@ -689,13 +692,15 @@ export default function DockManagement() {
               </div>
             </div>
           </div>
+          </div>
         </div>
       )}
 
       {/* ═══ EUSOTICKET RUN TICKET MODAL — Real-World Crude Oil Fields ═══ */}
       {showRunTicket && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-4" onClick={() => setShowRunTicket(false)}>
-          <div className={cn("w-full max-w-4xl mx-4 rounded-2xl border p-6 space-y-4 max-h-[92vh] overflow-y-auto", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowRunTicket(false)}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <div className={cn("w-full max-w-4xl rounded-2xl border p-6 space-y-4", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-800 dark:text-white">EusoTicket -- Run Ticket</h2>
@@ -987,6 +992,7 @@ export default function DockManagement() {
                 </Button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       )}
