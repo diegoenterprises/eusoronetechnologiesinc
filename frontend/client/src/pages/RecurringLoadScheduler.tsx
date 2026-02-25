@@ -97,9 +97,9 @@ export default function RecurringLoadScheduler() {
   const [patterns, setPatterns] = useState<SchedulePattern[]>([]);
   const [activating, setActivating] = useState(false);
 
-  // Load creation mutation — wired to loads.createLoad
-  const createLoadMutation = (trpc as any).loads?.createLoad?.useMutation?.({
-    onError: (err: any) => console.error("[RecurringScheduler] createLoad error:", err?.message),
+  // Load creation mutation — wired to loads.create (the wizard-compatible endpoint)
+  const createLoadMutation = (trpc as any).loads?.create?.useMutation?.({
+    onError: (err: any) => console.error("[RecurringScheduler] create error:", err?.message),
   });
 
   const activateSchedule = async () => {
@@ -109,11 +109,8 @@ export default function RecurringLoadScheduler() {
     let failed = 0;
 
     try {
-      // For each pattern, generate loads for the next 7 days matching the scheduled days
-      const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
       const start = new Date(startDate);
       const end = endDate ? new Date(endDate) : new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
-      // Generate first week of loads (or until end date, max 30 loads)
       const maxLoads = 30;
 
       for (const pattern of patterns) {
@@ -124,43 +121,38 @@ export default function RecurringLoadScheduler() {
           ? { lat: pattern.destLat, lng: pattern.destLng }
           : STATE_COORDS[pattern.destState.toUpperCase()] || { lat: 30.0, lng: -95.0 };
 
+        const originStr = pattern.originAddress || `${pattern.originCity}, ${pattern.originState}`;
+        const destStr = pattern.destAddress || `${pattern.destCity}, ${pattern.destState}`;
+        const driveMiles = parseFloat(pattern.estimatedMiles) || 300;
+        const driveHrs = parseFloat(pattern.estimatedDriveHours) || 5;
+
         let current = new Date(start);
         while (current <= end && created + failed < maxLoads) {
           const dayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][current.getDay()];
           if (pattern.days.includes(dayName)) {
-            // Create loadsPerDay loads for this day
             for (let l = 0; l < pattern.loadsPerDay && created + failed < maxLoads; l++) {
               try {
                 const [hours, minutes] = (pattern.pickupTime || "08:00").split(":").map(Number);
                 const pickupDate = new Date(current);
                 pickupDate.setHours(hours || 8, minutes || 0, 0, 0);
-                const driveMiles = parseFloat(pattern.estimatedMiles) || 300;
-                const driveHrs = parseFloat(pattern.estimatedDriveHours) || 5;
                 const deliveryDate = new Date(pickupDate.getTime() + driveHrs * 60 * 60 * 1000 + 2 * 60 * 60 * 1000);
 
                 if (createLoadMutation) {
                   await createLoadMutation.mutateAsync({
+                    origin: originStr,
+                    destination: destStr,
+                    originLat: originCoords.lat,
+                    originLng: originCoords.lng,
+                    destLat: destCoords.lat,
+                    destLng: destCoords.lng,
+                    distance: driveMiles,
                     equipment: pattern.equipmentType,
-                    pickupLocation: {
-                      address: `${pattern.originCity}, ${pattern.originState}`,
-                      city: pattern.originCity,
-                      state: pattern.originState,
-                      zipCode: "00000",
-                      lat: originCoords.lat,
-                      lng: originCoords.lng,
-                    },
-                    deliveryLocation: {
-                      address: `${pattern.destCity}, ${pattern.destState}`,
-                      city: pattern.destCity,
-                      state: pattern.destState,
-                      zipCode: "00000",
-                      lat: destCoords.lat,
-                      lng: destCoords.lng,
-                    },
-                    pickupDate,
-                    deliveryDate,
-                    rate: parseFloat(pattern.ratePerLoad) || 0,
-                    specialInstructions: `[Recurring: ${contractName}] ${pattern.equipmentType.replace(/_/g, " ")} | ${driveMiles} mi | ${catalystName ? `Dedicated: ${catalystName}` : "Open for bidding"} | ${pattern.notes || ""}`.trim(),
+                    pickupDate: pickupDate.toISOString(),
+                    deliveryDate: deliveryDate.toISOString(),
+                    rate: pattern.ratePerLoad || "0",
+                    assignmentType: catalystName ? "direct_catalyst" : "open_market",
+                    linkedAgreementId: selectedAgreementId ? String(selectedAgreementId) : undefined,
+                    productName: `${contractType.replace(/_/g, " ")} shipment`,
                   });
                   created++;
                 }
@@ -172,8 +164,8 @@ export default function RecurringLoadScheduler() {
       }
 
       if (created > 0) {
-        toast.success(`Schedule activated! ${created} loads created.`, { description: catalystName ? `Dedicated to ${catalystName}` : "Posted for catalyst bidding" });
-        setLocation("/loads/active");
+        toast.success(`Schedule activated! ${created} loads posted.`, { description: catalystName ? `Dedicated to ${catalystName}` : "Posted for catalyst bidding" });
+        setLocation("/my-loads");
       } else if (failed > 0) {
         toast.error(`Failed to create loads (${failed} errors). Check your schedule configuration.`);
       } else {

@@ -166,7 +166,7 @@ export default function TerminalCreateLoad() {
   };
 
   // ─── Mutations ───
-  const createLoadMut = (trpc as any).loads?.createLoad?.useMutation?.({
+  const createLoadMut = (trpc as any).loads?.create?.useMutation?.({
     onSuccess: (data: any) => {
       setOrderStatus("scheduled");
       toast.success(`Order ${orderNumber} scheduled — BOL generated`, {
@@ -202,34 +202,26 @@ export default function TerminalCreateLoad() {
   }, [scheduledDateObj, schedTimeHour, schedTimeMin]);
 
   const handleSchedule = () => {
+    const originAddr = terminal?.address || `${terminal?.city || "Houston"}, ${terminal?.state || "TX"}`;
+    const destAddr = form.destinationAddress || `${form.destinationCity}, ${form.destinationState}`;
+
     createLoadMut.mutate({
-      cargoType: "petroleum" as const,
+      origin: originAddr,
+      destination: destAddr,
+      originLat: 29.76,
+      originLng: -95.37,
+      destLat: 0,
+      destLng: 0,
+      equipment: "tanker",
       hazmatClass: form.hazmatClass || undefined,
       unNumber: form.unNumber || undefined,
-      volume: Number(form.quantity) || undefined,
-      volumeUnit: form.quantityUnit,
-      pickupLocation: {
-        address: terminal?.address || "Terminal Facility",
-        city: terminal?.city || "Houston",
-        state: terminal?.state || "TX",
-        zipCode: "77001",
-        lat: 29.76,
-        lng: -95.37,
-      },
-      deliveryLocation: {
-        address: form.destinationAddress || "",
-        city: form.destinationCity,
-        state: form.destinationState,
-        zipCode: form.destinationZip || "00000",
-        lat: 0,
-        lng: 0,
-      },
-      specialInstructions: form.specialInstructions || undefined,
-      carrierName: form.carrierName || undefined,
-      carrierCode: form.carrierCode || undefined,
-      driverName: form.driverName || undefined,
-      trailerNumber: form.trailerNumber || undefined,
-      scheduledDate: scheduledDatetime.toISOString(),
+      quantity: form.quantity || undefined,
+      quantityUnit: form.quantityUnit === "bbl" ? "Barrels" : "Gallons",
+      productName: form.productName || "Petroleum product",
+      pickupDate: scheduledDatetime.toISOString(),
+      deliveryDate: new Date(scheduledDatetime.getTime() + 8 * 60 * 60 * 1000).toISOString(),
+      rate: "0",
+      assignmentType: form.carrierId ? "direct_catalyst" : "open_market",
     });
 
     bolMut.mutate({
