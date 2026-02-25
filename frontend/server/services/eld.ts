@@ -4,8 +4,15 @@
  * Integrates with ELD providers for real-time HOS data,
  * driver duty status, and compliance monitoring.
  * 
- * Supports common ELD providers: KeepTruckin, Samsara, Omnitracs, etc.
+ * Supports common ELD providers: Motive (KeepTruckin), Samsara, Omnitracs, etc.
+ * 
+ * Provider credentials are loaded from:
+ *   1. integrationConnections table (per-company, saved via IntegrationsPortal)
+ *   2. Environment variables (platform-level fallback)
  */
+
+import { getDb } from "../db";
+import { eq, and, sql } from "drizzle-orm";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -103,25 +110,37 @@ export interface HOSSummary {
 // ELD SERVICE
 // ============================================================================
 
+// Mapping from integrationConnections providerSlug → ELD API config
+const ELD_PROVIDER_MAP: Record<string, { name: string; baseUrl: string }> = {
+  motive:      { name: "Motive",    baseUrl: "https://api.gomotive.com/v2" },
+  keeptruckin: { name: "Motive",    baseUrl: "https://api.gomotive.com/v2" },
+  samsara:     { name: "Samsara",   baseUrl: "https://api.samsara.com/v1" },
+  omnitracs:   { name: "Omnitracs", baseUrl: "https://api.omnitracs.com/v1" },
+  geotab:      { name: "Geotab",    baseUrl: "https://my.geotab.com/apiv1" },
+};
+
+// Slugs that are ELD providers (vs terminal automation or market data)
+const ELD_SLUGS = new Set(Object.keys(ELD_PROVIDER_MAP));
+
 class ELDService {
   private providers: Map<string, ELDProviderConfig> = new Map();
+  // Cache: companyId → timestamp of last provider load
+  private companyLoadCache: Map<number, number> = new Map();
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
 
   constructor() {
-    // Initialize with configured providers
-    this.initializeProviders();
+    // Initialize with env var fallbacks
+    this.initializeFromEnv();
   }
 
-  private initializeProviders() {
-    // KeepTruckin / Motive
-    if (process.env.KEEPTRUCKIN_API_KEY) {
-      this.providers.set("keeptruckin", {
-        name: "KeepTruckin",
-        apiKey: process.env.KEEPTRUCKIN_API_KEY,
-        baseUrl: "https://api.keeptruckin.com/v1",
+  private initializeFromEnv() {
+    if (process.env.KEEPTRUCKIN_API_KEY || process.env.MOTIVE_API_KEY) {
+      this.providers.set("motive", {
+        name: "Motive",
+        apiKey: process.env.MOTIVE_API_KEY || process.env.KEEPTRUCKIN_API_KEY || "",
+        baseUrl: "https://api.gomotive.com/v2",
       });
     }
-
-    // Samsara
     if (process.env.SAMSARA_API_KEY) {
       this.providers.set("samsara", {
         name: "Samsara",
@@ -129,8 +148,6 @@ class ELDService {
         baseUrl: "https://api.samsara.com/v1",
       });
     }
-
-    // Omnitracs
     if (process.env.OMNITRACS_API_KEY) {
       this.providers.set("omnitracs", {
         name: "Omnitracs",
@@ -138,6 +155,59 @@ class ELDService {
         baseUrl: "https://api.omnitracs.com/v1",
       });
     }
+  }
+
+  /**
+   * Load ELD provider credentials from integrationConnections for a company.
+   * Called by hosEngine when it needs to check if ELD data is available.
+   */
+  async loadProvidersForCompany(companyId: number): Promise<boolean> {
+    // Check cache
+    const lastLoad = this.companyLoadCache.get(companyId) || 0;
+    if (Date.now() - lastLoad < this.CACHE_TTL_MS && this.providers.size > 0) {
+      return this.providers.size > 0;
+    }
+
+    const db = await getDb();
+    if (!db) return this.providers.size > 0;
+
+    try {
+      const { integrationConnections } = await import("../../drizzle/schema");
+      const conns = await db.select({
+        slug: integrationConnections.providerSlug,
+        apiKey: integrationConnections.apiKey,
+        apiSecret: integrationConnections.apiSecret,
+        status: integrationConnections.status,
+      }).from(integrationConnections)
+        .where(and(
+          eq(integrationConnections.companyId, companyId),
+          eq(integrationConnections.status, "connected"),
+        ));
+
+      // Add any ELD providers found in the company's integrations
+      for (const conn of conns) {
+        const slug = (conn.slug || "").toLowerCase();
+        if (!ELD_SLUGS.has(slug) || !conn.apiKey) continue;
+
+        const providerInfo = ELD_PROVIDER_MAP[slug];
+        if (!providerInfo) continue;
+
+        // Use canonical name (motive for keeptruckin)
+        const canonicalSlug = slug === "keeptruckin" ? "motive" : slug;
+        this.providers.set(canonicalSlug, {
+          name: providerInfo.name,
+          apiKey: conn.apiKey,
+          baseUrl: providerInfo.baseUrl,
+          apiSecret: conn.apiSecret || undefined,
+        });
+      }
+
+      this.companyLoadCache.set(companyId, Date.now());
+    } catch (e) {
+      console.error("[ELD] loadProvidersForCompany error:", e);
+    }
+
+    return this.providers.size > 0;
   }
 
   /**
@@ -413,6 +483,7 @@ interface ELDProviderConfig {
   name: string;
   apiKey: string;
   baseUrl: string;
+  apiSecret?: string;
 }
 
 // Export singleton instance

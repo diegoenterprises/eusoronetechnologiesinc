@@ -278,12 +278,130 @@ function computeCurrentHOS(state: HOSState): HOSSummary {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ELD INTEGRATION — Hydrate HOS state from connected ELD device
+// ═══════════════════════════════════════════════════════════════
+
+const ELD_STATUS_MAP: Record<string, DutyStatus> = {
+  OFF: "off_duty", SB: "sleeper", D: "driving", ON: "on_duty",
+  YM: "on_duty", PC: "off_duty",
+};
+
+/**
+ * Try to hydrate HOS state from connected ELD provider.
+ * Returns true if ELD data was available and applied.
+ */
+async function tryHydrateFromELD(userId: number): Promise<boolean> {
+  try {
+    const db = await getDb();
+    if (!db) return false;
+
+    // Get user's companyId
+    const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
+    if (!user?.companyId) return false;
+
+    const { eldService } = await import("./eld");
+    const hasELD = await eldService.loadProvidersForCompany(user.companyId);
+    if (!hasELD) return false;
+
+    // Fetch HOS from ELD API
+    const eldData = await eldService.getDriverHOS(String(userId));
+    if (!eldData) return false;
+
+    // Convert ELD data → HOSState and apply
+    const state = getState(userId);
+    const eldStatus = ELD_STATUS_MAP[eldData.currentStatus] || "off_duty";
+
+    state.status = eldStatus;
+    state.statusStartedAt = eldData.statusSince || new Date().toISOString();
+
+    // ELD provides remaining minutes → convert to used
+    const drivingUsed = HOS_RULES.maxDrivingMinutes - (eldData.hoursAvailable.driving || 0);
+    const onDutyUsed = HOS_RULES.maxOnDutyMinutes - (eldData.hoursAvailable.onDuty || 0);
+    const cycleUsed = HOS_RULES.cycle8DayMinutes - (eldData.hoursAvailable.cycle || 0);
+    const breakUsed = HOS_RULES.breakRequiredAfterMinutes - (eldData.hoursAvailable.breakRemaining || 0);
+
+    state.drivingMinutesToday = Math.max(0, drivingUsed);
+    state.onDutyMinutesToday = Math.max(0, onDutyUsed);
+    state.drivingMinutesSinceReset = Math.max(0, drivingUsed);
+    state.onDutyMinutesSinceReset = Math.max(0, onDutyUsed);
+    state.cycleMinutesUsed = Math.max(0, cycleUsed);
+    state.drivingMinutesSinceBreak = Math.max(0, breakUsed);
+
+    // Convert ELD violations
+    state.violations = (eldData.violations || []).map((v: any) => ({
+      type: v.type === "drive_time" ? "driving_limit" as const :
+            v.type === "on_duty_time" ? "on_duty_limit" as const :
+            v.type === "cycle_time" ? "cycle_limit" as const :
+            v.type === "break" ? "break_required" as const : "driving_limit" as const,
+      description: v.description || "ELD violation",
+      severity: v.severity === "violation" ? "violation" as const : "warning" as const,
+      cfr: "49 CFR 395",
+      detectedAt: v.occurredAt || new Date().toISOString(),
+    }));
+
+    // Convert ELD log entries
+    state.todayLog = (eldData.logs || []).map((log: any) => ({
+      status: ELD_STATUS_MAP[log.status] || "off_duty" as DutyStatus,
+      startTime: log.startTime,
+      endTime: log.endTime || null,
+      duration: formatHM(log.duration || 0),
+      location: log.location,
+    }));
+
+    hosStates.set(userId, state);
+    return true;
+  } catch (e) {
+    // ELD fetch failed — fall back to in-memory
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // PUBLIC API
 // ═══════════════════════════════════════════════════════════════
 
 export function getHOSSummary(userId: number): HOSSummary {
   const state = getState(userId);
   return computeCurrentHOS(state);
+}
+
+/**
+ * ELD-aware HOS summary — tries ELD first, falls back to in-memory.
+ * Use this from all API endpoints that serve HOS data to any user role.
+ */
+export async function getHOSSummaryWithELD(userId: number): Promise<HOSSummary> {
+  // Try to hydrate from connected ELD provider
+  await tryHydrateFromELD(userId);
+  // Compute from (possibly ELD-hydrated) state
+  return getHOSSummary(userId);
+}
+
+/**
+ * ELD-aware duty status change — updates both in-memory and flags for ELD sync.
+ */
+export async function changeDutyStatusWithELD(userId: number, newStatus: DutyStatus, location?: string): Promise<HOSSummary> {
+  // First change locally
+  const summary = changeDutyStatus(userId, newStatus, location);
+
+  // If ELD is connected, attempt to push the status change
+  try {
+    const db = await getDb();
+    if (db) {
+      const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
+      if (user?.companyId) {
+        const { eldService } = await import("./eld");
+        const hasELD = await eldService.loadProvidersForCompany(user.companyId);
+        // Note: Most ELD APIs don't allow pushing status changes via API
+        // (status changes happen on the ELD device itself). This is a
+        // future hook for bidirectional sync when providers support it.
+        if (hasELD) {
+          console.log(`[HOS] Duty status ${newStatus} for user ${userId} — ELD connected, local state updated`);
+        }
+      }
+    }
+  } catch { /* non-critical */ }
+
+  return summary;
 }
 
 export function changeDutyStatus(userId: number, newStatus: DutyStatus, location?: string): HOSSummary {

@@ -11,7 +11,7 @@ import { router, auditedOperationsProcedure, auditedAdminProcedure, sensitiveDat
 import { getDb } from "../db";
 import { users, drivers, loads, vehicles, inspections, documents, certifications, companies } from "../../drizzle/schema";
 import { eq, and, desc, sql, count, avg, gte, or, like } from "drizzle-orm";
-import { getHOSSummary, changeDutyStatus } from "../services/hosEngine";
+import { getHOSSummary, changeDutyStatus, getHOSSummaryWithELD, changeDutyStatusWithELD } from "../services/hosEngine";
 
 const driverStatusSchema = z.enum(["active", "inactive", "suspended", "available", "off_duty", "on_load"]);
 const dutyStatusSchema = z.enum(["off_duty", "sleeper", "driving", "on_duty"]);
@@ -766,26 +766,34 @@ export const driversRouter = router({
     }),
 
   /**
-   * Get HOS status for logged-in driver
+   * Get HOS status for logged-in driver — ELD-aware
+   * If company has a connected ELD (Motive, Samsara, etc.), pulls real data.
+   * Otherwise uses the in-memory HOS engine (49 CFR 395 compliant).
    */
   getMyHOSStatus: auditedOperationsProcedure
     .query(async ({ ctx }) => {
+      const userId = Number(ctx.user?.id) || 0;
+      const summary = await getHOSSummaryWithELD(userId);
       return {
-        status: "driving",
-        drivingRemaining: "6h 30m",
-        onDutyRemaining: "8h 00m",
-        cycleRemaining: "52h 30m",
-        breakRemaining: "2h 00m",
-        drivingToday: 4.5,
-        drivingUsed: 4.5,
-        onDutyToday: 6,
-        onDutyUsed: 6,
-        cycleUsed: 17.5,
-        violation: false,
-        hoursAvailable: { driving: 6.5, onDuty: 8, cycle: 52.5 },
-        violations: [],
-        lastBreak: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        nextBreakRequired: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+        status: summary.status,
+        drivingRemaining: summary.drivingRemaining,
+        onDutyRemaining: summary.onDutyRemaining,
+        cycleRemaining: summary.cycleRemaining,
+        breakRemaining: summary.breakRemaining,
+        drivingToday: summary.drivingToday,
+        drivingUsed: summary.drivingHours,
+        onDutyToday: summary.onDutyToday,
+        onDutyUsed: summary.onDutyHours,
+        cycleUsed: summary.cycleUsed,
+        violation: summary.violations.some(v => v.severity === "violation"),
+        hoursAvailable: summary.hoursAvailable,
+        violations: summary.violations,
+        lastBreak: summary.lastBreak,
+        nextBreakRequired: summary.nextBreakRequired,
+        breakRequired: summary.breakRequired,
+        canDrive: summary.canDrive,
+        canAcceptLoad: summary.canAcceptLoad,
+        todayLog: summary.todayLog,
       };
     }),
 
@@ -969,19 +977,33 @@ export const driversRouter = router({
     }),
 
   /**
-   * Get HOS for specific driver for DriverDetails page
+   * Get HOS for specific driver — ELD-aware
+   * Used by DriverDetails page (dispatch, catalyst, terminal viewing a driver's HOS)
    */
   getHOS: auditedOperationsProcedure
     .input(z.object({ driverId: z.string() }))
     .query(async ({ input }) => {
+      // Resolve the driver record to get the userId
+      const db = await getDb();
+      let userId = parseInt(input.driverId, 10) || 0;
+      if (db) {
+        try {
+          const [driver] = await db.select({ userId: drivers.userId }).from(drivers).where(eq(drivers.id, userId)).limit(1);
+          if (driver?.userId) userId = driver.userId;
+        } catch { /* use driverId as-is */ }
+      }
+      const summary = await getHOSSummaryWithELD(userId);
       return {
-        driverId: input.driverId, status: "off_duty",
-        driving: 0, onDuty: 0, cycle: 0,
-        drivingRemaining: "11h 00m", onDutyRemaining: "14h 00m", cycleRemaining: "70h 00m",
-        breakRemaining: "0h 00m", lastUpdate: new Date().toISOString(),
-        drivingHours: { used: 0, total: 11, remaining: 11 },
-        onDutyHours: { used: 0, total: 14, remaining: 14 },
-        cycleHours: { used: 0, total: 70, remaining: 70 },
+        driverId: input.driverId, status: summary.status,
+        driving: summary.drivingHours, onDuty: summary.onDutyHours, cycle: summary.cycleHours,
+        drivingRemaining: summary.drivingRemaining, onDutyRemaining: summary.onDutyRemaining, cycleRemaining: summary.cycleRemaining,
+        breakRemaining: summary.breakRemaining, lastUpdate: new Date().toISOString(),
+        breakRequired: summary.breakRequired, canDrive: summary.canDrive, canAcceptLoad: summary.canAcceptLoad,
+        violations: summary.violations,
+        drivingHours: { used: summary.drivingHours, total: 11, remaining: summary.hoursAvailable.driving },
+        onDutyHours: { used: summary.onDutyHours, total: 14, remaining: summary.hoursAvailable.onDuty },
+        cycleHours: { used: summary.cycleHours, total: 70, remaining: summary.hoursAvailable.cycle },
+        todayLog: summary.todayLog,
       };
     }),
 
@@ -1144,29 +1166,28 @@ export const driversRouter = router({
     } catch (e) { console.error('[Drivers] getCompletedTrips error:', e); return []; }
   }),
 
-  // HOS — Real tracking via hosEngine
+  // HOS — Real tracking via hosEngine (ELD-aware)
   getHOSAvailability: auditedOperationsProcedure.query(async ({ ctx }) => {
     const userId = Number(ctx.user?.id) || 0;
-    const summary = getHOSSummary(userId);
+    const summary = await getHOSSummaryWithELD(userId);
     return { canDrive: summary.canDrive, canAccept: summary.canAcceptLoad, drivingRemaining: summary.drivingRemaining, dutyRemaining: summary.onDutyRemaining, onDutyRemaining: summary.onDutyRemaining, cycleRemaining: summary.cycleRemaining };
   }),
   getMyHOS: auditedOperationsProcedure.query(async ({ ctx }) => {
     const userId = Number(ctx.user?.id) || 0;
-    return getHOSSummary(userId);
+    return await getHOSSummaryWithELD(userId);
   }),
   startDriving: auditedOperationsProcedure.mutation(async ({ ctx }) => {
     const userId = Number(ctx.user?.id) || 0;
-    const summary = changeDutyStatus(userId, "driving");
+    const summary = await changeDutyStatusWithELD(userId, "driving");
     if (!summary.canDrive && summary.status === "driving") {
-      // Revert — shouldn't have started
-      changeDutyStatus(userId, "on_duty");
+      await changeDutyStatusWithELD(userId, "on_duty");
       return { success: false, message: "Cannot start driving: " + (summary.violations[0]?.description || "HOS limits exceeded") };
     }
     return { success: true, startedAt: new Date().toISOString(), hos: summary };
   }),
   stopDriving: auditedOperationsProcedure.mutation(async ({ ctx }) => {
     const userId = Number(ctx.user?.id) || 0;
-    const summary = changeDutyStatus(userId, "on_duty");
+    const summary = await changeDutyStatusWithELD(userId, "on_duty");
     return { success: true, stoppedAt: new Date().toISOString(), hos: summary };
   }),
 
