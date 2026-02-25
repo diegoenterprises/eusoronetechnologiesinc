@@ -11,6 +11,7 @@
  */
 
 import { useState } from "react";
+import AddressAutocomplete, { ParsedAddress } from "@/components/AddressAutocomplete";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -296,7 +297,7 @@ export default function FacilityPage() {
               <div className="flex items-center gap-2 mb-1"><MapPin className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-slate-800 dark:text-white">Location</span></div>
               {editing ? (
                 <div className="space-y-3">
-                  <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Address</label><Input value={form.address} onChange={(e: any) => setForm({ ...form, address: e.target.value })} className={inp} /></div>
+                  <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Address</label><AddressAutocomplete value={form.address} onChange={(v) => setForm({ ...form, address: v })} onSelect={(parsed: ParsedAddress) => setForm({ ...form, address: parsed.address, city: parsed.city, state: parsed.state, latitude: String(parsed.lat), longitude: String(parsed.lng) })} placeholder="Start typing an address..." className={inp} /></div>
                   <div className="grid grid-cols-2 gap-3">
                     <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">City</label><Input value={form.city} onChange={(e: any) => setForm({ ...form, city: e.target.value })} className={inp} /></div>
                     <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">State</label><Input value={form.state} onChange={(e: any) => setForm({ ...form, state: e.target.value })} className={inp} /></div>

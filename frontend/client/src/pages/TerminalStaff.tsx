@@ -7,6 +7,7 @@
  */
 
 import React, { useState } from "react";
+import AddressAutocomplete, { ParsedAddress } from "@/components/AddressAutocomplete";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -303,7 +304,13 @@ export default function TerminalStaff() {
                     </div>
                     <div className="md:col-span-2">
                       <label className="text-xs text-slate-400 mb-1 block">Address</label>
-                      <Input value={form.locationAddress} onChange={(e: any) => setForm({ ...form, locationAddress: e.target.value })} placeholder="123 Industrial Blvd, Houston, TX 77001" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                      <AddressAutocomplete
+                        value={form.locationAddress}
+                        onChange={(v) => setForm({ ...form, locationAddress: v })}
+                        onSelect={(parsed: ParsedAddress) => setForm({ ...form, locationAddress: parsed.address, locationLat: String(parsed.lat), locationLng: String(parsed.lng) })}
+                        placeholder="Start typing an address..."
+                        className="bg-slate-800/50 border-slate-700/50 rounded-lg"
+                      />
                     </div>
                     <div>
                       <label className="text-xs text-slate-400 mb-1 block">Latitude (for geofence)</label>
@@ -428,7 +435,13 @@ export default function TerminalStaff() {
                     </div>
                     <div className="md:col-span-2">
                       <label className="text-xs text-slate-400 mb-1 block">Address</label>
-                      <Input value={editForm.locationAddress} onChange={(e: any) => setEditForm({ ...editForm, locationAddress: e.target.value })} placeholder="123 Industrial Blvd, Houston, TX 77001" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                      <AddressAutocomplete
+                        value={editForm.locationAddress}
+                        onChange={(v) => setEditForm({ ...editForm, locationAddress: v })}
+                        onSelect={(parsed: ParsedAddress) => setEditForm({ ...editForm, locationAddress: parsed.address, locationLat: String(parsed.lat), locationLng: String(parsed.lng) })}
+                        placeholder="Start typing an address..."
+                        className="bg-slate-800/50 border-slate-700/50 rounded-lg"
+                      />
                     </div>
                     <div>
                       <label className="text-xs text-slate-400 mb-1 block">Latitude (for geofence)</label>

@@ -4,6 +4,7 @@
  * 100% Dynamic - No mock data
  */
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import AddressAutocomplete, { ParsedAddress } from "@/components/AddressAutocomplete";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -366,7 +367,7 @@ export default function CreateLoad() {
               <div className={cn("space-y-4 p-4 rounded-lg", isLight ? "bg-[#1473FF]/5 border border-[#1473FF]/20" : "bg-[#1473FF]/10 border border-[#1473FF]/30")}>
                 <h3 className="text-[#1473FF] font-medium flex items-center gap-2"><MapPin className="w-4 h-4" />Origin / Pickup</h3>
                 <Input value={formData.originName} onChange={e => updateField("originName", e.target.value)} placeholder="Facility Name" className="bg-slate-700/50" />
-                <Input value={formData.originAddress} onChange={e => updateField("originAddress", e.target.value)} placeholder="Address" className="bg-slate-700/50" />
+                <AddressAutocomplete value={formData.originAddress} onChange={(v) => updateField("originAddress", v)} onSelect={(parsed: ParsedAddress) => { updateField("originAddress", parsed.address); updateField("originCity", parsed.city); updateField("originState", parsed.state); updateField("originZip", parsed.zip); }} placeholder="Start typing an address..." className="bg-slate-700/50" />
                 <div className="grid grid-cols-3 gap-2"><Input value={formData.originCity} onChange={e => updateField("originCity", e.target.value)} placeholder="City" className="bg-slate-700/50" /><Input value={formData.originState} onChange={e => updateField("originState", e.target.value)} placeholder="State" className="bg-slate-700/50" /><Input value={formData.originZip} onChange={e => updateField("originZip", e.target.value)} placeholder="ZIP" className="bg-slate-700/50" /></div>
                 <Input value={formData.originContact} onChange={e => updateField("originContact", e.target.value)} placeholder="Contact Name" className="bg-slate-700/50" />
                 <Input value={formData.originPhone} onChange={e => updateField("originPhone", e.target.value)} placeholder="Phone" className="bg-slate-700/50" />
@@ -374,7 +375,7 @@ export default function CreateLoad() {
               <div className={cn("space-y-4 p-4 rounded-lg", isLight ? "bg-[#BE01FF]/5 border border-[#BE01FF]/20" : "bg-[#BE01FF]/10 border border-[#BE01FF]/30")}>
                 <h3 className="text-[#BE01FF] font-medium flex items-center gap-2"><MapPin className="w-4 h-4" />Destination / Drop-off</h3>
                 <Input value={formData.destName} onChange={e => updateField("destName", e.target.value)} placeholder="Facility Name" className="bg-slate-700/50" />
-                <Input value={formData.destAddress} onChange={e => updateField("destAddress", e.target.value)} placeholder="Address" className="bg-slate-700/50" />
+                <AddressAutocomplete value={formData.destAddress} onChange={(v) => updateField("destAddress", v)} onSelect={(parsed: ParsedAddress) => { updateField("destAddress", parsed.address); updateField("destCity", parsed.city); updateField("destState", parsed.state); updateField("destZip", parsed.zip); }} placeholder="Start typing an address..." className="bg-slate-700/50" />
                 <div className="grid grid-cols-3 gap-2"><Input value={formData.destCity} onChange={e => updateField("destCity", e.target.value)} placeholder="City" className="bg-slate-700/50" /><Input value={formData.destState} onChange={e => updateField("destState", e.target.value)} placeholder="State" className="bg-slate-700/50" /><Input value={formData.destZip} onChange={e => updateField("destZip", e.target.value)} placeholder="ZIP" className="bg-slate-700/50" /></div>
                 <Input value={formData.destContact} onChange={e => updateField("destContact", e.target.value)} placeholder="Contact Name" className="bg-slate-700/50" />
                 <Input value={formData.destPhone} onChange={e => updateField("destPhone", e.target.value)} placeholder="Phone" className="bg-slate-700/50" />

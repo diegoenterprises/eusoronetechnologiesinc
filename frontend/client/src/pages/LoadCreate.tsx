@@ -5,6 +5,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
+import AddressAutocomplete, { ParsedAddress } from "@/components/AddressAutocomplete";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import {
@@ -57,10 +58,14 @@ export default function LoadCreatePage() {
     pickupCity: string;
     pickupState: string;
     pickupZip: string;
+    pickupLat: number;
+    pickupLng: number;
     deliveryAddress: string;
     deliveryCity: string;
     deliveryState: string;
     deliveryZip: string;
+    deliveryLat: number;
+    deliveryLng: number;
     pickupDate: string;
     deliveryDate: string;
     rate: string;
@@ -78,10 +83,14 @@ export default function LoadCreatePage() {
     pickupCity: "",
     pickupState: "",
     pickupZip: "",
+    pickupLat: 0,
+    pickupLng: 0,
     deliveryAddress: "",
     deliveryCity: "",
     deliveryState: "",
     deliveryZip: "",
+    deliveryLat: 0,
+    deliveryLng: 0,
     pickupDate: "",
     deliveryDate: "",
     rate: "",
@@ -174,16 +183,16 @@ export default function LoadCreatePage() {
         city: formData.pickupCity,
         state: formData.pickupState,
         zipCode: formData.pickupZip,
-        lat: 0, // TODO: Geocode address
-        lng: 0,
+        lat: formData.pickupLat || 0,
+        lng: formData.pickupLng || 0,
       },
       deliveryLocation: {
         address: formData.deliveryAddress,
         city: formData.deliveryCity,
         state: formData.deliveryState,
         zipCode: formData.deliveryZip,
-        lat: 0, // TODO: Geocode address
-        lng: 0,
+        lat: formData.deliveryLat || 0,
+        lng: formData.deliveryLng || 0,
       },
       pickupDate: formData.pickupDate ? new Date(formData.pickupDate) : undefined,
       deliveryDate: formData.deliveryDate ? new Date(formData.deliveryDate) : undefined,
@@ -420,10 +429,11 @@ export default function LoadCreatePage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium mb-2 text-slate-300">Street Address</label>
-                    <Input
+                    <AddressAutocomplete
                       value={formData.pickupAddress}
-                      onChange={(e: any) => setFormData({ ...formData, pickupAddress: e.target.value })}
-                      placeholder="123 Main St"
+                      onChange={(v) => setFormData({ ...formData, pickupAddress: v })}
+                      onSelect={(parsed: ParsedAddress) => setFormData({ ...formData, pickupAddress: parsed.address, pickupCity: parsed.city, pickupState: parsed.state, pickupZip: parsed.zip, pickupLat: parsed.lat, pickupLng: parsed.lng })}
+                      placeholder="Start typing an address..."
                       className="bg-gray-800 border-gray-700"
                     />
                   </div>
@@ -467,10 +477,11 @@ export default function LoadCreatePage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium mb-2 text-slate-300">Street Address</label>
-                    <Input
+                    <AddressAutocomplete
                       value={formData.deliveryAddress}
-                      onChange={(e: any) => setFormData({ ...formData, deliveryAddress: e.target.value })}
-                      placeholder="456 Oak Ave"
+                      onChange={(v) => setFormData({ ...formData, deliveryAddress: v })}
+                      onSelect={(parsed: ParsedAddress) => setFormData({ ...formData, deliveryAddress: parsed.address, deliveryCity: parsed.city, deliveryState: parsed.state, deliveryZip: parsed.zip, deliveryLat: parsed.lat, deliveryLng: parsed.lng })}
+                      placeholder="Start typing an address..."
                       className="bg-gray-800 border-gray-700"
                     />
                   </div>
