@@ -901,7 +901,7 @@ export default function DashboardLayout({
         </motion.header>
 
         {/* Main Content Area — Domino Cascade Page Transition */}
-        <main className={`flex-1 overflow-y-auto overflow-x-hidden smooth-scroll ${theme === "light" ? "bg-[#f8f9fb]" : "bg-gray-950/50"}`}>
+        <main className={`flex-1 flex flex-col overflow-y-auto overflow-x-hidden smooth-scroll ${theme === "light" ? "bg-[#f8f9fb]" : "bg-gray-950/50"}`}>
           {/* Approval status banner for pending/suspended users */}
           <ApprovalBanner />
 
@@ -919,7 +919,7 @@ export default function DashboardLayout({
           <EsangFloatingButton />
 
           {/* Security Compliance Footer */}
-          <footer className={`border-t backdrop-blur-sm px-4 py-4 mt-4 ${theme === "light" ? "border-slate-200/60 bg-white/80" : "border-gray-800/50 bg-gray-900/40"}`}>
+          <footer className={`border-t backdrop-blur-sm px-4 py-4 mt-auto ${theme === "light" ? "border-slate-200/60 bg-white/80" : "border-gray-800/50 bg-gray-900/40"}`}>
             <div className="max-w-7xl mx-auto">
               <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-3">
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-500/10 border border-green-500/20">
