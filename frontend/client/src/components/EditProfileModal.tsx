@@ -125,8 +125,9 @@ export default function EditProfileModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <Card className="bg-slate-800 border-slate-700 w-full max-w-2xl max-h-96 overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto z-50" onClick={onClose}>
+      <div className="flex min-h-full items-center justify-center p-4">
+      <Card className="bg-slate-800 border-slate-700 w-full max-w-2xl" onClick={(e: any) => e.stopPropagation()}>
         {/* Header */}
         <div className="sticky top-0 bg-slate-800 border-b border-slate-700 p-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white">Edit Profile</h2>
@@ -314,6 +315,7 @@ export default function EditProfileModal({
           </Button>
         </div>
       </Card>
+      </div>
     </div>
   );
 }

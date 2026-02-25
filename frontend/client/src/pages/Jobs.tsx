@@ -654,8 +654,9 @@ export default function JobsPage() {
 
       {/* Bid Modal */}
       {showBidModal && selectedLoad && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <Card className="bg-slate-800 border-slate-700 p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/80 overflow-y-auto z-50" onClick={() => setShowBidModal(false)}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <Card className="bg-slate-800 border-slate-700 p-6 max-w-lg w-full" onClick={(e: any) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">Place Bid</h2>
               <button
@@ -743,13 +744,15 @@ export default function JobsPage() {
               </Button>
             </div>
           </Card>
+          </div>
         </div>
       )}
 
       {/* Negotiation Modal */}
       {showNegotiationModal && selectedLoad && selectedLoad.myBid?.counterOffer && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <Card className="bg-slate-800 border-slate-700 p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/80 overflow-y-auto z-50" onClick={() => setShowNegotiationModal(false)}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <Card className="bg-slate-800 border-slate-700 p-6 max-w-lg w-full" onClick={(e: any) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">Counter Offer Received</h2>
               <button
@@ -826,6 +829,7 @@ export default function JobsPage() {
               </Button>
             </div>
           </Card>
+          </div>
         </div>
       )}
     </div>

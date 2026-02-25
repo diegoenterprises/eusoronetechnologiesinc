@@ -123,8 +123,9 @@ export function DriverAssignment({ load, availableDrivers, onAssign, onCancel }:
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="bg-slate-800 border-slate-700 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/50 overflow-y-auto z-50" onClick={onCancel}>
+      <div className="flex min-h-full items-center justify-center p-4">
+      <Card className="bg-slate-800 border-slate-700 w-full max-w-4xl flex flex-col" onClick={(e: any) => e.stopPropagation()}>
         <CardHeader className="border-b border-slate-700 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
@@ -419,6 +420,7 @@ export function DriverAssignment({ load, availableDrivers, onAssign, onCancel }:
           </div>
         </div>
       </Card>
+      </div>
     </div>
   );
 }

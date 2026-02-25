@@ -384,8 +384,9 @@ function CompanyGrid({
 
 function CompanyDetailModal({ company, onClose }: { company: Company; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="bg-slate-800 border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 overflow-y-auto z-50" onClick={onClose}>
+      <div className="flex min-h-full items-center justify-center p-4">
+      <Card className="bg-slate-800 border-slate-700 w-full max-w-xl" onClick={(e: any) => e.stopPropagation()}>
         <CardHeader className="border-b border-slate-700">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
@@ -477,6 +478,7 @@ function CompanyDetailModal({ company, onClose }: { company: Company; onClose: (
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

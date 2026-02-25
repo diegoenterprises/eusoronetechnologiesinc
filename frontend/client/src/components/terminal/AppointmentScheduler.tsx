@@ -350,8 +350,9 @@ export function AppointmentScheduler({
 
       {/* New Appointment Modal */}
       {showNewAppointment && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="bg-slate-800 border-slate-700 w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 overflow-y-auto z-50" onClick={() => setShowNewAppointment(false)}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <Card className="bg-slate-800 border-slate-700 w-full max-w-lg" onClick={(e: any) => e.stopPropagation()}>
             <CardHeader>
               <CardTitle className="text-white">Schedule Appointment</CardTitle>
             </CardHeader>
@@ -448,6 +449,7 @@ export function AppointmentScheduler({
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
       )}
     </div>
