@@ -30,7 +30,7 @@ interface RoleAccessConfig {
   [page: string]: UserRole[];
 }
 
-// Comprehensive page access configuration for all 9 roles
+// Comprehensive page access configuration for all 12 roles
 const PAGE_ACCESS: RoleAccessConfig = {
   // Dashboard
   "/": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
@@ -43,8 +43,8 @@ const PAGE_ACCESS: RoleAccessConfig = {
   "/catalysts": ["SHIPPER", "BROKER", "ADMIN", "SUPER_ADMIN"],
   
   // Catalyst-specific pages
-  "/marketplace": ["CATALYST", "BROKER", "ADMIN", "SUPER_ADMIN"],
-  "/bids": ["CATALYST", "ADMIN", "SUPER_ADMIN"],
+  "/marketplace": ["CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/bids": ["CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
   "/loads/transit": ["CATALYST", "DRIVER", "ADMIN", "SUPER_ADMIN"],
   "/fleet": ["CATALYST", "ADMIN", "SUPER_ADMIN"],
   "/drivers": ["CATALYST", "ADMIN", "SUPER_ADMIN"],
@@ -57,7 +57,7 @@ const PAGE_ACCESS: RoleAccessConfig = {
   "/navigation": ["DRIVER", "ADMIN", "SUPER_ADMIN"],
   "/vehicle": ["DRIVER", "ADMIN", "SUPER_ADMIN"],
   "/diagnostics": ["DRIVER", "TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
-  "/documents": ["DRIVER", "ADMIN", "SUPER_ADMIN"],
+  "/documents": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   
   // Dispatch-specific pages
   "/specializations": ["DISPATCH", "ADMIN", "SUPER_ADMIN"],
@@ -70,7 +70,14 @@ const PAGE_ACCESS: RoleAccessConfig = {
   "/convoys": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
   "/team": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
   "/escort/incidents": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
-  "/reports": ["ESCORT", "TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/escort/reports": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/escort/jobs": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/escort/marketplace": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/escort/permits": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/escort/schedule": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/escort/earnings": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/escort/certifications": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/reports": ["ESCORT", "TERMINAL_MANAGER", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   
   // Terminal Manager-specific pages
   "/facility": ["TERMINAL_MANAGER", "SHIPPER", "ADMIN", "SUPER_ADMIN"],
@@ -110,11 +117,12 @@ const PAGE_ACCESS: RoleAccessConfig = {
   "/safety/incidents": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/safety/csa-scores": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/safety/driver-performance": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/safety/meetings": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/driver-health": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/vehicle-safety": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/training": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/hazmat": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
-  "/incidents": ["SAFETY_MANAGER", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/incidents": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/accident-report": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
 
   // Shared pages

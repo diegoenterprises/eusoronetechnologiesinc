@@ -888,14 +888,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { 
       icon: "AlertTriangle", 
       label: "Incidents", 
-      path: "/incidents", 
+      path: "/escort/incidents", 
       badge: 0,
       description: "Security incidents"
     },
     { 
       icon: "FileText", 
       label: "Reports", 
-      path: "/reports", 
+      path: "/escort/reports", 
       badge: 0,
       description: "Escort reports"
     },
@@ -1220,6 +1220,34 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Driver certifications"
     },
     { 
+      icon: "FolderOpen", 
+      label: "DQ Files", 
+      path: "/compliance/dq-files", 
+      badge: 0,
+      description: "Driver qualification file management"
+    },
+    { 
+      icon: "CalendarDays", 
+      label: "Compliance Calendar", 
+      path: "/compliance/calendar", 
+      badge: 0,
+      description: "Expiration tracking & renewal deadlines"
+    },
+    { 
+      icon: "Database", 
+      label: "Clearinghouse", 
+      path: "/compliance/clearinghouse", 
+      badge: 0,
+      description: "FMCSA Drug & Alcohol Clearinghouse"
+    },
+    { 
+      icon: "Activity", 
+      label: "ELD Logs", 
+      path: "/compliance/eld", 
+      badge: 0,
+      description: "Electronic logging device compliance"
+    },
+    { 
       icon: "Handshake", 
       label: "My Partners", 
       path: "/partners", 
@@ -1229,9 +1257,9 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { 
       icon: "BarChart3", 
       label: "Reports", 
-      path: "/reports", 
+      path: "/compliance/reports", 
       badge: 0,
-      description: "Compliance reports"
+      description: "Compliance reports & audit summaries"
     },
     { 
       icon: "TrendingUp", 
@@ -1329,18 +1357,39 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Safety training programs"
     },
     { 
+      icon: "BarChart3", 
+      label: "CSA Scores", 
+      path: "/safety/csa-scores", 
+      badge: 0,
+      description: "CSA BASIC scores & SMS monitoring"
+    },
+    { 
+      icon: "Activity", 
+      label: "Driver Performance", 
+      path: "/safety/driver-performance", 
+      badge: 0,
+      description: "Driver safety performance tracking"
+    },
+    { 
+      icon: "FileWarning", 
+      label: "Accident Report", 
+      path: "/accident-report", 
+      badge: 0,
+      description: "File and track accident reports"
+    },
+    { 
+      icon: "Users", 
+      label: "Safety Meetings", 
+      path: "/safety/meetings", 
+      badge: 0,
+      description: "Schedule & document safety meetings"
+    },
+    { 
       icon: "Handshake", 
       label: "My Partners", 
       path: "/partners", 
       badge: 0,
       description: "Companies in your safety program"
-    },
-    { 
-      icon: "BarChart3", 
-      label: "Analytics", 
-      path: "/analytics", 
-      badge: 0,
-      description: "Safety analytics"
     },
     { 
       icon: "AlertCircle", 
@@ -1541,8 +1590,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, demand heatmaps & surge pricing" },
     { icon: "FileText", label: "Audit Logs", path: "/super-admin/logs", badge: 0, description: "System-wide audit trail" },
     { icon: "Database", label: "Database", path: "/super-admin/database", badge: 0, description: "Database health & management" },
+    { icon: "Shield", label: "Security", path: "/super-admin/security", badge: 0, description: "Security settings, 2FA enforcement & threat monitoring" },
     { icon: "Settings", label: "Platform Config", path: "/super-admin/settings", badge: 0, description: "System settings & configuration" },
+    { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Platform-wide messaging" },
     { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
+    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & documentation" },
   ],
 
   // Default/fallback menu
