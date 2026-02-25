@@ -145,7 +145,7 @@ export default function Catalysts() {
       {showInvite && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm">
           <div className="flex min-h-full items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) { setShowInvite(false); resetInviteForm(); } }}>
-          <div className={cn("w-full max-w-2xl rounded-2xl border shadow-2xl flex flex-col overflow-hidden", isLight ? "bg-white border-slate-200" : "bg-[#12121a] border-white/[0.08]")}>
+          <div className={cn("w-full max-w-2xl rounded-2xl border shadow-2xl flex flex-col", isLight ? "bg-white border-slate-200" : "bg-[#12121a] border-white/[0.08]")}>
             {/* Modal Header */}
             <div className="px-6 py-4 border-b shrink-0" style={{ borderColor: isLight ? "#e2e8f0" : "rgba(255,255,255,0.04)" }}>
               <div className="flex items-center justify-between">
@@ -160,7 +160,7 @@ export default function Catalysts() {
             </div>
 
             {/* Modal Body */}
-            <div className="px-6 py-5 space-y-4 flex-1 min-h-0 overflow-y-auto">
+            <div className="px-6 py-5 space-y-4">
               {/* Company Search */}
               <div ref={suggestRef} className="relative">
                 <label className={cn("text-[10px] font-semibold uppercase tracking-wider mb-1 block", isLight ? "text-slate-400" : "text-white/30")}>Company *</label>
