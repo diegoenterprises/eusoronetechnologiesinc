@@ -87,7 +87,7 @@ function getClassesForTrailer(id: string) {
 // Sources: NIST, DOT hazmat tables, industry standards
 // ═══════════════════════════════════════════════════════════════
 const PRODUCT_DENSITY: Record<string, { lbsPerGal: number; label: string }> = {
-  // Petroleum
+  // ── Petroleum ──
   "gasoline": { lbsPerGal: 6.1, label: "Gasoline" },
   "diesel": { lbsPerGal: 7.1, label: "Diesel #2" },
   "diesel fuel": { lbsPerGal: 7.1, label: "Diesel #2" },
@@ -104,10 +104,14 @@ const PRODUCT_DENSITY: Record<string, { lbsPerGal: number; label: string }> = {
   "xylene": { lbsPerGal: 7.2, label: "Xylene" },
   "benzene": { lbsPerGal: 7.3, label: "Benzene" },
   "methanol": { lbsPerGal: 6.6, label: "Methanol" },
-  // Chemicals
+  "styrene": { lbsPerGal: 7.6, label: "Styrene" },
+  "acetaldehyde": { lbsPerGal: 6.5, label: "Acetaldehyde" },
+  // ── Chemicals ──
   "sulfuric acid": { lbsPerGal: 15.3, label: "Sulfuric Acid" },
   "hydrochloric acid": { lbsPerGal: 9.9, label: "Hydrochloric Acid" },
   "phosphoric acid": { lbsPerGal: 14.1, label: "Phosphoric Acid" },
+  "nitric acid": { lbsPerGal: 12.6, label: "Nitric Acid" },
+  "acetic acid": { lbsPerGal: 8.8, label: "Acetic Acid" },
   "sodium hydroxide": { lbsPerGal: 13.4, label: "Caustic Soda 50%" },
   "caustic soda": { lbsPerGal: 13.4, label: "Caustic Soda 50%" },
   "ammonia": { lbsPerGal: 5.15, label: "Anhydrous Ammonia" },
@@ -115,31 +119,137 @@ const PRODUCT_DENSITY: Record<string, { lbsPerGal: number; label: string }> = {
   "hydrogen peroxide": { lbsPerGal: 11.2, label: "H2O2 50%" },
   "acetone": { lbsPerGal: 6.6, label: "Acetone" },
   "isopropanol": { lbsPerGal: 6.5, label: "Isopropyl Alcohol" },
-  // Gases (liquid form)
+  "isopropyl alcohol": { lbsPerGal: 6.5, label: "Isopropyl Alcohol" },
+  "formaldehyde": { lbsPerGal: 9.3, label: "Formaldehyde 37%" },
+  "sodium hypochlorite": { lbsPerGal: 10.0, label: "Bleach (12.5%)" },
+  "ferric chloride": { lbsPerGal: 12.4, label: "Ferric Chloride" },
+  "calcium chloride": { lbsPerGal: 10.8, label: "Calcium Chloride (Liquid)" },
+  "propylene glycol": { lbsPerGal: 8.6, label: "Propylene Glycol" },
+  "ethylene glycol": { lbsPerGal: 9.3, label: "Ethylene Glycol" },
+  // ── Gases (liquid form / cryogenic) ──
   "propane": { lbsPerGal: 4.2, label: "Propane (LPG)" },
   "butane": { lbsPerGal: 4.9, label: "Butane" },
   "lng": { lbsPerGal: 3.5, label: "LNG" },
+  "natural gas": { lbsPerGal: 3.5, label: "LNG" },
   "liquid nitrogen": { lbsPerGal: 6.7, label: "Liquid Nitrogen" },
+  "nitrogen": { lbsPerGal: 6.7, label: "Liquid Nitrogen" },
   "liquid oxygen": { lbsPerGal: 9.5, label: "Liquid Oxygen" },
+  "oxygen": { lbsPerGal: 9.5, label: "Liquid Oxygen" },
   "liquid hydrogen": { lbsPerGal: 0.6, label: "Liquid Hydrogen" },
+  "hydrogen": { lbsPerGal: 0.6, label: "Liquid Hydrogen" },
   "liquid co2": { lbsPerGal: 8.5, label: "Liquid CO2" },
+  "carbon dioxide": { lbsPerGal: 8.5, label: "Liquid CO2" },
   "liquid argon": { lbsPerGal: 11.6, label: "Liquid Argon" },
-  // Food-grade liquids
+  "argon": { lbsPerGal: 11.6, label: "Liquid Argon" },
+  "liquid helium": { lbsPerGal: 1.04, label: "Liquid Helium" },
+  "helium": { lbsPerGal: 1.04, label: "Liquid Helium" },
+  "liquid neon": { lbsPerGal: 10.1, label: "Liquid Neon" },
+  "nitrous oxide": { lbsPerGal: 10.1, label: "Nitrous Oxide" },
+  // ── Food-grade liquids (tank) ──
   "water": { lbsPerGal: 8.34, label: "Water" },
+  "potable water": { lbsPerGal: 8.34, label: "Potable Water" },
   "milk": { lbsPerGal: 8.6, label: "Whole Milk" },
+  "whole milk": { lbsPerGal: 8.6, label: "Whole Milk" },
+  "skim milk": { lbsPerGal: 8.6, label: "Skim Milk" },
+  "condensed milk": { lbsPerGal: 10.7, label: "Condensed Milk" },
+  "cream": { lbsPerGal: 8.4, label: "Heavy Cream" },
+  "whey": { lbsPerGal: 8.5, label: "Liquid Whey" },
+  "liquid eggs": { lbsPerGal: 8.5, label: "Liquid Eggs" },
   "juice": { lbsPerGal: 8.8, label: "Fruit Juice" },
   "orange juice": { lbsPerGal: 8.8, label: "Orange Juice" },
+  "apple juice": { lbsPerGal: 8.8, label: "Apple Juice" },
+  "grape juice": { lbsPerGal: 9.2, label: "Grape Juice Concentrate" },
+  "tomato paste": { lbsPerGal: 9.5, label: "Tomato Paste" },
   "wine": { lbsPerGal: 8.4, label: "Wine" },
   "beer": { lbsPerGal: 8.5, label: "Beer" },
+  "vinegar": { lbsPerGal: 8.4, label: "Vinegar" },
+  "soy sauce": { lbsPerGal: 9.0, label: "Soy Sauce" },
+  "chocolate": { lbsPerGal: 10.5, label: "Liquid Chocolate" },
+  // ── Edible oils ──
   "cooking oil": { lbsPerGal: 7.7, label: "Cooking Oil" },
   "vegetable oil": { lbsPerGal: 7.7, label: "Vegetable Oil" },
   "soybean oil": { lbsPerGal: 7.7, label: "Soybean Oil" },
+  "canola oil": { lbsPerGal: 7.7, label: "Canola Oil" },
   "palm oil": { lbsPerGal: 7.6, label: "Palm Oil" },
+  "coconut oil": { lbsPerGal: 7.6, label: "Coconut Oil" },
+  "corn oil": { lbsPerGal: 7.7, label: "Corn Oil" },
+  "olive oil": { lbsPerGal: 7.6, label: "Olive Oil" },
+  "sunflower oil": { lbsPerGal: 7.7, label: "Sunflower Oil" },
+  "peanut oil": { lbsPerGal: 7.7, label: "Peanut Oil" },
+  "fish oil": { lbsPerGal: 7.7, label: "Fish Oil" },
+  "mct oil": { lbsPerGal: 7.3, label: "MCT Oil" },
+  "tallow": { lbsPerGal: 7.5, label: "Tallow" },
+  "lard": { lbsPerGal: 7.6, label: "Lard" },
+  "shortening": { lbsPerGal: 7.6, label: "Vegetable Shortening" },
+  // ── Sweeteners / syrups ──
   "corn syrup": { lbsPerGal: 11.7, label: "Corn Syrup" },
+  "hfcs": { lbsPerGal: 11.5, label: "HFCS" },
   "liquid sugar": { lbsPerGal: 11.1, label: "Liquid Sugar" },
   "molasses": { lbsPerGal: 11.7, label: "Molasses" },
-  "cream": { lbsPerGal: 8.4, label: "Heavy Cream" },
-  "vinegar": { lbsPerGal: 8.4, label: "Vinegar" },
+  "honey": { lbsPerGal: 11.9, label: "Honey" },
+  "maple syrup": { lbsPerGal: 11.1, label: "Maple Syrup" },
+  "agave nectar": { lbsPerGal: 11.2, label: "Agave Nectar" },
+  "sorbitol": { lbsPerGal: 10.8, label: "Sorbitol Solution" },
+  "glycerin": { lbsPerGal: 10.5, label: "Glycerin" },
+  // ── Dairy alternatives ──
+  "coconut milk": { lbsPerGal: 8.4, label: "Coconut Milk" },
+  "coconut cream": { lbsPerGal: 8.5, label: "Coconut Cream" },
+  "almond milk": { lbsPerGal: 8.5, label: "Almond Milk" },
+  "oat milk": { lbsPerGal: 8.6, label: "Oat Milk" },
+};
+
+// Dry bulk density table — lbs per cubic foot (for Cubic Yards / Cubic Feet / Cubic Meters)
+// Used when unit is Cubic Yards/Feet/Meters AND a bulk product is selected
+const DRY_BULK_DENSITY: Record<string, { lbsPerCuFt: number; label: string }> = {
+  "portland cement": { lbsPerCuFt: 94, label: "Portland Cement" },
+  "cement": { lbsPerCuFt: 94, label: "Portland Cement" },
+  "fly ash": { lbsPerCuFt: 70, label: "Fly Ash" },
+  "calcium carbonate": { lbsPerCuFt: 88, label: "Calcium Carbonate" },
+  "limestone": { lbsPerCuFt: 88, label: "Limestone" },
+  "sand": { lbsPerCuFt: 100, label: "Sand" },
+  "frac sand": { lbsPerCuFt: 100, label: "Frac Sand" },
+  "silica": { lbsPerCuFt: 95, label: "Silica Sand" },
+  "flour": { lbsPerCuFt: 37, label: "Wheat Flour" },
+  "sugar": { lbsPerCuFt: 55, label: "Granulated Sugar" },
+  "powdered sugar": { lbsPerCuFt: 40, label: "Powdered Sugar" },
+  "salt": { lbsPerCuFt: 75, label: "Salt" },
+  "plastic pellets": { lbsPerCuFt: 35, label: "Plastic Pellets" },
+  "polyethylene": { lbsPerCuFt: 35, label: "PE Pellets" },
+  "polypropylene": { lbsPerCuFt: 33, label: "PP Pellets" },
+  "pvc": { lbsPerCuFt: 45, label: "PVC Compound" },
+  "nylon": { lbsPerCuFt: 42, label: "Nylon Pellets" },
+  "soda ash": { lbsPerCuFt: 55, label: "Soda Ash" },
+  "potash": { lbsPerCuFt: 70, label: "Potash" },
+  "urea": { lbsPerCuFt: 46, label: "Urea" },
+  "ammonium sulfate": { lbsPerCuFt: 60, label: "Ammonium Sulfate" },
+  "corn": { lbsPerCuFt: 45, label: "Corn" },
+  "soybeans": { lbsPerCuFt: 47, label: "Soybeans" },
+  "wheat": { lbsPerCuFt: 48, label: "Wheat" },
+  "rice": { lbsPerCuFt: 47, label: "Rice" },
+  "barley": { lbsPerCuFt: 39, label: "Barley" },
+  "oats": { lbsPerCuFt: 26, label: "Oats" },
+  "animal feed": { lbsPerCuFt: 40, label: "Animal Feed" },
+  "soybean meal": { lbsPerCuFt: 40, label: "Soybean Meal" },
+  "bentonite": { lbsPerCuFt: 60, label: "Bentonite Clay" },
+  "kaolin": { lbsPerCuFt: 38, label: "Kaolin Clay" },
+  "barite": { lbsPerCuFt: 135, label: "Barite" },
+  "sodium bicarbonate": { lbsPerCuFt: 54, label: "Sodium Bicarbonate" },
+  "titanium dioxide": { lbsPerCuFt: 55, label: "Titanium Dioxide" },
+  "carbon black": { lbsPerCuFt: 25, label: "Carbon Black" },
+  "alumina": { lbsPerCuFt: 60, label: "Alumina" },
+  "lime": { lbsPerCuFt: 56, label: "Lime" },
+  "hydrated lime": { lbsPerCuFt: 40, label: "Hydrated Lime" },
+  "gypsum": { lbsPerCuFt: 70, label: "Gypsum" },
+  "diatomaceous earth": { lbsPerCuFt: 14, label: "Diatomaceous Earth" },
+  "wood pellets": { lbsPerCuFt: 42, label: "Wood Pellets" },
+  "wood chips": { lbsPerCuFt: 20, label: "Wood Chips" },
+  "sawdust": { lbsPerCuFt: 15, label: "Sawdust" },
+  "perlite": { lbsPerCuFt: 8, label: "Perlite" },
+  "vermiculite": { lbsPerCuFt: 10, label: "Vermiculite" },
+  "glass cullet": { lbsPerCuFt: 90, label: "Glass Cullet" },
+  "starch": { lbsPerCuFt: 42, label: "Starch" },
+  "maltodextrin": { lbsPerCuFt: 35, label: "Maltodextrin" },
+  "protein powder": { lbsPerCuFt: 30, label: "Protein Powder" },
 };
 
 // Unit conversion factors to lbs
@@ -160,26 +270,29 @@ const UNIT_WEIGHT_FACTORS: Record<string, number> = {
   "PSI Units": 0,        // no direct weight conversion
 };
 
-function lookupDensity(productName: string): { lbsPerGal: number; label: string } | null {
+function fuzzyMatch<T extends { label: string }>(table: Record<string, T>, productName: string): T | null {
   if (!productName) return null;
   const key = productName.toLowerCase().trim();
-  // Exact match
-  if (PRODUCT_DENSITY[key]) return PRODUCT_DENSITY[key];
-  // Substring match
-  for (const [k, v] of Object.entries(PRODUCT_DENSITY)) {
+  if (table[key]) return table[key];
+  for (const [k, v] of Object.entries(table)) {
     if (key.includes(k) || k.includes(key)) return v;
   }
-  // Word-based match — all words in density key appear in product name
-  // Handles ERG names like "Nitrogen, refrigerated liquid" matching "liquid nitrogen"
-  for (const [k, v] of Object.entries(PRODUCT_DENSITY)) {
+  for (const [k, v] of Object.entries(table)) {
     const keyWords = k.split(/\s+/);
     if (keyWords.length >= 1 && keyWords.every(w => key.includes(w))) return v;
   }
-  // Single dominant keyword match (for short keys like "lng", "propane", "ethanol")
-  for (const [k, v] of Object.entries(PRODUCT_DENSITY)) {
+  for (const [k, v] of Object.entries(table)) {
     if (k.length >= 3 && key.split(/[\s,()]+/).some(w => w === k)) return v;
   }
   return null;
+}
+
+function lookupDensity(productName: string): { lbsPerGal: number; label: string } | null {
+  return fuzzyMatch(PRODUCT_DENSITY, productName);
+}
+
+function lookupBulkDensity(productName: string): { lbsPerCuFt: number; label: string } | null {
+  return fuzzyMatch(DRY_BULK_DENSITY, productName);
 }
 
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
@@ -636,12 +749,32 @@ export default function LoadCreationWizard() {
   // ML Engine — rate prediction + ETA + anomaly detection
   const mlOriginState = (originParts[1] || originParts[0] || "").replace(/\s+/g, "").substring(0, 2).toUpperCase();
   const mlDestState = (destParts[1] || destParts[0] || "").replace(/\s+/g, "").substring(0, 2).toUpperCase();
+  // Granular cargo type for ML engine — matches cargoRiskFactors keys in mlEngine.ts
+  const mlCargoType = (() => {
+    if (selectedTrailer?.hazmat) {
+      // Differentiate hazmat sub-types for more precise risk factors
+      switch (formData.trailerType) {
+        case "liquid_tank": return "petroleum";
+        case "gas_tank": return "gas";
+        case "cryogenic": return "gas";
+        case "hazmat_van": return "chemicals";
+        default: return "hazmat";
+      }
+    }
+    switch (formData.trailerType) {
+      case "reefer": return "refrigerated";
+      case "food_grade_tank": return "liquid";
+      case "water_tank": return "liquid";
+      case "flatbed": return "oversized";
+      default: return "general";
+    }
+  })();
   const mlRatePrediction = (trpc as any).ml?.predictRate?.useQuery?.(
-    { originState: mlOriginState, destState: mlDestState, distance: formData.distance || 0, weight: Number(formData.weight) || undefined, equipmentType: rateEquipmentType, cargoType: selectedTrailer?.hazmat ? "hazmat" : "general" },
+    { originState: mlOriginState, destState: mlDestState, distance: formData.distance || 0, weight: Number(formData.weight) || undefined, equipmentType: rateEquipmentType, cargoType: mlCargoType },
     { enabled: rs >= 6 && !!mlOriginState && !!mlDestState && (formData.distance || 0) > 0, staleTime: 120_000 }
   ) || { data: null };
   const mlETA = (trpc as any).ml?.predictETA?.useQuery?.(
-    { originState: mlOriginState, destState: mlDestState, distance: formData.distance || 0, equipmentType: rateEquipmentType, cargoType: selectedTrailer?.hazmat ? "hazmat" : "general", pickupDate: formData.pickupDate },
+    { originState: mlOriginState, destState: mlDestState, distance: formData.distance || 0, equipmentType: rateEquipmentType, cargoType: mlCargoType, pickupDate: formData.pickupDate },
     { enabled: rs >= 5 && !!mlOriginState && !!mlDestState && (formData.distance || 0) > 0, staleTime: 120_000 }
   ) || { data: null };
   const mlAnomalies = (trpc as any).ml?.detectAnomalies?.useQuery?.(
@@ -651,28 +784,66 @@ export default function LoadCreationWizard() {
 
   const updateField = (field: string, value: any) => setFormData((prev: any) => ({ ...prev, [field]: value }));
 
+  // Unified weight calculator — handles ALL trailer/product/unit combos
+  // Returns { weight, source } or null if no calc possible
+  const calcWeightResult = useCallback((qty: number, unit: string, productName: string): { weight: number; source: string } | null => {
+    if (qty <= 0) return null;
+
+    // 1. Liquid volume units → use PRODUCT_DENSITY (lbs/gal)
+    if (unit === "Gallons" || unit === "Barrels" || unit === "Liters") {
+      const density = lookupDensity(productName);
+      if (density) {
+        let gallons = qty;
+        if (unit === "Barrels") gallons = qty * 42;
+        if (unit === "Liters") gallons = qty * 0.2642;
+        return { weight: Math.round(gallons * density.lbsPerGal), source: `${density.label} @ ${density.lbsPerGal} lbs/gal` };
+      }
+    }
+
+    // 2. Cubic volume units → use DRY_BULK_DENSITY if product matches, else generic factor
+    if (unit === "Cubic Yards" || unit === "Cubic Feet" || unit === "Cubic Meters") {
+      const bulk = lookupBulkDensity(productName);
+      if (bulk) {
+        let cuFt = qty;
+        if (unit === "Cubic Yards") cuFt = qty * 27;
+        if (unit === "Cubic Meters") cuFt = qty * 35.315;
+        return { weight: Math.round(cuFt * bulk.lbsPerCuFt), source: `${bulk.label} @ ${bulk.lbsPerCuFt} lbs/cu ft` };
+      }
+      // Fall through to generic UNIT_WEIGHT_FACTORS
+    }
+
+    // 3. Tons → exact conversion (no estimation needed)
+    if (unit === "Tons") return { weight: qty * 2000, source: "1 ton = 2,000 lbs" };
+
+    // 4. Drums → use product density if available (55 gal drum)
+    if (unit === "Drums") {
+      const density = lookupDensity(productName);
+      if (density) {
+        return { weight: Math.round(qty * 55 * density.lbsPerGal), source: `${density.label} @ ${density.lbsPerGal} lbs/gal × 55 gal/drum` };
+      }
+      return { weight: Math.round(qty * 600), source: "Est. 600 lbs/drum (55 gal avg)" };
+    }
+
+    // 5. Generic unit factors (Pallets, Cases, Boxes, Pieces, Bundles, Linear Feet, etc.)
+    const factor = UNIT_WEIGHT_FACTORS[unit];
+    if (factor && factor > 0) {
+      return { weight: Math.round(qty * factor), source: `Est. ${factor.toLocaleString()} lbs/${unit.toLowerCase().replace(/s$/, "")}` };
+    }
+
+    return null;
+  }, []);
+
   // Recalculate weight when product name changes (density might now match)
   const recalcWeightFromProduct = useCallback((newProductName: string) => {
     setFormData((prev: any) => {
       const qtyNum = Number(prev.quantity) || 0;
       if (qtyNum <= 0) return prev;
       const unit = prev.quantityUnit || getDefaultUnit(prev.trailerType || "");
-      if (unit === "Gallons" || unit === "Barrels" || unit === "Liters") {
-        const density = lookupDensity(newProductName);
-        if (density) {
-          let gallons = qtyNum;
-          if (unit === "Barrels") gallons = qtyNum * 42;
-          if (unit === "Liters") gallons = qtyNum * 0.2642;
-          const calcWeight = Math.round(gallons * density.lbsPerGal);
-          return { ...prev, weight: String(calcWeight), weightAutoCalc: true, weightSource: `${density.label} @ ${density.lbsPerGal} lbs/gal` };
-        }
-      } else if (UNIT_WEIGHT_FACTORS[unit] && UNIT_WEIGHT_FACTORS[unit] > 0) {
-        const calcWeight = Math.round(qtyNum * UNIT_WEIGHT_FACTORS[unit]);
-        return { ...prev, weight: String(calcWeight), weightAutoCalc: true, weightSource: `Est. ${UNIT_WEIGHT_FACTORS[unit].toLocaleString()} lbs/${unit.toLowerCase().replace(/s$/, "")}` };
-      }
+      const result = calcWeightResult(qtyNum, unit, newProductName);
+      if (result) return { ...prev, weight: String(result.weight), weightAutoCalc: true, weightSource: result.source };
       return prev;
     });
-  }, []);
+  }, [calcWeightResult]);
 
   const getMaterialType = () => selectedTrailer?.animType || "liquid";
 
@@ -1108,51 +1279,14 @@ export default function LoadCreationWizard() {
                     <Input type="number" value={formData.quantity || ""} onChange={(e: any) => {
                       const qty = e.target.value;
                       updateField("quantity", qty);
-                      // Auto-calculate weight from quantity + product density
-                      const qtyNum = Number(qty) || 0;
-                      if (qtyNum > 0) {
-                        const unit = formData.quantityUnit || currentUnit;
-                        if (unit === "Gallons" || unit === "Barrels" || unit === "Liters") {
-                          const density = lookupDensity(formData.productName || "");
-                          if (density) {
-                            let gallons = qtyNum;
-                            if (unit === "Barrels") gallons = qtyNum * 42;
-                            if (unit === "Liters") gallons = qtyNum * 0.2642;
-                            const calcWeight = Math.round(gallons * density.lbsPerGal);
-                            updateField("weight", String(calcWeight));
-                            updateField("weightAutoCalc", true);
-                            updateField("weightSource", `${density.label} @ ${density.lbsPerGal} lbs/gal`);
-                          }
-                        } else if (UNIT_WEIGHT_FACTORS[unit] && UNIT_WEIGHT_FACTORS[unit] > 0) {
-                          const calcWeight = Math.round(qtyNum * UNIT_WEIGHT_FACTORS[unit]);
-                          updateField("weight", String(calcWeight));
-                          updateField("weightAutoCalc", true);
-                          updateField("weightSource", `Est. ${UNIT_WEIGHT_FACTORS[unit].toLocaleString()} lbs/${unit.toLowerCase().replace(/s$/, "")}`);
-                        }
-                      }
+                      const result = calcWeightResult(Number(qty) || 0, formData.quantityUnit || currentUnit, formData.productName || "");
+                      if (result) { updateField("weight", String(result.weight)); updateField("weightAutoCalc", true); updateField("weightSource", result.source); }
                     }}
                       placeholder={getPlaceholder(formData.trailerType || "")} className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
                     <Select value={currentUnit} onValueChange={(v: any) => {
                       updateField("quantityUnit", v);
-                      // Recalculate weight when unit changes
-                      const qtyNum = Number(formData.quantity) || 0;
-                      if (qtyNum > 0) {
-                        if (v === "Gallons" || v === "Barrels" || v === "Liters") {
-                          const density = lookupDensity(formData.productName || "");
-                          if (density) {
-                            let gallons = qtyNum;
-                            if (v === "Barrels") gallons = qtyNum * 42;
-                            if (v === "Liters") gallons = qtyNum * 0.2642;
-                            updateField("weight", String(Math.round(gallons * density.lbsPerGal)));
-                            updateField("weightAutoCalc", true);
-                            updateField("weightSource", `${density.label} @ ${density.lbsPerGal} lbs/gal`);
-                          }
-                        } else if (UNIT_WEIGHT_FACTORS[v] && UNIT_WEIGHT_FACTORS[v] > 0) {
-                          updateField("weight", String(Math.round(qtyNum * UNIT_WEIGHT_FACTORS[v])));
-                          updateField("weightAutoCalc", true);
-                          updateField("weightSource", `Est. ${UNIT_WEIGHT_FACTORS[v].toLocaleString()} lbs/${v.toLowerCase().replace(/s$/, "")}`);
-                        }
-                      }
+                      const result = calcWeightResult(Number(formData.quantity) || 0, v, formData.productName || "");
+                      if (result) { updateField("weight", String(result.weight)); updateField("weightAutoCalc", true); updateField("weightSource", result.source); }
                     }}>
                       <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -1899,7 +2033,15 @@ export default function LoadCreationWizard() {
               {formData.distance && (formData.rate || formData.ratePerMile) && (() => {
                 const hz = hzQuoteQuery.data;
                 const hzRate = hz?.pricing?.ratePerMile || 0;
-                const marketRPM = hzRate > 0 ? hzRate : (selectedTrailer?.hazmat ? 4.20 : selectedTrailer?.equipment === "reefer" ? 3.10 : selectedTrailer?.equipment === "flatbed" ? 2.90 : 2.50) * (formData.distance < 200 ? 1.25 : formData.distance < 500 ? 1.0 : 0.85);
+                // Fallback base rates by equipment type (mirrors EQUIPMENT_RATES in quotes.ts)
+                const FALLBACK_BASE_RPM: Record<string, number> = {
+                  tanker: 3.05, mc331: 3.45, mc338: 3.85, dry_van: 2.65,
+                  flatbed: 2.95, reefer: 3.15, hopper: 2.85, hazmat_van: 3.10,
+                  food_grade: 2.90, lowboy: 3.55,
+                };
+                const distAdj = formData.distance < 200 ? 1.25 : formData.distance < 500 ? 1.0 : 0.85;
+                const fallbackRPM = (FALLBACK_BASE_RPM[rateEquipmentType] || 2.65) * distAdj;
+                const marketRPM = hzRate > 0 ? hzRate : fallbackRPM;
                 const marketLow = hz?.marketComparison ? Math.round((hz.marketComparison.low / Math.max(formData.distance, 1)) * 100) / 100 : Math.round(marketRPM * 0.85 * 100) / 100;
                 const marketHigh = hz?.marketComparison ? Math.round((hz.marketComparison.high / Math.max(formData.distance, 1)) * 100) / 100 : Math.round(marketRPM * 1.18 * 100) / 100;
                 const userRPM = Number(formData.ratePerMile || (Number(formData.rate) / formData.distance).toFixed(2));
