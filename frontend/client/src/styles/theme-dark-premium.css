@@ -201,10 +201,27 @@
 .dark input[type="tel"],
 .dark input[type="url"],
 .dark input[type="search"],
+.dark input[type="time"],
+.dark input[type="date"],
+.dark input[type="datetime-local"],
 .dark textarea {
   background-color: rgba(255, 255, 255, 0.03) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
   color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* Native time/date picker icon + dropdown in dark mode */
+.dark input[type="time"]::-webkit-calendar-picker-indicator,
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+  cursor: pointer;
+  opacity: 0.6;
+}
+.dark input[type="time"]::-webkit-calendar-picker-indicator:hover,
+.dark input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 /* Native <select> — slightly more opaque so closed state is visible */

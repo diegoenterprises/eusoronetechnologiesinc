@@ -102,6 +102,16 @@ html[data-theme="light"] .placeholder-slate-500::placeholder { color: #94a3b8 !i
 html[data-theme="light"] .placeholder-gray-500::placeholder { color: #94a3b8 !important; }
 html[data-theme="light"] input::placeholder { color: #94a3b8 !important; }
 
+/* Native time/date inputs — proper light mode styling */
+html[data-theme="light"] input[type="time"],
+html[data-theme="light"] input[type="date"],
+html[data-theme="light"] input[type="datetime-local"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  border-radius: 0.75rem;
+}
+
 /* Native <select> — proper light mode styling */
 html[data-theme="light"] select {
   background-color: #ffffff !important;

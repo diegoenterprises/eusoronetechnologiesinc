@@ -88,8 +88,8 @@ export default function Weather({ location: locationProp, compact = false, expan
       setLoading(true);
       setError(null);
 
-      const WEATHER_API_KEY = "2b6bcedb6cba2356a4ea3706a846cfef";
-      const GEO_API_KEY = "5ed712c5a70c46e78d0accde281edcc9";
+      const WEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || "";
+      const GEO_API_KEY = import.meta.env.VITE_IPGEO_API_KEY || "";
       
       let lat: number = 27.9506; // Default Tampa
       let lon: number = -82.4572;
@@ -108,7 +108,7 @@ export default function Weather({ location: locationProp, compact = false, expan
             cityName = `${geoData[0].name}, ${geoData[0].country}`;
           }
         } catch (e) {
-          console.log("Geocoding failed, using device location");
+          // Geocoding failed, using device location
         }
       } else {
         // 1) Try browser geolocation (most accurate - uses device GPS/WiFi)
@@ -122,7 +122,7 @@ export default function Weather({ location: locationProp, compact = false, expan
           cityName = ""; // Will be filled from weather API response
           gotBrowserLocation = true;
         } catch (e) {
-          console.log("Browser geolocation unavailable, trying IP geolocation");
+          // Browser geolocation unavailable, trying IP geolocation
         }
 
         // 2) Fallback to IP geolocation
@@ -138,7 +138,7 @@ export default function Weather({ location: locationProp, compact = false, expan
               cityName = `${ipGeoData.city}, ${ipGeoData.country_code2}`;
             }
           } catch (e) {
-            console.log("IP geolocation failed, using default location");
+            // IP geolocation failed, using default location
           }
         }
       }
