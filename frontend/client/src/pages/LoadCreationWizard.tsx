@@ -165,9 +165,19 @@ function lookupDensity(productName: string): { lbsPerGal: number; label: string 
   const key = productName.toLowerCase().trim();
   // Exact match
   if (PRODUCT_DENSITY[key]) return PRODUCT_DENSITY[key];
-  // Partial match
+  // Substring match
   for (const [k, v] of Object.entries(PRODUCT_DENSITY)) {
     if (key.includes(k) || k.includes(key)) return v;
+  }
+  // Word-based match — all words in density key appear in product name
+  // Handles ERG names like "Nitrogen, refrigerated liquid" matching "liquid nitrogen"
+  for (const [k, v] of Object.entries(PRODUCT_DENSITY)) {
+    const keyWords = k.split(/\s+/);
+    if (keyWords.length >= 1 && keyWords.every(w => key.includes(w))) return v;
+  }
+  // Single dominant keyword match (for short keys like "lng", "propane", "ethanol")
+  for (const [k, v] of Object.entries(PRODUCT_DENSITY)) {
+    if (k.length >= 3 && key.split(/[\s,()]+/).some(w => w === k)) return v;
   }
   return null;
 }
@@ -628,6 +638,29 @@ export default function LoadCreationWizard() {
 
   const updateField = (field: string, value: any) => setFormData((prev: any) => ({ ...prev, [field]: value }));
 
+  // Recalculate weight when product name changes (density might now match)
+  const recalcWeightFromProduct = useCallback((newProductName: string) => {
+    setFormData((prev: any) => {
+      const qtyNum = Number(prev.quantity) || 0;
+      if (qtyNum <= 0) return prev;
+      const unit = prev.quantityUnit || getDefaultUnit(prev.trailerType || "");
+      if (unit === "Gallons" || unit === "Barrels" || unit === "Liters") {
+        const density = lookupDensity(newProductName);
+        if (density) {
+          let gallons = qtyNum;
+          if (unit === "Barrels") gallons = qtyNum * 42;
+          if (unit === "Liters") gallons = qtyNum * 0.2642;
+          const calcWeight = Math.round(gallons * density.lbsPerGal);
+          return { ...prev, weight: String(calcWeight), weightAutoCalc: true, weightSource: `${density.label} @ ${density.lbsPerGal} lbs/gal` };
+        }
+      } else if (UNIT_WEIGHT_FACTORS[unit] && UNIT_WEIGHT_FACTORS[unit] > 0) {
+        const calcWeight = Math.round(qtyNum * UNIT_WEIGHT_FACTORS[unit]);
+        return { ...prev, weight: String(calcWeight), weightAutoCalc: true, weightSource: `Est. ${UNIT_WEIGHT_FACTORS[unit].toLocaleString()} lbs/${unit.toLowerCase().replace(/s$/, "")}` };
+      }
+      return prev;
+    });
+  }, []);
+
   const getMaterialType = () => selectedTrailer?.animType || "liquid";
 
   const selectMaterial = useCallback((material: any) => {
@@ -641,10 +674,12 @@ export default function LoadCreationWizard() {
     updateField("spectraVerified", true);
     setShowSuggestions(false);
     setShowUNSuggestions(false);
+    // Auto-recalculate weight from new product density
+    recalcWeightFromProduct(material.name);
     toast.success("SPECTRA-MATCH Verified", {
       description: `${material.name} -- UN${material.unNumber} (Class ${material.hazardClass}) Guide ${material.guide}`,
     });
-  }, []);
+  }, [recalcWeightFromProduct]);
 
   const handleProductNameChange = useCallback((value: string) => {
     updateField("productName", value);
@@ -911,6 +946,7 @@ export default function LoadCreationWizard() {
                                   updateField("freightClass", p.freightClass || "");
                                   setProductDropdownSearch("");
                                   setShowProductDropdown(false);
+                                  recalcWeightFromProduct(p.name);
                                   if (p.notes) toast.info(p.name, { description: p.notes });
                                 }}>
                                 <div className="flex-1 min-w-0">
