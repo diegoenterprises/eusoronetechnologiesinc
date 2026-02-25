@@ -766,7 +766,8 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
             <radialGradient id="gz-sel"><stop offset="0%" stopColor="#1473FF" stopOpacity="0.6" /><stop offset="40%" stopColor="#BE01FF" stopOpacity="0.25" /><stop offset="100%" stopColor="#BE01FF" stopOpacity="0" /></radialGradient>
             <filter id="mapGlow"><feGaussianBlur stdDeviation="3.5" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
             <filter id="heatGlow"><feGaussianBlur stdDeviation="6" result="b" /><feColorMatrix in="b" type="saturate" values="1.8" result="s" /><feMerge><feMergeNode in="s" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
-            <radialGradient id="gz-lidar"><stop offset="0%" stopColor="#00FF88" stopOpacity="0.5" /><stop offset="40%" stopColor="#00CC66" stopOpacity="0.2" /><stop offset="100%" stopColor="#00FF88" stopOpacity="0" /></radialGradient>
+            <radialGradient id="gz-lidar"><stop offset="0%" stopColor="#1473FF" stopOpacity="0.5" /><stop offset="40%" stopColor="#BE01FF" stopOpacity="0.25" /><stop offset="100%" stopColor="#BE01FF" stopOpacity="0" /></radialGradient>
+            <linearGradient id="eusoRoadGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#1473FF" /><stop offset="100%" stopColor="#BE01FF" /></linearGradient>
             <filter id="lidarGlow"><feGaussianBlur stdDeviation="4" result="b" /><feColorMatrix in="b" type="saturate" values="2" result="s" /><feMerge><feMergeNode in="s" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
           </defs>
 
@@ -836,8 +837,8 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                 // Width based on road type
                 const baseWidth = seg.roadType === "interstate" ? 1.8 : seg.roadType === "us_highway" ? 1.4 : seg.roadType === "state_highway" ? 1.1 : 0.8;
                 // Color based on congestion or hazmat
-                const color = seg.hasHazmat ? "#FF6B35" : seg.congestion === "heavy" || seg.congestion === "stopped" ? "#EF4444" : seg.congestion === "moderate" ? "#FBBF24" : "#00FF88";
-                const glowColor = seg.hasHazmat ? "#FF6B3540" : "#00FF8830";
+                const color = seg.hasHazmat ? "#FF6B35" : seg.congestion === "heavy" || seg.congestion === "stopped" ? "#EF4444" : seg.congestion === "moderate" ? "#FBBF24" : `hsl(${260 - intensity * 30}, 100%, ${55 + intensity * 15}%)`;
+                const glowColor = seg.hasHazmat ? "#FF6B3540" : "rgba(20,115,255,0.19)";
                 return (
                   <g key={`rs-${seg.id}`}>
                     {/* Glow underline */}
@@ -850,7 +851,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                       opacity={0.4 + intensity * 0.55} />
                     {/* Road name label at high zoom */}
                     {detail === "hi" && seg.roadName && seg.traversalCount > 10 && (
-                      <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - s(2)} fontSize={s(3)} fill="#00FF88" opacity={0.6}
+                      <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - s(2)} fontSize={s(3)} fill="#A855F7" opacity={0.6}
                         textAnchor="middle" fontWeight="600">{seg.roadName}</text>
                     )}
                   </g>
@@ -866,17 +867,17 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                 return (
                   <g key={`lp-${ping.driverId}-${i}`}>
                     {/* Outer pulse ring */}
-                    <circle cx={px} cy={py} r={s(4)} fill="none" stroke="#00FF88" strokeWidth={s(0.4)} opacity={0.4}>
+                    <circle cx={px} cy={py} r={s(4)} fill="none" stroke="#BE01FF" strokeWidth={s(0.4)} opacity={0.4}>
                       <animate attributeName="r" values={`${s(2)};${s(6)};${s(2)}`} dur="2s" repeatCount="indefinite" />
                       <animate attributeName="opacity" values="0.5;0.1;0.5" dur="2s" repeatCount="indefinite" />
                     </circle>
                     {/* Inner dot — the driver position */}
-                    <circle cx={px} cy={py} r={s(1.5)} fill="#00FF88" opacity={0.9} filter="url(#lidarGlow)">
+                    <circle cx={px} cy={py} r={s(1.5)} fill="url(#eusoRoadGrad)" opacity={0.9} filter="url(#lidarGlow)">
                       <animate attributeName="opacity" values="0.9;0.6;0.9" dur="1.5s" repeatCount="indefinite" />
                     </circle>
                     {/* Speed label at high zoom */}
                     {detail === "hi" && ping.speed != null && ping.speed > 0 && (
-                      <text x={px + s(3)} y={py - s(2)} fontSize={s(3)} fill="#00FF88" opacity={0.7} fontWeight="600">
+                      <text x={px + s(3)} y={py - s(2)} fontSize={s(3)} fill="#A855F7" opacity={0.7} fontWeight="600">
                         {Math.round(ping.speed)} mph
                       </text>
                     )}
@@ -889,12 +890,12 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
           {showLidar && roadIntel?.stats && (roadIntel.stats.totalSegments > 0 || roadIntel.stats.liveDrivers > 0) && (
             <g className="select-none pointer-events-none">
               <rect x={vb.x + s(8)} y={vb.y + vb.h - s(28)} width={s(60)} height={s(22)} rx={s(4)}
-                fill={isLight ? "rgba(0,40,20,0.85)" : "rgba(0,20,10,0.92)"} stroke="#00FF88" strokeWidth={s(0.4)} opacity={0.9} />
-              <text x={vb.x + s(12)} y={vb.y + vb.h - s(21)} fontSize={s(4)} fill="#00FF88" fontWeight="700">ROAD INTELLIGENCE</text>
-              <text x={vb.x + s(12)} y={vb.y + vb.h - s(15)} fontSize={s(3.2)} fill="#00CC66" opacity={0.8}>
+                fill={isLight ? "rgba(10,15,40,0.88)" : "rgba(8,10,30,0.92)"} stroke="#1473FF" strokeWidth={s(0.4)} opacity={0.9} />
+              <text x={vb.x + s(12)} y={vb.y + vb.h - s(21)} fontSize={s(4)} fill="#1473FF" fontWeight="700">ROAD INTELLIGENCE</text>
+              <text x={vb.x + s(12)} y={vb.y + vb.h - s(15)} fontSize={s(3.2)} fill="#A855F7" opacity={0.8}>
                 {roadIntel.stats.totalSegments.toLocaleString()} segments • {roadIntel.stats.totalMiles.toLocaleString()} mi mapped
               </text>
-              <text x={vb.x + s(12)} y={vb.y + vb.h - s(10)} fontSize={s(3.2)} fill="#00CC66" opacity={0.8}>
+              <text x={vb.x + s(12)} y={vb.y + vb.h - s(10)} fontSize={s(3.2)} fill="#A855F7" opacity={0.8}>
                 {roadIntel.stats.liveDrivers} live driver{roadIntel.stats.liveDrivers !== 1 ? "s" : ""} mapping
               </text>
             </g>
@@ -1576,17 +1577,17 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                       <circle cx={zx} cy={zy} r={lidarR} fill="url(#gz-lidar)" opacity={0.3 + intensity * 0.5} filter="url(#lidarGlow)">
                         <animate attributeName="opacity" values={`${0.2 + intensity * 0.3};${0.4 + intensity * 0.5};${0.2 + intensity * 0.3}`} dur="3s" repeatCount="indefinite" />
                       </circle>
-                      <circle cx={zx} cy={zy} r={r + s(3)} fill="none" stroke="#00FF88" strokeWidth={s(0.6 + intensity)} strokeDasharray={`${s(2)} ${s(1.5)}`} opacity={0.6}>
+                      <circle cx={zx} cy={zy} r={r + s(3)} fill="none" stroke="#BE01FF" strokeWidth={s(0.6 + intensity)} strokeDasharray={`${s(2)} ${s(1.5)}`} opacity={0.6}>
                         <animate attributeName="stroke-dashoffset" values={`0;${s(7)}`} dur="4s" repeatCount="indefinite" />
                       </circle>
                       {detail !== "lo" && (
                         <>
-                          <rect x={zx + r + s(14)} y={zy - s(16)} width={s(36)} height={s(32)} rx={s(3)} fill={isLight ? "rgba(0,40,20,0.85)" : "rgba(0,20,10,0.9)"} stroke="#00FF88" strokeWidth={s(0.4)} opacity={0.9} />
-                          <text x={zx + r + s(16)} y={zy - s(9)} fontSize={s(3.5)} fill="#00FF88" fontWeight="700" opacity={0.9}>LIDAR</text>
-                          <text x={zx + r + s(16)} y={zy - s(4)} fontSize={s(3)} fill="#00CC66" opacity={0.75}>{density} pings</text>
-                          <text x={zx + r + s(16)} y={zy + s(1)} fontSize={s(3)} fill="#00CC66" opacity={0.75}>{avgSpd > 0 ? `${avgSpd.toFixed(0)} mph avg` : "No speed"}</text>
-                          <text x={zx + r + s(16)} y={zy + s(6)} fontSize={s(3)} fill="#00CC66" opacity={0.75}>{lanes} lanes</text>
-                          <text x={zx + r + s(16)} y={zy + s(11)} fontSize={s(3)} fill="#00CC66" opacity={0.75}>{reports} routes</text>
+                          <rect x={zx + r + s(14)} y={zy - s(16)} width={s(36)} height={s(32)} rx={s(3)} fill={isLight ? "rgba(10,15,40,0.88)" : "rgba(8,10,30,0.92)"} stroke="#1473FF" strokeWidth={s(0.4)} opacity={0.9} />
+                          <text x={zx + r + s(16)} y={zy - s(9)} fontSize={s(3.5)} fill="#1473FF" fontWeight="700" opacity={0.9}>EUSO ROADS</text>
+                          <text x={zx + r + s(16)} y={zy - s(4)} fontSize={s(3)} fill="#A855F7" opacity={0.75}>{density} pings</text>
+                          <text x={zx + r + s(16)} y={zy + s(1)} fontSize={s(3)} fill="#A855F7" opacity={0.75}>{avgSpd > 0 ? `${avgSpd.toFixed(0)} mph avg` : "No speed"}</text>
+                          <text x={zx + r + s(16)} y={zy + s(6)} fontSize={s(3)} fill="#A855F7" opacity={0.75}>{lanes} lanes</text>
+                          <text x={zx + r + s(16)} y={zy + s(11)} fontSize={s(3)} fill="#A855F7" opacity={0.75}>{reports} routes</text>
                         </>
                       )}
                     </g>
@@ -1652,11 +1653,11 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                 if (d === 0 && ln === 0 && rr === 0) return null;
                 return (
                   <div className={`mt-1.5 pt-1.5 border-t space-y-0.5 text-[10px] ${isLight ? "border-slate-100" : "border-white/5"}`}>
-                    <div className="flex justify-between"><span style={{ color: "#00FF88" }}>LIDAR Pings</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{d.toLocaleString()}</span></div>
-                    {sp > 0 && <div className="flex justify-between"><span style={{ color: "#00CC66" }}>Avg Speed</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{sp.toFixed(0)} mph</span></div>}
-                    <div className="flex justify-between"><span style={{ color: "#00CC66" }}>Lanes Learned</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{ln}</span></div>
-                    <div className="flex justify-between"><span style={{ color: "#00CC66" }}>Route Reports</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{rr}</span></div>
-                    {ml > 0 && <div className="flex justify-between"><span style={{ color: "#00CC66" }}>Miles Mapped</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{ml.toLocaleString()}</span></div>}
+                    <div className="flex justify-between"><span style={{ color: "#1473FF" }}>Euso Pings</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{d.toLocaleString()}</span></div>
+                    {sp > 0 && <div className="flex justify-between"><span style={{ color: "#A855F7" }}>Avg Speed</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{sp.toFixed(0)} mph</span></div>}
+                    <div className="flex justify-between"><span style={{ color: "#A855F7" }}>Lanes Learned</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{ln}</span></div>
+                    <div className="flex justify-between"><span style={{ color: "#A855F7" }}>Route Reports</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{rr}</span></div>
+                    {ml > 0 && <div className="flex justify-between"><span style={{ color: "#A855F7" }}>Miles Mapped</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{ml.toLocaleString()}</span></div>}
                   </div>
                 );
               })()}
@@ -1823,7 +1824,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
               { label: "Cities", on: showCities, toggle: () => setShowCities(p => !p), color: "" },
               { label: "Infra", on: showInfra, toggle: () => setShowInfra(p => !p), color: "" },
               { label: "Hazmat", on: showHazmat, toggle: () => setShowHazmat(p => !p), color: "#F97316" },
-              { label: "LIDAR", on: showLidar, toggle: () => setShowLidar(p => !p), color: "#00FF88" },
+              { label: "Euso Roads", on: showLidar, toggle: () => setShowLidar(p => !p), color: "#1473FF" },
             ].map(({ label, on, toggle, color }) => (
               <button key={label} onClick={toggle}
                 className={`px-1.5 py-0.5 rounded text-[9px] font-semibold transition-all leading-tight ${on
@@ -1857,7 +1858,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
           <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full" style={{ background: rv.highColor }} />High</div>
           <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full" style={{ background: rv.elevColor }} />Elev</div>
           <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full bg-blue-400 opacity-50" />Cold</div>
-          {showLidar && <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full" style={{ background: "#00FF88", boxShadow: "0 0 3px #00FF88" }} />LIDAR</div>}
+          {showLidar && <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full" style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)", boxShadow: "0 0 3px #BE01FF" }} />Euso Roads</div>}
         </div>
 
         {/* ── MINIMAP ── */}

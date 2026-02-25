@@ -798,7 +798,12 @@ export const driversRouter = router({
     }),
 
   /**
-   * Update load status
+   * Update load status — with ORGANIC HOS event registration
+   * Trip lifecycle events automatically trigger appropriate duty status changes:
+   *   en_route_pickup, in_transit → driving
+   *   at_pickup, loading, at_delivery, unloading → on_duty (not driving)
+   *   delivered → on_duty (driver manually goes off_duty after)
+   * This eliminates manual HOS toggling — the system "just knows."
    */
   updateLoadStatus: auditedOperationsProcedure
     .input(z.object({
@@ -816,6 +821,36 @@ export const driversRouter = router({
         if (input.status === 'delivered') updateSet.actualDeliveryDate = new Date();
         if (input.notes) updateSet.specialInstructions = [(currentLoad.specialInstructions || ''), `[DRIVER ${input.status.toUpperCase()} ${new Date().toISOString()}] ${input.notes}`].filter(Boolean).join('\n');
         await db.update(loads).set(updateSet as any).where(eq(loads.id, currentLoad.id));
+
+        // ── ORGANIC HOS EVENT ── Trip lifecycle → automatic duty status
+        // The driver doesn't need to separately toggle HOS; the trip status
+        // change itself IS the HOS event. This is the organic registration.
+        const HOS_STATUS_MAP: Record<string, "driving" | "on_duty" | "off_duty"> = {
+          en_route_pickup: "driving",
+          in_transit: "driving",
+          at_pickup: "on_duty",
+          loading: "on_duty",
+          at_delivery: "on_duty",
+          unloading: "on_duty",
+          delivered: "on_duty",
+        };
+        const newDutyStatus = HOS_STATUS_MAP[input.status];
+        if (newDutyStatus) {
+          try {
+            // Build location string from load data for the HOS log entry
+            const pickup = currentLoad.pickupLocation as any || {};
+            const delivery = currentLoad.deliveryLocation as any || {};
+            const location = input.status.includes("pickup")
+              ? `${pickup.city || ""}, ${pickup.state || ""}`.trim().replace(/^,\s*/, "")
+              : `${delivery.city || ""}, ${delivery.state || ""}`.trim().replace(/^,\s*/, "");
+            await changeDutyStatusWithELD(userId, newDutyStatus, location || `Load ${currentLoad.loadNumber}`);
+            console.log(`[HOS-Organic] ${input.status} → ${newDutyStatus} for user ${userId} (load ${currentLoad.loadNumber})`);
+          } catch (hosErr) {
+            // HOS update is non-blocking — don't fail the trip status update
+            console.error("[HOS-Organic] duty status sync error:", hosErr);
+          }
+        }
+
         return { success: true, newStatus: input.status, updatedAt: new Date().toISOString(), updatedBy: ctx.user?.id };
       } catch (e) { console.error('[Drivers] updateLoadStatus error:', e); throw new Error("Failed to update load status"); }
     }),

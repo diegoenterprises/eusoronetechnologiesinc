@@ -23,7 +23,9 @@ import {
   Siren, CheckCircle2, Clock, Zap, ArrowRight, Globe,
   Wrench, Heart, Flame, Car, CloudLightning, HelpCircle,
   X, Loader2, RefreshCw, Target, Award, Coffee, Gauge,
+  Moon, Play, Pause,
 } from "lucide-react";
+import { toast } from "sonner";
 
 // ═══════════════════════════════════════════════════════════════
 // SOS BUTTON COMPONENT — The most important UI element
@@ -496,26 +498,64 @@ function MissionProgressIndicator({ loadId }: { loadId: number }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// HOS COMPACT GAUGES — Minimal in-trip HOS awareness
+// HOS COMPACT GAUGES + ORGANIC DUTY CONTROLS
 // Three thin arc gauges: Drive | Duty | Cycle
-// Break warning if approaching 8h threshold
+// Inline duty status toggle — trip events set this automatically,
+// but driver can manually override (break, sleeper, etc.)
 // ═══════════════════════════════════════════════════════════════
 
+const DUTY_BUTTONS = [
+  { status: "off_duty" as const, label: "Off Duty", icon: Pause, color: "bg-zinc-600", text: "text-zinc-300", active: "bg-zinc-500/30 border-zinc-500 text-zinc-200" },
+  { status: "sleeper" as const, label: "Sleeper", icon: Moon, color: "bg-purple-600", text: "text-purple-300", active: "bg-purple-500/30 border-purple-400 text-purple-200" },
+  { status: "on_duty" as const, label: "On Duty", icon: Play, color: "bg-blue-600", text: "text-blue-300", active: "bg-blue-500/30 border-blue-400 text-blue-200" },
+  { status: "driving" as const, label: "Driving", icon: Truck, color: "bg-emerald-600", text: "text-emerald-300", active: "bg-emerald-500/30 border-emerald-400 text-emerald-200" },
+];
+
 function HOSCompactPanel() {
-  const { data: hos } = (trpc as any).drivers?.getMyHOS?.useQuery?.(undefined, {
-    refetchInterval: 60000,
-  }) || { data: null };
+  const { data: hos, refetch: refetchHOS } = (trpc as any).drivers?.getMyHOSStatus?.useQuery?.(undefined, {
+    refetchInterval: 30000,
+  }) || { data: null, refetch: () => {} };
+
+  const changeStatusMut = (trpc as any).hos?.changeStatus?.useMutation?.({
+    onSuccess: (data: any) => {
+      refetchHOS();
+      toast.success(`Duty status: ${(data?.newStatus || "").replace(/_/g, " ").toUpperCase()}`, {
+        description: data?.canDrive ? "You are cleared to drive" : "Not in driving status",
+      });
+    },
+    onError: (err: any) => toast.error("Status change failed", { description: err?.message }),
+  });
+
+  const handleDutyChange = useCallback((newStatus: string) => {
+    if (!changeStatusMut?.mutate) return;
+    // Get location for the HOS log entry
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          changeStatusMut.mutate({
+            newStatus,
+            location: `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`,
+          });
+        },
+        () => changeStatusMut.mutate({ newStatus, location: "Unknown" }),
+        { enableHighAccuracy: false, timeout: 3000 }
+      );
+    } else {
+      changeStatusMut.mutate({ newStatus, location: "Unknown" });
+    }
+  }, [changeStatusMut]);
 
   if (!hos) return null;
 
   const gauges = [
-    { label: "Drive", used: hos.drivingHours || 0, max: 11, color: "#10b981" },
-    { label: "Duty", used: hos.onDutyHours || 0, max: 14, color: "#3b82f6" },
-    { label: "Cycle", used: hos.cycleHours || 0, max: 70, color: "#8b5cf6" },
+    { label: "Drive", used: hos.drivingUsed || hos.drivingHours || 0, max: 11, color: "#10b981" },
+    { label: "Duty", used: hos.onDutyUsed || hos.onDutyHours || 0, max: 14, color: "#3b82f6" },
+    { label: "Cycle", used: hos.cycleUsed || hos.cycleHours || 0, max: 70, color: "#8b5cf6" },
   ];
 
   const hasViolation = (hos.violations || []).some((v: any) => v.severity === "violation");
   const hasWarning = hos.breakRequired || (hos.violations || []).some((v: any) => v.severity === "warning");
+  const currentStatus = hos.status || "off_duty";
 
   return (
     <div className="rounded-2xl border border-zinc-800 p-4"
@@ -530,16 +570,43 @@ function HOSCompactPanel() {
       <div className="flex items-center gap-2 mb-3">
         <Gauge className="w-4 h-4 text-zinc-400" />
         <span className="text-zinc-300 font-medium text-sm">HOS Status</span>
-        {hos.status && (
-          <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium ${
-            hos.status === "driving" ? "bg-emerald-500/20 text-emerald-300" :
-            hos.status === "on_duty" ? "bg-blue-500/20 text-blue-300" :
-            hos.status === "sleeper" ? "bg-purple-500/20 text-purple-300" :
-            "bg-zinc-700/50 text-zinc-400"
-          }`}>
-            {(hos.status || "off_duty").replace(/_/g, " ").toUpperCase()}
-          </span>
-        )}
+        <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium ${
+          currentStatus === "driving" ? "bg-emerald-500/20 text-emerald-300" :
+          currentStatus === "on_duty" ? "bg-blue-500/20 text-blue-300" :
+          currentStatus === "sleeper" ? "bg-purple-500/20 text-purple-300" :
+          "bg-zinc-700/50 text-zinc-400"
+        }`}>
+          {currentStatus.replace(/_/g, " ").toUpperCase()}
+        </span>
+      </div>
+
+      {/* Organic Duty Status Controls */}
+      <div className="grid grid-cols-4 gap-1.5 mb-3">
+        {DUTY_BUTTONS.map((btn) => {
+          const Icon = btn.icon;
+          const isActive = currentStatus === btn.status;
+          return (
+            <button
+              key={btn.status}
+              onClick={() => !isActive && handleDutyChange(btn.status)}
+              disabled={isActive || changeStatusMut?.isPending}
+              className={`rounded-xl py-2 px-1 flex flex-col items-center gap-1 transition-all text-center border ${
+                isActive ? btn.active + " border" : "border-zinc-800 bg-zinc-900/40 hover:bg-zinc-800/60"
+              } ${changeStatusMut?.isPending ? "opacity-50" : ""}`}
+            >
+              <Icon className={`w-4 h-4 ${isActive ? btn.text : "text-zinc-500"}`} />
+              <span className={`text-[9px] font-medium leading-tight ${isActive ? btn.text : "text-zinc-500"}`}>
+                {btn.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Organic indicator */}
+      <div className="flex items-center gap-1.5 mb-3 px-1">
+        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        <span className="text-[9px] text-zinc-500">Trip events auto-update duty status</span>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -578,10 +645,16 @@ function HOSCompactPanel() {
       {hos.breakRequired && (
         <div className="mt-3 flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
           <Coffee className="w-4 h-4 text-amber-400 flex-shrink-0" />
-          <div>
+          <div className="flex-1">
             <p className="text-amber-300 text-xs font-medium">30-min break required</p>
             <p className="text-amber-400/60 text-[10px]">49 CFR 395.3(a)(3)(ii)</p>
           </div>
+          <button
+            onClick={() => handleDutyChange("off_duty")}
+            className="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[10px] font-medium hover:bg-amber-500/30 transition-colors"
+          >
+            Take Break
+          </button>
         </div>
       )}
 
