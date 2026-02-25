@@ -268,8 +268,14 @@ export async function ingestBreadcrumbs(
     await db.insert(locationBreadcrumbs).values(rows.slice(i, i + BATCH_SIZE));
   }
 
-  // Also update the user's current location in gpsTracking for fleet view
+  // Write live ping for real-time road mapping animation
   const last = points[points.length - 1];
+  try {
+    const { writeLivePing } = await import("../services/roadIntelligence");
+    await writeLivePing(driverId, last.lat, last.lng, last.speed, last.heading);
+  } catch { /* non-critical — road intel layer is best-effort */ }
+
+  // Also update the user's current location in gpsTracking for fleet view
   try {
     const existing = await db.select({ id: gpsTracking.id })
       .from(gpsTracking)

@@ -119,6 +119,9 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
   // Terminal integration intelligence — enriched by connected terminals' API keys
   const { data: termIntel } = (trpc as any).hotZones?.getTerminalIntelligence?.useQuery?.(undefined, { refetchInterval: 120000, staleTime: 60000 }) || { data: null };
 
+  // Road Intelligence — crowd-sourced road segments from driver GPS + live pings
+  const { data: roadIntel } = (trpc as any).hotZones?.getRoadIntelligence?.useQuery?.(undefined, { refetchInterval: 15000, staleTime: 10000 }) || { data: null };
+
   const zones = data?.zones || [];
   const coldZones = data?.coldZones || [];
   const roleCtx = data?.roleContext;
@@ -350,6 +353,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
             isLight={isLight}
             activeLayers={activeLayers}
             intel={mapIntel}
+            roadIntel={roadIntel}
           />
         </div>
       )}

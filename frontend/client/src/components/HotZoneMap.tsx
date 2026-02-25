@@ -16,6 +16,11 @@ interface HotZoneMapProps {
   isLight: boolean;
   activeLayers: string[];
   intel?: any;
+  roadIntel?: {
+    segments?: { id: number; startLat: number; startLng: number; endLat: number; endLng: number; roadName?: string; roadType?: string; traversalCount: number; avgSpeed?: number; congestion?: string; surfaceQuality?: string; hasHazmat?: boolean; lastTraversed?: string; state?: string }[];
+    livePings?: { driverId: number; lat: number; lng: number; speed?: number; heading?: number; roadName?: string; pingAt?: string }[];
+    stats?: { totalSegments: number; totalMiles: number; liveDrivers: number };
+  };
 }
 
 // Projection: lng/lat → SVG coordinates fitted to state outline anchor points
@@ -578,7 +583,7 @@ const CITIES: { n: string; lat: number; lng: number; tier: number; st: string }[
   { n:"Camden", lat:39.93, lng:-75.12, tier:3, st:"NJ" },
 ];
 
-export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, onSelectZone, isLight, activeLayers, intel }: HotZoneMapProps) {
+export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, onSelectZone, isLight, activeLayers, intel, roadIntel }: HotZoneMapProps) {
   const cRef = useRef<HTMLDivElement>(null);
   const [vb, setVb] = useState({ x: 0, y: 0, w: 800, h: 380 });
   const [panning, setPanning] = useState(false);
@@ -817,6 +822,83 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
               </g>
             );
           })}
+
+          {/* ═══ ROAD INTELLIGENCE LAYER — Crowd-sourced road mapping ═══ */}
+          {/* Road segments render as gradient lines; intensity = traversal count */}
+          {/* Live pings render as animated glowing dots moving along roads */}
+          {showLidar && roadIntel?.segments && roadIntel.segments.length > 0 && (
+            <g className="select-none pointer-events-none" opacity={0.85}>
+              {roadIntel.segments.map((seg) => {
+                const [x1, y1] = proj(seg.startLng, seg.startLat);
+                const [x2, y2] = proj(seg.endLng, seg.endLat);
+                // Intensity based on traversal count (more traversals = brighter)
+                const intensity = Math.min(1, (seg.traversalCount || 1) / 50);
+                // Width based on road type
+                const baseWidth = seg.roadType === "interstate" ? 1.8 : seg.roadType === "us_highway" ? 1.4 : seg.roadType === "state_highway" ? 1.1 : 0.8;
+                // Color based on congestion or hazmat
+                const color = seg.hasHazmat ? "#FF6B35" : seg.congestion === "heavy" || seg.congestion === "stopped" ? "#EF4444" : seg.congestion === "moderate" ? "#FBBF24" : "#00FF88";
+                const glowColor = seg.hasHazmat ? "#FF6B3540" : "#00FF8830";
+                return (
+                  <g key={`rs-${seg.id}`}>
+                    {/* Glow underline */}
+                    <line x1={x1} y1={y1} x2={x2} y2={y2}
+                      stroke={glowColor} strokeWidth={s(baseWidth * 3)} strokeLinecap="round"
+                      opacity={0.3 + intensity * 0.4} filter="url(#lidarGlow)" />
+                    {/* Main road line — gradient from dim to bright based on coverage */}
+                    <line x1={x1} y1={y1} x2={x2} y2={y2}
+                      stroke={color} strokeWidth={s(baseWidth)} strokeLinecap="round"
+                      opacity={0.4 + intensity * 0.55} />
+                    {/* Road name label at high zoom */}
+                    {detail === "hi" && seg.roadName && seg.traversalCount > 10 && (
+                      <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - s(2)} fontSize={s(3)} fill="#00FF88" opacity={0.6}
+                        textAnchor="middle" fontWeight="600">{seg.roadName}</text>
+                    )}
+                  </g>
+                );
+              })}
+            </g>
+          )}
+          {/* Live driver pings — animated glowing dots showing active road mapping */}
+          {showLidar && roadIntel?.livePings && roadIntel.livePings.length > 0 && (
+            <g className="select-none pointer-events-none">
+              {roadIntel.livePings.map((ping, i) => {
+                const [px, py] = proj(ping.lng, ping.lat);
+                return (
+                  <g key={`lp-${ping.driverId}-${i}`}>
+                    {/* Outer pulse ring */}
+                    <circle cx={px} cy={py} r={s(4)} fill="none" stroke="#00FF88" strokeWidth={s(0.4)} opacity={0.4}>
+                      <animate attributeName="r" values={`${s(2)};${s(6)};${s(2)}`} dur="2s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="0.5;0.1;0.5" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                    {/* Inner dot — the driver position */}
+                    <circle cx={px} cy={py} r={s(1.5)} fill="#00FF88" opacity={0.9} filter="url(#lidarGlow)">
+                      <animate attributeName="opacity" values="0.9;0.6;0.9" dur="1.5s" repeatCount="indefinite" />
+                    </circle>
+                    {/* Speed label at high zoom */}
+                    {detail === "hi" && ping.speed != null && ping.speed > 0 && (
+                      <text x={px + s(3)} y={py - s(2)} fontSize={s(3)} fill="#00FF88" opacity={0.7} fontWeight="600">
+                        {Math.round(ping.speed)} mph
+                      </text>
+                    )}
+                  </g>
+                );
+              })}
+            </g>
+          )}
+          {/* Road Intelligence stats badge */}
+          {showLidar && roadIntel?.stats && (roadIntel.stats.totalSegments > 0 || roadIntel.stats.liveDrivers > 0) && (
+            <g className="select-none pointer-events-none">
+              <rect x={vb.x + s(8)} y={vb.y + vb.h - s(28)} width={s(60)} height={s(22)} rx={s(4)}
+                fill={isLight ? "rgba(0,40,20,0.85)" : "rgba(0,20,10,0.92)"} stroke="#00FF88" strokeWidth={s(0.4)} opacity={0.9} />
+              <text x={vb.x + s(12)} y={vb.y + vb.h - s(21)} fontSize={s(4)} fill="#00FF88" fontWeight="700">ROAD INTELLIGENCE</text>
+              <text x={vb.x + s(12)} y={vb.y + vb.h - s(15)} fontSize={s(3.2)} fill="#00CC66" opacity={0.8}>
+                {roadIntel.stats.totalSegments.toLocaleString()} segments • {roadIntel.stats.totalMiles.toLocaleString()} mi mapped
+              </text>
+              <text x={vb.x + s(12)} y={vb.y + vb.h - s(10)} fontSize={s(3.2)} fill="#00CC66" opacity={0.8}>
+                {roadIntel.stats.liveDrivers} live driver{roadIntel.stats.liveDrivers !== 1 ? "s" : ""} mapping
+              </text>
+            </g>
+          )}
 
           {/* City markers (120+ cities, tier-based visibility) */}
           {showCities && CITIES.map(c => {

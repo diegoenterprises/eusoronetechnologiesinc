@@ -6683,3 +6683,95 @@ export const detentionGpsRecords = mysqlTable(
 export type DetentionGpsRecord = typeof detentionGpsRecords.$inferSelect;
 export type InsertDetentionGpsRecord = typeof detentionGpsRecords.$inferInsert;
 
+// ============================================================================
+// ROAD SEGMENTS — Crowd-sourced road intelligence database
+// Every GPS breadcrumb from every driver is aggregated into road segments.
+// As drivers cover roads, segments populate in real-time on the Market
+// Intelligence map — like Google's mapping cars, but digital.
+// Each segment ≈ 0.3–0.5 mi of road, built from snapped breadcrumb clusters.
+// ============================================================================
+
+export const roadSegments = mysqlTable(
+  "road_segments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    // Geometry — start and end points of the segment polyline
+    startLat: decimal("startLat", { precision: 10, scale: 7 }).notNull(),
+    startLng: decimal("startLng", { precision: 10, scale: 7 }).notNull(),
+    endLat: decimal("endLat", { precision: 10, scale: 7 }).notNull(),
+    endLng: decimal("endLng", { precision: 10, scale: 7 }).notNull(),
+    // Geohash for fast spatial lookups (precision 7 ≈ 150m cells)
+    geohash: varchar("geohash", { length: 12 }).notNull(),
+    // Road metadata
+    roadName: varchar("roadName", { length: 255 }),
+    roadType: mysqlEnum("roadType", [
+      "interstate", "us_highway", "state_highway", "county_road",
+      "local", "terminal_access", "unknown",
+    ]).default("unknown"),
+    // Aggregated traffic intelligence
+    traversalCount: int("traversalCount").default(0).notNull(),
+    uniqueDrivers: int("uniqueDrivers").default(0).notNull(),
+    avgSpeedMph: decimal("avgSpeedMph", { precision: 6, scale: 2 }),
+    maxSpeedMph: decimal("maxSpeedMph", { precision: 6, scale: 2 }),
+    avgAccuracy: decimal("avgAccuracy", { precision: 6, scale: 2 }),
+    // Road quality intelligence (derived from speed variance, hard braking events)
+    surfaceQuality: mysqlEnum("surfaceQuality", ["excellent", "good", "fair", "poor", "unknown"]).default("unknown"),
+    congestionLevel: mysqlEnum("congestionLevel", ["free_flow", "light", "moderate", "heavy", "stopped"]).default("free_flow"),
+    // Hazmat / compliance flags
+    hasHazmatTraffic: boolean("hasHazmatTraffic").default(false),
+    hasOversizedTraffic: boolean("hasOversizedTraffic").default(false),
+    // Coverage freshness — when this segment was last driven by our network
+    firstTraversedAt: timestamp("firstTraversedAt").notNull(),
+    lastTraversedAt: timestamp("lastTraversedAt").notNull(),
+    // Polyline encoding for the full segment path (Google encoded polyline format)
+    encodedPolyline: text("encodedPolyline"),
+    // Segment length in miles
+    lengthMiles: decimal("lengthMiles", { precision: 6, scale: 3 }),
+    // State for regional filtering
+    state: varchar("state", { length: 5 }),
+    // Timestamps
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    geohashIdx: index("idx_road_seg_geohash").on(table.geohash),
+    stateIdx: index("idx_road_seg_state").on(table.state),
+    roadNameIdx: index("idx_road_seg_road_name").on(table.roadName),
+    lastTraversedIdx: index("idx_road_seg_last_traversed").on(table.lastTraversedAt),
+    traversalIdx: index("idx_road_seg_traversal_count").on(table.traversalCount),
+    startIdx: index("idx_road_seg_start").on(table.startLat, table.startLng),
+  })
+);
+
+export type RoadSegment = typeof roadSegments.$inferSelect;
+export type InsertRoadSegment = typeof roadSegments.$inferInsert;
+
+// ============================================================================
+// ROAD SEGMENT LIVE PINGS — Real-time driver positions for live road animation
+// Ephemeral table — rows expire after 5 minutes. Used to show the "painting"
+// effect as drivers actively drive and their position moves along the road.
+// ============================================================================
+
+export const roadLivePings = mysqlTable(
+  "road_live_pings",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    driverId: int("driverId").notNull(),
+    lat: decimal("lat", { precision: 10, scale: 7 }).notNull(),
+    lng: decimal("lng", { precision: 10, scale: 7 }).notNull(),
+    speed: decimal("speed", { precision: 6, scale: 2 }),
+    heading: decimal("heading", { precision: 6, scale: 2 }),
+    roadName: varchar("roadName", { length: 255 }),
+    geohash: varchar("geohash", { length: 12 }).notNull(),
+    pingAt: timestamp("pingAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    geohashIdx: index("idx_rlp_geohash").on(table.geohash),
+    driverIdx: index("idx_rlp_driver").on(table.driverId),
+    pingIdx: index("idx_rlp_ping_at").on(table.pingAt),
+  })
+);
+
+export type RoadLivePing = typeof roadLivePings.$inferSelect;
+export type InsertRoadLivePing = typeof roadLivePings.$inferInsert;
+

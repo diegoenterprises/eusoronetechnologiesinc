@@ -1369,6 +1369,129 @@ export const hotZonesRouter = router({
       return result;
     }),
 
+  // ═══════════════════════════════════════════════════════════════
+  // ROAD INTELLIGENCE — Crowd-sourced road mapping from driver GPS
+  // Returns road segments + live driver pings for real-time road
+  // line rendering on the HotZoneMap (the "digital Google Maps car" layer)
+  // ═══════════════════════════════════════════════════════════════
+  getRoadIntelligence: protectedProcedure
+    .input(z.object({
+      // Viewport bounding box for spatial filtering
+      minLat: z.number().optional(),
+      maxLat: z.number().optional(),
+      minLng: z.number().optional(),
+      maxLng: z.number().optional(),
+      // Filter by state
+      state: z.string().optional(),
+      // Include live pings (real-time driver positions)
+      includeLive: z.boolean().default(true),
+      // Limit
+      segmentLimit: z.number().default(2000),
+    }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { segments: [], livePings: [], stats: { totalSegments: 0, totalMiles: 0, liveDrivers: 0 } };
+
+      const opts = input as { minLat?: number; maxLat?: number; minLng?: number; maxLng?: number; state?: string; includeLive?: boolean; segmentLimit?: number } || {};
+      try {
+        // Fetch road segments (with optional viewport filter)
+        const filters: string[] = ["1=1"];
+        if (opts.minLat != null && opts.maxLat != null) {
+          filters.push(`startLat BETWEEN ${opts.minLat} AND ${opts.maxLat}`);
+        }
+        if (opts.minLng != null && opts.maxLng != null) {
+          filters.push(`startLng BETWEEN ${opts.minLng} AND ${opts.maxLng}`);
+        }
+        if (opts.state) {
+          filters.push(`state = '${opts.state.replace(/'/g, "")}'`);
+        }
+
+        const segLimit = opts.segmentLimit || 2000;
+        const [segRows] = await db.execute(
+          sql.raw(`SELECT id, startLat, startLng, endLat, endLng, geohash,
+                     roadName, roadType, traversalCount, uniqueDrivers,
+                     avgSpeedMph, congestionLevel, surfaceQuality,
+                     hasHazmatTraffic, lastTraversedAt, lengthMiles, state,
+                     encodedPolyline
+                   FROM road_segments
+                   WHERE ${filters.join(" AND ")}
+                   ORDER BY lastTraversedAt DESC
+                   LIMIT ${segLimit}`)
+        ) as any;
+
+        const segments = (segRows || []).map((r: any) => ({
+          id: r.id,
+          startLat: Number(r.startLat), startLng: Number(r.startLng),
+          endLat: Number(r.endLat), endLng: Number(r.endLng),
+          geohash: r.geohash,
+          roadName: r.roadName,
+          roadType: r.roadType,
+          traversalCount: r.traversalCount,
+          uniqueDrivers: r.uniqueDrivers,
+          avgSpeed: r.avgSpeedMph ? Number(r.avgSpeedMph) : null,
+          congestion: r.congestionLevel,
+          surfaceQuality: r.surfaceQuality,
+          hasHazmat: r.hasHazmatTraffic,
+          lastTraversed: r.lastTraversedAt?.toISOString?.() || r.lastTraversedAt,
+          lengthMiles: r.lengthMiles ? Number(r.lengthMiles) : null,
+          state: r.state,
+          polyline: r.encodedPolyline,
+        }));
+
+        // Fetch live pings (last 5 minutes)
+        let livePings: any[] = [];
+        if (opts.includeLive !== false) {
+          const pingCutoff = new Date(Date.now() - 5 * 60 * 1000);
+          try {
+            const [pingRows] = await db.execute(
+              sql`SELECT driverId, lat, lng, speed, heading, roadName, pingAt
+                  FROM road_live_pings
+                  WHERE pingAt > ${pingCutoff}
+                  ORDER BY pingAt DESC
+                  LIMIT 500`
+            ) as any;
+            livePings = (pingRows || []).map((p: any) => ({
+              driverId: p.driverId,
+              lat: Number(p.lat), lng: Number(p.lng),
+              speed: p.speed ? Number(p.speed) : null,
+              heading: p.heading ? Number(p.heading) : null,
+              roadName: p.roadName,
+              pingAt: p.pingAt?.toISOString?.() || p.pingAt,
+            }));
+          } catch { /* table may not exist yet */ }
+        }
+
+        // Quick stats
+        const [statsRow] = await db.execute(
+          sql`SELECT COUNT(*) as cnt, SUM(CAST(lengthMiles AS DECIMAL(10,3))) as miles FROM road_segments`
+        ) as any;
+        const st = (statsRow || [])[0] || {};
+
+        return {
+          segments,
+          livePings,
+          stats: {
+            totalSegments: Number(st.cnt || 0),
+            totalMiles: Number(Number(st.miles || 0).toFixed(1)),
+            liveDrivers: new Set(livePings.map((p: any) => p.driverId)).size,
+          },
+        };
+      } catch (e) {
+        console.error("[HotZones] getRoadIntelligence error:", e);
+        return { segments: [], livePings: [], stats: { totalSegments: 0, totalMiles: 0, liveDrivers: 0 } };
+      }
+    }),
+
+  getRoadCoverageStats: protectedProcedure
+    .query(async () => {
+      try {
+        const { getRoadCoverageStats } = await import("../services/roadIntelligence");
+        return await getRoadCoverageStats();
+      } catch {
+        return { totalSegments: 0, totalMilesMapped: 0, totalTraversals: 0, uniqueDriversContributed: 0, topRoads: [], coverageByState: [] };
+      }
+    }),
+
   // Admin: Get sync log history from DB
   getSyncLog: adminProcedure
     .input(z.object({ limit: z.number().default(50), sourceName: z.string().optional() }))

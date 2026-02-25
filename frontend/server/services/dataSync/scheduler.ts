@@ -100,6 +100,14 @@ export function initializeDataSyncScheduler(): void {
     await runSync("ROUTE_INTELLIGENCE", computeRouteIntelligence);
   });
 
+  // Road segment aggregation — converts GPS breadcrumbs into road_segments - every 5 minutes
+  cron.schedule("*/5 * * * *", async () => {
+    try {
+      const { aggregateBreadcrumbsToSegments } = await import("../../services/roadIntelligence");
+      await runSync("ROAD_SEGMENT_AGGREGATION", async () => { await aggregateBreadcrumbsToSegments(); });
+    } catch (e) { console.error("[Scheduler] Road segment aggregation error:", e); }
+  });
+
   // ═══ HIGH PRIORITY: Operational data (15-60 minute intervals) ═══
 
   // Wildfires - every 15 minutes
