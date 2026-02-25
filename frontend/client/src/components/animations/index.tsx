@@ -4,7 +4,7 @@
  * Drop these into any page to bring it alive.
  */
 
-import React from "react";
+import React, { useRef, useCallback } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 // =============================================================================
@@ -269,6 +269,21 @@ export const dominoContainer: Variants = {
  * staggered entrance — no changes needed inside page components.
  */
 export function DominoPage({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // After entrance animation completes, strip perspective / transform / filter
+  // from the DOM. These CSS properties create a "containing block" which traps
+  // position:fixed modals inside the wrapper instead of the viewport.
+  const clearContainingBlock = useCallback(() => {
+    if (!containerRef.current) return;
+    containerRef.current.style.perspective = "none";
+    containerRef.current.querySelectorAll(":scope > div").forEach((el) => {
+      const h = el as HTMLElement;
+      h.style.transform = "none";
+      h.style.filter = "none";
+    });
+  }, []);
+
   let childArray = React.Children.toArray(children);
 
   // Unwrap single-child container divs so inner elements cascade individually.
@@ -283,10 +298,12 @@ export function DominoPage({ children, className = "" }: { children: React.React
         const wrapperClass = (only.props as any).className || "";
         return (
           <motion.div
+            ref={containerRef}
             variants={dominoContainer}
             initial="hidden"
             animate="visible"
             exit="exit"
+            onAnimationComplete={clearContainingBlock}
             className={`${className} ${wrapperClass}`}
             style={{ perspective: 1200 }}
           >
@@ -308,10 +325,12 @@ export function DominoPage({ children, className = "" }: { children: React.React
 
   return (
     <motion.div
+      ref={containerRef}
       variants={dominoContainer}
       initial="hidden"
       animate="visible"
       exit="exit"
+      onAnimationComplete={clearContainingBlock}
       className={className}
       style={{ perspective: 1200 }}
     >
