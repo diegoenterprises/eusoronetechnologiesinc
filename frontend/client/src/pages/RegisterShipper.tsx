@@ -581,13 +581,7 @@ export default function RegisterShipper() {
               <Label htmlFor="expirationDate" className="text-slate-300">
                 Policy Expiration <span className="text-red-400">*</span>
               </Label>
-              <Input
-                id="expirationDate"
-                type="date"
-                value={formData.expirationDate}
-                onChange={(e: any) => updateFormData({ expirationDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
+              <DatePicker value={formData.expirationDate} onChange={(v) => updateFormData({ expirationDate: v })} />
             </div>
           </div>
 

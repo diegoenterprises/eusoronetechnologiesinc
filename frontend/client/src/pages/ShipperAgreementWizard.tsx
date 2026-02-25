@@ -20,6 +20,7 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import GradientSignaturePad from "@/components/GradientSignaturePad";
 import { useAuth } from "@/_core/hooks/useAuth";
+import DatePicker from "@/components/DatePicker";
 
 type Step = "mode"|"parties"|"financial"|"lanes"|"review"|"sign"|"complete";
 type Mode = "generate"|"upload"|null;
@@ -152,7 +153,7 @@ export default function ShipperAgreementWizard() {
         {mode==="generate"&&(<Card className={cc}><CardContent className="p-5 space-y-4">
           <div><label className={lb}>Agreement Type</label><Select value={agType} onValueChange={setAgType}><SelectTrigger className={ic}><SelectValue/></SelectTrigger><SelectContent>{roleConfig.types.map(t=>(<SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>))}</SelectContent></Select></div>
           <div><label className={lb}>Duration</label><Select value={dur} onValueChange={setDur}><SelectTrigger className={ic}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="spot">Spot (Single Load)</SelectItem><SelectItem value="short_term">Short Term (1-6 mo)</SelectItem><SelectItem value="long_term">Long Term (6-24 mo)</SelectItem><SelectItem value="evergreen">Evergreen</SelectItem></SelectContent></Select></div>
-          <div className="grid grid-cols-2 gap-3"><div><label className={lb}>Effective Date</label><Input type="date" value={effDate} onChange={(e:any)=>setEffDate(e.target.value)} className={ic}/></div><div><label className={lb}>Expiration</label><Input type="date" value={expDate} onChange={(e:any)=>setExpDate(e.target.value)} className={ic}/></div></div>
+          <div className="grid grid-cols-2 gap-3"><div><label className={lb}>Effective Date</label><DatePicker value={effDate} onChange={setEffDate} /></div><div><label className={lb}>Expiration</label><DatePicker value={expDate} onChange={setExpDate} /></div></div>
         </CardContent></Card>)}
         <Button className="w-full h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" disabled={!mode} onClick={()=>mode==="upload"&&uploadedFile?undefined:setStep("parties")}>Continue <ChevronRight className="w-5 h-5 ml-2"/></Button>
       </div>)}

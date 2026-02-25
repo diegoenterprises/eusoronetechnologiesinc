@@ -172,7 +172,7 @@ export default function DOT5800Form() {
           <CardContent className="space-y-4">
             <div><label className={labelCls}>NRC Report Number</label><Input value={form.nrcReportNumber} onChange={(e: any) => update("nrcReportNumber", e.target.value)} placeholder="6-digit NRC number" className={inputCls} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className={labelCls}>Date of Incident</label><Input type="date" value={form.incidentDate} onChange={(e: any) => update("incidentDate", e.target.value)} className={inputCls} /></div>
+              <div><label className={labelCls}>Date of Incident</label><DatePicker value={form.incidentDate} onChange={(v) => update("incidentDate", v)} /></div>
               <div><label className={labelCls}>Time of Incident</label><Input type="time" value={form.incidentTime} onChange={(e: any) => update("incidentTime", e.target.value)} className={inputCls} /></div>
             </div>
             <div><label className={labelCls}>Location (address/mile marker)</label><Input value={form.incidentLocation} onChange={(e: any) => update("incidentLocation", e.target.value)} placeholder="Street address or mile marker" className={inputCls} /></div>

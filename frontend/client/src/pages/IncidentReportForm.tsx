@@ -185,7 +185,7 @@ export default function IncidentReportForm() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Date</label>
-                <Input type="date" value={form.date} onChange={(e: any) => update("date", e.target.value)} className={inputCls} />
+                <DatePicker value={form.date} onChange={(v) => update("date", v)} />
               </div>
               <div>
                 <label className={labelCls}>Time</label>

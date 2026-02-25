@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
+import DatePicker from "@/components/DatePicker";
 
 const STEPS = [
   { id: 1, title: "Product & Hazmat", icon: AlertTriangle },
@@ -396,8 +397,8 @@ export default function CreateLoad() {
           {step === 5 && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><Label>Pickup Date</Label><Input type="date" value={formData.pickupDate} onChange={e => updateField("pickupDate", e.target.value)} className="bg-slate-700/50" /></div>
-                <div><Label>Delivery Date</Label><Input type="date" value={formData.deliveryDate} onChange={e => updateField("deliveryDate", e.target.value)} className="bg-slate-700/50" /></div>
+                <div><Label>Pickup Date</Label><DatePicker value={formData.pickupDate} onChange={(v) => updateField("pickupDate", v)} /></div>
+                <div><Label>Delivery Date</Label><DatePicker value={formData.deliveryDate} onChange={(v) => updateField("deliveryDate", v)} /></div>
               </div>
               <div><Label>Schedule Type</Label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">

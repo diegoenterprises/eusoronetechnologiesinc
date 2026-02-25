@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { Factory, AlertTriangle, Clock, Upload, Shield, CheckCircle2, XCircle, Building, DollarSign, FileText, CreditCard } from "lucide-react";
+import DatePicker from "@/components/DatePicker";
 
 const SHIPPER_DOCS = [
   { value: "business_license", label: "Business License", category: "business", required: true },
@@ -81,7 +82,7 @@ export default function ShipperCompliance() {
                   <SelectContent>{SHIPPER_DOCS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}{t.required && " *"}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label>Expiration Date</Label><Input type="date" value={expirationDate} onChange={e => setExpirationDate(e.target.value)} /></div>
+              <div><Label>Expiration Date</Label><DatePicker value={expirationDate} onChange={setExpirationDate} /></div>
               <div><Label>Upload File</Label><Input type="file" accept=".pdf,.jpg,.png" /></div>
               <Button className="w-full" onClick={handleUpload} disabled={!selectedType}><Upload className="w-4 h-4 mr-2" />Upload</Button>
             </div>

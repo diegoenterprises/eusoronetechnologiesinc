@@ -315,21 +315,11 @@ export default function RegisterCompliance() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">FMCSA Compliance Training Date</Label>
-              <Input
-                type="date"
-                value={formData.fmcsaTrainingDate}
-                onChange={(e: any) => updateFormData({ fmcsaTrainingDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
+              <DatePicker value={formData.fmcsaTrainingDate} onChange={updateFormData} />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Hazmat Compliance Training Date</Label>
-              <Input
-                type="date"
-                value={formData.hazmatTrainingDate}
-                onChange={(e: any) => updateFormData({ hazmatTrainingDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
+              <DatePicker value={formData.hazmatTrainingDate} onChange={updateFormData} />
             </div>
           </div>
 

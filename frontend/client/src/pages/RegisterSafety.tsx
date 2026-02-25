@@ -340,21 +340,11 @@ export default function RegisterSafety() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">CSA Training Date</Label>
-              <Input
-                type="date"
-                value={formData.csaTrainingDate}
-                onChange={(e: any) => updateFormData({ csaTrainingDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
+              <DatePicker value={formData.csaTrainingDate} onChange={updateFormData} />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Accident Investigation Training Date</Label>
-              <Input
-                type="date"
-                value={formData.accidentInvestigationDate}
-                onChange={(e: any) => updateFormData({ accidentInvestigationDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
+              <DatePicker value={formData.accidentInvestigationDate} onChange={updateFormData} />
             </div>
           </div>
         </div>

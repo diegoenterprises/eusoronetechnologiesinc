@@ -31,6 +31,7 @@ import {
   ShieldCheck, Fuel,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import DatePicker from "@/components/DatePicker";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { EUSOTRIP_LOGO_BASE64 } from "@/lib/logoBase64";
 
@@ -1115,13 +1116,11 @@ export default function Wallet() {
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className={cn("text-[10px] font-semibold uppercase tracking-wider block mb-1", isLight ? "text-slate-500" : "text-slate-400")}>Period Start</label>
-                            <Input type="date" value={walletReconPeriod.start} onChange={e => setWalletReconPeriod(p => ({ ...p, start: e.target.value }))}
-                              className={cn("rounded-xl h-9 text-sm", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.06]")} />
+                            <DatePicker value={walletReconPeriod.start} onChange={(v) => setWalletReconPeriod(p => ({ ...p, start: v }))} />
                           </div>
                           <div>
                             <label className={cn("text-[10px] font-semibold uppercase tracking-wider block mb-1", isLight ? "text-slate-500" : "text-slate-400")}>Period End</label>
-                            <Input type="date" value={walletReconPeriod.end} onChange={e => setWalletReconPeriod(p => ({ ...p, end: e.target.value }))}
-                              className={cn("rounded-xl h-9 text-sm", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.06]")} />
+                            <DatePicker value={walletReconPeriod.end} onChange={(v) => setWalletReconPeriod(p => ({ ...p, end: v }))} />
                           </div>
                         </div>
                       ) : (

@@ -253,12 +253,7 @@ export default function RegisterEscort() {
 
           <div className="space-y-2">
             <Label className="text-slate-300">Date of Birth <span className="text-red-400">*</span></Label>
-            <Input
-              type="date"
-              value={formData.dateOfBirth}
-              onChange={(e: any) => updateFormData({ dateOfBirth: e.target.value })}
-              className="bg-slate-700/50 border-slate-600 text-white"
-            />
+            <DatePicker value={formData.dateOfBirth} onChange={updateFormData} />
           </div>
         </div>
       ),
@@ -381,12 +376,7 @@ export default function RegisterEscort() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">Expiration Date <span className="text-red-400">*</span></Label>
-              <Input
-                type="date"
-                value={formData.licenseExpiration}
-                onChange={(e: any) => updateFormData({ licenseExpiration: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
+              <DatePicker value={formData.licenseExpiration} onChange={updateFormData} />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">License Class</Label>
@@ -479,16 +469,14 @@ export default function RegisterEscort() {
                       })}
                       className="bg-slate-700/50 border-slate-600 text-white text-sm"
                     />
-                    <Input
-                      type="date"
+                    <DatePicker
                       value={formData.certificationExpirations[state] || ""}
-                      onChange={(e: any) => updateFormData({
+                      onChange={(v) => updateFormData({
                         certificationExpirations: { 
                           ...formData.certificationExpirations, 
-                          [state]: e.target.value 
+                          [state]: v 
                         }
                       })}
-                      className="bg-slate-700/50 border-slate-600 text-white text-sm"
                     />
                   </div>
                 ))}
@@ -647,12 +635,7 @@ export default function RegisterEscort() {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Expiration Date <span className="text-red-400">*</span></Label>
-              <Input
-                type="date"
-                value={formData.expirationDate}
-                onChange={(e: any) => updateFormData({ expirationDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
+              <DatePicker value={formData.expirationDate} onChange={updateFormData} />
             </div>
           </div>
         </div>

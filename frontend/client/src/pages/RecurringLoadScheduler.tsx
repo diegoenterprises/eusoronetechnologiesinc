@@ -302,8 +302,8 @@ export default function RecurringLoadScheduler() {
                 <div><label className={lb}>Duration</label><Select value={duration} onValueChange={setDuration}><SelectTrigger className={ic}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="short_term">Short Term (1-6 mo)</SelectItem><SelectItem value="long_term">Long Term (6-24 mo)</SelectItem><SelectItem value="evergreen">Evergreen</SelectItem></SelectContent></Select></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className={lb}>Start Date</label><Input type="date" value={startDate} onChange={(e: any) => setStartDate(e.target.value)} className={ic} /></div>
-                <div><label className={lb}>End Date</label><Input type="date" value={endDate} onChange={(e: any) => setEndDate(e.target.value)} className={ic} /></div>
+                <div><label className={lb}>Start Date</label><DatePicker value={startDate} onChange={setStartDate} /></div>
+                <div><label className={lb}>End Date</label><DatePicker value={endDate} onChange={setEndDate} /></div>
               </div>
               <div><label className={lb}>Dedicated Catalyst (optional)</label><Input value={catalystName} onChange={(e: any) => setCatalystName(e.target.value)} placeholder="Leave blank to open for bidding" className={ic} /></div>
             </CardContent>

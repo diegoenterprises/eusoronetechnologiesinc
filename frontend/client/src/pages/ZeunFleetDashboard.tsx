@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
+import DatePicker from "@/components/DatePicker";
 import { 
   Wrench, AlertTriangle, Truck, DollarSign,
   Clock, CheckCircle, RefreshCw, Download, BarChart3,
@@ -129,11 +130,11 @@ export default function ZeunFleetDashboard() {
           <div className="flex flex-wrap gap-4 items-end">
             <div>
               <label className={cn("text-[10px] font-medium uppercase tracking-wider block mb-1.5", L ? "text-slate-400" : "text-slate-500")}>Start Date</label>
-              <Input type="date" value={dateRange.startDate} onChange={(e: any) => setDateRange({ ...dateRange, startDate: e.target.value })} className={cn("rounded-xl text-sm", L ? "" : "bg-slate-800/50 border-slate-700/50")} />
+              <DatePicker value={dateRange.startDate} onChange={(v) => setDateRange({ ...dateRange, startDate: v })} />
             </div>
             <div>
               <label className={cn("text-[10px] font-medium uppercase tracking-wider block mb-1.5", L ? "text-slate-400" : "text-slate-500")}>End Date</label>
-              <Input type="date" value={dateRange.endDate} onChange={(e: any) => setDateRange({ ...dateRange, endDate: e.target.value })} className={cn("rounded-xl text-sm", L ? "" : "bg-slate-800/50 border-slate-700/50")} />
+              <DatePicker value={dateRange.endDate} onChange={(v) => setDateRange({ ...dateRange, endDate: v })} />
             </div>
             <div>
               <label className={cn("text-[10px] font-medium uppercase tracking-wider block mb-1.5", L ? "text-slate-400" : "text-slate-500")}>Status</label>

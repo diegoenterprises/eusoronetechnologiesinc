@@ -707,7 +707,7 @@ export default function DockManagement() {
             <div className="grid grid-cols-4 gap-3">
               <div>
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Ticket Date <span className="text-red-400">*</span></label>
-                <Input type="date" value={runTicketForm.ticketDate} onChange={e => setRunTicketForm(p => ({ ...p, ticketDate: e.target.value }))} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] h-9 text-sm" />
+                <DatePicker value={runTicketForm.ticketDate} onChange={(v) => setRunTicketForm(p => ({ ...p, ticketDate: v }))} />
               </div>
               <div>
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Product <span className="text-red-400">*</span></label>

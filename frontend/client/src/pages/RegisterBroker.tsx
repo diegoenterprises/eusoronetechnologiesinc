@@ -477,12 +477,7 @@ export default function RegisterBroker() {
               <Label className="text-slate-300">
                 Bond Expiration <span className="text-red-400">*</span>
               </Label>
-              <Input
-                type="date"
-                value={formData.bondExpiration}
-                onChange={(e: any) => updateFormData({ bondExpiration: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
+              <DatePicker value={formData.bondExpiration} onChange={updateFormData} />
             </div>
           </div>
 
@@ -559,12 +554,7 @@ export default function RegisterBroker() {
               <Label className="text-slate-300">
                 Expiration Date <span className="text-red-400">*</span>
               </Label>
-              <Input
-                type="date"
-                value={formData.expirationDate}
-                onChange={(e: any) => updateFormData({ expirationDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
+              <DatePicker value={formData.expirationDate} onChange={updateFormData} />
             </div>
           </div>
         </div>

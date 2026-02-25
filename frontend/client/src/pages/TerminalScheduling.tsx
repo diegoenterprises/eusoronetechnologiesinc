@@ -155,12 +155,7 @@ export default function TerminalScheduling() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-white text-lg">Appointments</CardTitle>
-                <input 
-                  type="date" 
-                  value={selectedDate} 
-                  onChange={(e: any) => setSelectedDate(e.target.value)} 
-                  className="bg-slate-700/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white text-sm" 
-                />
+                <DatePicker value={selectedDate} onChange={setSelectedDate} />
               </div>
             </CardHeader>
             <CardContent>

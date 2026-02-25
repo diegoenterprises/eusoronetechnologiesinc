@@ -340,7 +340,7 @@ function UploadModal({
                         <div className="grid grid-cols-3 gap-2">
                           <Input value={entry.docNumber} onChange={(e) => updateFile(idx, { docNumber: e.target.value })} placeholder="Doc #" className={cn("h-7 text-xs", isLight ? "" : "bg-slate-700 border-slate-600")} />
                           <Input value={entry.state} onChange={(e) => updateFile(idx, { state: e.target.value.toUpperCase().slice(0, 2) })} placeholder="ST" maxLength={2} className={cn("h-7 text-xs", isLight ? "" : "bg-slate-700 border-slate-600")} />
-                          <Input type="date" value={entry.expiresAt} onChange={(e) => updateFile(idx, { expiresAt: e.target.value })} className={cn("h-7 text-xs", isLight ? "" : "bg-slate-700 border-slate-600")} />
+                          <DatePicker value={entry.expiresAt} onChange={(v) => updateFile(idx, { expiresAt: v })} />
                         </div>
                       </div>
                       <button onClick={() => removeFile(idx)} className="p-1 text-slate-500 hover:text-red-400 shrink-0">

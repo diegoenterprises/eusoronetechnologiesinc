@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Shield, FileText, CheckCircle, XCircle, AlertTriangle, Plus, Search, Building2, Truck, ArrowRight, Clock, Handshake, Scale, Eye, ChevronRight, Zap, Lock, MapPin, ArrowUpRight, Users, Phone, Globe, Star, Loader2, Leaf, TrendingUp, BarChart3, Calendar, Activity, ShieldAlert, ShieldCheck, Wind, Flame, Heart, Target, Info, ArrowDownRight, Minus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import DatePicker from "@/components/DatePicker";
 
 const LEASE_TYPE_LABEL: Record<string, { label: string; color: string; bg: string; desc: string }> = {
   full_lease: { label: "Full Lease-On", color: "text-blue-400", bg: "bg-blue-500/10", desc: "Long-term operation under carrier authority" },
@@ -1288,11 +1289,11 @@ function CreateLeaseDialog({ open, onOpenChange, onSubmit, authorities }: { open
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-slate-400 text-xs uppercase tracking-wider">Start Date</Label>
-              <Input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+              <DatePicker value={form.startDate} onChange={(v) => setForm(f => ({ ...f, startDate: v }))} />
             </div>
             <div>
               <Label className="text-slate-400 text-xs uppercase tracking-wider">End Date</Label>
-              <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+              <DatePicker value={form.endDate} onChange={(v) => setForm(f => ({ ...f, endDate: v }))} />
             </div>
           </div>
 
@@ -1464,11 +1465,11 @@ function FMCSALeaseDialog({ open, onOpenChange, carrier, onSubmit }: { open: boo
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-slate-400 text-xs uppercase tracking-wider">Start Date</Label>
-              <Input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+              <DatePicker value={form.startDate} onChange={(v) => setForm(f => ({ ...f, startDate: v }))} />
             </div>
             <div>
               <Label className="text-slate-400 text-xs uppercase tracking-wider">End Date</Label>
-              <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+              <DatePicker value={form.endDate} onChange={(v) => setForm(f => ({ ...f, endDate: v }))} />
             </div>
           </div>
 

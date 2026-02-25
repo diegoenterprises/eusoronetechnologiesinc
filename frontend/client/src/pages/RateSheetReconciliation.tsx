@@ -1105,11 +1105,11 @@ export default function RateSheetReconciliation() {
             <div className="grid grid-cols-5 gap-3">
               <div>
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Period Start</label>
-                <Input type="date" value={reconForm.periodStart} onChange={e => setReconForm(p => ({ ...p, periodStart: e.target.value }))} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] h-9 text-sm" />
+                <DatePicker value={reconForm.periodStart} onChange={(v) => setReconForm(p => ({ ...p, periodStart: v }))} />
               </div>
               <div>
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Period End</label>
-                <Input type="date" value={reconForm.periodEnd} onChange={e => setReconForm(p => ({ ...p, periodEnd: e.target.value }))} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] h-9 text-sm" />
+                <DatePicker value={reconForm.periodEnd} onChange={(v) => setReconForm(p => ({ ...p, periodEnd: v }))} />
               </div>
               <div>
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Customer</label>
@@ -1462,11 +1462,11 @@ export default function RateSheetReconciliation() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Period Start</label>
-                <Input type="date" value={reconPeriod.start} onChange={e => setReconPeriod(p => ({ ...p, start: e.target.value }))} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] h-9 text-sm" />
+                <DatePicker value={reconPeriod.start} onChange={(v) => setReconPeriod(p => ({ ...p, start: v }))} />
               </div>
               <div>
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Period End</label>
-                <Input type="date" value={reconPeriod.end} onChange={e => setReconPeriod(p => ({ ...p, end: e.target.value }))} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] h-9 text-sm" />
+                <DatePicker value={reconPeriod.end} onChange={(v) => setReconPeriod(p => ({ ...p, end: v }))} />
               </div>
             </div>
           </div>

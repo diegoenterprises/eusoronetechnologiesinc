@@ -119,7 +119,7 @@ export default function ProfileSetup() {
           <div className="grid grid-cols-3 gap-3">
             <div><label className={labelCls}>CDL Number</label><Input value={form.cdlNumber} onChange={(e: any) => update("cdlNumber", e.target.value)} className={inputCls} /></div>
             <div><label className={labelCls}>Issuing State</label><Input value={form.cdlState} onChange={(e: any) => update("cdlState", e.target.value)} placeholder="TX" className={inputCls} /></div>
-            <div><label className={labelCls}>Expiration</label><Input type="date" value={form.cdlExpiry} onChange={(e: any) => update("cdlExpiry", e.target.value)} className={inputCls} /></div>
+            <div><label className={labelCls}>Expiration</label><DatePicker value={form.cdlExpiry} onChange={(v) => update("cdlExpiry", v)} /></div>
           </div>
 
           <div>

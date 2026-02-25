@@ -628,12 +628,7 @@ export default function RegisterCatalyst() {
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Expiration Date <span className="text-red-400">*</span></Label>
-                <Input
-                  type="date"
-                  value={formData.liabilityExpiration}
-                  onChange={(e: any) => updateFormData({ liabilityExpiration: e.target.value })}
-                  className="bg-slate-700/50 border-slate-600 text-white"
-                />
+                <DatePicker value={formData.liabilityExpiration} onChange={updateFormData} />
               </div>
             </div>
           </div>
@@ -675,12 +670,7 @@ export default function RegisterCatalyst() {
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Expiration Date <span className="text-red-400">*</span></Label>
-                <Input
-                  type="date"
-                  value={formData.cargoExpiration}
-                  onChange={(e: any) => updateFormData({ cargoExpiration: e.target.value })}
-                  className="bg-slate-700/50 border-slate-600 text-white"
-                />
+                <DatePicker value={formData.cargoExpiration} onChange={updateFormData} />
               </div>
             </div>
           </div>

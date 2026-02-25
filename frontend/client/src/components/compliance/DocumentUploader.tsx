@@ -223,12 +223,7 @@ export function DocumentUploader({
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Expiration Date (if applicable)</Label>
-              <Input
-                type="date"
-                value={expirationDate}
-                onChange={(e) => setExpirationDate(e.target.value)}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
+              <DatePicker value={expirationDate} onChange={setExpirationDate} />
             </div>
           </div>
 

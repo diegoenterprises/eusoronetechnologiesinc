@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { useTheme } from "@/contexts/ThemeContext";
 import { EsangIcon } from "@/components/EsangIcon";
 import { Badge } from "@/components/ui/badge";
+import DatePicker from "@/components/DatePicker";
 
 const STATUS_STYLE: Record<string, { cls: string; label: string; icon: any }> = {
   scheduled:  { cls: "text-blue-400 bg-blue-400/10", label: "Scheduled", icon: Clock },
@@ -482,7 +483,7 @@ export default function TerminalAppointments() {
                   </div>
                   <div>
                     <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Date</label>
-                    <Input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} className={cn("h-10", inp)} />
+                    <DatePicker value={formDate} onChange={setFormDate} placeholder="Select date" />
                   </div>
                   <div>
                     <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Time</label>

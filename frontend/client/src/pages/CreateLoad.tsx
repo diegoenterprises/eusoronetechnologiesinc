@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
+import DatePicker from "@/components/DatePicker";
 import {
   Package, MapPin, Truck, DollarSign, Calendar, ArrowRight,
   Send, Loader2
@@ -96,7 +97,7 @@ export default function CreateLoad() {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Pickup Date *</Label>
-              <Input type="date" value={formData.pickupDate} onChange={(e: any) => setFormData({ ...formData, pickupDate: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
+              <DatePicker value={formData.pickupDate} onChange={(v) => setFormData({ ...formData, pickupDate: v })} />
             </div>
           </CardContent>
         </Card>
@@ -124,7 +125,7 @@ export default function CreateLoad() {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Delivery Date</Label>
-              <Input type="date" value={formData.deliveryDate} onChange={(e: any) => setFormData({ ...formData, deliveryDate: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
+              <DatePicker value={formData.deliveryDate} onChange={(v) => setFormData({ ...formData, deliveryDate: v })} />
             </div>
           </CardContent>
         </Card>

@@ -266,12 +266,7 @@ export default function RegisterDriver() {
               <Label className="text-slate-300">
                 Date of Birth <span className="text-red-400">*</span>
               </Label>
-              <Input
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e: any) => updateFormData({ dateOfBirth: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
+              <DatePicker value={formData.dateOfBirth} onChange={updateFormData} />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">
@@ -498,12 +493,7 @@ export default function RegisterDriver() {
               <Label className="text-slate-300">
                 Expiration Date <span className="text-red-400">*</span>
               </Label>
-              <Input
-                type="date"
-                value={formData.cdlExpiration}
-                onChange={(e: any) => updateFormData({ cdlExpiration: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
+              <DatePicker value={formData.cdlExpiration} onChange={updateFormData} />
             </div>
           </div>
 
@@ -567,12 +557,7 @@ export default function RegisterDriver() {
                 <Label className="text-slate-300">
                   Expiration Date <span className="text-red-400">*</span>
                 </Label>
-                <Input
-                  type="date"
-                  value={formData.medicalExpiration}
-                  onChange={(e: any) => updateFormData({ medicalExpiration: e.target.value })}
-                  className="bg-slate-700/50 border-slate-600 text-white"
-                />
+                <DatePicker value={formData.medicalExpiration} onChange={updateFormData} />
               </div>
             </div>
           </div>
@@ -597,12 +582,7 @@ export default function RegisterDriver() {
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Expiration Date</Label>
-                <Input
-                  type="date"
-                  value={formData.twicExpiration}
-                  onChange={(e: any) => updateFormData({ twicExpiration: e.target.value })}
-                  className="bg-slate-700/50 border-slate-600 text-white"
-                />
+                <DatePicker value={formData.twicExpiration} onChange={updateFormData} />
               </div>
             </div>
           </div>
@@ -641,12 +621,7 @@ export default function RegisterDriver() {
               <Label className="text-slate-300">
                 Hazmat Training Completion Date <span className="text-red-400">*</span>
               </Label>
-              <Input
-                type="date"
-                value={formData.hazmatTrainingDate}
-                onChange={(e: any) => updateFormData({ hazmatTrainingDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
+              <DatePicker value={formData.hazmatTrainingDate} onChange={updateFormData} />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Training Provider</Label>
@@ -661,12 +636,7 @@ export default function RegisterDriver() {
 
           <div className="space-y-2">
             <Label className="text-slate-300">Security Awareness Training Date</Label>
-            <Input
-              type="date"
-              value={formData.securityTrainingDate}
-              onChange={(e: any) => updateFormData({ securityTrainingDate: e.target.value })}
-              className="bg-slate-700/50 border-slate-600 text-white"
-            />
+            <DatePicker value={formData.securityTrainingDate} onChange={updateFormData} />
           </div>
 
           <div className="space-y-2">

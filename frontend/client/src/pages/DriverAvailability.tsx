@@ -213,7 +213,7 @@ export default function DriverAvailability() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <p className={cn("text-xs font-medium mb-1.5", isLight ? "text-slate-500" : "text-slate-400")}>Start Date</p>
-                  <Input type="date" value={homeDate} onChange={(e: any) => setHomeDate(e.target.value)} className={inputCls} />
+                  <DatePicker value={homeDate} onChange={setHomeDate} />
                 </div>
                 <div>
                   <p className={cn("text-xs font-medium mb-1.5", isLight ? "text-slate-500" : "text-slate-400")}>Duration</p>

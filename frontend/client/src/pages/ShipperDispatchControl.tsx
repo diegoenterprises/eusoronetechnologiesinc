@@ -419,7 +419,7 @@ export default function ShipperDispatchControl() {
                         <div><label className={lb}>City</label><Input value={pickupCity} onChange={(e: any) => setPickupCity(e.target.value)} placeholder="City" className={ic} /></div>
                         <div><label className={lb}>State</label><Input value={pickupState} onChange={(e: any) => setPickupState(e.target.value)} placeholder="ST" className={ic} /></div>
                         <div className="grid grid-cols-2 gap-2">
-                          <div><label className={lb}>Date</label><Input type="date" value={pickupDate} onChange={(e: any) => setPickupDate(e.target.value)} className={ic} /></div>
+                          <div><label className={lb}>Date</label><DatePicker value={pickupDate} onChange={setPickupDate} /></div>
                           <div><label className={lb}>Time</label><Input type="time" value={pickupTime} onChange={(e: any) => setPickupTime(e.target.value)} className={ic} /></div>
                         </div>
                       </div>
@@ -463,7 +463,7 @@ export default function ShipperDispatchControl() {
                         <div><label className={lb}>City</label><Input value={delivCity} onChange={(e: any) => setDelivCity(e.target.value)} placeholder="City" className={ic} /></div>
                         <div><label className={lb}>State</label><Input value={delivState} onChange={(e: any) => setDelivState(e.target.value)} placeholder="ST" className={ic} /></div>
                         <div className="grid grid-cols-2 gap-2">
-                          <div><label className={lb}>Date</label><Input type="date" value={delivDate} onChange={(e: any) => setDelivDate(e.target.value)} className={ic} /></div>
+                          <div><label className={lb}>Date</label><DatePicker value={delivDate} onChange={setDelivDate} /></div>
                           <div><label className={lb}>Time</label><Input type="time" value={delivTime} onChange={(e: any) => setDelivTime(e.target.value)} className={ic} /></div>
                         </div>
                       </div>

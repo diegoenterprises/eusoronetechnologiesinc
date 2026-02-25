@@ -330,7 +330,7 @@ export default function CatalystCompliance() {
             </div>
             <div>
               <Label className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-300")}>Expiration Date</Label>
-              <Input type="date" value={expirationDate} onChange={(e: any) => setExpirationDate(e.target.value)} className={cn("mt-1.5 rounded-xl", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-900/50 border-slate-600")} />
+              <DatePicker value={expirationDate} onChange={setExpirationDate} />
             </div>
             <div>
               <Label className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-300")}>Upload File</Label>

@@ -119,12 +119,7 @@ export default function ELDLogs() {
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50 border border-slate-700/50">
           <Calendar className="w-4 h-4 text-slate-400" />
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e: any) => setSelectedDate(e.target.value)}
-            className="bg-transparent border-none text-white focus:outline-none"
-          />
+          <DatePicker value={selectedDate} onChange={setSelectedDate} />
         </div>
       </div>
 

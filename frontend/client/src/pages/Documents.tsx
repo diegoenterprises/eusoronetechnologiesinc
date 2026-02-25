@@ -257,13 +257,7 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
                               <option key={c.id} value={c.id}>{c.label}</option>
                             ))}
                           </select>
-                          <input
-                            type="date"
-                            value={entry.expiry}
-                            onChange={e => updateFile(idx, { expiry: e.target.value })}
-                            placeholder="Expiry date"
-                            className="bg-slate-700 text-white text-xs rounded-lg px-2 py-1 border border-slate-600 outline-none"
-                          />
+                          <DatePicker value={entry.expiry} onChange={(v) => updateFile(idx, { expiry: v })} placeholder="Expiry date" />
                         </div>
                         <p className="text-[11px] text-slate-500">
                           {(entry.file.size / 1024).toFixed(0)} KB

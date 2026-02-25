@@ -240,7 +240,7 @@ export default function AccidentReport() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  <div><Label className="text-slate-400">Date of Incident</Label><Input type="date" className="mt-1 bg-slate-700/50 border-slate-600" /></div>
+                  <div><Label className="text-slate-400">Date of Incident</Label><div className="mt-1"><DatePicker placeholder="Select date" /></div></div>
                   <div><Label className="text-slate-400">Time of Incident</Label><Input type="time" className="mt-1 bg-slate-700/50 border-slate-600" /></div>
                   <div><Label className="text-slate-400">Location</Label><Input placeholder="Enter location" className="mt-1 bg-slate-700/50 border-slate-600" /></div>
                   <div>

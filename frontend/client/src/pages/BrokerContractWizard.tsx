@@ -298,8 +298,8 @@ export default function BrokerContractWizard() {
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div><label className={lb}>Payment Days</label><Input type="number" value={payDays} onChange={(e: any) => setPayDays(e.target.value)} className={ic} /></div>
-                <div><label className={lb}>Effective</label><Input type="date" value={effDate} onChange={(e: any) => setEffDate(e.target.value)} className={ic} /></div>
-                <div><label className={lb}>Expires</label><Input type="date" value={expDate} onChange={(e: any) => setExpDate(e.target.value)} className={ic} /></div>
+                <div><label className={lb}>Effective</label><DatePicker value={effDate} onChange={setEffDate} /></div>
+                <div><label className={lb}>Expires</label><DatePicker value={expDate} onChange={setExpDate} /></div>
               </div>
               <div><label className={lb}>Equipment</label>
                 <div className="flex flex-wrap gap-2">{["dry_van", "reefer", "flatbed", "liquid_tank", "gas_tank", "bulk_hopper", "hazmat_van", "cryogenic", "food_grade_tank", "water_tank"].map(eq => (

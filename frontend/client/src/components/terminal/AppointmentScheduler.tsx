@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import DatePicker from "@/components/DatePicker";
 
 export interface Appointment {
   id: string;
@@ -375,12 +376,7 @@ export function AppointmentScheduler({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-slate-300">Date</Label>
-                  <Input
-                    type="date"
-                    value={selectedDate.toISOString().split('T')[0]}
-                    onChange={(e) => onDateChange(new Date(e.target.value))}
-                    className="bg-slate-700/50 border-slate-600 text-white"
-                  />
+                  <DatePicker value={selectedDate.toISOString().split('T')[0]} onChange={(v) => onDateChange(new Date(v + 'T00:00:00'))} />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-slate-300">Time</Label>
