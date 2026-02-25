@@ -1001,6 +1001,17 @@ button, a, [role="button"] {
   background: linear-gradient(135deg, rgba(190,1,255,0.12), rgba(20,115,255,0.12)) !important;
 }
 
+/* ── Global modal overlay fix ──
+   Prevent modals from sliding above viewport when content changes.
+   All modals use fixed inset-0 flex items-center justify-center.
+   Override to pin near top with scroll support. */
+.fixed.inset-0.flex.items-center.justify-center,
+.fixed.inset-0.flex.items-center.justify-center[class] {
+  align-items: flex-start !important;
+  padding-top: 8vh !important;
+  overflow-y: auto !important;
+}
+
 /* Tablet breakpoint */
 @media (min-width: 640px) and (max-width: 1023px) {
   .grid {
