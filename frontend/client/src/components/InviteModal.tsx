@@ -201,7 +201,7 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
     >
       <div className="flex min-h-full items-center justify-center p-4">
       <div className={cn(
-        "w-full max-w-md rounded-2xl border shadow-2xl flex flex-col",
+        "w-full max-w-lg rounded-2xl border shadow-2xl flex flex-col",
         isLight ? "bg-white border-slate-200" : "bg-[#12121a] border-white/[0.08]"
       )}>
         {/* Header */}

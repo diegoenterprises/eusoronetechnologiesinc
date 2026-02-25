@@ -695,8 +695,9 @@ export default function Messages() {
 
       {/* ═══ Payment Modal (Apple Pay / Cash App style) ═══ */}
       {showPaymentModal && selectedConversation && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999]" style={{ animation: "eusoDialogFadeIn 0.2s ease-out" }} onClick={() => setShowPaymentModal(false)}>
-          <div className="p-[1.5px] rounded-2xl w-full max-w-sm mx-4" style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)", animation: "eusoDialogScaleIn 0.2s ease-out" }} onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto z-[9999]" style={{ animation: "eusoDialogFadeIn 0.2s ease-out" }} onClick={() => setShowPaymentModal(false)}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <div className="p-[1.5px] rounded-2xl w-full max-w-md" style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)", animation: "eusoDialogScaleIn 0.2s ease-out" }} onClick={(e) => e.stopPropagation()}>
           <div className="bg-[#0f1629]/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-[0_8px_32px_rgba(20,115,255,0.15)]">
             <div className="flex items-center justify-between p-5 border-b border-white/10">
               <div className="flex items-center gap-2">
@@ -792,13 +793,15 @@ export default function Messages() {
             </div>
           </div>
           </div>
+          </div>
         </div>
       )}
 
       {/* ═══ New Conversation Modal ═══ */}
       {showNewConversation && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999]" style={{ animation: "eusoDialogFadeIn 0.2s ease-out" }} onClick={() => setShowNewConversation(false)}>
-          <div className="p-[1.5px] rounded-2xl w-full max-w-md mx-4" style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)", animation: "eusoDialogScaleIn 0.2s ease-out" }} onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto z-[9999]" style={{ animation: "eusoDialogFadeIn 0.2s ease-out" }} onClick={() => setShowNewConversation(false)}>
+          <div className="flex min-h-full items-center justify-center p-4">
+          <div className="p-[1.5px] rounded-2xl w-full max-w-lg" style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)", animation: "eusoDialogScaleIn 0.2s ease-out" }} onClick={(e) => e.stopPropagation()}>
           <div className="bg-[#0f1629]/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-[0_8px_32px_rgba(20,115,255,0.15)]">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-5 border-b border-white/10">
@@ -868,6 +871,7 @@ export default function Messages() {
                 <Loader2 className="w-4 h-4 animate-spin" /> Creating conversation...
               </div>
             )}
+          </div>
           </div>
           </div>
         </div>

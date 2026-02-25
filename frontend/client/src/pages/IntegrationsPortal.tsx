@@ -473,16 +473,17 @@ export default function IntegrationsPortal() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-md"
+            className="fixed inset-0 z-[9999] overflow-y-auto bg-black/50 backdrop-blur-md"
             onClick={() => setShowCatalog(false)}
           >
+            <div className="flex min-h-full items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
-                "w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden rounded-3xl border shadow-2xl mx-4",
+                "w-full max-w-2xl flex flex-col overflow-hidden rounded-3xl border shadow-2xl",
                 isLight ? "bg-white border-slate-200" : "bg-[#0f0f17] border-white/[0.08]"
               )}
               onClick={e => e.stopPropagation()}
@@ -630,6 +631,7 @@ export default function IntegrationsPortal() {
                 </div>
               </div>
             </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -646,16 +648,17 @@ export default function IntegrationsPortal() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-md"
+            className="fixed inset-0 z-[9999] overflow-y-auto bg-black/50 backdrop-blur-md"
             onClick={() => { setSelectedIntegration(null); setShowCatalog(false); }}
           >
+            <div className="flex min-h-full items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
-                "w-full max-w-lg rounded-3xl border shadow-2xl mx-4 overflow-hidden",
+                "w-full max-w-xl rounded-3xl border shadow-2xl overflow-hidden",
                 isLight ? "bg-white border-slate-200" : "bg-[#0f0f17] border-white/[0.08]"
               )}
               onClick={e => e.stopPropagation()}
@@ -763,6 +766,7 @@ export default function IntegrationsPortal() {
                 </div>
               </div>
             </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

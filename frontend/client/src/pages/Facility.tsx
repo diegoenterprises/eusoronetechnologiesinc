@@ -1048,7 +1048,7 @@ export default function FacilityPage() {
         return (
           <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setKeyModal(null)}>
             <div className="flex min-h-full items-center justify-center p-4">
-            <div className="border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
+            <div className="border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
               {intg && <div className="h-1 w-full rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${intg.brandFrom}, ${intg.brandTo})` }} />}
               <div className="px-6 pt-6 pb-4">
                 <div className="flex items-center justify-between">
