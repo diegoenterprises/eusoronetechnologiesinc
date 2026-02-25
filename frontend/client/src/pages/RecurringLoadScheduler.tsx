@@ -96,14 +96,47 @@ export default function RecurringLoadScheduler() {
   const [linkedAgreement, setLinkedAgreement] = useState("");
   const [patterns, setPatterns] = useState<SchedulePattern[]>([]);
   const [activating, setActivating] = useState(false);
+  const [recurrenceFreq, setRecurrenceFreq] = useState<"weekly" | "biweekly" | "monthly">("weekly");
+
+  // Partner search for dedicated lane catalyst picker
+  const [catalystSearch, setCatalystSearch] = useState("");
+  const partnersQuery = (trpc as any).supplyChain?.getMyPartners?.useQuery?.({ status: "active", toRole: "CATALYST" }) || { data: null, isLoading: false };
+  const partnersList: any[] = Array.isArray(partnersQuery.data) ? partnersQuery.data : [];
+  const filteredPartners = catalystSearch.length >= 2
+    ? partnersList.filter((p: any) => (p.partnerName || p.companyName || "").toLowerCase().includes(catalystSearch.toLowerCase()))
+    : [];
 
   // Load creation mutation — wired to loads.create (the wizard-compatible endpoint)
   const createLoadMutation = (trpc as any).loads?.create?.useMutation?.({
     onError: (err: any) => console.error("[RecurringScheduler] create error:", err?.message),
   });
 
+  // Helper: resolve coords from pattern or state fallback
+  const resolveCoords = (p: SchedulePattern, type: "origin" | "dest") => {
+    const lat = type === "origin" ? p.originLat : p.destLat;
+    const lng = type === "origin" ? p.originLng : p.destLng;
+    const st = type === "origin" ? p.originState : p.destState;
+    if (lat && lng) return { lat, lng };
+    return STATE_COORDS[st.toUpperCase()] || { lat: 32.0, lng: -96.0 };
+  };
+
+  // Helper: check if a date matches the recurrence frequency
+  const matchesRecurrence = (date: Date, startD: Date): boolean => {
+    if (recurrenceFreq === "weekly") return true;
+    if (recurrenceFreq === "biweekly") {
+      const diffWeeks = Math.floor((date.getTime() - startD.getTime()) / (7 * 24 * 60 * 60 * 1000));
+      return diffWeeks % 2 === 0;
+    }
+    if (recurrenceFreq === "monthly") {
+      const day = date.getDate();
+      return day === 1 || day === 15;
+    }
+    return true;
+  };
+
   const activateSchedule = async () => {
     if (patterns.length === 0) { toast.error("Add at least one lane pattern"); return; }
+    if (!createLoadMutation) { toast.error("Load creation not available"); return; }
     setActivating(true);
     let created = 0;
     let failed = 0;
@@ -112,54 +145,91 @@ export default function RecurringLoadScheduler() {
       const start = new Date(startDate);
       const end = endDate ? new Date(endDate) : new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
       const maxLoads = 30;
+      const assignType = catalystName ? "direct_catalyst" : "open_market";
+      const agId = selectedAgreementId ? String(selectedAgreementId) : undefined;
 
-      for (const pattern of patterns) {
-        const originCoords = pattern.originLat && pattern.originLng
-          ? { lat: pattern.originLat, lng: pattern.originLng }
-          : STATE_COORDS[pattern.originState.toUpperCase()] || { lat: 32.0, lng: -96.0 };
-        const destCoords = pattern.destLat && pattern.destLng
-          ? { lat: pattern.destLat, lng: pattern.destLng }
-          : STATE_COORDS[pattern.destState.toUpperCase()] || { lat: 30.0, lng: -95.0 };
-
-        const originStr = pattern.originAddress || `${pattern.originCity}, ${pattern.originState}`;
-        const destStr = pattern.destAddress || `${pattern.destCity}, ${pattern.destState}`;
-        const driveMiles = parseFloat(pattern.estimatedMiles) || 300;
-        const driveHrs = parseFloat(pattern.estimatedDriveHours) || 5;
+      if (contractType === "multi_stop") {
+        // ── MULTI-STOP: Create ONE load per scheduled day with first stop origin → last stop destination
+        // All intermediate stops stored in specialInstructions metadata
+        const firstStop = patterns[0];
+        const lastStop = patterns[patterns.length - 1];
+        const totalMiles = patterns.reduce((s, p) => s + (parseFloat(p.estimatedMiles) || 0), 0);
+        const totalHrs = patterns.reduce((s, p) => s + (parseFloat(p.estimatedDriveHours) || 0), 0);
+        const stopsMetadata = patterns.map((p, i) => `Stop ${i + 1}: ${p.originAddress || `${p.originCity}, ${p.originState}`} → ${p.destAddress || `${p.destCity}, ${p.destState}`}`).join(" | ");
+        const firstOrigin = resolveCoords(firstStop, "origin");
+        const lastDest = resolveCoords(lastStop, "dest");
 
         let current = new Date(start);
         while (current <= end && created + failed < maxLoads) {
           const dayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][current.getDay()];
-          if (pattern.days.includes(dayName)) {
-            for (let l = 0; l < pattern.loadsPerDay && created + failed < maxLoads; l++) {
-              try {
-                const [hours, minutes] = (pattern.pickupTime || "08:00").split(":").map(Number);
-                const pickupDate = new Date(current);
-                pickupDate.setHours(hours || 8, minutes || 0, 0, 0);
-                const deliveryDate = new Date(pickupDate.getTime() + driveHrs * 60 * 60 * 1000 + 2 * 60 * 60 * 1000);
+          if (firstStop.days.includes(dayName)) {
+            try {
+              const [h, m] = (firstStop.pickupTime || "08:00").split(":").map(Number);
+              const pickupDate = new Date(current);
+              pickupDate.setHours(h || 8, m || 0, 0, 0);
+              const deliveryDate = new Date(pickupDate.getTime() + totalHrs * 60 * 60 * 1000 + 2 * 60 * 60 * 1000);
 
-                if (createLoadMutation) {
+              await createLoadMutation.mutateAsync({
+                origin: firstStop.originAddress || `${firstStop.originCity}, ${firstStop.originState}`,
+                destination: lastStop.destAddress || `${lastStop.destCity}, ${lastStop.destState}`,
+                originLat: firstOrigin.lat, originLng: firstOrigin.lng,
+                destLat: lastDest.lat, destLng: lastDest.lng,
+                distance: totalMiles || 300,
+                equipment: firstStop.equipmentType,
+                pickupDate: pickupDate.toISOString(),
+                deliveryDate: deliveryDate.toISOString(),
+                rate: firstStop.ratePerLoad || "0",
+                assignmentType: assignType, linkedAgreementId: agId,
+                productName: `Multi-stop route (${patterns.length} stops) — ${stopsMetadata}`,
+              });
+              created++;
+            } catch { failed++; }
+          }
+          current.setDate(current.getDate() + 1);
+        }
+
+      } else {
+        // ── DEDICATED_LANE / AREA_COVERAGE / SCHEDULED_ROUTE: One load per pattern per matching day
+        for (const pattern of patterns) {
+          const oc = resolveCoords(pattern, "origin");
+          const dc = resolveCoords(pattern, "dest");
+          const originStr = pattern.originAddress || `${pattern.originCity}, ${pattern.originState}`;
+          const destStr = pattern.destAddress || `${pattern.destCity}, ${pattern.destState}`;
+          const driveMiles = parseFloat(pattern.estimatedMiles) || 300;
+          const driveHrs = parseFloat(pattern.estimatedDriveHours) || 5;
+
+          let current = new Date(start);
+          while (current <= end && created + failed < maxLoads) {
+            const dayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][current.getDay()];
+            // Scheduled Route: apply recurrence filter (biweekly, monthly)
+            const recurrenceOk = contractType === "scheduled_route" ? matchesRecurrence(current, start) : true;
+
+            if (pattern.days.includes(dayName) && recurrenceOk) {
+              for (let l = 0; l < pattern.loadsPerDay && created + failed < maxLoads; l++) {
+                try {
+                  const [h, m] = (pattern.pickupTime || "08:00").split(":").map(Number);
+                  const pickupDate = new Date(current);
+                  pickupDate.setHours(h || 8, m || 0, 0, 0);
+                  const deliveryDate = new Date(pickupDate.getTime() + driveHrs * 60 * 60 * 1000 + 2 * 60 * 60 * 1000);
+
                   await createLoadMutation.mutateAsync({
-                    origin: originStr,
-                    destination: destStr,
-                    originLat: originCoords.lat,
-                    originLng: originCoords.lng,
-                    destLat: destCoords.lat,
-                    destLng: destCoords.lng,
+                    origin: originStr, destination: destStr,
+                    originLat: oc.lat, originLng: oc.lng,
+                    destLat: dc.lat, destLng: dc.lng,
                     distance: driveMiles,
                     equipment: pattern.equipmentType,
                     pickupDate: pickupDate.toISOString(),
                     deliveryDate: deliveryDate.toISOString(),
                     rate: pattern.ratePerLoad || "0",
-                    assignmentType: catalystName ? "direct_catalyst" : "open_market",
-                    linkedAgreementId: selectedAgreementId ? String(selectedAgreementId) : undefined,
+                    assignmentType: assignType, linkedAgreementId: agId,
                     productName: `${contractType.replace(/_/g, " ")} shipment`,
                   });
                   created++;
-                }
-              } catch { failed++; }
+                } catch { failed++; }
+              }
             }
+            current.setDate(current.getDate() + 1);
           }
-          current.setDate(current.getDate() + 1);
         }
       }
 
@@ -194,12 +264,27 @@ export default function RecurringLoadScheduler() {
   })();
   const [selectedAgreementId, setSelectedAgreementId] = useState<number | null>(null);
 
-  const addPattern = () => setPatterns([...patterns, {
-    id: `p-${Date.now()}`, originCity: "", originState: "", originAddress: "", originLat: 0, originLng: 0,
-    destCity: "", destState: "", destAddress: "", destLat: 0, destLng: 0,
-    days: ["Mon", "Tue", "Wed", "Thu", "Fri"], pickupTime: "08:00", loadsPerDay: 1,
-    equipmentType: "dry_van", ratePerLoad: "", estimatedMiles: "", estimatedDriveHours: "", notes: "",
-  }]);
+  const addPattern = () => {
+    const base: SchedulePattern = {
+      id: `p-${Date.now()}`, originCity: "", originState: "", originAddress: "", originLat: 0, originLng: 0,
+      destCity: "", destState: "", destAddress: "", destLat: 0, destLng: 0,
+      days: ["Mon", "Tue", "Wed", "Thu", "Fri"], pickupTime: "08:00", loadsPerDay: 1,
+      equipmentType: "dry_van", ratePerLoad: "", estimatedMiles: "", estimatedDriveHours: "", notes: "",
+    };
+    // Area Coverage: copy shared destination from first pattern
+    if (contractType === "area_coverage" && patterns.length > 0) {
+      const first = patterns[0];
+      base.destCity = first.destCity; base.destState = first.destState;
+      base.destAddress = first.destAddress; base.destLat = first.destLat; base.destLng = first.destLng;
+    }
+    // Multi-Stop: chain origin from previous stop's destination
+    if (contractType === "multi_stop" && patterns.length > 0) {
+      const prev = patterns[patterns.length - 1];
+      base.originCity = prev.destCity; base.originState = prev.destState;
+      base.originAddress = prev.destAddress; base.originLat = prev.destLat; base.originLng = prev.destLng;
+    }
+    setPatterns([...patterns, base]);
+  };
 
   const updatePattern = (id: string, field: keyof SchedulePattern, value: any) => {
     setPatterns(patterns.map(p => p.id === id ? { ...p, [field]: value } : p));
@@ -298,7 +383,52 @@ export default function RecurringLoadScheduler() {
                 <div><label className={lb}>Start Date</label><DatePicker value={startDate} onChange={setStartDate} /></div>
                 <div><label className={lb}>End Date</label><DatePicker value={endDate} onChange={setEndDate} /></div>
               </div>
-              <div><label className={lb}>Dedicated Catalyst (optional)</label><Input value={catalystName} onChange={(e: any) => setCatalystName(e.target.value)} placeholder="Leave blank to open for bidding" className={ic} /></div>
+              {/* Route-type-specific options */}
+              {contractType === "dedicated_lane" && (
+                <div className="space-y-2">
+                  <label className={lb}>Assign Catalyst (Carrier)</label>
+                  <div className="relative">
+                    <Input
+                      value={catalystSearch || catalystName}
+                      onChange={(e: any) => { setCatalystSearch(e.target.value); setCatalystName(""); }}
+                      placeholder="Search your partners by company name..."
+                      className={ic}
+                    />
+                    {filteredPartners.length > 0 && catalystSearch.length >= 2 && !catalystName && (
+                      <div className={cn("absolute z-20 w-full mt-1 rounded-xl border max-h-48 overflow-y-auto", isLight ? "bg-white border-slate-200 shadow-lg" : "bg-slate-800 border-slate-700 shadow-xl")}>
+                        {filteredPartners.map((p: any) => (
+                          <button key={p.id || p.partnerId} onClick={() => { setCatalystName(p.partnerName || p.companyName || ""); setCatalystSearch(""); }}
+                            className={cn("w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors", isLight ? "hover:bg-blue-50" : "hover:bg-slate-700")}>
+                            <Users className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                            <div>
+                              <p className={vl}>{p.partnerName || p.companyName}</p>
+                              <p className="text-[10px] text-slate-400">{p.partnerRole || "Catalyst"}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {catalystName && <p className="text-xs text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" />Dedicated to: {catalystName}</p>}
+                  {!catalystName && <p className="text-[10px] text-slate-400">Leave blank to post on the open market for bidding</p>}
+                </div>
+              )}
+              {contractType === "scheduled_route" && (
+                <div>
+                  <label className={lb}>Recurrence Frequency</label>
+                  <Select value={recurrenceFreq} onValueChange={(v: any) => setRecurrenceFreq(v)}>
+                    <SelectTrigger className={ic}><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="weekly">Every Week</SelectItem>
+                      <SelectItem value="biweekly">Every 2 Weeks</SelectItem>
+                      <SelectItem value="monthly">Monthly (1st & 15th)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {(contractType === "multi_stop" || contractType === "area_coverage") && (
+                <div><label className={lb}>Catalyst (optional)</label><Input value={catalystName} onChange={(e: any) => setCatalystName(e.target.value)} placeholder="Leave blank to open for bidding" className={ic} /></div>
+              )}
             </CardContent>
           </Card>
           <Button className="w-full h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" disabled={!contractName} onClick={() => { if (patterns.length === 0) addPattern(); setStep("schedule"); }}>
@@ -314,7 +444,7 @@ export default function RecurringLoadScheduler() {
             <Card key={p.id} className={cc}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className={cn("flex items-center gap-2 text-base", tc)}><MapPin className="w-4 h-4 text-blue-500" />Lane {idx + 1}</CardTitle>
+                  <CardTitle className={cn("flex items-center gap-2 text-base", tc)}><MapPin className="w-4 h-4 text-blue-500" />{contractType === "multi_stop" ? `Stop ${idx + 1}` : contractType === "area_coverage" ? `Origin ${idx + 1}` : contractType === "scheduled_route" ? `Segment ${idx + 1}` : "Lane"}</CardTitle>
                   {patterns.length > 1 && <Button size="sm" variant="ghost" onClick={() => removePattern(p.id)} className="h-7 w-7 p-0"><Trash2 className="w-3.5 h-3.5 text-red-400" /></Button>}
                 </div>
               </CardHeader>
@@ -322,42 +452,61 @@ export default function RecurringLoadScheduler() {
                 {/* Origin & Dest — Google Maps Autocomplete */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className={lb}>Origin</label>
-                    <AddressAutocomplete
-                      value={p.originAddress || `${p.originCity}${p.originState ? ", " + p.originState : ""}`}
-                      onChange={(v) => updatePattern(p.id, "originAddress", v)}
-                      onSelect={(parsed: ParsedAddress) => {
-                        const updated = { ...p, originCity: parsed.city, originState: parsed.state, originAddress: parsed.address, originLat: parsed.lat, originLng: parsed.lng };
-                        if (updated.destLat && updated.destLng && parsed.lat && parsed.lng) {
-                          const miles = haversineDistance(parsed.lat, parsed.lng, updated.destLat, updated.destLng);
-                          updated.estimatedMiles = String(miles);
-                          updated.estimatedDriveHours = String(Math.round(miles / 55 * 10) / 10);
-                        }
-                        setPatterns(patterns.map(x => x.id === p.id ? updated : x));
-                      }}
-                      placeholder="Search origin address..."
-                      className={ic}
-                    />
-                    {p.originCity && <p className="text-[10px] text-slate-400 mt-1">{p.originCity}, {p.originState}</p>}
+                    <label className={lb}>{contractType === "multi_stop" && idx > 0 ? "Stop Location" : "Origin"}</label>
+                    {contractType === "multi_stop" && idx > 0 && p.originAddress ? (
+                      <div className={cn("px-3 py-2 rounded-xl text-sm", isLight ? "bg-slate-100 text-slate-600" : "bg-slate-800/70 text-slate-300")}>
+                        <p className="text-[10px] text-slate-400 mb-0.5">Chained from Stop {idx}</p>
+                        {p.originAddress || `${p.originCity}, ${p.originState}`}
+                      </div>
+                    ) : (
+                      <AddressAutocomplete
+                        value={p.originAddress || `${p.originCity}${p.originState ? ", " + p.originState : ""}`}
+                        onChange={(v) => updatePattern(p.id, "originAddress", v)}
+                        onSelect={(parsed: ParsedAddress) => {
+                          const updated = { ...p, originCity: parsed.city, originState: parsed.state, originAddress: parsed.address, originLat: parsed.lat, originLng: parsed.lng };
+                          if (updated.destLat && updated.destLng && parsed.lat && parsed.lng) {
+                            const miles = haversineDistance(parsed.lat, parsed.lng, updated.destLat, updated.destLng);
+                            updated.estimatedMiles = String(miles);
+                            updated.estimatedDriveHours = String(Math.round(miles / 55 * 10) / 10);
+                          }
+                          setPatterns(patterns.map(x => x.id === p.id ? updated : x));
+                        }}
+                        placeholder="Search origin address..."
+                        className={ic}
+                      />
+                    )}
+                    {p.originCity && !(contractType === "multi_stop" && idx > 0) && <p className="text-[10px] text-slate-400 mt-1">{p.originCity}, {p.originState}</p>}
                   </div>
                   <div>
-                    <label className={lb}>Destination</label>
-                    <AddressAutocomplete
-                      value={p.destAddress || `${p.destCity}${p.destState ? ", " + p.destState : ""}`}
-                      onChange={(v) => updatePattern(p.id, "destAddress", v)}
-                      onSelect={(parsed: ParsedAddress) => {
-                        const updated = { ...p, destCity: parsed.city, destState: parsed.state, destAddress: parsed.address, destLat: parsed.lat, destLng: parsed.lng };
-                        if (updated.originLat && updated.originLng && parsed.lat && parsed.lng) {
-                          const miles = haversineDistance(updated.originLat, updated.originLng, parsed.lat, parsed.lng);
-                          updated.estimatedMiles = String(miles);
-                          updated.estimatedDriveHours = String(Math.round(miles / 55 * 10) / 10);
-                        }
-                        setPatterns(patterns.map(x => x.id === p.id ? updated : x));
-                      }}
-                      placeholder="Search destination address..."
-                      className={ic}
-                    />
-                    {p.destCity && <p className="text-[10px] text-slate-400 mt-1">{p.destCity}, {p.destState}</p>}
+                    <label className={lb}>{contractType === "multi_stop" ? "Next Stop / Final Destination" : contractType === "area_coverage" ? "Shared Destination" : "Destination"}</label>
+                    {contractType === "area_coverage" && idx > 0 && p.destAddress ? (
+                      <div className={cn("px-3 py-2 rounded-xl text-sm", isLight ? "bg-slate-100 text-slate-600" : "bg-slate-800/70 text-slate-300")}>
+                        <p className="text-[10px] text-green-400 mb-0.5">Shared destination (set on Origin 1)</p>
+                        {p.destAddress || `${p.destCity}, ${p.destState}`}
+                      </div>
+                    ) : (
+                      <AddressAutocomplete
+                        value={p.destAddress || `${p.destCity}${p.destState ? ", " + p.destState : ""}`}
+                        onChange={(v) => updatePattern(p.id, "destAddress", v)}
+                        onSelect={(parsed: ParsedAddress) => {
+                          const updated = { ...p, destCity: parsed.city, destState: parsed.state, destAddress: parsed.address, destLat: parsed.lat, destLng: parsed.lng };
+                          if (updated.originLat && updated.originLng && parsed.lat && parsed.lng) {
+                            const miles = haversineDistance(updated.originLat, updated.originLng, parsed.lat, parsed.lng);
+                            updated.estimatedMiles = String(miles);
+                            updated.estimatedDriveHours = String(Math.round(miles / 55 * 10) / 10);
+                          }
+                          // Area Coverage: propagate destination to all patterns
+                          if (contractType === "area_coverage" && idx === 0) {
+                            setPatterns(patterns.map(x => x.id === p.id ? updated : { ...x, destCity: parsed.city, destState: parsed.state, destAddress: parsed.address, destLat: parsed.lat, destLng: parsed.lng }));
+                          } else {
+                            setPatterns(patterns.map(x => x.id === p.id ? updated : x));
+                          }
+                        }}
+                        placeholder="Search destination address..."
+                        className={ic}
+                      />
+                    )}
+                    {p.destCity && !(contractType === "area_coverage" && idx > 0) && <p className="text-[10px] text-slate-400 mt-1">{p.destCity}, {p.destState}</p>}
                   </div>
                 </div>
 
@@ -397,7 +546,13 @@ export default function RecurringLoadScheduler() {
             </Card>
           ))}
 
-          <Button variant="outline" onClick={addPattern} className={cn("w-full rounded-xl", isLight ? "border-slate-200" : "border-slate-700")}><Plus className="w-4 h-4 mr-2" />Add Another Lane</Button>
+          {/* Dedicated Lane = single lane only; others can add more */}
+          {contractType !== "dedicated_lane" && (
+            <Button variant="outline" onClick={addPattern} className={cn("w-full rounded-xl", isLight ? "border-slate-200" : "border-slate-700")}>
+              <Plus className="w-4 h-4 mr-2" />
+              {contractType === "multi_stop" ? "Add Another Stop" : contractType === "area_coverage" ? "Add Another Origin" : "Add Route Segment"}
+            </Button>
+          )}
 
           {/* Totals */}
           <div className={cn("grid grid-cols-3 gap-3")}>
