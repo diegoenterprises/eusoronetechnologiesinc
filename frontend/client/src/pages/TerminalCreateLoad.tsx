@@ -36,6 +36,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
+import type { ParsedAddress } from "@/components/AddressAutocomplete";
 
 type OrderStatus = "draft" | "scheduled" | "loading" | "complete";
 type OrderType = "rack_loading" | "transfer" | "blending";
@@ -722,10 +724,19 @@ export default function TerminalCreateLoad() {
             </label>
             <div className="grid grid-cols-6 gap-3">
               <div className="col-span-6 md:col-span-3">
-                <Input
+                <AddressAutocomplete
                   value={form.destinationAddress}
-                  onChange={e => update("destinationAddress", e.target.value)}
-                  placeholder="Street Address"
+                  onChange={(v) => update("destinationAddress", v)}
+                  onSelect={(parsed: ParsedAddress) => {
+                    setForm(prev => ({
+                      ...prev,
+                      destinationAddress: parsed.address,
+                      destinationCity: parsed.city,
+                      destinationState: parsed.state,
+                      destinationZip: parsed.zip,
+                    }));
+                  }}
+                  placeholder="Search destination address..."
                   className={cn("rounded-xl text-sm", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.08]")}
                 />
               </div>

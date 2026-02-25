@@ -153,8 +153,41 @@ export const escortsRouter = router({
   getAvailableJobs: protectedProcedure
     .input(z.object({ filter: z.string().optional(), search: z.string().optional() }))
     .query(async ({ input }) => {
-      // No escort jobs table yet — return empty
-      return [];
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        // Escort-qualifying loads: hazmat, chemicals, petroleum, oversized — status posted or assigned
+        const rows = await db.select({
+          id: loads.id, loadNumber: loads.loadNumber, status: loads.status,
+          cargoType: loads.cargoType, hazmatClass: loads.hazmatClass,
+          pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
+          rate: loads.rate, distance: loads.distance, pickupDate: loads.pickupDate,
+          weight: loads.weight, specialInstructions: loads.specialInstructions,
+        }).from(loads)
+          .where(and(
+            sql`${loads.cargoType} IN ('hazmat', 'chemicals', 'petroleum', 'oversized')`,
+            sql`${loads.status} IN ('posted', 'assigned')`,
+            sql`(${loads.specialInstructions} IS NULL OR ${loads.specialInstructions} NOT LIKE '%Escort assigned:%')`,
+          ))
+          .orderBy(desc(loads.createdAt))
+          .limit(20);
+
+        return rows.map(r => {
+          const p = r.pickupLocation as any || {};
+          const d = r.deliveryLocation as any || {};
+          return {
+            id: String(r.id), loadNumber: r.loadNumber, status: r.status,
+            cargoType: r.cargoType, hazmatClass: r.hazmatClass,
+            origin: p.city && p.state ? `${p.city}, ${p.state}` : 'Unknown',
+            destination: d.city && d.state ? `${d.city}, ${d.state}` : 'Unknown',
+            rate: r.rate ? parseFloat(String(r.rate)) : 0,
+            distance: r.distance ? parseFloat(String(r.distance)) : 0,
+            pickupDate: r.pickupDate?.toISOString() || '',
+            weight: r.weight ? parseFloat(String(r.weight)) : 0,
+            requiresEscort: true,
+          };
+        });
+      } catch (e) { console.error('[Escorts] getAvailableJobs error:', e); return []; }
     }),
 
   /**
@@ -238,8 +271,42 @@ export const escortsRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ input }) => {
-      // No escort jobs table yet — return empty
-      return { jobs: [], total: 0 };
+      const db = await getDb();
+      if (!db) return { jobs: [], total: 0 };
+      try {
+        const filters = [
+          sql`${loads.cargoType} IN ('hazmat', 'chemicals', 'petroleum', 'oversized')`,
+          sql`${loads.status} IN ('posted', 'assigned')`,
+          sql`(${loads.specialInstructions} IS NULL OR ${loads.specialInstructions} NOT LIKE '%Escort assigned:%')`,
+        ];
+        if (input.startDate) filters.push(gte(loads.pickupDate!, new Date(input.startDate)));
+
+        const [countResult] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(...filters));
+        const rows = await db.select({
+          id: loads.id, loadNumber: loads.loadNumber, status: loads.status,
+          cargoType: loads.cargoType, hazmatClass: loads.hazmatClass,
+          pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
+          rate: loads.rate, distance: loads.distance, pickupDate: loads.pickupDate,
+          weight: loads.weight,
+        }).from(loads).where(and(...filters)).orderBy(desc(loads.createdAt)).limit(input.limit).offset(input.offset);
+
+        const jobs = rows.map(r => {
+          const p = r.pickupLocation as any || {};
+          const d = r.deliveryLocation as any || {};
+          return {
+            id: String(r.id), loadNumber: r.loadNumber, status: r.status,
+            cargoType: r.cargoType, hazmatClass: r.hazmatClass,
+            origin: p.city && p.state ? `${p.city}, ${p.state}` : 'Unknown',
+            destination: d.city && d.state ? `${d.city}, ${d.state}` : 'Unknown',
+            rate: r.rate ? parseFloat(String(r.rate)) : 0,
+            distance: r.distance ? parseFloat(String(r.distance)) : 0,
+            pickupDate: r.pickupDate?.toISOString() || '',
+            weight: r.weight ? parseFloat(String(r.weight)) : 0,
+            requiresEscort: true,
+          };
+        });
+        return { jobs, total: countResult?.count || 0 };
+      } catch (e) { console.error('[Escorts] getAvailableJobsDetailed error:', e); return { jobs: [], total: 0 }; }
     }),
 
   /**
@@ -250,8 +317,35 @@ export const escortsRouter = router({
       status: jobStatusSchema.optional(),
     }))
     .query(async ({ ctx, input }) => {
-      // No escort jobs table yet — return empty
-      return [];
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        if (!userId) return [];
+        const rows = await db.select({
+          id: loads.id, loadNumber: loads.loadNumber, status: loads.status,
+          cargoType: loads.cargoType, hazmatClass: loads.hazmatClass,
+          pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
+          rate: loads.rate, distance: loads.distance, pickupDate: loads.pickupDate,
+        }).from(loads)
+          .where(sql`${loads.specialInstructions} LIKE ${'%Escort assigned: user ' + userId + '%'}`)
+          .orderBy(desc(loads.updatedAt))
+          .limit(20);
+
+        return rows.map(r => {
+          const p = r.pickupLocation as any || {};
+          const d = r.deliveryLocation as any || {};
+          return {
+            id: String(r.id), loadNumber: r.loadNumber, status: r.status,
+            cargoType: r.cargoType, hazmatClass: r.hazmatClass,
+            origin: p.city && p.state ? `${p.city}, ${p.state}` : 'Unknown',
+            destination: d.city && d.state ? `${d.city}, ${d.state}` : 'Unknown',
+            rate: r.rate ? parseFloat(String(r.rate)) : 0,
+            distance: r.distance ? parseFloat(String(r.distance)) : 0,
+            pickupDate: r.pickupDate?.toISOString() || '',
+          };
+        });
+      } catch (e) { console.error('[Escorts] getMyJobs error:', e); return []; }
     }),
 
   /**
@@ -321,8 +415,30 @@ export const escortsRouter = router({
   getJobDetails: protectedProcedure
     .input(z.object({ jobId: z.string() }))
     .query(async ({ input }) => {
-      // No escort jobs table yet — return null
-      return null;
+      const db = await getDb();
+      if (!db) return null;
+      try {
+        const loadId = parseInt(input.jobId, 10);
+        if (!loadId) return null;
+        const [row] = await db.select().from(loads).where(eq(loads.id, loadId)).limit(1);
+        if (!row) return null;
+        const p = row.pickupLocation as any || {};
+        const d = row.deliveryLocation as any || {};
+        return {
+          id: String(row.id), loadNumber: row.loadNumber, status: row.status,
+          cargoType: row.cargoType, hazmatClass: row.hazmatClass,
+          origin: p.city && p.state ? `${p.city}, ${p.state}` : 'Unknown',
+          originAddress: p.address || '', originLat: p.lat || 0, originLng: p.lng || 0,
+          destination: d.city && d.state ? `${d.city}, ${d.state}` : 'Unknown',
+          destAddress: d.address || '', destLat: d.lat || 0, destLng: d.lng || 0,
+          rate: row.rate ? parseFloat(String(row.rate)) : 0,
+          distance: row.distance ? parseFloat(String(row.distance)) : 0,
+          pickupDate: row.pickupDate?.toISOString() || '',
+          deliveryDate: row.deliveryDate?.toISOString() || '',
+          weight: row.weight ? parseFloat(String(row.weight)) : 0,
+          specialInstructions: row.specialInstructions || '',
+        };
+      } catch (e) { console.error('[Escorts] getJobDetails error:', e); return null; }
     }),
 
   /**
@@ -425,7 +541,19 @@ export const escortsRouter = router({
     }),
 
   // Jobs
-  acceptJob: protectedProcedure.input(z.object({ jobId: z.string() })).mutation(async ({ input }) => ({ success: true, jobId: input.jobId })),
+  acceptJob: protectedProcedure.input(z.object({ jobId: z.string() })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) throw new Error('Database unavailable');
+    const userId = Number(ctx.user?.id) || 0;
+    const loadId = parseInt(input.jobId, 10);
+    if (!loadId || !userId) throw new Error('Invalid job or user');
+    // Assign escort to load via specialInstructions
+    await db.update(loads).set({
+      specialInstructions: sql`CONCAT(COALESCE(${loads.specialInstructions}, ''), '\nEscort assigned: user ${String(userId)} at ${new Date().toISOString()}')`,
+      updatedAt: new Date(),
+    }).where(eq(loads.id, loadId));
+    return { success: true, jobId: input.jobId, escortUserId: userId };
+  }),
   getJobs: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];

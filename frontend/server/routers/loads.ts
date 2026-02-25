@@ -109,6 +109,7 @@ export const loadsRouter = router({
       equipment: z.string().optional(),
       trailerType: z.string().optional(),
       assignmentType: z.string().optional(),
+      assignedCatalystId: z.number().optional(),
       linkedAgreementId: z.string().optional(),
       compartments: z.number().optional(),
       compartmentProducts: z.array(z.object({
@@ -238,11 +239,24 @@ export const loadsRouter = router({
         }
       }
 
+      // Auto-assign catalyst if direct_catalyst assignment type
+      if (input?.assignmentType === 'direct_catalyst' && input?.assignedCatalystId && insertedId) {
+        try {
+          await db.update(loads).set({
+            catalystId: input.assignedCatalystId,
+            status: 'assigned',
+            updatedAt: new Date(),
+          } as any).where(eq(loads.id, insertedId));
+        } catch (e) {
+          console.error('[Loads] Auto-assign catalyst error:', e);
+        }
+      }
+
       emitLoadStatusChange({
         loadId: String(insertedId),
         loadNumber,
         previousStatus: "",
-        newStatus: "posted",
+        newStatus: input?.assignmentType === 'direct_catalyst' && input?.assignedCatalystId ? "assigned" : "posted",
         timestamp: new Date().toISOString(),
         updatedBy: String(ctx.user?.id || 0),
       });

@@ -93,6 +93,7 @@ export default function RecurringLoadScheduler() {
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
   const [endDate, setEndDate] = useState("");
   const [catalystName, setCatalystName] = useState("");
+  const [catalystUserId, setCatalystUserId] = useState<number | null>(null);
   const [linkedAgreement, setLinkedAgreement] = useState("");
   const [patterns, setPatterns] = useState<SchedulePattern[]>([]);
   const [activating, setActivating] = useState(false);
@@ -179,7 +180,9 @@ export default function RecurringLoadScheduler() {
                 pickupDate: pickupDate.toISOString(),
                 deliveryDate: deliveryDate.toISOString(),
                 rate: firstStop.ratePerLoad || "0",
-                assignmentType: assignType, linkedAgreementId: agId,
+                assignmentType: assignType,
+                assignedCatalystId: catalystUserId || undefined,
+                linkedAgreementId: agId,
                 productName: `Multi-stop route (${patterns.length} stops) — ${stopsMetadata}`,
               });
               created++;
@@ -221,7 +224,9 @@ export default function RecurringLoadScheduler() {
                     pickupDate: pickupDate.toISOString(),
                     deliveryDate: deliveryDate.toISOString(),
                     rate: pattern.ratePerLoad || "0",
-                    assignmentType: assignType, linkedAgreementId: agId,
+                    assignmentType: assignType,
+                    assignedCatalystId: catalystUserId || undefined,
+                    linkedAgreementId: agId,
                     productName: `${contractType.replace(/_/g, " ")} shipment`,
                   });
                   created++;
@@ -397,7 +402,7 @@ export default function RecurringLoadScheduler() {
                     {filteredPartners.length > 0 && catalystSearch.length >= 2 && !catalystName && (
                       <div className={cn("absolute z-20 w-full mt-1 rounded-xl border max-h-48 overflow-y-auto", isLight ? "bg-white border-slate-200 shadow-lg" : "bg-slate-800 border-slate-700 shadow-xl")}>
                         {filteredPartners.map((p: any) => (
-                          <button key={p.id || p.partnerId} onClick={() => { setCatalystName(p.partnerName || p.companyName || ""); setCatalystSearch(""); }}
+                          <button key={p.id || p.partnerId} onClick={() => { setCatalystName(p.partnerName || p.companyName || ""); setCatalystUserId(p.partnerUserId || p.id || null); setCatalystSearch(""); }}
                             className={cn("w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors", isLight ? "hover:bg-blue-50" : "hover:bg-slate-700")}>
                             <Users className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
                             <div>
