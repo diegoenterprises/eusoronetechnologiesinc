@@ -297,7 +297,7 @@ export default function EsangChatWidget({ open, onClose, dissolving, isFullScree
           }
           className={cn(
             isFullScreen
-              ? "fixed inset-4 md:inset-6 z-50 rounded-2xl border overflow-hidden flex flex-col"
+              ? "fixed inset-4 md:inset-6 md:bottom-24 z-50 rounded-2xl border overflow-hidden flex flex-col"
               : "fixed bottom-24 right-6 z-50 w-[380px] h-[560px] rounded-2xl border overflow-hidden flex flex-col",
             panelBg
           )}

@@ -253,7 +253,7 @@ export default function EsangFloatingButton() {
     <>
       {/* Floating button — transformed motion.div (creates containing block) */}
       <motion.div
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-0 cursor-pointer"
+        className="fixed bottom-6 right-6 z-[60] flex items-center gap-0 cursor-pointer"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.5 }}
