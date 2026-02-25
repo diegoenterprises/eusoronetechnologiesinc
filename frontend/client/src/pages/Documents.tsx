@@ -21,6 +21,7 @@ import {
   CalendarDays, Tag, ArrowUpDown, FolderOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import DatePicker from "@/components/DatePicker";
 
 // ---------------------------------------------------------------------------
 // CATEGORY DEFINITIONS — single source of truth for the whole platform

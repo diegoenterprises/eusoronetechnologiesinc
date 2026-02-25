@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import DatePicker from "@/components/DatePicker";
 
 interface DispatchFormData {
   // Step 1: Personal Information
@@ -388,7 +389,7 @@ export default function RegisterDispatch() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">Hazmat Training Completion Date</Label>
-              <DatePicker value={formData.hazmatTrainingDate} onChange={updateFormData} />
+              <DatePicker value={formData.hazmatTrainingDate} onChange={(v) => updateFormData({ hazmatTrainingDate: v })} />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Training Provider</Label>

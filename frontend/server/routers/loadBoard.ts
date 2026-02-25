@@ -1224,7 +1224,7 @@ export const loadBoardRouter = router({
         const matches: Array<{
           loadId: string; loadNumber: string; score: number; matchReasons: string[]; warnings: string[];
           origin: string; destination: string; rate: number; distance: number; weight: number;
-          hazmat: boolean; hazmatClass: string | null; equipmentType: string;
+          hazmat: boolean; hazmatClass: string | null; equipmentType: string; cargoType: string;
           postedAt: string;
         }> = [];
 
@@ -2555,7 +2555,7 @@ export const loadBoardRouter = router({
         const matches: Array<{
           loadId: string; loadNumber: string; score: number; matchReasons: string[]; warnings: string[];
           origin: string; destination: string; rate: number; distance: number; weight: number;
-          hazmat: boolean; hazmatClass: string | null; equipmentType: string;
+          hazmat: boolean; hazmatClass: string | null; equipmentType: string; cargoType: string;
           laneContracted: boolean; contractedRate: number | null; msaActive: boolean;
           postedAt: string;
         }> = [];

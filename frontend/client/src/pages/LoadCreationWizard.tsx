@@ -561,7 +561,7 @@ export default function LoadCreationWizard() {
 
   // Also post to loadBoard for enhanced matching (hazmat-aware, trailer type enriched)
   const postToLoadBoardMutation = (trpc as any).loadBoard.postLoad.useMutation({
-    onSuccess: () => console.log("[LoadCreationWizard] Load also posted to loadBoard"),
+    onSuccess: () => {},
     onError: (e: any) => console.warn("[LoadCreationWizard] loadBoard.postLoad failed:", e.message),
   });
 

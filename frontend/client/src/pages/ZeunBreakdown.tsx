@@ -168,7 +168,7 @@ export default function ZeunBreakdown() {
         latitude = position.coords.latitude;
         longitude = position.coords.longitude;
       } catch {
-        console.log("Using default location");
+        // Using default location
       }
     }
 

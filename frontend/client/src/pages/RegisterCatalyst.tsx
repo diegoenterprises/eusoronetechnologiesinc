@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import DatePicker from "@/components/DatePicker";
 
 interface CatalystFormData {
   // Step 1: Company Information
@@ -628,7 +629,7 @@ export default function RegisterCatalyst() {
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Expiration Date <span className="text-red-400">*</span></Label>
-                <DatePicker value={formData.liabilityExpiration} onChange={updateFormData} />
+                <DatePicker value={formData.liabilityExpiration} onChange={(v) => updateFormData({ liabilityExpiration: v })} />
               </div>
             </div>
           </div>
@@ -670,7 +671,7 @@ export default function RegisterCatalyst() {
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Expiration Date <span className="text-red-400">*</span></Label>
-                <DatePicker value={formData.cargoExpiration} onChange={updateFormData} />
+                <DatePicker value={formData.cargoExpiration} onChange={(v) => updateFormData({ cargoExpiration: v })} />
               </div>
             </div>
           </div>

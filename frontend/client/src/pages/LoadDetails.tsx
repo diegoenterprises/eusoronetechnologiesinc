@@ -1069,7 +1069,7 @@ export default function LoadDetails() {
                 showSaveButton={true}
                 productName={load.commodity}
                 onIdentify={(result) => {
-                  console.log("SpectraMatch result:", result);
+                  // SpectraMatch result received
                   loadQuery.refetch();
                 }}
               />

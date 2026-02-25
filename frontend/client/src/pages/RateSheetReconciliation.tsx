@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import DatePicker from "@/components/DatePicker";
 
 const cell = "rounded-2xl border border-slate-200/60 dark:border-white/[0.04] bg-white dark:bg-white/[0.02]";
 
@@ -1475,38 +1476,38 @@ export default function RateSheetReconciliation() {
           {reconData?.summary && (
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div className={cn("p-4 text-center", cell)}>
-                <div className={cn("text-2xl font-bold", reconData.summary.reconciliationScore >= 80 ? "text-emerald-400" : reconData.summary.reconciliationScore >= 50 ? "text-amber-400" : "text-red-400")}>
-                  {reconData.summary.reconciliationScore}%
+                <div className={cn("text-2xl font-bold", reconData!.summary.reconciliationScore >= 80 ? "text-emerald-400" : reconData!.summary.reconciliationScore >= 50 ? "text-amber-400" : "text-red-400")}>
+                  {reconData!.summary.reconciliationScore}%
                 </div>
                 <p className="text-[10px] text-slate-500 mt-0.5">Reconciliation Score</p>
               </div>
               <div className={cn("p-4 text-center", cell)}>
-                <div className="text-2xl font-bold text-emerald-400">{reconData.summary.clean || 0}</div>
+                <div className="text-2xl font-bold text-emerald-400">{reconData!.summary.clean || 0}</div>
                 <p className="text-[10px] text-slate-500 mt-0.5">Matched (Clean)</p>
               </div>
               <div className={cn("p-4 text-center", cell)}>
-                <div className="text-2xl font-bold text-amber-400">{reconData.summary.warnings || 0}</div>
+                <div className="text-2xl font-bold text-amber-400">{reconData!.summary.warnings || 0}</div>
                 <p className="text-[10px] text-slate-500 mt-0.5">Minor Variance</p>
               </div>
               <div className={cn("p-4 text-center", cell)}>
-                <div className="text-2xl font-bold text-red-400">{reconData.summary.discrepancies || 0}</div>
+                <div className="text-2xl font-bold text-red-400">{reconData!.summary.discrepancies || 0}</div>
                 <p className="text-[10px] text-slate-500 mt-0.5">Discrepancies</p>
               </div>
               <div className={cn("p-4 text-center", cell)}>
-                <div className="text-2xl font-bold text-slate-500">{reconData.summary.unmatched || 0}</div>
+                <div className="text-2xl font-bold text-slate-500">{reconData!.summary.unmatched || 0}</div>
                 <p className="text-[10px] text-slate-500 mt-0.5">Unmatched</p>
               </div>
             </div>
           )}
 
           {/* Matched Records — Traffic Light View */}
-          {reconData?.matched && reconData.matched.length > 0 && (
+          {reconData?.matched && reconData!.matched.length > 0 && (
             <div className={cn("p-5", cell)}>
               <h4 className="text-xs font-semibold text-slate-800 dark:text-white flex items-center gap-2 mb-3">
-                <Search className="w-3.5 h-3.5 text-[#1473FF]" />Matched Records ({reconData.matched.length})
+                <Search className="w-3.5 h-3.5 text-[#1473FF]" />Matched Records ({reconData!.matched.length})
               </h4>
               <div className="space-y-2">
-                {reconData.matched.map((m: any, i: number) => (
+                {reconData!.matched.map((m: any, i: number) => (
                   <div key={i} className={cn("p-3 rounded-xl border",
                     m.overallStatus === "green" ? "bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20" :
                     m.overallStatus === "amber" ? "bg-amber-50/50 dark:bg-amber-500/5 border-amber-200 dark:border-amber-500/20" :
@@ -1575,14 +1576,14 @@ export default function RateSheetReconciliation() {
           )}
 
           {/* Unmatched Records */}
-          {reconData?.unmatched && reconData.unmatched.length > 0 && (
+          {reconData?.unmatched && reconData!.unmatched.length > 0 && (
             <div className={cn("p-5", cell)}>
               <h4 className="text-xs font-semibold text-slate-800 dark:text-white flex items-center gap-2 mb-3">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />Unmatched Records ({reconData.unmatched.length})
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />Unmatched Records ({reconData!.unmatched.length})
               </h4>
               <p className="text-[10px] text-slate-500 mb-3">These records could not be paired — investigate for missing documents, incorrect invoicing, or lost product</p>
               <div className="space-y-1.5">
-                {reconData.unmatched.map((u: any, i: number) => (
+                {reconData!.unmatched.map((u: any, i: number) => (
                   <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.03]">
                     <div className="flex items-center gap-3">
                       <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded",

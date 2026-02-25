@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import DatePicker from "@/components/DatePicker";
 
 interface TerminalFormData {
   // Step 1: Personal Information
@@ -413,7 +414,7 @@ export default function RegisterTerminal() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">SPCC Plan Date</Label>
-              <DatePicker value={formData.spccPlanDate} onChange={updateFormData} />
+              <DatePicker value={formData.spccPlanDate} onChange={(v) => updateFormData({ spccPlanDate: v })} />
               <p className="text-xs text-slate-500">Spill Prevention, Control, and Countermeasure plan date</p>
             </div>
             <div className="space-y-2">
@@ -568,7 +569,7 @@ export default function RegisterTerminal() {
 
           <div className="space-y-2">
             <Label className="text-slate-300">Last Facility Inspection Date</Label>
-            <DatePicker value={formData.lastInspectionDate} onChange={updateFormData} />
+            <DatePicker value={formData.lastInspectionDate} onChange={(v) => updateFormData({ lastInspectionDate: v })} />
           </div>
 
           <div className="flex items-center space-x-2 p-4 rounded-lg bg-slate-700/30">

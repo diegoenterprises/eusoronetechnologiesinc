@@ -248,7 +248,7 @@ export default function Wallet() {
       const tiers = meta.rateTiers || [];
       const sc = meta.surcharges || {};
       const rateUnit = meta.rateUnit || "per_barrel";
-      const unitLabel = { per_barrel: "/BBL", per_mile: "/mi", per_cwt: "/cwt", flat_rate: "", per_pallet: "/plt", per_gallon: "/gal", per_ton: "/ton" }[rateUnit] || "/BBL";
+      const unitLabel = ({ per_barrel: "/BBL", per_mile: "/mi", per_cwt: "/cwt", flat_rate: "", per_pallet: "/plt", per_gallon: "/gal", per_ton: "/ton" } as Record<string, string>)[rateUnit] || "/BBL";
       const trailerLabel = { tanker: "Tanker", dry_van: "Dry Van", reefer: "Reefer", flatbed: "Flatbed", step_deck: "Step Deck", lowboy: "Lowboy", hopper: "Hopper", intermodal: "Container" }[meta.trailerType as string] || meta.trailerType || "Tanker";
 
       // Build gradient tier grid matching the app's Schedule A layout

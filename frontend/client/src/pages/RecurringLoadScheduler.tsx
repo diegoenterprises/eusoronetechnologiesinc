@@ -33,6 +33,7 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import AddressAutocomplete, { ParsedAddress } from "@/components/AddressAutocomplete";
+import DatePicker from "@/components/DatePicker";
 
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 3959;

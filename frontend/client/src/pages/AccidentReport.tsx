@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import DatePicker from "@/components/DatePicker";
 
 export default function AccidentReport() {
   const [activeTab, setActiveTab] = useState("reports");

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import DatePicker from "@/components/DatePicker";
 
 interface DriverFormData {
   // Step 1: Personal Information
@@ -266,7 +267,7 @@ export default function RegisterDriver() {
               <Label className="text-slate-300">
                 Date of Birth <span className="text-red-400">*</span>
               </Label>
-              <DatePicker value={formData.dateOfBirth} onChange={updateFormData} />
+              <DatePicker value={formData.dateOfBirth} onChange={(v) => updateFormData({ dateOfBirth: v })} />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">
@@ -493,7 +494,7 @@ export default function RegisterDriver() {
               <Label className="text-slate-300">
                 Expiration Date <span className="text-red-400">*</span>
               </Label>
-              <DatePicker value={formData.cdlExpiration} onChange={updateFormData} />
+              <DatePicker value={formData.cdlExpiration} onChange={(v) => updateFormData({ cdlExpiration: v })} />
             </div>
           </div>
 
@@ -557,7 +558,7 @@ export default function RegisterDriver() {
                 <Label className="text-slate-300">
                   Expiration Date <span className="text-red-400">*</span>
                 </Label>
-                <DatePicker value={formData.medicalExpiration} onChange={updateFormData} />
+                <DatePicker value={formData.medicalExpiration} onChange={(v) => updateFormData({ medicalExpiration: v })} />
               </div>
             </div>
           </div>
@@ -582,7 +583,7 @@ export default function RegisterDriver() {
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Expiration Date</Label>
-                <DatePicker value={formData.twicExpiration} onChange={updateFormData} />
+                <DatePicker value={formData.twicExpiration} onChange={(v) => updateFormData({ twicExpiration: v })} />
               </div>
             </div>
           </div>
@@ -621,7 +622,7 @@ export default function RegisterDriver() {
               <Label className="text-slate-300">
                 Hazmat Training Completion Date <span className="text-red-400">*</span>
               </Label>
-              <DatePicker value={formData.hazmatTrainingDate} onChange={updateFormData} />
+              <DatePicker value={formData.hazmatTrainingDate} onChange={(v) => updateFormData({ hazmatTrainingDate: v })} />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Training Provider</Label>
@@ -636,7 +637,7 @@ export default function RegisterDriver() {
 
           <div className="space-y-2">
             <Label className="text-slate-300">Security Awareness Training Date</Label>
-            <DatePicker value={formData.securityTrainingDate} onChange={updateFormData} />
+            <DatePicker value={formData.securityTrainingDate} onChange={(v) => updateFormData({ securityTrainingDate: v })} />
           </div>
 
           <div className="space-y-2">

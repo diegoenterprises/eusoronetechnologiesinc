@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import DatePicker from "@/components/DatePicker";
 
 interface EscortFormData {
   // Step 1: Personal Information
@@ -253,7 +254,7 @@ export default function RegisterEscort() {
 
           <div className="space-y-2">
             <Label className="text-slate-300">Date of Birth <span className="text-red-400">*</span></Label>
-            <DatePicker value={formData.dateOfBirth} onChange={updateFormData} />
+            <DatePicker value={formData.dateOfBirth} onChange={(v) => updateFormData({ dateOfBirth: v })} />
           </div>
         </div>
       ),
@@ -376,7 +377,7 @@ export default function RegisterEscort() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">Expiration Date <span className="text-red-400">*</span></Label>
-              <DatePicker value={formData.licenseExpiration} onChange={updateFormData} />
+              <DatePicker value={formData.licenseExpiration} onChange={(v) => updateFormData({ licenseExpiration: v })} />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">License Class</Label>
@@ -635,7 +636,7 @@ export default function RegisterEscort() {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Expiration Date <span className="text-red-400">*</span></Label>
-              <DatePicker value={formData.expirationDate} onChange={updateFormData} />
+              <DatePicker value={formData.expirationDate} onChange={(v) => updateFormData({ expirationDate: v })} />
             </div>
           </div>
         </div>

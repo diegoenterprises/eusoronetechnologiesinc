@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
+import DatePicker from "@/components/DatePicker";
 import {
   User, Truck, Phone, Mail, MapPin, Shield,
   CheckCircle, Camera, Calendar, FileText, Settings

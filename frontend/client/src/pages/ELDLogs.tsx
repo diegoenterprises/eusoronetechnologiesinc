@@ -15,6 +15,7 @@ import {
   AlertTriangle, Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import DatePicker from "@/components/DatePicker";
 
 export default function ELDLogs() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);

@@ -38,6 +38,7 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import GradientSignaturePad from "@/components/GradientSignaturePad";
 import { useAuth } from "@/_core/hooks/useAuth";
+import DatePicker from "@/components/DatePicker";
 
 const PLATFORM_FEE = 3.5;
 const PLATFORM_FEE_MIN = 15;

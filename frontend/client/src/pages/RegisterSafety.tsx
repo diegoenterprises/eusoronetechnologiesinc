@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import DatePicker from "@/components/DatePicker";
 
 interface SafetyFormData {
   // Step 1: Personal Information
@@ -340,11 +341,11 @@ export default function RegisterSafety() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">CSA Training Date</Label>
-              <DatePicker value={formData.csaTrainingDate} onChange={updateFormData} />
+              <DatePicker value={formData.csaTrainingDate} onChange={(v) => updateFormData({ csaTrainingDate: v })} />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Accident Investigation Training Date</Label>
-              <DatePicker value={formData.accidentInvestigationDate} onChange={updateFormData} />
+              <DatePicker value={formData.accidentInvestigationDate} onChange={(v) => updateFormData({ accidentInvestigationDate: v })} />
             </div>
           </div>
         </div>
