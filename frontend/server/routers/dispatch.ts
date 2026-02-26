@@ -559,11 +559,12 @@ export const dispatchRouter = router({
       try {
         const companyId = ctx.user?.companyId || 0;
 
-        // Get drivers with active loads and their last known location
+        // Get drivers with active loads and their last known location from users.currentLocation
         const activeDrivers = await db
           .select({
             driverId: drivers.id, userId: drivers.userId,
             driverName: users.name, driverStatus: drivers.status,
+            currentLocation: users.currentLocation, lastGPSUpdate: users.lastGPSUpdate,
             loadId: loads.id, loadNumber: loads.loadNumber, loadStatus: loads.status,
             cargoType: loads.cargoType, specialInstructions: loads.specialInstructions,
             pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
@@ -577,9 +578,34 @@ export const dispatchRouter = router({
           .where(companyId > 0 ? eq(drivers.companyId, companyId) : undefined)
           .limit(100);
 
+        // For drivers without cached currentLocation, try gps_tracking table
+        const missingLocationUserIds = activeDrivers
+          .filter(d => !d.currentLocation && d.userId)
+          .map(d => d.userId!);
+
+        const gpsLocations = new Map<number, { lat: number; lng: number; updatedAt: Date }>();
+        if (missingLocationUserIds.length > 0) {
+          try {
+            const { gpsTracking } = await import("../../drizzle/schema");
+            for (const uid of missingLocationUserIds) {
+              const [latest] = await db.select({
+                lat: gpsTracking.latitude, lng: gpsTracking.longitude, ts: gpsTracking.timestamp,
+              }).from(gpsTracking).where(eq(gpsTracking.driverId, uid)).orderBy(desc(gpsTracking.timestamp)).limit(1);
+              if (latest) gpsLocations.set(uid, { lat: parseFloat(String(latest.lat)), lng: parseFloat(String(latest.lng)), updatedAt: latest.ts });
+            }
+          } catch { /* gps_tracking table may not exist yet */ }
+        }
+
         return activeDrivers.map(d => {
           const pickup = d.pickupLocation as any || {};
           const delivery = d.deliveryLocation as any || {};
+          const loc = d.currentLocation as { lat: number; lng: number; city?: string; state?: string } | null;
+          const gpsLoc = d.userId ? gpsLocations.get(d.userId) : null;
+          const lastKnownLocation = loc
+            ? { lat: loc.lat, lng: loc.lng, city: loc.city || null, state: loc.state || null, updatedAt: d.lastGPSUpdate?.toISOString() || null }
+            : gpsLoc
+              ? { lat: gpsLoc.lat, lng: gpsLoc.lng, city: null, state: null, updatedAt: gpsLoc.updatedAt?.toISOString() || null }
+              : null;
           return {
             driverId: String(d.driverId),
             name: d.driverName || 'Unknown',
@@ -588,7 +614,7 @@ export const dispatchRouter = router({
             loadStatus: d.loadStatus || null,
             equipmentType: (() => { try { return JSON.parse(d.specialInstructions || '{}')?.equipmentType || null; } catch { return null; } })(),
             cargoType: d.cargoType || null,
-            lastKnownLocation: null, // TODO: integrate with GPS/ELD telemetry table
+            lastKnownLocation,
             origin: pickup.city ? `${pickup.city}, ${pickup.state || ''}` : null,
             destination: delivery.city ? `${delivery.city}, ${delivery.state || ''}` : null,
           };

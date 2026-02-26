@@ -879,29 +879,51 @@ export const integrationsRouter = router({
         .set({ status: "syncing" })
         .where(eq(integrationConnections.id, connection.id));
       
-      // TODO: Trigger actual sync via service
-      // For now, simulate completion
-      setTimeout(async () => {
-        await db
-          .update(integrationSyncLogs)
-          .set({
-            status: "completed",
+      // Trigger real async sync via provider service (fire-and-forget)
+      const startTime = Date.now();
+      (async () => {
+        try {
+          const { getIntegrationService } = await import("../services/integrations");
+          const svc = getIntegrationService(input.providerSlug);
+          if (!svc) throw new Error(`No service implementation for ${input.providerSlug}`);
+          await svc.initialize(connection.id);
+          const result = await svc.fetchData(input.dataTypes || undefined);
+          const durationMs = Date.now() - startTime;
+
+          await db.update(integrationSyncLogs).set({
+            status: result.success ? "completed" : "failed",
             completedAt: new Date(),
-            durationMs: 1500,
-            recordsFetched: 0,
-            recordsCreated: 0,
-            recordsUpdated: 0,
-          })
-          .where(eq(integrationSyncLogs.id, syncLog.id));
-        
-        await db
-          .update(integrationConnections)
-          .set({
-            status: "connected",
+            durationMs,
+            recordsFetched: result.recordsFetched,
+            recordsCreated: result.recordsCreated,
+            recordsUpdated: result.recordsUpdated,
+            recordsFailed: result.recordsFailed,
+            errorMessage: result.errors.length > 0 ? result.errors.join("; ") : null,
+          }).where(eq(integrationSyncLogs.id, syncLog.id));
+
+          await db.update(integrationConnections).set({
+            status: result.success ? "connected" : "error",
             lastSyncAt: new Date(),
-          })
-          .where(eq(integrationConnections.id, connection.id));
-      }, 1500);
+            lastError: result.success ? null : result.errors[0] || null,
+            totalRecordsSynced: (connection.totalRecordsSynced || 0) + result.recordsCreated + result.recordsUpdated,
+            lastRecordsSynced: result.recordsCreated + result.recordsUpdated,
+          }).where(eq(integrationConnections.id, connection.id));
+        } catch (e: any) {
+          console.error(`[Integrations] Sync failed for ${input.providerSlug}:`, e);
+          await db.update(integrationSyncLogs).set({
+            status: "failed",
+            completedAt: new Date(),
+            durationMs: Date.now() - startTime,
+            errorMessage: e?.message || "Unknown sync error",
+          }).where(eq(integrationSyncLogs.id, syncLog.id));
+
+          await db.update(integrationConnections).set({
+            status: "error",
+            lastError: e?.message || "Sync failed",
+            errorCount: (connection.errorCount || 0) + 1,
+          }).where(eq(integrationConnections.id, connection.id));
+        }
+      })();
       
       return { success: true, syncLogId: syncLog.id };
     }),

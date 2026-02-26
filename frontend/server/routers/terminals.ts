@@ -1705,10 +1705,13 @@ export const terminalsRouter = router({
         const [opis] = await db.select().from(integrationConnections)
           .where(and(eq(integrationConnections.companyId, companyId), eq(integrationConnections.providerSlug, 'opis')))
           .limit(1);
-        if (!opis) return null;
-        // TODO: Call real OPIS API with stored keys
-        return null;
-      } catch { return null; }
+        if (!opis || opis.status !== 'connected') return null;
+        const { OPISService } = await import("../services/integrations/OPISService");
+        const svc = new OPISService();
+        await svc.initialize(opis.id);
+        const prices = await svc.getRackPrices({ limit: 50 });
+        return prices;
+      } catch (e) { console.warn('[Terminals] OPIS fetch failed:', e); return null; }
     }),
 
   /**
@@ -1725,10 +1728,17 @@ export const terminalsRouter = router({
         const [gs] = await db.select().from(integrationConnections)
           .where(and(eq(integrationConnections.companyId, companyId), eq(integrationConnections.providerSlug, 'genscape')))
           .limit(1);
-        if (!gs) return null;
-        // TODO: Call real Genscape Lens Direct API with stored keys
-        return null;
-      } catch { return null; }
+        if (!gs || gs.status !== 'connected') return null;
+        const { GenscapeService } = await import("../services/integrations/GenscapeService");
+        const svc = new GenscapeService();
+        await svc.initialize(gs.id);
+        const [storage, pipelines, refineries] = await Promise.all([
+          svc.getCurrentStorage({ limit: 20 }).catch(() => []),
+          svc.getPipelineFlows({ limit: 20 }).catch(() => []),
+          svc.getRefineryStatus().catch(() => []),
+        ]);
+        return { storage, pipelines, refineries };
+      } catch (e) { console.warn('[Terminals] Genscape fetch failed:', e); return null; }
     }),
 
   /**
@@ -1744,10 +1754,16 @@ export const terminalsRouter = router({
         const [env] = await db.select().from(integrationConnections)
           .where(and(eq(integrationConnections.companyId, companyId), eq(integrationConnections.providerSlug, 'enverus')))
           .limit(1);
-        if (!env) return null;
-        // TODO: Call real Enverus API with stored keys
-        return null;
-      } catch { return null; }
+        if (!env || env.status !== 'connected') return null;
+        const { EnverusService } = await import("../services/integrations/EnverusService");
+        const svc = new EnverusService();
+        await svc.initialize(env.id);
+        const [crudePrices, pipelineFlows] = await Promise.all([
+          svc.getCrudePrices().catch(() => []),
+          svc.getPipelineFlows({ limit: 20 }).catch(() => []),
+        ]);
+        return { crudePrices, pipelineFlows };
+      } catch (e) { console.warn('[Terminals] Enverus fetch failed:', e); return null; }
     }),
 
   /**
