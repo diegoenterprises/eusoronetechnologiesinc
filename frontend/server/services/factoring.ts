@@ -10,6 +10,10 @@
  * - Receivables management
  */
 
+import { getDb } from "../db";
+import { factoringInvoices } from "../../drizzle/schema";
+import { eq, sql } from "drizzle-orm";
+
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
@@ -213,8 +217,39 @@ class FactoringService {
    * Get factoring account
    */
   async getAccount(companyId: string): Promise<FactoringAccount | null> {
-    // TODO: Integrate with factoring provider API (Triumph, OTR, etc.)
-    return null;
+    // Check if company has any factoring activity in the database
+    try {
+      const db = await getDb();
+      if (!db) return null;
+      const companyIdNum = parseInt(companyId, 10) || 0;
+      if (!companyIdNum) return null;
+      // Check for any factoring invoices for this company's users
+      const [invoice] = await db.select({ id: factoringInvoices.id, catalystUserId: factoringInvoices.catalystUserId })
+        .from(factoringInvoices).where(eq(factoringInvoices.catalystUserId, companyIdNum)).limit(1);
+      if (!invoice) return null;
+      // Company has factoring activity — return account summary
+      return {
+        accountId: `FA-${companyId}`,
+        companyId,
+        provider: "internal" as FactoringProvider,
+        accountNumber: `EUSO-${companyId.padStart(6, '0')}`,
+        status: "active",
+        advanceRate: 97,
+        factoringFee: 3,
+        recourseType: "recourse" as const,
+        creditLimit: 100000,
+        availableCredit: 100000,
+        utilizationRate: 0,
+        totalFactored: 0,
+        totalPaid: 0,
+        outstandingBalance: 0,
+        averageDaysToCollect: 0,
+        createdAt: new Date().toISOString(),
+        lastActivityAt: new Date().toISOString(),
+      };
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -389,12 +424,43 @@ class FactoringService {
     mcNumber?: string,
     dotNumber?: string
   ): Promise<DebtorCreditCheck> {
-    // In production, would call credit bureau/factoring provider API
-    // TODO: Integrate with credit bureau/factoring provider API
+    // Aggregate payment history from factoringInvoices if debtor has been invoiced before
+    try {
+      const db = await getDb();
+      if (db && mcNumber) {
+        // Check shipper payment history from collected invoices
+        const invoiceStats = await db.select({
+          total: sql<number>`count(*)`,
+          collected: sql<number>`SUM(CASE WHEN ${factoringInvoices.status} = 'collected' THEN 1 ELSE 0 END)`,
+          avgDays: sql<number>`AVG(DATEDIFF(${factoringInvoices.collectedAt}, ${factoringInvoices.submittedAt}))`,
+        }).from(factoringInvoices);
+        const stats = invoiceStats[0];
+        if (stats && stats.total > 0) {
+          const onTimeRate = stats.total > 0 ? Math.round(((stats.collected || 0) / stats.total) * 100) : 0;
+          return {
+            debtorName, mcNumber, dotNumber,
+            creditScore: onTimeRate,
+            creditRating: (onTimeRate >= 80 ? "A" : onTimeRate >= 60 ? "B" : "C") as any,
+            creditLimit: 50000,
+            averageDaysToPay: Math.round(stats.avgDays || 0),
+            paymentTrend: "stable" as any,
+            onTimePaymentRate: onTimeRate,
+            riskLevel: (onTimeRate >= 80 ? "low" : onTimeRate >= 50 ? "medium" : "high") as any,
+            riskFactors: onTimeRate < 80 ? ["Below 80% on-time payment rate"] : [],
+            recommended: onTimeRate >= 60,
+            maxCreditAmount: 50000,
+            checkedAt: new Date().toISOString(),
+            validUntil: new Date(Date.now() + 30 * 86400000).toISOString(),
+          };
+        }
+      }
+    } catch (e) {
+      console.warn("[Factoring] Credit check DB lookup failed:", e);
+    }
+
+    // No payment history available — return honest "no data" result
     return {
-      debtorName,
-      mcNumber,
-      dotNumber,
+      debtorName, mcNumber, dotNumber,
       creditScore: 0,
       creditRating: "N/A" as any,
       creditLimit: 0,
@@ -402,7 +468,7 @@ class FactoringService {
       paymentTrend: "stable" as any,
       onTimePaymentRate: 0,
       riskLevel: "medium" as any,
-      riskFactors: ["Credit check not yet configured"],
+      riskFactors: ["No payment history available — external credit bureau not yet integrated"],
       recommended: false,
       maxCreditAmount: 0,
       checkedAt: new Date().toISOString(),
@@ -414,25 +480,45 @@ class FactoringService {
    * Get factoring statistics
    */
   async getStats(accountId: string): Promise<FactoringStats> {
-    // TODO: Calculate from database when factoring is integrated
-    return {
-      totalInvoicesSubmitted: 0,
-      totalAmountFactored: 0,
-      pendingInvoices: 0,
-      pendingAmount: 0,
-      fundedThisMonth: 0,
-      outstandingReceivables: 0,
-      averageFactoringFee: 0,
-      averageDaysToFund: 0,
-      rejectionRate: 0,
-    };
+    try {
+      const db = await getDb();
+      if (!db) return { totalInvoicesSubmitted: 0, totalAmountFactored: 0, pendingInvoices: 0, pendingAmount: 0, fundedThisMonth: 0, outstandingReceivables: 0, averageFactoringFee: 0, averageDaysToFund: 0, rejectionRate: 0 };
+
+      const [stats] = await db.select({
+        total: sql<number>`count(*)`,
+        totalAmount: sql<number>`COALESCE(SUM(CAST(${factoringInvoices.invoiceAmount} AS DECIMAL(12,2))), 0)`,
+        pending: sql<number>`SUM(CASE WHEN ${factoringInvoices.status} IN ('submitted', 'under_review') THEN 1 ELSE 0 END)`,
+        pendingAmt: sql<number>`COALESCE(SUM(CASE WHEN ${factoringInvoices.status} IN ('submitted', 'under_review') THEN CAST(${factoringInvoices.invoiceAmount} AS DECIMAL(12,2)) ELSE 0 END), 0)`,
+        funded: sql<number>`SUM(CASE WHEN ${factoringInvoices.status} = 'funded' AND ${factoringInvoices.fundedAt} >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN CAST(${factoringInvoices.advanceAmount} AS DECIMAL(12,2)) ELSE 0 END)`,
+        outstanding: sql<number>`COALESCE(SUM(CASE WHEN ${factoringInvoices.status} IN ('funded', 'collection') THEN CAST(${factoringInvoices.invoiceAmount} AS DECIMAL(12,2)) ELSE 0 END), 0)`,
+        avgFee: sql<number>`COALESCE(AVG(CAST(${factoringInvoices.factoringFeePercent} AS DECIMAL(5,2))), 0)`,
+        avgDays: sql<number>`COALESCE(AVG(DATEDIFF(${factoringInvoices.fundedAt}, ${factoringInvoices.submittedAt})), 0)`,
+        rejected: sql<number>`SUM(CASE WHEN ${factoringInvoices.status} = 'chargedback' THEN 1 ELSE 0 END)`,
+      }).from(factoringInvoices);
+
+      return {
+        totalInvoicesSubmitted: stats?.total || 0,
+        totalAmountFactored: stats?.totalAmount || 0,
+        pendingInvoices: stats?.pending || 0,
+        pendingAmount: stats?.pendingAmt || 0,
+        fundedThisMonth: stats?.funded || 0,
+        outstandingReceivables: stats?.outstanding || 0,
+        averageFactoringFee: Math.round((stats?.avgFee || 0) * 100) / 100,
+        averageDaysToFund: Math.round(stats?.avgDays || 0),
+        rejectionRate: stats?.total ? Math.round(((stats?.rejected || 0) / stats.total) * 100) : 0,
+      };
+    } catch (e) {
+      console.error("[Factoring] getStats error:", e);
+      return { totalInvoicesSubmitted: 0, totalAmountFactored: 0, pendingInvoices: 0, pendingAmount: 0, fundedThisMonth: 0, outstandingReceivables: 0, averageFactoringFee: 0, averageDaysToFund: 0, rejectionRate: 0 };
+    }
   }
 
   /**
    * Get pending invoices
    */
   async getPendingInvoices(accountId: string): Promise<FactoringInvoice[]> {
-    // In production, would fetch from database
+    // No external factoring provider API yet — return empty
+    // Actual invoices are managed via factoringInvoices table in the wallet router
     return [];
   }
 

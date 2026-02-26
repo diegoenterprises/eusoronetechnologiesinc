@@ -3,6 +3,10 @@
  * Points, badges, leaderboards, achievements, and tier management
  */
 
+import { getDb } from "../db";
+import { gamificationProfiles, userBadges, badges as badgesTable, rewards, users } from "../../drizzle/schema";
+import { eq, and, desc, sql, gte } from "drizzle-orm";
+
 export interface UserPoints {
   userId: number;
   totalPoints: number;
@@ -289,9 +293,49 @@ export async function awardPoints(
   reason: string,
   db: any
 ): Promise<{ success: boolean; newTotal: number; tierUp?: boolean }> {
-  // TODO: Integrate with gamification DB tables when ready
-  // For now, return success with zero totals (no mock data)
-  return { success: true, newTotal: points, tierUp: false };
+  const database = db || await getDb();
+  if (!database) return { success: false, newTotal: 0, tierUp: false };
+  try {
+    // Upsert gamification profile
+    const [existing] = await database.select().from(gamificationProfiles).where(eq(gamificationProfiles.userId, userId)).limit(1);
+    const oldTotal = existing?.totalXp || 0;
+    const newTotal = oldTotal + points;
+    const oldTier = calculateTier(oldTotal);
+    const newTier = calculateTier(newTotal);
+
+    if (existing) {
+      await database.update(gamificationProfiles).set({
+        totalXp: newTotal,
+        currentXp: (existing.currentXp || 0) + points,
+        level: calculateLevel(newTotal),
+        lastActivityAt: new Date(),
+      }).where(eq(gamificationProfiles.userId, userId));
+    } else {
+      await database.insert(gamificationProfiles).values({
+        userId,
+        totalXp: newTotal,
+        currentXp: points,
+        level: calculateLevel(newTotal),
+        lastActivityAt: new Date(),
+      });
+    }
+
+    // Record as reward
+    await database.insert(rewards).values({
+      userId,
+      type: "bonus" as any,
+      rewardType: "xp" as any,
+      amount: String(points),
+      description: reason,
+      status: "claimed" as any,
+      claimedAt: new Date(),
+    });
+
+    return { success: true, newTotal, tierUp: oldTier !== newTier };
+  } catch (e) {
+    console.error("[Gamification] awardPoints error:", e);
+    return { success: false, newTotal: 0, tierUp: false };
+  }
 }
 
 /**
@@ -302,11 +346,40 @@ export async function checkBadgeEligibility(
   badgeId: string,
   db: any
 ): Promise<{ eligible: boolean; awarded: boolean }> {
-  // TODO: Check if user already has badge
-  // TODO: Check if user meets criteria
-  // TODO: Award badge if eligible
-  
-  return { eligible: false, awarded: false };
+  const database = db || await getDb();
+  if (!database) return { eligible: false, awarded: false };
+  try {
+    // Check if user already has this badge
+    const [badge] = await database.select().from(badgesTable).where(eq(badgesTable.code, badgeId)).limit(1);
+    if (!badge) return { eligible: false, awarded: false };
+
+    const [existing] = await database.select().from(userBadges)
+      .where(and(eq(userBadges.userId, userId), eq(userBadges.badgeId, badge.id))).limit(1);
+    if (existing) return { eligible: true, awarded: true };
+
+    // Check criteria if defined on the badge
+    const criteria = badge.criteria as { type?: string; value?: number } | null;
+    if (!criteria?.type) return { eligible: false, awarded: false };
+
+    // Award badge if eligible (criteria met by caller)
+    await database.insert(userBadges).values({ userId, badgeId: badge.id });
+    await database.insert(rewards).values({
+      userId,
+      type: "badge_earned" as any,
+      sourceType: "badge",
+      sourceId: badge.id,
+      rewardType: "xp" as any,
+      amount: String(badge.xpValue || 0),
+      description: `Earned badge: ${badge.name}`,
+      status: "claimed" as any,
+      claimedAt: new Date(),
+    });
+
+    return { eligible: true, awarded: true };
+  } catch (e) {
+    console.error("[Gamification] checkBadgeEligibility error:", e);
+    return { eligible: false, awarded: false };
+  }
 }
 
 /**
@@ -317,28 +390,108 @@ export async function getLeaderboard(
   role?: string,
   limit: number = 100
 ): Promise<LeaderboardEntry[]> {
-  // TODO: Query database for top users by points in the period
-  // TODO: Filter by role if specified
-  
-  // TODO: Query database for top users by points in the period
-  return [];
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    // For period-based filtering, use rewards table with date ranges
+    // For all-time, use gamification profiles directly
+    let rows;
+    if (period === "all-time") {
+      rows = await db.select({
+        userId: gamificationProfiles.userId,
+        userName: users.name,
+        userRole: users.role,
+        points: gamificationProfiles.totalXp,
+        level: gamificationProfiles.level,
+      })
+        .from(gamificationProfiles)
+        .leftJoin(users, eq(gamificationProfiles.userId, users.id))
+        .orderBy(desc(gamificationProfiles.totalXp))
+        .limit(limit);
+    } else {
+      const cutoff = new Date();
+      if (period === "daily") cutoff.setDate(cutoff.getDate() - 1);
+      else if (period === "weekly") cutoff.setDate(cutoff.getDate() - 7);
+      else cutoff.setMonth(cutoff.getMonth() - 1);
+
+      rows = await db.select({
+        userId: rewards.userId,
+        userName: users.name,
+        userRole: users.role,
+        points: sql<number>`SUM(CAST(${rewards.amount} AS UNSIGNED))`,
+      })
+        .from(rewards)
+        .leftJoin(users, eq(rewards.userId, users.id))
+        .where(and(eq(rewards.rewardType, "xp" as any), gte(rewards.createdAt, cutoff)))
+        .groupBy(rewards.userId, users.name, users.role)
+        .orderBy(sql`SUM(CAST(${rewards.amount} AS UNSIGNED)) DESC`)
+        .limit(limit);
+    }
+
+    return rows.map((r, i) => ({
+      rank: i + 1,
+      userId: r.userId,
+      userName: r.userName || "Unknown",
+      userRole: r.userRole || "DRIVER",
+      points: Number(r.points) || 0,
+      tier: calculateTier(Number(r.points) || 0),
+    }));
+  } catch (e) {
+    console.error("[Gamification] getLeaderboard error:", e);
+    return [];
+  }
 }
 
 /**
  * Get user's achievements and progress
  */
 export async function getUserAchievements(userId: number, db: any): Promise<Achievement[]> {
-  // TODO: Query database for user's achievements
-  
-  return [];
+  const database = db || await getDb();
+  if (!database) return [];
+  try {
+    const rows = await database.select({
+      id: userBadges.id,
+      userId: userBadges.userId,
+      badgeId: badgesTable.code,
+      earnedAt: userBadges.earnedAt,
+    })
+      .from(userBadges)
+      .leftJoin(badgesTable, eq(userBadges.badgeId, badgesTable.id))
+      .where(eq(userBadges.userId, userId));
+
+    return rows.map((r: { id: number; userId: number; badgeId: string | null; earnedAt: Date }) => ({
+      id: String(r.id),
+      userId: r.userId,
+      badgeId: r.badgeId || "",
+      earnedAt: r.earnedAt,
+      progress: 100,
+      completed: true,
+    }));
+  } catch (e) {
+    console.error("[Gamification] getUserAchievements error:", e);
+    return [];
+  }
 }
 
 /**
  * Get user's rank among all users (or within role)
  */
 export async function getUserRank(userId: number, db: any, role?: string): Promise<number> {
-  // TODO: Query database to calculate user's rank
-  
-  return 1;
+  const database = db || await getDb();
+  if (!database) return 0;
+  try {
+    const [profile] = await database.select({ totalXp: gamificationProfiles.totalXp })
+      .from(gamificationProfiles).where(eq(gamificationProfiles.userId, userId)).limit(1);
+    if (!profile) return 0;
+
+    const [countResult] = await database.select({ count: sql<number>`count(*)` })
+      .from(gamificationProfiles)
+      .where(sql`${gamificationProfiles.totalXp} > ${profile.totalXp}`);
+
+    return (countResult?.count || 0) + 1;
+  } catch (e) {
+    console.error("[Gamification] getUserRank error:", e);
+    return 0;
+  }
 }
 

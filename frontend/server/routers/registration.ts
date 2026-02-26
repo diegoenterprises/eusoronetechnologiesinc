@@ -1246,11 +1246,20 @@ export const registrationRouter = router({
       const [user] = await db.select({ id: users.id, email: users.email, role: users.role, isVerified: users.isVerified }).from(users).where(eq(users.id, Number(userId))).limit(1);
       if (!user) return { status: "not_found" };
 
+      // Check if user has uploaded required documents (CDL, insurance, W-9, etc.)
+      const docCount = await db.select({ count: sql<number>`count(*)` })
+        .from(documents)
+        .where(and(eq(documents.userId, user.id), eq(documents.status, "active")));
+      const hasDocuments = (docCount[0]?.count || 0) >= 1;
+
+      // Compliance: user is verified + has at least one active document
+      const complianceVerified = !!user.isVerified && hasDocuments;
+
       return {
         status: user.isVerified ? "verified" : "pending",
         emailVerified: user.isVerified,
-        documentsVerified: false, // TODO: Check documents
-        complianceVerified: false, // TODO: Check compliance
+        documentsVerified: hasDocuments,
+        complianceVerified,
         role: user.role,
       };
     }),

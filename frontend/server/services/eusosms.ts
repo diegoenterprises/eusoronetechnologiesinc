@@ -14,7 +14,7 @@
 
 import { getDb } from "../db";
 import { smsMessages, smsOptOuts } from "../../drizzle/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, gte, lte } from "drizzle-orm";
 
 const ACS_CONNECTION_STRING = process.env.AZURE_EMAIL_CONNECTION_STRING || "";
 const ACS_SMS_FROM = process.env.ACS_SMS_FROM_NUMBER || "";
@@ -304,16 +304,15 @@ export async function getSmsCostSummary(userId?: number, startDate?: Date, endDa
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // TODO: Add date filtering
+  const conditions: any[] = [eq(smsMessages.direction, "OUTBOUND")];
+  if (userId) conditions.push(eq(smsMessages.userId, userId));
+  if (startDate) conditions.push(gte(smsMessages.createdAt, startDate));
+  if (endDate) conditions.push(lte(smsMessages.createdAt, endDate));
+
   const messages = await db
     .select()
     .from(smsMessages)
-    .where(
-      and(
-        eq(smsMessages.direction, "OUTBOUND"),
-        userId ? eq(smsMessages.userId, userId) : undefined
-      )
-    );
+    .where(and(...conditions));
 
   const totalCost = messages.reduce((sum, msg) => {
     return sum + (msg.cost ? parseFloat(msg.cost) : 0);
