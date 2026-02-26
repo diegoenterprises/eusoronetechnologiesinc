@@ -844,6 +844,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Escort dashboard"
     },
     { 
+      icon: "Car", 
+      label: "Active Trip", 
+      path: "/escort/active-trip", 
+      badge: 0,
+      description: "Your current escort assignment — live status & controls"
+    },
+    { 
       icon: "Search", 
       label: "Find Loads", 
       path: "/marketplace", 
@@ -1515,6 +1522,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Payment processing, platform fees & revenue"
     },
     { 
+      icon: "Wallet", 
+      label: "EusoWallet", 
+      path: "/wallet", 
+      badge: 0,
+      description: "Platform wallet, escrow oversight & payments"
+    },
+    { 
       icon: "AlertTriangle", 
       label: "Disputes", 
       path: "/admin/disputes", 
@@ -1579,11 +1593,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "UserCheck", label: "Approvals", path: "/admin/approvals", badge: 0, description: "Registration approval queue" },
     { icon: "Building2", label: "Companies", path: "/super-admin/companies", badge: 0, description: "All registered companies" },
     { icon: "Package", label: "Loads", path: "/super-admin/loads", badge: 0, description: "All platform loads — status, disputes, lifecycle" },
-    { icon: "PenTool", label: "Agreements", path: "/super-admin/agreements", badge: 0, description: "All contracts & agreements across the platform" },
     { icon: "AlertTriangle", label: "Claims & Disputes", path: "/super-admin/claims", badge: 0, description: "Active claims, disputes & resolutions" },
     { icon: "HelpCircle", label: "Support Tickets", path: "/super-admin/support", badge: 0, description: "User support requests & issue resolution" },
     { icon: "Wrench", label: "ZEUN Mechanics", path: "/admin/zeun", badge: 0, description: "Breakdown reports, diagnostics & repairs" },
     { icon: "DollarSign", label: "Platform Fees", path: "/admin/platform-fees", badge: 0, description: "Fee configuration, commissions & revenue" },
+    { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Platform wallet, escrow oversight & all payments" },
     { icon: "Activity", label: "Telemetry", path: "/admin/telemetry", badge: 0, description: "GPS tracking & system telemetry" },
     { icon: "MapPin", label: "Fleet Map", path: "/fleet-tracking", badge: 0, description: "System-wide fleet tracking" },
     { icon: "BarChart3", label: "Analytics", path: "/super-admin/monitoring", badge: 0, description: "Platform analytics & performance metrics" },
@@ -1616,6 +1630,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Messages", 
       path: "/messages", 
       badge: 0 
+    },
+    { 
+      icon: "Wallet", 
+      label: "EusoWallet", 
+      path: "/wallet", 
+      badge: 0,
+      description: "Wallet, payments & escrow"
     },
     { 
       icon: "Settings", 

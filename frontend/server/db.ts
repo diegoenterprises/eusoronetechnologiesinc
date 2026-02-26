@@ -576,6 +576,51 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX idx_sr_user (userId)
     )`);
 
+    // --- escort_assignments table ---
+    await ensureTable("escort_assignments", `CREATE TABLE escort_assignments (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      loadId INT NOT NULL,
+      escortUserId INT NOT NULL,
+      convoyId INT DEFAULT NULL,
+      position ENUM('lead','chase','both') DEFAULT 'lead' NOT NULL,
+      status ENUM('pending','accepted','en_route','on_site','escorting','completed','cancelled') DEFAULT 'pending' NOT NULL,
+      rate DECIMAL(10,2) DEFAULT NULL,
+      rateType ENUM('flat','per_mile','per_hour') DEFAULT 'flat',
+      notes TEXT DEFAULT NULL,
+      driverUserId INT DEFAULT NULL,
+      carrierUserId INT DEFAULT NULL,
+      startedAt TIMESTAMP NULL DEFAULT NULL,
+      completedAt TIMESTAMP NULL DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX ea_load_idx (loadId),
+      INDEX ea_escort_idx (escortUserId),
+      INDEX ea_status_idx (status),
+      INDEX ea_convoy_idx (convoyId)
+    )`);
+
+    // --- convoys table (if not exists) ---
+    await ensureTable("convoys", `CREATE TABLE convoys (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      loadId INT NOT NULL,
+      routeId INT DEFAULT NULL,
+      leadUserId INT NOT NULL,
+      loadUserId INT NOT NULL,
+      rearUserId INT DEFAULT NULL,
+      status ENUM('forming','active','paused','completed','disbanded') DEFAULT 'forming' NOT NULL,
+      targetLeadDistanceMeters INT DEFAULT 800,
+      targetRearDistanceMeters INT DEFAULT 500,
+      maxSpeedMph INT DEFAULT 45,
+      currentLeadDistance INT DEFAULT NULL,
+      currentRearDistance INT DEFAULT NULL,
+      lastPositionUpdate TIMESTAMP NULL DEFAULT NULL,
+      startedAt TIMESTAMP NULL DEFAULT NULL,
+      completedAt TIMESTAMP NULL DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX convoy_load_idx (loadId),
+      INDEX convoy_status_idx (status)
+    )`);
+
     console.log("[SchemaSync] Done.");
   } catch (err: any) {
     console.warn("[SchemaSync] Non-fatal error:", err?.message?.slice(0, 200));

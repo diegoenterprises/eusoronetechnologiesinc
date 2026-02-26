@@ -168,6 +168,11 @@ export const vehicles = mysqlTable(
       "dry_van",
       "lowboy",
       "step_deck",
+      "hopper",
+      "pneumatic",
+      "end_dump",
+      "intermodal_chassis",
+      "curtain_side",
     ]).notNull(),
     capacity: decimal("capacity", { precision: 10, scale: 2 }),
     mileage: int("mileage"),
@@ -219,6 +224,7 @@ export const loads = mysqlTable(
       "pod_pending", "pod_rejected", "delivered",
       "invoiced", "disputed", "paid", "complete",
       "cancelled", "on_hold",
+      "temp_excursion", "reefer_breakdown", "contamination_reject", "seal_breach", "weight_violation",
     ])
       .default("draft")
       .notNull(),
@@ -2474,6 +2480,42 @@ export const convoys = mysqlTable(
 
 export type Convoy = typeof convoys.$inferSelect;
 export type InsertConvoy = typeof convoys.$inferInsert;
+
+// ============================================================================
+// ESCORT ASSIGNMENTS
+// ============================================================================
+
+export const escortAssignments = mysqlTable(
+  "escort_assignments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    escortUserId: int("escortUserId").notNull(),
+    convoyId: int("convoyId"),
+    position: mysqlEnum("position", ["lead", "chase", "both"]).default("lead").notNull(),
+    status: mysqlEnum("status", [
+      "pending", "accepted", "en_route", "on_site", "escorting", "completed", "cancelled",
+    ]).default("pending").notNull(),
+    rate: decimal("rate", { precision: 10, scale: 2 }),
+    rateType: mysqlEnum("rateType", ["flat", "per_mile", "per_hour"]).default("flat"),
+    notes: text("notes"),
+    driverUserId: int("driverUserId"),
+    carrierUserId: int("carrierUserId"),
+    startedAt: timestamp("startedAt"),
+    completedAt: timestamp("completedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("ea_load_idx").on(table.loadId),
+    escortIdx: index("ea_escort_idx").on(table.escortUserId),
+    statusIdx: index("ea_status_idx").on(table.status),
+    convoyIdx: index("ea_convoy_idx").on(table.convoyId),
+  })
+);
+
+export type EscortAssignment = typeof escortAssignments.$inferSelect;
+export type InsertEscortAssignment = typeof escortAssignments.$inferInsert;
 
 // ============================================================================
 // ETA TRACKING
@@ -6774,4 +6816,39 @@ export const roadLivePings = mysqlTable(
 
 export type RoadLivePing = typeof roadLivePings.$inferSelect;
 export type InsertRoadLivePing = typeof roadLivePings.$inferInsert;
+
+// ============================================================================
+// PPLX-EMBED VECTOR EMBEDDINGS — Self-hosted semantic search index
+// Model: perplexity-ai/pplx-embed-v1-0.6b (1024-dim INT8, MIT license)
+// Stores embeddings for loads, documents, knowledge, carriers, rate sheets
+// for semantic search, RAG, and intelligent matching.
+// ============================================================================
+
+export const embeddings = mysqlTable(
+  "embeddings",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    entityType: mysqlEnum("entity_type", [
+      "load", "document", "knowledge", "carrier",
+      "rate_sheet", "agreement", "erg_guide", "zone_intelligence",
+    ]).notNull(),
+    entityId: varchar("entity_id", { length: 255 }).notNull(),
+    contentHash: varchar("content_hash", { length: 16 }).notNull(),
+    embedding: json("embedding").notNull(),       // INT8 array (1024 values, ~4KB as JSON)
+    dimensions: int("dimensions").notNull().default(1024),
+    model: varchar("model", { length: 100 }).notNull().default("pplx-embed-v1-0.6b"),
+    sourceText: text("source_text"),               // Original text that was embedded (for debugging/reindex)
+    metadata: json("metadata"),                    // Flexible extra data (title, tags, etc.)
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    entityIdx: uniqueIndex("idx_emb_entity").on(table.entityType, table.entityId),
+    typeIdx: index("idx_emb_type").on(table.entityType),
+    hashIdx: index("idx_emb_hash").on(table.contentHash),
+  })
+);
+
+export type Embedding = typeof embeddings.$inferSelect;
+export type InsertEmbedding = typeof embeddings.$inferInsert;
 

@@ -23,6 +23,7 @@ export default function EscortSchedule() {
   const scheduleQuery = (trpc as any).escorts.getSchedule.useQuery({ date: selectedDate });
   const availabilityQuery = (trpc as any).escorts.getAvailability.useQuery();
   const upcomingQuery = (trpc as any).escorts.getUpcomingJobs.useQuery();
+  const summaryQuery = (trpc as any).escorts.getJobsSummary.useQuery();
 
   const updateAvailabilityMutation = (trpc as any).escorts.updateAvailability.useMutation({
     onSuccess: () => {
@@ -273,20 +274,26 @@ export default function EscortSchedule() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-slate-700/30">
-                  <p className="text-xs text-slate-500">Jobs This Week</p>
-                  <p className="text-2xl font-bold text-white">5</p>
+              {summaryQuery.isLoading ? (
+                <div className="space-y-3">
+                  {Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}
                 </div>
-                <div className="p-3 rounded-lg bg-slate-700/30">
-                  <p className="text-xs text-slate-500">Total Miles</p>
-                  <p className="text-2xl font-bold text-white">842</p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="p-3 rounded-lg bg-slate-700/30">
+                    <p className="text-xs text-slate-500">Active / Assigned</p>
+                    <p className="text-2xl font-bold text-white">{(summaryQuery.data as any)?.inProgress || 0} / {(summaryQuery.data as any)?.assigned || 0}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-slate-700/30">
+                    <p className="text-xs text-slate-500">Completed Jobs</p>
+                    <p className="text-2xl font-bold text-white">{(summaryQuery.data as any)?.completed || 0}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                    <p className="text-xs text-slate-500">Weekly Earnings</p>
+                    <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${((summaryQuery.data as any)?.weeklyEarnings || 0).toLocaleString()}</p>
+                  </div>
                 </div>
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                  <p className="text-xs text-slate-500">Projected Earnings</p>
-                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">$2,450</p>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>

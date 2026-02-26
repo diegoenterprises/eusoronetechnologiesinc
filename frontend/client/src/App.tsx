@@ -124,6 +124,7 @@ const ComplianceDashboard = lazy(() => import("./pages/ComplianceDashboard"));
 const TerminalDashboard = lazy(() => import("./pages/TerminalDashboard"));
 const BrokerDashboard = lazy(() => import("./pages/BrokerDashboard"));
 const EscortDashboard = lazy(() => import("./pages/EscortDashboard"));
+const EscortActiveTrip = lazy(() => import("./pages/EscortActiveTrip"));
 const FleetManagement = lazy(() => import("./pages/FleetManagement"));
 const ShipperLoads = lazy(() => import("./pages/ShipperLoads"));
 const Billing = lazy(() => import("./pages/Billing"));
@@ -616,6 +617,7 @@ function Router() {
       {/* ESCORT ROUTES */}
       {/* ============================================ */}
       <Route path={"/escort"} component={guard(ESCT, <EscortDashboard />)} />
+      <Route path={"/escort/active-trip"} component={guard(ESCT, <EscortActiveTrip />)} />
       <Route path={"/convoys"} component={guard(ESCT, <ActiveConvoys />)} />
       <Route path={"/team"} component={guard(ESCT, <ProfilePage />)} />
       <Route path={"/escort/incidents"} component={guard(ESCT, <EscortIncidents />)} />
