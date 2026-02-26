@@ -1000,7 +1000,19 @@ export const emergencyResponseRouter = router({
           acceptanceRate: opResponses.length > 0
             ? `${Math.round((opResponses.filter(r => r.status !== "DECLINED").length / opResponses.length) * 100)}%`
             : "N/A",
-          averageResponseTimeMinutes: "~15", // would calculate from timestamps in production
+          averageResponseTimeMinutes: opResponses.length > 0
+            ? (() => {
+                let totalMins = 0; let count = 0;
+                for (const r of opResponses) {
+                  const order = opOrders.find(o => o.id === r.mobilizationOrderId);
+                  if (order?.sentAt && r.respondedAt) {
+                    totalMins += (new Date(r.respondedAt).getTime() - new Date(order.sentAt).getTime()) / 60000;
+                    count++;
+                  }
+                }
+                return count > 0 ? String(Math.round(totalMins / count)) : null;
+              })()
+            : null
         },
         impact: {
           totalLoadsDelivered: opResponses.reduce((sum, r) => sum + r.loadsCompleted, 0),

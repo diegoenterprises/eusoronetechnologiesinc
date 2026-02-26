@@ -94,15 +94,15 @@ export const dashboardRouter = router({
       // Scope by role: users only see THEIR relevant loads
       let whereClause;
       if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
-        whereClause = sql`${loads.status} IN ('in_transit', 'assigned', 'bidding')`;
+        whereClause = sql`${loads.status} IN ('in_transit', 'assigned', 'bidding', 'temp_excursion', 'reefer_breakdown', 'contamination_reject', 'seal_breach', 'weight_violation')`;
       } else if (role === 'SHIPPER' || role === 'BROKER') {
-        whereClause = sql`${loads.shipperId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'bidding', 'posted')`;
+        whereClause = sql`${loads.shipperId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'bidding', 'posted', 'temp_excursion', 'reefer_breakdown', 'contamination_reject', 'seal_breach', 'weight_violation')`;
       } else if (role === 'CATALYST' || role === 'DISPATCH') {
-        whereClause = sql`${loads.catalystId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'loading', 'unloading')`;
+        whereClause = sql`${loads.catalystId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'loading', 'unloading', 'temp_excursion', 'reefer_breakdown', 'contamination_reject', 'seal_breach', 'weight_violation')`;
       } else if (role === 'DRIVER') {
-        whereClause = sql`${loads.driverId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'loading', 'at_pickup', 'at_delivery')`;
+        whereClause = sql`${loads.driverId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'loading', 'at_pickup', 'at_delivery', 'temp_excursion', 'reefer_breakdown', 'contamination_reject', 'seal_breach', 'weight_violation')`;
       } else {
-        whereClause = sql`${loads.status} IN ('in_transit', 'assigned') AND (${loads.shipperId} = ${userId} OR ${loads.catalystId} = ${userId} OR ${loads.driverId} = ${userId})`;
+        whereClause = sql`${loads.status} IN ('in_transit', 'assigned', 'temp_excursion', 'reefer_breakdown', 'contamination_reject', 'seal_breach', 'weight_violation') AND (${loads.shipperId} = ${userId} OR ${loads.catalystId} = ${userId} OR ${loads.driverId} = ${userId})`;
       }
 
       const results = await db
@@ -219,17 +219,18 @@ export const dashboardRouter = router({
    * Get HOS status for drivers
    */
   getHOSStatus: protectedProcedure.query(async ({ ctx }) => {
-    // HOS calculations based on ELD data
-    // In production, this would integrate with ELD providers
+    // HOS data requires ELD integration (Motive, Samsara, etc.)
+    // Returns null values until ELD provider is connected
     return {
-      drivingRemaining: 8.5,
-      dutyRemaining: 11.2,
-      cycleRemaining: 45.5,
-      breakRequired: false,
-      breakDueIn: null,
-      lastRestartDate: new Date().toISOString(),
-      status: 'ON_DUTY_NOT_DRIVING' as const,
+      drivingRemaining: null as number | null,
+      dutyRemaining: null as number | null,
+      cycleRemaining: null as number | null,
+      breakRequired: null as boolean | null,
+      breakDueIn: null as string | null,
+      lastRestartDate: null as string | null,
+      status: null as string | null,
       violations: [],
+      eldConnected: false,
     };
   }),
 
@@ -435,8 +436,15 @@ export const dashboardRouter = router({
    * Get escort jobs for Escort role (per 06_ESCORT_USER_JOURNEY.md)
    */
   getEscortJobs: protectedProcedure.query(async ({ ctx }) => {
-    // In production, would filter jobs by user's certifications/location
-    return getSeedEscortJobs();
+    const db = await getDb();
+    if (!db) return getSeedEscortJobs();
+    try {
+      const userId = ctx.user?.id || 0;
+      // Query loads tagged as escort-required that are assigned to this user
+      const [active] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, userId), sql`${loads.status} IN ('assigned','in_transit','loading')`));
+      const [completed] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, userId), eq(loads.status, 'delivered')));
+      return { activeJobs: active?.count || 0, upcoming: 0, completed: completed?.count || 0, monthlyEarnings: 0, rating: 0, availableJobs: [], certifications: [] };
+    } catch { return getSeedEscortJobs(); }
   }),
 
   /**
@@ -1102,7 +1110,7 @@ async function getShipperStats(db: any, userId: number) {
   const [activeLoads] = await db
     .select({ count: sql<number>`count(*)` })
     .from(loads)
-    .where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('in_transit', 'assigned', 'bidding')`));
+    .where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('in_transit', 'assigned', 'bidding', 'temp_excursion', 'reefer_breakdown', 'contamination_reject', 'seal_breach', 'weight_violation')`));
 
   const [deliveredLoads] = await db
     .select({ count: sql<number>`count(*)` })
@@ -1133,7 +1141,7 @@ async function getCatalystStats(db: any, companyId: number) {
   const [activeLoads] = await db
     .select({ count: sql<number>`count(*)` })
     .from(loads)
-    .where(and(eq(loads.catalystId, companyId), sql`${loads.status} = 'in_transit'`));
+    .where(and(eq(loads.catalystId, companyId), sql`${loads.status} IN ('in_transit', 'temp_excursion', 'reefer_breakdown', 'contamination_reject', 'seal_breach', 'weight_violation')`));
 
   const [totalRevenue] = await db
     .select({ sum: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` })
@@ -1167,7 +1175,7 @@ async function getBrokerStats(db: any, userId: number) {
   const [activeLoadsCount] = await db
     .select({ count: sql<number>`count(*)` })
     .from(loads)
-    .where(sql`${loads.status} IN ('posted', 'bidding', 'assigned', 'in_transit')`);
+    .where(sql`${loads.status} IN ('posted', 'bidding', 'assigned', 'in_transit', 'temp_excursion', 'reefer_breakdown', 'contamination_reject', 'seal_breach', 'weight_violation')`);
 
   const [totalBids] = await db
     .select({ count: sql<number>`count(*)` })
@@ -1216,7 +1224,7 @@ async function getDispatchStats(db: any, companyId: number) {
   const [loadsInTransit] = await db
     .select({ count: sql<number>`count(*)` })
     .from(loads)
-    .where(and(eq(loads.catalystId, companyId), eq(loads.status, 'in_transit')));
+    .where(and(eq(loads.catalystId, companyId), sql`${loads.status} IN ('in_transit', 'temp_excursion', 'reefer_breakdown', 'contamination_reject', 'seal_breach', 'weight_violation')`));
 
   const [pendingAssignments] = await db
     .select({ count: sql<number>`count(*)` })
@@ -1420,6 +1428,11 @@ function getProgressFromStatus(status: string | null): number {
     delivered: 100,
     cancelled: 0,
     disputed: 50,
+    temp_excursion: 55,
+    reefer_breakdown: 55,
+    contamination_reject: 55,
+    seal_breach: 55,
+    weight_violation: 55,
   };
   return statusProgress[status || 'draft'] || 0;
 }

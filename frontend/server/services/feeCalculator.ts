@@ -13,6 +13,7 @@ import {
   promoCodes,
   promoCodeUsage,
   walletTransactions,
+  users,
 } from "../../drizzle/schema";
 
 export interface FeeCalculationInput {
@@ -278,8 +279,11 @@ export class FeeCalculator {
         return totalAmount >= threshold;
       
       case "tenure":
-        // Tenure is in days
-        return true; // Simplified - check user creation date in production
+        // Tenure threshold is in days — check user creation date
+        const [user] = await db.select({ createdAt: users.createdAt }).from(users).where(eq(users.id, userId)).limit(1);
+        if (!user?.createdAt) return false;
+        const tenureDays = Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+        return tenureDays >= threshold;
       
       default:
         return false;

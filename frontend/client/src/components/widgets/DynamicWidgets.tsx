@@ -874,9 +874,9 @@ export const HOSTrackerWidget: React.FC = () => {
     status: 'OFF_DUTY' as 'OFF_DUTY' | 'DRIVING' | 'ON_DUTY_NOT_DRIVING' | 'SLEEPER_BERTH',
   };
 
-  const driving = { used: 11 - hos.drivingRemaining, limit: 11 };
-  const onDuty = { used: 14 - hos.dutyRemaining, limit: 14 };
-  const cycle = { used: 70 - hos.cycleRemaining, limit: 70 };
+  const driving = { used: 11 - (hos.drivingRemaining ?? 11), limit: 11 };
+  const onDuty = { used: 14 - (hos.dutyRemaining ?? 14), limit: 14 };
+  const cycle = { used: 70 - (hos.cycleRemaining ?? 70), limit: 70 };
 
   const getBarColor = (used: number, limit: number) => {
     const pct = (used / limit) * 100;
@@ -919,7 +919,7 @@ export const HOSTrackerWidget: React.FC = () => {
     </div>
   );
 
-  const sc = statusConfig[hos.status] || statusConfig.OFF_DUTY;
+  const sc = statusConfig[hos.status ?? 'OFF_DUTY'] || statusConfig.OFF_DUTY;
 
   return (
     <ResponsiveWidget>

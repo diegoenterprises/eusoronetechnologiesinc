@@ -443,12 +443,9 @@ export const clearinghouseRouter = router({
       if (db) {
         try {
           const companyId = ctx.user?.companyId || 0;
-          // Simulate sync: mark old pending queries as completed (negative) for demo
-          const pendingRows = await db.select({ id: drugTests.id }).from(drugTests).where(and(eq(drugTests.companyId, companyId), eq(drugTests.result, 'pending'))).limit(10);
-          for (const row of pendingRows) {
-            await db.update(drugTests).set({ result: 'negative' }).where(eq(drugTests.id, row.id));
-            queriesUpdated++; newResponses++;
-          }
+          // Count pending queries — actual results come from FMCSA Clearinghouse API or lab integration
+          const [pendingCount] = await db.select({ count: sql<number>`count(*)` }).from(drugTests).where(and(eq(drugTests.companyId, companyId), eq(drugTests.result, 'pending')));
+          queriesUpdated = pendingCount?.count || 0;
         } catch { /* non-fatal */ }
       }
       return {

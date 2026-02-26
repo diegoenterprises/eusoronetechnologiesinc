@@ -277,7 +277,8 @@ class ClearinghouseService {
       isActive: true,
     };
 
-    // In production, would store in database
+    // No clearinghouse_consents table exists yet — consent returned but not persisted
+    console.warn(`[Clearinghouse] Consent recorded in-memory only for driver ${driverId} — add consent table for persistence`);
     return consent;
   }
 
@@ -285,7 +286,8 @@ class ClearinghouseService {
    * Revoke driver consent
    */
   async revokeConsent(driverId: string): Promise<boolean> {
-    // In production, would update database
+    // No clearinghouse_consents table exists yet — revocation not persisted
+    console.warn(`[Clearinghouse] Consent revocation for driver ${driverId} not persisted — add consent table`);
     return true;
   }
 
