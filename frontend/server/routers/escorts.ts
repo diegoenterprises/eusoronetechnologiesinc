@@ -85,7 +85,7 @@ export const escortsRouter = router({
           upcomingJobs: 0,
           completedThisMonth: completedThisMonth?.count || 0,
           monthlyEarnings: 0,
-          rating: 4.9,
+          rating: 0,
           upcoming: 0,
           completed: completedThisMonth?.count || 0,
           earnings: 0,
@@ -252,7 +252,7 @@ export const escortsRouter = router({
         const [completed] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.status, 'delivered'), gte(loads.updatedAt, thisMonth)));
         return {
           activeJobs: active?.count || 0, upcomingJobs: 0, completedThisMonth: completed?.count || 0, monthlyEarnings: 0,
-          rating: 4.9, upcoming: 0, completed: completed?.count || 0, earnings: 0,
+          rating: 0, upcoming: 0, completed: completed?.count || 0, earnings: 0,
           certifications: { total: 0, expiringSoon: 0 },
         };
       } catch { return { activeJobs: 0, upcomingJobs: 0, completedThisMonth: 0, monthlyEarnings: 0, rating: 0, upcoming: 0, completed: 0, earnings: 0, certifications: { total: 0, expiringSoon: 0 } }; }
