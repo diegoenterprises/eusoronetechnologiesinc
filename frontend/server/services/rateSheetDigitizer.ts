@@ -488,6 +488,41 @@ Respond with ONLY the JSON object. No markdown, no explanation, just pure valid 
 async function parsePDF(buffer: Buffer): Promise<DigitizeResult> {
   const warnings: string[] = [];
 
+  // Tier 0: Try Docling via AI Sidecar for structured table extraction (free, fast)
+  try {
+    const { ocrExtractRateSheet } = await import("./aiSidecar");
+    const base64 = buffer.toString("base64");
+    const sidecarResult = await ocrExtractRateSheet(base64, "application/pdf");
+    if (sidecarResult?.success && sidecarResult.rate_tiers.length > 0) {
+      const rawTiers = sidecarResult.rate_tiers.map((t: any) => ({
+        minMiles: Number(t.minMiles) || 0,
+        maxMiles: Number(t.maxMiles) || 0,
+        rate: Number(t.ratePerBarrel) || 0,
+      }));
+      const rateTiers = validateAndNormalizeTiers(rawTiers, warnings);
+      if (rateTiers.length > 0) {
+        const textSurcharges = extractSurchargesFromText(sidecarResult.raw_text || "");
+        const sidecarSurcharges = { ...textSurcharges, ...sidecarResult.surcharges };
+        warnings.push("Digitized by Docling AI (open-source) — review tiers for accuracy");
+        console.log(`[RateSheetDigitizer] Docling extracted ${rateTiers.length} tiers`);
+        return {
+          rateTiers,
+          surcharges: mergeSurcharges(sidecarSurcharges),
+          rateUnit: "per_barrel",
+          productType: sidecarResult.metadata?.productType || null,
+          region: sidecarResult.metadata?.region || null,
+          effectiveDate: sidecarResult.metadata?.effectiveDate || null,
+          expirationDate: sidecarResult.metadata?.expirationDate || null,
+          issuedBy: sidecarResult.metadata?.issuedBy || null,
+          issuedTo: sidecarResult.metadata?.issuedTo || null,
+          warnings,
+          source: "pdf",
+        };
+      }
+    }
+  } catch { /* AI sidecar unavailable, fall through to ESANG AI */ }
+
+  // Tier 1: ESANG AI (Gemini) — always-available fallback
   // Multi-strategy PDF text extraction
   const textContent = extractTextFromPDFBuffer(buffer);
 

@@ -831,3 +831,79 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
   setCache(cacheKey, snapshot, 90 * 1000);
   return snapshot;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// DuckDB ANALYTICS INTEGRATION — Fast OLAP via AI Sidecar
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Snapshot platform load data into DuckDB for fast offline analytics.
+ * Called periodically to keep the DuckDB analytics layer fresh.
+ */
+export async function snapshotLoadsToDuckDB(): Promise<{ success: boolean; rows: number }> {
+  try {
+    const { getDb } = await import("../db");
+    const db = await getDb();
+    if (!db) return { success: false, rows: 0 };
+
+    const { analyticsQuery } = await import("./aiSidecar");
+
+    // Fetch recent loads for analytics
+    const { loads } = await import("../../drizzle/schema");
+    const { desc } = await import("drizzle-orm");
+    const recentLoads = await db.select({
+      id: loads.id, rate: loads.rate, distance: loads.distance,
+      cargoType: loads.cargoType, status: loads.status,
+      pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
+      createdAt: loads.createdAt,
+    }).from(loads).orderBy(desc(loads.createdAt)).limit(5000);
+
+    if (recentLoads.length === 0) return { success: true, rows: 0 };
+
+    // Transform to flat analytics format
+    const columns = ["id", "rate", "rate_per_mile", "distance", "cargo_type", "status",
+                     "origin_state", "dest_state", "created_at"];
+    const rows = recentLoads.map(l => {
+      const p = l.pickupLocation as any || {};
+      const d = l.deliveryLocation as any || {};
+      const dist = Number(l.distance) || 1;
+      const rate = Number(l.rate) || 0;
+      return [l.id, rate, dist > 0 ? Math.round(rate / dist * 100) / 100 : 0,
+              dist, l.cargoType || "general", l.status || "unknown",
+              (p.state || "").substring(0, 2).toUpperCase(),
+              (d.state || "").substring(0, 2).toUpperCase(),
+              l.createdAt?.toISOString() || ""];
+    });
+
+    // Ingest into DuckDB via AI sidecar
+    const sidecarUrl = process.env.AI_SIDECAR_URL || "http://localhost:8091";
+    const res = await globalThis.fetch(`${sidecarUrl}/analytics/ingest`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ table_name: "loads", columns, rows, replace: true }),
+    });
+
+    if (res.ok) {
+      const result = await res.json() as any;
+      console.log(`[MarketData] DuckDB snapshot: ${result.rows_ingested} loads ingested`);
+      return { success: true, rows: result.rows_ingested };
+    }
+    return { success: false, rows: 0 };
+  } catch (err) {
+    console.warn("[MarketData] DuckDB snapshot failed:", err);
+    return { success: false, rows: 0 };
+  }
+}
+
+/**
+ * Query lane-level analytics from DuckDB (fast OLAP).
+ * Returns pre-aggregated lane stats, rate distributions, weekly volumes.
+ */
+export async function queryLaneAnalytics(queryType: "lane_stats" | "rate_distribution" | "weekly_volume" = "lane_stats") {
+  try {
+    const { analyticsAggregate } = await import("./aiSidecar");
+    const result = await analyticsAggregate(queryType, {}, 50);
+    if (result?.success) return result;
+  } catch { /* AI sidecar unavailable */ }
+  return null;
+}

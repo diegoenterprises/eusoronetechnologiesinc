@@ -1,0 +1,32 @@
+# EusoTrip AI Sidecar — Python dependencies
+# All MIT/Apache/BSD licensed
+
+# Core
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# Phase 1: Document Processing
+docling==2.14.0
+paddlepaddle==3.0.0b1
+paddleocr==2.9.1
+
+# Phase 2: Route Optimization
+ortools==9.12.4544
+requests==2.32.3
+
+# Phase 3: NLP
+spacy==3.8.3
+
+# Phase 4: Demand Forecasting
+darts==0.32.0
+prophet==1.1.6
+
+# Phase 5: Data Processing
+duckdb==1.2.1
+polars==1.20.0
+
+# Utilities
+numpy==2.2.2
+Pillow==11.1.0
+pydantic==2.10.4

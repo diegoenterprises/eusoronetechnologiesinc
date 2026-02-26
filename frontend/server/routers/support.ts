@@ -123,7 +123,27 @@ export const supportRouter = router({
       ];
       let filtered = articles;
       if (input.categoryId) filtered = filtered.filter(a => a.category === input.categoryId);
-      if (input.search) { const q = input.search.toLowerCase(); filtered = filtered.filter(a => a.title.toLowerCase().includes(q) || a.summary.toLowerCase().includes(q)); }
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        filtered = filtered.filter(a => a.title.toLowerCase().includes(q) || a.summary.toLowerCase().includes(q));
+
+        // Augment with semantic knowledge base search
+        if (filtered.length < 3) {
+          try {
+            const { searchKnowledge } = await import("../services/embeddings/aiTurbocharge");
+            const hits = await searchKnowledge(input.search, 5);
+            for (const hit of hits.filter(h => h.score > 0.3)) {
+              filtered.push({
+                id: `ai_${hit.entityId}`,
+                title: hit.text.slice(0, 60) + "...",
+                category: (hit.metadata?.category as string) || "ai-knowledge",
+                summary: hit.text.slice(0, 200),
+                views: 0,
+              });
+            }
+          } catch { /* embedding service unavailable */ }
+        }
+      }
       return filtered;
     }),
 
@@ -253,9 +273,25 @@ export const supportRouter = router({
         } catch {}
       }
 
+      // NLP auto-classify category if user didn't specify (or chose "general")
+      let finalCategory = input.category;
+      if (!finalCategory || finalCategory === "general") {
+        try {
+          const { classifyText } = await import("../services/aiSidecar");
+          const nlpResult = await classifyText(
+            `${input.subject} ${messageBody}`,
+            ["billing", "technical", "compliance", "loads", "account", "agreements", "safety", "general"],
+          );
+          if (nlpResult?.success && nlpResult.confidence > 0.3 && nlpResult.category !== "general") {
+            finalCategory = nlpResult.category;
+            console.log(`[Support] NLP auto-classified ticket as "${finalCategory}" (${(nlpResult.confidence * 100).toFixed(0)}%)`);
+          }
+        } catch { /* AI sidecar unavailable — keep user-provided category */ }
+      }
+
       const result = await rawExec(
         `INSERT INTO support_tickets (ticketNumber, userId, userName, userEmail, userRole, subject, message, category, priority, status, loadId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`,
-        [ticketNumber, userId, userName, userEmail, ctx.user?.role || "", input.subject, messageBody, input.category, input.priority, input.loadId ? parseInt(input.loadId) : null]
+        [ticketNumber, userId, userName, userEmail, ctx.user?.role || "", input.subject, messageBody, finalCategory, input.priority, input.loadId ? parseInt(input.loadId) : null]
       );
 
       const ticketId = (result as any)?.insertId || 0;

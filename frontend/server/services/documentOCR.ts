@@ -355,7 +355,9 @@ function fallbackClassification(filename: string, text: string): DocumentClassif
 
 /**
  * Full digitize pipeline: OCR → ESANG AI Classification
- * Tries PaddleOCR first, falls back to ESANG AI Vision.
+ * Tier 0: Docling (AI Sidecar) — structured extraction with tables
+ * Tier 1: PaddleOCR (Python subprocess) — high-accuracy raw OCR
+ * Tier 2: ESANG AI Vision (Gemini) — always-available fallback
  */
 export async function digitizeDocument(
   base64Data: string,
@@ -363,8 +365,36 @@ export async function digitizeDocument(
 ): Promise<DigitizeResult> {
   console.log(`[DocumentOCR] Digitizing: ${filename}`);
 
-  // Step 1: Try PaddleOCR
-  let ocrResult = await runPaddleOCR(base64Data);
+  let ocrResult: OCRResult | null = null;
+  let extractedTables: Array<{ headers: string[]; rows: any[][] }> = [];
+
+  // Detect mime type from base64 header or filename
+  const mimeType = base64Data.startsWith("data:application/pdf") || filename.toLowerCase().endsWith(".pdf")
+    ? "application/pdf"
+    : base64Data.startsWith("data:image/jpeg") || filename.match(/\.jpe?g$/i)
+      ? "image/jpeg"
+      : "image/png";
+
+  // Step 0: Try Docling via AI Sidecar (structured extraction + tables)
+  try {
+    const { ocrExtract } = await import("./aiSidecar");
+    const sidecarResult = await ocrExtract(base64Data, mimeType, "auto", true);
+    if (sidecarResult?.success && sidecarResult.text.trim()) {
+      ocrResult = {
+        text: sidecarResult.text,
+        lines: sidecarResult.lines.map(l => ({ text: l.text, confidence: l.confidence })),
+        engine: sidecarResult.engine as OCRResult["engine"],
+        avgConfidence: sidecarResult.avg_confidence,
+      };
+      extractedTables = sidecarResult.tables || [];
+      console.log(`[DocumentOCR] Docling/Sidecar: ${ocrResult.lines.length} lines, ${extractedTables.length} tables`);
+    }
+  } catch { /* AI sidecar unavailable */ }
+
+  // Step 1: Try PaddleOCR (subprocess)
+  if (!ocrResult || !ocrResult.text.trim()) {
+    ocrResult = await runPaddleOCR(base64Data);
+  }
 
   // Step 2: Fall back to ESANG AI Vision
   if (!ocrResult || !ocrResult.text.trim()) {
@@ -383,9 +413,40 @@ export async function digitizeDocument(
   // Step 3: ESANG AI classification
   const classification = await classifyWithESANG(ocrResult.text, filename);
 
+  // Enrich extracted fields with table data if available
+  if (extractedTables.length > 0 && Object.keys(classification.extractedFields).length < 3) {
+    classification.extractedFields._tablesExtracted = String(extractedTables.length);
+  }
+
   console.log(
     `[DocumentOCR] Classified as ${classification.category}/${classification.subcategory} (${classification.confidence}% confidence)`
   );
 
   return { ocr: ocrResult, classification };
+}
+
+/**
+ * Extract structured BOL fields from a scanned document via AI Sidecar.
+ * Falls back to null if sidecar is unavailable.
+ */
+export async function extractBOLFields(base64Data: string, mimeType = "image/png") {
+  try {
+    const { ocrExtractBOL } = await import("./aiSidecar");
+    const result = await ocrExtractBOL(base64Data, mimeType);
+    if (result?.success) return result.fields;
+  } catch { /* sidecar unavailable */ }
+  return null;
+}
+
+/**
+ * Extract structured rate tiers from a rate sheet via AI Sidecar.
+ * Falls back to null if sidecar is unavailable.
+ */
+export async function extractRateSheetFields(base64Data: string, mimeType = "application/pdf") {
+  try {
+    const { ocrExtractRateSheet } = await import("./aiSidecar");
+    const result = await ocrExtractRateSheet(base64Data, mimeType);
+    if (result?.success) return { rateTiers: result.rate_tiers, surcharges: result.surcharges, metadata: result.metadata };
+  } catch { /* sidecar unavailable */ }
+  return null;
 }

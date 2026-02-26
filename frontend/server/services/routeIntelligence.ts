@@ -210,6 +210,85 @@ export async function getLanePerformance(originState?: string, destState?: strin
 }
 
 /**
+ * OSRM-POWERED REAL DISTANCE & ETA
+ * Uses the AI Sidecar's OSRM integration for real driving distances.
+ * Falls back to haversine estimation if sidecar is unavailable.
+ */
+export async function getRealDistance(
+  originLat: number, originLng: number,
+  destLat: number, destLng: number,
+): Promise<{ miles: number; hours: number; source: "osrm" | "haversine" }> {
+  // Try OSRM via AI Sidecar
+  try {
+    const { getDirections } = await import("./aiSidecar");
+    const result = await getDirections(
+      { lat: originLat, lng: originLng },
+      { lat: destLat, lng: destLng },
+    );
+    if (result?.success && result.distance_miles > 0) {
+      return { miles: result.distance_miles, hours: result.duration_hours, source: "osrm" };
+    }
+  } catch { /* sidecar unavailable */ }
+
+  // Fallback: haversine
+  const R = 3959;
+  const dLat = (destLat - originLat) * Math.PI / 180;
+  const dLng = (destLng - originLng) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(originLat * Math.PI / 180) * Math.cos(destLat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  const miles = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const hours = miles / 50; // ~50mph avg
+  return { miles: Math.round(miles), hours: Math.round(hours * 100) / 100, source: "haversine" };
+}
+
+/**
+ * MULTI-STOP ROUTE OPTIMIZATION
+ * Uses OR-Tools via AI Sidecar to solve VRP for multi-stop routes.
+ * Falls back to greedy nearest-neighbor if sidecar is unavailable.
+ */
+export async function optimizeMultiStopRoute(
+  depot: { lat: number; lng: number },
+  stops: Array<{ lat: number; lng: number; name?: string }>,
+  maxRouteMinutes = 660, // 11-hour HOS
+): Promise<{ stops: Array<{ index: number; name: string; lat: number; lng: number }>; totalMiles: number; totalHours: number; source: "ortools" | "greedy" }> {
+  // Try OR-Tools via AI Sidecar
+  try {
+    const { optimizeRoute } = await import("./aiSidecar");
+    const result = await optimizeRoute(depot, stops, { maxRouteTimeMinutes: maxRouteMinutes });
+    if (result?.success && result.routes.length > 0) {
+      const route = result.routes[0];
+      return {
+        stops: route.stops,
+        totalMiles: result.total_distance_miles,
+        totalHours: result.total_duration_hours,
+        source: "ortools",
+      };
+    }
+  } catch { /* sidecar unavailable */ }
+
+  // Fallback: greedy nearest-neighbor
+  const remaining = stops.map((s, i) => ({ ...s, index: i }));
+  const ordered: typeof remaining = [];
+  let current = depot;
+  while (remaining.length > 0) {
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < remaining.length; i++) {
+      const dx = remaining[i].lat - current.lat;
+      const dy = remaining[i].lng - current.lng;
+      const d = dx * dx + dy * dy;
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    }
+    const next = remaining.splice(bestIdx, 1)[0];
+    ordered.push(next);
+    current = next;
+  }
+  return {
+    stops: ordered.map(s => ({ index: s.index, name: s.name || `Stop ${s.index + 1}`, lat: s.lat, lng: s.lng })),
+    totalMiles: 0, totalHours: 0, source: "greedy",
+  };
+}
+
+/**
  * MASTER AGGREGATION — called by scheduler every 5 minutes
  */
 export async function computeRouteIntelligence(): Promise<void> {

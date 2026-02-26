@@ -510,6 +510,23 @@ export const hotZonesRouter = router({
       // If platform data is too sparse, blend with market intelligence baselines
       const PLATFORM_DATA_THRESHOLD = 10; // need at least 10 total platform loads to trust DB counts
 
+      // Pre-compute demand forecasts per state (async, outside map)
+      const stateForecastMap: Record<string, { trend: string; nextWeek: number | null }> = {};
+      try {
+        const { mlEngine } = await import("../services/mlEngine");
+        if (mlEngine.isReady()) {
+          const uniqueStates = Array.from(new Set(HOT_ZONES.map(z => z.state)));
+          await Promise.all(uniqueStates.map(async (st) => {
+            try {
+              const fc = await mlEngine.forecastDemandAdvanced({ originState: st });
+              if (fc.confidence > 40) {
+                stateForecastMap[st] = { trend: fc.trend, nextWeek: fc.nextWeekForecast };
+              }
+            } catch { /* skip */ }
+          }));
+        }
+      } catch { /* mlEngine or sidecar unavailable */ }
+
       const feed = HOT_ZONES.map(zone => {
         const intel = hasZoneIntel ? zoneIntel[zone.id] : null;
 
@@ -571,9 +588,14 @@ export const hotZonesRouter = router({
         const compRisk = intelCompRisk > 0 ? intelCompRisk : formulaCompRisk;
         const wxLevel = intelMaxSeverity ? (["Severe","Extreme"].includes(intelMaxSeverity) ? "HIGH" : intelMaxSeverity !== "None" ? "MODERATE" : "LOW") : (zoneWeather.length > 2 ? "HIGH" : zoneWeather.length > 0 ? "MODERATE" : "LOW");
 
+        // Demand prediction from pre-computed forecasts (async work done before .map)
+        const zoneForecast = stateForecastMap[zone.state];
+
         const zd = {
           zoneId: zone.id, zoneName: zone.name, state: zone.state, center: zone.center, radius: zone.radius,
           demandLevel: (liveRatio > 2.8 ? "CRITICAL" : liveRatio > 2.0 ? "HIGH" : "ELEVATED") as string,
+          demandTrend: zoneForecast?.trend || "STABLE",
+          nextWeekForecast: zoneForecast?.nextWeek || null,
           liveRate, liveLoads, liveTrucks, liveRatio, liveSurge,
           rateChange, rateChangePercent: rateChangePct,
           topEquipment: zone.topEquipment, reasons: zone.reasons, peakHours: zone.peakHours,
@@ -656,12 +678,24 @@ export const hotZonesRouter = router({
       const zoneFuel = fuelPrices[zone.state] || null;
       const zoneWeather = weatherAlerts.filter(a => a.state.includes(zone.state));
       const roleCtx = getRoleContext(role);
+      // Semantic knowledge enrichment for this zone
+      let zoneKnowledge: string[] = [];
+      try {
+        const { searchZones, searchKnowledge } = await import("../services/embeddings/aiTurbocharge");
+        const [zoneHits, knowledgeHits] = await Promise.all([
+          searchZones(`${zone.name} ${zone.state} freight logistics`, 3),
+          searchKnowledge(`${zone.state} trucking regulations compliance hazmat`, 2),
+        ]);
+        zoneKnowledge = [...zoneHits, ...knowledgeHits].filter(h => h.score > 0.3).map(h => h.text.slice(0, 200));
+      } catch { /* embedding service unavailable */ }
+
       return {
         ...zone, roleContext: roleCtx,
         fuelPrice: zoneFuel?.diesel || null, fuelPriceUpdated: zoneFuel?.updatedAt || null,
         weatherAlerts: zoneWeather.slice(0, 5),
         weatherRiskLevel: zoneWeather.filter(a => ["Extreme","Severe"].includes(a.severity)).length > 2 ? "HIGH" : zoneWeather.length > 0 ? "MODERATE" : "LOW",
         complianceRiskScore: Math.round((zoneWeather.filter(a => ["Extreme","Severe"].includes(a.severity)).length * 20) + (zone.hazmatClasses?.length || 0) * 15 + (zone.loadToTruckRatio > 2.5 ? 20 : 0) + (zone.oversizedFrequency === "VERY_HIGH" ? 10 : zone.oversizedFrequency === "HIGH" ? 5 : 0)),
+        aiKnowledge: zoneKnowledge,
       };
     }),
 

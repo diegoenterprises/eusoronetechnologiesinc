@@ -292,6 +292,17 @@ export const loadsRouter = router({
         })();
       }
 
+      // Auto-index load for semantic search (fire-and-forget)
+      try {
+        const { indexLoad } = await import("../services/embeddings/aiTurbocharge");
+        indexLoad({
+          id: insertedId, origin: input?.origin, destination: input?.destination,
+          cargoType, productName: input?.productName, equipment: input?.equipment,
+          rate: input?.rate, weight: input?.weight, miles: input?.distance,
+          hazmat: !!input?.hazmatClass, specialInstructions: ergNotes,
+        });
+      } catch { /* embedding service unavailable */ }
+
       // Fire gamification event for load creation
       const dbCreatorId = await resolveUserId(ctx.user);
       if (dbCreatorId) fireGamificationEvent({ userId: dbCreatorId, type: "load_created", value: 1 });
@@ -1385,11 +1396,68 @@ export const loadsRouter = router({
 
         if (input.query) {
           const q = input.query.toLowerCase();
-          results = results.filter(r =>
-            r.loadNumber.toLowerCase().includes(q) ||
-            r.origin.toLowerCase().includes(q) ||
-            r.destination.toLowerCase().includes(q)
-          );
+
+          // NLP: parse natural language query into structured fields
+          let nlpOrigin: string | undefined;
+          let nlpDest: string | undefined;
+          let nlpEquipment: string | undefined;
+          let nlpMaxRate: number | undefined;
+          try {
+            const { parseLoadQuery } = await import("../services/aiSidecar");
+            const nlp = await parseLoadQuery(input.query);
+            if (nlp?.success && nlp.parsed) {
+              nlpOrigin = nlp.parsed.origin?.toLowerCase();
+              nlpDest = nlp.parsed.destination?.toLowerCase();
+              nlpEquipment = nlp.parsed.equipment;
+              nlpMaxRate = nlp.parsed.max_rate;
+              console.log(`[Loads] NLP parsed: origin=${nlpOrigin}, dest=${nlpDest}, equip=${nlpEquipment}, maxRate=${nlpMaxRate}`);
+            }
+          } catch { /* AI sidecar unavailable — fall back to text search */ }
+
+          // Apply NLP-structured filters if available, otherwise text search
+          if (nlpOrigin || nlpDest) {
+            results = results.filter(r => {
+              let match = true;
+              if (nlpOrigin) match = match && r.origin.toLowerCase().includes(nlpOrigin!);
+              if (nlpDest) match = match && r.destination.toLowerCase().includes(nlpDest!);
+              if (nlpEquipment) match = match && (r.cargoType || "").toUpperCase().includes(nlpEquipment!);
+              if (nlpMaxRate && r.rate > 0) match = match && r.rate <= nlpMaxRate!;
+              return match;
+            });
+          } else {
+            results = results.filter(r =>
+              r.loadNumber.toLowerCase().includes(q) ||
+              r.origin.toLowerCase().includes(q) ||
+              r.destination.toLowerCase().includes(q)
+            );
+          }
+
+          // Augment with semantic search if text filter yields few results
+          if (results.length < 5) {
+            try {
+              const { searchLoads } = await import("../services/embeddings/aiTurbocharge");
+              const semanticHits = await searchLoads(input.query, 10);
+              const existingIds = new Set(results.map(r => r.id));
+              for (const hit of semanticHits) {
+                if (!existingIds.has(hit.entityId)) {
+                  const match = rows.find(r => String(r.id) === hit.entityId);
+                  if (match) {
+                    const p = match.pickupLocation as any || {};
+                    const d = match.deliveryLocation as any || {};
+                    results.push({
+                      id: String(match.id), loadNumber: match.loadNumber || '',
+                      status: match.status, cargoType: match.cargoType,
+                      origin: `${p.city || ''}, ${p.state || ''}`,
+                      destination: `${d.city || ''}, ${d.state || ''}`,
+                      rate: match.rate ? parseFloat(String(match.rate)) : 0,
+                      pickupDate: match.pickupDate?.toISOString() || '',
+                      createdAt: match.createdAt?.toISOString() || '',
+                    });
+                  }
+                }
+              }
+            } catch { /* embedding service unavailable */ }
+          }
         }
         if (input.status) results = results.filter(r => r.status === input.status);
         if (input.cargoType) results = results.filter(r => r.cargoType === input.cargoType);
@@ -2175,7 +2243,7 @@ export const bidsRouter = router({
 
   updateLoadStatus: protectedProcedure.input(z.object({
     loadId: z.string(),
-    status: z.enum(['posted', 'bidding', 'assigned', 'en_route_pickup', 'at_pickup', 'loading', 'in_transit', 'at_delivery', 'unloading', 'delivered', 'cancelled', 'disputed']),
+    status: z.enum(['posted', 'bidding', 'assigned', 'en_route_pickup', 'at_pickup', 'loading', 'in_transit', 'at_delivery', 'unloading', 'delivered', 'cancelled', 'disputed', 'temp_excursion', 'reefer_breakdown', 'contamination_reject', 'seal_breach', 'weight_violation']),
     lat: z.number().optional(),
     lng: z.number().optional(),
     notes: z.string().optional(),
@@ -2215,6 +2283,11 @@ export const bidsRouter = router({
       // Cancelled: notify both parties
       if (load.shipperId && load.shipperId !== userId) lookupAndNotify(load.shipperId, { type: "load_cancelled", loadNumber: load.loadNumber, reason: input.notes });
       if (load.catalystId) lookupAndNotify(load.catalystId, { type: "load_cancelled", loadNumber: load.loadNumber, reason: input.notes });
+    } else if (['temp_excursion', 'reefer_breakdown', 'contamination_reject', 'seal_breach', 'weight_violation'].includes(input.status)) {
+      // Cargo exception: urgent alert to all parties
+      const cargoType = (load as any).cargoType || undefined;
+      if (load.shipperId) lookupAndNotify(load.shipperId, { type: "cargo_exception", loadNumber: load.loadNumber, exceptionType: input.status, loadId: input.loadId, cargoType, description: input.notes });
+      if (load.catalystId) lookupAndNotify(load.catalystId, { type: "cargo_exception", loadNumber: load.loadNumber, exceptionType: input.status, loadId: input.loadId, cargoType, description: input.notes });
     } else {
       // All other status changes: notify the other party
       if (load.shipperId && load.shipperId !== userId) lookupAndNotify(load.shipperId, { type: "load_status_changed", loadNumber: load.loadNumber, oldStatus: load.status, newStatus: input.status });

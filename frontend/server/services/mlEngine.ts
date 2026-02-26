@@ -782,6 +782,79 @@ class MLEngine {
     };
   }
 
+  /**
+   * ENHANCED DEMAND FORECAST — Darts/Prophet via AI Sidecar
+   * Uses professional time-series models when available, falls back to built-in exponential smoothing.
+   */
+  async forecastDemandAdvanced(p: { originState?: string; destState?: string }): Promise<DemandForecast> {
+    const lane = p.originState && p.destState
+      ? `${p.originState.toUpperCase()}-${p.destState.toUpperCase()}`
+      : "ALL";
+
+    const ls = lane !== "ALL" ? this.state.laneStats.get(lane) : null;
+
+    // Try Darts/Prophet via AI Sidecar if we have enough historical data
+    if (ls && ls.weeklyVolumes.length >= 4) {
+      try {
+        const { forecastDemand: sidecarForecast } = await import("./aiSidecar");
+        const now = new Date();
+        const history = ls.weeklyVolumes.slice().reverse().map((v, i) => ({
+          date: new Date(now.getTime() - (ls.weeklyVolumes.length - 1 - i) * 7 * 86400000).toISOString().split("T")[0],
+          value: v,
+        }));
+        const result = await sidecarForecast(lane, history, 4);
+        if (result?.success && result.forecast.length > 0) {
+          console.log(`[MLEngine] Darts/Prophet forecast for ${lane}: model=${result.model_used}, trend=${result.trend}`);
+          return {
+            lane,
+            currentWeekVolume: ls.weeklyVolumes[0] || 0,
+            nextWeekForecast: Math.round(result.forecast[0].predicted),
+            next4WeekForecast: result.forecast.map(f => Math.round(f.predicted)),
+            trend: result.trend as DemandForecast["trend"],
+            seasonalFactor: result.seasonal_factor,
+            confidence: 85, // Higher confidence from professional models
+            topLanes: this.forecastDemand(p).topLanes,
+          };
+        }
+      } catch { /* AI sidecar unavailable */ }
+    }
+
+    // Fallback to built-in exponential smoothing
+    return this.forecastDemand(p);
+  }
+
+  /**
+   * RATE TREND FORECAST — Darts/Prophet via AI Sidecar
+   * Predicts rate-per-mile trends for a lane using professional forecasting models.
+   */
+  async forecastRateTrend(p: { originState: string; destState: string }): Promise<{
+    forecast: Array<{ date: string; predicted: number; lower: number; upper: number }>;
+    trend: string; volatility: number; model: string;
+  } | null> {
+    const lane = `${p.originState.toUpperCase()}-${p.destState.toUpperCase()}`;
+    const ls = this.state.laneStats.get(lane);
+    if (!ls || ls.recentRates.length < 4) return null;
+
+    try {
+      const { forecastRates } = await import("./aiSidecar");
+      const now = new Date();
+      const history = ls.recentRates.slice().reverse().map((v, i) => ({
+        date: new Date(now.getTime() - (ls.recentRates.length - 1 - i) * 7 * 86400000).toISOString().split("T")[0],
+        value: v / Math.max(ls.avgDistance, 1), // convert to rate-per-mile
+      }));
+      const result = await forecastRates(lane, history, 4);
+      if (result?.success) {
+        return {
+          forecast: result.forecast,
+          trend: result.trend,
+          volatility: result.volatility,
+          model: result.model_used,
+        };
+      }
+    } catch { /* AI sidecar unavailable */ }
+    return null;
+  }
+
   // ═══════════════════════════════════════════════════════════
   // 5. ANOMALY DETECTION
   // ═══════════════════════════════════════════════════════════
