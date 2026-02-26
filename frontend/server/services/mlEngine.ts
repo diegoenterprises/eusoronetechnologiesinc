@@ -805,6 +805,16 @@ class MLEngine {
         const result = await sidecarForecast(lane, history, 4);
         if (result?.success && result.forecast.length > 0) {
           console.log(`[MLEngine] Darts/Prophet forecast for ${lane}: model=${result.model_used}, trend=${result.trend}`);
+          // Compute confidence from data depth + model quality + CI tightness
+          const dataWeeks = ls.weeklyVolumes.length;
+          const dataDepthScore = Math.min(dataWeeks / 12, 1.0); // max at 12+ weeks
+          const modelBonus = result.model_used.includes("prophet") ? 0.10
+            : result.model_used.includes("darts") ? 0.12 : 0.0;
+          const f0 = result.forecast[0];
+          const ciWidth = f0.upper - f0.lower;
+          const ciTightness = f0.predicted > 0 ? Math.max(0, 1 - ciWidth / (f0.predicted * 2)) : 0.5;
+          const rawConf = 40 + 30 * dataDepthScore + 20 * ciTightness + modelBonus * 100;
+          const sidecarConfidence = Math.min(Math.round(rawConf), 95);
           return {
             lane,
             currentWeekVolume: ls.weeklyVolumes[0] || 0,
@@ -812,7 +822,7 @@ class MLEngine {
             next4WeekForecast: result.forecast.map(f => Math.round(f.predicted)),
             trend: result.trend as DemandForecast["trend"],
             seasonalFactor: result.seasonal_factor,
-            confidence: 85, // Higher confidence from professional models
+            confidence: sidecarConfidence,
             topLanes: this.forecastDemand(p).topLanes,
           };
         }

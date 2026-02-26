@@ -91,9 +91,11 @@ async def run_query(req: QueryRequest):
     if not sql_upper.startswith("SELECT") and not sql_upper.startswith("WITH"):
         raise HTTPException(400, "Only SELECT/WITH queries allowed")
 
-    # Block dangerous keywords
+    # Block dangerous keywords using word boundary matching to prevent
+    # false positives (e.g. 'updates_table' should NOT match 'UPDATE')
+    import re as _re
     for forbidden in ["DROP", "DELETE", "TRUNCATE", "ALTER", "UPDATE", "INSERT"]:
-        if forbidden in sql_upper:
+        if _re.search(rf"\b{forbidden}\b", sql_upper):
             raise HTTPException(400, f"Query contains forbidden keyword: {forbidden}")
 
     try:
@@ -181,21 +183,25 @@ async def run_aggregate(req: AggregateRequest):
         tables = [r[0] for r in conn.execute("SHOW TABLES").fetchall()]
 
         if req.query_type == "lane_stats" and "loads" in tables:
+            # Query only columns guaranteed to exist in ingested loads table
+            # (see marketDataService.ts snapshotLoadsToDuckDB: id, rate, rate_per_mile,
+            #  distance, cargo_type, status, origin_state, dest_state, created_at)
             result = conn.execute("""
                 SELECT
                     origin_state || '-' || dest_state AS lane,
                     COUNT(*) AS load_count,
-                    ROUND(AVG(rate_per_mile), 2) AS avg_rate,
-                    ROUND(STDDEV(rate_per_mile), 2) AS rate_stddev,
-                    ROUND(AVG(distance), 0) AS avg_distance,
-                    ROUND(AVG(weight), 0) AS avg_weight
+                    ROUND(AVG(CAST(rate_per_mile AS DOUBLE)), 2) AS avg_rate,
+                    ROUND(STDDEV(CAST(rate_per_mile AS DOUBLE)), 2) AS rate_stddev,
+                    ROUND(AVG(CAST(distance AS DOUBLE)), 0) AS avg_distance,
+                    ROUND(SUM(CAST(rate AS DOUBLE)), 0) AS total_revenue
                 FROM loads
+                WHERE origin_state != '' AND dest_state != ''
                 GROUP BY lane
                 ORDER BY load_count DESC
                 LIMIT ?
             """, [req.limit]).fetchall()
 
-            columns = ["lane", "load_count", "avg_rate", "rate_stddev", "avg_distance", "avg_weight"]
+            columns = ["lane", "load_count", "avg_rate", "rate_stddev", "avg_distance", "total_revenue"]
             results = [dict(zip(columns, row)) for row in result]
 
             return AggregateResponse(
@@ -226,12 +232,14 @@ async def run_aggregate(req: AggregateRequest):
             )
 
         elif req.query_type == "weekly_volume" and "loads" in tables:
+            # created_at is ingested as VARCHAR ISO string — cast to TIMESTAMP
             result = conn.execute("""
                 SELECT
-                    DATE_TRUNC('week', created_at) AS week,
+                    DATE_TRUNC('week', CAST(created_at AS TIMESTAMP)) AS week,
                     COUNT(*) AS volume,
-                    ROUND(AVG(rate_per_mile), 2) AS avg_rate
+                    ROUND(AVG(CAST(rate_per_mile AS DOUBLE)), 2) AS avg_rate
                 FROM loads
+                WHERE created_at IS NOT NULL AND created_at != ''
                 GROUP BY week
                 ORDER BY week DESC
                 LIMIT ?

@@ -81,7 +81,23 @@ app.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 
 @app.get("/health")
 async def health():
-    available = {k: v is not None for k, v in models.items()}
+    """Comprehensive health check — probes actual library availability."""
+    def _check(module_name: str) -> bool:
+        try:
+            __import__(module_name)
+            return True
+        except ImportError:
+            return False
+
+    available = {
+        "spacy": models.get("spacy") is not None,
+        "paddleocr": _check("paddleocr"),
+        "docling": _check("docling"),
+        "darts": _check("darts"),
+        "prophet": _check("prophet"),
+        "ortools": _check("ortools"),
+        "duckdb": _check("duckdb"),
+    }
     return {"status": "ok", "service": "eusotrip-ai-sidecar", "models": available}
 
 

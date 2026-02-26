@@ -7,6 +7,7 @@ import base64
 import io
 import json
 import logging
+import re
 import tempfile
 import os
 from typing import Optional
@@ -175,13 +176,16 @@ def run_paddle(file_path: str) -> tuple[str, list[OCRLine], float]:
     return full_text, lines, round(avg_conf, 4)
 
 
-def run_docling(file_path: str) -> tuple[str, list[dict]]:
-    """Run Docling on a file, return (markdown_text, tables)."""
+def run_docling(file_path: str) -> tuple[str, list[dict], float]:
+    """Run Docling on a file, return (markdown_text, tables, confidence).
+    Docling performs structural PDF parsing (not pixel-based OCR), so confidence
+    is computed from extraction quality: text density and table completeness."""
     converter = get_docling()
     result = converter.convert(file_path)
     md_text = result.document.export_to_markdown()
 
     tables = []
+    tables_complete = 0
     for table in result.document.tables:
         try:
             table_data = table.export_to_dataframe()
@@ -190,10 +194,19 @@ def run_docling(file_path: str) -> tuple[str, list[dict]]:
                 "rows": table_data.values.tolist(),
                 "num_rows": len(table_data),
             })
+            if len(table_data) > 0 and len(table_data.columns) > 0:
+                tables_complete += 1
         except Exception:
             tables.append({"headers": [], "rows": [], "num_rows": 0})
 
-    return md_text, tables
+    # Compute confidence from extraction quality
+    lines = [l for l in md_text.split("\n") if l.strip()]
+    text_density = min(len(lines) / 10.0, 1.0) if lines else 0.0  # expect >=10 lines for good extraction
+    table_ratio = tables_complete / max(len(tables), 1) if tables else 1.0  # penalize failed table extractions
+    # Structural PDF parsing is inherently high confidence; base 0.92 adjusted by quality
+    confidence = round(0.80 + 0.12 * text_density + 0.08 * table_ratio, 3)
+
+    return md_text, tables, confidence
 
 
 # ---------------------------------------------------------------------------
@@ -214,11 +227,11 @@ async def extract_text(req: OCRRequest):
         if req.engine == "auto":
             if req.mime_type == "application/pdf":
                 try:
-                    md_text, tables = run_docling(tmp_path)
-                    lines = [OCRLine(text=l, confidence=0.95) for l in md_text.split("\n") if l.strip()]
+                    md_text, tables, doc_conf = run_docling(tmp_path)
+                    lines = [OCRLine(text=l, confidence=doc_conf) for l in md_text.split("\n") if l.strip()]
                     return OCRResponse(
                         success=True, engine="docling", text=md_text,
-                        lines=lines, tables=tables, avg_confidence=0.95,
+                        lines=lines, tables=tables, avg_confidence=doc_conf,
                     )
                 except Exception as e:
                     logger.warning(f"Docling failed, falling back to PaddleOCR: {e}")
@@ -231,11 +244,11 @@ async def extract_text(req: OCRRequest):
             )
 
         elif req.engine == "docling":
-            md_text, tables = run_docling(tmp_path)
-            lines = [OCRLine(text=l, confidence=0.95) for l in md_text.split("\n") if l.strip()]
+            md_text, tables, doc_conf = run_docling(tmp_path)
+            lines = [OCRLine(text=l, confidence=doc_conf) for l in md_text.split("\n") if l.strip()]
             return OCRResponse(
                 success=True, engine="docling", text=md_text,
-                lines=lines, tables=tables, avg_confidence=0.95,
+                lines=lines, tables=tables, avg_confidence=doc_conf,
             )
 
         elif req.engine == "paddle":
@@ -298,7 +311,7 @@ async def extract_ratesheet(req: RateSheetExtractRequest):
 
         # Try Docling first for structured table extraction
         try:
-            md_text, doc_tables = run_docling(tmp_path)
+            md_text, doc_tables, _conf = run_docling(tmp_path)
             raw_text = md_text
             tables = doc_tables
         except Exception:
@@ -326,8 +339,6 @@ async def extract_ratesheet(req: RateSheetExtractRequest):
 # ---------------------------------------------------------------------------
 # Field parsers
 # ---------------------------------------------------------------------------
-
-import re
 
 
 def parse_bol_fields(text: str) -> BOLFields:

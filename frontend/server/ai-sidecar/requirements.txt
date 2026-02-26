@@ -28,5 +28,7 @@ polars==1.20.0
 
 # Utilities
 numpy==2.2.2
+pandas==2.2.3
+statsmodels==0.14.4
 Pillow==11.1.0
 pydantic==2.10.4
