@@ -74,11 +74,13 @@ export const dispatchRoleRouter = router({
           id: loads.id,
           loadNumber: loads.loadNumber,
           shipperId: loads.shipperId,
+          shipperName: users.name,
           rate: loads.rate,
           pickupLocation: loads.pickupLocation,
           deliveryLocation: loads.deliveryLocation,
         })
           .from(loads)
+          .leftJoin(users, eq(loads.shipperId, users.id))
           .where(eq(loads.status, 'posted'))
           .orderBy(desc(loads.createdAt))
           .limit(20);
@@ -89,11 +91,11 @@ export const dispatchRoleRouter = router({
           return {
             id: `l${l.id}`,
             loadNumber: l.loadNumber,
-            shipper: `Shipper ${l.shipperId}`,
+            shipper: l.shipperName || 'Unknown Shipper',
             origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
             destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
             rate: parseFloat(l.rate || '0'),
-            matchScore: Math.floor(Math.random() * 30) + 70,
+            matchScore: null as number | null,
           };
         }).filter(l => {
           if (input.search) {

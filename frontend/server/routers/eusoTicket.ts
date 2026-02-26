@@ -16,7 +16,7 @@ import { z } from "zod";
 import { eq, sql, desc, and } from "drizzle-orm";
 import { router, isolatedApprovedProcedure as protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { loads, documents, users, vehicles } from "../../drizzle/schema";
+import { loads, documents, users, vehicles, runTickets } from "../../drizzle/schema";
 
 // Run Ticket schema
 const runTicketSchema = z.object({
@@ -118,15 +118,32 @@ export const eusoTicketRouter = router({
   createRunTicket: protectedProcedure
     .input(runTicketSchema)
     .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const ticketNumber = `RT-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-      
-      // In production, save to database
+      const driverIdNum = parseInt(input.driverId) || 0;
+      const companyId = Number(ctx.user?.companyId) || 0;
+      const loadIdNum = parseInt(input.loadId) || undefined;
+
+      const [result] = await db.insert(runTickets).values({
+        ticketNumber,
+        loadId: loadIdNum,
+        driverId: driverIdNum,
+        companyId,
+        status: "active",
+        origin: input.originTerminalId,
+        destination: input.destinationTerminalId || null,
+        driverNotes: input.notes || null,
+      }).$returningId();
+
       return {
         success: true,
         ticketNumber,
+        ticketId: result.id,
         createdAt: new Date().toISOString(),
         createdBy: ctx.user?.id,
-        status: "draft",
+        status: "active",
         data: {
           ...input,
           ticketNumber,
