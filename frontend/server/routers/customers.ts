@@ -34,7 +34,7 @@ export const customersRouter = router({
           blocked: 0,
           totalRevenue: revenue?.total || 0,
           activeCustomers: active?.count || 0,
-          avgRating: 4.5,
+          avgRating: 0,
         };
       } catch (error) {
         console.error('[Customers] getSummary error:', error);

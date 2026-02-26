@@ -1127,8 +1127,8 @@ async function getShipperStats(db: any, userId: number) {
     activeLoads: activeLoads?.count || 0,
     deliveredLoads: deliveredLoads?.count || 0,
     totalSpent: totalSpent?.sum || 0,
-    onTimeRate: 94.5,
-    avgTransitTime: '2.3 days',
+    onTimeRate: 0,
+    avgTransitTime: '0 days',
   };
 }
 
@@ -1208,9 +1208,9 @@ async function getDriverStats(db: any, userId: number) {
   return {
     completedLoads: completedLoads?.count || 0,
     totalEarnings: totalEarnings?.sum || 0,
-    milesThisWeek: 2450,
-    safetyScore: 98,
-    hoursAvailable: 8.5,
+    milesThisWeek: 0,
+    safetyScore: 0,
+    hoursAvailable: 0,
     nextLoad: null,
   };
 }

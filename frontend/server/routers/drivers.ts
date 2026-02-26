@@ -158,13 +158,13 @@ export const driversRouter = router({
 
         return {
           currentStatus: currentLoad ? "on_load" : "available",
-          hoursAvailable: 11, // Would come from ELD integration
-          milesThisWeek: 0, // Would come from GPS tracking
+          hoursAvailable: 0, // Requires ELD integration
+          milesThisWeek: 0, // Requires GPS tracking
           earningsThisWeek: weeklyStats?.earnings || 0,
           loadsCompleted: weeklyStats?.count || 0,
-          safetyScore: driver?.safetyScore || 100,
-          onTimeRate: 100,
-          rating: 5.0,
+          safetyScore: driver?.safetyScore || 0,
+          onTimeRate: 0,
+          rating: 0,
           weeklyEarnings: weeklyStats?.earnings || 0,
           weeklyMiles: 0,
         };
@@ -412,9 +412,9 @@ export const driversRouter = router({
           status: currentLoad ? "on_load" : "available",
           currentLoad: currentLoad?.loadNumber || null,
           location: { lat: 0, lng: 0, city: 'Unknown', state: '' },
-          hoursRemaining: 11,
-          safetyScore: driver.safetyScore || 100,
-          rating: 5.0,
+          hoursRemaining: 0,
+          safetyScore: driver.safetyScore || 0,
+          rating: 0,
           hireDate: driver.createdAt?.toISOString().split('T')[0] || '',
           truckNumber: '',
           cdlNumber: driver.licenseNumber || '',
@@ -434,10 +434,10 @@ export const driversRouter = router({
             loadsThisMonth: monthlyStats?.count || 0,
             milesThisMonth: 0,
             earningsThisMonth: monthlyStats?.earnings || 0,
-            onTimeRate: 100,
+            onTimeRate: 0,
           },
           loadsCompleted: driver.totalLoads || 0,
-          onTimeRate: 100,
+          onTimeRate: 0,
           milesLogged: parseFloat(driver.totalMiles || '0'),
         };
       } catch (error) {
@@ -531,13 +531,13 @@ export const driversRouter = router({
         const totalLoads = stats?.count || 0;
         const totalDelivered = stats?.delivered || 0;
         const onTimeRate = totalLoads > 0 ? Math.round((totalDelivered / totalLoads) * 100) : 0;
-        const inspPassRate = inspStats?.total ? Math.round(((inspStats.passed || 0) / inspStats.total) * 100) : 100;
+        const inspPassRate = inspStats?.total ? Math.round(((inspStats.passed || 0) / inspStats.total) * 100) : 0;
         const [totalDrivers] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, driver.companyId));
         return {
           driverId: input.driverId, period: input.period,
-          metrics: { totalMiles: stats?.miles || 0, totalLoads, onTimeDeliveryRate: onTimeRate, safetyScore: driver.safetyScore || 100, fuelEfficiency: 0, customerRating: 5.0, hosCompliance: 100, inspectionPassRate: inspPassRate },
-          rankings: { overall: 1, totalDrivers: totalDrivers?.count || 0, safetyRank: 1, productivityRank: 1 },
-          trends: { safetyScore: { current: driver.safetyScore || 100, previous: driver.safetyScore || 100, change: 0 }, onTimeRate: { current: onTimeRate, previous: onTimeRate, change: 0 } },
+          metrics: { totalMiles: stats?.miles || 0, totalLoads, onTimeDeliveryRate: onTimeRate, safetyScore: driver.safetyScore || 0, fuelEfficiency: 0, customerRating: 0, hosCompliance: 0, inspectionPassRate: inspPassRate },
+          rankings: { overall: 0, totalDrivers: totalDrivers?.count || 0, safetyRank: 0, productivityRank: 0 },
+          trends: { safetyScore: { current: driver.safetyScore || 0, previous: driver.safetyScore || 0, change: 0 }, onTimeRate: { current: onTimeRate, previous: onTimeRate, change: 0 } },
         };
       } catch (e) { console.error('[Drivers] getPerformanceMetrics error:', e); return { driverId: input.driverId, period: input.period, metrics: { totalMiles: 0, totalLoads: 0, onTimeDeliveryRate: 0, safetyScore: 0, fuelEfficiency: 0, customerRating: 0, hosCompliance: 0, inspectionPassRate: 0 }, rankings: { overall: 0, totalDrivers: 0, safetyRank: 0, productivityRank: 0 }, trends: { safetyScore: { current: 0, previous: 0, change: 0 }, onTimeRate: { current: 0, previous: 0, change: 0 } } }; }
     }),
@@ -1323,13 +1323,13 @@ export const driversRouter = router({
       }
       const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
       const [stats] = await db.select({ count: sql<number>`count(*)`, delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`, revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`, miles: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.driverId, driverUserId), gte(loads.createdAt, monthAgo)));
-      const safetyScore = driverRecord?.safetyScore || 100;
+      const safetyScore = driverRecord?.safetyScore || 0;
       const totalLoads = stats?.count || 0;
       const delivered = stats?.delivered || 0;
-      const onTimeRate = totalLoads > 0 ? Math.round((delivered / totalLoads) * 100) : 100;
+      const onTimeRate = totalLoads > 0 ? Math.round((delivered / totalLoads) * 100) : 0;
       const [totalDrivers] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, driverRecord?.companyId || 0));
       const [userName] = driverId ? await db.select({ name: users.name }).from(users).where(eq(users.id, driverUserId)).limit(1) : [{ name: ctx.user?.name || '' }];
-      return { score: safetyScore, overallScore: safetyScore, onTimeRate, safetyScore, customerRating: 5.0, name: userName?.name || '', rank: 1, totalDrivers: totalDrivers?.count || 0, trend: "stable", achievements: [], stats: { loadsCompleted: totalLoads, milesDriver: stats?.miles || 0, milesThisMonth: stats?.miles || 0, hoursThisWeek: 0, fuelEfficiency: 0, revenue: stats?.revenue || 0, onTimeDeliveries: delivered, incidents: 0 }, metrics: { loadsCompleted: totalLoads, milesDriver: stats?.miles || 0, revenue: stats?.revenue || 0, fuelEfficiency: 0, safety: safetyScore, efficiency: onTimeRate, compliance: 100, onTime: onTimeRate, customerRating: 5.0 } };
+      return { score: safetyScore, overallScore: safetyScore, onTimeRate, safetyScore, customerRating: 0, name: userName?.name || '', rank: 0, totalDrivers: totalDrivers?.count || 0, trend: "stable", achievements: [], stats: { loadsCompleted: totalLoads, milesDriver: stats?.miles || 0, milesThisMonth: stats?.miles || 0, hoursThisWeek: 0, fuelEfficiency: 0, revenue: stats?.revenue || 0, onTimeDeliveries: delivered, incidents: 0 }, metrics: { loadsCompleted: totalLoads, milesDriver: stats?.miles || 0, revenue: stats?.revenue || 0, fuelEfficiency: 0, safety: safetyScore, efficiency: onTimeRate, compliance: 0, onTime: onTimeRate, customerRating: 0 } };
     } catch (e) { console.error('[Drivers] getPerformance error:', e); return fallback; }
   }),
   getPerformanceReviews: auditedOperationsProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() }).optional()).query(async ({ ctx }) => {
@@ -1369,15 +1369,15 @@ export const driversRouter = router({
       const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
       const [stats] = await db.select({ count: sql<number>`count(*)`, delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`, revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`, miles: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.driverId, driverUserId), gte(loads.createdAt, monthAgo)));
       const [inspStats] = await db.select({ total: sql<number>`count(*)`, passed: sql<number>`SUM(CASE WHEN ${inspections.status} = 'passed' THEN 1 ELSE 0 END)` }).from(inspections).where(and(eq(inspections.driverId, driverUserId), gte(inspections.createdAt, monthAgo)));
-      const safetyScore = driverRecord?.safetyScore || 100;
+      const safetyScore = driverRecord?.safetyScore || 0;
       const totalLoads = stats?.count || 0;
       const delivered = stats?.delivered || 0;
-      const onTimeRate = totalLoads > 0 ? Math.round((delivered / totalLoads) * 100) : 100;
-      const inspScore = inspStats?.total ? Math.round(((inspStats.passed || 0) / inspStats.total) * 100) : 100;
+      const onTimeRate = totalLoads > 0 ? Math.round((delivered / totalLoads) * 100) : 0;
+      const inspScore = inspStats?.total ? Math.round(((inspStats.passed || 0) / inspStats.total) * 100) : 0;
       const [totalDrivers] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, driverRecord?.companyId || 0));
       const [userName] = driverId ? await db.select({ name: users.name }).from(users).where(eq(users.id, driverUserId)).limit(1) : [{ name: ctx.user?.name || '' }];
-      const overallScore = Math.round((safetyScore + onTimeRate + 100 + 100) / 4);
-      return { safety: safetyScore, efficiency: onTimeRate, compliance: 100, customer: 100, overallScore, driverName: userName?.name || '', rank: 1, totalDrivers: totalDrivers?.count || 0, trend: "stable", metrics: { loadsCompleted: totalLoads, milesDriver: stats?.miles || 0, milesThisMonth: stats?.miles || 0, revenue: stats?.revenue || 0, fuelEfficiency: 0, onTimeDelivery: onTimeRate, customerRating: 5.0, inspectionScore: inspScore, safetyEvents: 0, hardBraking: 0, speeding: 0, idling: 0, hosViolations: 0 }, achievements: [] };
+      const overallScore = Math.round((safetyScore + onTimeRate) / 2);
+      return { safety: safetyScore, efficiency: onTimeRate, compliance: 0, customer: 0, overallScore, driverName: userName?.name || '', rank: 0, totalDrivers: totalDrivers?.count || 0, trend: "stable", metrics: { loadsCompleted: totalLoads, milesDriver: stats?.miles || 0, milesThisMonth: stats?.miles || 0, revenue: stats?.revenue || 0, fuelEfficiency: 0, onTimeDelivery: onTimeRate, customerRating: 0, inspectionScore: inspScore, safetyEvents: 0, hardBraking: 0, speeding: 0, idling: 0, hosViolations: 0 }, achievements: [] };
     } catch (e) { console.error('[Drivers] getScorecard error:', e); return fallback; }
   }),
   getLeaderboard: auditedOperationsProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async ({ ctx }) => {
@@ -1386,7 +1386,7 @@ export const driversRouter = router({
     try {
       const companyId = ctx.user?.companyId || 0;
       const driverList = await db.select({ id: drivers.id, userId: drivers.userId, safetyScore: drivers.safetyScore, totalLoads: drivers.totalLoads, totalMiles: drivers.totalMiles, userName: users.name }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).orderBy(desc(drivers.safetyScore)).limit(20);
-      return driverList.map((d, idx) => ({ rank: idx + 1, id: String(d.id), name: d.userName || 'Unknown', safetyScore: d.safetyScore || 0, totalLoads: d.totalLoads || 0, totalMiles: parseFloat(d.totalMiles || '0'), onTimeRate: 100 }));
+      return driverList.map((d, idx) => ({ rank: idx + 1, id: String(d.id), name: d.userName || 'Unknown', safetyScore: d.safetyScore || 0, totalLoads: d.totalLoads || 0, totalMiles: parseFloat(d.totalMiles || '0'), onTimeRate: 0 }));
     } catch (e) { console.error('[Drivers] getLeaderboard error:', e); return []; }
   }),
 
@@ -1887,9 +1887,9 @@ export const driversRouter = router({
 
     const empty = {
       carrier: null as { id: number; name: string; dotNumber: string | null; mcNumber: string | null; phone: string | null; city: string | null; state: string | null; logo: string | null } | null,
-      hos: { canDrive: true, drivingRemaining: "11h 00m", onDutyRemaining: "14h 00m", cycleRemaining: "70h 00m", status: "off_duty" as string, nextBreakRequired: null as string | null, violations: [] as string[] },
+      hos: { canDrive: false, drivingRemaining: null as string | null, onDutyRemaining: null as string | null, cycleRemaining: null as string | null, status: "unknown" as string, nextBreakRequired: null as string | null, violations: [] as string[], eldConnected: false },
       currentLoad: null as { id: string; loadNumber: string; status: string; commodity: string; hazmatClass: string | null; origin: { name: string; city: string; state: string }; destination: { name: string; city: string; state: string }; pickupDate: string; deliveryDate: string; rate: number; miles: number; shipper: string } | null,
-      stats: { weeklyEarnings: 0, weeklyMiles: 0, weeklyLoads: 0, monthlyEarnings: 0, monthlyLoads: 0, safetyScore: 100, onTimeRate: 100, totalLoads: 0, totalMiles: 0 },
+      stats: { weeklyEarnings: 0, weeklyMiles: 0, weeklyLoads: 0, monthlyEarnings: 0, monthlyLoads: 0, safetyScore: 0, onTimeRate: 0, totalLoads: 0, totalMiles: 0 },
       vehicle: null as { id: string; unitNumber: string; make: string; model: string; year: number; equipmentType: string } | null,
       recentLoads: [] as { id: string; loadNumber: string; status: string; origin: string; destination: string; rate: number; date: string }[],
       driver: { id: "", name: ctx.user?.name || "", cdlNumber: "", hazmatEndorsement: false, status: "active" },
@@ -1935,6 +1935,7 @@ export const driversRouter = router({
         status: hosSummary.status,
         nextBreakRequired: hosSummary.nextBreakRequired || null,
         violations: hosSummary.violations?.map((v: any) => v.description || v) || [],
+        eldConnected: false,
       };
 
       // 4) Current load

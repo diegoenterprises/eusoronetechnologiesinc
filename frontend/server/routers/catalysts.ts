@@ -282,8 +282,8 @@ export const catalystsRouter = router({
           availableCapacity: available?.count || 0,
           weeklyRevenue: weeklyStats?.revenue || 0,
           fleetUtilization: utilization,
-          safetyScore: 100,
-          onTimeRate: 100,
+          safetyScore: 0,
+          onTimeRate: 0,
         };
       } catch (error) {
         console.error('[Catalysts] getDashboardStats error:', error);
@@ -559,7 +559,7 @@ export const catalystsRouter = router({
           verified: company.complianceStatus === 'compliant',
           rating: 0,
           loadsCompleted: loadsStats?.count || 0,
-          onTimeRate: 100,
+          onTimeRate: 0,
           driverCount: 0,
           fleetSize: vehicleCount?.count || 0,
           phone: company.phone || '',
@@ -594,7 +594,7 @@ export const catalystsRouter = router({
           },
           performance: {
             loadsCompleted: loadsStats?.count || 0,
-            onTimeRate: 100,
+            onTimeRate: 0,
             claimsRatio: 0,
             avgRating: 0,
           },
@@ -1152,11 +1152,11 @@ export const catalystsRouter = router({
           totalLoads: totalLoads?.count || 0,
           totalRevenue: totalRevenue?.sum || 0,
           avgRatePerMile: 0,
-          onTimeDeliveryRate: 95,
-          safetyScore: 90,
+          onTimeDeliveryRate: 0,
+          safetyScore: 0,
           avgPaymentReceived: 0,
           loadsCompleted: completed?.count || 0,
-          onTimeRate: 95,
+          onTimeRate: 0,
         };
       } catch (error) {
         console.error('[Catalysts] getStats error:', error);

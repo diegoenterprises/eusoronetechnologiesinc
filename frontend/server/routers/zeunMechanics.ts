@@ -256,6 +256,15 @@ export const zeunMechanicsRouter = router({
       status: "REPORTED",
     }).$returningId();
 
+    // Enrich with semantic knowledge (fire-and-forget index for future searches)
+    let semanticContext: string[] = [];
+    try {
+      const { searchKnowledge } = await import("../services/embeddings/aiTurbocharge");
+      const query = `${input.issueCategory} ${input.symptoms.join(" ")} ${(input.faultCodes || []).join(" ")} truck breakdown diagnostic`;
+      const hits = await searchKnowledge(query, 3);
+      semanticContext = hits.filter(h => h.score > 0.3).map(h => h.text.slice(0, 300));
+    } catch { /* embedding service unavailable */ }
+
     // Run ESANG AI-powered diagnosis
     const aiDiag = await esangAI.diagnoseBreakdown({
       symptoms: input.symptoms,
@@ -323,6 +332,7 @@ export const zeunMechanicsRouter = router({
       preventiveTips: aiDiag.preventiveTips,
       alternativeDiagnoses: aiDiag.alternativeDiagnoses,
       aiModel: "esang-ai",
+      semanticContext,
     };
   }),
 
@@ -656,16 +666,16 @@ export const zeunMechanicsRouter = router({
             website: op.website?.slice(0, 500) || null,
             services: op.services,
             isActive: true,
-            rating: "4.0",
+            rating: "0",
           });
           results.push({
             id: (inserted as any)?.insertId || null,
             name: op.name, type: pType, chainName: null,
             address: op.address || null, city: op.city || null, state: op.state || null,
             phone: op.phone || null, distance: Number(distance.toFixed(1)),
-            rating: 4.0, reviewCount: 0, available24x7: null,
+            rating: 0, reviewCount: 0, available24x7: null,
             hasMobileService: null, services: op.services,
-            score: 90 - distance, source: "openstreetmap", website: op.website || null,
+            score: Math.max(0, 90 - distance), source: "openstreetmap", website: op.website || null,
           });
         } catch {
           // Duplicate or insert error — still add to results
@@ -673,9 +683,9 @@ export const zeunMechanicsRouter = router({
             id: null, name: op.name, type: pType, chainName: null,
             address: op.address || null, city: op.city || null, state: op.state || null,
             phone: op.phone || null, distance: Number(distance.toFixed(1)),
-            rating: 4.0, reviewCount: 0, available24x7: null,
+            rating: 0, reviewCount: 0, available24x7: null,
             hasMobileService: null, services: op.services,
-            score: 90 - distance, source: "openstreetmap", website: op.website || null,
+            score: Math.max(0, 90 - distance), source: "openstreetmap", website: op.website || null,
           });
         }
       }
@@ -1078,6 +1088,34 @@ export const zeunMechanicsRouter = router({
     if (builtin) {
       return { found: true, code: normalizedCode, spn: normalizedCode.split("-")[0], fmi: normalizedCode.split("-")[1], ...builtin };
     }
+
+    // Semantic search: find related DTC knowledge from embeddings
+    try {
+      const { searchKnowledge } = await import("../services/embeddings/aiTurbocharge");
+      const semanticResults = await searchKnowledge(`fault code ${normalizedCode} truck diagnostic DTC SPN FMI`, 3);
+      if (semanticResults.length > 0 && semanticResults[0].score > 0.4) {
+        const best = semanticResults[0];
+        const parts = normalizedCode.split("-");
+        return {
+          found: true,
+          code: normalizedCode,
+          spn: parts[0] || normalizedCode,
+          fmi: parts[1] || "",
+          description: best.text.slice(0, 300),
+          severity: "MEDIUM" as const,
+          category: (best.metadata?.subcategory as string) || "Diagnostics",
+          symptoms: ["See knowledge base description above"],
+          commonCauses: semanticResults.slice(0, 3).map(r => r.text.slice(0, 150)),
+          canDrive: true,
+          repairUrgency: "Have inspected at next available service stop",
+          estimatedCost: { min: 0, max: 0 },
+          estimatedTimeHours: 0,
+          affectedSystems: [],
+          source: "semantic-search",
+          relatedKnowledge: semanticResults.map(r => ({ text: r.text.slice(0, 200), score: r.score })),
+        };
+      }
+    } catch { /* Embedding service unavailable */ }
 
     // SPN/FMI pattern match attempt
     const parts = normalizedCode.split("-");

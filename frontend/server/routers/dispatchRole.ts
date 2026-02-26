@@ -600,7 +600,7 @@ export const dispatchRoleRouter = router({
     try {
       const delivered = await db.select({ id: loads.id, loadNumber: loads.loadNumber, rate: loads.rate, actualDeliveryDate: loads.actualDeliveryDate })
         .from(loads).where(eq(loads.status, 'delivered')).orderBy(desc(loads.actualDeliveryDate)).limit(20);
-      return delivered.map(l => ({ id: String(l.id), loadNumber: l.loadNumber, rate: parseFloat(l.rate || '0'), completedAt: l.actualDeliveryDate?.toISOString() || '', score: 95 }));
+      return delivered.map(l => ({ id: String(l.id), loadNumber: l.loadNumber, rate: parseFloat(l.rate || '0'), completedAt: l.actualDeliveryDate?.toISOString() || '', score: 0 }));
     } catch { return []; }
   }),
   getPerformanceHistory: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() })).query(async () => {
@@ -609,7 +609,7 @@ export const dispatchRoleRouter = router({
     try {
       const delivered = await db.select({ id: loads.id, loadNumber: loads.loadNumber, rate: loads.rate, actualDeliveryDate: loads.actualDeliveryDate })
         .from(loads).where(eq(loads.status, 'delivered')).orderBy(desc(loads.actualDeliveryDate)).limit(50);
-      return delivered.map(l => ({ id: String(l.id), loadNumber: l.loadNumber, rate: parseFloat(l.rate || '0'), completedAt: l.actualDeliveryDate?.toISOString() || '', score: 95 }));
+      return delivered.map(l => ({ id: String(l.id), loadNumber: l.loadNumber, rate: parseFloat(l.rate || '0'), completedAt: l.actualDeliveryDate?.toISOString() || '', score: 0 }));
     } catch { return []; }
   }),
   getPerformanceStats: protectedProcedure.query(async () => {
@@ -618,9 +618,9 @@ export const dispatchRoleRouter = router({
     try {
       const [delivered] = await db.select({ count: sql<number>`count(*)`, total: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)),0)` }).from(loads).where(eq(loads.status, 'delivered'));
       return {
-        avgScore: 92, topScore: 100, trend: 'stable' as const,
-        loadsCompleted: delivered?.count || 0, successRate: 98,
-        rating: 4.8, onTimeRate: 95, totalEarnings: delivered?.total || 0, achievements: [],
+        avgScore: 0, topScore: 0, trend: 'stable' as const,
+        loadsCompleted: delivered?.count || 0, successRate: 0,
+        rating: 0, onTimeRate: 0, totalEarnings: delivered?.total || 0, achievements: [],
       };
     } catch { return { avgScore: 0, topScore: 0, trend: 'stable', loadsCompleted: 0, successRate: 0, rating: 0, onTimeRate: 0, totalEarnings: 0, achievements: [] }; }
   }),

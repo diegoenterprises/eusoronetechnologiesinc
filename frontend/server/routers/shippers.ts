@@ -92,8 +92,8 @@ export const shippersRouter = router({
           activeLoads: activeLoads?.count || 0,
           pendingBids: pendingBids?.count || 0,
           deliveredThisWeek: deliveredThisWeek?.count || 0,
-          ratePerMile: 3.45,
-          onTimeRate: 96,
+          ratePerMile: 0,
+          onTimeRate: 0,
           totalSpendThisMonth: monthSpend?.total || 0,
         };
       } catch (error) {
@@ -239,7 +239,7 @@ export const shippersRouter = router({
           pendingBids: pendingBids?.count || 0,
           deliveredThisWeek: deliveredThisWeek?.count || 0,
           ratePerMile: 0,
-          onTimeRate: 95,
+          onTimeRate: 0,
           totalSpendThisMonth: monthSpend?.total || 0,
         };
       } catch (error) {
@@ -371,9 +371,9 @@ export const shippersRouter = router({
             catalystId: `car_${b.catalystId}`,
             catalystName: catalyst?.name || 'Catalyst',
             dotNumber: catalyst?.dotNumber || '',
-            safetyScore: 90,
+            safetyScore: 0,
             amount: b.amount ? parseFloat(String(b.amount)) : 0,
-            transitTime: '8 hours',
+            transitTime: '',
             submittedAt: b.createdAt?.toISOString() || '',
             message: b.notes || '',
             recommended: idx === 0,

@@ -929,11 +929,11 @@ export const brokersRouter = router({
           email: c.email || '',
           phone: c.phone || '',
           location: c.city && c.state ? `${c.city}, ${c.state}` : '',
-          rating: 4.5,
+          rating: 0,
           totalLoads: 0,
           activeLoads: 0,
           totalRevenue: 0,
-          avgCommission: 12,
+          avgCommission: 0,
           status: c.isActive ? 'active' : 'inactive',
           lastActivity: c.updatedAt?.toISOString() || new Date().toISOString(),
         }));
