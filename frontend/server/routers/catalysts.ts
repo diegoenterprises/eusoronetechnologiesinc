@@ -181,7 +181,7 @@ export const catalystsRouter = router({
           available: available?.count || 0,
           booked: inUse?.count || 0,
           verified: 0,
-          avgRating: 4.5,
+          avgRating: 0,
         };
       } catch (error) {
         console.error('[Catalysts] getCapacitySummary error:', error);
@@ -557,7 +557,7 @@ export const catalystsRouter = router({
           safetyRating: company.complianceStatus === 'compliant' ? 'Satisfactory' : 'None',
           safetyScore: company.complianceStatus === 'compliant' ? 85 : 0,
           verified: company.complianceStatus === 'compliant',
-          rating: 4.5,
+          rating: 0,
           loadsCompleted: loadsStats?.count || 0,
           onTimeRate: 100,
           driverCount: 0,
@@ -596,7 +596,7 @@ export const catalystsRouter = router({
             loadsCompleted: loadsStats?.count || 0,
             onTimeRate: 100,
             claimsRatio: 0,
-            avgRating: 4.5,
+            avgRating: 0,
           },
           csaScores: { unsafeDriving: 0, hos: 0, driverFitness: 0, drugs: 0, vehicleMaintenance: 0, hazmat: 0, crash: 0 },
           csaScore: 100,
@@ -971,7 +971,7 @@ export const catalystsRouter = router({
           const [stats] = await db.select({ count: sql<number>`count(*)`, delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)` }).from(loads).where(and(eq(loads.catalystId, catalystId), gte(loads.createdAt, start), sql`${loads.createdAt} < ${end}`));
           const loadCount = stats?.count || 0;
           const deliveredCount = stats?.delivered || 0;
-          history.push({ month: start.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), loads: loadCount, onTimeRate: loadCount > 0 ? Math.round((deliveredCount / loadCount) * 100) : 0, rating: 4.5 });
+          history.push({ month: start.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), loads: loadCount, onTimeRate: loadCount > 0 ? Math.round((deliveredCount / loadCount) * 100) : 0, rating: 0 });
         }
         const first = history[0]?.loads || 0; const last = history[history.length - 1]?.loads || 0;
         const change = first > 0 ? Math.round(((last - first) / first) * 100 * 10) / 10 : 0;
@@ -1047,7 +1047,7 @@ export const catalystsRouter = router({
             name: c.name,
             mcNumber: c.mcNumber || '',
             equipment: ['tanker'],
-            rating: 4.5,
+            rating: 0,
             trucks: vehicleCount?.count || 0,
             location: c.city && c.state ? `${c.city}, ${c.state}` : 'Unknown',
             verified: c.complianceStatus === 'compliant',
@@ -1091,7 +1091,7 @@ export const catalystsRouter = router({
           verified: verified?.count || 0,
           active: active?.count || 0,
           newThisMonth: newThisMonth?.count || 0,
-          avgRating: 4.5,
+          avgRating: 0,
           totalTrucks: totalTrucks?.count || 0,
         };
       } catch (error) {
@@ -1353,26 +1353,31 @@ export const catalystsRouter = router({
         const [total] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.catalystId, catalystId));
         const [revenue] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.catalystId, catalystId), eq(loads.status, 'delivered')));
 
+        // Calculate on-time delivery rate from actual data
+        const totalCompleted = completed?.count || 0;
+        const totalAll = total?.count || 0;
+        const onTimeDelivery = totalAll > 0 ? Math.round((totalCompleted / totalAll) * 100 * 10) / 10 : 0;
+
         return {
           revenue: { 
             current: revenue?.sum || 0, 
-            previous: Math.round((revenue?.sum || 0) * 0.9), 
-            change: 10.1 
+            previous: 0, 
+            change: 0 
           },
           loads: { 
-            completed: completed?.count || 0, 
+            completed: totalCompleted, 
             inProgress: inProgress?.count || 0, 
-            total: total?.count || 0 
+            total: totalAll 
           },
           efficiency: { 
-            onTimeDelivery: 94.5, 
-            avgDeliveryTime: 2.3, 
-            fuelEfficiency: 6.8 
+            onTimeDelivery, 
+            avgDeliveryTime: 0, 
+            fuelEfficiency: 0 
           },
           performance: { 
-            rating: 4.7, 
-            repeatCustomers: 68, 
-            cancellationRate: 2.1 
+            rating: 0, 
+            repeatCustomers: 0, 
+            cancellationRate: 0 
           }
         };
       } catch (error) {
