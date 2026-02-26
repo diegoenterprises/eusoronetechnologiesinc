@@ -558,8 +558,32 @@ export const complianceRouter = router({
         const inspPassed = passedInsp?.count || 0;
         const vehicleScore = inspTotal > 0 ? Math.round((inspPassed / inspTotal) * 100) : 100;
 
-        // HOS score: placeholder (ELD integration pending)
-        const hosScore = 95;
+        // HOS score: derived from ELD violations if available, else from inspection pass rate
+        // When ELD is connected, use violation count; otherwise use vehicle inspection data
+        // as a proxy (FMCSA treats HOS violations as inspection failures)
+        let hosScore = 100;
+        try {
+          const { eldService } = await import("../services/eld");
+          if (eldService.isConfigured()) {
+            // ELD available — count drivers with violations
+            const driverRows = await db.select({ id: users.id }).from(users)
+              .where(and(eq(users.companyId, companyId), eq(users.role, "DRIVER" as any)))
+              .limit(50);
+            let totalDrivers = driverRows.length;
+            let driversClean = 0;
+            for (const d of driverRows) {
+              const violations = await eldService.getDriverViolations(String(d.id));
+              if (violations.length === 0) driversClean++;
+            }
+            hosScore = totalDrivers > 0 ? Math.round((driversClean / totalDrivers) * 100) : 100;
+          } else {
+            // No ELD — use vehicle inspection pass rate as HOS proxy
+            hosScore = vehicleScore;
+          }
+        } catch {
+          // ELD service unavailable — fall back to vehicle inspection score
+          hosScore = vehicleScore;
+        }
 
         // Hazmat score
         const [totalHazCerts] = await db.select({ count: sql<number>`count(*)` }).from(certifications).where(eq(certifications.type, 'hazmat'));
@@ -1059,7 +1083,17 @@ export const complianceRouter = router({
         if (input.status) filtered = filtered.filter(v => v.status === input.status);
         if (input.severity) filtered = filtered.filter(v => v.severity === input.severity);
 
-        return filtered;
+        // Enrich with semantic compliance knowledge when searching
+        let complianceKnowledge: string[] = [];
+        if (input.search) {
+          try {
+            const { searchKnowledge } = await import("../services/embeddings/aiTurbocharge");
+            const hits = await searchKnowledge(`${input.search} FMCSA violation compliance regulation 49 CFR`, 3);
+            complianceKnowledge = hits.filter(h => h.score > 0.3).map(h => h.text.slice(0, 200));
+          } catch { /* embedding service unavailable */ }
+        }
+
+        return complianceKnowledge.length > 0 ? { violations: filtered, complianceKnowledge } : filtered;
       } catch (error) {
         console.error('[Compliance] getViolations error:', error);
         return [];

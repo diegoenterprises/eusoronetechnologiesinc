@@ -142,7 +142,7 @@ export const contactsRouter = router({
         try {
           const roleMap: Record<string, string> = { shipper: 'SHIPPER', catalyst: 'CATALYST', broker: 'BROKER', driver: 'DRIVER', terminal: 'TERMINAL', vendor: 'CATALYST', other: 'SHIPPER' };
           const openId = `contact_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-          const [result] = await db.insert(users).values({ openId, name: input.name, email: input.email || `contact_${Date.now()}@placeholder.local`, phone: input.phone || null, role: (roleMap[input.type] || 'SHIPPER') as any, isActive: true, isVerified: false }).$returningId();
+          const [result] = await db.insert(users).values({ openId, name: input.name, email: input.email || `contact_${Date.now()}@noreply.eusotrip.com`, phone: input.phone || null, role: (roleMap[input.type] || 'SHIPPER') as any, isActive: true, isVerified: false }).$returningId();
           return { id: `con_${result.id}`, ...input, createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
         } catch (e) { console.error('[Contacts] create error:', e); }
       }

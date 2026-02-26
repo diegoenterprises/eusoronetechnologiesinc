@@ -332,10 +332,10 @@ export const terminalsRouter = router({
       const requestedById = ctx.user?.id || null;
 
       // TAS pre-clearance checks (non-blocking — store results, don't hard-fail)
-      let preClearanceStatus: "pending" | "cleared" | "denied" | "bypassed" = input.skipTasValidation ? "bypassed" : "pending";
+      let preClearanceStatus: "pending" | "cleared" | "denied" | "bypassed" = input.skipTasValidation || !dtn ? "bypassed" : "pending";
       const preClearanceData: any = {};
 
-      if (!input.skipTasValidation) {
+      if (!input.skipTasValidation && dtn) {
         try {
           // 1. Credit check (carrier authorized at this terminal?)
           if (input.carrierId) {
@@ -587,24 +587,26 @@ export const terminalsRouter = router({
               } catch (e) { console.warn('[Detention] Tracking failed (non-fatal):', e); }
             }
 
-            // TAS notifications (fire-and-forget)
+            // TAS notifications (fire-and-forget, skip if DTN not configured)
             try {
               const { getDTNClient } = await import("../services/dtn/dtnClient");
               const dtn = getDTNClient();
-              const [appt] = await db.select().from(appointments).where(eq(appointments.id, id)).limit(1);
-              if (appt) {
-                if (input.status === 'checked_in' && !appt.arrivalNotifiedAt) {
-                  let driverName = 'Unknown';
-                  if (appt.driverId) {
-                    const [d] = await db.select({ name: users.name }).from(users).where(eq(users.id, appt.driverId)).limit(1);
-                    driverName = d?.name || driverName;
+              if (dtn) {
+                const [appt] = await db.select().from(appointments).where(eq(appointments.id, id)).limit(1);
+                if (appt) {
+                  if (input.status === 'checked_in' && !appt.arrivalNotifiedAt) {
+                    let driverName = 'Unknown';
+                    if (appt.driverId) {
+                      const [d] = await db.select({ name: users.name }).from(users).where(eq(users.id, appt.driverId)).limit(1);
+                      driverName = d?.name || driverName;
+                    }
+                    await dtn.notifyArrival(String(appt.terminalId), String(appt.loadId || id), driverName);
+                    await db.update(appointments).set({ arrivalNotifiedAt: now } as any).where(eq(appointments.id, id));
                   }
-                  await dtn.notifyArrival(String(appt.terminalId), String(appt.loadId || id), driverName);
-                  await db.update(appointments).set({ arrivalNotifiedAt: now } as any).where(eq(appointments.id, id));
-                }
-                if (input.status === 'completed' && !appt.departureNotifiedAt) {
-                  await dtn.notifyDeparture(String(appt.terminalId), String(appt.loadId || id));
-                  await db.update(appointments).set({ departureNotifiedAt: now } as any).where(eq(appointments.id, id));
+                  if (input.status === 'completed' && !appt.departureNotifiedAt) {
+                    await dtn.notifyDeparture(String(appt.terminalId), String(appt.loadId || id));
+                    await db.update(appointments).set({ departureNotifiedAt: now } as any).where(eq(appointments.id, id));
+                  }
                 }
               }
             } catch (e) { console.warn('[TAS] Status notification failed (non-fatal):', e); }
@@ -710,6 +712,7 @@ export const terminalsRouter = router({
       try {
         const { getDTNClient } = await import("../services/dtn/dtnClient");
         const dtn = getDTNClient();
+        if (!dtn) return { provider: "DTN", connected: false, lastSync: null, environment: null };
         const result = await dtn.authenticate({ terminalId: "default", apiKey: "test", environment: "sandbox" });
         return { provider: "DTN Guardian3 / TABS / TIMS", connected: true, lastSync: new Date().toISOString(), environment: "sandbox" };
       } catch {
@@ -733,6 +736,11 @@ export const terminalsRouter = router({
       const { getDTNClient } = await import("../services/dtn/dtnClient");
       const dtn = getDTNClient();
       const checks: { label: string; status: "pass" | "fail" | "warn" | "skip"; detail: string }[] = [];
+
+      if (!dtn) {
+        checks.push({ label: "DTN Integration", status: "skip", detail: "DTN not configured for this terminal" });
+        return { checks, overall: "skip" as const };
+      }
 
       // 1. Credit check
       if (input.carrierId) {

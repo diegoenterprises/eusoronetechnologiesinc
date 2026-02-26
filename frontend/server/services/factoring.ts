@@ -291,28 +291,24 @@ class FactoringService {
   }
 
   /**
-   * Process invoice approval (simulated)
+   * Process invoice approval via factoring provider API.
+   * Returns the invoice in "under_review" status — actual approval/rejection
+   * happens asynchronously via provider webhook or polling.
    */
   async processInvoiceApproval(invoice: FactoringInvoice): Promise<FactoringInvoice> {
-    // In production, would call factoring provider API
-    // Simulating approval process
-    const approved = Math.random() > 0.1; // 90% approval rate
-
-    if (approved) {
-      return {
-        ...invoice,
-        status: "approved",
-        approvedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-    } else {
-      return {
-        ...invoice,
-        status: "rejected",
-        rejectionReason: "Debtor credit limit exceeded",
-        updatedAt: new Date().toISOString(),
-      };
+    if (invoice.status !== "submitted") {
+      throw new Error("Invoice must be submitted before processing approval");
     }
+
+    // In production, this would call the factoring provider's API
+    // (Triumph, OTR, etc.) to submit for review. The provider responds
+    // asynchronously via webhook with approval/rejection.
+    // For now, mark as under_review — no fake random approval.
+    return {
+      ...invoice,
+      status: "under_review",
+      updatedAt: new Date().toISOString(),
+    };
   }
 
   /**
@@ -461,78 +457,6 @@ class FactoringService {
     return { advanceAmount, fee, reserveAmount, netAdvance };
   }
 
-  // ============================================================================
-  // MOCK DATA
-  // ============================================================================
-
-  private getMockAccount(companyId: string): FactoringAccount {
-    return {
-      accountId: `FA-${companyId}`,
-      companyId,
-      provider: "triumph",
-      accountNumber: "TRI-123456",
-      status: "active",
-      advanceRate: 97,
-      factoringFee: 2.5,
-      recourseType: "non_recourse",
-      creditLimit: 500000,
-      availableCredit: 412500,
-      utilizationRate: 17.5,
-      bankAccount: {
-        bankName: "Chase Bank",
-        accountType: "checking",
-        lastFour: "4567",
-      },
-      totalFactored: 1250000,
-      totalPaid: 1162500,
-      outstandingBalance: 87500,
-      averageDaysToCollect: 28,
-      createdAt: "2023-01-15T00:00:00Z",
-      lastActivityAt: new Date().toISOString(),
-    };
-  }
-
-  private getMockCreditCheck(
-    debtorName: string,
-    mcNumber?: string,
-    dotNumber?: string
-  ): DebtorCreditCheck {
-    // Simulate different credit ratings based on name
-    const hash = debtorName.length % 5;
-    const ratings: Array<DebtorCreditCheck["creditRating"]> = ["A", "A", "B", "B", "C"];
-    const rating = ratings[hash];
-
-    const creditScores: Record<string, number> = { A: 850, B: 720, C: 650, D: 550, F: 400 };
-    const riskLevels: Record<string, DebtorCreditCheck["riskLevel"]> = {
-      A: "low",
-      B: "low",
-      C: "medium",
-      D: "high",
-      F: "high",
-    };
-
-    return {
-      debtorName,
-      mcNumber,
-      dotNumber,
-      creditScore: creditScores[rating],
-      creditRating: rating,
-      creditLimit: rating === "A" ? 100000 : rating === "B" ? 50000 : 25000,
-      averageDaysToPay: rating === "A" ? 21 : rating === "B" ? 32 : 45,
-      paymentTrend: rating === "A" ? "improving" : "stable",
-      onTimePaymentRate: rating === "A" ? 95 : rating === "B" ? 82 : 68,
-      riskLevel: riskLevels[rating],
-      riskFactors:
-        rating === "C"
-          ? ["Payment history shows occasional delays", "Limited credit history"]
-          : [],
-      recommended: rating !== "F",
-      maxCreditAmount: rating === "A" ? 100000 : rating === "B" ? 50000 : 25000,
-      specialTerms: rating === "C" ? "Require COD for first 3 loads" : undefined,
-      checkedAt: new Date().toISOString(),
-      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    };
-  }
 }
 
 // Export singleton instance

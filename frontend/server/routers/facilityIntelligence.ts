@@ -285,12 +285,23 @@ export const facilityIntelligenceRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const companyId = ctx.user?.companyId || 0;
-      // TODO: Encrypt API key with AES-256-GCM before storage
+
+      // Encrypt API key with AES-256-GCM before storage
+      const crypto = await import("crypto");
+      const encKeyHex = process.env.DTN_ENCRYPTION_KEY || process.env.APP_SECRET || "";
+      if (!encKeyHex) throw new Error("Encryption key not configured (set DTN_ENCRYPTION_KEY)");
+      const keyBuffer = crypto.createHash("sha256").update(encKeyHex).digest();
+      const iv = crypto.randomBytes(12);
+      const cipher = crypto.createCipheriv("aes-256-gcm", keyBuffer, iv);
+      let encrypted = cipher.update(input.dtnApiKey, "utf8", "hex");
+      encrypted += cipher.final("hex");
+      const authTag = cipher.getAuthTag().toString("hex");
+
       await db.insert(dtnConnections).values({
         facilityId: input.facilityId,
         companyId: parseInt(String(companyId)),
         dtnTerminalId: input.dtnTerminalId,
-        dtnApiKeyEncrypted: { iv: "placeholder", encryptedData: input.dtnApiKey, authTag: "placeholder" },
+        dtnApiKeyEncrypted: { iv: iv.toString("hex"), encryptedData: encrypted, authTag },
         dtnEnvironment: input.dtnEnvironment,
         syncEnabled: true,
         syncConfigJson: input.syncConfig || {},
@@ -302,6 +313,7 @@ export const facilityIntelligenceRouter = router({
     .input(z.object({ facilityId: z.number() }))
     .mutation(async ({ input }) => {
       const client = getDTNClient();
+      if (!client) return { success: false, error: "DTN integration not configured" };
       try {
         const result = await client.authenticate({ terminalId: String(input.facilityId), apiKey: "test", environment: "sandbox" });
         return { success: true, token: result.token };
@@ -314,6 +326,7 @@ export const facilityIntelligenceRouter = router({
     .input(z.object({ facilityId: z.number(), product: z.string() }))
     .query(async ({ input }) => {
       const client = getDTNClient();
+      if (!client) throw new Error("DTN integration not configured");
       return client.getTerminalAllocation(String(input.facilityId), input.product);
     }),
 
@@ -321,6 +334,7 @@ export const facilityIntelligenceRouter = router({
     .input(z.object({ facilityId: z.number(), carrierId: z.number() }))
     .query(async ({ input }) => {
       const client = getDTNClient();
+      if (!client) throw new Error("DTN integration not configured");
       return client.checkCredit(String(input.carrierId), String(input.facilityId));
     }),
 
@@ -328,6 +342,7 @@ export const facilityIntelligenceRouter = router({
     .input(z.object({ facilityId: z.number() }))
     .query(async ({ input }) => {
       const client = getDTNClient();
+      if (!client) throw new Error("DTN integration not configured");
       return client.getInventoryLevels(String(input.facilityId));
     }),
 
@@ -335,6 +350,7 @@ export const facilityIntelligenceRouter = router({
     .input(z.object({ facilityId: z.number(), product: z.string().optional() }))
     .query(async ({ input }) => {
       const client = getDTNClient();
+      if (!client) throw new Error("DTN integration not configured");
       return client.getRackPricing(String(input.facilityId), input.product);
     }),
 
@@ -342,6 +358,7 @@ export const facilityIntelligenceRouter = router({
     .input(z.object({ loadingId: z.string() }))
     .query(async ({ input }) => {
       const client = getDTNClient();
+      if (!client) throw new Error("DTN integration not configured");
       return client.getLoadingProgress(input.loadingId);
     }),
 
@@ -586,6 +603,7 @@ export const facilityIntelligenceRouter = router({
     }))
     .query(async ({ input }) => {
       const client = getDTNClient();
+      if (!client) throw new Error("DTN integration not configured");
       const terminalId = input.facilityId ? String(input.facilityId) : "DEFAULT";
       return client.getRackPricing(terminalId, input.product);
     }),
@@ -594,6 +612,7 @@ export const facilityIntelligenceRouter = router({
     .input(z.object({ facilityId: z.number() }))
     .query(async ({ input }) => {
       const client = getDTNClient();
+      if (!client) throw new Error("DTN integration not configured");
       return client.getInventoryLevels(String(input.facilityId));
     }),
 

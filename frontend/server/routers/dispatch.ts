@@ -313,6 +313,18 @@ export const dispatchRouter = router({
           .where(sql`${loads.status} IN ('in_transit', 'assigned', 'loading', 'unloading', 'en_route_pickup', 'en_route_delivery')`);
         const busyDriverIds = new Set(activeLoadDrivers.map(l => l.driverId));
 
+        // Pre-compute driver stats from loads table (completed loads + on-time rate per driver)
+        const driverStatsRows = await db
+          .select({
+            driverId: loads.driverId,
+            total: sql<number>`count(*)`,
+            onTime: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' AND (${loads.actualDeliveryDate} IS NULL OR ${loads.actualDeliveryDate} <= ${loads.deliveryDate}) THEN 1 ELSE 0 END)`,
+          })
+          .from(loads)
+          .where(eq(loads.status, 'delivered'))
+          .groupBy(loads.driverId);
+        const driverStats = new Map(driverStatsRows.map(r => [r.driverId, { total: r.total || 0, onTime: r.onTime || 0 }]));
+
         // Filter and map
         let results = driverRows
           .filter(d => !busyDriverIds.has(d.userId))
@@ -322,6 +334,7 @@ export const dispatchRouter = router({
             const tankerEndorsed = reg.tankerEndorsed || reg.tankerEndorsement || false;
             const twicCard = !!reg.twicNumber;
             const equipmentTypes: string[] = reg.equipmentTypes || [];
+            const stats = driverStats.get(d.userId) || { total: 0, onTime: 0 };
             return {
               id: String(d.id),
               userId: d.userId,
@@ -334,10 +347,10 @@ export const dispatchRouter = router({
               equipmentTypes,
               licenseNumber: d.licenseNumber || '',
               licenseState: d.licenseState || '',
-              safetyScore: 90 + Math.floor(Math.random() * 10), // TODO: pull from carrier_scorecard table
-              hosRemaining: { driving: 660, onDuty: 840, cycle: 4200 }, // TODO: pull from ELD integration
-              completedLoads: 0, // TODO: aggregate from loads table
-              onTimeRate: 95, // TODO: aggregate from loads table
+              safetyScore: null as number | null,
+              hosRemaining: null as { driving: number; onDuty: number; cycle: number } | null,
+              completedLoads: stats.total,
+              onTimeRate: stats.total > 0 ? Math.round((stats.onTime / stats.total) * 100) : null,
             };
           });
 

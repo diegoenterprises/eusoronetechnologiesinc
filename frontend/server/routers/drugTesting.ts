@@ -248,21 +248,70 @@ export const drugTestingRouter = router({
     }),
 
   /**
-   * Query Clearinghouse — placeholder (external API)
+   * Query Clearinghouse — calls real FMCSA Clearinghouse API when configured
    */
   queryClearinghouse: protectedProcedure
     .input(z.object({ driverId: z.string(), queryType: z.enum(["pre_employment", "annual"]), consentDate: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return { queryId: `ch_query_${Date.now()}`, driverId: input.driverId, queryType: input.queryType, status: "submitted", result: null, submittedBy: ctx.user?.id, submittedAt: new Date().toISOString() };
+      try {
+        const { clearinghouseService } = await import("../services/clearinghouse");
+        if (!clearinghouseService.isConfigured()) {
+          return { queryId: null, driverId: input.driverId, queryType: input.queryType, status: "not_configured", result: null, submittedBy: ctx.user?.id, submittedAt: new Date().toISOString(), error: "CLEARINGHOUSE_API_KEY not configured" };
+        }
+
+        const db = await getDb();
+        const driverIdNum = parseInt(input.driverId, 10) || 0;
+        let driverInfo = { firstName: "Unknown", lastName: "Driver", cdlNumber: "", cdlState: "", dateOfBirth: "" };
+        if (db && driverIdNum) {
+          const [d] = await db.select().from(drivers).where(eq(drivers.id, driverIdNum)).limit(1);
+          if (d) {
+            const nameParts = ((d as any).name || "").split(" ");
+            driverInfo = {
+              firstName: nameParts[0] || "",
+              lastName: nameParts.slice(1).join(" ") || "",
+              cdlNumber: (d as any).cdlNumber || "",
+              cdlState: (d as any).licenseState || "",
+              dateOfBirth: (d as any).dateOfBirth?.toISOString?.() || "",
+            };
+          }
+        }
+
+        const query = input.queryType === "pre_employment"
+          ? await clearinghouseService.submitPreEmploymentQuery(input.driverId, driverInfo, String(ctx.user?.id))
+          : await clearinghouseService.submitAnnualQuery(input.driverId, driverInfo, String(ctx.user?.id));
+
+        if (!query) return { queryId: null, driverId: input.driverId, queryType: input.queryType, status: "api_error", result: null, submittedBy: ctx.user?.id, submittedAt: new Date().toISOString(), error: "Clearinghouse API returned no result" };
+        return { queryId: query.queryId, driverId: input.driverId, queryType: input.queryType, status: query.status, result: query.result, submittedBy: ctx.user?.id, submittedAt: query.requestedAt };
+      } catch (e: any) {
+        console.error("[DrugTesting] queryClearinghouse error:", e);
+        return { queryId: null, driverId: input.driverId, queryType: input.queryType, status: "error", result: null, submittedBy: ctx.user?.id, submittedAt: new Date().toISOString(), error: e?.message };
+      }
     }),
 
   /**
-   * Get Clearinghouse query results
+   * Get Clearinghouse query results — returns real data from clearinghouse service
    */
   getClearinghouseResults: protectedProcedure
     .input(z.object({ driverId: z.string().optional(), limit: z.number().default(20) }))
     .query(async ({ ctx, input }) => {
-      return { queries: [], annualQueriesRequired: 0, annualQueriesCompleted: 0, dueForAnnualQuery: [] };
+      try {
+        const { clearinghouseService } = await import("../services/clearinghouse");
+        if (!clearinghouseService.isConfigured()) {
+          return { queries: [], annualQueriesRequired: 0, annualQueriesCompleted: 0, dueForAnnualQuery: [], configured: false };
+        }
+
+        if (input.driverId) {
+          const history = await clearinghouseService.getDriverQueryHistory(input.driverId);
+          const hasValid = await clearinghouseService.hasValidAnnualQuery(input.driverId);
+          return { queries: history, annualQueriesRequired: 1, annualQueriesCompleted: hasValid ? 1 : 0, dueForAnnualQuery: hasValid ? [] : [input.driverId], configured: true };
+        }
+
+        // No specific driver — return empty (bulk query not yet supported)
+        return { queries: [], annualQueriesRequired: 0, annualQueriesCompleted: 0, dueForAnnualQuery: [], configured: true };
+      } catch (e) {
+        console.error("[DrugTesting] getClearinghouseResults error:", e);
+        return { queries: [], annualQueriesRequired: 0, annualQueriesCompleted: 0, dueForAnnualQuery: [], configured: false };
+      }
     }),
 
   /**
