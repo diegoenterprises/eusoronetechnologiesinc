@@ -236,29 +236,28 @@ export const factoringRouter = router({
       const { creditChecks } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const userId = Number(ctx.user?.id) || 0;
-      const score = Math.floor(Math.random() * 40) + 55;
-      const rating = score >= 85 ? "A" : score >= 75 ? "B+" : score >= 65 ? "B" : "C";
+      // Record credit check request — scores populated when credit bureau integration is configured
       const [result] = await db.insert(creditChecks).values({
         requestedBy: userId,
         entityName: input.customerName,
         entityType: "shipper",
         mcNumber: input.mcNumber || null,
         dotNumber: null,
-        creditScore: score,
-        creditRating: rating,
-        avgDaysToPay: Math.floor(Math.random() * 30) + 15,
-        yearsInBusiness: Math.floor(Math.random() * 15) + 2,
-        publicRecords: Math.floor(Math.random() * 3),
-        recommendation: (score >= 70 ? "approve" : score >= 55 ? "review" : "decline") as any,
-        resultData: JSON.stringify({ source: "eusotrip_credit_engine", address: input.customerAddress, taxId: input.taxId, requestedLimit: input.requestedLimit }),
+        creditScore: null,
+        creditRating: null,
+        avgDaysToPay: null,
+        yearsInBusiness: null,
+        publicRecords: null,
+        recommendation: "review" as any,
+        resultData: JSON.stringify({ source: "pending_credit_bureau", address: input.customerAddress, taxId: input.taxId, requestedLimit: input.requestedLimit }),
       }).$returningId();
       return {
         requestId: `credit_${result.id}`,
         customerName: input.customerName,
-        status: "completed",
-        score,
-        rating,
-        estimatedCompletion: new Date().toISOString(),
+        status: "pending",
+        score: null,
+        rating: null,
+        estimatedCompletion: new Date(Date.now() + 24 * 3600000).toISOString(),
         requestedBy: ctx.user?.id,
         requestedAt: new Date().toISOString(),
       };
@@ -443,6 +442,129 @@ export const factoringRouter = router({
       };
     }),
 
+  // ============================================================================
+  // QUICK PAY — Instant funding (4hr) with higher fee. Platform revenue stream.
+  // Platform earns spread between advance rate and fee: ~1% of invoice value
+  // ============================================================================
+  quickPay: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      invoiceAmount: z.number().positive(),
+      documents: z.array(z.object({
+        type: z.enum(["invoice", "bol", "pod", "rate_con"]),
+        documentId: z.string(),
+      })).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      if (!userId) throw new Error("Authentication required");
+
+      const QUICK_PAY_ADVANCE_RATE = 97;
+      const QUICK_PAY_FEE_RATE = 3.5; // Higher fee for instant funding
+      const PLATFORM_SPREAD = 1.0; // Platform keeps 1% of invoice value
+
+      const feeAmount = input.invoiceAmount * (QUICK_PAY_FEE_RATE / 100);
+      const advanceAmount = input.invoiceAmount * (QUICK_PAY_ADVANCE_RATE / 100);
+      const reserveAmount = input.invoiceAmount - advanceAmount - feeAmount;
+      const platformRevShare = input.invoiceAmount * (PLATFORM_SPREAD / 100);
+      const invoiceNumber = `QP-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
+
+      const [result] = await db.insert(factoringInvoices).values({
+        loadId: input.loadId,
+        catalystUserId: userId,
+        invoiceNumber,
+        invoiceAmount: String(input.invoiceAmount),
+        advanceRate: String(QUICK_PAY_ADVANCE_RATE),
+        factoringFeePercent: String(QUICK_PAY_FEE_RATE),
+        factoringFeeAmount: String(feeAmount.toFixed(2)),
+        advanceAmount: String(advanceAmount.toFixed(2)),
+        reserveAmount: String(reserveAmount.toFixed(2)),
+        status: "approved",
+        approvedAt: new Date(),
+        notes: "[QUICK_PAY] Instant funding — 4hr target",
+        dueDate: new Date(Date.now() + 30 * 86400000),
+      }).$returningId();
+
+      // Record platform revenue
+      try {
+        const { platformRevenue } = await import("../../drizzle/schema");
+        await db.insert(platformRevenue).values({
+          transactionId: result.id,
+          transactionType: "quickpay_fee",
+          userId,
+          grossAmount: String(feeAmount.toFixed(2)),
+          feeAmount: String(platformRevShare.toFixed(2)),
+          netAmount: String((feeAmount - platformRevShare).toFixed(2)),
+          platformShare: String(platformRevShare.toFixed(2)),
+          processorShare: String((feeAmount - platformRevShare).toFixed(2)),
+          discountApplied: "0.00",
+          metadata: { type: "quick_pay", loadId: input.loadId, invoiceNumber },
+        });
+      } catch (e) {
+        console.error("[Factoring] QuickPay revenue recording error:", e);
+      }
+
+      return {
+        factoringId: String(result.id),
+        invoiceNumber,
+        type: "quick_pay",
+        invoiceAmount: input.invoiceAmount,
+        advanceAmount,
+        feeAmount,
+        platformFee: platformRevShare,
+        reserveAmount: Math.max(0, reserveAmount),
+        status: "approved",
+        estimatedFundingTime: "4 hours",
+        fundingDeadline: new Date(Date.now() + 4 * 3600000).toISOString(),
+      };
+    }),
+
+  // ============================================================================
+  // FACTORING REVENUE DASHBOARD — Platform admin view of factoring revenue
+  // ============================================================================
+  getRevenueStats: protectedProcedure
+    .input(z.object({ period: z.enum(["7d", "30d", "90d", "ytd"]).optional().default("30d") }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const empty = { totalVolume: 0, totalFees: 0, platformRevenue: 0, quickPayVolume: 0, standardVolume: 0, invoiceCount: 0, avgInvoiceSize: 0, avgFeeRate: 0 };
+      if (!db) return empty;
+      try {
+        const days = (input?.period || "30d") === "7d" ? 7 : (input?.period || "30d") === "90d" ? 90 : (input?.period || "30d") === "ytd" ? 365 : 30;
+        const since = new Date(Date.now() - days * 86400000);
+        const rows = await db.select({
+          invoiceAmount: factoringInvoices.invoiceAmount,
+          factoringFeeAmount: factoringInvoices.factoringFeeAmount,
+          notes: factoringInvoices.notes,
+        }).from(factoringInvoices).where(sql`${factoringInvoices.submittedAt} >= ${since}`);
+
+        let totalVolume = 0, totalFees = 0, quickPayVolume = 0;
+        for (const r of rows) {
+          const amt = r.invoiceAmount ? parseFloat(String(r.invoiceAmount)) : 0;
+          const fee = r.factoringFeeAmount ? parseFloat(String(r.factoringFeeAmount)) : 0;
+          totalVolume += amt;
+          totalFees += fee;
+          if (r.notes?.includes("[QUICK_PAY]")) quickPayVolume += amt;
+        }
+        const platformRevenue = totalVolume * 0.01; // 1% platform spread
+
+        return {
+          totalVolume: Math.round(totalVolume),
+          totalFees: Math.round(totalFees * 100) / 100,
+          platformRevenue: Math.round(platformRevenue * 100) / 100,
+          quickPayVolume: Math.round(quickPayVolume),
+          standardVolume: Math.round(totalVolume - quickPayVolume),
+          invoiceCount: rows.length,
+          avgInvoiceSize: rows.length > 0 ? Math.round(totalVolume / rows.length) : 0,
+          avgFeeRate: totalVolume > 0 ? Math.round((totalFees / totalVolume) * 10000) / 100 : 0,
+        };
+      } catch (e) {
+        console.error("[Factoring] getRevenueStats error:", e);
+        return empty;
+      }
+    }),
+
   getSummary: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb(); if (!db) return { totalFactored: 0, pendingPayments: 0, availableCredit: 0, totalFunded: 0, pending: 0, invoicesFactored: 0 };
     try {
@@ -553,37 +675,30 @@ export const factoringRouter = router({
 
       const userId = Number(ctx.user?.id) || 0;
 
-      // Simulate credit bureau lookup (in production, integrate with Ansonia, TranzAct, etc.)
-      const score = Math.floor(Math.random() * 40) + 55;
-      const rating = score >= 85 ? "A" : score >= 75 ? "B+" : score >= 65 ? "B" : "C";
-      const avgDays = Math.floor(Math.random() * 30) + 15;
-      const years = Math.floor(Math.random() * 15) + 2;
-      const records = Math.floor(Math.random() * 3);
-      const recommendation = score >= 70 ? "approve" : score >= 55 ? "review" : "decline";
-
+      // Record credit check request — scores populated when credit bureau (Ansonia, TranzAct) is integrated
       await db.insert(creditChecks).values({
         requestedBy: userId,
         entityName: input.entityName,
         entityType: "shipper",
         mcNumber: input.mcNumber || null,
         dotNumber: input.dotNumber || null,
-        creditScore: score,
-        creditRating: rating,
-        avgDaysToPay: avgDays,
-        yearsInBusiness: years,
-        publicRecords: records,
-        recommendation: recommendation as any,
-        resultData: JSON.stringify({ source: "eusotrip_credit_engine", checkedAt: new Date().toISOString() }),
+        creditScore: null,
+        creditRating: null,
+        avgDaysToPay: null,
+        yearsInBusiness: null,
+        publicRecords: null,
+        recommendation: "review" as any,
+        resultData: JSON.stringify({ source: "pending_credit_bureau", checkedAt: new Date().toISOString() }),
       });
 
       return {
         name: input.entityName,
-        score,
-        rating,
-        avgDaysToPay: avgDays,
-        yearsInBusiness: years,
-        publicRecords: records,
-        recommendation,
+        score: null as number | null,
+        rating: null as string | null,
+        avgDaysToPay: null as number | null,
+        yearsInBusiness: null as number | null,
+        publicRecords: null as number | null,
+        recommendation: "pending" as string,
       };
     }),
 
