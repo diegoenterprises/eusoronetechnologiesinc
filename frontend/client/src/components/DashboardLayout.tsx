@@ -89,6 +89,8 @@ import {
   Eye,
   Handshake,
   Car,
+  FileCheck,
+  Receipt,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -167,6 +169,8 @@ const iconMap: Record<string, React.ReactNode> = {
   Eye: <Eye size={20} />,
   Handshake: <Handshake size={20} />,
   Car: <Car size={20} />,
+  FileCheck: <FileCheck size={20} />,
+  Receipt: <Receipt size={20} />,
 };
 
 // --- Notification Bell Component ---

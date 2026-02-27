@@ -441,9 +441,9 @@ function Router() {
       <Route path={"/erg/lookup"} component={guard(ALL, <ERGLookupPage />)} />
       <Route path={"/fmcsa-lookup"} component={guard([...CARR, ...BROK, ...COMP, ...SHIP], <SAFERLookupPage />)} />
       <Route path={"/hazmat/certifications"} component={guard(ALL, <HazmatCertsPage />)} />
-      <Route path={"/insurance"} component={guard([...CARR, ...BROK, ...COMP], <InsuranceMgmtPage />)} />
+      <Route path={"/insurance"} component={guard([...CARR, ...BROK, ...COMP, "ESCORT"], <InsuranceMgmtPage />)} />
       <Route path={"/insurance/per-load"} component={guard([...CARR, ...SHIP, ...BROK], <PerLoadInsurance />)} />
-      <Route path={"/insurance/verification"} component={guard([...CARR, ...BROK, ...COMP, ...SHIP, ...DRIV], <InsuranceVerification />)} />
+      <Route path={"/insurance/verification"} component={guard([...CARR, ...BROK, ...COMP, ...SHIP, ...DRIV, "ESCORT"], <InsuranceVerification />)} />
       <Route path={"/equipment-intelligence"} component={guard([...CARR, ...BROK, ...COMP, ...SHIP], <EquipmentIntelligence />)} />
       <Route path={"/inspections"} component={guard([...CARR, ...COMP, ...SAFE], <VehicleInspectionsPage />)} />
       <Route path={"/report-builder"} component={guard([...CARR, ...BROK, ...COMP, ...SAFE, ...ADMN], <ReportBuilderPage />)} />
@@ -455,7 +455,7 @@ function Router() {
       <Route path={"/hazmat/shipments"} component={guard([...CARR, ...SHIP, ...BROK, ...COMP, ...SAFE, ...ADMN], <HazmatShipments />)} />
       <Route path={"/settings/billing"} component={guard([...CARR, ...SHIP, ...BROK], <BillingSettings />)} />
       <Route path={"/utilization"} component={guard([...CARR, ...COMP, ...ADMN], <UtilizationReport />)} />
-      <Route path={"/expenses"} component={guard([...CARR, ...DRIV], <ExpenseReports />)} />
+      <Route path={"/expenses"} component={guard([...CARR, ...DRIV, "ESCORT"], <ExpenseReports />)} />
 
       {/* ============================================ */}
       {/* SHIPPER ROUTES */}
@@ -466,7 +466,7 @@ function Router() {
       <Route path={"/tracking"} component={guard(LOAD, <ShipperDispatchControl />)} />
       <Route path={"/catalysts"} component={guard([...SHIP, "BROKER"], <CatalystsPage />)} />
       <Route path={"/payments"} component={guard(ALL, <WalletPage />)} />
-      <Route path={"/company"} component={guard(LOAD, <CompanyProfile />)} />
+      <Route path={"/company"} component={guard([...LOAD, "ESCORT"], <CompanyProfile />)} />
       <Route path={"/agreements"} component={guard([...LOAD, "TERMINAL_MANAGER", "ESCORT"], <AgreementsLibrary />)} />
       <Route path={"/agreements/create"} component={guard([...LOAD, "TERMINAL_MANAGER", "ESCORT"], <ShipperAgreementWizard />)} />
       <Route path={"/agreements/broker"} component={guard([...BROK, "SHIPPER"], <BrokerContractWizard />)} />
@@ -497,7 +497,7 @@ function Router() {
       <Route path={"/earnings"} component={guard([...CARR, "DRIVER", "DISPATCH", "ESCORT"], <WalletPage />)} />
       <Route path={"/analytics"} component={guard([...CARR, "BROKER"], <Analytics />)} />
       <Route path={"/equipment"} component={guard(CARR, <EquipmentMgmtPage />)} />
-      <Route path={"/invoices"} component={guard([...CARR, ...SHIP, ...BROK], <InvoiceMgmtPage />)} />
+      <Route path={"/invoices"} component={guard([...CARR, ...SHIP, ...BROK, "ESCORT"], <InvoiceMgmtPage />)} />
       <Route path={"/revenue"} component={guard([...CARR, ...BROK], <RevenueAnalyticsPage />)} />
       <Route path={"/settlements"} component={guard(CARR, <SettlementStatementsPage />)} />
       <Route path={"/maintenance"} component={guard(CARR, <MaintenanceSchedulePage />)} />

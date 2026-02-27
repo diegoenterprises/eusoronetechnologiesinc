@@ -41,6 +41,7 @@ export default function AgreementsLibrary() {
   const role = user?.role || "SHIPPER";
   const isBroker = role === "BROKER";
   const isCatalyst = role === "CATALYST";
+  const isEscort = role === "ESCORT";
   const isTerminal = role === "TERMINAL_MANAGER";
 
   // Fetch agreements
@@ -124,11 +125,11 @@ export default function AgreementsLibrary() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Agreements</h1>
-          <p className={mt}>{isTerminal ? "Terminal access, throughput & service agreements" : isBroker ? "Manage shipper & catalyst contracts" : isCatalyst ? "View & sign shipper agreements" : "Manage catalyst agreements & contracts"}</p>
+          <p className={mt}>{isTerminal ? "Terminal access, throughput & service agreements" : isBroker ? "Manage shipper & catalyst contracts" : isCatalyst ? "View & sign shipper agreements" : isEscort ? "Escort service agreements & rate schedules" : "Manage catalyst agreements & contracts"}</p>
         </div>
         <div className="flex gap-2">
           {!isCatalyst && (
-            <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold h-10" onClick={() => setLocation("/agreements/create")}>
+            <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold h-10" onClick={() => setLocation(isEscort ? "/agreements/create?type=escort_service" : "/agreements/create")}>
               <Plus className="w-4 h-4 mr-2" />New Agreement
             </Button>
           )}
@@ -155,7 +156,7 @@ export default function AgreementsLibrary() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4", isLight ? "text-slate-400" : "text-slate-500")} />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={isTerminal ? "Search by agreement #, shipper, company..." : "Search by agreement #, catalyst, company..."} className={cn("pl-10", ic)} />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={isTerminal ? "Search by agreement #, shipper, company..." : isEscort ? "Search by agreement #, client, company..." : "Search by agreement #, catalyst, company..."} className={cn("pl-10", ic)} />
         </div>
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {(["all", "active", "pending", "draft", "expired"] as TabFilter[]).map(t => (
@@ -183,8 +184,8 @@ export default function AgreementsLibrary() {
               <PenTool className="w-8 h-8 text-slate-400" />
             </div>
             <p className={cn("font-bold text-lg mb-1", vl)}>No agreements yet</p>
-            <p className={cn("text-sm mb-6", mt)}>{isTerminal ? "Create terminal access, throughput, or storage agreements with shippers and transporters." : isCatalyst ? "Agreements will appear here when shippers send you contracts to sign." : "Create your first agreement to start managing catalyst contracts."}</p>
-            {!isCatalyst && <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => setLocation("/agreements/create")}><Plus className="w-4 h-4 mr-2" />{isTerminal ? "Create Agreement" : "Create Agreement"}</Button>}
+            <p className={cn("text-sm mb-6", mt)}>{isTerminal ? "Create terminal access, throughput, or storage agreements with shippers and transporters." : isCatalyst ? "Agreements will appear here when shippers send you contracts to sign." : isEscort ? "Create escort service agreements, define your rate schedule, or upload existing contracts." : "Create your first agreement to start managing catalyst contracts."}</p>
+            {!isCatalyst && <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => setLocation(isEscort ? "/agreements/create?type=escort_service" : "/agreements/create")}><Plus className="w-4 h-4 mr-2" />Create Agreement</Button>}
           </CardContent>
         </Card>
       ) : (
@@ -208,7 +209,7 @@ export default function AgreementsLibrary() {
                         <Badge className="bg-slate-500/10 text-slate-400 border-slate-500/20 border text-[10px]">{typeLabel(ag.agreementType)}</Badge>
                       </div>
                       <div className="flex items-center gap-3 mt-1 flex-wrap">
-                        <span className="text-xs text-slate-400 flex items-center gap-1"><Building2 className="w-3 h-3" />{ag.partyBCompany || ag.partyBName || "Catalyst TBD"}</span>
+                        <span className="text-xs text-slate-400 flex items-center gap-1"><Building2 className="w-3 h-3" />{ag.partyBCompany || ag.partyBName || (isEscort ? "Client TBD" : isTerminal ? "Shipper TBD" : "Catalyst TBD")}</span>
                         <span className="text-xs text-slate-400 flex items-center gap-1"><Calendar className="w-3 h-3" />{ag.effectiveDate ? new Date(ag.effectiveDate).toLocaleDateString() : "No date"}</span>
                         {ag.contractDuration && <span className="text-xs text-slate-400">{durationLabel(ag.contractDuration)}</span>}
                       </div>
@@ -223,7 +224,7 @@ export default function AgreementsLibrary() {
                     <Button size="sm" variant="ghost" className={cn("rounded-lg h-8 w-8 p-0", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); downloadAgreementPdf({ agreementNumber: ag.agreementNumber || `AG-${ag.id}`, agreementType: ag.agreementType || "catalyst_shipper", contractDuration: ag.contractDuration, status: ag.status, generatedContent: ag.generatedContent || "Agreement content not available — open the agreement to view full details.", partyAName: ag.partyAName || user?.name, partyARole: ag.partyARole || role, partyBName: ag.partyBName || ag.partyBCompany, partyBCompany: ag.partyBCompany, partyBRole: ag.partyBRole || "CATALYST", baseRate: ag.baseRate, rateType: ag.rateType, paymentTermDays: ag.paymentTermDays, effectiveDate: ag.effectiveDate, expirationDate: ag.expirationDate, equipmentTypes: ag.equipmentTypes, hazmatRequired: ag.hazmatRequired }); }}>
                       <Download className="w-3.5 h-3.5" />
                     </Button>
-                    {ag.status?.includes?.("pending") && isCatalyst && (
+                    {ag.status?.includes?.("pending") && (isCatalyst || isEscort) && (
                       <Button size="sm" className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-lg font-bold text-xs h-8" onClick={(e: React.MouseEvent) => { e.stopPropagation(); setLocation(`/contract/sign/${ag.loadId || ag.id}`); }}>
                         <Shield className="w-3 h-3 mr-1" />Sign
                       </Button>
@@ -256,6 +257,24 @@ export default function AgreementsLibrary() {
                 <Building2 className="w-5 h-5 text-emerald-500 mb-2" />
                 <p className={cn("font-bold text-sm", vl)}>Storage & Service Agreement</p>
                 <p className="text-xs text-slate-400">Tank storage, blending services, or product handling terms</p>
+              </button>
+            </>
+          ) : isEscort ? (
+            <>
+              <button onClick={() => setLocation("/agreements/create?type=escort_service")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
+                <Shield className="w-5 h-5 text-blue-500 mb-2" />
+                <p className={cn("font-bold text-sm", vl)}>Escort Service Agreement</p>
+                <p className="text-xs text-slate-400">Define escort scope, liability, insurance requirements & service terms</p>
+              </button>
+              <button onClick={() => setLocation("/agreements/create?type=escort_service&rateSchedule=true")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
+                <DollarSign className="w-5 h-5 text-emerald-500 mb-2" />
+                <p className={cn("font-bold text-sm", vl)}>Rate Schedule</p>
+                <p className="text-xs text-slate-400">Set hourly, per-mile, and per-trip rates for front, rear & oversize escorts</p>
+              </button>
+              <button onClick={() => setLocation("/agreements/create")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
+                <FileText className="w-5 h-5 text-purple-500 mb-2" />
+                <p className={cn("font-bold text-sm", vl)}>Upload Contract</p>
+                <p className="text-xs text-slate-400">Digitize an existing escort contract for electronic signing</p>
               </button>
             </>
           ) : (

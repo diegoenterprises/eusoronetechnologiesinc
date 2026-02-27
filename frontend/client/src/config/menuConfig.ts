@@ -872,6 +872,20 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Current escort jobs"
     },
     { 
+      icon: "DollarSign", 
+      label: "Earnings", 
+      path: "/escort/earnings", 
+      badge: 0,
+      description: "Track escort income, payouts & payment history"
+    },
+    { 
+      icon: "Calendar", 
+      label: "Schedule", 
+      path: "/escort/schedule", 
+      badge: 0,
+      description: "Manage availability & upcoming escort assignments"
+    },
+    { 
       icon: "Users", 
       label: "Team", 
       path: "/team", 
@@ -914,11 +928,39 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Verify carrier authority for oversized loads"
     },
     { 
+      icon: "Award", 
+      label: "Certifications", 
+      path: "/escort/certifications", 
+      badge: 0,
+      description: "State pilot car certifications & training records"
+    },
+    { 
+      icon: "FileCheck", 
+      label: "Permits", 
+      path: "/escort/permits", 
+      badge: 0,
+      description: "Oversize/overweight escort permits by state"
+    },
+    { 
+      icon: "ShieldCheck", 
+      label: "Insurance", 
+      path: "/insurance", 
+      badge: 0,
+      description: "Escort vehicle insurance & liability coverage"
+    },
+    { 
       icon: "PenTool", 
       label: "Agreements", 
       path: "/agreements", 
       badge: 0,
-      description: "Escort service agreements"
+      description: "Escort service agreements & rate schedules"
+    },
+    { 
+      icon: "Receipt", 
+      label: "Invoices", 
+      path: "/invoices", 
+      badge: 0,
+      description: "Invoice clients for completed escort services"
     },
     { 
       icon: "FileText", 
@@ -926,6 +968,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/documents", 
       badge: 0,
       description: "License, certifications & insurance docs"
+    },
+    { 
+      icon: "Building2", 
+      label: "Company Profile", 
+      path: "/company", 
+      badge: 0,
+      description: "Manage your escort company profile & credentials"
     },
     { 
       icon: "MessageSquare", 
