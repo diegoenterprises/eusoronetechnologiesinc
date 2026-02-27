@@ -120,7 +120,7 @@ export default function ShipperAgreementWizard() {
       effectiveDate:effDate||undefined, expirationDate:expDate||undefined, autoRenew:dur==="evergreen", notes:notes||undefined,
     });
   };
-  const doSign = () => { if(!sigData||!agId){toast.error("Draw your signature");return;} signMut.mutate({agreementId:agId,signatureData:sigData,signatureRole:"shipper",signerName:user?.name||"Shipper",signerTitle:"Authorized Representative"}); };
+  const doSign = () => { if(!sigData||!agId){toast.error("Draw your signature");return;} signMut.mutate({agreementId:agId,signatureData:sigData,signatureRole:user?.role?.toLowerCase()||"shipper",signerName:user?.name||roleConfig.partyALabel,signerTitle:"Authorized Representative"}); };
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[960px] mx-auto">
@@ -295,7 +295,7 @@ export default function ShipperAgreementWizard() {
         </div>
         <div className="flex gap-3">
           <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>setStep("lanes")}><ArrowLeft className="w-4 h-4 mr-2"/>Back</Button>
-          <Button variant="outline" className={cn("rounded-xl h-12 font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>downloadAgreementPdf({agreementNumber:agNum,agreementType:agType,contractDuration:dur,status:"draft",generatedContent:genContent,partyAName:user?.name||"Shipper",partyARole:user?.role||"SHIPPER",partyBName:bName,partyBCompany:bComp,partyBRole:"CATALYST",baseRate,rateType,paymentTermDays:parseInt(payDays)||30,payFrequency:payFreq,fuelSurchargeType:fuelType,fuelSurchargeValue:fuelVal,minInsuranceAmount:insAmt,liabilityLimit:liab,cargoInsuranceRequired:cargo,effectiveDate:effDate,expirationDate:expDate,equipmentTypes:eqTypes,hazmatRequired:hazmat,lanes:lanes.filter(l=>l.oC&&l.dC)})}><Download className="w-4 h-4 mr-2"/>Download</Button>
+          <Button variant="outline" className={cn("rounded-xl h-12 font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>downloadAgreementPdf({agreementNumber:agNum,agreementType:agType,contractDuration:dur,status:"draft",generatedContent:genContent,partyAName:user?.name||roleConfig.partyALabel,partyARole:user?.role||"SHIPPER",partyBName:bName,partyBCompany:bComp,partyBRole:roleConfig.partyBRole,baseRate,rateType,paymentTermDays:parseInt(payDays)||30,payFrequency:payFreq,fuelSurchargeType:fuelType,fuelSurchargeValue:fuelVal,minInsuranceAmount:insAmt,liabilityLimit:liab,cargoInsuranceRequired:cargo,effectiveDate:effDate,expirationDate:expDate,equipmentTypes:eqTypes,hazmatRequired:hazmat,lanes:lanes.filter(l=>l.oC&&l.dC)})}><Download className="w-4 h-4 mr-2"/>Download</Button>
           <Button className="flex-1 h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={()=>setStep("sign")}>Proceed to Sign <ChevronRight className="w-5 h-5 ml-2"/></Button>
         </div>
       </div>)}
@@ -305,7 +305,7 @@ export default function ShipperAgreementWizard() {
           <Badge className="bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 text-purple-400 border border-purple-500/30 text-xs font-bold">Ready to Sign</Badge>
         </div>
         <Card className={cc}><CardContent className="p-5">
-          <GradientSignaturePad documentTitle="Catalyst-Shipper Agreement" signerName={user?.name||user?.firstName||"Shipper Representative"} onSign={(d:string)=>setSigData(d)} onClear={()=>setSigData(null)} legalText="By electronically signing this document, I acknowledge and agree that my electronic signature holds the same legal validity as a handwritten signature, pursuant to the U.S. Electronic Signatures in Global and National Commerce Act (ESIGN Act, 15 U.S.C. ch. 96) and the Uniform Electronic Transactions Act (UETA)."/>
+          <GradientSignaturePad documentTitle={`${agType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())} Agreement`} signerName={user?.name||user?.firstName||`${roleConfig.partyALabel} Representative`} onSign={(d:string)=>setSigData(d)} onClear={()=>setSigData(null)} legalText="By electronically signing this document, I acknowledge and agree that my electronic signature holds the same legal validity as a handwritten signature, pursuant to the U.S. Electronic Signatures in Global and National Commerce Act (ESIGN Act, 15 U.S.C. ch. 96) and the Uniform Electronic Transactions Act (UETA)."/>
         </CardContent></Card>
         <div className="flex gap-3">
           <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>setStep("review")}><ArrowLeft className="w-4 h-4 mr-2"/>Back</Button>
@@ -316,7 +316,7 @@ export default function ShipperAgreementWizard() {
         <div className={cn("text-center py-12 rounded-2xl border",cc)}>
           <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center"><CheckCircle className="w-10 h-10 text-green-500"/></div>
           <h2 className={cn("text-2xl font-bold mb-2",isLight?"text-slate-800":"text-white")}>Agreement Signed</h2>
-          <p className={cn("text-sm max-w-md mx-auto",mt)}>Your Gradient Ink signature has been recorded for agreement #{agNum}. Awaiting catalyst counter-signature to fully execute.</p>
+          <p className={cn("text-sm max-w-md mx-auto",mt)}>Your Gradient Ink signature has been recorded for agreement #{agNum}. Awaiting counter-party signature to fully execute.</p>
           <div className="mt-6 flex items-center justify-center gap-3">
             <Badge className="bg-green-500/15 text-green-500 border border-green-500/30 text-xs font-bold"><Shield className="w-3 h-3 mr-1"/>ESIGN Act Compliant</Badge>
             <Badge className="bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 text-purple-400 border border-purple-500/30 text-xs font-bold"><EsangIcon className="w-3 h-3 mr-1"/>Gradient Ink Verified</Badge>
@@ -324,7 +324,7 @@ export default function ShipperAgreementWizard() {
           <div className={cn("mx-auto mt-8 max-w-sm p-5 rounded-xl border text-left",cl)}>
             <div className="space-y-3">
               <div className="flex justify-between"><span className="text-xs text-slate-400">Agreement</span><span className={vl}>#{agNum}</span></div>
-              <div className="flex justify-between"><span className="text-xs text-slate-400">Catalyst</span><span className={vl}>{bComp||bName||"TBD"}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-slate-400">{roleConfig.partyBLabel}</span><span className={vl}>{bComp||bName||"TBD"}</span></div>
               <div className="flex justify-between"><span className="text-xs text-slate-400">Rate</span><span className="font-bold text-sm bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${parseFloat(baseRate||"0").toLocaleString()}</span></div>
               <div className="flex justify-between"><span className="text-xs text-slate-400">Payment</span><span className={vl}>Net {payDays} · {payFreq.replace(/_/g," ")}</span></div>
               <div className="flex justify-between"><span className="text-xs text-slate-400">Status</span><Badge className="bg-yellow-500/15 text-yellow-500 border-yellow-500/30 border text-[10px]">Pending Counter-Signature</Badge></div>
@@ -332,7 +332,7 @@ export default function ShipperAgreementWizard() {
           </div>
           <div className="mt-8 flex justify-center gap-3">
             <Button variant="outline" className={cn("rounded-xl font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>setLocation("/agreements")}><ArrowLeft className="w-4 h-4 mr-2"/>Agreements</Button>
-            <Button variant="outline" className={cn("rounded-xl font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>downloadAgreementPdf({agreementNumber:agNum,agreementType:agType,contractDuration:dur,status:"pending_signature",generatedContent:genContent,partyAName:user?.name||"Shipper",partyARole:user?.role||"SHIPPER",partyBName:bName,partyBCompany:bComp,partyBRole:"CATALYST",baseRate,rateType,paymentTermDays:parseInt(payDays)||30,fuelSurchargeType:fuelType,fuelSurchargeValue:fuelVal,minInsuranceAmount:insAmt,liabilityLimit:liab,cargoInsuranceRequired:cargo,effectiveDate:effDate,expirationDate:expDate,equipmentTypes:eqTypes,hazmatRequired:hazmat})}><Download className="w-4 h-4 mr-2"/>Download PDF</Button>
+            <Button variant="outline" className={cn("rounded-xl font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>downloadAgreementPdf({agreementNumber:agNum,agreementType:agType,contractDuration:dur,status:"pending_signature",generatedContent:genContent,partyAName:user?.name||roleConfig.partyALabel,partyARole:user?.role||"SHIPPER",partyBName:bName,partyBCompany:bComp,partyBRole:roleConfig.partyBRole,baseRate,rateType,paymentTermDays:parseInt(payDays)||30,fuelSurchargeType:fuelType,fuelSurchargeValue:fuelVal,minInsuranceAmount:insAmt,liabilityLimit:liab,cargoInsuranceRequired:cargo,effectiveDate:effDate,expirationDate:expDate,equipmentTypes:eqTypes,hazmatRequired:hazmat})}><Download className="w-4 h-4 mr-2"/>Download PDF</Button>
             <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={()=>setLocation("/documents")}><FileText className="w-4 h-4 mr-2"/>View Documents</Button>
           </div>
         </div>
