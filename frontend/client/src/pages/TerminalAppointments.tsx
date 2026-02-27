@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Portal } from "@/components/ui/portal";
 import { useTheme } from "@/contexts/ThemeContext";
 import { EsangIcon } from "@/components/EsangIcon";
 import { Badge } from "@/components/ui/badge";
@@ -387,7 +388,8 @@ export default function TerminalAppointments() {
 
       {/* Create Modal — 2-Step TAS-Integrated */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => { setShowCreate(false); resetForm(); }}>
+        <Portal>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => { setShowCreate(false); resetForm(); }}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div className={cn("w-full max-w-2xl p-6 space-y-4", cell, isLight ? "bg-white border-slate-200" : "bg-[#0B1120] border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             {/* Modal Header */}
@@ -440,8 +442,8 @@ export default function TerminalAppointments() {
                       </Button>
                     </div>
                     {showErgResults && ergSearch.data?.results?.length > 0 && (
-                      <div className={cn("absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-xl max-h-56 overflow-y-auto", isLight ? "bg-white border-slate-200" : "bg-slate-800 border-slate-600/50")}>
-                        <div className={cn("px-3 py-1.5 text-[9px] uppercase tracking-wide border-b sticky top-0", isLight ? "text-slate-400 border-slate-100 bg-white" : "text-slate-500 border-slate-700/50 bg-slate-800")}>ERG 2024 — {ergSearch.data.count} results</div>
+                      <div className={cn("absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-xl max-h-56 overflow-y-auto", isLight ? "bg-white border-slate-200" : "border-slate-600/50")} style={isLight ? undefined : { backgroundColor: '#0c0e18' }}>
+                        <div className={cn("px-3 py-1.5 text-[9px] uppercase tracking-wide border-b sticky top-0", isLight ? "text-slate-400 border-slate-100 bg-white" : "text-slate-500 border-slate-700/50")} style={isLight ? undefined : { backgroundColor: '#0c0e18' }}>ERG 2024 — {ergSearch.data.count} results</div>
                         {ergSearch.data.results.map((m: any, i: number) => (
                           <button key={`${m.unNumber}-${i}`} className={cn("w-full text-left px-3 py-2 flex items-center justify-between gap-2 border-b last:border-0 transition-colors", isLight ? "hover:bg-slate-50 border-slate-100" : "hover:bg-slate-700/50 border-slate-700/20")} onClick={() => {
                             setFormProduct(`UN${m.unNumber} ${m.name}`);
@@ -462,7 +464,7 @@ export default function TerminalAppointments() {
                       </div>
                     )}
                     {showErgResults && ergQuery.length >= 2 && ergSearch.isLoading && (
-                      <div className={cn("absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-xl p-3", isLight ? "bg-white border-slate-200" : "bg-slate-800 border-slate-600/50")}>
+                      <div className={cn("absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-xl p-3", isLight ? "bg-white border-slate-200" : "border-slate-600/50")} style={isLight ? undefined : { backgroundColor: '#0c0e18' }}>
                         <div className="flex items-center gap-2 text-slate-400 text-xs"><EsangIcon className="w-3.5 h-3.5 animate-spin" />Searching ERG 2024...</div>
                       </div>
                     )}
@@ -653,6 +655,7 @@ export default function TerminalAppointments() {
           </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

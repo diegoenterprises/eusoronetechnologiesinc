@@ -38,6 +38,11 @@ const LOAD_STATUS: Record<string, { label: string; color: string }> = {
   at_delivery:       { label: "At Delivery",        color: "text-cyan-500" },
   unloading:         { label: "Unloading",          color: "text-orange-500" },
   delivered:         { label: "Delivered",           color: "text-emerald-500" },
+  temp_excursion:    { label: "Temp Excursion",     color: "text-red-500" },
+  reefer_breakdown:  { label: "Reefer Breakdown",   color: "text-red-500" },
+  contamination_reject: { label: "Contamination",   color: "text-red-500" },
+  seal_breach:       { label: "Seal Breach",         color: "text-red-500" },
+  weight_violation:  { label: "Weight Violation",    color: "text-red-500" },
 };
 
 export default function DriverDashboard() {

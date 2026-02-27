@@ -165,6 +165,8 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
     await addColIfMissing("loads", "deletedAt", "TIMESTAMP NULL DEFAULT NULL");
     await addColIfMissing("loads", "weightUnit", "VARCHAR(10) DEFAULT 'lbs'");
     await addColIfMissing("loads", "distance", "DECIMAL(10,2) DEFAULT NULL");
+    await addColIfMissing("loads", "requiresEscort", "BOOLEAN NOT NULL DEFAULT FALSE");
+    await addColIfMissing("loads", "escortCount", "INT NOT NULL DEFAULT 0");
 
     // --- documents table columns ---
     await addColIfMissing("documents", "agreementId", "INT DEFAULT NULL");

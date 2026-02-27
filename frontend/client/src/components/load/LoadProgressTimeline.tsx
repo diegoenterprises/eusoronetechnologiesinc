@@ -19,6 +19,14 @@ const HAPPY_PATH: string[] = [
   "INVOICED", "PAID", "COMPLETE",
 ];
 
+// States that are off the happy path — injected into timeline when active
+const OFF_PATH_STATES = new Set([
+  "EXPIRED", "DECLINED", "LAPSED", "LOADING_EXCEPTION", "TRANSIT_HOLD",
+  "TRANSIT_EXCEPTION", "UNLOADING_EXCEPTION", "POD_REJECTED", "DISPUTED",
+  "CANCELLED", "ON_HOLD",
+  "TEMP_EXCURSION", "REEFER_BREAKDOWN", "CONTAMINATION_REJECT", "SEAL_BREACH", "WEIGHT_VIOLATION",
+]);
+
 const GRADIENT_BG = "linear-gradient(135deg, #1473FF, #BE01FF)";
 const GRADIENT_TEXT: Record<string, string> = { background: GRADIENT_BG, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" };
 const GRAD_GLOW = "0 0 14px rgba(20,115,255,0.5), 0 0 14px rgba(190,1,255,0.3)";
@@ -72,9 +80,25 @@ export default function LoadProgressTimeline({
 
   // Determine which milestones to show
   const currentIdx = HAPPY_PATH.indexOf(normalized);
-  const milestones = compact
+  const isOffPath = OFF_PATH_STATES.has(normalized) && currentIdx === -1;
+
+  // Build base milestones from happy path
+  let baseMilestones = compact
     ? HAPPY_PATH.filter((_, i) => i % 3 === 0 || i === HAPPY_PATH.length - 1 || HAPPY_PATH[i] === normalized)
-    : HAPPY_PATH;
+    : [...HAPPY_PATH];
+
+  // Inject the current off-path state after the last visited happy-path state
+  if (isOffPath) {
+    let insertIdx = 0;
+    for (let i = HAPPY_PATH.length - 1; i >= 0; i--) {
+      if (visitedStates.has(HAPPY_PATH[i])) {
+        insertIdx = baseMilestones.indexOf(HAPPY_PATH[i]) + 1;
+        break;
+      }
+    }
+    baseMilestones.splice(insertIdx, 0, normalized);
+  }
+  const milestones = baseMilestones;
 
   if (variant === "vertical") {
     return (

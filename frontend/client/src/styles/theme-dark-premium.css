@@ -172,6 +172,18 @@
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
+/* Custom absolute-positioned dropdowns (product pickers, ERG search,
+   company search, status menus) — force opaque dark surface.
+   Uses .dark-dropdown utility class applied to all custom dropdowns. */
+.dark .dark-dropdown {
+  background-color: #0c0e18 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(190,1,255,0.08) !important;
+}
+.dark .dark-dropdown .sticky {
+  background-color: #0c0e18 !important;
+}
+
 /* ============================================================
    TABS — Premium Dark Treatment
    ============================================================ */

@@ -957,6 +957,21 @@ export const agreementsRouter = router({
         throw new Error(`DB ${errCode}(${errNo}): ${sqlMsg || (insertErr?.message || "").slice(-150)}`);
       }
 
+      // Auto-index agreement for semantic search (fire-and-forget)
+      try {
+        const { indexAgreement } = await import("../services/embeddings/aiTurbocharge");
+        indexAgreement({
+          id: result[0]?.id,
+          title: `${input.agreementType} Agreement #${agreementNumber}`,
+          type: input.agreementType,
+          status: "draft",
+          partyA: (si.partyAName as string) || ctx.user?.name || "",
+          partyB: (si.partyBName as string) || "",
+          terms: aiResult.content?.slice(0, 3000) || "",
+          effectiveDate: input.effectiveDate,
+        });
+      } catch { /* embedding service unavailable */ }
+
       // Merge AI compliance notes with FMCSA warnings
       const allComplianceNotes = [
         ...aiResult.complianceNotes,

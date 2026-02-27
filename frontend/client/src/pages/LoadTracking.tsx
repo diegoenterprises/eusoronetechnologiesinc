@@ -76,6 +76,11 @@ export default function LoadTracking() {
       unloading:      { label: "Unloading",    bg: "bg-teal-500/15",   text: "text-teal-500",   border: "border-teal-500/30",   icon: Package },
       delivered:      { label: "Delivered",    bg: "bg-emerald-500/15",text: "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent",border: "border-emerald-500/30",icon: CheckCircle },
       cancelled:      { label: "Cancelled",   bg: "bg-red-500/15",    text: "text-red-500",    border: "border-red-500/30",    icon: XCircle },
+      temp_excursion: { label: "Temp Excursion", bg: "bg-red-500/15", text: "text-red-500", border: "border-red-500/30", icon: AlertTriangle },
+      reefer_breakdown: { label: "Reefer Down", bg: "bg-red-500/15", text: "text-red-500", border: "border-red-500/30", icon: AlertTriangle },
+      contamination_reject: { label: "Contamination", bg: "bg-red-500/15", text: "text-red-500", border: "border-red-500/30", icon: AlertTriangle },
+      seal_breach:    { label: "Seal Breach", bg: "bg-red-500/15", text: "text-red-500", border: "border-red-500/30", icon: AlertTriangle },
+      weight_violation: { label: "Overweight", bg: "bg-red-500/15", text: "text-red-500", border: "border-red-500/30", icon: AlertTriangle },
     };
     return map[status] || { label: status, bg: "bg-slate-500/15", text: "text-slate-400", border: "border-slate-500/30", icon: Package };
   };

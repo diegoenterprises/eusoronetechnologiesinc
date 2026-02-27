@@ -629,6 +629,7 @@ const equipmentTypeSchema = z.enum([
   "gas_tank", "cryogenic", "hazmat_van", "bulk_hopper", "food_grade_tank",
   "water_tank", "conestoga", "curtainside", "intermodal", "double_drop",
   "dump_trailer", "auto_carrier", "livestock",
+  "hopper", "pneumatic", "end_dump", "intermodal_chassis", "curtain_side",
 ]);
 
 export const loadBoardRouter = router({
@@ -778,6 +779,8 @@ export const loadBoardRouter = router({
         dry_van: "general", hazmat_van: "general", conestoga: "general", curtainside: "general", intermodal: "general",
         bulk_hopper: "general", dump_trailer: "general",
         auto_carrier: "general", livestock: "general",
+        hopper: "general", pneumatic: "general", end_dump: "general",
+        intermodal_chassis: "general", curtain_side: "general",
       };
       let derivedCargo = EQUIP_TO_CARGO[input.equipmentType] || "general";
       // Hazmat + chemicals override
@@ -962,8 +965,10 @@ export const loadBoardRouter = router({
           scopeCondition = sql`1 = 1`;
         } else if (profile.role === 'CATALYST' || profile.role === 'DISPATCH') {
           scopeCondition = sql`(${loads.shipperId} = ${userId} OR ${loads.catalystId} = ${userId})`;
-        } else if (profile.role === 'DRIVER' || profile.role === 'ESCORT') {
+        } else if (profile.role === 'DRIVER') {
           scopeCondition = sql`(${loads.driverId} = ${userId} OR ${loads.shipperId} = ${userId})`;
+        } else if (profile.role === 'ESCORT') {
+          scopeCondition = sql`(${loads.id} IN (SELECT loadId FROM escort_assignments WHERE escortUserId = ${userId}) OR ${loads.shipperId} = ${userId})`;
         } else if (profile.role === 'BROKER') {
           scopeCondition = sql`(${loads.shipperId} = ${userId} OR ${loads.catalystId} = ${userId})`;
         } else {

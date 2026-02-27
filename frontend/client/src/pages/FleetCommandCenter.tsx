@@ -13,6 +13,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Portal } from "@/components/ui/portal";
 import {
   Truck, Users, Search, Plus, MapPin, CheckCircle, Wrench,
   AlertTriangle, Phone, Clock, Activity, Package, Navigation,
@@ -161,7 +162,8 @@ export default function FleetCommandCenter() {
 
       {/* ADD DRIVER MODAL */}
       {showAD && (
-        <div className="fixed inset-0 z-50 bg-black/50 overflow-y-auto" onClick={() => setShowAD(false)}>
+        <Portal>
+        <div className="fixed inset-0 z-[9999] bg-black/50 overflow-y-auto" onClick={() => setShowAD(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div className={cn("w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl backdrop-blur-2xl", L ? "bg-white/90 border border-slate-200" : "bg-slate-900/70 border border-white/10 ring-1 ring-white/5")} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between"><h2 className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Add Driver</h2><button onClick={() => setShowAD(false)}><X className="w-5 h-5 text-slate-400" /></button></div>
@@ -173,11 +175,13 @@ export default function FleetCommandCenter() {
           </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {/* ADD VEHICLE MODAL */}
       {showAV && (
-        <div className="fixed inset-0 z-50 bg-black/50 overflow-y-auto" onClick={() => setShowAV(false)}>
+        <Portal>
+        <div className="fixed inset-0 z-[9999] bg-black/50 overflow-y-auto" onClick={() => setShowAV(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div className={cn("w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl backdrop-blur-2xl", L ? "bg-white/90 border border-slate-200" : "bg-slate-900/70 border border-white/10 ring-1 ring-white/5")} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between"><h2 className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Add Vehicle</h2><button onClick={() => setShowAV(false)}><X className="w-5 h-5 text-slate-400" /></button></div>
@@ -192,6 +196,7 @@ export default function FleetCommandCenter() {
           </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

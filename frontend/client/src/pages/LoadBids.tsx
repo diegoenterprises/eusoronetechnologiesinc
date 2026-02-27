@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from "react";
+import { Portal } from "@/components/ui/portal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -235,7 +236,8 @@ function HazmatAuthCheckOverlay({ dotNumber, hazmatClass, isLight, onConfirm, on
   const data = authQuery.data;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm">
+    <Portal>
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm">
       <div className="flex min-h-full items-center justify-center p-4">
       <div className={cn(
         "w-full max-w-xl rounded-2xl border p-6",
@@ -354,5 +356,6 @@ function HazmatAuthCheckOverlay({ dotNumber, hazmatClass, isLight, onConfirm, on
       </div>
       </div>
     </div>
+    </Portal>
   );
 }

@@ -25,7 +25,7 @@ import {
 import { useLocation } from "wouter";
 import LoadCargoAnimation from "@/components/LoadCargoAnimation";
 
-type EquipFilter = "all" | "tanker" | "flatbed" | "dry_van" | "reefer" | "hopper" | "cryogenic" | "hazmat";
+type EquipFilter = "all" | "tanker" | "flatbed" | "dry_van" | "reefer" | "hopper" | "cryogenic" | "hazmat" | "pneumatic" | "end_dump" | "intermodal_chassis" | "curtain_side";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -121,7 +121,11 @@ export default function FindLoads() {
     { id: "dry_van", label: "Dry Van" },
     { id: "reefer", label: "Reefer" },
     { id: "hopper", label: "Bulk/Hopper" },
+    { id: "pneumatic", label: "Pneumatic" },
+    { id: "end_dump", label: "End Dump" },
     { id: "cryogenic", label: "Cryogenic" },
+    { id: "intermodal_chassis", label: "Intermodal" },
+    { id: "curtain_side", label: "Curtain Side" },
     { id: "hazmat", label: "Hazmat" },
   ];
 

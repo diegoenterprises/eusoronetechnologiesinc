@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Portal } from '@/components/ui/portal';
 import { Search, AlertTriangle, Phone, ChevronRight, X, MapPin, Flame, Wind, Shield, Zap } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -351,7 +352,8 @@ export default function ERG2024Module() {
 
       {/* Guide Detail Modal */}
       {showModal && selectedGuide && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto" onClick={() => setShowModal(false)}>
+        <Portal>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] overflow-y-auto" onClick={() => setShowModal(false)}>
           <div className="flex min-h-full items-end sm:items-center justify-center p-4">
           <div className={`w-full max-w-2xl ${emergency ? 'bg-red-900' : 'bg-white'} rounded-t-3xl sm:rounded-3xl shadow-2xl`} onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 z-10 p-4 border-b border-slate-200" style={{ backgroundColor: selectedGuide.color }}>
@@ -460,6 +462,7 @@ export default function ERG2024Module() {
           </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

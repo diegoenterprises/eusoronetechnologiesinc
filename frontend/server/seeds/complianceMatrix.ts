@@ -112,6 +112,12 @@ export const TRAILER_PRODUCT_MAP: Record<string, string[]> = {
   flatbed:          ["steel_coils", "lumber", "pipe_tubing", "building_materials", "solar_panels", "machinery", "oilfield_equipment"],
   bulk_hopper:      ["grain", "sand_aggregate", "cement", "plastic_pellets", "flour_sugar"],
   hazmat_van:       ["hazmat_dry", "chemicals"],
+  // New vehicle types
+  hopper:           ["grain", "sand_aggregate", "cement", "plastic_pellets", "flour_sugar"],
+  pneumatic:        ["cement", "flour_sugar", "plastic_pellets", "sand_aggregate"],
+  end_dump:         ["sand_aggregate", "building_materials", "steel_coils"],
+  intermodal_chassis: ["general_freight", "electronics", "automotive_parts", "retail_goods", "paper_packaging", "hazmat_dry"],
+  curtain_side:     ["general_freight", "retail_goods", "paper_packaging", "furniture", "building_materials"],
   // Aliases
   lowboy:           ["machinery", "construction_equipment", "oilfield_equipment"],
   step_deck:        ["steel_coils", "lumber", "pipe_tubing", "building_materials", "machinery", "oilfield_equipment", "solar_panels"],
@@ -158,9 +164,14 @@ export const COMPLIANCE_RULES: ComplianceRule[] = [
   { id: "OVERSIZE_PERMIT",     trigger: "TRAILER", trailerTypes: ["flatbed", "step_deck", "lowboy"],                                         documentTypeId: "OVERSIZE_PERMIT",     priority: "HIGH",     status: "CONDITIONAL", reason: "Oversize/overweight permits may be required per state", group: "State Permits", federal: false },
   { id: "ROUTE_SURVEY",        trigger: "TRAILER", trailerTypes: ["lowboy"],                                                                  documentTypeId: "ROUTE_SURVEY",        priority: "MEDIUM",   status: "CONDITIONAL", reason: "Pre-trip route survey for oversize loads", group: "Operations", federal: false },
 
-  // ─── Hopper / Pneumatic / Dry Bulk ───
-  { id: "BULK_LOADING",        trigger: "TRAILER", trailerTypes: ["bulk_hopper"],                                                             documentTypeId: "BULK_LOADING_CERT",   priority: "HIGH",     status: "REQUIRED", reason: "Pneumatic loading/unloading training certification", group: "Specialized Training", federal: true },
-  { id: "HOPPER_INSPECT",      trigger: "TRAILER", trailerTypes: ["bulk_hopper"],                                                             documentTypeId: "HOPPER_INSPECTION",   priority: "HIGH",     status: "REQUIRED", reason: "Pneumatic system integrity inspection", group: "Equipment Compliance", federal: true },
+  // ─── Hopper / Pneumatic / Dry Bulk / End Dump ───
+  { id: "BULK_LOADING",        trigger: "TRAILER", trailerTypes: ["bulk_hopper", "hopper", "pneumatic"],                                      documentTypeId: "BULK_LOADING_CERT",   priority: "HIGH",     status: "REQUIRED", reason: "Pneumatic loading/unloading training certification", group: "Specialized Training", federal: true },
+  { id: "HOPPER_INSPECT",      trigger: "TRAILER", trailerTypes: ["bulk_hopper", "hopper", "pneumatic"],                                      documentTypeId: "HOPPER_INSPECTION",   priority: "HIGH",     status: "REQUIRED", reason: "Pneumatic system integrity inspection", group: "Equipment Compliance", federal: true },
+  { id: "END_DUMP_SECURE",     trigger: "TRAILER", trailerTypes: ["end_dump"],                                                                 documentTypeId: "LOAD_SECUREMENT_TRAINING", priority: "HIGH", status: "REQUIRED", reason: "Load securement training for end-dump operations", group: "Specialized Training", federal: true },
+
+  // ─── Intermodal / Curtain Side ───
+  { id: "INTERMODAL_TWIST",    trigger: "TRAILER", trailerTypes: ["intermodal_chassis"],                                                        documentTypeId: "INTERMODAL_TWIST_LOCK_CERT", priority: "HIGH", status: "REQUIRED", reason: "Intermodal twist-lock securement and container inspection training", group: "Equipment Compliance", federal: true },
+  { id: "CURTAIN_SECURE",      trigger: "TRAILER", trailerTypes: ["curtain_side"],                                                              documentTypeId: "LOAD_SECUREMENT_TRAINING", priority: "HIGH", status: "REQUIRED", reason: "Cargo securement training for curtain-side operations (49 CFR 393)", group: "Specialized Training", federal: true },
 
   // ─── Reefer ───
   { id: "REEFER_FSMA",         trigger: "TRAILER", trailerTypes: ["reefer"],                                                                  documentTypeId: "FOOD_SAFETY_CERT",    priority: "HIGH",     status: "REQUIRED", reason: "FSMA sanitary transportation certification (21 CFR 1.908)", group: "Food Safety", federal: true },

@@ -6,6 +6,7 @@
 
 import React, { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
+import { Portal } from "@/components/ui/portal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -187,7 +188,8 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <Portal>
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Modal header */}
@@ -353,6 +355,7 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
       </div>
       </div>
     </div>
+    </Portal>
   );
 }
 
@@ -819,7 +822,8 @@ export default function Documents() {
 
       {/* Document Preview Modal */}
       {previewDoc && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm" onClick={() => { if (previewDoc?.blobUrl) URL.revokeObjectURL(previewDoc.blobUrl); setPreviewDoc(null); }}>
+        <Portal>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-sm" onClick={() => { if (previewDoc?.blobUrl) URL.revokeObjectURL(previewDoc.blobUrl); setPreviewDoc(null); }}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col" style={{ height: '85vh' }} onClick={e => e.stopPropagation()}>
             {/* Preview Header */}
@@ -879,6 +883,7 @@ export default function Documents() {
           </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {/* Upload modal */}

@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from "react";
+import { Portal } from "@/components/ui/portal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -350,7 +351,8 @@ export function AppointmentScheduler({
 
       {/* New Appointment Modal */}
       {showNewAppointment && (
-        <div className="fixed inset-0 bg-black/50 overflow-y-auto z-50" onClick={() => setShowNewAppointment(false)}>
+        <Portal>
+        <div className="fixed inset-0 bg-black/50 overflow-y-auto z-[9999]" onClick={() => setShowNewAppointment(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <Card className="bg-slate-800 border-slate-700 w-full max-w-lg" onClick={(e: any) => e.stopPropagation()}>
             <CardHeader>
@@ -451,6 +453,7 @@ export function AppointmentScheduler({
           </Card>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

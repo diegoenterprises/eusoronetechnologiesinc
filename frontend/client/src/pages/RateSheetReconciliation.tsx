@@ -7,7 +7,7 @@
  * Tab 3: Reconciliation — generate billing statements from run tickets
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,194 @@ import { toast } from "sonner";
 import DatePicker from "@/components/DatePicker";
 
 const cell = "rounded-2xl border border-slate-200/60 dark:border-white/[0.04] bg-white dark:bg-white/[0.02]";
+
+const COMPARE_COLORS = ["#1473FF", "#BE01FF", "#10B981"];
+
+function ComparisonDashboard({ sheetIds, allSheets }: { sheetIds: number[]; allSheets: any[] }) {
+  const _rs = (trpc as any).rateSheet;
+
+  // Fixed hook calls for up to 3 sheets (max allowed)
+  const q0 = _rs.getRateSheet.useQuery({ id: sheetIds[0] || 0 }, { enabled: !!sheetIds[0] });
+  const q1 = _rs.getRateSheet.useQuery({ id: sheetIds[1] || 0 }, { enabled: !!sheetIds[1] });
+  const q2 = _rs.getRateSheet.useQuery({ id: sheetIds[2] || 0 }, { enabled: !!sheetIds[2] });
+
+  const queries = [q0, q1, q2].slice(0, sheetIds.length);
+  const sheetsData = queries.map((q: any, i: number) => {
+    const raw = q.data;
+    if (!raw) return null;
+    const summary = allSheets.find((s: any) => s.id === sheetIds[i]);
+    return { ...raw, summary };
+  });
+
+  const allLoaded = sheetsData.every(Boolean);
+  if (!allLoaded) {
+    return (
+      <div className={cn("p-6", cell)}>
+        <div className="flex gap-4">
+          {sheetIds.map((_, i) => <Skeleton key={i} className="h-40 flex-1 rounded-xl" />)}
+        </div>
+      </div>
+    );
+  }
+
+  // Build comparison data
+  const sheets = sheetsData as any[];
+  const maxTiers = Math.max(...sheets.map(s => s.rateTiers?.length || 0));
+
+  // Compute summary stats per sheet
+  const stats = sheets.map(s => {
+    const tiers = s.rateTiers || [];
+    const rates = tiers.map((t: any) => t.ratePerBarrel || 0);
+    const avg = rates.length > 0 ? rates.reduce((a: number, b: number) => a + b, 0) / rates.length : 0;
+    const min = rates.length > 0 ? Math.min(...rates) : 0;
+    const max = rates.length > 0 ? Math.max(...rates) : 0;
+    return {
+      name: s.name || s.summary?.name || "Sheet",
+      region: s.region || s.summary?.region || "",
+      product: s.productType || s.summary?.productType || "Crude Oil",
+      tierCount: tiers.length,
+      avgRate: Math.round(avg * 100) / 100,
+      minRate: Math.round(min * 100) / 100,
+      maxRate: Math.round(max * 100) / 100,
+      maxMiles: tiers.length > 0 ? tiers[tiers.length - 1]?.maxMiles || 0 : 0,
+      tiers,
+    };
+  });
+
+  return (
+    <div className={cn("p-5 space-y-5", cell)}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-[#BE01FF]" />
+          <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Rate Sheet Comparison</span>
+        </h3>
+        <span className="text-[9px] text-slate-400">{sheets.length} sheets selected</span>
+      </div>
+
+      {/* Summary cards side by side */}
+      <div className={cn("grid gap-4", sheets.length === 2 ? "grid-cols-2" : "grid-cols-3")}>
+        {stats.map((s, i) => (
+          <div key={i} className="p-4 rounded-xl border border-slate-100 dark:border-white/[0.04] bg-slate-50 dark:bg-white/[0.02] relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1" style={{ background: COMPARE_COLORS[i] }} />
+            <p className="text-xs font-semibold text-slate-800 dark:text-white truncate mt-1">{s.name}</p>
+            <div className="flex items-center gap-2 mt-1 mb-3">
+              {s.region && <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ color: COMPARE_COLORS[i], background: `${COMPARE_COLORS[i]}15` }}>{s.region}</span>}
+              <span className="text-[9px] text-slate-400">{s.product}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="text-center">
+                <p className="text-lg font-bold" style={{ color: COMPARE_COLORS[i] }}>${s.avgRate}</p>
+                <p className="text-[8px] text-slate-400">Avg $/BBL</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-slate-600 dark:text-slate-300">{s.tierCount}</p>
+                <p className="text-[8px] text-slate-400">Tiers</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-slate-600 dark:text-slate-300">{s.maxMiles}</p>
+                <p className="text-[8px] text-slate-400">Max Mi</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-white/[0.04]">
+              <span className="text-[9px] text-emerald-500">${s.minRate} min</span>
+              <span className="text-[9px] text-amber-500">${s.maxRate} max</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tier-by-tier comparison grid */}
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-3">Tier-by-Tier Comparison</p>
+        <div className="max-h-[360px] overflow-y-auto rounded-xl border border-slate-100 dark:border-white/[0.04]">
+          <table className="w-full text-xs">
+            <thead className="sticky top-0 bg-slate-50 dark:bg-white/[0.04]">
+              <tr>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Miles</th>
+                {stats.map((s, i) => (
+                  <th key={i} className="px-3 py-2 text-center text-[10px] font-semibold uppercase tracking-wider" style={{ color: COMPARE_COLORS[i] }}>
+                    {s.name.length > 18 ? s.name.slice(0, 18) + "…" : s.name}
+                  </th>
+                ))}
+                {stats.length === 2 && (
+                  <th className="px-3 py-2 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Delta</th>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: maxTiers }).map((_, tierIdx) => {
+                const tierData = stats.map(s => s.tiers[tierIdx]);
+                const baseTier = tierData[0];
+                const hasData = tierData.some(Boolean);
+                if (!hasData) return null;
+
+                return (
+                  <tr key={tierIdx} className="border-t border-slate-50 dark:border-white/[0.02] hover:bg-slate-50/50 dark:hover:bg-white/[0.01]">
+                    <td className="px-3 py-1.5 text-slate-500 font-medium whitespace-nowrap">
+                      {baseTier?.minMiles || tierData.find(Boolean)?.minMiles}–{baseTier?.maxMiles || tierData.find(Boolean)?.maxMiles}
+                    </td>
+                    {tierData.map((tier, i) => (
+                      <td key={i} className="px-3 py-1.5 text-center font-semibold" style={{ color: tier ? COMPARE_COLORS[i] : "#94a3b8" }}>
+                        {tier ? `$${tier.ratePerBarrel.toFixed(2)}` : "—"}
+                      </td>
+                    ))}
+                    {stats.length === 2 && (
+                      <td className="px-3 py-1.5 text-center">
+                        {tierData[0] && tierData[1] ? (
+                          (() => {
+                            const delta = tierData[1].ratePerBarrel - tierData[0].ratePerBarrel;
+                            const pct = tierData[0].ratePerBarrel > 0 ? (delta / tierData[0].ratePerBarrel) * 100 : 0;
+                            return (
+                              <span className={cn("text-[10px] font-semibold", delta > 0 ? "text-red-400" : delta < 0 ? "text-emerald-500" : "text-slate-400")}>
+                                {delta > 0 ? "+" : ""}{delta.toFixed(2)} ({pct > 0 ? "+" : ""}{pct.toFixed(1)}%)
+                              </span>
+                            );
+                          })()
+                        ) : "—"}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Rate curve visualization */}
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-3">Rate Curve Overlay</p>
+        <div className="h-40 relative rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] overflow-hidden">
+          {stats.map((s, i) => {
+            const globalMax = Math.max(...stats.flatMap(st => st.tiers.map((t: any) => t.ratePerBarrel || 0)), 1);
+            return (
+              <svg key={i} className="absolute inset-0 w-full h-full" viewBox={`0 0 ${maxTiers} 100`} preserveAspectRatio="none">
+                <polyline
+                  fill="none"
+                  stroke={COMPARE_COLORS[i]}
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={0.8}
+                  points={s.tiers.map((t: any, ti: number) => `${ti},${100 - (t.ratePerBarrel / globalMax) * 90}`).join(" ")}
+                />
+              </svg>
+            );
+          })}
+          {/* Legend */}
+          <div className="absolute bottom-2 right-3 flex items-center gap-3">
+            {stats.map((s, i) => (
+              <div key={i} className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ background: COMPARE_COLORS[i] }} />
+                <span className="text-[8px] text-slate-400 font-medium">{s.name.length > 12 ? s.name.slice(0, 12) + "…" : s.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function RateSheetReconciliation() {
   const [activeTab, setActiveTab] = useState<"calculator" | "tiers" | "reconciliation" | "ticket_recon">("calculator");
@@ -70,6 +258,10 @@ export default function RateSheetReconciliation() {
   const [newSheetTrailer, setNewSheetTrailer] = useState("tanker");
   const [newSheetRateUnit, setNewSheetRateUnit] = useState("per_barrel");
   const [savingSheet, setSavingSheet] = useState(false);
+
+  // Rate sheet comparison mode
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareSheetIds, setCompareSheetIds] = useState<number[]>([]);
 
   // Upload / Digitize state
   const [showUpload, setShowUpload] = useState(false);
@@ -126,6 +318,48 @@ export default function RateSheetReconciliation() {
     onError: (e: any) => toast.error(e?.message || "Failed to delete"),
   });
   const mySheets = (myRateSheetsQ.data || []) as any[];
+
+  // Version history
+  const [showHistory, setShowHistory] = useState(false);
+  const versionHistoryQ = _rs.getVersionHistory.useQuery(
+    { sheetId: selectedSheetId! },
+    { enabled: !!selectedSheetId && showHistory }
+  );
+  const versionHistory = (versionHistoryQ.data || []) as any[];
+
+  // Live EIA diesel price (auto-populates the FSC input)
+  const dieselQ = _rs.getCurrentDiesel.useQuery(
+    { paddRegion: localSurcharges?.fscPaddRegion || "3" },
+    { staleTime: 300_000 }
+  );
+  const dieselData = dieselQ.data as { price: number; padd: string; state: string | null; reportDate: string | null; source: string; change1w: number | null; change1m: number | null } | undefined;
+
+  // Auto-populate diesel price from EIA when data arrives
+  const [dieselAutoSet, setDieselAutoSet] = useState(false);
+  useEffect(() => {
+    if (dieselData?.source === "EIA" && dieselData.price > 0 && !dieselAutoSet) {
+      setCalcForm(p => ({ ...p, currentDieselPrice: dieselData.price.toFixed(2) }));
+      setReconForm(p => ({ ...p, currentDieselPrice: dieselData.price.toFixed(2) }));
+      setDieselAutoSet(true);
+    }
+  }, [dieselData, dieselAutoSet]);
+
+  // Smart default tiers (region/product/trailer-aware) — used when creating new sheets
+  const smartTiersQ = _rs.getSmartDefaultTiers.useQuery(
+    { region: newSheetRegion || undefined, product: newSheetProduct || undefined, trailerType: newSheetTrailer || undefined },
+    { enabled: showCreateSheet, staleTime: 60_000 }
+  );
+  const smartMeta = smartTiersQ.data as {
+    availableRegions?: { key: string; label: string; padd: string; multiplier: number }[];
+    availableProducts?: { name: string; multiplier: number }[];
+    regionInfo?: { key: string; label: string; padd: string; multiplier: number } | null;
+    productMultiplier?: number;
+    trailerMultiplier?: number;
+  } | undefined;
+
+  // Platform rate intelligence (aggregated from completed loads)
+  const rateIntelQ = _rs.getPlatformRateIntelligence.useQuery(undefined, { staleTime: 120_000 });
+  const rateIntel = rateIntelQ.data as { bands: any[]; totalLoads: number; avgRatePerMile: number; states: any[]; lastUpdated: string | null } | undefined;
 
   // Rate calculation (via query with manual refetch)
   const calcQuery = _rs.calculateRate.useQuery(
@@ -191,8 +425,10 @@ export default function RateSheetReconciliation() {
 
   const handleCreateSheet = () => {
     if (!newSheetName.trim()) { toast.error("Name is required"); return; }
-    const tiersToSave = localTiers || rawTiers;
-    const surchargesToSave = localSurcharges || defaultSurcharges;
+    // Use smart tiers if region/product/trailer is selected, otherwise raw defaults
+    const smartData = smartTiersQ.data as any;
+    const tiersToSave = localTiers || (smartData?.tiers?.length ? smartData.tiers : rawTiers);
+    const surchargesToSave = localSurcharges || (smartData?.surcharges ? smartData.surcharges : defaultSurcharges);
     saveSheetMut.mutate({
       name: newSheetName.trim(),
       region: newSheetRegion.trim() || undefined,
@@ -246,28 +482,57 @@ export default function RateSheetReconciliation() {
   const handleAiSuggest = async () => {
     setAiSuggesting(true);
     try {
-      // Simulate ESANG AI analysis of market conditions
-      await new Promise(r => setTimeout(r, 1500));
-      const baseDiesel = parseFloat(calcForm.currentDieselPrice) || 4.10;
+      // Use live EIA diesel data if available, otherwise fall back to form input
+      const liveDiesel = dieselData?.source === "EIA" ? dieselData.price : null;
+      const currentDiesel = liveDiesel || parseFloat(calcForm.currentDieselPrice) || 4.10;
+      const paddLabel = dieselData?.padd?.replace("PADD", "PADD ") || "PADD 3";
+      const reportDate = dieselData?.reportDate || "current";
+      const weekChange = dieselData?.change1w;
+      const monthChange = dieselData?.change1m;
+
+      // Market condition assessment from live data
+      const isElevated = currentDiesel > 4.50;
+      const isHigh = currentDiesel > 5.00;
+      const isRising = weekChange !== null && weekChange !== undefined && weekChange > 0.02;
+      const isFalling = weekChange !== null && weekChange !== undefined && weekChange < -0.02;
+      const monthTrend = monthChange !== null && monthChange !== undefined
+        ? (monthChange > 0.10 ? "rising sharply" : monthChange > 0.03 ? "trending up" : monthChange < -0.10 ? "falling sharply" : monthChange < -0.03 ? "trending down" : "stable")
+        : "stable";
+
+      // Calibrate surcharges to actual market conditions
+      const fscBaseline = Math.round(Math.max(3.50, currentDiesel - (isRising ? 0.25 : 0.35)) * 100) / 100;
+      const fscMpg = isHigh ? 4.5 : currentDiesel > 4.25 ? 4.75 : 5;
+      const waitRate = isHigh ? 100 : isElevated ? 95 : 85;
+      const travelRate = isHigh ? 2.00 : isElevated ? 1.75 : 1.50;
+      const minBbl = isElevated ? 165 : 160;
+
+      // Brief processing delay for perceived intelligence
+      await new Promise(r => setTimeout(r, 800));
+
       const suggestions = {
-        fscBaselineDieselPrice: Math.max(3.50, baseDiesel - 0.35).toFixed(2),
-        fscMilesPerGallon: baseDiesel > 4.50 ? 4.5 : 5,
-        waitTimeRatePerHour: baseDiesel > 4.50 ? 95 : 85,
+        fscBaselineDieselPrice: fscBaseline,
+        fscMilesPerGallon: fscMpg,
+        waitTimeRatePerHour: waitRate,
         waitTimeFreeHours: 1,
-        splitLoadFee: 50,
+        splitLoadFee: isElevated ? 55 : 50,
         rejectFee: 85,
-        minimumBarrels: 160,
-        travelSurchargePerMile: baseDiesel > 4.50 ? 1.75 : 1.50,
+        minimumBarrels: minBbl,
+        travelSurchargePerMile: travelRate,
         rationale: [
-          `Diesel at $${baseDiesel.toFixed(2)}/gal — ${baseDiesel > 4.50 ? "elevated" : "moderate"} fuel market`,
-          `FSC baseline set $0.35 below current EIA PADD 3 spot to protect carrier margins`,
-          `Wait time rate ${baseDiesel > 4.50 ? "increased to $95/hr" : "standard $85/hr"} based on driver opportunity cost`,
-          `160 BBL minimum ensures profitable partial loads at current tank truck capacity`,
-          `Travel surcharge covers deadhead miles outside primary operating radius`,
+          liveDiesel
+            ? `EIA ${paddLabel} diesel: $${currentDiesel.toFixed(2)}/gal (${reportDate})${weekChange !== null && weekChange !== undefined ? ` — ${weekChange >= 0 ? "+" : ""}${weekChange.toFixed(3)}/wk` : ""}`
+            : `Diesel at $${currentDiesel.toFixed(2)}/gal (manual input — connect EIA for live data)`,
+          `Market: ${isHigh ? "high-cost environment" : isElevated ? "elevated fuel costs" : "moderate fuel market"}, ${monthTrend} over 30 days`,
+          `FSC baseline $${fscBaseline.toFixed(2)} — set ${isRising ? "$0.25" : "$0.35"} below spot to ${isRising ? "tighten margin in rising market" : "protect carrier margins"}`,
+          `Wait time $${waitRate}/hr reflects ${isHigh ? "premium" : isElevated ? "elevated" : "standard"} driver opportunity cost at current fuel economics`,
+          `${minBbl} BBL minimum ensures profitable partial loads at tank truck capacity`,
+          `Travel surcharge $${travelRate.toFixed(2)}/mi covers deadhead miles outside primary operating radius`,
         ],
       };
       setAiSuggestions(suggestions);
-      toast.success("ESANG AI analysis complete", { description: "Review suggestions below" });
+      toast.success("ESANG AI analysis complete", {
+        description: liveDiesel ? `Based on live EIA ${paddLabel} data` : "Review suggestions below",
+      });
     } catch {
       toast.error("AI suggestion failed");
     } finally {
@@ -449,7 +714,7 @@ export default function RateSheetReconciliation() {
       </div>
 
       {/* ═══ TAB: RATE CALCULATOR ═══ */}
-      {activeTab === "calculator" && (
+      {activeTab === "calculator" && (<>
         <div className="grid grid-cols-3 gap-5">
           {/* Input Panel */}
           <div className={cn("p-5 space-y-4 col-span-1", cell)}>
@@ -466,7 +731,28 @@ export default function RateSheetReconciliation() {
             </div>
             <div>
               <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Current Diesel ($/gal)</label>
-              <Input type="number" step="0.01" value={calcForm.currentDieselPrice} onChange={e => setCalcForm(p => ({ ...p, currentDieselPrice: e.target.value }))} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
+              <div className="relative">
+                <Input type="number" step="0.01" value={calcForm.currentDieselPrice} onChange={e => { setCalcForm(p => ({ ...p, currentDieselPrice: e.target.value })); setDieselAutoSet(true); }} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] pr-16" />
+                {dieselData?.source === "EIA" && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tracking-wide">
+                    EIA LIVE
+                  </span>
+                )}
+              </div>
+              {dieselData && (
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <span className="text-[9px] text-slate-400">PADD {dieselData.padd?.replace("PADD", "")}</span>
+                  {dieselData.reportDate && <span className="text-[9px] text-slate-400">{dieselData.reportDate}</span>}
+                  {dieselData.change1w !== null && dieselData.change1w !== 0 && (
+                    <span className={cn("text-[9px] font-semibold", dieselData.change1w > 0 ? "text-red-400" : "text-emerald-400")}>
+                      {dieselData.change1w > 0 ? "+" : ""}{dieselData.change1w.toFixed(3)}/wk
+                    </span>
+                  )}
+                  {!dieselAutoSet && dieselData.source === "EIA" && (
+                    <span className="text-[9px] text-[#1473FF]">Auto-populated</span>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Wait Time (hours)</label>
@@ -570,7 +856,94 @@ export default function RateSheetReconciliation() {
             )}
           </div>
         </div>
-      )}
+
+        {/* Platform Rate Intelligence — market data from completed loads */}
+        <div className={cn("p-5 mt-5", cell)}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-[#BE01FF]" />
+              <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Platform Rate Intelligence</span>
+            </h3>
+            <div className="flex items-center gap-2">
+              {rateIntel?.totalLoads ? (
+                <span className="text-[9px] font-semibold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/15">
+                  {rateIntel.totalLoads} completed loads indexed
+                </span>
+              ) : null}
+              {rateIntel?.lastUpdated && (
+                <span className="text-[9px] text-slate-400">Updated {new Date(rateIntel.lastUpdated).toLocaleTimeString()}</span>
+              )}
+            </div>
+          </div>
+
+          {rateIntelQ.isLoading ? (
+            <div className="grid grid-cols-4 gap-3">
+              {[0,1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
+            </div>
+          ) : rateIntel && rateIntel.totalLoads > 0 ? (
+            <div className="space-y-4">
+              {/* Summary stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-[#1473FF]/5 to-[#1473FF]/10 border border-[#1473FF]/10 text-center">
+                  <p className="text-xl font-bold text-[#1473FF]">{rateIntel.totalLoads}</p>
+                  <p className="text-[9px] text-slate-400 uppercase tracking-wider">Loads Indexed</p>
+                </div>
+                <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/5 to-emerald-500/10 border border-emerald-500/10 text-center">
+                  <p className="text-xl font-bold text-emerald-500">${rateIntel.avgRatePerMile}</p>
+                  <p className="text-[9px] text-slate-400 uppercase tracking-wider">Avg $/Mile</p>
+                </div>
+                <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/5 to-purple-500/10 border border-purple-500/10 text-center">
+                  <p className="text-xl font-bold text-purple-500">{rateIntel.bands.length}</p>
+                  <p className="text-[9px] text-slate-400 uppercase tracking-wider">Mileage Bands</p>
+                </div>
+                <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/5 to-amber-500/10 border border-amber-500/10 text-center">
+                  <p className="text-xl font-bold text-amber-500">{rateIntel.states.length}</p>
+                  <p className="text-[9px] text-slate-400 uppercase tracking-wider">States Active</p>
+                </div>
+              </div>
+
+              {/* Mileage band breakdown */}
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Rate by Mileage Band</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                  {rateIntel.bands.slice(0, 12).map((band: any) => {
+                    const maxAvg = Math.max(...rateIntel.bands.map((b: any) => b.avgRate || 0), 1);
+                    const pct = (band.avgRate / maxAvg) * 100;
+                    return (
+                      <div key={band.minMiles} className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] relative overflow-hidden">
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#1473FF]/8 to-transparent" style={{ height: `${pct}%` }} />
+                        <div className="relative">
+                          <p className="text-[9px] text-slate-400">{band.minMiles}-{band.maxMiles} mi</p>
+                          <p className="text-sm font-bold text-slate-800 dark:text-white">${band.avgRate}</p>
+                          <p className="text-[8px] text-slate-400">{band.loadCount} loads</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Active states */}
+              {rateIntel.states.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Coverage:</span>
+                  {rateIntel.states.slice(0, 8).map((s: any) => (
+                    <span key={s.state} className="text-[9px] px-2 py-0.5 rounded bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-300 font-medium">
+                      {s.state} <span className="text-slate-400">({s.count})</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <BarChart3 className="w-8 h-8 text-slate-200 dark:text-white/10 mx-auto mb-2" />
+              <p className="text-xs text-slate-400">Rate intelligence builds as loads complete on the platform</p>
+              <p className="text-[10px] text-slate-300 dark:text-white/[0.06] mt-1">Mileage band averages, state coverage, and rate trends will appear here</p>
+            </div>
+          )}
+        </div>
+      </>)}
 
       {/* ═══ TAB: SCHEDULE A RATE TIERS ═══ */}
       {activeTab === "tiers" && (
@@ -588,6 +961,12 @@ export default function RateSheetReconciliation() {
                   <p className="text-[10px] text-slate-500 mt-0.5">Store regional rate sheets for different routes, products, and agreements</p>
                 </div>
                 <div className="flex gap-2">
+                  {mySheets.length >= 2 && (
+                    <Button size="sm" variant="outline" onClick={() => { setCompareMode(!compareMode); setCompareSheetIds([]); }}
+                      className={cn("h-8 px-3 text-xs rounded-xl border-slate-200 dark:border-white/10", compareMode && "bg-[#BE01FF]/10 text-[#BE01FF] border-[#BE01FF]/20")}>
+                      <BarChart3 className="w-3.5 h-3.5 mr-1.5" />{compareMode ? "Exit Compare" : "Compare"}
+                    </Button>
+                  )}
                   <Button size="sm" onClick={() => { setShowUpload(!showUpload); setUploadPreview(null); }}
                     variant="outline" className="h-8 px-4 text-xs rounded-xl border-slate-200 dark:border-white/10">
                     <Upload className="w-3.5 h-3.5 mr-1.5" />Import File
@@ -750,8 +1129,29 @@ export default function RateSheetReconciliation() {
                       <Input value={newSheetName} onChange={e => setNewSheetName(e.target.value)} placeholder="e.g., Permian Basin Regional" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] h-9 text-sm" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Region</label>
-                      <Input value={newSheetRegion} onChange={e => setNewSheetRegion(e.target.value)} placeholder="e.g., West Texas, Eagle Ford" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] h-9 text-sm" />
+                      <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Operating Region</label>
+                      <select value={newSheetRegion} onChange={e => setNewSheetRegion(e.target.value)}
+                        className="w-full h-9 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] text-sm px-3 text-slate-800 dark:text-white">
+                        <option value="">Select region...</option>
+                        {(smartMeta?.availableRegions || [
+                          { key: "permian_basin", label: "Permian Basin", multiplier: 1.0 },
+                          { key: "eagle_ford", label: "Eagle Ford", multiplier: 1.08 },
+                          { key: "bakken", label: "Bakken", multiplier: 1.22 },
+                          { key: "marcellus", label: "Marcellus/Appalachia", multiplier: 1.18 },
+                          { key: "mid_continent", label: "Mid-Continent", multiplier: 1.05 },
+                          { key: "gulf_coast", label: "Gulf Coast", multiplier: 0.97 },
+                          { key: "dj_basin", label: "DJ Basin", multiplier: 1.15 },
+                          { key: "haynesville", label: "Haynesville", multiplier: 1.06 },
+                          { key: "uinta", label: "Uinta Basin", multiplier: 1.20 },
+                          { key: "williston", label: "Williston Basin", multiplier: 1.22 },
+                          { key: "san_joaquin", label: "San Joaquin Valley", multiplier: 1.28 },
+                          { key: "powder_river", label: "Powder River Basin", multiplier: 1.17 },
+                        ]).map((r: any) => (
+                          <option key={r.key} value={r.label}>
+                            {r.label} {r.multiplier !== 1.0 ? `(${r.multiplier > 1 ? "+" : ""}${((r.multiplier - 1) * 100).toFixed(0)}%)` : "(baseline)"}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Trailer Type</label>
@@ -810,10 +1210,51 @@ export default function RateSheetReconciliation() {
                       </select>
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 mb-3">
-                    {newSheetTrailer === "tanker" ? "Rate tiers start with crude oil transport defaults. Edit after creation." :
-                     "Rate tiers define pricing by mileage. Edit tiers and surcharges after creation."}
-                  </p>
+
+                  {/* Rate Intelligence Panel — shows calibration when region/product selected */}
+                  {(smartMeta?.regionInfo || (smartMeta?.productMultiplier && smartMeta.productMultiplier !== 1)) && (
+                    <div className="p-3 rounded-xl bg-gradient-to-r from-[#1473FF]/5 to-[#BE01FF]/5 border border-[#1473FF]/10 mb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-3.5 h-3.5 text-[#BE01FF]" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Rate Intelligence — Auto-Calibrated</span>
+                      </div>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {smartMeta?.regionInfo && (
+                          <span className="text-[9px] font-semibold px-2 py-1 rounded-lg bg-[#1473FF]/10 text-[#1473FF] border border-[#1473FF]/15">
+                            <MapPin className="w-2.5 h-2.5 inline mr-0.5" />
+                            {smartMeta.regionInfo.label}
+                            {smartMeta.regionInfo.multiplier !== 1.0 && (
+                              <span className={cn("ml-1", smartMeta.regionInfo.multiplier > 1 ? "text-amber-500" : "text-emerald-500")}>
+                                {smartMeta.regionInfo.multiplier > 1 ? "+" : ""}{((smartMeta.regionInfo.multiplier - 1) * 100).toFixed(0)}%
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        {smartMeta?.productMultiplier && smartMeta.productMultiplier !== 1 && (
+                          <span className="text-[9px] font-semibold px-2 py-1 rounded-lg bg-purple-500/10 text-purple-500 border border-purple-500/15">
+                            <Droplets className="w-2.5 h-2.5 inline mr-0.5" />
+                            {newSheetProduct}
+                            <span className={cn("ml-1", smartMeta.productMultiplier > 1 ? "text-amber-500" : "text-emerald-500")}>
+                              {smartMeta.productMultiplier > 1 ? "+" : ""}{((smartMeta.productMultiplier - 1) * 100).toFixed(0)}%
+                            </span>
+                          </span>
+                        )}
+                        {smartMeta?.trailerMultiplier && smartMeta.trailerMultiplier !== 1 && (
+                          <span className="text-[9px] font-semibold px-2 py-1 rounded-lg bg-slate-500/10 text-slate-500 border border-slate-500/15">
+                            <Truck className="w-2.5 h-2.5 inline mr-0.5" />
+                            {smartMeta.trailerMultiplier > 1 ? "+" : ""}{((smartMeta.trailerMultiplier - 1) * 100).toFixed(0)}% vs tanker
+                          </span>
+                        )}
+                        {smartMeta?.regionInfo?.padd && (
+                          <span className="text-[9px] text-slate-400">PADD {smartMeta.regionInfo.padd.replace("PADD", "")}</span>
+                        )}
+                      </div>
+                      <p className="text-[9px] text-slate-400 mt-1.5">
+                        60 tiers pre-calibrated with regional + product multipliers. Editable after creation.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
                     <Button size="sm" onClick={handleCreateSheet} disabled={saveSheetMut.isPending || !newSheetName.trim()}
                       className="h-8 px-4 text-xs rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0">
@@ -841,11 +1282,27 @@ export default function RateSheetReconciliation() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {mySheets.map((sheet: any) => (
+                  {mySheets.map((sheet: any) => {
+                    const isSelected = compareMode && compareSheetIds.includes(sheet.id);
+                    return (
                     <div key={sheet.id}
-                      onClick={() => openSheet(sheet.id)}
-                      className={cn("group cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.03] hover:scale-[1.01]", cell, "overflow-hidden")}>
-                      <div className="h-1 w-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" />
+                      onClick={() => {
+                        if (compareMode) {
+                          setCompareSheetIds(prev =>
+                            prev.includes(sheet.id)
+                              ? prev.filter(id => id !== sheet.id)
+                              : prev.length < 3 ? [...prev, sheet.id] : prev
+                          );
+                        } else {
+                          openSheet(sheet.id);
+                        }
+                      }}
+                      className={cn(
+                        "group cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.03] hover:scale-[1.01]",
+                        cell, "overflow-hidden",
+                        isSelected && "ring-2 ring-[#BE01FF] shadow-lg shadow-[#BE01FF]/10"
+                      )}>
+                      <div className={cn("h-1 w-full", isSelected ? "bg-gradient-to-r from-[#BE01FF] to-[#1473FF]" : "bg-gradient-to-r from-[#1473FF] to-[#BE01FF]")} />
                       <div className="p-5">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1 min-w-0">
@@ -899,7 +1356,21 @@ export default function RateSheetReconciliation() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Comparison Dashboard */}
+              {compareMode && compareSheetIds.length >= 2 && (
+                <ComparisonDashboard sheetIds={compareSheetIds} allSheets={mySheets} />
+              )}
+
+              {compareMode && compareSheetIds.length < 2 && (
+                <div className={cn("p-6 text-center", cell)}>
+                  <BarChart3 className="w-8 h-8 text-[#BE01FF]/30 mx-auto mb-2" />
+                  <p className="text-xs text-slate-500">Select {2 - compareSheetIds.length} more sheet{compareSheetIds.length === 0 ? "s" : ""} to compare</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Click up to 3 rate sheets to see a side-by-side comparison</p>
                 </div>
               )}
             </>
@@ -926,6 +1397,10 @@ export default function RateSheetReconciliation() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setShowHistory(p => !p)}
+                    className={cn("h-8 px-3 text-xs rounded-xl border-slate-200 dark:border-white/[0.06]", showHistory ? "bg-[#1473FF]/10 text-[#1473FF] border-[#1473FF]/20" : "text-slate-500")}>
+                    <Clock className="w-3 h-3 mr-1.5" />{showHistory ? "Hide History" : "History"}
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => { if (confirm(`Delete "${sheetData?.name}"?`)) deleteSheetMut.mutate({ id: selectedSheetId }); }}
                     className="h-8 px-3 text-xs rounded-xl text-red-400 border-red-200 dark:border-red-500/20 hover:bg-red-50 dark:hover:bg-red-500/10">
                     <Trash2 className="w-3 h-3 mr-1.5" />Delete
@@ -936,6 +1411,52 @@ export default function RateSheetReconciliation() {
                   </Button>
                 </div>
               </div>
+
+              {/* Version History Panel */}
+              {showHistory && (
+                <div className={cn("p-4 overflow-hidden transition-all", cell)}>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-[#1473FF]" />Version History — {sheetData?.name}
+                  </h4>
+                  {versionHistoryQ.isLoading ? (
+                    <div className="flex gap-3">{[0,1,2].map(i => <Skeleton key={i} className="h-16 w-40 rounded-xl" />)}</div>
+                  ) : versionHistory.length === 0 ? (
+                    <p className="text-xs text-slate-400 py-2">No previous versions yet. History is recorded each time you save changes.</p>
+                  ) : (
+                    <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+                      {/* Current version marker */}
+                      <div className="shrink-0 w-36 p-3 rounded-xl bg-gradient-to-br from-[#1473FF]/10 to-[#BE01FF]/10 border border-[#1473FF]/20">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <span className="text-[9px] font-bold text-[#1473FF] bg-[#1473FF]/15 px-1.5 py-0.5 rounded">CURRENT</span>
+                          <span className="text-[9px] text-slate-400">v{sheetData?.version || 1}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500">{tiers.length} tiers</p>
+                        <p className="text-[9px] text-slate-400 mt-1 truncate">{sheetData?.region || "No region"}</p>
+                      </div>
+                      {/* Previous versions */}
+                      {versionHistory.map((v: any) => (
+                        <div key={v.id}
+                          onClick={() => {
+                            if (confirm(`Restore v${v.version}? This will replace the current tiers and surcharges.`)) {
+                              if (v.rateTiers?.length) setLocalTiers(v.rateTiers);
+                              if (v.surcharges) setLocalSurcharges(v.surcharges);
+                              toast.success(`Restored v${v.version} — save to persist`);
+                            }
+                          }}
+                          className="shrink-0 w-36 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] cursor-pointer hover:border-[#1473FF]/30 hover:bg-[#1473FF]/5 transition-all group">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="text-[9px] font-semibold text-slate-500">v{v.version}</span>
+                            <span className="text-[9px] text-slate-400">{new Date(v.snapshotAt).toLocaleDateString()}</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500">{v.tierCount} tiers</p>
+                          <p className="text-[9px] text-slate-400 mt-1 truncate">{v.region || "No region"}</p>
+                          <p className="text-[8px] text-[#1473FF] opacity-0 group-hover:opacity-100 transition-opacity mt-1">Click to restore</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Rate Grid */}
               <div className={cn("p-5", cell)}>
@@ -961,11 +1482,18 @@ export default function RateSheetReconciliation() {
                     {tiers.map((tier: any, i: number) => {
                       const intensity = Math.min(tier.ratePerBarrel / 7, 1);
                       const isEditing = editingCell === i;
+
+                      // Market rate overlay — find matching mileage band from platform intelligence
+                      const tierMid = (tier.minMiles + tier.maxMiles) / 2;
+                      const matchBand = rateIntel?.bands?.find((b: any) => tierMid >= b.minMiles && tierMid < b.maxMiles);
+                      const marketDelta = matchBand ? tier.ratePerBarrel - matchBand.avgRate : null;
+                      const marketPct = matchBand && matchBand.avgRate > 0 ? (marketDelta! / matchBand.avgRate) * 100 : null;
+
                       return (
                         <div key={i}
                           onClick={() => !isEditing && startEdit(i, tier.ratePerBarrel)}
                           className={cn(
-                            "p-2 rounded-lg text-center border transition-all group",
+                            "p-2 rounded-lg text-center border transition-all group relative",
                             isEditing
                               ? "border-[#1473FF] ring-2 ring-[#1473FF]/20 bg-[#1473FF]/5"
                               : cn(
@@ -997,6 +1525,19 @@ export default function RateSheetReconciliation() {
                               ${tier.ratePerBarrel.toFixed(2)}
                               <Pencil className="w-2.5 h-2.5 absolute -right-0.5 -top-0.5 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </p>
+                          )}
+                          {/* Market rate overlay badge */}
+                          {matchBand && marketPct !== null && !isEditing && (
+                            <div className={cn(
+                              "absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] font-bold px-1.5 py-px rounded-full whitespace-nowrap",
+                              Math.abs(marketPct) < 5
+                                ? "bg-slate-100 dark:bg-white/[0.06] text-slate-400"
+                                : marketPct > 0
+                                ? "bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                                : "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                            )}>
+                              {marketPct > 0 ? "+" : ""}{marketPct.toFixed(0)}% mkt
+                            </div>
                           )}
                         </div>
                       );

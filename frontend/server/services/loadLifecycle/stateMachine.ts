@@ -1,6 +1,6 @@
 /**
  * LOAD LIFECYCLE STATE MACHINE — Core Engine
- * 32 states · ~50 transitions · role-based guards · side effects
+ * 37 states · ~60 transitions · role-based guards · side effects
  *
  * Fused into EusoTrip from the Load Lifecycle spec.
  * Adapted for: tRPC + Drizzle ORM + MySQL (not Prisma/Next.js)
@@ -26,6 +26,8 @@ export const LOAD_STATES = [
   "INVOICED", "DISPUTED", "PAID", "COMPLETE",
   // Exception
   "CANCELLED", "ON_HOLD",
+  // Cargo-specific exceptions
+  "TEMP_EXCURSION", "REEFER_BREAKDOWN", "CONTAMINATION_REJECT", "SEAL_BREACH", "WEIGHT_VIOLATION",
 ] as const;
 
 export type LoadState = (typeof LOAD_STATES)[number];
@@ -325,6 +327,48 @@ export const STATE_METADATA: Record<LoadState, StateMetadata> = {
     icon: "Hand", color: "#f59e0b", bgColor: "#451a03",
     primaryActor: ["COMPLIANCE_OFFICER", "ADMIN"], allowedActors: ["COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
     gpsRequired: false, documentsRequired: [], isException: true,
+  },
+
+  // ── CARGO-SPECIFIC EXCEPTIONS ──
+  TEMP_EXCURSION: {
+    state: "TEMP_EXCURSION", category: "EXCEPTION",
+    displayName: "Temperature Excursion", description: "Reefer temperature deviated outside acceptable range",
+    icon: "Thermometer", color: "#ef4444", bgColor: "#450a0a",
+    primaryActor: ["DRIVER"], allowedActors: ["DRIVER", "DISPATCH", "SHIPPER", "ADMIN", "SAFETY_MANAGER"],
+    gpsRequired: true, documentsRequired: ["temp_log", "exception_photos"], isException: true,
+    financialImpact: "Potential cargo claim — cold chain breach documented",
+  },
+  REEFER_BREAKDOWN: {
+    state: "REEFER_BREAKDOWN", category: "EXCEPTION",
+    displayName: "Reefer Breakdown", description: "Refrigeration unit mechanical failure during transit",
+    icon: "Snowflake", color: "#ef4444", bgColor: "#450a0a",
+    primaryActor: ["DRIVER"], allowedActors: ["DRIVER", "DISPATCH", "CATALYST", "ADMIN", "SAFETY_MANAGER"],
+    gpsRequired: true, documentsRequired: ["reefer_diagnostic", "temp_log", "exception_photos"], isException: true,
+    financialImpact: "Reefer breakdown claim — cargo damage assessment required",
+  },
+  CONTAMINATION_REJECT: {
+    state: "CONTAMINATION_REJECT", category: "EXCEPTION",
+    displayName: "Contamination Reject", description: "Product rejected at delivery due to contamination from previous load or cross-contamination",
+    icon: "FlaskConical", color: "#ef4444", bgColor: "#450a0a",
+    primaryActor: ["TERMINAL_MANAGER"], allowedActors: ["DRIVER", "TERMINAL_MANAGER", "SHIPPER", "DISPATCH", "ADMIN", "SAFETY_MANAGER"],
+    gpsRequired: true, documentsRequired: ["lab_test_results", "exception_photos", "tank_washout_cert"], isException: true,
+    financialImpact: "Tank washout + disposal charge — carrier liability if washout cert missing",
+  },
+  SEAL_BREACH: {
+    state: "SEAL_BREACH", category: "EXCEPTION",
+    displayName: "Seal Breach", description: "Seal broken, missing, or tampered with at delivery",
+    icon: "ShieldAlert", color: "#ef4444", bgColor: "#450a0a",
+    primaryActor: ["TERMINAL_MANAGER", "DRIVER"], allowedActors: ["DRIVER", "TERMINAL_MANAGER", "DISPATCH", "SHIPPER", "ADMIN", "SAFETY_MANAGER"],
+    gpsRequired: true, documentsRequired: ["seal_photos", "exception_photos"], isException: true,
+    financialImpact: "Full inspection required — potential cargo claim",
+  },
+  WEIGHT_VIOLATION: {
+    state: "WEIGHT_VIOLATION", category: "EXCEPTION",
+    displayName: "Weight Violation", description: "Load exceeds legal weight limits at scale or weigh station",
+    icon: "Scale", color: "#ef4444", bgColor: "#450a0a",
+    primaryActor: ["DRIVER"], allowedActors: ["DRIVER", "DISPATCH", "SHIPPER", "ADMIN", "COMPLIANCE_OFFICER"],
+    gpsRequired: true, documentsRequired: ["scale_ticket", "exception_photos"], isException: true,
+    financialImpact: "Reweigh fee + potential DOT fine — shipper/terminal liability if overloaded at origin",
   },
 };
 
@@ -1003,6 +1047,163 @@ export const TRANSITIONS: Transition[] = [
       { type: "websocket", action: "hold_released" },
     ],
     uiAction: { component: "ReleaseHoldButton", location: "primary", label: "Release Hold", icon: "Play", variant: "success" },
+    priority: 1,
+  },
+
+  // ── REEFER: TEMPERATURE EXCURSION ──
+  {
+    id: "TRANSIT_TO_TEMP_EXCURSION",
+    from: ["IN_TRANSIT", "AT_DELIVERY", "UNLOADING"],
+    to: "TEMP_EXCURSION",
+    trigger: "EXCEPTION", triggerEvent: "report_temp_excursion",
+    actor: ["DRIVER", "DISPATCH"],
+    guards: [],
+    effects: [
+      { type: "notification", action: "temp_excursion_alert", recipients: ["SHIPPER", "DISPATCH", "CATALYST", "SAFETY_MANAGER"] },
+      { type: "email", action: "cold_chain_breach_notification", recipients: ["SHIPPER", "ADMIN"] },
+      { type: "websocket", action: "temp_excursion" },
+    ],
+    uiAction: { component: "ReportTempExcursionButton", location: "header", label: "Report Temp Excursion", icon: "Thermometer", variant: "danger", requiresConfirmation: true, confirmationMessage: "Report a temperature excursion? This will be logged as a cold chain breach." },
+    priority: 3,
+  },
+  {
+    id: "TEMP_EXCURSION_TO_IN_TRANSIT",
+    from: "TEMP_EXCURSION", to: "IN_TRANSIT",
+    trigger: "USER_ACTION", triggerEvent: "resolve_temp_excursion",
+    actor: ["DRIVER", "DISPATCH", "ADMIN"],
+    guards: [
+      { type: "document", check: "temp_log_uploaded", errorMessage: "Temperature log must be uploaded before resolving" },
+    ],
+    effects: [
+      { type: "notification", action: "temp_excursion_resolved", recipients: ["SHIPPER", "DISPATCH"] },
+    ],
+    uiAction: { component: "ResolveButton", location: "primary", label: "Temp Restored — Resume", icon: "CheckCircle", variant: "success" },
+    priority: 1,
+  },
+
+  // ── REEFER: BREAKDOWN ──
+  {
+    id: "TRANSIT_TO_REEFER_BREAKDOWN",
+    from: ["IN_TRANSIT", "TRANSIT_HOLD"],
+    to: "REEFER_BREAKDOWN",
+    trigger: "EXCEPTION", triggerEvent: "report_reefer_breakdown",
+    actor: ["DRIVER"],
+    guards: [],
+    effects: [
+      { type: "notification", action: "reefer_breakdown_alert", recipients: ["DISPATCH", "CATALYST", "SHIPPER", "SAFETY_MANAGER"] },
+      { type: "email", action: "reefer_breakdown_notification", recipients: ["CATALYST", "ADMIN"] },
+      { type: "financial", action: "start_layover_timer" },
+      { type: "websocket", action: "reefer_breakdown" },
+    ],
+    uiAction: { component: "ReportReeferBreakdownButton", location: "header", label: "Reefer Breakdown", icon: "Snowflake", variant: "danger", requiresConfirmation: true, confirmationMessage: "Report reefer unit failure? A layover timer will start and dispatch will be notified for emergency transfer." },
+    priority: 3,
+  },
+  {
+    id: "REEFER_BREAKDOWN_TO_IN_TRANSIT",
+    from: "REEFER_BREAKDOWN", to: "IN_TRANSIT",
+    trigger: "USER_ACTION", triggerEvent: "resolve_reefer_breakdown",
+    actor: ["DRIVER", "DISPATCH", "ADMIN"],
+    guards: [
+      { type: "document", check: "reefer_diagnostic_uploaded", errorMessage: "Reefer diagnostic report must be uploaded" },
+    ],
+    effects: [
+      { type: "notification", action: "reefer_breakdown_resolved", recipients: ["SHIPPER", "DISPATCH"] },
+      { type: "financial", action: "stop_layover_timer" },
+    ],
+    uiAction: { component: "ResolveButton", location: "primary", label: "Reefer Repaired — Resume", icon: "CheckCircle", variant: "success" },
+    priority: 1,
+  },
+
+  // ── TANKER/CHEMICAL: CONTAMINATION REJECT ──
+  {
+    id: "UNLOADING_TO_CONTAMINATION_REJECT",
+    from: ["UNLOADING", "UNLOADING_EXCEPTION", "AT_DELIVERY"],
+    to: "CONTAMINATION_REJECT",
+    trigger: "EXCEPTION", triggerEvent: "report_contamination",
+    actor: ["TERMINAL_MANAGER", "DRIVER"],
+    guards: [],
+    effects: [
+      { type: "notification", action: "contamination_reject_alert", recipients: ["SHIPPER", "DISPATCH", "CATALYST", "SAFETY_MANAGER", "ADMIN"] },
+      { type: "email", action: "contamination_notification", recipients: ["SHIPPER", "ADMIN", "COMPLIANCE_OFFICER"] },
+      { type: "financial", action: "stop_demurrage_timer" },
+      { type: "websocket", action: "contamination_reject" },
+    ],
+    uiAction: { component: "ReportContaminationButton", location: "header", label: "Contamination Reject", icon: "FlaskConical", variant: "danger", requiresConfirmation: true, confirmationMessage: "Reject load for contamination? Lab test results will be required." },
+    priority: 3,
+  },
+  {
+    id: "CONTAMINATION_REJECT_TO_CANCELLED",
+    from: "CONTAMINATION_REJECT", to: "CANCELLED",
+    trigger: "USER_ACTION", triggerEvent: "cancel_contaminated_load",
+    actor: ["SHIPPER", "ADMIN", "SUPER_ADMIN"],
+    guards: [],
+    effects: [
+      { type: "notification", action: "contaminated_load_cancelled", recipients: ["CATALYST", "DRIVER", "DISPATCH"] },
+      { type: "financial", action: "release_escrow" },
+    ],
+    uiAction: { component: "CancelButton", location: "primary", label: "Cancel — Contaminated", icon: "XCircle", variant: "danger", requiresConfirmation: true, confirmationMessage: "Cancel this load due to contamination? Tank washout and disposal charges may apply to the carrier." },
+    priority: 1,
+  },
+
+  // ── ALL TRAILER TYPES: SEAL BREACH ──
+  {
+    id: "DELIVERY_TO_SEAL_BREACH",
+    from: ["AT_DELIVERY", "DELIVERY_CHECKIN"],
+    to: "SEAL_BREACH",
+    trigger: "EXCEPTION", triggerEvent: "report_seal_breach",
+    actor: ["TERMINAL_MANAGER", "DRIVER"],
+    guards: [],
+    effects: [
+      { type: "notification", action: "seal_breach_alert", recipients: ["SHIPPER", "DISPATCH", "CATALYST", "ADMIN", "SAFETY_MANAGER"] },
+      { type: "email", action: "seal_breach_notification", recipients: ["SHIPPER", "ADMIN"] },
+      { type: "websocket", action: "seal_breach" },
+    ],
+    uiAction: { component: "ReportSealBreachButton", location: "header", label: "Report Seal Breach", icon: "ShieldAlert", variant: "danger", requiresConfirmation: true, confirmationMessage: "Report a seal breach? Full cargo inspection will be required before unloading." },
+    priority: 3,
+  },
+  {
+    id: "SEAL_BREACH_TO_UNLOADING",
+    from: "SEAL_BREACH", to: "UNLOADING",
+    trigger: "USER_ACTION", triggerEvent: "clear_seal_breach",
+    actor: ["TERMINAL_MANAGER", "SHIPPER", "ADMIN"],
+    guards: [
+      { type: "document", check: "seal_photos_uploaded", errorMessage: "Photos of broken/missing seals must be uploaded" },
+      { type: "document", check: "cargo_inspection_complete", errorMessage: "Cargo inspection report required before unloading" },
+    ],
+    effects: [
+      { type: "notification", action: "seal_breach_cleared", recipients: ["DRIVER", "DISPATCH"] },
+    ],
+    uiAction: { component: "ClearButton", location: "primary", label: "Inspection Done — Proceed", icon: "CheckCircle", variant: "success" },
+    priority: 1,
+  },
+
+  // ── ALL TRAILER TYPES: WEIGHT VIOLATION ──
+  {
+    id: "TRANSIT_TO_WEIGHT_VIOLATION",
+    from: ["IN_TRANSIT", "LOADED"],
+    to: "WEIGHT_VIOLATION",
+    trigger: "EXCEPTION", triggerEvent: "report_weight_violation",
+    actor: ["DRIVER"],
+    guards: [],
+    effects: [
+      { type: "notification", action: "weight_violation_alert", recipients: ["DISPATCH", "SHIPPER", "CATALYST", "COMPLIANCE_OFFICER", "ADMIN"] },
+      { type: "websocket", action: "weight_violation" },
+    ],
+    uiAction: { component: "ReportWeightViolationButton", location: "header", label: "Weight Violation", icon: "Scale", variant: "danger", requiresConfirmation: true, confirmationMessage: "Report a weight violation? A reweigh fee will be applied." },
+    priority: 3,
+  },
+  {
+    id: "WEIGHT_VIOLATION_TO_IN_TRANSIT",
+    from: "WEIGHT_VIOLATION", to: "IN_TRANSIT",
+    trigger: "USER_ACTION", triggerEvent: "resolve_weight_violation",
+    actor: ["DRIVER", "DISPATCH", "ADMIN"],
+    guards: [
+      { type: "document", check: "scale_ticket_uploaded", errorMessage: "Scale ticket must be uploaded" },
+    ],
+    effects: [
+      { type: "notification", action: "weight_violation_resolved", recipients: ["DISPATCH", "SHIPPER"] },
+    ],
+    uiAction: { component: "ResolveButton", location: "primary", label: "Weight Resolved — Resume", icon: "CheckCircle", variant: "success" },
     priority: 1,
   },
 ];

@@ -90,6 +90,10 @@ export default function Wallet() {
   const receiptsQuery = _t.payments.getReceipts.useQuery();
   const payInvoiceMutation = _t.payments.pay.useMutation({ onSuccess: () => { setPayingInvoice(null); invoicesQuery.refetch?.(); paySummaryQuery.refetch?.(); balanceQuery.refetch(); } });
   const aiInsightsMutation = _t.esang.walletInsights.useMutation({ onSuccess: (data: any) => { setAiInsights(data); }, onError: (err: any) => { toast.error(err?.message || "AI insights temporarily unavailable"); } });
+  const sendMoneyMutation = _t.wallet.sendMoney.useMutation();
+  const orderCardMutation = _t.wallet.orderPhysicalCard.useMutation();
+  const connectBankMutation = _t.wallet.initBankConnection.useMutation();
+  const releaseEscrowMutation = _t.wallet.releaseEscrow.useMutation();
   const paySummary = paySummaryQuery.data;
 
   const balance = balanceQuery.data;
@@ -123,7 +127,7 @@ export default function Wallet() {
     }
     setSendLoading(true);
     try {
-      await (trpc as any).wallet.sendMoney.mutate({
+      await sendMoneyMutation.mutateAsync({
         recipientEmail: sendRecipient,
         amount: parseFloat(sendAmount),
         note: sendNote,
@@ -142,7 +146,7 @@ export default function Wallet() {
   const handleOrderCard = async () => {
     setCardOrderLoading(true);
     try {
-      await (trpc as any).wallet.orderPhysicalCard.mutate({});
+      await orderCardMutation.mutateAsync({});
       toast.success("Card ordered! Your EusoWallet debit card will arrive in 5-7 business days.");
       cardsQuery.refetch();
       balanceQuery.refetch();
@@ -155,8 +159,16 @@ export default function Wallet() {
 
   const handleConnectBank = async () => {
     try {
-      await (trpc as any).wallet.initBankConnection.mutate({});
-      toast.success("Bank connection initiated. Follow the secure link to connect your account.");
+      const result = await connectBankMutation.mutateAsync({});
+      if (result?.redirectUrl) {
+        window.location.href = result.redirectUrl;
+        return;
+      }
+      if (result?.clientSecret) {
+        toast.success("Complete bank verification in the secure window.");
+      } else {
+        toast.success(result?.message || "Bank connection initiated. Follow the secure link to connect your account.");
+      }
       bankQuery.refetch();
     } catch (err: any) {
       toast.error(err?.message || "Bank connection failed. Please try again.");
@@ -165,7 +177,7 @@ export default function Wallet() {
 
   const handleReleaseEscrow = async (escrowId: string) => {
     try {
-      await (trpc as any).wallet.releaseEscrow.mutate({ escrowId });
+      await releaseEscrowMutation.mutateAsync({ escrowId });
       toast.success("Escrow released! Payment sent to driver.");
       escrowQuery.refetch();
       balanceQuery.refetch();
@@ -1568,7 +1580,12 @@ export default function Wallet() {
               <CardTitle className={`text-lg ${isLight ? 'text-slate-900' : 'text-white'}`}>Active Escrow Holds</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              {escrowHolds.length === 0 ? (
+              {escrowQuery.isLoading ? (
+                <div className="text-center py-12">
+                  <div className={`w-6 h-6 mx-auto mb-3 border-2 border-t-transparent rounded-full animate-spin ${isLight ? 'border-slate-300' : 'border-slate-600'}`} />
+                  <p className={`text-sm ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Loading escrow holds...</p>
+                </div>
+              ) : escrowHolds.length === 0 ? (
                 <div className="text-center py-12">
                   <Shield className={`w-10 h-10 mx-auto mb-3 ${isLight ? 'text-slate-300' : 'text-slate-600'}`} />
                   <p className={isLight ? 'text-slate-400' : 'text-slate-500'}>No active escrow holds</p>

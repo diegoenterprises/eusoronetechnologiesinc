@@ -25,6 +25,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { Portal } from "@/components/ui/portal";
 import {
   Users, Search, Plus, ChevronDown, MapPin, Building2,
   Truck, Package, Shield, UserPlus, CheckCircle, Clock,
@@ -366,7 +367,7 @@ export default function MyPartners() {
                         <MoreHorizontal className="w-4 h-4" />
                       </Button>
                       {showStatusMenu === partner.id && (
-                        <div className={cn("absolute right-0 top-full mt-1 z-50 rounded-xl border shadow-xl min-w-[160px] py-1", isLight ? "bg-white border-slate-200" : "bg-slate-800 border-slate-600/50")}>
+                        <div className={cn("absolute right-0 top-full mt-1 z-50 rounded-xl border shadow-xl min-w-[160px] py-1", isLight ? "bg-white border-slate-200" : "border-slate-600/50")} style={isLight ? undefined : { backgroundColor: '#0c0e18' }}>
                           {(["active", "suspended", "terminated"] as const).map((s) => (
                             <button
                               key={s}
@@ -394,7 +395,8 @@ export default function MyPartners() {
 
       {/* Add Partner Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm">
+        <Portal>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm">
           <div className="flex min-h-full items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) { setShowAddModal(false); resetForm(); } }}>
           <div className={cn("w-full max-w-2xl rounded-2xl border shadow-2xl flex flex-col overflow-hidden", isLight ? "bg-white border-slate-200" : "bg-[#12121a] border-white/[0.08]")}>
             {/* Modal Header */}
@@ -483,7 +485,7 @@ export default function MyPartners() {
                       />
                     </div>
                     {apShowSuggestions && (companySearchQ.data as any[])?.length > 0 && (
-                      <div className={cn("absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-xl max-h-56 overflow-y-auto", isLight ? "bg-white border-slate-200" : "bg-[#1e1e2e] border-slate-600/50")}>
+                      <div className={cn("absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-xl max-h-56 overflow-y-auto", isLight ? "bg-white border-slate-200" : "border-slate-600/50")} style={isLight ? undefined : { backgroundColor: '#0c0e18' }}>
                         {(companySearchQ.data as any[]).map((c: any, idx: number) => (
                           <button key={c.id || `fmcsa-${idx}`} className={cn("w-full text-left px-4 py-2.5 flex items-center justify-between gap-2 border-b last:border-0 transition-colors", isLight ? "hover:bg-slate-50 border-slate-100" : "hover:bg-slate-700/50 border-slate-700/20")} onClick={() => {
                             setApSelectedCompany(c);
@@ -518,7 +520,7 @@ export default function MyPartners() {
                       </div>
                     )}
                     {apShowSuggestions && apCompanySearch.length >= 2 && companySearchQ.isLoading && (
-                      <div className={cn("absolute z-50 left-0 right-0 mt-1 rounded-xl border p-3", isLight ? "bg-white border-slate-200" : "bg-slate-800 border-slate-600/50")}>
+                      <div className={cn("absolute z-50 left-0 right-0 mt-1 rounded-xl border p-3", isLight ? "bg-white border-slate-200" : "border-slate-600/50")} style={isLight ? undefined : { backgroundColor: '#0c0e18' }}>
                         <p className="text-xs text-slate-400">Searching companies...</p>
                       </div>
                     )}
@@ -647,6 +649,7 @@ export default function MyPartners() {
           </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

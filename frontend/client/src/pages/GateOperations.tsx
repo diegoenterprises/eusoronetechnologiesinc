@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Portal } from "@/components/ui/portal";
 
 const cell = "rounded-2xl border border-slate-200/60 dark:border-white/[0.04] bg-white dark:bg-white/[0.02]";
 const inp = "bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] rounded-xl text-slate-800 dark:text-white placeholder:text-slate-500";
@@ -273,7 +274,8 @@ export default function GateOperations() {
 
       {/* Check-In Modal */}
       {checkInId && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setCheckInId(null)}>
+        <Portal>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setCheckInId(null)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div className={cn("w-full max-w-2xl p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
@@ -320,6 +322,7 @@ export default function GateOperations() {
           </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

@@ -98,7 +98,7 @@ export default function MyLoads() {
   const getFilterGroup = (status: string): LoadFilter => {
     if (["draft", "posted", "bidding"].includes(status)) return "pending";
     if (["assigned", "en_route_pickup", "at_pickup", "loading"].includes(status)) return "scheduled";
-    if (["in_transit", "at_delivery", "unloading"].includes(status)) return "in_progress";
+    if (["in_transit", "at_delivery", "unloading", "temp_excursion", "reefer_breakdown", "contamination_reject", "seal_breach", "weight_violation"].includes(status)) return "in_progress";
     if (["delivered", "cancelled", "disputed"].includes(status)) return "past";
     return "pending";
   };
@@ -115,6 +115,11 @@ export default function MyLoads() {
       delivered: { label: "Delivered", bg: "bg-emerald-500/20", text: "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" },
       cancelled: { label: "Cancelled", bg: "bg-red-500/20", text: "text-red-500" },
       pending: { label: "Pending", bg: "bg-red-500/20", text: "text-red-500" },
+      temp_excursion: { label: "Temp Excursion", bg: "bg-red-500/20", text: "text-red-500" },
+      reefer_breakdown: { label: "Reefer Breakdown", bg: "bg-red-500/20", text: "text-red-500" },
+      contamination_reject: { label: "Contamination", bg: "bg-red-500/20", text: "text-red-500" },
+      seal_breach: { label: "Seal Breach", bg: "bg-red-500/20", text: "text-red-500" },
+      weight_violation: { label: "Weight Violation", bg: "bg-red-500/20", text: "text-red-500" },
     };
     return map[status] || { label: status, bg: "bg-slate-500/20", text: "text-slate-400" };
   };

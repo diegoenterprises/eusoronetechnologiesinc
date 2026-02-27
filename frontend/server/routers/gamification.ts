@@ -741,6 +741,20 @@ export const gamificationRouter = router({
         return { active, completed, available: templateFallback(userRole, input) };
       }
 
+      // Semantic enrichment: score available missions by relevance to user's recent activity
+      try {
+        const { searchKnowledge } = await import("../services/embeddings/aiTurbocharge");
+        const roleQuery = `${userRole.toLowerCase()} missions tasks goals achievements trucking logistics`;
+        const hits = await searchKnowledge(roleQuery, 3);
+        if (hits.length > 0) {
+          (available as any[]).forEach((m: any) => {
+            const matchScore = hits.find(h => h.text.toLowerCase().includes(m.category?.toLowerCase() || ""));
+            if (matchScore) m.aiRelevance = matchScore.score;
+          });
+          available.sort((a: any, b: any) => (b.aiRelevance || 0) - (a.aiRelevance || 0));
+        }
+      } catch { /* embedding service unavailable */ }
+
       return { active, completed, available };
     }),
 

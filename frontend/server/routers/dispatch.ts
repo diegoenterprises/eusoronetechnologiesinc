@@ -9,9 +9,9 @@ import { z } from "zod";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
-import { drivers, loads, users } from "../../drizzle/schema";
-import { eq, and, desc, sql, gte } from "drizzle-orm";
-import { emitDispatchEvent, emitDriverStatusChange, emitLoadStatusChange, emitNotification } from "../_core/websocket";
+import { drivers, loads, users, escortAssignments, convoys } from "../../drizzle/schema";
+import { eq, and, desc, sql, gte, isNull, ne } from "drizzle-orm";
+import { emitDispatchEvent, emitDriverStatusChange, emitLoadStatusChange, emitNotification, emitEscortJobAssigned, emitEscortJobAvailable } from "../_core/websocket";
 import { WS_EVENTS } from "@shared/websocket-events";
 
 const loadStatusSchema = z.enum([
@@ -707,4 +707,311 @@ export const dispatchRouter = router({
 
   // AI Recommendations
   getRecommendations: protectedProcedure.input(z.object({ loadId: z.string() })).query(async ({ input }) => []),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ESCORT MANAGEMENT — dispatch assigns/views/manages escort assignments
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Get loads that require escort but don't have full coverage
+   */
+  getLoadsNeedingEscort: protectedProcedure
+    .input(z.object({ limit: z.number().default(20) }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const limit = input?.limit || 20;
+
+        // Loads where requiresEscort = true and not yet delivered/cancelled
+        const rows = await db.select().from(loads)
+          .where(and(
+            eq(loads.requiresEscort, true),
+            sql`${loads.status} NOT IN ('delivered', 'complete', 'cancelled', 'paid', 'invoiced')`,
+          ))
+          .orderBy(desc(loads.createdAt))
+          .limit(limit);
+
+        // For each load, count assigned (non-cancelled) escorts
+        const result = [];
+        for (const l of rows) {
+          const [assignmentCount] = await db.select({ count: sql<number>`count(*)` })
+            .from(escortAssignments)
+            .where(and(
+              eq(escortAssignments.loadId, l.id),
+              ne(escortAssignments.status, "cancelled"),
+            ));
+          const assigned = assignmentCount?.count || 0;
+          const needed = l.escortCount || 1;
+          const pickup = l.pickupLocation as any || {};
+          const delivery = l.deliveryLocation as any || {};
+
+          result.push({
+            id: String(l.id),
+            loadNumber: l.loadNumber,
+            status: l.status,
+            cargoType: l.cargoType,
+            origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : "Unknown",
+            destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : "Unknown",
+            pickupDate: l.pickupDate?.toISOString() || null,
+            escortsNeeded: needed,
+            escortsAssigned: assigned,
+            escortGap: Math.max(0, needed - assigned),
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+            weight: l.weight ? parseFloat(String(l.weight)) : 0,
+          });
+        }
+
+        return result;
+      } catch (error) {
+        console.error("[Dispatch] getLoadsNeedingEscort error:", error);
+        return [];
+      }
+    }),
+
+  /**
+   * Get available escort users for assignment
+   */
+  getAvailableEscorts: protectedProcedure
+    .input(z.object({ loadId: z.number().optional() }).optional())
+    .query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        // Get all users with role ESCORT
+        const escortUsers = await db.select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          phone: users.phone,
+        }).from(users)
+          .where(eq(users.role, "ESCORT"))
+          .limit(100);
+
+        // Get escort users currently on active (non-completed, non-cancelled) assignments
+        const busyEscorts = await db.select({ escortUserId: escortAssignments.escortUserId })
+          .from(escortAssignments)
+          .where(sql`${escortAssignments.status} IN ('accepted', 'en_route', 'on_site', 'escorting')`);
+        const busyIds = new Set(busyEscorts.map(e => e.escortUserId));
+
+        // Count completed assignments per escort for stats
+        const completedStats = await db.select({
+          escortUserId: escortAssignments.escortUserId,
+          total: sql<number>`count(*)`,
+        }).from(escortAssignments)
+          .where(eq(escortAssignments.status, "completed"))
+          .groupBy(escortAssignments.escortUserId);
+        const statsMap = new Map(completedStats.map(s => [s.escortUserId, s.total || 0]));
+
+        return escortUsers.map(u => ({
+          id: String(u.id),
+          userId: u.id,
+          name: u.name || "Unknown",
+          email: u.email || "",
+          phone: u.phone || "",
+          available: !busyIds.has(u.id),
+          completedTrips: statsMap.get(u.id) || 0,
+        }));
+      } catch (error) {
+        console.error("[Dispatch] getAvailableEscorts error:", error);
+        return [];
+      }
+    }),
+
+  /**
+   * Assign an escort to a load (creates escort_assignment row)
+   */
+  assignEscort: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      escortUserId: z.number(),
+      position: z.enum(["lead", "chase", "both"]).default("lead"),
+      rate: z.number().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || "DISPATCH", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "LOAD" }, (ctx as any).req);
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      // Check if this escort is already assigned to this load
+      const [existing] = await db.select({ id: escortAssignments.id })
+        .from(escortAssignments)
+        .where(and(
+          eq(escortAssignments.loadId, input.loadId),
+          eq(escortAssignments.escortUserId, input.escortUserId),
+          ne(escortAssignments.status, "cancelled"),
+        )).limit(1);
+      if (existing) throw new Error("Escort already assigned to this load");
+
+      // Get load info for the assignment
+      const [load] = await db.select({
+        driverId: loads.driverId,
+        catalystId: loads.catalystId,
+        loadNumber: loads.loadNumber,
+      }).from(loads).where(eq(loads.id, input.loadId)).limit(1);
+      if (!load) throw new Error("Load not found");
+
+      // Create the escort assignment
+      await db.insert(escortAssignments).values({
+        loadId: input.loadId,
+        escortUserId: input.escortUserId,
+        position: input.position,
+        status: "pending",
+        rate: input.rate ? String(input.rate) : null,
+        notes: input.notes || null,
+        driverUserId: load.driverId || null,
+        carrierUserId: load.catalystId || null,
+      });
+
+      // Notify the escort via WebSocket
+      emitNotification(String(input.escortUserId), {
+        id: `notif_escort_${Date.now()}`,
+        type: "assignment",
+        title: "New Escort Assignment",
+        message: `You have been assigned as ${input.position} escort for load ${load.loadNumber}`,
+        priority: "high",
+        data: { loadId: String(input.loadId) },
+        actionUrl: `/escort/active-trip`,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Emit dispatch event
+      const companyId = String(ctx.user?.companyId || 0);
+      emitDispatchEvent(companyId, {
+        loadId: String(input.loadId),
+        loadNumber: load.loadNumber,
+        driverId: String(input.escortUserId),
+        eventType: "ESCORT_ASSIGNED",
+        priority: "normal",
+        message: `Escort assigned to load ${load.loadNumber} as ${input.position}`,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Emit typed escort assignment event
+      emitEscortJobAssigned({
+        assignmentId: 0, // Will be filled by DB auto-increment
+        loadId: input.loadId,
+        loadNumber: load.loadNumber,
+        escortUserId: input.escortUserId,
+        position: input.position,
+        status: "pending",
+        driverUserId: load.driverId || undefined,
+        carrierUserId: load.catalystId || undefined,
+        timestamp: new Date().toISOString(),
+      });
+
+      return {
+        success: true,
+        loadId: input.loadId,
+        escortUserId: input.escortUserId,
+        loadNumber: load.loadNumber,
+        assignedAt: new Date().toISOString(),
+        assignedBy: ctx.user?.id,
+      };
+    }),
+
+  /**
+   * Unassign (cancel) an escort from a load
+   */
+  unassignEscort: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      escortUserId: z.number(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      await db.update(escortAssignments)
+        .set({ status: "cancelled", updatedAt: new Date(), notes: input.reason || "Unassigned by dispatch" })
+        .where(and(
+          eq(escortAssignments.loadId, input.loadId),
+          eq(escortAssignments.escortUserId, input.escortUserId),
+          ne(escortAssignments.status, "cancelled"),
+        ));
+
+      // Notify the escort
+      emitNotification(String(input.escortUserId), {
+        id: `notif_escort_unassign_${Date.now()}`,
+        type: "assignment",
+        title: "Escort Assignment Cancelled",
+        message: `Your escort assignment has been cancelled${input.reason ? `: ${input.reason}` : ""}`,
+        priority: "low",
+        data: { loadId: String(input.loadId) },
+        timestamp: new Date().toISOString(),
+      });
+
+      return { success: true, loadId: input.loadId, escortUserId: input.escortUserId };
+    }),
+
+  /**
+   * Get escort assignments for dispatch view (optionally filtered by load)
+   */
+  getEscortAssignments: protectedProcedure
+    .input(z.object({
+      loadId: z.number().optional(),
+      status: z.string().optional(),
+      limit: z.number().default(50),
+    }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const limit = input?.limit || 50;
+        const conds: any[] = [];
+        if (input?.loadId) conds.push(eq(escortAssignments.loadId, input.loadId));
+        if (input?.status) conds.push(eq(escortAssignments.status, input.status as any));
+
+        const rows = await db.select({
+          id: escortAssignments.id,
+          loadId: escortAssignments.loadId,
+          escortUserId: escortAssignments.escortUserId,
+          position: escortAssignments.position,
+          status: escortAssignments.status,
+          rate: escortAssignments.rate,
+          convoyId: escortAssignments.convoyId,
+          notes: escortAssignments.notes,
+          createdAt: escortAssignments.createdAt,
+          completedAt: escortAssignments.completedAt,
+          escortName: users.name,
+          escortEmail: users.email,
+          escortPhone: users.phone,
+        })
+          .from(escortAssignments)
+          .leftJoin(users, eq(escortAssignments.escortUserId, users.id))
+          .where(conds.length > 0 ? and(...conds) : undefined)
+          .orderBy(desc(escortAssignments.createdAt))
+          .limit(limit);
+
+        // Enrich with load numbers
+        const loadIds = Array.from(new Set(rows.map(r => r.loadId)));
+        const loadMap = new Map<number, string>();
+        for (const lid of loadIds) {
+          const [l] = await db.select({ loadNumber: loads.loadNumber }).from(loads).where(eq(loads.id, lid)).limit(1);
+          if (l) loadMap.set(lid, l.loadNumber);
+        }
+
+        return rows.map(r => ({
+          id: r.id,
+          loadId: r.loadId,
+          loadNumber: loadMap.get(r.loadId) || `LOAD-${r.loadId}`,
+          escortUserId: r.escortUserId,
+          escortName: r.escortName || "Unknown",
+          escortEmail: r.escortEmail || "",
+          escortPhone: r.escortPhone || "",
+          position: r.position,
+          status: r.status,
+          rate: r.rate ? parseFloat(String(r.rate)) : null,
+          convoyId: r.convoyId,
+          notes: r.notes,
+          createdAt: r.createdAt?.toISOString() || null,
+          completedAt: r.completedAt?.toISOString() || null,
+        }));
+      } catch (error) {
+        console.error("[Dispatch] getEscortAssignments error:", error);
+        return [];
+      }
+    }),
 });

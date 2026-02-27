@@ -6,6 +6,7 @@
  */
 
 import { useState } from "react";
+import { Portal } from "@/components/ui/portal";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Award, CheckCircle, ThumbsUp, Navigation, LogIn, Package,
@@ -143,8 +144,9 @@ export default function PrimaryActionButton({
       {/* Confirmation dialog */}
       <AnimatePresence>
         {showConfirm && (
+          <Portal>
           <motion.div
-            className="fixed inset-0 z-50 flex items-end justify-center pb-6 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] flex items-end justify-center pb-6 bg-black/60 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -176,6 +178,7 @@ export default function PrimaryActionButton({
               </div>
             </motion.div>
           </motion.div>
+          </Portal>
         )}
       </AnimatePresence>
 

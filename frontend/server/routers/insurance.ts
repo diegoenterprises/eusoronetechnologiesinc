@@ -968,7 +968,7 @@ export const insuranceRouter = router({
         status: "active",
         activatedAt: new Date(),
         expiresAt: new Date(Date.now() + 30 * 24 * 3600000),
-      });
+      }).$returningId();
 
       // Debit EusoWallet
       try {
@@ -991,7 +991,28 @@ export const insuranceRouter = router({
         console.error("[Insurance] wallet debit error:", e);
       }
 
-      return { success: true, policyNumber };
+      // Record platform revenue — 15% commission on insurance premiums
+      const INSURANCE_COMMISSION_RATE = 0.15;
+      const platformCommission = input.premium * INSURANCE_COMMISSION_RATE;
+      try {
+        const { platformRevenue } = await import("../../drizzle/schema");
+        await db.insert(platformRevenue).values({
+          transactionId: (result as any).id || 0,
+          transactionType: "insurance_commission",
+          userId,
+          grossAmount: String(input.premium.toFixed(2)),
+          feeAmount: String(platformCommission.toFixed(2)),
+          netAmount: String((input.premium - platformCommission).toFixed(2)),
+          platformShare: String(platformCommission.toFixed(2)),
+          processorShare: String((input.premium - platformCommission).toFixed(2)),
+          discountApplied: "0.00",
+          metadata: { policyNumber, commodityType: input.commodityType, loadId: input.loadId, commissionRate: INSURANCE_COMMISSION_RATE },
+        });
+      } catch (e) {
+        console.error("[Insurance] Revenue recording error:", e);
+      }
+
+      return { success: true, policyNumber, platformCommission };
     }),
 
   /**

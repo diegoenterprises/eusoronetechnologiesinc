@@ -970,6 +970,44 @@ async function resolveUserContact(userId: number): Promise<UserContactInfo | nul
   } catch { return null; }
 }
 
+/**
+ * Cargo exception — urgent alert for cargo-specific incidents
+ */
+export async function notifyCargoException(params: {
+  email: string;
+  phone?: string;
+  name: string;
+  loadNumber: string;
+  exceptionType: string;
+  loadId?: string | number;
+  cargoType?: string;
+  description?: string;
+}) {
+  const label = formatStatus(params.exceptionType);
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `URGENT: ${label} — Load ${params.loadNumber}`,
+    html: emailWrap(`Cargo Exception: ${label}`, `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Load <strong style="color:#E2E8F0">${params.loadNumber}</strong> has entered <strong style="color:#ef4444">${label}</strong> state.`)}
+      ${infoTable(
+        infoRow("Exception", `<strong style="color:#ef4444">${label}</strong>`)
+        + (params.cargoType ? infoRow("Cargo Type", formatStatus(params.cargoType)) : "")
+        + (params.description ? infoRow("Details", params.description) : "")
+      )}
+      ${p("Immediate attention may be required. Review the load details and take appropriate action.")}
+      ${btn(`${APP_URL}/loads/${params.loadId || params.loadNumber}`, "View Load Details", "#ef4444")}
+    `, "#ef4444"),
+  }));
+
+  if (params.phone) {
+    safe(() => sendSms({
+      to: params.phone!,
+      message: `URGENT EusoTrip: Load ${params.loadNumber} — ${label}.${params.description ? " " + params.description : ""} View: ${APP_URL}/loads/${params.loadId || params.loadNumber}`,
+    }));
+  }
+}
+
 export type NotifyEvent =
   | { type: "load_assigned"; loadNumber: string; origin?: string; destination?: string }
   | { type: "load_status_changed"; loadNumber: string; oldStatus: string; newStatus: string }
@@ -987,7 +1025,8 @@ export type NotifyEvent =
   | { type: "agreement_signed"; agreementNumber: string; signerName: string }
   | { type: "agreement_executed"; agreementNumber: string }
   | { type: "agreement_terminated"; agreementNumber: string; reason?: string; terminatedBy?: string }
-  | { type: "terminal_load_originated"; loadNumber: string; loadId: string | number; origin?: string; destination?: string; product?: string; shipperName?: string; terminalName?: string };
+  | { type: "terminal_load_originated"; loadNumber: string; loadId: string | number; origin?: string; destination?: string; product?: string; shipperName?: string; terminalName?: string }
+  | { type: "cargo_exception"; loadNumber: string; exceptionType: string; loadId?: string | number; cargoType?: string; description?: string };
 
 /**
  * Persist a notification to the DB so it shows in the Notification Center.
@@ -1051,7 +1090,9 @@ function mapEventToNotification(event: NotifyEvent): {
     case "agreement_terminated":
       return { dbType: "system", category: "agreements", title: `Agreement ${event.agreementNumber} — Terminated`, message: `Agreement ${event.agreementNumber} has been terminated${event.reason ? `: ${event.reason}` : ""}.`, actionUrl: "/agreements", extra: { agreementNumber: event.agreementNumber } };
     case "terminal_load_originated":
-      return { dbType: "load_update", category: "loads", title: `New Load from Your Terminal`, message: `${event.shipperName || "A shipper"} posted load ${event.loadNumber} originating from ${event.terminalName || "your terminal"}${event.origin && event.destination ? ` (${event.origin} → ${event.destination})` : ""}.`, actionUrl: `/loads/${event.loadId}`, extra: { loadNumber: event.loadNumber, terminalName: event.terminalName } };
+      return { dbType: "load_update", category: "loads", title: `New Load from Your Terminal`, message: `${event.shipperName || "A shipper"} posted load ${event.loadNumber} originating from ${event.terminalName || "your terminal"}${event.origin && event.destination ? ` (${event.origin} \u2192 ${event.destination})` : ""}.`, actionUrl: `/loads/${event.loadId}`, extra: { loadNumber: event.loadNumber, terminalName: event.terminalName } };
+    case "cargo_exception":
+      return { dbType: "load_update", category: "loads", title: `Cargo Exception \u2014 ${formatStatus(event.exceptionType)}`, message: `Load ${event.loadNumber} has entered ${formatStatus(event.exceptionType)} state.${event.description ? " " + event.description : ""}${event.cargoType ? ` (${event.cargoType})` : ""}`, actionUrl: event.loadId ? `/loads/${event.loadId}` : undefined, extra: { loadNumber: event.loadNumber, exceptionType: event.exceptionType, cargoType: event.cargoType } };
     default:
       return { dbType: "system", category: "system", title: "Notification", message: "You have a new notification." };
   }
@@ -1112,6 +1153,8 @@ export function lookupAndNotify(userId: number, event: NotifyEvent): void {
         return notifyAgreementTerminated({ ...base, agreementNumber: event.agreementNumber, reason: event.reason, terminatedBy: event.terminatedBy });
       case "terminal_load_originated":
         return notifyTerminalLoadOriginated({ ...base, loadNumber: event.loadNumber, loadId: event.loadId, origin: event.origin, destination: event.destination, product: event.product, shipperName: event.shipperName, terminalName: event.terminalName });
+      case "cargo_exception":
+        return notifyCargoException({ ...base, loadNumber: event.loadNumber, exceptionType: event.exceptionType, loadId: event.loadId, cargoType: event.cargoType, description: event.description });
     }
   }).catch(e => console.error("[lookupAndNotify]", e));
 }

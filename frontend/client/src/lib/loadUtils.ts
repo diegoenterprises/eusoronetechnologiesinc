@@ -158,6 +158,9 @@ const EQUIPMENT_LABELS: Record<string, string> = {
   chemical_tank:   "Chemical Tank (DOT-412)",
   hopper:          "Dry Bulk / Hopper",
   pneumatic:       "Pneumatic Tank",
+  end_dump:        "End Dump Trailer",
+  intermodal_chassis: "Intermodal Container Chassis",
+  curtain_side:    "Curtain Side / Tautliner",
   refrigerated:    "Refrigerated (Reefer)",
 };
 
@@ -234,6 +237,9 @@ const EQUIP_ANIM: Record<string, AnimationType> = {
   chemical_tank:   "liquid",
   hopper:          "hopper",
   pneumatic:       "hopper",
+  end_dump:        "dump",
+  intermodal_chassis: "intermodal",
+  curtain_side:    "dryvan",
 };
 
 export function inferAnimationType(

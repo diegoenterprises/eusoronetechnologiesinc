@@ -14,7 +14,7 @@ import { trpc } from "@/lib/trpc";
 import {
   Truck, MapPin, Clock, User, AlertTriangle,
   CheckCircle, Navigation, RefreshCw, Package,
-  Beaker, Droplets, Flame
+  Beaker, Droplets, Flame, Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -24,10 +24,17 @@ export default function DispatchBoard() {
 
   const boardQuery = (trpc as any).dispatch.getBoard.useQuery({ status: filter === 'all' ? undefined : filter as any }, { refetchInterval: 30000 });
   const driversQuery = (trpc as any).dispatch.getAvailableDrivers.useQuery({});
+  const escortLoadsQuery = (trpc as any).dispatch.getLoadsNeedingEscort.useQuery({ limit: 10 }, { refetchInterval: 60000 });
+  const availableEscortsQuery = (trpc as any).dispatch.getAvailableEscorts.useQuery(undefined, { refetchInterval: 60000 });
 
   const assignMutation = (trpc as any).dispatch.assignDriver.useMutation({
     onSuccess: () => { toast.success("Driver assigned"); boardQuery.refetch(); driversQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
+  });
+
+  const assignEscortMutation = (trpc as any).dispatch.assignEscort.useMutation({
+    onSuccess: () => { toast.success("Escort assigned"); escortLoadsQuery.refetch(); availableEscortsQuery.refetch(); },
+    onError: (error: any) => toast.error("Escort assignment failed", { description: error.message }),
   });
 
   const stats = (boardQuery.data as any)?.summary;
@@ -40,6 +47,11 @@ export default function DispatchBoard() {
       case "loading": return <Badge className="bg-purple-500/20 text-purple-400 border-0"><Package className="w-3 h-3 mr-1" />Loading</Badge>;
       case "in_transit": return <Badge className="bg-cyan-500/20 text-cyan-400 border-0"><Truck className="w-3 h-3 mr-1" />In Transit</Badge>;
       case "delivered": return <Badge className="bg-green-500/20 text-green-400 border-0"><CheckCircle className="w-3 h-3 mr-1" />Delivered</Badge>;
+      case "temp_excursion":
+      case "reefer_breakdown":
+      case "contamination_reject":
+      case "seal_breach":
+      case "weight_violation": return <Badge className="bg-red-500/20 text-red-400 border-0"><AlertTriangle className="w-3 h-3 mr-1" />{status.replace(/_/g, " ")}</Badge>;
       default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
     }
   };
@@ -178,6 +190,64 @@ export default function DispatchBoard() {
           )}
         </CardContent>
       </Card>
+      {/* Escort Management Section */}
+      {((escortLoadsQuery.data as any)?.length ?? 0) > 0 && (
+        <Card className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-indigo-500/30 rounded-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-white text-lg flex items-center gap-2">
+              <Shield className="w-5 h-5 text-indigo-400" />Loads Needing Escort
+              <Badge className="bg-indigo-500/20 text-indigo-400 border-0 ml-2">
+                {(escortLoadsQuery.data as any)?.length || 0}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-slate-700/50">
+              {(escortLoadsQuery.data as any)?.map((load: any) => (
+                <div key={load.id} className={cn("p-4", load.escortGap > 0 && "bg-indigo-500/5 border-l-2 border-indigo-500")}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-slate-500 text-sm">#{load.loadNumber}</span>
+                        <Badge className="bg-indigo-500/20 text-indigo-400 border-0">
+                          <Shield className="w-3 h-3 mr-1" />{load.escortsAssigned}/{load.escortsNeeded} Escorts
+                        </Badge>
+                        {load.escortGap > 0 && (
+                          <Badge className="bg-red-500/20 text-red-400 border-0">
+                            <AlertTriangle className="w-3 h-3 mr-1" />Needs {load.escortGap} more
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-400">{load.origin} → {load.destination}</p>
+                    </div>
+                    {load.escortGap > 0 && ((availableEscortsQuery.data as any)?.length ?? 0) > 0 && (
+                      <Select onValueChange={(escortId) => assignEscortMutation.mutate({ loadId: load.id, escortUserId: Number(escortId) })}>
+                        <SelectTrigger className="w-[200px] bg-slate-700/50 border-slate-600/50 rounded-lg">
+                          <Shield className="w-4 h-4 mr-2" /><SelectValue placeholder="Assign Escort" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(availableEscortsQuery.data as any)
+                            ?.filter((e: any) => e.available)
+                            ?.map((escort: any) => (
+                              <SelectItem key={escort.id} value={escort.id}>
+                                {escort.name} {escort.completedTrips > 0 ? `(${escort.completedTrips} trips)` : ""}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                    <div className="flex items-center gap-2 text-slate-400"><MapPin className="w-4 h-4 text-green-400" /><span>{load.origin}</span></div>
+                    <div className="flex items-center gap-2 text-slate-400"><MapPin className="w-4 h-4 text-red-400" /><span>{load.destination}</span></div>
+                    {load.pickupDate && <div className="flex items-center gap-2 text-slate-400"><Clock className="w-4 h-4" /><span>{new Date(load.pickupDate).toLocaleDateString()}</span></div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

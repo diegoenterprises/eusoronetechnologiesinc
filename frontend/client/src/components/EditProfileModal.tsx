@@ -5,6 +5,7 @@
  */
 
 import { useState, useRef } from "react";
+import { Portal } from "@/components/ui/portal";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -125,7 +126,8 @@ export default function EditProfileModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto z-50" onClick={onClose}>
+    <Portal>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto z-[9999]" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center p-4">
       <Card className="bg-slate-800 border-slate-700 w-full max-w-2xl" onClick={(e: any) => e.stopPropagation()}>
         {/* Header */}
@@ -317,6 +319,7 @@ export default function EditProfileModal({
       </Card>
       </div>
     </div>
+    </Portal>
   );
 }
 

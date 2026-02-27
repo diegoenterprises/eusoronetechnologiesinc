@@ -14,7 +14,7 @@ export type Resource =
   // Users & companies
   | "USER" | "COMPANY" | "DRIVER" | "VEHICLE" | "EQUIPMENT"
   // Financial
-  | "WALLET" | "INVOICE" | "PAYMENT" | "REFUND" | "FACTORING_ADVANCE" | "DETENTION_CHARGE"
+  | "WALLET" | "INVOICE" | "PAYMENT" | "REFUND" | "FACTORING_ADVANCE" | "DETENTION_CHARGE" | "ACCESSORIAL_CLAIM"
   // Location/tracking
   | "GPS_BREADCRUMB" | "GEOFENCE" | "GEOTAG" | "ROUTE"
   // Compliance

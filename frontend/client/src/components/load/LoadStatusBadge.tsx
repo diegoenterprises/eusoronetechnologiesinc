@@ -14,7 +14,7 @@ import {
   CheckCircle, Truck, ThumbsUp, Navigation, MapPin, KeyRound,
   Package, AlertTriangle, Pause, Siren, ClipboardCheck, RefreshCw,
   CheckCircle2, FileText, Zap, DollarSign, Flag, Ban, Hand,
-  HelpCircle,
+  HelpCircle, Thermometer, Snowflake, FlaskConical, ShieldAlert,
   type LucideIcon,
 } from "lucide-react";
 
@@ -27,7 +27,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   CheckCircle, Truck, ThumbsUp, Navigation, MapPin, KeyRound,
   Package, AlertTriangle, Pause, Siren, ClipboardCheck, RefreshCw,
   CheckCircle2, FileText, Zap, DollarSign, Flag, Ban, Hand,
-  HelpCircle, PartyPopper: CheckCircle2,
+  HelpCircle, Thermometer, Snowflake, FlaskConical, ShieldAlert,
+  PartyPopper: CheckCircle2,
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -68,12 +69,19 @@ const STATE_META: Record<string, { displayName: string; icon: string; color: str
   COMPLETE:            { displayName: "Complete",           icon: "Flag",           color: "#10b981", bgColor: "#064e3b", category: "FINANCIAL", isFinal: true },
   CANCELLED:           { displayName: "Cancelled",          icon: "Ban",            color: "#6b7280", bgColor: "#1f2937", category: "EXCEPTION", isFinal: true },
   ON_HOLD:             { displayName: "On Hold",            icon: "Hand",           color: "#f59e0b", bgColor: "#451a03", category: "EXCEPTION", isException: true },
+  // Cargo-specific exceptions
+  TEMP_EXCURSION:      { displayName: "Temp Excursion",     icon: "Thermometer",    color: "#ef4444", bgColor: "#450a0a", category: "EXCEPTION", isException: true },
+  REEFER_BREAKDOWN:    { displayName: "Reefer Breakdown",   icon: "Snowflake",      color: "#ef4444", bgColor: "#450a0a", category: "EXCEPTION", isException: true },
+  CONTAMINATION_REJECT:{ displayName: "Contamination",      icon: "FlaskConical",   color: "#ef4444", bgColor: "#450a0a", category: "EXCEPTION", isException: true },
+  SEAL_BREACH:         { displayName: "Seal Breach",        icon: "ShieldAlert",    color: "#ef4444", bgColor: "#450a0a", category: "EXCEPTION", isException: true },
+  WEIGHT_VIOLATION:    { displayName: "Weight Violation",   icon: "Scale",          color: "#ef4444", bgColor: "#450a0a", category: "EXCEPTION", isException: true },
 };
 
 // Active states that should pulse
 const ACTIVE_STATES = new Set([
   "EN_ROUTE_PICKUP", "AT_PICKUP", "LOADING", "IN_TRANSIT",
   "AT_DELIVERY", "UNLOADING", "TRANSIT_HOLD",
+  "TEMP_EXCURSION", "REEFER_BREAKDOWN", "CONTAMINATION_REJECT", "SEAL_BREACH", "WEIGHT_VIOLATION",
 ]);
 
 // ═══════════════════════════════════════════════════════════════

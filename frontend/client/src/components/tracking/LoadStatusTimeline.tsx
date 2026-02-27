@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Truck, Package, CheckCircle2, Clock, AlertTriangle,
   Camera, FileText, PenLine, Navigation2, Shield, CircleDot,
+  Thermometer, Snowflake, FlaskConical, ShieldAlert, Scale,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -33,6 +34,11 @@ const EVENT_ICONS: Record<string, React.ElementType> = {
   weigh_station_approach: Truck,
   route_deviation: AlertTriangle,
   speed_alert: AlertTriangle,
+  temp_excursion: Thermometer,
+  reefer_breakdown: Snowflake,
+  contamination_reject: FlaskConical,
+  seal_breach: ShieldAlert,
+  weight_violation: Scale,
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -42,6 +48,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   operational: "text-gray-500 bg-gray-50 dark:bg-gray-950/30",
   photo: "text-amber-500 bg-amber-50 dark:bg-amber-950/30",
   document: "text-indigo-500 bg-indigo-50 dark:bg-indigo-950/30",
+  cargo_exception: "text-red-500 bg-red-50 dark:bg-red-950/30",
 };
 
 export default function LoadStatusTimeline({ loadId }: LoadStatusTimelineProps) {

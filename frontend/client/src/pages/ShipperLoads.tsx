@@ -58,6 +58,11 @@ export default function ShipperLoads() {
       case "assigned": return "bg-purple-500/20 text-purple-400";
       case "pending": return "bg-yellow-500/20 text-yellow-400";
       case "cancelled": return "bg-red-500/20 text-red-400";
+      case "temp_excursion":
+      case "reefer_breakdown":
+      case "contamination_reject":
+      case "seal_breach":
+      case "weight_violation": return "bg-red-500/20 text-red-400";
       default: return "bg-slate-500/20 text-slate-400";
     }
   };

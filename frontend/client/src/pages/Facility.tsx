@@ -31,6 +31,7 @@ import { EsangIcon } from "@/components/EsangIcon";
 import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Portal } from "@/components/ui/portal";
 
 const STATUS_STYLE: Record<string, { icon: any; cls: string; label: string }> = {
   VERIFIED:       { icon: CheckCircle,   cls: "text-emerald-400 bg-emerald-400/10", label: "Verified" },
@@ -1047,7 +1048,8 @@ export default function FacilityPage() {
         const intg = INT_CATALOG.find(c => c.id === keyModal);
         const fields = INT_FIELDS[keyModal] || [{ key: "apiKey", label: "API Key", placeholder: "Enter API key", secret: true }];
         return (
-          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setKeyModal(null)}>
+          <Portal>
+          <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setKeyModal(null)}>
             <div className="flex min-h-full items-center justify-center p-4">
             <div className="border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
               {intg && <div className="h-1 w-full rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${intg.brandFrom}, ${intg.brandTo})` }} />}
@@ -1107,6 +1109,7 @@ export default function FacilityPage() {
             </div>
             </div>
           </div>
+          </Portal>
         );
       })()}
     </div>

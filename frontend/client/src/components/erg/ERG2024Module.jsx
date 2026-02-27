@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Portal } from '@/components/ui/portal';
 import { 
   Search, AlertTriangle, Phone, ChevronRight, ChevronDown,
   Flame, Shield, Wind, Droplets, Activity, BookOpen,
@@ -559,7 +560,8 @@ export default function ERG2024Module() {
 
       {/* Guide Detail Modal */}
       {showGuideDetail && selectedGuide && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto">
+        <Portal>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] overflow-y-auto">
           <div className="flex min-h-full items-end sm:items-center justify-center p-4">
           <div className={`w-full max-w-2xl ${isEmergencyMode ? 'bg-red-900' : 'bg-white'} rounded-t-3xl sm:rounded-3xl shadow-2xl`}>
             {/* Modal Header */}
@@ -736,6 +738,7 @@ export default function ERG2024Module() {
           </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

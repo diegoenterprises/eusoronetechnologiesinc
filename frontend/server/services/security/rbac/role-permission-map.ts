@@ -55,6 +55,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("READ", "SAFETY_EVENT", "OWN"),
     p("CREATE", "INCIDENT_REPORT", "OWN"),
     p("READ", "INCIDENT_REPORT", "OWN"),
+    // Accessorial claims — drivers submit claims for detention, pump time, dry run, etc.
+    p("CREATE", "ACCESSORIAL_CLAIM", "OWN"),
+    p("READ", "ACCESSORIAL_CLAIM", "OWN"),
+    p("CREATE", "DETENTION_CHARGE", "OWN"),
+    p("READ", "DETENTION_CHARGE", "OWN"),
     // Gamification
     p("READ", "MISSION", "OWN"),
     p("READ", "ACHIEVEMENT", "OWN"),
@@ -154,6 +159,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("CREATE", "AGREEMENT", "COMPANY"),
     p("READ", "AGREEMENT", "COMPANY"),
     p("UPDATE", "AGREEMENT", "COMPANY"),
+    // Accessorial claims — catalysts submit and manage claims on behalf of fleet
+    p("CREATE", "ACCESSORIAL_CLAIM", "COMPANY"),
+    p("READ", "ACCESSORIAL_CLAIM", "COMPANY"),
+    p("UPDATE", "ACCESSORIAL_CLAIM", "COMPANY"),
+    p("CREATE", "DETENTION_CHARGE", "COMPANY"),
+    p("READ", "DETENTION_CHARGE", "COMPANY"),
     // Gamification
     p("READ", "MISSION", "OWN"),
     p("READ", "ACHIEVEMENT", "OWN"),
@@ -201,6 +212,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("READ", "ACHIEVEMENT", "OWN"),
     p("CREATE", "DETENTION_CHARGE", "COMPANY"),
     p("READ", "DETENTION_CHARGE", "COMPANY"),
+    // Accessorial claims — shippers review/approve claims submitted against their loads
+    p("READ", "ACCESSORIAL_CLAIM", "COMPANY"),
+    p("APPROVE", "ACCESSORIAL_CLAIM", "COMPANY"),
+    p("UPDATE", "ACCESSORIAL_CLAIM", "COMPANY"),
     // Supply Chain — view own terminal partnerships
     p("READ", "TERMINAL_PARTNER", "LINKED"),
     p("READ", "SUPPLY_CHAIN_CONFIG", "OWN"),
@@ -332,6 +347,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     p("READ", "AUDIT_LOG", "COMPANY"),
     p("CREATE", "DETENTION_CHARGE", "COMPANY"),
     p("READ", "DETENTION_CHARGE", "COMPANY"),
+    // Accessorial claims — terminal managers review/approve claims at their facility
+    p("CREATE", "ACCESSORIAL_CLAIM", "COMPANY"),
+    p("READ", "ACCESSORIAL_CLAIM", "COMPANY"),
+    p("UPDATE", "ACCESSORIAL_CLAIM", "COMPANY"),
     p("CREATE", "BOL", "COMPANY"),
     p("READ", "BOL", "COMPANY"),
     // Supply Chain — Terminal Partner management
@@ -403,7 +422,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // CRUD all primary resources
     ...["LOAD", "BID", "RATE_CONFIRMATION", "BOL", "POD",
         "USER", "COMPANY", "DRIVER", "VEHICLE", "EQUIPMENT",
-        "INVOICE", "PAYMENT", "REFUND", "DETENTION_CHARGE",
+        "INVOICE", "PAYMENT", "REFUND", "DETENTION_CHARGE", "ACCESSORIAL_CLAIM",
         "DOCUMENT", "AGREEMENT", "COMPLIANCE_RECORD",
         "SAFETY_EVENT", "INCIDENT_REPORT",
         "MESSAGE", "CONVERSATION", "NOTIFICATION",
@@ -416,8 +435,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
       p("UPDATE", r as Resource, "PLATFORM"),
       p("DELETE", r as Resource, "PLATFORM"),
     ]),
-    // Read-only for sensitive
+    // Wallet — full management
+    p("CREATE", "WALLET", "PLATFORM"),
     p("READ", "WALLET", "PLATFORM"),
+    p("UPDATE", "WALLET", "PLATFORM"),
+    p("DELETE", "WALLET", "PLATFORM"),
     p("READ", "SSN", "PLATFORM"),
     p("READ", "BANK_ACCOUNT", "PLATFORM"),
     p("READ", "CDL_NUMBER", "PLATFORM"),
@@ -437,7 +459,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Everything ADMIN has, plus SYSTEM scope
     ...["LOAD", "BID", "RATE_CONFIRMATION", "BOL", "POD",
         "USER", "COMPANY", "DRIVER", "VEHICLE", "EQUIPMENT",
-        "WALLET", "INVOICE", "PAYMENT", "REFUND", "DETENTION_CHARGE",
+        "WALLET", "INVOICE", "PAYMENT", "REFUND", "DETENTION_CHARGE", "ACCESSORIAL_CLAIM",
         "DOCUMENT", "AGREEMENT", "COMPLIANCE_RECORD",
         "SAFETY_EVENT", "INCIDENT_REPORT",
         "MESSAGE", "CONVERSATION", "NOTIFICATION",

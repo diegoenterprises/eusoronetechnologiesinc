@@ -4,6 +4,7 @@
  */
 
 import { useState } from "react";
+import { Portal } from "@/components/ui/portal";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -654,7 +655,8 @@ export default function JobsPage() {
 
       {/* Bid Modal */}
       {showBidModal && selectedLoad && (
-        <div className="fixed inset-0 bg-black/80 overflow-y-auto z-50" onClick={() => setShowBidModal(false)}>
+        <Portal>
+        <div className="fixed inset-0 bg-black/80 overflow-y-auto z-[9999]" onClick={() => setShowBidModal(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <Card className="bg-slate-800 border-slate-700 p-6 max-w-lg w-full" onClick={(e: any) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
@@ -746,11 +748,13 @@ export default function JobsPage() {
           </Card>
           </div>
         </div>
+        </Portal>
       )}
 
       {/* Negotiation Modal */}
       {showNegotiationModal && selectedLoad && selectedLoad.myBid?.counterOffer && (
-        <div className="fixed inset-0 bg-black/80 overflow-y-auto z-50" onClick={() => setShowNegotiationModal(false)}>
+        <Portal>
+        <div className="fixed inset-0 bg-black/80 overflow-y-auto z-[9999]" onClick={() => setShowNegotiationModal(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <Card className="bg-slate-800 border-slate-700 p-6 max-w-lg w-full" onClick={(e: any) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
@@ -831,6 +835,7 @@ export default function JobsPage() {
           </Card>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

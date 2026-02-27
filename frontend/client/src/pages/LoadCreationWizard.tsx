@@ -19,13 +19,15 @@ import {
   ArrowRight, ArrowLeft, AlertTriangle, Info, Search,
   Droplets, Wind, Box, Thermometer, Snowflake,
   Scale, Link2, Plus, Trash2, Calculator,
-  GlassWater, MilkOff, Clock, Zap, Users, User
+  GlassWater, MilkOff, Clock, Zap, Users, User,
+  Container, Blinds, ArrowDownToLine
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { HazmatDecalPreview } from "@/components/HazmatDecal";
 import HazmatRouteRestrictions from "@/components/HazmatRouteRestrictions";
+import RegulatoryCompliancePanel from "@/components/RegulatoryCompliancePanel";
 import { MultiTruckVisualization } from "@/components/TruckVisualization";
 import RouteMap from "@/components/RouteMap";
 import DatePicker from "@/components/DatePicker";
@@ -43,6 +45,11 @@ const TRAILER_TYPES = [
   { id: "cryogenic", name: "Cryogenic Tank", desc: "LNG, liquid nitrogen, liquid oxygen, liquid hydrogen", icon: "snowflake", animType: "gas" as const, hazmat: true, equipment: "tanker", maxGal: 10000 },
   { id: "food_grade_tank", name: "Food-Grade Liquid Tank", desc: "Milk, juice, cooking oil, wine, liquid sugar, edible oils", icon: "milkoff", animType: "liquid" as const, hazmat: false, equipment: "tank", maxGal: 6500 },
   { id: "water_tank", name: "Water Tank", desc: "Potable water, non-potable water, industrial water", icon: "glasswater", animType: "liquid" as const, hazmat: false, equipment: "tank", maxGal: 5500 },
+  { id: "hopper", name: "Dry Bulk / Hopper", desc: "Gravity-discharge hopper for grain, sand, aggregate", icon: "hopper_icon", animType: "solid" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
+  { id: "pneumatic", name: "Pneumatic Tank", desc: "Pressure-unload for cement, flour, powder, pellets", icon: "wind", animType: "solid" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
+  { id: "end_dump", name: "End Dump Trailer", desc: "Hydraulic end-dump for aggregate, sand, demolition debris", icon: "arrowdown", animType: "solid" as const, hazmat: false, equipment: "flatbed", maxGal: 0 },
+  { id: "intermodal_chassis", name: "Intermodal Chassis", desc: "ISO container chassis for port drayage and intermodal", icon: "container", animType: "solid" as const, hazmat: false, equipment: "dry-van", maxGal: 0 },
+  { id: "curtain_side", name: "Curtain Side / Tautliner", desc: "Side-access loading for pallets, building materials", icon: "blinds", animType: "solid" as const, hazmat: false, equipment: "dry-van", maxGal: 0 },
 ];
 
 const TRAILER_ICON: Record<string, React.ReactNode> = {
@@ -56,6 +63,10 @@ const TRAILER_ICON: Record<string, React.ReactNode> = {
   snowflake: <Snowflake className="w-8 h-8" />,
   milkoff: <MilkOff className="w-8 h-8" />,
   glasswater: <GlassWater className="w-8 h-8" />,
+  hopper_icon: <Package className="w-8 h-8" />,
+  arrowdown: <ArrowDownToLine className="w-8 h-8" />,
+  container: <Container className="w-8 h-8" />,
+  blinds: <Blinds className="w-8 h-8" />,
 };
 
 const HAZMAT_CLASSES = [
@@ -537,6 +548,11 @@ export default function LoadCreationWizard() {
       case "reefer": return ["Pallets", "Units", "Cases", "Boxes"];
       case "flatbed": return ["Pieces", "Bundles", "Linear Feet", "Tons"];
       case "bulk_hopper": return ["Cubic Yards", "Cubic Feet", "Tons"];
+      case "hopper": return ["Cubic Yards", "Cubic Feet", "Tons", "Bushels"];
+      case "pneumatic": return ["Cubic Yards", "Cubic Feet", "Tons"];
+      case "end_dump": return ["Cubic Yards", "Tons"];
+      case "intermodal_chassis": return ["Containers", "TEU"];
+      case "curtain_side": return ["Pallets", "Units", "Cases", "Boxes"];
       case "hazmat_van": return ["Drums", "Pallets", "Units", "Cases"];
       case "food_grade_tank": return ["Gallons", "Barrels", "Liters"];
       case "water_tank": return ["Gallons", "Barrels", "Liters"];
@@ -553,6 +569,11 @@ export default function LoadCreationWizard() {
       case "reefer": return "22";
       case "flatbed": return "6";
       case "bulk_hopper": return "30";
+      case "hopper": return "30";
+      case "pneumatic": return "25";
+      case "end_dump": return "20";
+      case "intermodal_chassis": return "1";
+      case "curtain_side": return "24";
       case "hazmat_van": return "48";
       case "food_grade_tank": return "6000";
       case "water_tank": return "5000";
@@ -730,6 +751,11 @@ export default function LoadCreationWizard() {
       case "water_tank": return "tanker";
       case "hazmat_van": return "hazmat_van";
       case "bulk_hopper": return "hopper";
+      case "hopper": return "hopper";
+      case "pneumatic": return "pneumatic";
+      case "end_dump": return "end_dump";
+      case "intermodal_chassis": return "intermodal_chassis";
+      case "curtain_side": return "curtain_side";
       default: return selectedTrailer?.equipment || "dry_van";
     }
   })();
@@ -1110,8 +1136,8 @@ export default function LoadCreationWizard() {
                           placeholder={`Search ${productList.length || 50} products for ${selectedTrailer?.name || "this trailer"}...`}
                           className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10" />
                         {showProductDropdown && (
-                          <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-72 overflow-y-auto">
-                            <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50 sticky top-0 bg-slate-800">
+                          <div className="absolute z-50 left-0 right-0 mt-1 border border-slate-600/50 rounded-lg shadow-xl max-h-72 overflow-y-auto" style={{ backgroundColor: '#0c0e18' }}>
+                            <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50 sticky top-0" style={{ backgroundColor: '#0c0e18' }}>
                               {selectedTrailer?.name} -- {productList.length} products {productDropdownSearch ? `matching "${productDropdownSearch}"` : ""}
                             </div>
                             {productListQuery.isLoading ? (
@@ -2311,7 +2337,22 @@ export default function LoadCreationWizard() {
                 </div>
               </div>
 
-              {/* ── Hazmat Route Restrictions (only for hazmat loads) ── */}
+              {/* ── Regulatory Compliance Panel (ALL load types) ── */}
+              {formData.trailerType && formData.origin && formData.destination && (
+                <RegulatoryCompliancePanel
+                  trailerType={formData.trailerType}
+                  productName={formData.productName}
+                  productId={formData.productId}
+                  hazmatClass={formData.hazmatClass}
+                  unNumber={formData.unNumber}
+                  originState={(formData.origin || "").split(",").pop()?.trim() || ""}
+                  destinationState={(formData.destination || "").split(",").pop()?.trim() || ""}
+                  originCity={(formData.origin || "").split(",")[0]?.trim()}
+                  destinationCity={(formData.destination || "").split(",")[0]?.trim()}
+                />
+              )}
+
+              {/* ── Hazmat Route Restrictions (hazmat loads — tunnels, time-of-day, ERG) ── */}
               {selectedTrailer?.hazmat && formData.hazmatClass && formData.origin && formData.destination && (
                 <HazmatRouteRestrictions
                   hazmatClass={formData.hazmatClass}
@@ -2321,6 +2362,9 @@ export default function LoadCreationWizard() {
                   isTIH={formData.isTIH}
                   isRadioactive={formData.hazmatClass === "7"}
                   weight={Number(formData.weight) || undefined}
+                  trailerType={formData.trailerType}
+                  originCity={(formData.origin || "").split(",")[0]?.trim()}
+                  destinationCity={(formData.destination || "").split(",")[0]?.trim()}
                 />
               )}
 

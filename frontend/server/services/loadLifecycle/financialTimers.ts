@@ -1,11 +1,14 @@
 /**
- * FINANCIAL TIMER SERVICE — Detention, Demurrage & Layover
+ * FINANCIAL TIMER SERVICE — Detention, Demurrage, Layover & Cargo-Specific Timers
  *
  * Manages time-based financial charges:
  * - Detention: waiting at pickup (free time → billing)
  * - Demurrage: waiting at delivery (free time → billing)
  * - Layover: overnight/HOS rest stops
+ * - Pump time: tanker PTO pump operation (30 min free → $75/hr)
+ * - Blow off: hopper/pneumatic unloading ($100 flat after 90 min)
  *
+ * Supports cargo-specific rate overrides for detention/demurrage.
  * Integrates with loadLifecycle state transitions as effects.
  */
 
@@ -16,7 +19,7 @@ import { sql } from "drizzle-orm";
 // TYPES
 // ═══════════════════════════════════════════════════════════════
 
-export type TimerType = "DETENTION" | "DEMURRAGE" | "LAYOVER";
+export type TimerType = "DETENTION" | "DEMURRAGE" | "LAYOVER" | "PUMP_TIME" | "BLOW_OFF";
 export type TimerStatus = "FREE_TIME" | "BILLING" | "STOPPED" | "WAIVED";
 
 export interface TimerConfig {
@@ -68,9 +71,30 @@ export const DEFAULT_TIMER_CONFIGS: Record<TimerType, TimerConfig> = {
   DETENTION: { freeTimeMinutes: 120, hourlyRate: 75, maxChargeHours: 24 },
   DEMURRAGE: { freeTimeMinutes: 120, hourlyRate: 75, maxChargeHours: 48 },
   LAYOVER: { freeTimeMinutes: 0, hourlyRate: 0, maxChargeHours: undefined },
+  PUMP_TIME: { freeTimeMinutes: 30, hourlyRate: 75, maxChargeHours: 4 },
+  BLOW_OFF: { freeTimeMinutes: 90, hourlyRate: 0, maxChargeHours: undefined },
 };
 
 const LAYOVER_FLAT_RATE = 350; // $350/day flat rate
+const BLOW_OFF_FLAT_RATE = 100; // $100 flat rate after free time
+
+// Cargo-specific rate overrides for detention and demurrage
+const CARGO_TIMER_OVERRIDES: Record<string, Partial<Record<"DETENTION" | "DEMURRAGE", TimerConfig>>> = {
+  hazmat:       { DETENTION: { freeTimeMinutes: 90, hourlyRate: 125, maxChargeHours: 24 }, DEMURRAGE: { freeTimeMinutes: 90, hourlyRate: 125, maxChargeHours: 48 } },
+  refrigerated: { DETENTION: { freeTimeMinutes: 90, hourlyRate: 100, maxChargeHours: 24 }, DEMURRAGE: { freeTimeMinutes: 60, hourlyRate: 100, maxChargeHours: 48 } },
+  oversized:    { DETENTION: { freeTimeMinutes: 120, hourlyRate: 100, maxChargeHours: 24 }, DEMURRAGE: { freeTimeMinutes: 120, hourlyRate: 100, maxChargeHours: 48 } },
+  liquid:       { DETENTION: { freeTimeMinutes: 120, hourlyRate: 85, maxChargeHours: 24 }, DEMURRAGE: { freeTimeMinutes: 120, hourlyRate: 85, maxChargeHours: 48 } },
+  gas:          { DETENTION: { freeTimeMinutes: 90, hourlyRate: 125, maxChargeHours: 24 }, DEMURRAGE: { freeTimeMinutes: 90, hourlyRate: 125, maxChargeHours: 48 } },
+  chemicals:    { DETENTION: { freeTimeMinutes: 90, hourlyRate: 110, maxChargeHours: 24 }, DEMURRAGE: { freeTimeMinutes: 90, hourlyRate: 110, maxChargeHours: 48 } },
+  petroleum:    { DETENTION: { freeTimeMinutes: 120, hourlyRate: 85, maxChargeHours: 24 }, DEMURRAGE: { freeTimeMinutes: 120, hourlyRate: 85, maxChargeHours: 48 } },
+};
+
+export function getTimerConfigForCargo(type: "DETENTION" | "DEMURRAGE", cargoType?: string): TimerConfig {
+  if (cargoType && CARGO_TIMER_OVERRIDES[cargoType]?.[type]) {
+    return CARGO_TIMER_OVERRIDES[cargoType][type]!;
+  }
+  return DEFAULT_TIMER_CONFIGS[type];
+}
 
 // ═══════════════════════════════════════════════════════════════
 // SERVICE
@@ -216,6 +240,8 @@ export async function getActiveTimers(loadId: number): Promise<TimerSnapshot[]> 
       let currentCharge = 0;
       if (t.type === "LAYOVER") {
         currentCharge = Math.ceil(elapsedMinutes / (24 * 60)) * LAYOVER_FLAT_RATE;
+      } else if (t.type === "BLOW_OFF") {
+        currentCharge = billableMinutes > 0 ? BLOW_OFF_FLAT_RATE : 0;
       } else if (billableMinutes > 0) {
         currentCharge = (billableMinutes / 60) * hourlyRate;
         if (t.max_charge_hours) {

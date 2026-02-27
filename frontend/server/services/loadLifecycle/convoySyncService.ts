@@ -11,7 +11,10 @@
 
 import { getDb } from "../../db";
 import { sql, eq } from "drizzle-orm";
-import { convoys } from "../../../drizzle/schema";
+import { convoys, escortAssignments } from "../../../drizzle/schema";
+import { emitConvoyUpdate, emitNotification } from "../../_core/websocket";
+import { WS_EVENTS, WS_CHANNELS } from "@shared/websocket-events";
+import { wsService } from "../../_core/websocket";
 
 // ═══════════════════════════════════════════════════════════════
 // ESCORT-SPECIFIC STATES
@@ -26,6 +29,12 @@ export const ESCORT_STATES = [
 ] as const;
 
 export type EscortState = (typeof ESCORT_STATES)[number];
+
+// Cargo exception states that should pause convoy sync progression
+const CARGO_EXCEPTION_STATES = new Set([
+  "TEMP_EXCURSION", "REEFER_BREAKDOWN", "CONTAMINATION_REJECT",
+  "SEAL_BREACH", "WEIGHT_VIOLATION",
+]);
 
 // ═══════════════════════════════════════════════════════════════
 // SYNC POINTS
@@ -196,6 +205,75 @@ export async function executeSyncPoint(
       executedEffects.push(effect);
     }
 
+    // ── Send real-time notifications for this sync point ──
+    const [convoyInfo] = await db.select({
+      loadId: convoys.loadId,
+      leadUserId: convoys.leadUserId,
+      rearUserId: convoys.rearUserId,
+      loadUserId: convoys.loadUserId,
+      status: convoys.status,
+    }).from(convoys).where(eq(convoys.id, convoyId)).limit(1);
+
+    if (convoyInfo) {
+      const participants = [convoyInfo.leadUserId, convoyInfo.loadUserId];
+      if (convoyInfo.rearUserId) participants.push(convoyInfo.rearUserId);
+
+      // Map sync point notification keys to human-readable messages
+      const NOTIF_MAP: Record<string, { title: string; message: string; priority: 'low' | 'medium' | 'high' | 'critical' }> = {
+        convoy_ready_to_depart: { title: "Convoy Ready", message: "Both primary and escort confirmed — convoy ready to depart.", priority: "high" },
+        convoy_departing: { title: "Convoy Departing", message: "Convoy is forming and departing from pickup.", priority: "high" },
+        convoy_formed_all_positions: { title: "Convoy Formed", message: "All positions confirmed — convoy is in transit.", priority: "medium" },
+        convoy_arrived_at_delivery: { title: "Convoy Arrived", message: "Convoy has arrived at the delivery location.", priority: "medium" },
+        escort_mission_complete: { title: "Escort Complete", message: "Escort mission is complete. Thank you for your service.", priority: "low" },
+      };
+
+      for (const notifKey of syncPoint.onSync.notifications) {
+        const notif = NOTIF_MAP[notifKey];
+        if (!notif) continue;
+
+        // Notify each participant via user channel
+        for (const userId of participants) {
+          emitNotification(String(userId), {
+            id: `notif_convoy_${convoyId}_${notifKey}_${Date.now()}`,
+            type: `convoy_sync`,
+            title: notif.title,
+            message: notif.message,
+            priority: notif.priority,
+            data: { convoyId: String(convoyId), syncPointId: syncPoint.id, loadId: String(convoyInfo.loadId) },
+            actionUrl: `/escort/active-trip`,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        // Also broadcast convoy alert to the load channel
+        wsService.broadcastToChannel(
+          WS_CHANNELS.LOAD(String(convoyInfo.loadId)),
+          {
+            type: WS_EVENTS.CONVOY_ALERT,
+            data: {
+              convoyId,
+              syncPointId: syncPoint.id,
+              syncPointName: syncPoint.name,
+              notification: notifKey,
+              message: notif.message,
+            },
+            timestamp: new Date().toISOString(),
+          }
+        );
+      }
+
+      // Emit convoy update event with new state
+      emitConvoyUpdate({
+        convoyId,
+        loadId: convoyInfo.loadId,
+        status: convoyInfo.status || "unknown",
+        leadUserId: convoyInfo.leadUserId,
+        rearUserId: convoyInfo.rearUserId || undefined,
+        loadUserId: convoyInfo.loadUserId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     console.log(`[ConvoySync] Sync point ${syncPoint.id} executed for convoy ${convoyId}`);
     return { success: true, effects: executedEffects };
   } catch (e) {
@@ -228,6 +306,47 @@ export async function checkSeparation(convoyId: number): Promise<{
 
     if (leadAlert || rearAlert) {
       console.log(`[ConvoySync] Separation alert convoy ${convoyId}: lead=${leadDist}m rear=${rearDist}m`);
+
+      // Build alert message
+      const alerts: string[] = [];
+      if (leadAlert) alerts.push(`Lead escort ${Math.round(leadDist!)}m away (max ${SEPARATION_CONFIG.maxLeadDistanceMeters}m)`);
+      if (rearAlert) alerts.push(`Rear escort ${Math.round(rearDist!)}m away (max ${SEPARATION_CONFIG.maxRearDistanceMeters}m)`);
+      const alertMsg = `Separation alert: ${alerts.join("; ")}`;
+
+      // Broadcast convoy alert to the load channel
+      wsService.broadcastToChannel(
+        WS_CHANNELS.LOAD(String(convoy.loadId)),
+        {
+          type: WS_EVENTS.CONVOY_ALERT,
+          data: {
+            convoyId,
+            alertType: "separation",
+            leadDistance: leadDist,
+            rearDistance: rearDist,
+            leadAlert,
+            rearAlert,
+            message: alertMsg,
+          },
+          timestamp: new Date().toISOString(),
+        }
+      );
+
+      // Notify all convoy participants
+      const participants = [convoy.leadUserId, convoy.loadUserId];
+      if (convoy.rearUserId) participants.push(convoy.rearUserId);
+
+      for (const userId of participants) {
+        emitNotification(String(userId), {
+          id: `notif_sep_${convoyId}_${Date.now()}`,
+          type: "convoy_separation_alert",
+          title: "Convoy Separation Alert",
+          message: alertMsg,
+          priority: "high",
+          data: { convoyId: String(convoyId), loadId: String(convoy.loadId), leadDistance: leadDist, rearDistance: rearDist },
+          actionUrl: `/escort/active-trip`,
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
     return { leadDistance: leadDist, rearDistance: rearDist, leadAlert, rearAlert };
@@ -256,6 +375,49 @@ export async function onLoadStateChange(
     `);
     const convoy = ((convoyRows as unknown as any[][])[0] || [])[0];
     if (!convoy) return;
+
+    const upperState = newState.toUpperCase();
+
+    // Cargo exception states pause convoy — place escort on ESCORT_HOLD
+    if (CARGO_EXCEPTION_STATES.has(upperState)) {
+      console.log(`[ConvoySync] Primary load ${loadId} entered ${upperState}, placing convoy ${convoy.id} on ESCORT_HOLD`);
+      await db.update(convoys).set({ status: "escort_hold" as any }).where(eq(convoys.id, convoy.id));
+
+      // Fetch convoy participants and notify them
+      const [cInfo] = await db.select({
+        leadUserId: convoys.leadUserId,
+        rearUserId: convoys.rearUserId,
+        loadUserId: convoys.loadUserId,
+      }).from(convoys).where(eq(convoys.id, convoy.id)).limit(1);
+
+      if (cInfo) {
+        const holdMsg = `Convoy paused — primary load entered ${upperState}`;
+        wsService.broadcastToChannel(
+          WS_CHANNELS.LOAD(String(loadId)),
+          {
+            type: WS_EVENTS.CONVOY_ALERT,
+            data: { convoyId: convoy.id, alertType: "cargo_exception", cargoState: upperState, message: holdMsg },
+            timestamp: new Date().toISOString(),
+          }
+        );
+
+        const holdParticipants = [cInfo.leadUserId, cInfo.loadUserId];
+        if (cInfo.rearUserId) holdParticipants.push(cInfo.rearUserId);
+        for (const uid of holdParticipants) {
+          emitNotification(String(uid), {
+            id: `notif_hold_${convoy.id}_${Date.now()}`,
+            type: "convoy_hold",
+            title: "Convoy On Hold",
+            message: holdMsg,
+            priority: "critical",
+            data: { convoyId: String(convoy.id), loadId: String(loadId), cargoState: upperState },
+            actionUrl: `/escort/active-trip`,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
+      return;
+    }
 
     // Check sync points
     const syncPoint = await checkSyncPoints(convoy.id, loadId);

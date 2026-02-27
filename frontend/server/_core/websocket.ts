@@ -26,6 +26,8 @@ import {
   FinancialPayload,
   ZeunPayload,
   EmergencyPayload,
+  EscortPayload,
+  ConvoyPayload,
 } from "@shared/websocket-events";
 
 type WSMessage = SharedWSMessage;
@@ -759,6 +761,181 @@ export function emitEscortJobAvailable(data: Record<string, unknown>): void {
     {
       type: WS_EVENTS.ESCORT_JOB_AVAILABLE,
       data,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit escort job assigned — notifies the assigned escort user and dispatch
+ */
+export function emitEscortJobAssigned(payload: EscortPayload): void {
+  // Notify the load room
+  wsService.broadcastToChannel(
+    WS_CHANNELS.LOAD(String(payload.loadId)),
+    {
+      type: WS_EVENTS.ESCORT_JOB_ASSIGNED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+
+  // Notify the assigned escort user
+  wsService.broadcastToChannel(
+    WS_CHANNELS.USER(String(payload.escortUserId)),
+    {
+      type: WS_EVENTS.ESCORT_JOB_ASSIGNED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+
+  // Notify dispatch
+  wsService.broadcastToChannel(
+    WS_CHANNELS.DISPATCH_UPDATES,
+    {
+      type: WS_EVENTS.ESCORT_JOB_ASSIGNED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit escort job started — escort has accepted and begun escorting
+ */
+export function emitEscortJobStarted(payload: EscortPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.LOAD(String(payload.loadId)),
+    {
+      type: WS_EVENTS.ESCORT_JOB_STARTED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+
+  // Notify the driver of the load
+  if (payload.driverUserId) {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.USER(String(payload.driverUserId)),
+      {
+        type: WS_EVENTS.ESCORT_JOB_STARTED,
+        data: payload,
+        timestamp: new Date().toISOString(),
+      }
+    );
+  }
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.DISPATCH_UPDATES,
+    {
+      type: WS_EVENTS.ESCORT_JOB_STARTED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit escort job completed — escort has finished
+ */
+export function emitEscortJobCompleted(payload: EscortPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.LOAD(String(payload.loadId)),
+    {
+      type: WS_EVENTS.ESCORT_JOB_COMPLETED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.USER(String(payload.escortUserId)),
+    {
+      type: WS_EVENTS.ESCORT_JOB_COMPLETED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.DISPATCH_UPDATES,
+    {
+      type: WS_EVENTS.ESCORT_JOB_COMPLETED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit convoy formed — convoy created and linked to load
+ */
+export function emitConvoyFormed(payload: ConvoyPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.LOAD(String(payload.loadId)),
+    {
+      type: WS_EVENTS.CONVOY_FORMED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+
+  // Notify all convoy participants
+  for (const uid of [payload.leadUserId, payload.rearUserId, payload.loadUserId]) {
+    if (uid) {
+      wsService.broadcastToChannel(
+        WS_CHANNELS.USER(String(uid)),
+        {
+          type: WS_EVENTS.CONVOY_FORMED,
+          data: payload,
+          timestamp: new Date().toISOString(),
+        }
+      );
+    }
+  }
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.DISPATCH_UPDATES,
+    {
+      type: WS_EVENTS.CONVOY_FORMED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit convoy status update (active, completed, disbanded)
+ */
+export function emitConvoyUpdate(payload: ConvoyPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.LOAD(String(payload.loadId)),
+    {
+      type: WS_EVENTS.CONVOY_UPDATE,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+
+  for (const uid of [payload.leadUserId, payload.rearUserId, payload.loadUserId]) {
+    if (uid) {
+      wsService.broadcastToChannel(
+        WS_CHANNELS.USER(String(uid)),
+        {
+          type: WS_EVENTS.CONVOY_UPDATE,
+          data: payload,
+          timestamp: new Date().toISOString(),
+        }
+      );
+    }
+  }
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.DISPATCH_UPDATES,
+    {
+      type: WS_EVENTS.CONVOY_UPDATE,
+      data: payload,
       timestamp: new Date().toISOString(),
     }
   );

@@ -531,6 +531,32 @@ export interface ZeunPayload {
   timestamp: string;
 }
 
+export interface EscortPayload {
+  assignmentId: number;
+  loadId: number;
+  loadNumber?: string;
+  escortUserId: number;
+  escortName?: string;
+  position?: 'lead' | 'chase' | 'both';
+  status: string;
+  previousStatus?: string;
+  convoyId?: number;
+  driverUserId?: number;
+  carrierUserId?: number;
+  timestamp: string;
+}
+
+export interface ConvoyPayload {
+  convoyId: number;
+  loadId: number;
+  status: string;
+  previousStatus?: string;
+  leadUserId?: number;
+  rearUserId?: number;
+  loadUserId?: number;
+  timestamp: string;
+}
+
 export interface EmergencyPayload {
   operationId: string;
   operationCode: string;

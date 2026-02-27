@@ -400,7 +400,7 @@ export default function RecurringLoadScheduler() {
                       className={ic}
                     />
                     {filteredPartners.length > 0 && catalystSearch.length >= 2 && !catalystName && (
-                      <div className={cn("absolute z-20 w-full mt-1 rounded-xl border max-h-48 overflow-y-auto", isLight ? "bg-white border-slate-200 shadow-lg" : "bg-slate-800 border-slate-700 shadow-xl")}>
+                      <div className={cn("absolute z-20 w-full mt-1 rounded-xl border max-h-48 overflow-y-auto", isLight ? "bg-white border-slate-200 shadow-lg" : "border-slate-700 shadow-xl")} style={isLight ? undefined : { backgroundColor: '#0c0e18' }}>
                         {filteredPartners.map((p: any) => (
                           <button key={p.id || p.partnerId} onClick={() => { setCatalystName(p.partnerName || p.companyName || ""); setCatalystUserId(p.partnerUserId || p.id || null); setCatalystSearch(""); }}
                             className={cn("w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors", isLight ? "hover:bg-blue-50" : "hover:bg-slate-700")}>

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useMemo } from "react";
+import { Portal } from "@/components/ui/portal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -384,7 +385,8 @@ function CompanyGrid({
 
 function CompanyDetailModal({ company, onClose }: { company: Company; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/50 overflow-y-auto z-50" onClick={onClose}>
+    <Portal>
+    <div className="fixed inset-0 bg-black/50 overflow-y-auto z-[9999]" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center p-4">
       <Card className="bg-slate-800 border-slate-700 w-full max-w-xl" onClick={(e: any) => e.stopPropagation()}>
         <CardHeader className="border-b border-slate-700">
@@ -480,5 +482,6 @@ function CompanyDetailModal({ company, onClose }: { company: Company; onClose: (
       </Card>
       </div>
     </div>
+    </Portal>
   );
 }

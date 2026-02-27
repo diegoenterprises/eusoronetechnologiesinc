@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Portal } from "@/components/ui/portal";
 import DatePicker from "@/components/DatePicker";
 
 const cell = "rounded-2xl border border-slate-200/60 dark:border-white/[0.04] bg-white dark:bg-white/[0.02]";
@@ -528,7 +529,8 @@ export default function DockManagement() {
       )}
       {/* ═══ CONFIGURE MODAL ═══ */}
       {showConfig && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowConfig(false)}>
+        <Portal>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowConfig(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div className={cn("w-full max-w-xl rounded-2xl border p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
@@ -567,11 +569,13 @@ export default function DockManagement() {
           </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {/* ═══ GENERATE BOL MODAL ═══ */}
       {showBOL && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowBOL(false)}>
+        <Portal>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowBOL(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div className={cn("w-full max-w-2xl rounded-2xl border p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
@@ -694,11 +698,13 @@ export default function DockManagement() {
           </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {/* ═══ EUSOTICKET RUN TICKET MODAL — Real-World Crude Oil Fields ═══ */}
       {showRunTicket && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowRunTicket(false)}>
+        <Portal>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowRunTicket(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div className={cn("w-full max-w-4xl rounded-2xl border p-6 space-y-4", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
@@ -995,6 +1001,7 @@ export default function DockManagement() {
           </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

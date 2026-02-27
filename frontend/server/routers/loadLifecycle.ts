@@ -1,10 +1,10 @@
 /**
- * LOAD LIFECYCLE STATE MACHINE v2.1 — 32-State Engine
+ * LOAD LIFECYCLE STATE MACHINE v2.2 — 37-State Engine
  * ═══════════════════════════════════════════════════════
  *
  * Full state machine with:
- * - 32 states across 6 categories (Creation → Financial)
- * - ~50 typed transitions with guards, effects, and UI actions
+ * - 37 states across 6 categories (Creation → Financial + cargo-specific exceptions)
+ * - ~60 typed transitions with guards, effects, and UI actions
  * - Role-based permission checks (12 platform roles)
  * - Geofence-triggered automatic transitions
  * - Financial timer hooks (detention, demurrage, layover)
@@ -25,8 +25,8 @@ import { z } from "zod";
 import { router, isolatedApprovedProcedure as protectedProcedure } from "../_core/trpc";
 import { feeCalculator } from "../services/feeCalculator";
 import { getDb } from "../db";
-import { loads, vehicles } from "../../drizzle/schema";
-import { eq, sql } from "drizzle-orm";
+import { loads, vehicles, escortAssignments } from "../../drizzle/schema";
+import { eq, and, ne, sql } from "drizzle-orm";
 
 import {
   LOAD_STATES,
@@ -47,6 +47,7 @@ import {
   getActiveTimers as getFinancialTimers,
   getTimerHistory,
   waiveTimer,
+  getTimerConfigForCargo,
 } from "../services/loadLifecycle/financialTimers";
 
 import { onLoadStateChange as checkConvoySync } from "../services/loadLifecycle/convoySyncService";
@@ -83,7 +84,7 @@ interface GuardContext {
 
 const IS_PROD = process.env.NODE_ENV === "production";
 
-function evaluateGuard(guard: { type: string; check: string; errorMessage: string }, ctx: GuardContext): string | null {
+async function evaluateGuard(guard: { type: string; check: string; errorMessage: string }, ctx: GuardContext): Promise<string | null> {
   switch (guard.check) {
     // ── Data guards (always enforced) ──
     case "has_pickup_location":
@@ -218,13 +219,34 @@ function evaluateGuard(guard: { type: string; check: string; errorMessage: strin
     case "fsma_cert_valid":
     case "oversize_permit_valid":
     case "route_survey_complete":
-    case "escort_arranged":
     case "ifta_valid":
     case "irp_valid":
     case "carb_compliant":
     case "weight_distance_tax": {
       const profile = buildCargoProfile(ctx.load);
       return evaluateCargoGuard(guard.check, profile, guard.errorMessage);
+    }
+
+    // ── Escort arrangement gate (async DB check) ──
+    case "escort_arranged": {
+      const loadId = ctx.load?.id;
+      const requiresEscort = ctx.load?.requiresEscort;
+      // If the load doesn't require escort, pass immediately
+      if (!requiresEscort) return null;
+      if (!loadId) return guard.errorMessage;
+      try {
+        const db = await getDb();
+        if (!db) return IS_PROD ? guard.errorMessage : null;
+        const [assignment] = await db.select({ id: escortAssignments.id })
+          .from(escortAssignments)
+          .where(and(
+            eq(escortAssignments.loadId, loadId),
+            ne(escortAssignments.status, "cancelled"),
+          )).limit(1);
+        return assignment ? null : guard.errorMessage;
+      } catch {
+        return IS_PROD ? guard.errorMessage : null;
+      }
     }
 
     default:
@@ -432,10 +454,6 @@ function evaluateCargoGuard(check: string, profile: CargoProfile, errorMessage: 
     case "route_survey_complete":
       if (!profile.isOversize) return null;
       return IS_PROD ? errorMessage : null;
-    case "escort_arranged":
-      if (!profile.isOversize) return null;
-      return null; // Conditional — not all oversize needs escort
-
     // ── Interstate compliance ──
     case "ifta_valid":
       if (!profile.isInterstate) return null;
@@ -540,19 +558,33 @@ async function captureComplianceSnapshot(loadId: number, load: any) {
 
 async function executeFinancialEffect(action: string, loadId: number, ctx: any) {
   try {
+    // Resolve cargo type for cargo-specific timer configs
+    let cargoType: string | undefined;
+    if (["start_detention_timer", "start_demurrage_timer"].includes(action)) {
+      const db = await getDb();
+      if (db) {
+        const [load] = await db.select({ cargoType: loads.cargoType }).from(loads).where(eq(loads.id, loadId)).limit(1);
+        cargoType = (load as any)?.cargoType;
+      }
+    }
+
     switch (action) {
-      case "start_detention_timer":
-        await startTimer(loadId, "DETENTION");
+      case "start_detention_timer": {
+        const cfg = getTimerConfigForCargo("DETENTION", cargoType);
+        await startTimer(loadId, "DETENTION", cfg);
         break;
+      }
       case "stop_detention_timer": {
         const timers = await getFinancialTimers(loadId);
         const detention = timers.find(t => t.type === "DETENTION");
         if (detention) await stopTimer(detention.id);
         break;
       }
-      case "start_demurrage_timer":
-        await startTimer(loadId, "DEMURRAGE");
+      case "start_demurrage_timer": {
+        const cfg2 = getTimerConfigForCargo("DEMURRAGE", cargoType);
+        await startTimer(loadId, "DEMURRAGE", cfg2);
         break;
+      }
       case "stop_demurrage_timer": {
         const timers2 = await getFinancialTimers(loadId);
         const demurrage = timers2.find(t => t.type === "DEMURRAGE");
@@ -566,6 +598,24 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
         const timers3 = await getFinancialTimers(loadId);
         const layover = timers3.find(t => t.type === "LAYOVER");
         if (layover) await stopTimer(layover.id);
+        break;
+      }
+      case "start_pump_timer":
+        await startTimer(loadId, "PUMP_TIME");
+        break;
+      case "stop_pump_timer": {
+        const timers4 = await getFinancialTimers(loadId);
+        const pump = timers4.find(t => t.type === "PUMP_TIME");
+        if (pump) await stopTimer(pump.id);
+        break;
+      }
+      case "start_blow_off_timer":
+        await startTimer(loadId, "BLOW_OFF");
+        break;
+      case "stop_blow_off_timer": {
+        const timers5 = await getFinancialTimers(loadId);
+        const blowOff = timers5.find(t => t.type === "BLOW_OFF");
+        if (blowOff) await stopTimer(blowOff.id);
         break;
       }
       case "capture_escrow":
@@ -719,12 +769,11 @@ export const loadLifecycleRouter = router({
       const userRole = (ctx.user?.role || "DRIVER").toUpperCase() as UserRole;
       const transitions = getTransitionsFrom(currentState);
 
-      return transitions
-        .filter(t => t.actor.includes(userRole) || userRole === "ADMIN" || userRole === "SUPER_ADMIN")
-        .map(t => {
+      const filtered = transitions.filter(t => t.actor.includes(userRole) || userRole === "ADMIN" || userRole === "SUPER_ADMIN");
+      return Promise.all(filtered.map(async t => {
           const guardErrors: string[] = [];
           for (const g of t.guards) {
-            const err = evaluateGuard(g, { load, complianceChecks: {}, metadata: {} });
+            const err = await evaluateGuard(g, { load, complianceChecks: {}, metadata: {} });
             if (err) guardErrors.push(err);
           }
           return {
@@ -736,7 +785,7 @@ export const loadLifecycleRouter = router({
             canExecute: guardErrors.length === 0,
             blockedReasons: guardErrors,
           };
-        });
+        }));
     }),
 
   // ── GET STATE HISTORY FOR A LOAD ──
@@ -868,7 +917,7 @@ export const loadLifecycleRouter = router({
       const errors: string[] = [];
       const guardsPassed: string[] = [];
       for (const g of transition.guards) {
-        const err = evaluateGuard(g, guardCtx);
+        const err = await evaluateGuard(g, guardCtx);
         if (err) errors.push(err);
         else guardsPassed.push(g.check);
       }
@@ -957,6 +1006,17 @@ export const loadLifecycleRouter = router({
         });
       } catch { /* non-critical — page still works via polling */ }
 
+      // ── Cargo exception notifications — urgent email + SMS ──
+      const CARGO_EXCEPTION_STATES = ["TEMP_EXCURSION", "REEFER_BREAKDOWN", "CONTAMINATION_REJECT", "SEAL_BREACH", "WEIGHT_VIOLATION"];
+      if (CARGO_EXCEPTION_STATES.includes(transition.to)) {
+        try {
+          const { lookupAndNotify } = await import("../services/notifications");
+          const cargoType = (load as any).cargoType || undefined;
+          if (load.shipperId) lookupAndNotify(load.shipperId, { type: "cargo_exception", loadNumber: load.loadNumber, exceptionType: transition.to.toLowerCase(), loadId: input.loadId, cargoType });
+          if (load.catalystId) lookupAndNotify(load.catalystId, { type: "cargo_exception", loadNumber: load.loadNumber, exceptionType: transition.to.toLowerCase(), loadId: input.loadId, cargoType });
+        } catch { /* non-critical */ }
+      }
+
       return {
         success: true,
         loadId: input.loadId,
@@ -1029,7 +1089,7 @@ export const loadLifecycleRouter = router({
       };
       const errors: string[] = [];
       for (const g of match.guards) {
-        const err = evaluateGuard(g, guardCtx);
+        const err = await evaluateGuard(g, guardCtx);
         if (err) errors.push(err);
       }
       if (errors.length > 0) {

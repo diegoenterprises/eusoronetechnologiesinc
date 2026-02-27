@@ -293,6 +293,8 @@ export const loads = mysqlTable(
     heldBy: int("held_by"),
     heldAt: timestamp("held_at"),
     previousState: varchar("previous_state", { length: 30 }),
+    requiresEscort: boolean("requiresEscort").default(false).notNull(),
+    escortCount: int("escortCount").default(0).notNull(),
   },
   (table) => ({
     shipperIdx: index("load_shipper_idx").on(table.shipperId),

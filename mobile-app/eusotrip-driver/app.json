@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "EusoTrip Driver",
+    "slug": "eusotrip-driver",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "eusotrip-driver",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1473FF"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.eusotrip.driver",
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "EusoTrip needs your location to track deliveries, detect facility arrivals, and calculate detention time — even when the app is in the background.",
+        "NSLocationWhenInUseUsageDescription": "EusoTrip needs your location to track deliveries and detect geofence events.",
+        "NSCameraUsageDescription": "EusoTrip needs camera access to capture BOL photos, damage documentation, and seal verification images.",
+        "UIBackgroundModes": ["location", "fetch"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1473FF"
+      },
+      "package": "com.eusotrip.driver",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "CAMERA",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "EusoTrip needs your location to track deliveries and detect facility arrivals.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      "@nozbe/watermelondb/expo-plugin"
+    ]
+  }
+}

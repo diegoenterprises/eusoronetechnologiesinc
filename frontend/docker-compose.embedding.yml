@@ -1,0 +1,47 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# PPLX-EMBED SELF-HOSTED INFERENCE — LOCAL DEVELOPMENT
+# ──────────────────────────────────────────────────────────────────────────────
+# Uses HuggingFace Text Embeddings Inference (TEI) — a production-grade
+# Rust inference server — to serve perplexity-ai/pplx-embed-v1-0.6b locally.
+#
+# Usage:
+#   docker compose -f docker-compose.embedding.yml up
+#
+# First run downloads the model (~1.2GB). Subsequent runs use cached weights.
+# The server exposes an OpenAI-compatible /v1/embeddings endpoint on port 8090.
+#
+# Set EMBEDDING_SERVICE_URL=http://localhost:8090 in your .env
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+  pplx-embed:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
+    container_name: eusotrip-pplx-embed
+    ports:
+      - "8090:80"
+    volumes:
+      - pplx-embed-cache:/data
+    environment:
+      - LOG_LEVEL=info
+    command:
+      - --model-id=perplexity-ai/pplx-embed-v1-0.6b
+      - --port=80
+      - --max-batch-tokens=32768
+      - --max-concurrent-requests=64
+      - --dtype=float32
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2.0"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+volumes:
+  pplx-embed-cache:
+    driver: local

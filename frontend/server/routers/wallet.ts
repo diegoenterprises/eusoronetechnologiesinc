@@ -23,6 +23,62 @@ import {
 } from "../../drizzle/schema";
 import { feeCalculator } from "../services/feeCalculator";
 import { requireAccess } from "../services/security/rbac/access-check";
+import { stripe } from "../stripe/service";
+
+// Safe Stripe call — returns null if Stripe not configured or API not available
+async function safeStripeCall<T>(fn: () => Promise<T>): Promise<T | null> {
+  try { return await fn(); } catch (err: any) {
+    if (err.message?.includes("STRIPE_SECRET_KEY")) return null;
+    console.warn("[wallet] Stripe call failed:", err.message);
+    return null;
+  }
+}
+
+// Ensure a wallet exists for the given userId, creating one if missing
+async function ensureWallet(db: NonNullable<Awaited<ReturnType<typeof getDb>>>, userId: number) {
+  let [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
+  if (!wallet) {
+    try {
+      await db.insert(wallets).values({
+        userId,
+        availableBalance: "0",
+        pendingBalance: "0",
+        reservedBalance: "0",
+        currency: "USD",
+      });
+      [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
+      console.log(`[Wallet] Auto-created wallet for user ${userId}`);
+    } catch (e: any) {
+      // Race condition — another request may have created it
+      [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
+    }
+  }
+  if (!wallet) throw new Error("Unable to create wallet. Please contact support.");
+  return wallet;
+}
+
+// Ensure a Stripe customer exists for the given userId, creating one if missing
+async function ensureStripeCustomer(db: NonNullable<Awaited<ReturnType<typeof getDb>>>, userId: number) {
+  const [userRow] = await db.select({ stripeCustomerId: users.stripeCustomerId, stripeConnectId: users.stripeConnectId, email: users.email, name: users.name })
+    .from(users).where(eq(users.id, userId)).limit(1);
+  if (!userRow) return { stripeCustomerId: null, stripeConnectId: null, email: null, name: null };
+
+  let stripeCustomerId = userRow.stripeCustomerId || null;
+  if (!stripeCustomerId && userRow.email) {
+    const customer = await safeStripeCall(() => stripe.customers.create({
+      email: userRow.email!,
+      name: userRow.name || undefined,
+      metadata: { userId: String(userId), platform: "eusotrip" },
+    }));
+    if (customer?.id) {
+      stripeCustomerId = customer.id;
+      await db.update(users).set({ stripeCustomerId: customer.id }).where(eq(users.id, userId));
+      console.log(`[Wallet] Auto-created Stripe customer ${customer.id} for user ${userId}`);
+    }
+  }
+
+  return { stripeCustomerId, stripeConnectId: userRow.stripeConnectId || null, email: userRow.email, name: userRow.name };
+}
 
 const transactionTypeSchema = z.enum([
   "earnings", "payout", "fee", "refund", "bonus", "adjustment", "transfer", "deposit"
@@ -432,8 +488,7 @@ export const walletRouter = router({
       const userId = Number(ctx.user?.id) || 0;
 
       // Verify wallet balance
-      const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
-      if (!wallet) throw new Error("Wallet not found");
+      const wallet = await ensureWallet(db, userId);
       const availableBalance = parseFloat(wallet.availableBalance || "0");
       if (availableBalance < input.amount) throw new Error("Insufficient balance");
 
@@ -456,6 +511,23 @@ export const walletRouter = router({
       }
       const netAmount = input.amount - fee;
 
+      // Execute real Stripe payout if user has a Connect account
+      let stripePayoutId: string | null = null;
+      const [userRow] = await db.select({ stripeConnectId: users.stripeConnectId }).from(users).where(eq(users.id, userId)).limit(1);
+      if (userRow?.stripeConnectId) {
+        const payout = await safeStripeCall(() => stripe.payouts.create({
+          amount: Math.round(netAmount * 100),
+          currency: "usd",
+          description: input.instant ? "EusoWallet instant payout" : "EusoWallet standard payout",
+          method: input.instant ? "instant" : "standard",
+          metadata: { userId: String(userId), walletId: String(wallet.id) },
+        }, { stripeAccount: userRow.stripeConnectId! }));
+        if (payout) {
+          stripePayoutId = payout.id;
+          console.log(`[Wallet] Stripe payout ${payout.id}: $${netAmount} → ${userRow.stripeConnectId} (${input.instant ? 'instant' : 'standard'})`);
+        }
+      }
+
       // Create payout transaction and debit wallet
       const [txn] = await db.insert(walletTransactions).values({
         walletId: wallet.id,
@@ -463,8 +535,8 @@ export const walletRouter = router({
         amount: String(-input.amount),
         fee: String(fee),
         netAmount: String(-netAmount),
-        status: input.instant ? "processing" : "pending",
-        description: input.instant ? "Instant payout" : "Standard payout",
+        status: stripePayoutId ? "processing" : (input.instant ? "processing" : "pending"),
+        description: `${input.instant ? "Instant payout" : "Standard payout"}${stripePayoutId ? ` (${stripePayoutId})` : ''}`,
       }).$returningId();
 
       await db.update(wallets).set({
@@ -631,12 +703,7 @@ export const walletRouter = router({
       if (!db) throw new Error("Database not available");
 
       // Get sender wallet
-      const [senderWallet] = await db.select()
-        .from(wallets)
-        .where(eq(wallets.userId, userId))
-        .limit(1);
-
-      if (!senderWallet) throw new Error("Sender wallet not found");
+      const senderWallet = await ensureWallet(db, userId);
 
       const availableBalance = parseFloat(senderWallet.availableBalance || "0");
       if (availableBalance < input.amount) {
@@ -819,12 +886,7 @@ export const walletRouter = router({
 
       if (!db) throw new Error("Database not available");
 
-      const [wallet] = await db.select()
-        .from(wallets)
-        .where(eq(wallets.userId, userId))
-        .limit(1);
-
-      if (!wallet) throw new Error("Wallet not found");
+      const wallet = await ensureWallet(db, userId);
 
       // Calculate fee using admin-configured platform fee calculator
       let feePercent = 5;
@@ -939,12 +1001,7 @@ export const walletRouter = router({
 
       if (!db) throw new Error("Database not available");
 
-      const [wallet] = await db.select()
-        .from(wallets)
-        .where(eq(wallets.userId, userId))
-        .limit(1);
-
-      if (!wallet) throw new Error("Wallet not found");
+      const wallet = await ensureWallet(db, userId);
 
       const availableBalance = parseFloat(wallet.availableBalance || "0");
       if (availableBalance < input.amount) {
@@ -1061,13 +1118,8 @@ export const walletRouter = router({
 
       if (!db) throw new Error("Database not available");
 
-      // Get sender wallet
-      const [senderWallet] = await db.select()
-        .from(wallets)
-        .where(eq(wallets.userId, userId))
-        .limit(1);
-
-      if (!senderWallet) throw new Error("Wallet not found");
+      // Get or create sender wallet
+      const senderWallet = await ensureWallet(db, userId);
 
       if (input.paymentType === "direct") {
         const availableBalance = parseFloat(senderWallet.availableBalance || "0");
@@ -1093,23 +1145,8 @@ export const walletRouter = router({
 
       // Process direct payment immediately
       if (input.paymentType === "direct" || input.paymentType === "tip") {
-        // Get recipient wallet
-        let [recipientWallet] = await db.select()
-          .from(wallets)
-          .where(eq(wallets.userId, input.recipientUserId))
-          .limit(1);
-
-        if (!recipientWallet) {
-          await db.insert(wallets).values({
-            userId: input.recipientUserId,
-            availableBalance: "0",
-            pendingBalance: "0",
-          });
-          [recipientWallet] = await db.select()
-            .from(wallets)
-            .where(eq(wallets.userId, input.recipientUserId))
-            .limit(1);
-        }
+        // Get or create recipient wallet
+        const recipientWallet = await ensureWallet(db, input.recipientUserId);
 
         // Create P2P transfer
         const [transferResult] = await db.insert(p2pTransfers).values({
@@ -1183,12 +1220,7 @@ export const walletRouter = router({
       }
 
       // Accept - process the payment (recipient pays)
-      const [recipientWallet] = await db.select()
-        .from(wallets)
-        .where(eq(wallets.userId, userId))
-        .limit(1);
-
-      if (!recipientWallet) throw new Error("Wallet not found");
+      const recipientWallet = await ensureWallet(db, userId);
 
       const amount = parseFloat(payment.amount);
       const balance = parseFloat(recipientWallet.availableBalance || "0");
@@ -1197,13 +1229,8 @@ export const walletRouter = router({
         throw new Error("Insufficient balance");
       }
 
-      // Get sender wallet (original requester)
-      const [senderWallet] = await db.select()
-        .from(wallets)
-        .where(eq(wallets.userId, payment.senderUserId))
-        .limit(1);
-
-      if (!senderWallet) throw new Error("Requester wallet not found");
+      // Get or create sender wallet (original requester)
+      const senderWallet = await ensureWallet(db, payment.senderUserId);
 
       // Create P2P transfer (from recipient to sender for payment requests)
       const [transferResult] = await db.insert(p2pTransfers).values({
@@ -1364,18 +1391,49 @@ export const walletRouter = router({
       const userId = Number(ctx.user?.id) || 0;
       if (!db) return [];
 
-      // Stripe Issuing integration required for real card data
-      // Returns empty until Stripe Issuing is configured
-      try {
-        const stripeCustomerId = ctx.user?.stripeCustomerId;
-        if (!stripeCustomerId) return [];
-        // When Stripe Issuing is set up:
-        // const cards = await stripe.issuing.cards.list({ cardholder: stripeCardholderId });
-        // return cards.data.map(c => ({ id: c.id, type: c.type, last4: c.last4, ... }));
-        return [];
-      } catch {
-        return [];
+      // Try Stripe Issuing API first (requires Issuing access)
+      const userRow = await ensureStripeCustomer(db, userId);
+
+      if (userRow?.stripeCustomerId) {
+        // Attempt Stripe Issuing — graceful fallback if not enabled
+        const cards = await safeStripeCall(async () => {
+          // Find cardholder by email metadata
+          const cardholders = await stripe.issuing.cardholders.list({ email: userRow.email || undefined, limit: 1 });
+          if (cardholders.data.length === 0) return [];
+          const issuedCards = await stripe.issuing.cards.list({ cardholder: cardholders.data[0].id, limit: 10 });
+          return issuedCards.data.map((c: any) => ({
+            id: c.id,
+            type: c.type, // 'physical' or 'virtual'
+            last4: c.last4,
+            brand: "Visa",
+            status: c.status, // 'active', 'inactive', 'canceled'
+            cardholderName: cardholders.data[0].name,
+            expMonth: String(c.exp_month),
+            expYear: String(c.exp_year),
+            spendingLimit: c.spending_controls?.spending_limits?.[0]?.amount ? (c.spending_controls.spending_limits[0].amount / 100) : null,
+            createdAt: new Date(c.created * 1000).toISOString(),
+          }));
+        });
+        if (cards && cards.length > 0) return cards;
       }
+
+      // Fallback: return from DB payout methods (debit cards)
+      try {
+        const methods = await db.select().from(payoutMethods)
+          .where(and(eq(payoutMethods.userId, userId), eq(payoutMethods.type, "debit_card")));
+        return methods.map(m => ({
+          id: `card_${m.id}`,
+          type: "physical",
+          last4: m.last4 || "0000",
+          brand: m.brand || "Visa",
+          status: "active",
+          cardholderName: userRow?.name || "Account Holder",
+          expMonth: "",
+          expYear: "",
+          spendingLimit: null,
+          createdAt: m.createdAt?.toISOString() || "",
+        }));
+      } catch { return []; }
     }),
 
   /**
@@ -1388,8 +1446,25 @@ export const walletRouter = router({
       const userId = Number(ctx.user?.id) || 0;
       if (!db) return [];
 
-      // TODO: Replace with Stripe Financial Connections API:
-      // const accounts = await stripe.financialConnections.accounts.list({ account_holder: ... });
+      // Try Stripe Payment Methods API for real bank accounts
+      const userRow = await ensureStripeCustomer(db, userId);
+
+      if (userRow?.stripeCustomerId) {
+        const stripeBanks = await safeStripeCall(async () => {
+          const methods = await stripe.customers.listPaymentMethods(userRow.stripeCustomerId!, { type: "us_bank_account", limit: 10 });
+          return methods.data.map((pm: any) => ({
+            id: pm.id,
+            bankName: pm.us_bank_account?.bank_name || "Bank Account",
+            last4: pm.us_bank_account?.last4 || "0000",
+            type: pm.us_bank_account?.account_type === "savings" ? "Savings" : "Checking",
+            status: pm.us_bank_account?.status_details ? "pending" : "verified",
+            routingNumber: `••••••${(pm.us_bank_account?.last4 || "00").slice(-2)}`,
+          }));
+        });
+        if (stripeBanks && stripeBanks.length > 0) return stripeBanks;
+      }
+
+      // Fallback: DB payout methods
       try {
         const methods = await db.select()
           .from(payoutMethods)
@@ -1418,8 +1493,7 @@ export const walletRouter = router({
       const userId = Number(ctx.user?.id) || 0;
       if (!db) return [];
 
-      // TODO: Replace with Stripe Treasury held funds query
-      // For now return from wallet transactions marked as escrow
+      // Return escrow holds from wallet transactions + escrow_holds table
       try {
         const [wallet] = await db.select()
           .from(wallets)
@@ -1428,27 +1502,73 @@ export const walletRouter = router({
 
         if (!wallet) return [];
 
-        // Get transactions marked as escrow-type
-        const escrowTxns = await db.select()
-          .from(walletTransactions)
-          .where(and(
-            eq(walletTransactions.walletId, wallet.id),
-            eq(walletTransactions.type, "deposit"),
-            eq(walletTransactions.status, "pending")
-          ))
-          .orderBy(desc(walletTransactions.createdAt))
-          .limit(20);
+        const results: Array<{
+          id: string;
+          loadRef: string;
+          route: string;
+          driverName: string;
+          amount: number;
+          status: string;
+          createdAt: string | undefined;
+        }> = [];
 
-        return escrowTxns.map(t => ({
-          id: `escrow_${t.id}`,
-          loadRef: t.loadNumber || `LOAD-${t.id}`,
-          route: t.description || "Origin → Destination",
-          driverName: "Assigned Driver",
-          amount: Math.abs(parseFloat(t.amount || "0")),
-          status: "held",
-          createdAt: t.createdAt?.toISOString(),
-        }));
-      } catch {
+        // Check escrow_holds table first (from createEscrowHold)
+        try {
+          const { escrowHolds: escrowHoldsTable } = await import("../../drizzle/schema");
+          const holds = await db.select()
+            .from(escrowHoldsTable)
+            .where(and(
+              eq(escrowHoldsTable.shipperWalletId, wallet.id),
+              eq(escrowHoldsTable.status, "HELD")
+            ))
+            .orderBy(desc(escrowHoldsTable.createdAt))
+            .limit(20);
+
+          for (const h of holds) {
+            results.push({
+              id: `escrow_${h.id}`,
+              loadRef: `LOAD-${h.loadId}`,
+              route: `Load #${h.loadId}`,
+              driverName: "Assigned Driver",
+              amount: Math.abs(parseFloat(h.amount || "0")),
+              status: (h.status || "HELD").toLowerCase(),
+              createdAt: h.createdAt?.toISOString(),
+            });
+          }
+        } catch {
+          // escrow_holds table may not exist yet — fall through
+        }
+
+        // Also check wallet transactions marked as escrow-type deposits
+        try {
+          const escrowTxns = await db.select()
+            .from(walletTransactions)
+            .where(and(
+              eq(walletTransactions.walletId, wallet.id),
+              eq(walletTransactions.type, "deposit"),
+              eq(walletTransactions.status, "pending")
+            ))
+            .orderBy(desc(walletTransactions.createdAt))
+            .limit(20);
+
+          for (const t of escrowTxns) {
+            results.push({
+              id: `escrow_txn_${t.id}`,
+              loadRef: t.loadNumber || `LOAD-${t.id}`,
+              route: t.description || "Origin → Destination",
+              driverName: "Assigned Driver",
+              amount: Math.abs(parseFloat(t.amount || "0")),
+              status: "held",
+              createdAt: t.createdAt?.toISOString(),
+            });
+          }
+        } catch {
+          // wallet_transactions table may not have expected rows — ignore
+        }
+
+        return results;
+      } catch (err) {
+        console.warn("[Wallet] getEscrowHolds error:", (err as Error).message);
         return [];
       }
     }),
@@ -1468,12 +1588,8 @@ export const walletRouter = router({
       const userId = Number(ctx.user?.id) || 0;
       if (!db) throw new Error("Database not available");
 
-      // Find sender wallet
-      const [senderWallet] = await db.select()
-        .from(wallets)
-        .where(eq(wallets.userId, userId))
-        .limit(1);
-      if (!senderWallet) throw new Error("Wallet not found. Please contact support.");
+      // Find or create sender wallet
+      const senderWallet = await ensureWallet(db, userId);
 
       const availableBalance = parseFloat(senderWallet.availableBalance || "0");
       if (availableBalance < input.amount) {
@@ -1508,8 +1624,19 @@ export const walletRouter = router({
           .limit(1);
       }
 
-      // TODO: Execute via Stripe Connect transfer:
-      // await stripe.transfers.create({ amount: input.amount * 100, currency: 'usd', destination: recipientStripeId });
+      // Execute via Stripe Connect transfer if both users have Connect accounts
+      const senderStripe = await ensureStripeCustomer(db, userId);
+      const recipientStripe = await ensureStripeCustomer(db, recipient.id);
+      if (senderStripe.stripeConnectId && recipientStripe.stripeConnectId) {
+        const transfer = await safeStripeCall(() => stripe.transfers.create({
+          amount: Math.round(input.amount * 100),
+          currency: "usd",
+          destination: recipientStripe.stripeConnectId!,
+          description: `EusoWallet P2P: ${ctx.user?.email} → ${input.recipientEmail}${input.note ? ` — ${input.note}` : ''}`,
+          metadata: { senderUserId: String(userId), recipientUserId: String(recipient.id), type: "p2p_send" },
+        }));
+        if (transfer) console.log(`[Wallet] Stripe transfer ${transfer.id}: $${input.amount} → ${recipientStripe.stripeConnectId}`);
+      }
 
       // Debit sender
       await db.update(wallets)
@@ -1577,21 +1704,69 @@ export const walletRouter = router({
 
       const CARD_FEE = 5.00;
 
-      // Get wallet and check balance
-      const [wallet] = await db.select()
-        .from(wallets)
-        .where(eq(wallets.userId, userId))
-        .limit(1);
-      if (!wallet) throw new Error("Wallet not found");
+      // Get or create wallet and check balance
+      const wallet = await ensureWallet(db, userId);
 
       const balance = parseFloat(wallet.availableBalance || "0");
       if (balance < CARD_FEE) {
         throw new Error(`Insufficient balance for $${CARD_FEE} card fee. Current balance: $${balance.toFixed(2)}`);
       }
 
-      // TODO: Stripe Issuing API call:
-      // const cardholder = await stripe.issuing.cardholders.create({ ... });
-      // const card = await stripe.issuing.cards.create({ cardholder: cardholder.id, type: 'physical', shipping: { ... } });
+      // Try Stripe Issuing API for real card creation
+      const userRow = await ensureStripeCustomer(db, userId);
+
+      let stripeCardId: string | null = null;
+      if (userRow?.email) {
+        const issuingResult = await safeStripeCall(async () => {
+          // Get or create cardholder
+          const existingHolders = await stripe.issuing.cardholders.list({ email: userRow.email!, limit: 1 });
+          let cardholder: any;
+          if (existingHolders.data.length > 0) {
+            cardholder = existingHolders.data[0];
+          } else {
+            const nameParts = (userRow.name || "Account Holder").split(" ");
+            const addr = input?.shippingAddress;
+            cardholder = await stripe.issuing.cardholders.create({
+              name: userRow.name || "Account Holder",
+              email: userRow.email!,
+              type: "individual",
+              individual: { first_name: nameParts[0] || "Account", last_name: nameParts.slice(1).join(" ") || "Holder" },
+              billing: {
+                address: {
+                  line1: addr?.line1 || "Address Required",
+                  city: addr?.city || "City",
+                  state: addr?.state || "TX",
+                  postal_code: addr?.postalCode || "00000",
+                  country: addr?.country || "US",
+                },
+              },
+              metadata: { userId: String(userId), platform: "eusotrip" },
+            });
+          }
+
+          // Create physical card
+          const card = await stripe.issuing.cards.create({
+            cardholder: cardholder.id,
+            type: "physical",
+            currency: "usd",
+            status: "active",
+            shipping: input?.shippingAddress ? {
+              name: userRow.name || "Account Holder",
+              address: {
+                line1: input.shippingAddress.line1,
+                line2: input.shippingAddress.line2 || undefined,
+                city: input.shippingAddress.city,
+                state: input.shippingAddress.state,
+                postal_code: input.shippingAddress.postalCode,
+                country: input.shippingAddress.country || "US",
+              },
+            } : undefined,
+            metadata: { userId: String(userId), feeCharged: String(CARD_FEE) },
+          } as any);
+          return card.id;
+        });
+        if (issuingResult) stripeCardId = issuingResult;
+      }
 
       // Deduct fee
       await db.update(wallets)
@@ -1606,16 +1781,19 @@ export const walletRouter = router({
         fee: String(CARD_FEE),
         netAmount: String(-CARD_FEE),
         status: "completed",
-        description: "Physical EusoWallet card issuance fee",
+        description: `Physical EusoWallet card issuance fee${stripeCardId ? ` (${stripeCardId})` : ''}`,
         completedAt: new Date(),
       });
 
+      if (stripeCardId) console.log(`[Wallet] Stripe Issuing card created: ${stripeCardId} for user ${userId}`);
+
       return {
         success: true,
-        cardId: `card_physical_${Date.now()}`,
+        cardId: stripeCardId || `card_physical_${Date.now()}`,
         fee: CARD_FEE,
         estimatedDelivery: "5-7 business days",
-        status: "ordered",
+        status: stripeCardId ? "ordered" : "pending_issuing_setup",
+        message: stripeCardId ? "Your EusoWallet debit card has been ordered!" : "Card order recorded. Physical card issuance requires Stripe Issuing activation.",
       };
     }),
 
@@ -1626,20 +1804,59 @@ export const walletRouter = router({
   initBankConnection: auditedProtectedProcedure
     .input(z.object({}).optional())
     .mutation(async ({ ctx }) => {
+      const db = await getDb();
       const userId = Number(ctx.user?.id) || 0;
 
-      // TODO: Stripe Financial Connections API:
-      // const session = await stripe.financialConnections.sessions.create({
-      //   account_holder: { type: 'customer', customer: stripeCustomerId },
-      //   permissions: ['balances', 'transactions', 'payment_method'],
-      // });
-      // return { clientSecret: session.client_secret, sessionId: session.id };
+      // Get or create Stripe customer ID
+      let stripeCustomerId: string | null = null;
+      if (db) {
+        const userInfo = await ensureStripeCustomer(db, userId);
+        stripeCustomerId = userInfo.stripeCustomerId;
+      }
+
+      // Try Stripe Financial Connections session (requires Financial Connections access)
+      if (stripeCustomerId) {
+        const session = await safeStripeCall(async () => {
+          const s = await (stripe as any).financialConnections.sessions.create({
+            account_holder: { type: "customer", customer: stripeCustomerId },
+            permissions: ["balances", "payment_method"],
+            filters: { countries: ["US"] },
+          });
+          return s as { id: string; client_secret: string };
+        });
+        if (session) {
+          console.log(`[Wallet] Financial Connections session created: ${session.id}`);
+          return {
+            success: true,
+            sessionId: session.id,
+            clientSecret: session.client_secret,
+            message: "Complete bank verification in the secure window.",
+          };
+        }
+
+        // Fallback: create Checkout session in setup mode for us_bank_account
+        const setupSession = await safeStripeCall(() => stripe.checkout.sessions.create({
+          customer: stripeCustomerId!,
+          payment_method_types: ["us_bank_account"],
+          mode: "setup",
+          success_url: `${process.env.APP_URL || "https://eusotrip.com"}/wallet?bank=success`,
+          cancel_url: `${process.env.APP_URL || "https://eusotrip.com"}/wallet?bank=cancelled`,
+          metadata: { userId: String(userId), type: "bank_connection" },
+        }));
+        if (setupSession?.url) {
+          return {
+            success: true,
+            sessionId: setupSession.id,
+            redirectUrl: setupSession.url,
+            message: "Redirecting to secure bank connection...",
+          };
+        }
+      }
 
       return {
-        success: true,
-        sessionId: `fc_session_${Date.now()}`,
-        message: "Bank connection initiated. Complete verification in the secure window.",
-        // In production, return Stripe Financial Connections client_secret for frontend SDK
+        success: false,
+        sessionId: null,
+        message: "Set up your Stripe account first to connect a bank. Go to Settings → Payments.",
       };
     }),
 
@@ -1667,8 +1884,7 @@ export const walletRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       const userId = Number(ctx.user?.id) || 0;
-      const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
-      if (!wallet) throw new Error("Wallet not found");
+      const wallet = await ensureWallet(db, userId);
       const [txn] = await db.select().from(walletTransactions).where(and(eq(walletTransactions.id, input.transactionId), eq(walletTransactions.walletId, wallet.id))).limit(1);
       if (!txn) throw new Error("Transaction not found");
       await db.update(walletTransactions).set({
@@ -1691,23 +1907,252 @@ export const walletRouter = router({
       const txnId = parseInt(input.escrowId.replace('escrow_', ''));
       if (!txnId) throw new Error("Invalid escrow ID");
 
-      // TODO: Stripe Treasury API:
-      // await stripe.treasury.outboundTransfers.create({ ... });
+      // Get the escrow transaction to find load/driver info
+      const [escrowTxn] = await db.select().from(walletTransactions).where(eq(walletTransactions.id, txnId)).limit(1);
+      if (!escrowTxn) throw new Error("Escrow transaction not found");
+
+      const amount = Math.abs(parseFloat(escrowTxn.amount || "0"));
+
+      // Try Stripe Treasury OutboundTransfer first (true escrow release from financial account)
+      let stripeTransferId: string | null = null;
+      let usedTreasury = false;
+
+      if (escrowTxn.loadId) {
+        const { loads } = await import("../../drizzle/schema");
+        const [load] = await db.select({ catalystId: loads.catalystId, driverId: loads.driverId }).from(loads).where(eq(loads.id, escrowTxn.loadId)).limit(1);
+        const payeeId = load?.driverId || load?.catalystId;
+
+        if (payeeId) {
+          const [driverRow] = await db.select({ stripeConnectId: users.stripeConnectId }).from(users).where(eq(users.id, payeeId)).limit(1);
+
+          // Attempt Treasury OutboundTransfer (requires Treasury access)
+          if (driverRow?.stripeConnectId) {
+            const treasuryResult = await safeStripeCall(async () => {
+              // Get platform financial account for escrow
+              const financialAccounts = await (stripe as any).treasury.financialAccounts.list({ limit: 1 });
+              if (!financialAccounts?.data?.length) return null;
+              const faId = financialAccounts.data[0].id;
+
+              // Create outbound transfer from financial account to driver's Connect account
+              const outbound = await (stripe as any).treasury.outboundTransfers.create({
+                financial_account: faId,
+                amount: Math.round(amount * 100),
+                currency: "usd",
+                destination_payment_method_data: {
+                  type: "financial_account",
+                  financial_account: driverRow.stripeConnectId,
+                },
+                description: `Escrow release — Load #${escrowTxn.loadNumber || escrowTxn.loadId}`,
+                metadata: { escrowId: input.escrowId, loadId: String(escrowTxn.loadId), releasedBy: String(userId) },
+              });
+              return outbound;
+            });
+
+            if (treasuryResult?.id) {
+              stripeTransferId = treasuryResult.id;
+              usedTreasury = true;
+              console.log(`[Wallet] Escrow released via Treasury OutboundTransfer ${treasuryResult.id}: $${amount}`);
+            }
+
+            // Fallback: Connect transfer if Treasury not available
+            if (!stripeTransferId) {
+              const transfer = await safeStripeCall(() => stripe.transfers.create({
+                amount: Math.round(amount * 100),
+                currency: "usd",
+                destination: driverRow.stripeConnectId!,
+                description: `Escrow release — Load #${escrowTxn.loadNumber || escrowTxn.loadId}`,
+                metadata: { escrowId: input.escrowId, loadId: String(escrowTxn.loadId), releasedBy: String(userId) },
+              }));
+              if (transfer) {
+                stripeTransferId = transfer.id;
+                console.log(`[Wallet] Escrow released via Stripe transfer ${transfer.id}: $${amount} → ${driverRow.stripeConnectId}`);
+              }
+            }
+          }
+        }
+      }
 
       // Update the escrow transaction to completed
       await db.update(walletTransactions)
         .set({
           status: "completed",
           completedAt: new Date(),
-          description: sql`CONCAT(${walletTransactions.description}, ' — Released')`,
-        })
+          description: sql`CONCAT(${walletTransactions.description}, ' — Released${stripeTransferId ? ` (${stripeTransferId})` : ''}')`,
+        } as any)
         .where(eq(walletTransactions.id, txnId));
 
       return {
         success: true,
         escrowId: input.escrowId,
+        stripeTransferId,
+        usedTreasury,
         releasedAt: new Date().toISOString(),
-        message: "Escrow funds released to driver successfully.",
+        message: stripeTransferId
+          ? usedTreasury
+            ? "Escrow funds released from Treasury financial account to driver."
+            : "Escrow funds released to driver via Stripe Connect."
+          : "Escrow released. Driver will receive funds on next payout cycle.",
       };
+    }),
+
+  // ========================================================================
+  // STRIPE TREASURY — Financial Accounts & Escrow
+  // Pre-wired for when Treasury access is granted by Stripe
+  // ========================================================================
+
+  /**
+   * Get or create a Treasury Financial Account for the platform
+   * Used for escrow holds — funds sit in a segregated financial account until released
+   */
+  getFinancialAccount: auditedProtectedProcedure
+    .query(async ({ ctx }) => {
+      const userId = Number(ctx.user?.id) || 0;
+
+      // Get platform Treasury financial account
+      const account = await safeStripeCall(async () => {
+        const financialAccounts = await (stripe as any).treasury.financialAccounts.list({ limit: 1 });
+        if (!financialAccounts?.data?.length) return null;
+        const fa = financialAccounts.data[0];
+        return {
+          id: fa.id,
+          status: fa.status, // 'open', 'closed'
+          balance: {
+            cash: (fa.balance?.cash?.usd || 0) / 100,
+            inboundPending: (fa.balance?.inbound_pending?.usd || 0) / 100,
+            outboundPending: (fa.balance?.outbound_pending?.usd || 0) / 100,
+          },
+          features: fa.active_features || [],
+          created: new Date(fa.created * 1000).toISOString(),
+        };
+      });
+
+      if (!account) {
+        return {
+          available: false,
+          message: "Treasury Financial Accounts not yet enabled. Awaiting Stripe approval.",
+        };
+      }
+
+      return { available: true, ...account };
+    }),
+
+  /**
+   * Create an escrow hold via Treasury
+   * Funds are received into the platform's financial account and held until load delivery
+   */
+  createEscrowHold: auditedProtectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      amount: z.number().positive(),
+      description: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      if (!db) throw new Error("Database not available");
+
+      // Find or create user wallet
+      const wallet = await ensureWallet(db, userId);
+
+      const balance = parseFloat(wallet.availableBalance || "0");
+      if (balance < input.amount) {
+        throw new Error(`Insufficient balance for escrow. Available: $${balance.toFixed(2)}, Required: $${input.amount.toFixed(2)}`);
+      }
+
+      // Try Treasury ReceivedCredit / InboundTransfer to hold funds in financial account
+      let treasuryHoldId: string | null = null;
+      const treasuryResult = await safeStripeCall(async () => {
+        const financialAccounts = await (stripe as any).treasury.financialAccounts.list({ limit: 1 });
+        if (!financialAccounts?.data?.length) return null;
+        const faId = financialAccounts.data[0].id;
+
+        // Create an inbound transfer to the financial account (escrow hold)
+        const inbound = await (stripe as any).treasury.inboundTransfers.create({
+          financial_account: faId,
+          amount: Math.round(input.amount * 100),
+          currency: "usd",
+          origin_payment_method: "pm_card_visa", // platform funding source
+          description: `Escrow hold — Load #${input.loadId}`,
+          metadata: { loadId: String(input.loadId), userId: String(userId), type: "escrow_hold" },
+        });
+        return inbound;
+      });
+
+      if (treasuryResult?.id) {
+        treasuryHoldId = treasuryResult.id;
+        console.log(`[Wallet] Treasury escrow hold created: ${treasuryResult.id} for Load #${input.loadId}, $${input.amount}`);
+      }
+
+      // Debit wallet balance
+      await db.update(wallets)
+        .set({
+          availableBalance: String(balance - input.amount),
+          pendingBalance: String(parseFloat(wallet.pendingBalance || "0") + input.amount),
+        })
+        .where(eq(wallets.id, wallet.id));
+
+      // Record escrow transaction
+      const { loads } = await import("../../drizzle/schema");
+      const [load] = await db.select({ loadNumber: loads.loadNumber }).from(loads).where(eq(loads.id, input.loadId)).limit(1);
+
+      const [txn] = await db.insert(walletTransactions).values({
+        walletId: wallet.id,
+        type: "deposit",
+        amount: String(input.amount),
+        fee: "0",
+        netAmount: String(input.amount),
+        status: "pending",
+        loadId: input.loadId,
+        loadNumber: load?.loadNumber || undefined,
+        description: input.description || `Escrow hold — Load #${load?.loadNumber || input.loadId}${treasuryHoldId ? ` (${treasuryHoldId})` : ''}`,
+      }).$returningId();
+
+      return {
+        success: true,
+        escrowId: `escrow_${txn.id}`,
+        treasuryHoldId,
+        amount: input.amount,
+        loadId: input.loadId,
+        usedTreasury: !!treasuryHoldId,
+        message: treasuryHoldId
+          ? "Funds held in Treasury financial account until delivery confirmation."
+          : "Escrow hold recorded. Funds reserved in wallet.",
+      };
+    }),
+
+  /**
+   * Get Treasury transaction history (inbound/outbound transfers)
+   * Shows fund movements through the Treasury financial account
+   */
+  getTreasuryTransactions: auditedProtectedProcedure
+    .input(z.object({ limit: z.number().default(20) }))
+    .query(async ({ ctx, input }) => {
+      const transactions = await safeStripeCall(async () => {
+        const financialAccounts = await (stripe as any).treasury.financialAccounts.list({ limit: 1 });
+        if (!financialAccounts?.data?.length) return null;
+        const faId = financialAccounts.data[0].id;
+
+        const txns = await (stripe as any).treasury.transactions.list({
+          financial_account: faId,
+          limit: input.limit,
+        });
+
+        return txns.data.map((t: any) => ({
+          id: t.id,
+          type: t.flow_type, // 'inbound_transfer', 'outbound_transfer', 'received_credit', etc.
+          amount: (t.amount || 0) / 100,
+          currency: t.currency,
+          status: t.status,
+          description: t.description,
+          created: new Date(t.created * 1000).toISOString(),
+          metadata: t.flow_details,
+        }));
+      });
+
+      if (!transactions) {
+        return { available: false, transactions: [], message: "Treasury not yet enabled." };
+      }
+
+      return { available: true, transactions };
     }),
 });

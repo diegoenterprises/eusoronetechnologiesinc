@@ -13,4 +13,5 @@ export const ENV = {
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   azureEmailConnectionString: process.env.AZURE_EMAIL_CONNECTION_STRING ?? "",
   fromEmail: process.env.FROM_EMAIL ?? "DoNotReply@eusotrip.com",
+  embeddingServiceUrl: process.env.EMBEDDING_SERVICE_URL ?? "http://localhost:8090",
 };

@@ -6,7 +6,7 @@
  */
 
 import { motion } from "framer-motion";
-import { MapPin, Package, Clock, FileText, Truck, AlertTriangle, DollarSign, Shield, Navigation } from "lucide-react";
+import { MapPin, Package, Clock, FileText, Truck, AlertTriangle, DollarSign, Shield, Navigation, Thermometer, Snowflake, FlaskConical, ShieldAlert, Scale } from "lucide-react";
 import LoadStatusBadge, { STATE_META } from "./LoadStatusBadge";
 
 interface StatePanelProps {
@@ -53,6 +53,8 @@ export default function StatePanel({ currentState, load, activeTimers = [], clas
 
   const hasActiveDetention = activeTimers.some(t => t.type === "DETENTION" && (t.status === "FREE_TIME" || t.status === "BILLING"));
   const hasActiveDemurrage = activeTimers.some(t => t.type === "DEMURRAGE" && (t.status === "FREE_TIME" || t.status === "BILLING"));
+  const hasActivePumpTime = activeTimers.some(t => t.type === "PUMP_TIME" && (t.status === "FREE_TIME" || t.status === "BILLING"));
+  const hasActiveBlowOff = activeTimers.some(t => t.type === "BLOW_OFF" && (t.status === "FREE_TIME" || t.status === "BILLING"));
 
   const renderContent = () => {
     switch (meta.category) {
@@ -143,6 +145,30 @@ export default function StatePanel({ currentState, load, activeTimers = [], clas
                 </p>
               </motion.div>
             )}
+            {hasActivePumpTime && (
+              <motion.div
+                className="mt-2 p-2.5 rounded-lg bg-amber-950/30 border border-amber-900/20"
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <p className="text-xs text-amber-300">
+                  <Clock size={12} className="inline mr-1" />
+                  Pump time timer active
+                </p>
+              </motion.div>
+            )}
+            {hasActiveBlowOff && (
+              <motion.div
+                className="mt-2 p-2.5 rounded-lg bg-amber-950/30 border border-amber-900/20"
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <p className="text-xs text-amber-300">
+                  <Clock size={12} className="inline mr-1" />
+                  Blow-off timer active
+                </p>
+              </motion.div>
+            )}
 
             {/* Exception callout */}
             {meta.isException && (
@@ -203,19 +229,39 @@ export default function StatePanel({ currentState, load, activeTimers = [], clas
           </div>
         );
 
-      case "EXCEPTION":
+      case "EXCEPTION": {
+        const EXCEPTION_DETAILS: Record<string, { icon: React.ReactNode; title: string; desc: string; severity: string }> = {
+          TEMP_EXCURSION:       { icon: <Thermometer size={16} className="text-red-400" />,    title: "Temperature Excursion",  desc: "Reefer temperature deviated outside acceptable range. Cold chain breach documented.",                     severity: "bg-red-950/40 border-red-800/30" },
+          REEFER_BREAKDOWN:     { icon: <Snowflake size={16} className="text-red-400" />,      title: "Reefer Breakdown",       desc: "Refrigeration unit mechanical failure. Layover timer started. Emergency transfer may be needed.",        severity: "bg-red-950/40 border-red-800/30" },
+          CONTAMINATION_REJECT: { icon: <FlaskConical size={16} className="text-red-400" />,   title: "Contamination Reject",   desc: "Product rejected due to contamination. Lab test results required. Tank washout charges may apply.",      severity: "bg-red-950/40 border-red-800/30" },
+          SEAL_BREACH:          { icon: <ShieldAlert size={16} className="text-red-400" />,    title: "Seal Breach",            desc: "Seal broken, missing, or tampered with. Full cargo inspection required before unloading can proceed.",   severity: "bg-red-950/40 border-red-800/30" },
+          WEIGHT_VIOLATION:     { icon: <Scale size={16} className="text-red-400" />,          title: "Weight Violation",       desc: "Load exceeds legal weight limits. Reweigh fee applied. Scale ticket must be uploaded.",                  severity: "bg-red-950/40 border-red-800/30" },
+          ON_HOLD:              { icon: <AlertTriangle size={16} className="text-amber-400" />, title: "Compliance Hold",       desc: "Load paused by compliance or admin. Awaiting resolution.",                                               severity: "bg-amber-950/30 border-amber-900/20" },
+          CANCELLED:            { icon: <AlertTriangle size={16} className="text-gray-400" />, title: "Load Cancelled",         desc: "This load has been cancelled. Cancellation penalty may apply if after assignment.",                      severity: "bg-slate-800/40 border-slate-700/30" },
+        };
+        const detail = EXCEPTION_DETAILS[normalized];
         return (
           <div className="space-y-3">
             <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle size={16} className="text-amber-400" />
+              {detail?.icon || <AlertTriangle size={16} className="text-amber-400" />}
               <span className="text-sm font-medium text-gray-300">
-                {normalized === "ON_HOLD" ? "Compliance Hold" : "Load Cancelled"}
+                {detail?.title || "Exception"}
               </span>
             </div>
-            <InfoRow icon={<MapPin size={14} />} label="Route" value={load.origin && load.destination ? `${load.origin.city} → ${load.destination.city}` : undefined} />
+            <InfoRow icon={<MapPin size={14} />} label="Route" value={load.origin && load.destination ? `${load.origin.city} \u2192 ${load.destination.city}` : undefined} />
             <InfoRow icon={<DollarSign size={14} />} label="Rate" value={load.rate ? `$${load.rate.toLocaleString()}` : undefined} />
+            {detail && (
+              <motion.div
+                className={`mt-2 p-3 rounded-lg border ${detail.severity}`}
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+              >
+                <p className="text-xs text-red-300/90">{detail.desc}</p>
+              </motion.div>
+            )}
           </div>
         );
+      }
 
       default:
         return null;

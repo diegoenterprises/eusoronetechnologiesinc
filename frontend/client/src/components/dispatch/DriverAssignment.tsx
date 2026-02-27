@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from "react";
+import { Portal } from "@/components/ui/portal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -123,7 +124,8 @@ export function DriverAssignment({ load, availableDrivers, onAssign, onCancel }:
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 overflow-y-auto z-50" onClick={onCancel}>
+    <Portal>
+    <div className="fixed inset-0 bg-black/50 overflow-y-auto z-[9999]" onClick={onCancel}>
       <div className="flex min-h-full items-center justify-center p-4">
       <Card className="bg-slate-800 border-slate-700 w-full max-w-4xl flex flex-col" onClick={(e: any) => e.stopPropagation()}>
         <CardHeader className="border-b border-slate-700 flex-shrink-0">
@@ -422,6 +424,7 @@ export function DriverAssignment({ load, availableDrivers, onAssign, onCancel }:
       </Card>
       </div>
     </div>
+    </Portal>
   );
 }
 

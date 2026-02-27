@@ -32,6 +32,11 @@ export default function LoadHistory() {
       case "delivered": return <Badge className="bg-green-500/20 text-green-400 border-0"><CheckCircle className="w-3 h-3 mr-1" />Delivered</Badge>;
       case "cancelled": return <Badge className="bg-red-500/20 text-red-400 border-0"><XCircle className="w-3 h-3 mr-1" />Cancelled</Badge>;
       case "in_transit": return <Badge className="bg-cyan-500/20 text-cyan-400 border-0"><Clock className="w-3 h-3 mr-1" />In Transit</Badge>;
+      case "temp_excursion":
+      case "reefer_breakdown":
+      case "contamination_reject":
+      case "seal_breach":
+      case "weight_violation": return <Badge className="bg-red-500/20 text-red-400 border-0"><XCircle className="w-3 h-3 mr-1" />{status.replace(/_/g, " ")}</Badge>;
       default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
     }
   };

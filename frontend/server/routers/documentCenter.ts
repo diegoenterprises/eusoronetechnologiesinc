@@ -873,6 +873,18 @@ export const documentCenterRouter = router({
         })
         .$returningId();
 
+      // Auto-index document for semantic search (fire-and-forget)
+      try {
+        const { indexDocument } = await import("../services/embeddings/aiTurbocharge");
+        indexDocument({
+          id: doc.id,
+          title: input.fileName,
+          type: docType.name || input.documentTypeId,
+          category: docType.category || "general",
+          description: `${docType.name || ""} uploaded by user ${userId}`,
+        });
+      } catch { /* embedding service unavailable */ }
+
       // Recalculate compliance
       const userRole = ctx.user?.role || "DRIVER";
       await calculateDocumentAwareness(userId, userRole);
@@ -1433,6 +1445,18 @@ export const documentCenterRouter = router({
             t.name.toLowerCase().includes(search) ||
             typeMap.get(t.documentTypeId)?.name?.toLowerCase().includes(search)
         );
+
+        // Augment with semantic document search when text filter yields few results
+        if (filtered.length < 3) {
+          try {
+            const { searchDocuments } = await import("../services/embeddings/aiTurbocharge");
+            const hits = await searchDocuments(input.search, 5);
+            // Add AI-found document IDs as hints (won't expand template list, but logged for future use)
+            if (hits.length > 0) {
+              console.log(`[DocCenter] Semantic search found ${hits.length} related docs for "${input.search}"`);
+            }
+          } catch { /* embedding service unavailable */ }
+        }
       }
 
       return filtered.map((t) => ({

@@ -14,6 +14,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+import { Portal } from "@/components/ui/portal";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { trpc } from "@/lib/trpc";
@@ -195,8 +196,9 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
   const needsSearch = !target.name && !selectedTarget;
 
   return (
+    <Portal>
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="flex min-h-full items-center justify-center p-4">
@@ -466,6 +468,7 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
       </div>
       </div>
     </div>
+    </Portal>
   );
 }
 

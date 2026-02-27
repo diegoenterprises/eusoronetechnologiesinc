@@ -33,6 +33,8 @@ export default function DispatchFleetMap() {
       case "at_receiver": return "bg-orange-500";
       case "available": return "bg-emerald-500";
       case "off_duty": return "bg-slate-500";
+      case "temp_excursion": case "reefer_breakdown": case "contamination_reject":
+      case "seal_breach": case "weight_violation": return "bg-red-500";
       default: return "bg-slate-500";
     }
   };
@@ -49,6 +51,9 @@ export default function DispatchFleetMap() {
         return <Badge className="bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border-emerald-500/30">Available</Badge>;
       case "off_duty":
         return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30">Off Duty</Badge>;
+      case "temp_excursion": case "reefer_breakdown": case "contamination_reject":
+      case "seal_breach": case "weight_violation":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">{status.replace(/_/g, " ").toUpperCase()}</Badge>;
       default:
         return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30">{status}</Badge>;
     }

@@ -22,7 +22,10 @@ import {
   appointments, 
   documents, 
   incidents, 
-  inspections 
+  inspections,
+  escortAssignments,
+  convoys,
+  certifications,
 } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte, count, sum } from "drizzle-orm";
 
@@ -1060,21 +1063,120 @@ export const dashboardRouter = router({
     entries: [], totalDriveTime: "", totalDistance: 0, avgSpeed: 0,
   })),
 
-  getPermitVerification: protectedProcedure.query(async () => ({
-    permits: [], allValid: false, pendingCount: 0,
-  })),
+  getPermitVerification: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { permits: [], allValid: false, pendingCount: 0 };
+    try {
+      const userId = ctx.user?.id || 0;
+      const companyId = ctx.user?.companyId || 0;
+      const now = new Date();
+
+      // Certifications act as permits/licenses for the user's company
+      const rows = await db.select({
+        id: certifications.id,
+        name: certifications.name,
+        type: certifications.type,
+        expiryDate: certifications.expiryDate,
+        status: certifications.status,
+      }).from(certifications)
+        .innerJoin(users, eq(certifications.userId, users.id))
+        .where(eq(users.companyId, companyId))
+        .orderBy(certifications.expiryDate)
+        .limit(20);
+
+      const permits = rows.map(r => {
+        const expired = r.expiryDate && new Date(r.expiryDate) < now;
+        return {
+          id: r.id,
+          name: r.name || r.type,
+          status: expired ? "expired" : r.status || "active",
+          expiryDate: r.expiryDate ? new Date(r.expiryDate).toISOString().split("T")[0] : null,
+        };
+      });
+      const allValid = permits.every(p => p.status === "active");
+      const pendingCount = permits.filter(p => p.status === "pending" || p.status === "expired").length;
+      return { permits, allValid, pendingCount };
+    } catch (error) {
+      console.error("[Dashboard] getPermitVerification error:", error);
+      return { permits: [], allValid: false, pendingCount: 0 };
+    }
+  }),
 
   getEscortPay: protectedProcedure.query(async () => ({
     currentJob: null, weeklyTotal: 0, monthlyTotal: 0, recentPayments: [],
   })),
 
-  getOversizedLoads: protectedProcedure.query(async () => ({
-    active: [], totalActive: 0, requiresEscort: 0,
-  })),
+  getOversizedLoads: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { active: [], totalActive: 0, requiresEscort: 0 };
+    try {
+      const rows = await db.select({
+        id: loads.id,
+        loadNumber: loads.loadNumber,
+        status: loads.status,
+        requiresEscort: loads.requiresEscort,
+        weight: loads.weight,
+        pickupLocation: loads.pickupLocation,
+        deliveryLocation: loads.deliveryLocation,
+      }).from(loads)
+        .where(and(
+          eq(loads.requiresEscort, true),
+          sql`${loads.status} NOT IN ('delivered', 'complete', 'cancelled', 'paid', 'invoiced')`,
+        ))
+        .orderBy(desc(loads.createdAt))
+        .limit(20);
 
-  getSafetyProtocols: protectedProcedure.query(async () => ({
-    protocols: [], complianceScore: 0,
-  })),
+      const needsEscort = rows.filter(r => r.requiresEscort).length;
+      return {
+        active: rows.map(r => {
+          const pickup = r.pickupLocation as any || {};
+          const delivery = r.deliveryLocation as any || {};
+          return {
+            loadNumber: r.loadNumber,
+            status: r.status,
+            dimensions: r.weight ? `${parseFloat(String(r.weight)).toLocaleString()} lbs` : "Oversized",
+            origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : "Unknown",
+            destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : "Unknown",
+          };
+        }),
+        totalActive: rows.length,
+        requiresEscort: needsEscort,
+      };
+    } catch (error) {
+      console.error("[Dashboard] getOversizedLoads error:", error);
+      return { active: [], totalActive: 0, requiresEscort: 0 };
+    }
+  }),
+
+  getSafetyProtocols: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { protocols: [], complianceScore: 0 };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      // Use inspections as safety protocol checks
+      const rows = await db.select({
+        id: inspections.id,
+        type: inspections.type,
+        status: inspections.status,
+        completedAt: inspections.completedAt,
+      }).from(inspections)
+        .where(eq(inspections.companyId, companyId))
+        .orderBy(desc(inspections.createdAt))
+        .limit(10);
+
+      const protocols = rows.map(r => ({
+        name: r.type || "Inspection",
+        status: r.status === "passed" ? "complete" : r.status === "failed" ? "failed" : "pending",
+        date: r.completedAt?.toISOString().split("T")[0] || "",
+      }));
+      const passed = protocols.filter(p => p.status === "complete").length;
+      const score = protocols.length > 0 ? Math.round((passed / protocols.length) * 100) : 100;
+      return { protocols, complianceScore: score };
+    } catch (error) {
+      console.error("[Dashboard] getSafetyProtocols error:", error);
+      return { protocols: [], complianceScore: 0 };
+    }
+  }),
 
   getRouteRestrictions: protectedProcedure.query(async () => ({
     restrictions: [], currentlyRestricted: false,
@@ -1084,17 +1186,112 @@ export const dashboardRouter = router({
     channels: [], unreadMessages: 0,
   })),
 
-  getCoordinationMap: protectedProcedure.query(async () => ({
-    vehicles: [], formationStatus: "", spacing: "",
-  })),
+  getCoordinationMap: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { total: 0, escorts: 0, drivers: 0, enRoute: 0 };
+    try {
+      const [escortCount] = await db.select({ count: sql<number>`count(*)` })
+        .from(escortAssignments)
+        .where(sql`${escortAssignments.status} IN ('accepted', 'en_route', 'on_site', 'escorting')`);
+      const [activeConvoys] = await db.select({ count: sql<number>`count(*)` })
+        .from(convoys)
+        .where(sql`${convoys.status} IN ('forming', 'active')`);
+      const [activeDrivers] = await db.select({ count: sql<number>`count(*)` })
+        .from(drivers)
+        .where(eq(drivers.status, "active"));
+      const [enRoute] = await db.select({ count: sql<number>`count(*)` })
+        .from(escortAssignments)
+        .where(eq(escortAssignments.status, "en_route"));
+      return {
+        total: (escortCount?.count || 0) + (activeConvoys?.count || 0),
+        escorts: escortCount?.count || 0,
+        drivers: activeDrivers?.count || 0,
+        enRoute: enRoute?.count || 0,
+      };
+    } catch (error) {
+      console.error("[Dashboard] getCoordinationMap error:", error);
+      return { total: 0, escorts: 0, drivers: 0, enRoute: 0 };
+    }
+  }),
 
-  getIncidentReports: protectedProcedure.query(async () => ({
-    recent: [], totalThisMonth: 0, totalThisYear: 0,
-  })),
+  getIncidentReports: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { incidents: [], totalThisMonth: 0, totalThisYear: 0 };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const yearStart = new Date(now.getFullYear(), 0, 1);
 
-  getEquipmentChecklist: protectedProcedure.query(async () => ({
-    items: [], allGood: true, issueCount: 0,
-  })),
+      const rows = await db.select({
+        id: incidents.id,
+        type: incidents.type,
+        severity: incidents.severity,
+        description: incidents.description,
+        status: incidents.status,
+        createdAt: incidents.createdAt,
+      }).from(incidents)
+        .where(eq(incidents.companyId, companyId))
+        .orderBy(desc(incidents.createdAt))
+        .limit(10);
+
+      const [monthCount] = await db.select({ count: sql<number>`count(*)` })
+        .from(incidents)
+        .where(and(eq(incidents.companyId, companyId), gte(incidents.occurredAt, monthStart)));
+      const [yearCount] = await db.select({ count: sql<number>`count(*)` })
+        .from(incidents)
+        .where(and(eq(incidents.companyId, companyId), gte(incidents.occurredAt, yearStart)));
+
+      return {
+        incidents: rows.map(r => ({
+          id: r.id,
+          title: r.description || r.type || "Incident",
+          severity: r.severity || "minor",
+          status: r.status || "open",
+          date: r.createdAt?.toISOString().split("T")[0] || "",
+        })),
+        totalThisMonth: monthCount?.count || 0,
+        totalThisYear: yearCount?.count || 0,
+      };
+    } catch (error) {
+      console.error("[Dashboard] getIncidentReports error:", error);
+      return { incidents: [], totalThisMonth: 0, totalThisYear: 0 };
+    }
+  }),
+
+  getEquipmentChecklist: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { items: [], allGood: true, issueCount: 0 };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const now = new Date();
+      const rows = await db.select({
+        id: vehicles.id,
+        make: vehicles.make,
+        model: vehicles.model,
+        status: vehicles.status,
+        nextMaintenanceDate: vehicles.nextMaintenanceDate,
+      }).from(vehicles)
+        .where(eq(vehicles.companyId, companyId))
+        .orderBy(vehicles.nextMaintenanceDate)
+        .limit(15);
+
+      const items = rows.map(v => {
+        const overdue = v.nextMaintenanceDate && new Date(v.nextMaintenanceDate) < now;
+        const label = [v.make, v.model].filter(Boolean).join(" ") || `Vehicle #${v.id}`;
+        return {
+          name: label,
+          status: overdue ? "overdue" : v.status === "available" ? "good" : "needs_attention",
+          nextDue: v.nextMaintenanceDate ? new Date(v.nextMaintenanceDate).toISOString().split("T")[0] : null,
+        };
+      });
+      const issueCount = items.filter(i => i.status !== "good").length;
+      return { items, allGood: issueCount === 0, issueCount };
+    } catch (error) {
+      console.error("[Dashboard] getEquipmentChecklist error:", error);
+      return { items: [], allGood: true, issueCount: 0 };
+    }
+  }),
 });
 
 // ============================================================================

@@ -44,6 +44,7 @@ import ApprovalGateCard, { ApprovalBadge } from "@/components/load/ApprovalGateC
 import GuardChecklist from "@/components/load/GuardChecklist";
 import ConvoySyncDashboard from "@/components/convoy/ConvoySyncDashboard";
 import HazmatRouteRestrictions from "@/components/HazmatRouteRestrictions";
+import RegulatoryCompliancePanel from "@/components/RegulatoryCompliancePanel";
 
 const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
 const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
@@ -61,6 +62,7 @@ const EXECUTION_STATES = new Set([
   "en_route_pickup", "at_pickup", "pickup_checkin", "loading", "loading_exception", "loaded",
   "in_transit", "transit_hold", "transit_exception",
   "at_delivery", "delivery_checkin", "unloading", "unloading_exception", "unloaded",
+  "temp_excursion", "reefer_breakdown", "contamination_reject", "seal_breach", "weight_violation",
 ]);
 const FINANCIAL_STATES = new Set(["invoiced", "disputed", "paid", "complete"]);
 
@@ -1045,7 +1047,22 @@ export default function LoadDetails() {
           </Card>
         )}
 
-        {/* ── Hazmat Route Restrictions ── */}
+        {/* ── Regulatory Compliance Panel (ALL load types) ── */}
+        {originState && destState && (
+          <RegulatoryCompliancePanel
+            trailerType={load.trailerType || (isTankerLoad ? "liquid_tank" : isReeferLoad ? "reefer" : isFlatbedLoad ? "flatbed" : load.equipmentType?.includes("hopper") ? "bulk_hopper" : "dry_van")}
+            productName={load.commodity}
+            hazmatClass={load.hazmatClass}
+            unNumber={load.unNumber}
+            originState={originState}
+            destinationState={destState}
+            originCity={originCity}
+            destinationCity={destCity}
+            compact
+          />
+        )}
+
+        {/* ── Hazmat Route Restrictions (hazmat loads — tunnels, time-of-day, ERG) ── */}
         {isHazmatLoad && originState && destState && (
           <HazmatRouteRestrictions
             hazmatClass={load.hazmatClass || "3"}
@@ -1056,6 +1073,9 @@ export default function LoadDetails() {
             isRadioactive={load.hazmatClass === "7"}
             weight={Number(load.weight) || undefined}
             compact
+            trailerType={load.trailerType || (isTankerLoad ? "liquid_tank" : isReeferLoad ? "reefer" : isFlatbedLoad ? "flatbed" : "dry_van")}
+            originCity={originCity}
+            destinationCity={destCity}
           />
         )}
 

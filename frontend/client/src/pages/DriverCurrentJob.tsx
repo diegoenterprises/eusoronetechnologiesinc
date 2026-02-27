@@ -50,6 +50,16 @@ export default function DriverCurrentJob() {
         return <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">At Delivery</Badge>;
       case "unloading":
         return <Badge className="bg-pink-500/20 text-pink-400 border-pink-500/30">Unloading</Badge>;
+      case "temp_excursion":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Temp Excursion</Badge>;
+      case "reefer_breakdown":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Reefer Breakdown</Badge>;
+      case "contamination_reject":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Contamination</Badge>;
+      case "seal_breach":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Seal Breach</Badge>;
+      case "weight_violation":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Weight Violation</Badge>;
       default:
         return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30">{status}</Badge>;
     }

@@ -395,6 +395,17 @@ class ESANGAIService {
       contextPrompt += `\nUser geolocation: ${context.latitude.toFixed(4)}°N, ${context.longitude.toFixed(4)}°W — use this to give location-aware answers (nearby services, weather, route info, fuel prices, terminals).`;
     }
 
+    // RAG: Retrieve relevant knowledge from embedding index (non-blocking, graceful fallback)
+    try {
+      const { retrieveContext, formatRAGContext } = await import("../services/embeddings/ragRetriever");
+      const ragContext = await retrieveContext(message, { topK: 5, threshold: 0.3 });
+      if (ragContext.chunks.length > 0) {
+        contextPrompt += formatRAGContext(ragContext);
+      }
+    } catch (ragErr) {
+      // RAG unavailable — continue without it (embedding service may be offline)
+    }
+
     try {
       const response = await this.callGeminiAPI(message, history, contextPrompt);
 

@@ -162,14 +162,125 @@ async function startServer() {
           break;
         }
         case "account.updated": {
-          // Stripe Connect account updated
+          // Stripe Connect account updated — sync status to wallets table
           const account = event.data.object;
           console.log(`[Stripe Webhook] Connect account updated: ${account.id}, charges_enabled: ${account.charges_enabled}`);
+          try {
+            const { getDb: getDb2 } = await import("../db");
+            const { wallets: walletsTable, users: usersTable } = await import("../../drizzle/schema");
+            const { eq: eq2 } = await import("drizzle-orm");
+            const db2 = await getDb2();
+            if (db2) {
+              const status = account.charges_enabled ? "active" : "pending";
+              await db2.update(walletsTable).set({ stripeAccountStatus: status }).where(eq2(walletsTable.stripeConnectId, account.id));
+              console.log(`[Stripe Webhook] Synced Connect status '${status}' for ${account.id}`);
+            }
+          } catch (e) { console.warn("[Stripe Webhook] Connect sync error:", e); }
           break;
         }
         case "transfer.created": {
           const transfer = event.data.object;
           console.log(`[Stripe Webhook] Transfer created: ${transfer.id}, amount: ${transfer.amount}`);
+          break;
+        }
+        case "payout.paid": {
+          const payout = event.data.object;
+          console.log(`[Stripe Webhook] Payout completed: ${payout.id}, amount: $${(payout.amount || 0) / 100}`);
+          // Update wallet transaction status to completed
+          try {
+            const { getDb: getDb3 } = await import("../db");
+            const { walletTransactions: wtTable } = await import("../../drizzle/schema");
+            const { sql: sql2 } = await import("drizzle-orm");
+            const db3 = await getDb3();
+            if (db3 && payout.id) {
+              await db3.execute(sql2`UPDATE wallet_transactions SET status = 'completed', completed_at = NOW() WHERE description LIKE ${'%' + payout.id + '%'} AND status = 'processing'`);
+            }
+          } catch (e) { console.warn("[Stripe Webhook] Payout sync error:", e); }
+          break;
+        }
+        case "payout.failed": {
+          const payout = event.data.object;
+          console.error(`[Stripe Webhook] Payout failed: ${payout.id}, reason: ${payout.failure_message}`);
+          try {
+            const { getDb: getDb4 } = await import("../db");
+            const { sql: sql3 } = await import("drizzle-orm");
+            const db4 = await getDb4();
+            if (db4 && payout.id) {
+              await db4.execute(sql3`UPDATE wallet_transactions SET status = 'failed' WHERE description LIKE ${'%' + payout.id + '%'} AND status = 'processing'`);
+            }
+          } catch (e) { console.warn("[Stripe Webhook] Payout fail sync error:", e); }
+          break;
+        }
+        case "issuing_card.created":
+        case "issuing_card.updated": {
+          const card = event.data.object;
+          console.log(`[Stripe Webhook] Issuing card ${event.type}: ${card.id}, last4: ${card.last4}, status: ${card.status}`);
+          break;
+        }
+        case "issuing_authorization.request": {
+          const auth = event.data.object;
+          console.log(`[Stripe Webhook] Issuing auth request: ${auth.id}, amount: $${(auth.amount || 0) / 100}, merchant: ${auth.merchant_data?.name}`);
+          break;
+        }
+        case "financial_connections.account.created": {
+          const fcAccount = event.data.object;
+          console.log(`[Stripe Webhook] Financial Connections account linked: ${fcAccount.id}, institution: ${fcAccount.institution_name}`);
+          break;
+        }
+        // Treasury events — escrow fund movements
+        case "treasury.inbound_transfer.succeeded": {
+          const inbound = event.data.object;
+          console.log(`[Stripe Webhook] Treasury inbound transfer succeeded: ${inbound.id}, amount: $${(inbound.amount || 0) / 100}, FA: ${inbound.financial_account}`);
+          break;
+        }
+        case "treasury.inbound_transfer.failed": {
+          const inbound = event.data.object;
+          console.error(`[Stripe Webhook] Treasury inbound transfer failed: ${inbound.id}, reason: ${inbound.failure_details?.code}`);
+          try {
+            const { getDb: getDbTi } = await import("../db");
+            const { sql: sqlTi } = await import("drizzle-orm");
+            const dbTi = await getDbTi();
+            if (dbTi && inbound.id) {
+              await dbTi.execute(sqlTi`UPDATE wallet_transactions SET status = 'failed' WHERE description LIKE ${'%' + inbound.id + '%'} AND status = 'pending'`);
+            }
+          } catch (e) { console.warn("[Stripe Webhook] Treasury inbound fail sync error:", e); }
+          break;
+        }
+        case "treasury.outbound_transfer.posted": {
+          const outbound = event.data.object;
+          console.log(`[Stripe Webhook] Treasury outbound transfer posted: ${outbound.id}, amount: $${(outbound.amount || 0) / 100}`);
+          try {
+            const { getDb: getDbTo } = await import("../db");
+            const { sql: sqlTo } = await import("drizzle-orm");
+            const dbTo = await getDbTo();
+            if (dbTo && outbound.id) {
+              await dbTo.execute(sqlTo`UPDATE wallet_transactions SET status = 'completed', completed_at = NOW() WHERE description LIKE ${'%' + outbound.id + '%'} AND status = 'pending'`);
+            }
+          } catch (e) { console.warn("[Stripe Webhook] Treasury outbound sync error:", e); }
+          break;
+        }
+        case "treasury.outbound_transfer.failed":
+        case "treasury.outbound_transfer.returned": {
+          const outbound = event.data.object;
+          console.error(`[Stripe Webhook] Treasury outbound transfer ${event.type}: ${outbound.id}, amount: $${(outbound.amount || 0) / 100}`);
+          try {
+            const { getDb: getDbTof } = await import("../db");
+            const { sql: sqlTof } = await import("drizzle-orm");
+            const dbTof = await getDbTof();
+            if (dbTof && outbound.id) {
+              await dbTof.execute(sqlTof`UPDATE wallet_transactions SET status = 'failed' WHERE description LIKE ${'%' + outbound.id + '%'} AND status IN ('pending', 'processing')`);
+            }
+          } catch (e) { console.warn("[Stripe Webhook] Treasury outbound fail sync error:", e); }
+          break;
+        }
+        case "treasury.financial_account.features_status_updated": {
+          const fa = event.data.object;
+          console.log(`[Stripe Webhook] Treasury FA features updated: ${fa.id}, active: ${JSON.stringify(fa.active_features)}`);
+          break;
+        }
+        case "treasury.received_credit.succeeded": {
+          const credit = event.data.object;
+          console.log(`[Stripe Webhook] Treasury received credit: ${credit.id}, amount: $${(credit.amount || 0) / 100}, FA: ${credit.financial_account}`);
           break;
         }
         default:

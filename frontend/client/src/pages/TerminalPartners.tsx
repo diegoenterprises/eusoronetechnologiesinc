@@ -18,6 +18,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { Portal } from "@/components/ui/portal";
 import {
   Building2, Users, TrendingUp, Package, Search,
   ArrowRight, Shield, Truck, BarChart3, Filter,
@@ -433,7 +434,8 @@ export default function TerminalPartners() {
       </Card>
       {/* Add Partner Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}>
+        <Portal>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div className={cn("w-full max-w-2xl rounded-2xl border shadow-2xl overflow-hidden", isLight ? "bg-white border-slate-200" : "bg-[#12121a] border-white/[0.08]")}>
             {/* Modal Header */}
@@ -496,7 +498,7 @@ export default function TerminalPartners() {
                         className={cn("pl-10", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.08]")} />
                     </div>
                     {apShowCompanySuggestions && (companySearchQ.data as any[])?.length > 0 && (
-                      <div className={cn("absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-xl max-h-56 overflow-y-auto", isLight ? "bg-white border-slate-200" : "bg-slate-800 border-slate-600/50")}>
+                      <div className={cn("absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-xl max-h-56 overflow-y-auto", isLight ? "bg-white border-slate-200" : "border-slate-600/50")} style={isLight ? undefined : { backgroundColor: '#0c0e18' }}>
                         {(companySearchQ.data as any[]).map((c: any, idx: number) => (
                           <button key={c.id || `fmcsa-${idx}`} className={cn("w-full text-left px-4 py-2.5 flex items-center justify-between gap-2 border-b last:border-0 transition-colors", isLight ? "hover:bg-slate-50 border-slate-100" : "hover:bg-slate-700/50 border-slate-700/20")} onClick={() => {
                             setApSelectedCompany(c); setApShowCompanySuggestions(false); setApCompanySearch(c.name);
@@ -529,7 +531,7 @@ export default function TerminalPartners() {
                       </div>
                     )}
                     {apShowCompanySuggestions && apCompanySearch.length >= 2 && companySearchQ.isLoading && (
-                      <div className={cn("absolute z-50 left-0 right-0 mt-1 rounded-xl border p-3", isLight ? "bg-white border-slate-200" : "bg-slate-800 border-slate-600/50")}>
+                      <div className={cn("absolute z-50 left-0 right-0 mt-1 rounded-xl border p-3", isLight ? "bg-white border-slate-200" : "border-slate-600/50")} style={isLight ? undefined : { backgroundColor: '#0c0e18' }}>
                         <p className="text-xs text-slate-400">Searching companies...</p>
                       </div>
                     )}
@@ -667,6 +669,7 @@ export default function TerminalPartners() {
           </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

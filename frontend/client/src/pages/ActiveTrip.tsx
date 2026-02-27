@@ -24,6 +24,7 @@ import {
   Wrench, Heart, Flame, Car, CloudLightning, HelpCircle,
   X, Loader2, RefreshCw, Target, Award, Coffee, Gauge,
   Moon, Play, Pause,
+  Thermometer, Snowflake, FlaskConical, ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -406,6 +407,39 @@ function ActiveSOSBanner({ loadId }: { loadId: number }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// CARGO EXCEPTION BANNER — Urgent alert when load is in a cargo exception state
+// ═══════════════════════════════════════════════════════════════
+
+const CARGO_EXCEPTION_META: Record<string, { icon: React.ElementType; label: string; desc: string }> = {
+  temp_excursion:       { icon: Thermometer,  label: "Temperature Excursion",  desc: "Reefer temperature outside acceptable range. Cold chain breach documented." },
+  reefer_breakdown:     { icon: Snowflake,    label: "Reefer Breakdown",       desc: "Refrigeration unit failure. Layover timer active. Emergency transfer may be needed." },
+  contamination_reject: { icon: FlaskConical,  label: "Contamination Reject",   desc: "Product rejected — contamination detected. Lab results required." },
+  seal_breach:          { icon: ShieldAlert,   label: "Seal Breach",            desc: "Seal broken or tampered. Full cargo inspection required before unloading." },
+  weight_violation:     { icon: Scale,         label: "Weight Violation",       desc: "Load exceeds legal weight limits. Reweigh required. Scale ticket must be uploaded." },
+};
+
+function CargoExceptionBanner({ status }: { status: string }) {
+  const meta = CARGO_EXCEPTION_META[status];
+  if (!meta) return null;
+  const Icon = meta.icon;
+
+  return (
+    <div className="rounded-2xl bg-red-500/15 border-2 border-red-500/40 p-4">
+      <div className="flex items-start gap-3">
+        <div className="p-2 rounded-xl bg-red-500/20 flex-shrink-0">
+          <Icon className="w-6 h-6 text-red-400" />
+        </div>
+        <div>
+          <p className="text-red-300 font-bold">{meta.label}</p>
+          <p className="text-red-400/80 text-xs mt-0.5 leading-relaxed">{meta.desc}</p>
+          <p className="text-red-500/60 text-[10px] mt-1.5">Resolve this exception to continue the load lifecycle.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MISSION PROGRESS INDICATOR — Jony Ive-inspired minimal design
 // Subtle, elegant, purposeful. Shows when an active trip matches
 // a mission the driver has accepted. Frosted glass + thin ring.
@@ -735,6 +769,7 @@ export default function ActiveTrip() {
             <p className="text-lg font-bold text-white">{activeLoad.loadNumber}</p>
           </div>
           <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+            CARGO_EXCEPTION_META[activeLoad.status] ? "bg-red-500/20 text-red-300" :
             activeLoad.status === "in_transit" ? "bg-blue-500/20 text-blue-300" :
             activeLoad.status === "at_pickup" || activeLoad.status === "loading" ? "bg-amber-500/20 text-amber-300" :
             activeLoad.status === "at_delivery" || activeLoad.status === "unloading" ? "bg-emerald-500/20 text-emerald-300" :
@@ -790,6 +825,9 @@ export default function ActiveTrip() {
           </button>
         </div>
       </div>
+
+      {/* Cargo Exception Banner */}
+      <CargoExceptionBanner status={activeLoad.status} />
 
       {/* Active SOS Banner */}
       <ActiveSOSBanner loadId={activeLoad.id} />
