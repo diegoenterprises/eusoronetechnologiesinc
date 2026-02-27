@@ -498,8 +498,8 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
   // ── Rate Analysis Actions ─────────────────────────────────────────────────
 
   analyze_rate: {
-    allowedRoles: ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "ADMIN", "SUPER_ADMIN"],
-    description: "Analyze a freight rate for fairness using AI market intelligence",
+    allowedRoles: ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    description: "Analyze a freight or escort rate for fairness using AI market intelligence",
     schema: z.object({
       origin: z.string(), destination: z.string(), cargoType: z.string().default("general"),
       proposedRate: z.number().positive(), distance: z.number().optional(),

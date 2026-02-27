@@ -202,6 +202,31 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
     // --- vehicles table columns ---
     await addColIfMissing("vehicles", "mileage", "INT DEFAULT NULL");
 
+    // --- vehicles: extend vehicleType enum with escort vehicle types ---
+    try {
+      await pool!.query(`
+        ALTER TABLE vehicles MODIFY COLUMN vehicleType ENUM(
+          'tractor','trailer','tanker','flatbed','refrigerated','dry_van',
+          'lowboy','step_deck','hopper','pneumatic','end_dump','intermodal_chassis','curtain_side',
+          'pilot_car','escort_truck','height_pole_vehicle','route_survey_vehicle'
+        ) NOT NULL
+      `);
+    } catch (e: any) {
+      if (!e?.message?.includes("Duplicate")) console.warn("[SchemaSync] vehicleType enum:", e?.message?.slice(0, 120));
+    }
+
+    // --- zeun_breakdown_reports: extend issueCategory enum with escort categories ---
+    try {
+      await pool!.query(`
+        ALTER TABLE zeun_breakdown_reports MODIFY COLUMN issueCategory ENUM(
+          'ENGINE','BRAKES','TRANSMISSION','ELECTRICAL','TIRES','FUEL_SYSTEM','COOLING','EXHAUST',
+          'STEERING','SUSPENSION','HVAC','LIGHTING','SIGNAGE','COMMUNICATIONS','HEIGHT_POLE','OTHER'
+        ) NOT NULL
+      `);
+    } catch (e: any) {
+      if (!e?.message?.includes("Duplicate")) console.warn("[SchemaSync] issueCategory enum:", e?.message?.slice(0, 120));
+    }
+
     // --- audit_logs table ---
     await ensureTable("audit_logs", `CREATE TABLE audit_logs (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -621,6 +646,30 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       INDEX convoy_load_idx (loadId),
       INDEX convoy_status_idx (status)
+    )`);
+
+    // --- insurance_compliance_checks table ---
+    await ensureTable("insurance_compliance_checks", `CREATE TABLE IF NOT EXISTS insurance_compliance_checks (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      companyId INT NOT NULL,
+      checkType ENUM('daily_expiration','weekly_fmcsa_deep','registration_verify','manual_trigger') NOT NULL,
+      previousStatus VARCHAR(50) DEFAULT NULL,
+      newStatus VARCHAR(50) NOT NULL,
+      policiesChecked INT DEFAULT 0,
+      policiesActive INT DEFAULT 0,
+      policiesExpiring INT DEFAULT 0,
+      policiesExpired INT DEFAULT 0,
+      fmcsaFilingValid TINYINT(1) DEFAULT NULL,
+      fmcsaAuthorityActive TINYINT(1) DEFAULT NULL,
+      companyInsuranceExpiry TIMESTAMP NULL DEFAULT NULL,
+      alertsGenerated INT DEFAULT 0,
+      usersNotified INT DEFAULT 0,
+      discrepancies JSON DEFAULT NULL,
+      metadata JSON DEFAULT NULL,
+      checkedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX icc_company_idx (companyId),
+      INDEX icc_check_type_idx (checkType),
+      INDEX icc_checked_at_idx (checkedAt)
     )`);
 
     console.log("[SchemaSync] Done.");

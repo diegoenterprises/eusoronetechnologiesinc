@@ -389,6 +389,8 @@ export const esangRouter = router({
         return ["Analyze lane pricing", "Match catalyst to load", "Check margin on active loads", "Market rate intelligence", "Catalyst compliance verify"];
       case "TERMINAL_MANAGER":
         return ["View terminal throughput", "Identify product with SPECTRA-MATCH", "Check tank inventory", "Review pending run tickets", "Safety compliance audit"];
+      case "ESCORT":
+        return ["View available escort jobs", "Check my certifications", "Analyze escort rates in my area", "View my schedule", "State permit requirements"];
       case "ADMIN": case "SUPER_ADMIN":
         return ["System health overview", "User activity summary", "Compliance dashboard", "Revenue analytics", "Platform diagnostics"];
       case "COMPLIANCE_OFFICER":
@@ -407,6 +409,67 @@ export const esangRouter = router({
     hazmat: z.boolean().optional(), equipmentType: z.string().optional(),
   })).mutation(async ({ input }) => {
     return esangAI.analyzeRate(input);
+  }),
+
+  analyzeEscortRate: protectedProcedure.input(z.object({
+    origin: z.string(), destination: z.string(),
+    proposedRate: z.number().positive(),
+    rateType: z.enum(["flat", "per_mile", "per_hour"]).default("flat"),
+    distance: z.number().optional(),
+    position: z.string().optional(),
+    hazmat: z.boolean().optional(),
+  })).mutation(async ({ input }) => {
+    try {
+      const { mlEngine } = await import("./services/mlEngine");
+      const oState = (input.origin || "").split(",").pop()?.trim().toUpperCase().substring(0, 2) || "";
+      const dState = (input.destination || "").split(",").pop()?.trim().toUpperCase().substring(0, 2) || "";
+      const dist = input.distance || 300;
+      const pred = mlEngine.predictEscortRate({ originState: oState, destState: dState, distance: dist, position: input.position, rateType: input.rateType, hazmat: input.hazmat });
+
+      // Compare proposed rate against prediction
+      const benchmark = input.rateType === "per_mile" ? pred.estimatedPerMile
+        : input.rateType === "per_hour" ? pred.estimatedPerHour
+        : pred.estimatedFlatRate;
+      const ratio = input.proposedRate / Math.max(benchmark, 1);
+      const fairnessScore = ratio >= 0.85 && ratio <= 1.15 ? 85 : ratio >= 0.70 && ratio <= 1.30 ? 65 : ratio < 0.70 ? 30 : 45;
+
+      return {
+        fairnessScore,
+        recommendation: fairnessScore >= 80 ? "accept" : fairnessScore >= 55 ? "negotiate" : "reject",
+        reasoning: pred.recommendation,
+        marketEstimate: { low: pred.priceRange.low, mid: benchmark, high: pred.priceRange.high },
+        factors: pred.factors.map(f => ({ name: f.name, impact: f.direction === "up" ? "negative" : f.direction === "down" ? "positive" : "neutral", score: f.impact })),
+        escortSpecific: true,
+        rateType: input.rateType,
+        estimatedFlatRate: pred.estimatedFlatRate,
+        estimatedPerMile: pred.estimatedPerMile,
+        estimatedPerHour: pred.estimatedPerHour,
+        confidence: pred.confidence,
+        basedOnSamples: pred.basedOnSamples,
+        marketCondition: pred.marketCondition,
+      };
+    } catch {
+      const dist = input.distance || 300;
+      const benchmarks = { flat: 450, per_mile: 2.25, per_hour: 45 };
+      const bm = benchmarks[input.rateType] || 450;
+      return {
+        fairnessScore: 50, recommendation: "negotiate",
+        reasoning: "ML engine not ready — using industry benchmarks for escort rates.",
+        marketEstimate: { low: Math.round(bm * 0.75), mid: bm, high: Math.round(bm * 1.25) },
+        factors: [], escortSpecific: true, rateType: input.rateType,
+        estimatedFlatRate: 450, estimatedPerMile: 2.25, estimatedPerHour: 45,
+        confidence: 25, basedOnSamples: 0, marketCondition: "Unknown",
+      };
+    }
+  }),
+
+  getEscortRateStats: protectedProcedure.query(async () => {
+    try {
+      const { mlEngine } = await import("./services/mlEngine");
+      return mlEngine.getEscortRateStats();
+    } catch {
+      return { totalAssignments: 0, completedAssignments: 0, avgFlatRate: 0, avgPerMileRate: 0, avgPerHourRate: 0, topLanes: [], positions: [] };
+    }
   }),
 
   walletInsights: protectedProcedure.input(z.object({

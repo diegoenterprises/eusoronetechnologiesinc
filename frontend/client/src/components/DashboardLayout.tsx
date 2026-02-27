@@ -49,6 +49,7 @@ import {
   Maximize2,
   Snowflake,
   ShieldCheck,
+  ShieldAlert,
   Cloud,
   CloudRain,
   Sun,
@@ -171,6 +172,7 @@ const iconMap: Record<string, React.ReactNode> = {
   Car: <Car size={20} />,
   FileCheck: <FileCheck size={20} />,
   Receipt: <Receipt size={20} />,
+  ShieldAlert: <ShieldAlert size={20} />,
 };
 
 // --- Notification Bell Component ---

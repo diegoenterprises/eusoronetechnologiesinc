@@ -195,7 +195,7 @@ export const ShortcutsWidget: React.FC<{ compact?: boolean }> = ({ compact = fal
 // Bookmarks Widget
 export const BookmarksWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const bookmarks = [
-    { name: 'Dashboard', url: '/dashboard' },
+    { name: 'Dashboard', url: '/' },
     { name: 'Loads', url: '/loads' },
     { name: 'Reports', url: '/reports' },
   ];

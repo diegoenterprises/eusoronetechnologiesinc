@@ -29,7 +29,8 @@ import {
   Flame, CloudLightning, HelpCircle, X, Loader2,
   CheckCircle2, Gauge, Moon, Play, Pause,
   Coffee, Thermometer, Snowflake, FlaskConical,
-  ShieldAlert, Scale, FileText, Globe
+  ShieldAlert, Scale, FileText, Globe,
+  Radar, Radio, AlertOctagon, ArrowUpFromLine, Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -268,6 +269,167 @@ function HOSCompactPanel() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// CONVOY PROXIMITY GEOFENCE — Moving geofence around primary vehicle
+// Escort must stay within threshold distance at all times
+// ═══════════════════════════════════════════════════════════════
+
+function ConvoyProximityPanel() {
+  const { data: proximity } = (trpc as any).escorts.getConvoyProximity.useQuery(undefined, { refetchInterval: 5000 });
+
+  if (!proximity) return null;
+
+  const dist = proximity.distanceMeters;
+  const max = proximity.maxDistanceMeters || 1200;
+  const warn = proximity.warningThresholdMeters || Math.round(max * 0.8);
+  const pct = dist !== null ? Math.min(100, (dist / max) * 100) : 0;
+  const status = proximity.status as string;
+
+  const statusColors = {
+    ok: { ring: "#10b981", bg: "bg-emerald-500/10", border: "border-emerald-500/30", text: "text-emerald-400", label: "IN RANGE" },
+    warning: { ring: "#f59e0b", bg: "bg-amber-500/10", border: "border-amber-500/30", text: "text-amber-400", label: "DRIFTING" },
+    critical: { ring: "#ef4444", bg: "bg-red-500/10", border: "border-red-500/40", text: "text-red-400", label: "OUT OF RANGE" },
+    unknown: { ring: "#6b7280", bg: "bg-slate-800/50", border: "border-slate-700/50", text: "text-slate-400", label: "NO SIGNAL" },
+  };
+  const cfg = statusColors[status as keyof typeof statusColors] || statusColors.unknown;
+
+  const distDisplay = dist !== null
+    ? dist < 1000 ? `${dist}m` : `${(dist / 1609.34).toFixed(1)} mi`
+    : "—";
+  const maxDisplay = max < 1000 ? `${max}m` : `${(max / 1609.34).toFixed(1)} mi`;
+
+  return (
+    <Card className={cn("rounded-xl border", cfg.bg, cfg.border, status === "critical" && "animate-pulse")}>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Radar className={cn("w-5 h-5", cfg.text)} />
+          <span className="text-white font-semibold text-sm">Convoy Proximity</span>
+          <Badge className={cn("ml-auto border-0 text-[10px] font-bold", cfg.bg, cfg.text)}>{cfg.label}</Badge>
+        </div>
+
+        {/* Proximity gauge */}
+        <div className="relative h-4 rounded-full bg-slate-700/50 overflow-hidden mb-3">
+          {/* Warning threshold marker */}
+          <div className="absolute top-0 h-full border-r-2 border-dashed border-amber-500/60 z-10" style={{ left: `${(warn / max) * 100}%` }} />
+          {/* Max limit marker */}
+          <div className="absolute top-0 right-0 h-full w-0.5 bg-red-500/80 z-10" />
+          {/* Current distance fill */}
+          <div
+            className="h-full rounded-full transition-all duration-700 ease-out"
+            style={{
+              width: `${Math.min(100, pct)}%`,
+              background: status === "ok" ? "linear-gradient(90deg, #10b981, #059669)"
+                : status === "warning" ? "linear-gradient(90deg, #f59e0b, #d97706)"
+                : status === "critical" ? "linear-gradient(90deg, #ef4444, #dc2626)"
+                : "linear-gradient(90deg, #6b7280, #4b5563)",
+            }}
+          />
+        </div>
+
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-slate-500">0m</span>
+          <span className={cn("font-bold text-lg tabular-nums", cfg.text)}>{distDisplay}</span>
+          <span className="text-slate-500">{maxDisplay}</span>
+        </div>
+
+        {/* Position & speed info */}
+        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-700/50">
+          <div className="text-center">
+            <p className="text-[10px] text-slate-500">Position</p>
+            <p className="text-white text-xs font-medium capitalize">{proximity.position === "lead" ? "Lead Escort" : "Rear Escort"}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] text-slate-500">Convoy Speed</p>
+            <p className="text-white text-xs font-medium">{proximity.escortLocation?.speed?.toFixed(0) || 0} mph</p>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] text-slate-500">Max Speed</p>
+            <p className="text-white text-xs font-medium">{proximity.convoyMaxSpeed} mph</p>
+          </div>
+        </div>
+
+        {/* Critical separation alert */}
+        {status === "critical" && (
+          <div className="mt-3 flex items-center gap-2 p-3 rounded-xl bg-red-500/15 border border-red-500/30">
+            <AlertOctagon className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <div>
+              <p className="text-red-300 text-xs font-bold">SEPARATION ALERT</p>
+              <p className="text-red-400/80 text-[10px] mt-0.5">You have exceeded the maximum distance from the convoy. Reduce distance immediately or contact dispatch.</p>
+            </div>
+          </div>
+        )}
+
+        {status === "warning" && (
+          <div className="mt-3 flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <Radio className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <p className="text-amber-300 text-[10px] font-medium">Approaching maximum separation distance. Maintain position.</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ROUTE RESTRICTION WARNINGS — Heavy haul / oversize / hazmat
+// ═══════════════════════════════════════════════════════════════
+
+const RESTRICTION_ICON_MAP: Record<string, React.ElementType> = {
+  AlertOctagon, Scale, Flame, Moon, Clock, ArrowUpFromLine, Calendar,
+};
+
+function RouteRestrictionWarnings() {
+  const { data: restrictions } = (trpc as any).escorts.getRouteRestrictions.useQuery(undefined, { refetchInterval: 60000 });
+
+  if (!restrictions || restrictions.restrictions.length === 0) return null;
+
+  const severityConfig = {
+    critical: { bg: "bg-red-500/10", border: "border-red-500/30", title: "text-red-300", desc: "text-red-400/80", badge: "bg-red-500/20 text-red-400" },
+    warning: { bg: "bg-amber-500/10", border: "border-amber-500/30", title: "text-amber-300", desc: "text-amber-400/80", badge: "bg-amber-500/20 text-amber-400" },
+    info: { bg: "bg-blue-500/10", border: "border-blue-500/30", title: "text-blue-300", desc: "text-blue-400/80", badge: "bg-blue-500/20 text-blue-400" },
+  };
+
+  return (
+    <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-white text-lg flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-amber-400" />
+          Route Restrictions
+          {restrictions.isSuperload && <Badge className="border-0 bg-red-500/20 text-red-400 text-[10px] font-bold ml-2">SUPERLOAD</Badge>}
+          {restrictions.isOversize && !restrictions.isSuperload && <Badge className="border-0 bg-amber-500/20 text-amber-400 text-[10px] font-bold ml-2">OVERSIZE</Badge>}
+          {restrictions.isHazmat && <Badge className="border-0 bg-purple-500/20 text-purple-400 text-[10px] font-bold ml-2">HAZMAT</Badge>}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {restrictions.restrictions.map((r: any, i: number) => {
+          const cfg = severityConfig[r.severity as keyof typeof severityConfig] || severityConfig.info;
+          const Icon = RESTRICTION_ICON_MAP[r.icon] || AlertTriangle;
+          return (
+            <div key={i} className={cn("rounded-xl p-3 border", cfg.bg, cfg.border)}>
+              <div className="flex items-start gap-3">
+                <div className="p-1.5 rounded-lg bg-slate-700/30 flex-shrink-0 mt-0.5"><Icon className={cn("w-4 h-4", cfg.title)} /></div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className={cn("font-semibold text-sm", cfg.title)}>{r.title}</p>
+                    <Badge className={cn("border-0 text-[9px]", cfg.badge)}>{r.severity.toUpperCase()}</Badge>
+                  </div>
+                  <p className={cn("text-xs mt-0.5 leading-relaxed", cfg.desc)}>{r.description}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {restrictions.specialInstructions && (
+          <div className="mt-2 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+            <p className="text-xs text-yellow-400 font-medium mb-1">Special Instructions</p>
+            <p className="text-yellow-200 text-sm">{restrictions.specialInstructions}</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // STATUS CONFIG + TRANSITIONS
 // ═══════════════════════════════════════════════════════════════
 
@@ -329,7 +491,7 @@ export default function EscortActiveTrip() {
           <p className="text-slate-400 text-center max-w-md mb-6">You don't have an active escort assignment right now. Check the marketplace for available jobs.</p>
           <div className="flex gap-3">
             <Button onClick={() => window.location.href = "/escort/marketplace"} className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg"><MapPin className="w-4 h-4 mr-2" />Find Jobs</Button>
-            <Button onClick={() => window.location.href = "/dashboard"} variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800 rounded-lg"><Clock className="w-4 h-4 mr-2" />Dashboard</Button>
+            <Button onClick={() => window.location.href = "/"} variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800 rounded-lg"><Clock className="w-4 h-4 mr-2" />Dashboard</Button>
           </div>
         </div>
       </div>
@@ -403,6 +565,12 @@ export default function EscortActiveTrip() {
 
           {/* HOS Panel */}
           <HOSCompactPanel />
+
+          {/* Convoy Proximity Geofence — live distance to primary vehicle */}
+          <ConvoyProximityPanel />
+
+          {/* Route Restriction Warnings — oversize/hazmat/superload */}
+          <RouteRestrictionWarnings />
 
           {/* Route Card */}
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">

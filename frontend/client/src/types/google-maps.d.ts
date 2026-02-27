@@ -11,6 +11,7 @@ declare namespace google.maps {
     setOptions(options: MapOptions): void;
     panTo(latLng: LatLng | LatLngLiteral): void;
     setZoom(zoom: number): void;
+    addListener(event: string, handler: (...args: any[]) => void): MapsEventListener;
   }
 
   class LatLng {
@@ -22,7 +23,24 @@ declare namespace google.maps {
   class Marker {
     constructor(options?: MarkerOptions);
     setMap(map: Map | null): void;
-    addListener(event: string, handler: (...args: any[]) => void): void;
+    addListener(event: string, handler: (...args: any[]) => void): MapsEventListener;
+  }
+
+  class Polyline {
+    constructor(options?: PolylineOptions);
+    setMap(map: Map | null): void;
+  }
+
+  class Circle {
+    constructor(options?: CircleOptions);
+    setMap(map: Map | null): void;
+    addListener(event: string, handler: (...args: any[]) => void): MapsEventListener;
+  }
+
+  class Polygon {
+    constructor(options?: PolygonOptions);
+    setMap(map: Map | null): void;
+    addListener(event: string, handler: (...args: any[]) => void): MapsEventListener;
   }
 
   class Size {
@@ -36,8 +54,36 @@ declare namespace google.maps {
   class InfoWindow {
     constructor(options?: any);
     setContent(content: string | HTMLElement): void;
-    open(map: Map, anchor?: any): void;
+    setPosition(latLng: LatLngLiteral | LatLng): void;
+    open(map: Map | any, anchor?: any): void;
     close(): void;
+  }
+
+  interface MapsEventListener {
+    remove(): void;
+  }
+
+  interface MapMouseEvent {
+    latLng?: LatLng;
+  }
+
+  enum SymbolPath {
+    CIRCLE = 0,
+    FORWARD_CLOSED_ARROW = 1,
+    FORWARD_OPEN_ARROW = 2,
+    BACKWARD_CLOSED_ARROW = 3,
+    BACKWARD_OPEN_ARROW = 4,
+  }
+
+  interface Symbol {
+    path: SymbolPath | string;
+    fillColor?: string;
+    fillOpacity?: number;
+    strokeColor?: string;
+    strokeWeight?: number;
+    scale?: number;
+    rotation?: number;
+    anchor?: Point;
   }
 
   interface MapOptions {
@@ -50,6 +96,7 @@ declare namespace google.maps {
     streetViewControl?: boolean;
     fullscreenControl?: boolean;
     backgroundColor?: string;
+    gestureHandling?: string;
     [key: string]: any;
   }
 
@@ -61,9 +108,40 @@ declare namespace google.maps {
   interface MarkerOptions {
     position?: LatLngLiteral | LatLng;
     map?: Map;
-    icon?: string | Icon;
+    icon?: string | Icon | Symbol;
     title?: string;
     zIndex?: number;
+    [key: string]: any;
+  }
+
+  interface PolylineOptions {
+    path?: (LatLngLiteral | LatLng)[];
+    strokeColor?: string;
+    strokeWeight?: number;
+    strokeOpacity?: number;
+    map?: Map;
+    [key: string]: any;
+  }
+
+  interface CircleOptions {
+    center?: LatLngLiteral | LatLng;
+    radius?: number;
+    strokeColor?: string;
+    strokeWeight?: number;
+    strokeOpacity?: number;
+    fillColor?: string;
+    fillOpacity?: number;
+    map?: Map;
+    [key: string]: any;
+  }
+
+  interface PolygonOptions {
+    paths?: (LatLngLiteral | LatLng)[];
+    strokeColor?: string;
+    strokeWeight?: number;
+    fillColor?: string;
+    fillOpacity?: number;
+    map?: Map;
     [key: string]: any;
   }
 

@@ -171,6 +171,7 @@ import { syncRouter } from "./routers/sync";
 import { regulatoryRouter } from "./routers/regulatory";
 import { accessorialRouter } from "./routers/accessorial";
 import { embeddingsRouter } from "./routers/embeddings";
+import { visualIntelligenceRouter } from "./routers/visualIntelligence";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -1247,6 +1248,9 @@ export const appRouter = router({
 
   // PPLX-EMBED Self-Hosted Semantic Search & RAG (perplexity-ai/pplx-embed-v1-0.6b)
   embeddings: embeddingsRouter,
+
+  // VIGA Visual Intelligence — Photo-based diagnosis, gauge reading, seal verification, POD, facility mapping
+  visualIntelligence: visualIntelligenceRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,

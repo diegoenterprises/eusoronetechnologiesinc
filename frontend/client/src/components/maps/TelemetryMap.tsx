@@ -1,10 +1,10 @@
 /**
  * TelemetryMap - Reusable map component for GPS tracking, routes, and geofences
- * Uses Leaflet with OpenStreetMap (free) or can be swapped for Google Maps
+ * Uses Google Maps JavaScript API (loaded in index.html)
+ * Dark mode uses Google Maps built-in dark styling
  */
 
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Navigation, Circle, AlertTriangle, Truck, User } from "lucide-react";
 
 interface Location {
   lat: number;
@@ -39,8 +39,47 @@ interface TelemetryMapProps {
   currentLocation?: Location;
   showControls?: boolean;
   height?: string;
+  darkMode?: boolean;
   onMarkerClick?: (marker: Location) => void;
   onMapClick?: (lat: number, lng: number) => void;
+}
+
+// Google Maps dark mode style — matches EusoTrip dark slate theme
+const DARK_MAP_STYLES: google.maps.MapTypeStyle[] = [
+  { elementType: "geometry", stylers: [{ color: "#0f172a" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#0f172a" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#64748b" }] },
+  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#94a3b8" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#1e293b" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#334155" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#1e3a5f" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1e40af" }] },
+  { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#93c5fd" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#0c1929" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#475569" }] },
+  { featureType: "poi", elementType: "geometry", stylers: [{ color: "#1e293b" }] },
+  { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#64748b" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#0f2818" }] },
+  { featureType: "transit", elementType: "geometry", stylers: [{ color: "#1e293b" }] },
+];
+
+function markerColor(type?: string, isMoving?: boolean): string {
+  if (type === "alert") return "#ef4444";
+  if (type === "driver" && isMoving) return "#22c55e";
+  if (type === "driver") return "#3b82f6";
+  if (type === "vehicle") return "#8b5cf6";
+  return "#3b82f6";
+}
+
+function createMarkerIcon(color: string, pulse = false): google.maps.Icon | google.maps.Symbol {
+  return {
+    path: google.maps.SymbolPath.CIRCLE,
+    fillColor: color,
+    fillOpacity: 1,
+    strokeColor: "#ffffff",
+    strokeWeight: 2,
+    scale: pulse ? 10 : 8,
+  };
 }
 
 export function TelemetryMap({
@@ -52,119 +91,204 @@ export function TelemetryMap({
   currentLocation,
   showControls = true,
   height = "400px",
+  darkMode = false,
   onMarkerClick,
   onMapClick,
 }: TelemetryMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const overlaysRef = useRef<(google.maps.Marker | google.maps.Polyline | google.maps.Circle | google.maps.Polygon | google.maps.InfoWindow)[]>([]);
+  const [mapsReady, setMapsReady] = useState(false);
 
+  // Wait for Google Maps API to be available
   useEffect(() => {
-    setMapLoaded(true);
+    const check = () => !!(window as any).google?.maps;
+    if (check()) { setMapsReady(true); return; }
+    const interval = setInterval(() => {
+      if (check()) { setMapsReady(true); clearInterval(interval); }
+    }, 200);
+    return () => clearInterval(interval);
   }, []);
 
-  const getMarkerIcon = (type?: string) => {
-    switch (type) {
-      case "driver":
-        return <User className="h-4 w-4" />;
-      case "vehicle":
-        return <Truck className="h-4 w-4" />;
-      case "alert":
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case "geofence":
-        return <Circle className="h-4 w-4" />;
-      default:
-        return <MapPin className="h-4 w-4" />;
-    }
-  };
+  // Initialize map once
+  useEffect(() => {
+    if (!mapsReady || !containerRef.current || mapRef.current) return;
 
-  const getMarkerColor = (type?: string, isMoving?: boolean) => {
-    if (type === "alert") return "bg-red-500";
-    if (isMoving) return "bg-green-500";
-    return "bg-blue-500";
-  };
+    const map = new google.maps.Map(containerRef.current, {
+      center: { lat: center.lat, lng: center.lng },
+      zoom,
+      disableDefaultUI: !showControls,
+      zoomControl: showControls,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+      styles: darkMode ? DARK_MAP_STYLES : undefined,
+      gestureHandling: "greedy",
+    });
+
+    mapRef.current = map;
+
+    if (onMapClick) {
+      map.addListener("click", (e: google.maps.MapMouseEvent) => {
+        if (e.latLng) onMapClick(e.latLng.lat(), e.latLng.lng());
+      });
+    }
+
+    return () => {
+      mapRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapsReady]);
+
+  // Update dark mode styles
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.setOptions({ styles: darkMode ? DARK_MAP_STYLES : [] });
+  }, [darkMode]);
+
+  // Update center/zoom
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.panTo({ lat: center.lat, lng: center.lng });
+    map.setZoom(zoom);
+  }, [center.lat, center.lng, zoom]);
+
+  // Update markers, route, geofences, currentLocation
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clear existing overlays
+    overlaysRef.current.forEach(o => {
+      if (o instanceof google.maps.Marker) o.setMap(null);
+      else if (o instanceof google.maps.Polyline) o.setMap(null);
+      else if (o instanceof google.maps.Circle) o.setMap(null);
+      else if (o instanceof google.maps.Polygon) o.setMap(null);
+    });
+    overlaysRef.current = [];
+
+    // Route polyline
+    if (route && route.points.length > 1) {
+      const polyline = new google.maps.Polyline({
+        path: route.points.map(p => ({ lat: p.lat, lng: p.lng })),
+        strokeColor: route.color || "#3b82f6",
+        strokeWeight: 4,
+        strokeOpacity: 0.8,
+        map,
+      });
+      overlaysRef.current.push(polyline);
+    }
+
+    // Geofences
+    geofences.forEach(gf => {
+      if (gf.center && gf.radius) {
+        const circle = new google.maps.Circle({
+          center: { lat: gf.center.lat, lng: gf.center.lng },
+          radius: gf.radius,
+          strokeColor: "#f97316",
+          strokeWeight: 2,
+          fillColor: "#f97316",
+          fillOpacity: 0.1,
+          map,
+        });
+        overlaysRef.current.push(circle);
+
+        const infoWindow = new google.maps.InfoWindow({
+          content: `<b>${gf.name}</b><br/>${gf.type}`,
+        });
+        circle.addListener("click", () => {
+          infoWindow.setPosition({ lat: gf.center!.lat, lng: gf.center!.lng });
+          infoWindow.open(map);
+        });
+        overlaysRef.current.push(infoWindow);
+      }
+      if (gf.polygon && gf.polygon.length > 2) {
+        const polygon = new google.maps.Polygon({
+          paths: gf.polygon.map(p => ({ lat: p.lat, lng: p.lng })),
+          strokeColor: "#f97316",
+          strokeWeight: 2,
+          fillColor: "#f97316",
+          fillOpacity: 0.1,
+          map,
+        });
+        overlaysRef.current.push(polygon);
+      }
+    });
+
+    // Markers
+    markers.forEach(m => {
+      const color = markerColor(m.type, m.isMoving);
+      const marker = new google.maps.Marker({
+        position: { lat: m.lat, lng: m.lng },
+        map,
+        icon: createMarkerIcon(color, m.isMoving),
+        title: m.label || "Location",
+      });
+
+      const speedStr = m.speed !== undefined && m.speed > 0 ? `<br/>Speed: ${m.speed.toFixed(0)} mph` : "";
+      const infoWindow = new google.maps.InfoWindow({
+        content: `<div style="color:#1e293b"><b>${m.label || "Location"}</b>${speedStr}<br/>${m.lat.toFixed(5)}, ${m.lng.toFixed(5)}</div>`,
+      });
+      marker.addListener("click", () => {
+        infoWindow.open(map, marker);
+        if (onMarkerClick) onMarkerClick(m);
+      });
+
+      overlaysRef.current.push(marker);
+      overlaysRef.current.push(infoWindow);
+    });
+
+    // Current location (pulsing green dot)
+    if (currentLocation) {
+      const marker = new google.maps.Marker({
+        position: { lat: currentLocation.lat, lng: currentLocation.lng },
+        map,
+        icon: createMarkerIcon("#22c55e", true),
+        title: currentLocation.label || "Your Location",
+        zIndex: 999,
+      });
+
+      const infoWindow = new google.maps.InfoWindow({
+        content: `<div style="color:#1e293b"><b>${currentLocation.label || "Your Location"}</b><br/>${currentLocation.lat.toFixed(5)}, ${currentLocation.lng.toFixed(5)}</div>`,
+      });
+      marker.addListener("click", () => infoWindow.open(map, marker));
+
+      // Pulsing animation via marker circle overlay
+      const pulseCircle = new google.maps.Circle({
+        center: { lat: currentLocation.lat, lng: currentLocation.lng },
+        radius: 40,
+        strokeColor: "#22c55e",
+        strokeOpacity: 0.4,
+        strokeWeight: 2,
+        fillColor: "#22c55e",
+        fillOpacity: 0.15,
+        map,
+      });
+
+      overlaysRef.current.push(marker, infoWindow, pulseCircle);
+    }
+  }, [markers, route, geofences, currentLocation, onMarkerClick]);
+
+  // Fallback if Google Maps not available
+  if (!mapsReady) {
+    return (
+      <div
+        className="relative rounded-lg overflow-hidden border border-border flex items-center justify-center bg-slate-900/50"
+        style={{ height }}
+      >
+        <div className="text-center text-muted-foreground">
+          <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
+          <p className="text-sm">Loading Google Maps...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative rounded-lg overflow-hidden border border-border" style={{ height }}>
-      <div ref={mapRef} className="w-full h-full bg-muted">
-        {/* Map placeholder - integrates with Leaflet or Google Maps */}
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/20 dark:to-blue-800/20">
-          <div className="text-center">
-            <Navigation className="h-12 w-12 mx-auto mb-2 text-blue-500" />
-            <p className="text-sm text-muted-foreground">
-              Map View - {markers.length} marker{markers.length !== 1 ? "s" : ""}
-              {route && ` | Route: ${route.points.length} points`}
-              {geofences.length > 0 && ` | ${geofences.length} geofence${geofences.length !== 1 ? "s" : ""}`}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Center: {center.lat.toFixed(4)}, {center.lng.toFixed(4)} | Zoom: {zoom}
-            </p>
-          </div>
-        </div>
-
-        {/* Marker overlays */}
-        {markers.length > 0 && (
-          <div className="absolute top-2 left-2 bg-background/90 rounded-lg p-2 max-h-40 overflow-y-auto">
-            <p className="text-xs font-medium mb-1">Locations ({markers.length})</p>
-            {markers.slice(0, 5).map((marker, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-2 text-xs py-1 cursor-pointer hover:bg-muted rounded px-1"
-                onClick={() => onMarkerClick?.(marker)}
-              >
-                <div className={`w-3 h-3 rounded-full ${getMarkerColor(marker.type, marker.isMoving)}`} />
-                <span>{marker.label || `${marker.lat.toFixed(4)}, ${marker.lng.toFixed(4)}`}</span>
-                {marker.speed !== undefined && marker.speed > 0 && (
-                  <span className="text-muted-foreground">{marker.speed.toFixed(0)} mph</span>
-                )}
-              </div>
-            ))}
-            {markers.length > 5 && (
-              <p className="text-xs text-muted-foreground mt-1">+{markers.length - 5} more</p>
-            )}
-          </div>
-        )}
-
-        {/* Current location indicator */}
-        {currentLocation && (
-          <div className="absolute bottom-2 left-2 bg-background/90 rounded-lg p-2">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs">
-                Your location: {currentLocation.lat.toFixed(4)}, {currentLocation.lng.toFixed(4)}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Geofence legend */}
-        {geofences.length > 0 && (
-          <div className="absolute top-2 right-2 bg-background/90 rounded-lg p-2">
-            <p className="text-xs font-medium mb-1">Geofences</p>
-            {geofences.slice(0, 3).map((gf) => (
-              <div key={gf.id} className="flex items-center gap-2 text-xs py-0.5">
-                <Circle className="h-3 w-3 text-orange-500" />
-                <span>{gf.name}</span>
-                <span className="text-muted-foreground">({gf.type})</span>
-              </div>
-            ))}
-            {geofences.length > 3 && (
-              <p className="text-xs text-muted-foreground">+{geofences.length - 3} more</p>
-            )}
-          </div>
-        )}
-
-        {/* Map controls */}
-        {showControls && (
-          <div className="absolute bottom-2 right-2 flex flex-col gap-1">
-            <button className="w-8 h-8 bg-background rounded flex items-center justify-center shadow hover:bg-muted">
-              <span className="text-lg font-bold">+</span>
-            </button>
-            <button className="w-8 h-8 bg-background rounded flex items-center justify-center shadow hover:bg-muted">
-              <span className="text-lg font-bold">-</span>
-            </button>
-          </div>
-        )}
-      </div>
+    <div className="relative rounded-lg overflow-hidden border border-border" style={{ height, isolation: "isolate", position: "relative", zIndex: 0 }}>
+      <div ref={containerRef} className="w-full h-full" />
     </div>
   );
 }

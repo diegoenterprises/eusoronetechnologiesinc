@@ -14,7 +14,7 @@
  * 6. IFTA Mileage Tracker — Per-state mile log
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import {
@@ -25,6 +25,7 @@ import {
   X, Loader2, RefreshCw, Target, Award, Coffee, Gauge,
   Moon, Play, Pause,
   Thermometer, Snowflake, FlaskConical, ShieldAlert,
+  Camera, Eye, ImageIcon, ChevronDown, ChevronUp, Lock, Package,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -332,6 +333,310 @@ function ZeunMechanicsPanel({ loadId }: { loadId: number }) {
         <p className="text-[10px] text-zinc-500 mt-2 text-center">
           Next service: {zeunData.nextService}
         </p>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VIGA VISUAL INTELLIGENCE — Photo-based AI verification panel
+// Gauge reading, Seal verification, DVIR, Cargo condition
+// ═══════════════════════════════════════════════════════════════
+
+const VIGA_MODES = [
+  { key: "gauge", label: "Gauge Reading", icon: Gauge, desc: "Photo of tank gauge → extract readings", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+  { key: "seal", label: "Seal Check", icon: Lock, desc: "Photo of seal → verify number & integrity", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+  { key: "dvir", label: "DVIR Assist", icon: Shield, desc: "Photo of inspection point → AI check", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { key: "cargo", label: "Cargo Check", icon: Package, desc: "Photo of cargo → condition & securement", color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
+] as const;
+
+type VigaMode = typeof VIGA_MODES[number]["key"];
+
+function VIGAVisualPanel({ loadId }: { loadId: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const [activeMode, setActiveMode] = useState<VigaMode | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [sealInput, setSealInput] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const gaugeRead = (trpc as any).visualIntelligence?.readGauge?.useMutation?.() || { mutate: () => {}, isPending: false };
+  const sealVerify = (trpc as any).visualIntelligence?.verifySeal?.useMutation?.() || { mutate: () => {}, isPending: false };
+  const dvirInspect = (trpc as any).visualIntelligence?.inspectDVIR?.useMutation?.() || { mutate: () => {}, isPending: false };
+  const cargoAssess = (trpc as any).visualIntelligence?.assessCargo?.useMutation?.() || { mutate: () => {}, isPending: false };
+
+  const handleCapture = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setPhotoPreview(dataUrl);
+      setPhotoBase64(dataUrl);
+      setResult(null);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handleAnalyze = useCallback(() => {
+    if (!photoBase64 || !activeMode) return;
+    setAnalyzing(true);
+    setResult(null);
+
+    const onSuccess = (r: any) => { setResult(r); setAnalyzing(false); };
+    const onError = () => { setAnalyzing(false); toast.error("Analysis failed. Try again."); };
+
+    switch (activeMode) {
+      case "gauge":
+        gaugeRead.mutate({ imageBase64: photoBase64, mimeType: "image/jpeg" }, { onSuccess, onError });
+        break;
+      case "seal":
+        sealVerify.mutate({ imageBase64: photoBase64, mimeType: "image/jpeg", expectedSealNumber: sealInput || undefined }, { onSuccess, onError });
+        break;
+      case "dvir":
+        dvirInspect.mutate({ imageBase64: photoBase64, mimeType: "image/jpeg" }, { onSuccess, onError });
+        break;
+      case "cargo":
+        cargoAssess.mutate({ imageBase64: photoBase64, mimeType: "image/jpeg" }, { onSuccess, onError });
+        break;
+    }
+  }, [photoBase64, activeMode, sealInput]);
+
+  const resetPanel = () => {
+    setPhotoPreview(null);
+    setPhotoBase64(null);
+    setResult(null);
+    setActiveMode(null);
+    setSealInput("");
+  };
+
+  return (
+    <div className="rounded-2xl bg-zinc-900/60 border border-zinc-800 overflow-hidden">
+      <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center gap-2 p-4 hover:bg-zinc-800/30 transition-colors">
+        <div className="p-1.5 rounded-lg bg-gradient-to-r from-[#1473FF] to-[#BE01FF]">
+          <Camera className="w-3.5 h-3.5 text-white" />
+        </div>
+        <div className="text-left flex-1">
+          <span className="text-zinc-200 font-medium text-sm">VIGA Visual Intelligence</span>
+          <p className="text-[10px] text-zinc-500">Photo-based AI verification & diagnostics</p>
+        </div>
+        {expanded ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+      </button>
+
+      {expanded && (
+        <div className="px-4 pb-4 space-y-3">
+          {!activeMode ? (
+            <div className="grid grid-cols-2 gap-2">
+              {VIGA_MODES.map((m) => {
+                const Icon = m.icon;
+                return (
+                  <button key={m.key} onClick={() => setActiveMode(m.key)}
+                    className={`rounded-xl p-3 border text-left transition-all hover:scale-[1.02] ${m.bg}`}>
+                    <Icon className={`w-5 h-5 mb-1.5 ${m.color}`} />
+                    <p className="text-xs font-semibold text-zinc-200">{m.label}</p>
+                    <p className="text-[9px] text-zinc-500 mt-0.5">{m.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {(() => { const m = VIGA_MODES.find(v => v.key === activeMode); if (!m) return null; const Icon = m.icon; return <><Icon className={`w-4 h-4 ${m.color}`} /><span className="text-sm font-medium text-zinc-200">{m.label}</span></>; })()}
+                </div>
+                <button onClick={resetPanel} className="text-xs text-zinc-500 hover:text-zinc-300">Back</button>
+              </div>
+
+              {activeMode === "seal" && !photoPreview && (
+                <input value={sealInput} onChange={e => setSealInput(e.target.value)} placeholder="Expected seal # from BOL (optional)"
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-800/80 border border-zinc-700/50 text-sm text-zinc-200 placeholder:text-zinc-600" />
+              )}
+
+              <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
+
+              {!photoPreview ? (
+                <button onClick={() => fileRef.current?.click()}
+                  className="w-full p-5 rounded-xl border-2 border-dashed border-zinc-700 hover:border-purple-500/50 hover:bg-purple-500/5 flex flex-col items-center gap-2 transition-all">
+                  <ImageIcon className="w-7 h-7 text-zinc-600" />
+                  <span className="text-xs text-zinc-400">Tap to capture photo</span>
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="relative">
+                    <img src={photoPreview} alt="Captured" className="w-full rounded-xl max-h-40 object-cover" />
+                    <button onClick={() => { setPhotoPreview(null); setPhotoBase64(null); setResult(null); }}
+                      className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {!result && !analyzing && (
+                    <button onClick={handleAnalyze}
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-sm font-medium flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+                      <Eye className="w-4 h-4" />Analyze with VIGA
+                    </button>
+                  )}
+
+                  {analyzing && (
+                    <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center">
+                      <RefreshCw className="w-4 h-4 mx-auto mb-1 text-purple-400 animate-spin" />
+                      <p className="text-xs text-purple-300">VIGA analyzing...</p>
+                    </div>
+                  )}
+
+                  {/* ── Gauge Reading Results ── */}
+                  {result?.data && activeMode === "gauge" && (
+                    <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Gauge className="w-4 h-4 text-blue-400" />
+                        <span className="text-sm font-semibold text-blue-300">Gauge Reading</span>
+                        <span className="ml-auto text-[10px] text-blue-400/70">{((result.data.confidence || 0) * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="bg-zinc-900/50 rounded-lg p-3">
+                        <p className="text-2xl font-bold text-white">{result.data.reading} <span className="text-sm text-zinc-400">{result.data.unit}</span></p>
+                        <p className="text-[10px] text-zinc-500 mt-1">{result.data.gaugeType}</p>
+                      </div>
+                      {result.data.additionalReadings?.length > 0 && (
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {result.data.additionalReadings.map((r: any, i: number) => (
+                            <div key={i} className="bg-zinc-900/30 rounded-lg p-2">
+                              <p className="text-[9px] text-zinc-500">{r.label}</p>
+                              <p className="text-sm font-medium text-zinc-200">{r.value} <span className="text-[10px] text-zinc-500">{r.unit}</span></p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className={`flex items-center gap-1.5 text-[10px] ${result.data.isWithinNormal ? "text-emerald-400" : "text-amber-400"}`}>
+                        {result.data.isWithinNormal ? <CheckCircle2 className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                        {result.data.isWithinNormal ? "Within normal range" : "Outside normal range"} ({result.data.normalRange})
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Seal Verification Results ── */}
+                  {result?.data && activeMode === "seal" && (
+                    <div className={`p-3 rounded-xl border space-y-2 ${
+                      result.data.condition === "INTACT" ? "bg-emerald-500/10 border-emerald-500/20" :
+                      result.data.condition === "TAMPERED" || result.data.condition === "BROKEN" ? "bg-red-500/10 border-red-500/20" :
+                      "bg-amber-500/10 border-amber-500/20"
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-amber-400" />
+                        <span className="text-sm font-semibold text-zinc-200">Seal Verification</span>
+                        <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          result.data.condition === "INTACT" ? "bg-emerald-500/20 text-emerald-400" :
+                          result.data.condition === "TAMPERED" || result.data.condition === "BROKEN" ? "bg-red-500/20 text-red-400" :
+                          "bg-amber-500/20 text-amber-400"
+                        }`}>{result.data.condition}</span>
+                      </div>
+                      <div className="bg-zinc-900/50 rounded-lg p-3">
+                        <p className="text-[10px] text-zinc-500">Seal Number</p>
+                        <p className="text-lg font-bold text-white font-mono">{result.data.sealNumber || "Unreadable"}</p>
+                        <p className="text-[10px] text-zinc-500 mt-1">Type: {result.data.sealType}</p>
+                      </div>
+                      {result.data.matchesBOL !== null && (
+                        <div className={`flex items-center gap-1.5 text-xs font-medium ${result.data.matchesBOL ? "text-emerald-400" : "text-red-400"}`}>
+                          {result.data.matchesBOL ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+                          {result.data.matchesBOL ? "Matches BOL" : "Does NOT match BOL"}
+                        </div>
+                      )}
+                      {result.data.tamperEvidence && (
+                        <div className="flex items-start gap-1.5 text-xs text-red-400 bg-red-500/10 rounded-lg p-2">
+                          <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                          <span>{result.data.tamperDetails}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── DVIR Inspection Results ── */}
+                  {result?.data && activeMode === "dvir" && (
+                    <div className={`p-3 rounded-xl border space-y-2 ${
+                      result.data.condition === "PASS" ? "bg-emerald-500/10 border-emerald-500/20" :
+                      result.data.condition === "FAIL" ? "bg-red-500/10 border-red-500/20" :
+                      "bg-amber-500/10 border-amber-500/20"
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-emerald-400" />
+                        <span className="text-sm font-semibold text-zinc-200">DVIR: {result.data.inspectionPoint}</span>
+                        <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          result.data.condition === "PASS" ? "bg-emerald-500/20 text-emerald-400" :
+                          result.data.condition === "FAIL" ? "bg-red-500/20 text-red-400" :
+                          "bg-amber-500/20 text-amber-400"
+                        }`}>{result.data.condition}</span>
+                      </div>
+                      {result.data.defectsFound?.length > 0 ? (
+                        <div className="space-y-1">
+                          {result.data.defectsFound.map((d: any, i: number) => (
+                            <div key={i} className="flex items-start gap-2 bg-zinc-900/50 rounded-lg p-2">
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold flex-shrink-0 ${
+                                d.severity === "CRITICAL_OOS" ? "bg-red-500/20 text-red-400" :
+                                d.severity === "MAJOR" ? "bg-orange-500/20 text-orange-400" :
+                                "bg-yellow-500/20 text-yellow-400"
+                              }`}>{d.severity}</span>
+                              <span className="text-xs text-zinc-300">{d.description}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-emerald-400 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" />No defects found</p>
+                      )}
+                      {result.data.regulatoryNotes?.length > 0 && (
+                        <div className="text-[10px] text-zinc-500">
+                          {result.data.regulatoryNotes.map((n: string, i: number) => <p key={i}>{n}</p>)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Cargo Condition Results ── */}
+                  {result?.data && activeMode === "cargo" && (
+                    <div className={`p-3 rounded-xl border space-y-2 ${
+                      result.data.condition === "SECURE" ? "bg-emerald-500/10 border-emerald-500/20" :
+                      result.data.condition === "LEAKING" || result.data.condition === "DAMAGED" ? "bg-red-500/10 border-red-500/20" :
+                      "bg-amber-500/10 border-amber-500/20"
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-purple-400" />
+                        <span className="text-sm font-semibold text-zinc-200">Cargo: {result.data.cargoType}</span>
+                        <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          result.data.condition === "SECURE" ? "bg-emerald-500/20 text-emerald-400" :
+                          result.data.condition === "LEAKING" || result.data.condition === "DAMAGED" ? "bg-red-500/20 text-red-400" :
+                          "bg-amber-500/20 text-amber-400"
+                        }`}>{result.data.condition}</span>
+                      </div>
+                      <div className="bg-zinc-900/50 rounded-lg p-2">
+                        <p className="text-[10px] text-zinc-500">Securement</p>
+                        <p className="text-xs text-zinc-300">{result.data.securementStatus}</p>
+                      </div>
+                      {result.data.issues?.length > 0 && (
+                        <div className="space-y-1">
+                          {result.data.issues.map((issue: any, i: number) => (
+                            <div key={i} className="flex items-start gap-2 bg-zinc-900/50 rounded-lg p-2">
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold flex-shrink-0 ${
+                                issue.severity === "CRITICAL" || issue.severity === "HIGH" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"
+                              }`}>{issue.severity}</span>
+                              <span className="text-xs text-zinc-300">{issue.description}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {result.data.hazmatVisible && result.data.placardInfo && (
+                        <div className="flex items-center gap-1.5 text-xs text-amber-400">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          Placard: {result.data.placardInfo}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
@@ -853,6 +1158,9 @@ export default function ActiveTrip() {
 
       {/* ZEUN Vehicle Health */}
       <ZeunMechanicsPanel loadId={activeLoad.id} />
+
+      {/* VIGA Visual Intelligence — Photo-based AI verification */}
+      <VIGAVisualPanel loadId={activeLoad.id} />
 
       {/* Compliance Panel */}
       {tripData?.routeCompliance && (

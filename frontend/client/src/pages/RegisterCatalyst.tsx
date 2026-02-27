@@ -26,6 +26,8 @@ import {
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import DatePicker from "@/components/DatePicker";
+import CanopyConnectButton from "@/components/CanopyConnectButton";
+import type { CanopyPolicyData } from "@/components/CanopyConnectButton";
 
 interface CatalystFormData {
   // Step 1: Company Information
@@ -593,6 +595,24 @@ export default function RegisterCatalyst() {
       icon: <CreditCard className="w-5 h-5" />,
       component: (
         <div className="space-y-6">
+          <CanopyConnectButton
+            policyType="liability"
+            verified={!!formData.liabilityPolicy && !!formData.liabilityCatalyst && (formData as any)._canopyVerified}
+            onPolicyData={(data: CanopyPolicyData) => {
+              const updates: Partial<CatalystFormData> = { _canopyVerified: true } as any;
+              if (data.carrier) updates.liabilityCatalyst = data.carrier;
+              if (data.policyNumber) updates.liabilityPolicy = data.policyNumber;
+              if (data.policyEnd) updates.liabilityExpiration = data.policyEnd;
+              const biCov = data.coverages?.find(c => c.type?.toLowerCase().includes('liability') || c.type?.toLowerCase().includes('bi'));
+              if (biCov?.limit) {
+                const num = parseInt(String(biCov.limit).replace(/[^0-9]/g, ''));
+                if (num >= 5000000) updates.liabilityCoverage = '5000000';
+                else if (num >= 2000000) updates.liabilityCoverage = '2000000';
+                else updates.liabilityCoverage = '1000000';
+              }
+              updateFormData(updates);
+            }}
+          />
           <div className="space-y-4">
             <h4 className="text-white font-medium">Liability Insurance (Min $1,000,000)</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -43,8 +43,8 @@ const PAGE_ACCESS: RoleAccessConfig = {
   "/catalysts": ["SHIPPER", "BROKER", "ADMIN", "SUPER_ADMIN"],
   
   // Catalyst-specific pages
-  "/marketplace": ["CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
-  "/bids": ["CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/marketplace": ["CATALYST", "BROKER", "DRIVER", "DISPATCH", "ADMIN", "SUPER_ADMIN"],
+  "/bids": ["CATALYST", "BROKER", "DRIVER", "DISPATCH", "ADMIN", "SUPER_ADMIN"],
   "/loads/transit": ["CATALYST", "DRIVER", "ADMIN", "SUPER_ADMIN"],
   "/fleet": ["CATALYST", "ADMIN", "SUPER_ADMIN"],
   "/drivers": ["CATALYST", "ADMIN", "SUPER_ADMIN"],
@@ -72,6 +72,8 @@ const PAGE_ACCESS: RoleAccessConfig = {
   "/escort/incidents": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
   "/escort/reports": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
   "/escort/jobs": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/escort/active-trip": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/escort/profile": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
   "/escort/marketplace": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
   "/escort/permits": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
   "/escort/schedule": ["ESCORT", "ADMIN", "SUPER_ADMIN"],

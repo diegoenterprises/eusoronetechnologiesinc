@@ -16,6 +16,7 @@ const MessagesPage = lazy(() => import("./pages/Messages"));
 const ChannelsPage = lazy(() => import("./pages/Channels"));
 const ProfilePage = lazy(() => import("./pages/Profile"));
 const CompanyPage = lazy(() => import("./pages/Company"));
+const EscortTeam = lazy(() => import("./pages/EscortTeam"));
 const FacilityPage = lazy(() => import("./pages/Facility"));
 const ProceduresPage = lazy(() => import("./pages/Procedures"));
 const DiagnosticsPage = lazy(() => import("./pages/Diagnostics"));
@@ -125,6 +126,7 @@ const TerminalDashboard = lazy(() => import("./pages/TerminalDashboard"));
 const BrokerDashboard = lazy(() => import("./pages/BrokerDashboard"));
 const EscortDashboard = lazy(() => import("./pages/EscortDashboard"));
 const EscortActiveTrip = lazy(() => import("./pages/EscortActiveTrip"));
+const EscortProfile = lazy(() => import("./pages/EscortProfile"));
 const FleetManagement = lazy(() => import("./pages/FleetManagement"));
 const ShipperLoads = lazy(() => import("./pages/ShipperLoads"));
 const Billing = lazy(() => import("./pages/Billing"));
@@ -481,7 +483,7 @@ function Router() {
       {/* ============================================ */}
       {/* CATALYST ROUTES */}
       {/* ============================================ */}
-      <Route path={"/marketplace"} component={guard([...CARR, "BROKER", "DRIVER", "DISPATCH", "ESCORT"], <FindLoadsPage />)} />
+      <Route path={"/marketplace"} component={guard([...CARR, "BROKER", "DRIVER", "DISPATCH"], <FindLoadsPage />)} />
       <Route path={"/bids"} component={guard([...CARR, "BROKER", "DRIVER", "DISPATCH", "ESCORT"], <BidManagement />)} />
       <Route path={"/bids/submit/:loadId"} component={guard(CARR, <CatalystBidSubmission />)} />
       <Route path={"/bids/:bidId"} component={guard(CARR, <BidDetails />)} />
@@ -618,8 +620,9 @@ function Router() {
       {/* ============================================ */}
       <Route path={"/escort"} component={guard(ESCT, <EscortDashboard />)} />
       <Route path={"/escort/active-trip"} component={guard(ESCT, <EscortActiveTrip />)} />
+      <Route path={"/escort/profile"} component={guard(ESCT, <EscortProfile />)} />
       <Route path={"/convoys"} component={guard(ESCT, <ActiveConvoys />)} />
-      <Route path={"/team"} component={guard(ESCT, <ProfilePage />)} />
+      <Route path={"/team"} component={guard(ESCT, <EscortTeam />)} />
       <Route path={"/escort/incidents"} component={guard(ESCT, <EscortIncidents />)} />
       <Route path={"/escort/reports"} component={guard(ESCT, <EscortReports />)} />
       <Route path={"/escort/jobs"} component={guard(ESCT, <EscortJobs />)} />

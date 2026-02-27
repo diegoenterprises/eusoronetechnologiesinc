@@ -151,6 +151,7 @@ export default function FleetTracking() {
                   markers={mapMarkers}
                   geofences={mapGeofences}
                   height="520px"
+                  darkMode={!L}
                   onMarkerClick={(marker) => {
                     const driver = filteredLocations.find(
                       (l: any) => l.lat === marker.lat && l.lng === marker.lng

@@ -4,7 +4,7 @@
  * Theme-aware | Brand gradient | Premium UX.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,13 +20,16 @@ import {
   Thermometer, Fuel, Gauge, Battery, Navigation, Zap, Shield,
   BookOpen, HardHat, Search, ExternalLink, ChevronDown, ChevronUp,
   Flame, Heart, Cloud, CircleDot, ShieldAlert, Siren, Info,
-  Package, Cable,
+  Package, Cable, Car, Radio, Lightbulb, Megaphone, Ruler, Camera, Eye, ImageIcon,
 } from "lucide-react";
 import { EquipmentIntelligencePanel } from "./EquipmentIntelligence";
 
 type ZeunMode = "diagnostics" | "equipment";
 
-const ISSUE_CATEGORIES = [
+const ESCORT_VEHICLE_TYPES = ["pilot_car", "escort_truck", "height_pole_vehicle", "route_survey_vehicle"];
+const isEscortVehicle = (type?: string) => type ? ESCORT_VEHICLE_TYPES.includes(type) : false;
+
+const BASE_ISSUE_CATEGORIES = [
   { value: "ENGINE", label: "Engine Problem", icon: Wrench },
   { value: "BRAKES", label: "Brakes", icon: AlertTriangle },
   { value: "TRANSMISSION", label: "Transmission", icon: Gauge },
@@ -40,6 +43,15 @@ const ISSUE_CATEGORIES = [
   { value: "HVAC", label: "HVAC/Climate", icon: Thermometer },
   { value: "OTHER", label: "Other", icon: Wrench },
 ] as const;
+
+const ESCORT_ISSUE_CATEGORIES = [
+  { value: "LIGHTING", label: "Warning Lights/Beacons", icon: Lightbulb },
+  { value: "SIGNAGE", label: "Signs/Flags/Banners", icon: Megaphone },
+  { value: "COMMUNICATIONS", label: "Radio/Comms", icon: Radio },
+  { value: "HEIGHT_POLE", label: "Height Pole/Measuring", icon: Ruler },
+] as const;
+
+const ISSUE_CATEGORIES = [...BASE_ISSUE_CATEGORIES] as const;
 
 const SEVERITY_OPTIONS = [
   { value: "LOW", label: "Low - Minor issue", color: "bg-green-100 text-green-800" },
@@ -60,7 +72,18 @@ const COMMON_SYMPTOMS: Record<string, string[]> = {
   SUSPENSION: ["Rough ride", "Leaning", "Bouncing", "Noise over bumps"],
   HVAC: ["No heat", "No A/C", "Weak airflow", "Strange smell"],
   TIRES: ["Flat tire", "Blowout", "Low pressure", "Vibration"],
+  LIGHTING: ["Amber beacon not working", "Strobe light failure", "LED bar malfunction", "Turn signals out", "Headlight dim", "Roof lights flickering"],
+  SIGNAGE: ["Oversize load sign damaged", "Flag holder broken", "Banner torn", "Magnetic sign not sticking", "Reflective tape peeling"],
+  COMMUNICATIONS: ["CB radio static", "No transmission", "Two-way radio dead", "Antenna broken", "Bluetooth disconnected", "GPS tracker offline"],
+  HEIGHT_POLE: ["Pole won't extend", "Pole stuck", "Measurement inaccurate", "Mount broken", "Pole bent", "Quick-release jammed"],
   OTHER: ["Unknown issue", "Multiple problems", "Need inspection"],
+};
+
+const ESCORT_VEHICLE_LABELS: Record<string, string> = {
+  pilot_car: "Pilot Car",
+  escort_truck: "Escort Truck",
+  height_pole_vehicle: "Height Pole Vehicle",
+  route_survey_vehicle: "Route Survey Vehicle",
 };
 
 type IssueCategory = typeof ISSUE_CATEGORIES[number]["value"];
@@ -85,6 +108,63 @@ export default function ZeunBreakdown() {
   const [showSelfRepair, setShowSelfRepair] = useState(false);
   const [emergencyDetail, setEmergencyDetail] = useState<string | null>(null);
   const cc = cn("rounded-2xl border backdrop-blur-sm transition-all", L ? "bg-white/80 border-slate-200/80 shadow-sm" : "bg-slate-800/40 border-slate-700/40");
+
+  // ── VIGA Visual Intelligence State ──
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
+  const [vigaResult, setVigaResult] = useState<any>(null);
+  const [vigaAnalyzing, setVigaAnalyzing] = useState(false);
+
+  const vigaDiagnose = (trpc as any).visualIntelligence.diagnoseMechanical.useMutation({
+    onSuccess: (result: any) => {
+      setVigaResult(result);
+      setVigaAnalyzing(false);
+      // Auto-populate symptoms from VIGA diagnosis
+      if (result?.data?.defects?.length) {
+        const newSymptoms = result.data.defects.map((d: any) => d.description).filter((s: string) => !symptoms.includes(s));
+        if (newSymptoms.length) setSymptoms(prev => [...prev, ...newSymptoms]);
+      }
+      // Auto-set severity from VIGA if not yet set
+      if (!severity && result?.data?.safetyRisk) {
+        const riskMap: Record<string, string> = { NONE: "LOW", LOW: "LOW", MODERATE: "MEDIUM", HIGH: "HIGH", IMMEDIATE_DANGER: "CRITICAL" };
+        const mapped = riskMap[result.data.safetyRisk];
+        if (mapped) setSeverity(mapped as Severity);
+      }
+      // Auto-set canDrive from VIGA
+      if (canDrive === null && result?.data?.canContinueDriving !== undefined) {
+        setCanDrive(result.data.canContinueDriving);
+      }
+    },
+    onError: () => setVigaAnalyzing(false),
+  });
+
+  const handlePhotoCapture = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setPhotoPreview(dataUrl);
+      setPhotoBase64(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handleVigaAnalyze = useCallback(() => {
+    if (!photoBase64) return;
+    setVigaAnalyzing(true);
+    setVigaResult(null);
+    vigaDiagnose.mutate({
+      imageBase64: photoBase64,
+      mimeType: "image/jpeg",
+      vehicleMake: selectedVehicle?.make,
+      vehicleModel: selectedVehicle?.model,
+      vehicleYear: selectedVehicle?.year,
+      issueCategory: issueCategory || undefined,
+      symptoms,
+    });
+  }, [photoBase64, selectedVehicle, issueCategory, symptoms]);
   const [reportResult, setReportResult] = useState<{
     reportId: number;
     diagnosis: { issue: string; probability: number; severity: string; description: string };
@@ -467,11 +547,11 @@ export default function ZeunBreakdown() {
                         sel ? "border-blue-500 bg-blue-500/10" : L ? "border-slate-200 hover:border-blue-300 hover:bg-blue-50/50" : "border-slate-700/50 hover:border-blue-500/50 hover:bg-blue-500/5"
                       )}>
                       <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center", sel ? "bg-blue-500/20" : L ? "bg-slate-100" : "bg-slate-800")}>
-                        <Truck className={cn("w-5 h-5", sel ? "text-blue-500" : L ? "text-slate-500" : "text-slate-400")} />
+                        {isEscortVehicle(v.type) ? <Car className={cn("w-5 h-5", sel ? "text-blue-500" : L ? "text-slate-500" : "text-slate-400")} /> : <Truck className={cn("w-5 h-5", sel ? "text-blue-500" : L ? "text-slate-500" : "text-slate-400")} />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={cn("font-semibold text-sm", L ? "text-slate-800" : "text-white")}>{v.unitNumber}</p>
-                        <p className="text-xs text-slate-400">{v.year} {v.make} {v.model} {v.type ? `- ${v.type}` : ""}</p>
+                        <p className="text-xs text-slate-400">{v.year} {v.make} {v.model} {v.type ? `- ${ESCORT_VEHICLE_LABELS[v.type] || v.type.replace(/_/g, " ")}` : ""}</p>
                       </div>
                       <Badge className={cn("border-0 text-[10px] font-bold flex-shrink-0",
                         v.status === "active" ? "bg-green-500/15 text-green-500" :
@@ -503,7 +583,7 @@ export default function ZeunBreakdown() {
           </div>
           <CardContent className="p-4">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {ISSUE_CATEGORIES.map((category: any) => {
+              {[...ISSUE_CATEGORIES, ...(isEscortVehicle(selectedVehicle?.type) ? ESCORT_ISSUE_CATEGORIES : [])].map((category: any) => {
                 const Icon = category.icon;
                 const sel = issueCategory === category.value;
                 return (
@@ -544,6 +624,149 @@ export default function ZeunBreakdown() {
                 ))}
               </div>
             )}
+
+            {/* ── VIGA Visual Scan — Photo-based AI Diagnosis ── */}
+            <div className={cn("p-4 rounded-xl border-2 border-dashed transition-all", L ? "border-purple-300/50 bg-purple-50/30" : "border-purple-500/30 bg-purple-500/5")}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 rounded-lg bg-gradient-to-r from-[#1473FF] to-[#BE01FF]">
+                  <Camera className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>VIGA Visual Scan</p>
+                  <p className="text-[10px] text-slate-400">Take a photo of the issue — AI diagnoses from the image</p>
+                </div>
+              </div>
+
+              <input ref={photoInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoCapture} />
+
+              {!photoPreview ? (
+                <button onClick={() => photoInputRef.current?.click()}
+                  className={cn("w-full p-6 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 transition-all",
+                    L ? "border-slate-300 hover:border-purple-400 hover:bg-purple-50" : "border-slate-600 hover:border-purple-500 hover:bg-purple-500/10"
+                  )}>
+                  <ImageIcon className={cn("w-8 h-8", L ? "text-slate-400" : "text-slate-500")} />
+                  <span className={cn("text-sm font-medium", L ? "text-slate-600" : "text-slate-300")}>Tap to photograph the issue</span>
+                  <span className="text-[10px] text-slate-400">Camera will open — point at the broken part</span>
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="relative">
+                    <img src={photoPreview} alt="Captured issue" className="w-full rounded-xl max-h-48 object-cover" />
+                    <button onClick={() => { setPhotoPreview(null); setPhotoBase64(null); setVigaResult(null); }}
+                      className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80">
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {!vigaResult && !vigaAnalyzing && (
+                    <Button onClick={handleVigaAnalyze} className="w-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl">
+                      <Eye className="h-4 w-4 mr-2" />Analyze with VIGA AI
+                    </Button>
+                  )}
+
+                  {vigaAnalyzing && (
+                    <div className={cn("p-4 rounded-xl border text-center", L ? "bg-purple-50 border-purple-200" : "bg-purple-500/10 border-purple-500/20")}>
+                      <RefreshCw className="h-5 w-5 mx-auto mb-2 text-purple-500 animate-spin" />
+                      <p className={cn("text-sm font-medium", L ? "text-purple-700" : "text-purple-300")}>VIGA analyzing image...</p>
+                      <p className="text-[10px] text-slate-400 mt-1">Multi-pass visual reasoning in progress</p>
+                    </div>
+                  )}
+
+                  {vigaResult?.data && (
+                    <div className={cn("p-4 rounded-xl border space-y-3", L ? "bg-emerald-50/50 border-emerald-200" : "bg-emerald-500/10 border-emerald-500/20")}>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                        <p className={cn("text-sm font-bold", L ? "text-emerald-700" : "text-emerald-400")}>Visual Diagnosis Complete</p>
+                        <Badge className="border-0 bg-emerald-500/15 text-emerald-500 text-[10px] font-bold ml-auto">
+                          {((vigaResult.data.confidence || 0) * 100).toFixed(0)}% confidence
+                        </Badge>
+                      </div>
+
+                      <div className={cn("p-3 rounded-lg", L ? "bg-white/80" : "bg-slate-800/50")}>
+                        <p className={cn("font-bold text-sm", L ? "text-slate-800" : "text-white")}>{vigaResult.data.component}</p>
+                        <Badge className={cn("border-0 text-[10px] font-bold mt-1",
+                          vigaResult.data.condition === "FAILED" || vigaResult.data.condition === "CRITICAL" ? "bg-red-500/15 text-red-500" :
+                          vigaResult.data.condition === "DAMAGED" ? "bg-orange-500/15 text-orange-500" :
+                          vigaResult.data.condition === "WORN" ? "bg-yellow-500/15 text-yellow-500" :
+                          "bg-green-500/15 text-green-500"
+                        )}>{vigaResult.data.condition}</Badge>
+                      </div>
+
+                      {vigaResult.data.defects?.length > 0 && (
+                        <div>
+                          <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1.5">Defects Identified</p>
+                          {vigaResult.data.defects.map((d: any, i: number) => (
+                            <div key={i} className={cn("flex items-start gap-2 text-sm p-2 rounded-lg mb-1", L ? "bg-white/60" : "bg-slate-800/30")}>
+                              <Badge className={cn("border-0 text-[9px] font-bold flex-shrink-0 mt-0.5",
+                                d.severity === "CRITICAL" ? "bg-red-500/15 text-red-500" :
+                                d.severity === "HIGH" ? "bg-orange-500/15 text-orange-500" :
+                                "bg-yellow-500/15 text-yellow-500"
+                              )}>{d.severity}</Badge>
+                              <div>
+                                <p className={cn("font-medium text-xs", L ? "text-slate-700" : "text-slate-200")}>{d.description}</p>
+                                {d.location && <p className="text-[10px] text-slate-400">Location: {d.location}</p>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {vigaResult.data.repairRecommendation && (
+                        <div className={cn("p-3 rounded-lg", L ? "bg-blue-50 border border-blue-200" : "bg-blue-500/10 border border-blue-500/20")}>
+                          <p className="text-[10px] text-blue-500 uppercase tracking-wider font-bold mb-1">Repair Recommendation</p>
+                          <p className={cn("text-sm", L ? "text-blue-800" : "text-blue-200")}>{vigaResult.data.repairRecommendation}</p>
+                        </div>
+                      )}
+
+                      {vigaResult.data.repairSteps?.length > 0 && (
+                        <div>
+                          <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1.5">Repair Steps</p>
+                          <ol className="space-y-1">
+                            {vigaResult.data.repairSteps.map((s: string, i: number) => (
+                              <li key={i} className={cn("flex gap-2 text-xs", L ? "text-slate-600" : "text-slate-300")}>
+                                <span className="flex-shrink-0 w-4 h-4 rounded-full bg-purple-500/20 flex items-center justify-center text-[9px] font-bold text-purple-500">{i + 1}</span>
+                                {s}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+
+                      {vigaResult.data.partsNeeded?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold w-full mb-0.5">Parts Needed</span>
+                          {vigaResult.data.partsNeeded.map((p: string, i: number) => (
+                            <Badge key={i} className={cn("border text-[10px]", L ? "bg-teal-50 border-teal-200 text-teal-700" : "bg-teal-500/10 border-teal-500/20 text-teal-400")}>{p}</Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className={cn("flex items-center gap-2 pt-1 border-t", L ? "border-slate-200" : "border-slate-700/30")}>
+                        <Badge className={cn("border-0 text-[10px] font-bold",
+                          vigaResult.data.safetyRisk === "IMMEDIATE_DANGER" || vigaResult.data.safetyRisk === "HIGH" ? "bg-red-500/15 text-red-500" :
+                          vigaResult.data.safetyRisk === "MODERATE" ? "bg-orange-500/15 text-orange-500" :
+                          "bg-green-500/15 text-green-500"
+                        )}>Safety: {vigaResult.data.safetyRisk}</Badge>
+                        <Badge className={cn("border-0 text-[10px] font-bold",
+                          vigaResult.data.canContinueDriving ? "bg-green-500/15 text-green-500" : "bg-red-500/15 text-red-500"
+                        )}>{vigaResult.data.canContinueDriving ? "Can drive (limited)" : "Cannot drive"}</Badge>
+                        {vigaResult.data.estimatedRepairTime && (
+                          <Badge className="border-0 bg-slate-500/15 text-slate-400 text-[10px] font-bold ml-auto">
+                            <Clock className="w-3 h-3 mr-1" />{vigaResult.data.estimatedRepairTime}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {photoPreview && !vigaResult && !vigaAnalyzing && (
+                    <button onClick={() => photoInputRef.current?.click()} className="text-xs text-slate-400 hover:text-slate-300 underline">
+                      Retake photo
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
 
             {issueCategory && COMMON_SYMPTOMS[issueCategory] && (
               <div>
@@ -591,7 +814,7 @@ export default function ZeunBreakdown() {
             </div>
 
             <div>
-              <p className={cn("text-sm font-semibold mb-3", L ? "text-slate-800" : "text-white")}>Can you drive the truck?</p>
+              <p className={cn("text-sm font-semibold mb-3", L ? "text-slate-800" : "text-white")}>Can you drive the {isEscortVehicle(selectedVehicle?.type) ? "vehicle" : "truck"}?</p>
               <div className="grid grid-cols-2 gap-3">
                 <button onClick={() => setCanDrive(true)}
                   className={cn("p-4 rounded-xl border-2 text-center transition-all",

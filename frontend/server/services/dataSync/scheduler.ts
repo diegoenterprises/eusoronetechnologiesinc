@@ -29,7 +29,7 @@ import { syncECHOHazWaste } from "../../integrations/epa/echoHazWaste";
 import { computeZoneIntelligence } from "./zoneAggregator";
 import { monitorHMSPPermits } from "./hmspMonitor";
 import { computeRouteIntelligence } from "../routeIntelligence";
-import { monitorInsuranceExpirations } from "../insuranceMonitor";
+import { monitorInsuranceExpirations, deepFMCSAComplianceScan } from "../insuranceMonitor";
 import { logSync, generateSyncId } from "./syncLogger";
 import { seedMapData } from "./seedMapData";
 
@@ -229,7 +229,12 @@ export function initializeDataSyncScheduler(): void {
     await runSync("INSURANCE_EXPIRATION_MONITOR", monitorInsuranceExpirations);
   });
 
-  console.log("[DataSync] Scheduler v3.3 initialized — 28 data sources, 25+ cron jobs (incl. insurance monitor)");
+  // Insurance FMCSA Deep Compliance Scan - Sunday at 3:00 AM
+  cron.schedule("0 3 * * 0", async () => {
+    await runSync("INSURANCE_FMCSA_DEEP_SCAN", deepFMCSAComplianceScan);
+  });
+
+  console.log("[DataSync] Scheduler v3.4 initialized — 29 data sources, 26+ cron jobs (incl. insurance compliance engine)");
 }
 
 /**
@@ -285,5 +290,8 @@ export async function runInitialSync(): Promise<void> {
     runSync("ROUTE_INTELLIGENCE_INIT", computeRouteIntelligence),
   ]);
 
-  console.log("[DataSync] Initial data sync complete — ALL 27 sources loaded (incl. route intelligence)");
+  // Wave 5: Insurance compliance check
+  await runSync("INSURANCE_COMPLIANCE_INIT", monitorInsuranceExpirations);
+
+  console.log("[DataSync] Initial data sync complete — ALL 28 sources loaded (incl. insurance compliance engine)");
 }

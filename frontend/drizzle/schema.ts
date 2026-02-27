@@ -173,6 +173,10 @@ export const vehicles = mysqlTable(
       "end_dump",
       "intermodal_chassis",
       "curtain_side",
+      "pilot_car",
+      "escort_truck",
+      "height_pole_vehicle",
+      "route_survey_vehicle",
     ]).notNull(),
     capacity: decimal("capacity", { precision: 10, scale: 2 }),
     mileage: int("mileage"),
@@ -2622,7 +2626,7 @@ export const zeunBreakdownReports = mysqlTable(
     vehicleId: int("vehicleId"),
     companyId: int("companyId"),
     loadId: int("loadId"),
-    issueCategory: mysqlEnum("issueCategory", ["ENGINE", "BRAKES", "TRANSMISSION", "ELECTRICAL", "TIRES", "FUEL_SYSTEM", "COOLING", "EXHAUST", "STEERING", "SUSPENSION", "HVAC", "OTHER"]).notNull(),
+    issueCategory: mysqlEnum("issueCategory", ["ENGINE", "BRAKES", "TRANSMISSION", "ELECTRICAL", "TIRES", "FUEL_SYSTEM", "COOLING", "EXHAUST", "STEERING", "SUSPENSION", "HVAC", "LIGHTING", "SIGNAGE", "COMMUNICATIONS", "HEIGHT_POLE", "OTHER"]).notNull(),
     severity: mysqlEnum("severity", ["LOW", "MEDIUM", "HIGH", "CRITICAL"]).notNull(),
     symptoms: json("symptoms").$type<string[]>().notNull(),
     canDrive: boolean("canDrive").notNull(),
@@ -6853,4 +6857,40 @@ export const embeddings = mysqlTable(
 
 export type Embedding = typeof embeddings.$inferSelect;
 export type InsertEmbedding = typeof embeddings.$inferInsert;
+
+// ============================================================================
+// INSURANCE COMPLIANCE CHECKS — Audit trail for periodic insurance scans
+// ============================================================================
+
+export const insuranceComplianceChecks = mysqlTable(
+  "insurance_compliance_checks",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    checkType: mysqlEnum("checkType", [
+      "daily_expiration", "weekly_fmcsa_deep", "registration_verify", "manual_trigger",
+    ]).notNull(),
+    previousStatus: varchar("previousStatus", { length: 50 }),
+    newStatus: varchar("newStatus", { length: 50 }).notNull(),
+    policiesChecked: int("policiesChecked").default(0),
+    policiesActive: int("policiesActive").default(0),
+    policiesExpiring: int("policiesExpiring").default(0),
+    policiesExpired: int("policiesExpired").default(0),
+    fmcsaFilingValid: boolean("fmcsaFilingValid"),
+    fmcsaAuthorityActive: boolean("fmcsaAuthorityActive"),
+    companyInsuranceExpiry: timestamp("companyInsuranceExpiry"),
+    alertsGenerated: int("alertsGenerated").default(0),
+    usersNotified: int("usersNotified").default(0),
+    discrepancies: json("discrepancies").$type<string[]>(),
+    metadata: json("metadata").$type<Record<string, unknown>>(),
+    checkedAt: timestamp("checkedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("icc_company_idx").on(table.companyId),
+    checkTypeIdx: index("icc_check_type_idx").on(table.checkType),
+    checkedAtIdx: index("icc_checked_at_idx").on(table.checkedAt),
+  })
+);
+
+export type InsuranceComplianceCheck = typeof insuranceComplianceChecks.$inferSelect;
 

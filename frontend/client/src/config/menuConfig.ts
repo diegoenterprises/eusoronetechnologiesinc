@@ -194,6 +194,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Platform news and updates"
     },
     { 
+      icon: "AlertTriangle", 
+      label: "Report Incident", 
+      path: "/hazmat/incident-report", 
+      badge: 0,
+      description: "Report a safety, cargo, or roadside incident"
+    },
+    { 
       icon: "HelpCircle", 
       label: "Support", 
       path: "/support", 
@@ -361,6 +368,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Platform news and updates"
     },
     { 
+      icon: "AlertTriangle", 
+      label: "Report Incident", 
+      path: "/hazmat/incident-report", 
+      badge: 0,
+      description: "Report a safety, cargo, or roadside incident"
+    },
+    { 
       icon: "HelpCircle", 
       label: "Support", 
       path: "/support", 
@@ -517,6 +531,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/news", 
       badge: 0,
       description: "Platform news and updates"
+    },
+    { 
+      icon: "AlertTriangle", 
+      label: "Report Incident", 
+      path: "/hazmat/incident-report", 
+      badge: 0,
+      description: "Report a safety, cargo, or roadside incident"
     },
     { 
       icon: "HelpCircle", 
@@ -688,6 +709,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Platform news and updates"
     },
     { 
+      icon: "AlertTriangle", 
+      label: "Report Incident", 
+      path: "/hazmat/incident-report", 
+      badge: 0,
+      description: "Report a safety, vehicle, or roadside incident"
+    },
+    { 
       icon: "HelpCircle", 
       label: "Support", 
       path: "/support", 
@@ -826,6 +854,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Platform news & regulatory updates"
     },
     { 
+      icon: "AlertTriangle", 
+      label: "Report Incident", 
+      path: "/hazmat/incident-report", 
+      badge: 0,
+      description: "Report a safety, fleet, or operational incident"
+    },
+    { 
       icon: "HelpCircle", 
       label: "Support", 
       path: "/support", 
@@ -835,6 +870,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
   ],
 
   // ESCORT: Convoy management, security coordination
+  // Consolidated from 26 → 13 items. Removed items are absorbed into:
+  //   Profile → Certifications, Permits, Insurance, Company Profile, Vehicle/Equipment
+  //   EusoWallet → Earnings, Invoices, Agreements
+  //   Active Trip → Live Tracking (proximity panel), Active Convoys
+  //   Messages → Company Channels
+  //   Safety & Reports → Incidents + Reports merged
+  //   Dashboard → Team, My Partners
   ESCORT: [
     { 
       icon: "LayoutDashboard", 
@@ -848,14 +890,21 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Active Trip", 
       path: "/escort/active-trip", 
       badge: 0,
-      description: "Your current escort assignment — live status & controls"
+      description: "Live convoy status, proximity geofence, route restrictions, SOS & HOS"
+    },
+    { 
+      icon: "User", 
+      label: "My Profile", 
+      path: "/escort/profile", 
+      badge: 0,
+      description: "Identity, certifications, permits, vehicle, equipment, insurance, stats & ratings"
     },
     { 
       icon: "Search", 
-      label: "Find Loads", 
-      path: "/marketplace", 
+      label: "Find Jobs", 
+      path: "/escort/marketplace", 
       badge: 0,
-      description: "Browse available escort-eligible loads"
+      description: "Browse available escort jobs & apply"
     },
     { 
       icon: "Scale", 
@@ -869,14 +918,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Active Convoys", 
       path: "/convoys", 
       badge: 0,
-      description: "Current escort jobs"
-    },
-    { 
-      icon: "DollarSign", 
-      label: "Earnings", 
-      path: "/escort/earnings", 
-      badge: 0,
-      description: "Track escort income, payouts & payment history"
+      description: "Current escort convoy assignments"
     },
     { 
       icon: "Calendar", 
@@ -907,20 +949,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Real-time convoy tracking & GPS position"
     },
     { 
-      icon: "AlertTriangle", 
-      label: "Incidents", 
-      path: "/escort/incidents", 
-      badge: 0,
-      description: "Security incidents"
-    },
-    { 
-      icon: "FileText", 
-      label: "Reports", 
-      path: "/escort/reports", 
-      badge: 0,
-      description: "Escort reports"
-    },
-    { 
       icon: "Shield", 
       label: "Operating Authority", 
       path: "/authority", 
@@ -928,53 +956,18 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Verify carrier authority for oversized loads"
     },
     { 
-      icon: "Award", 
-      label: "Certifications", 
-      path: "/escort/certifications", 
-      badge: 0,
-      description: "State pilot car certifications & training records"
-    },
-    { 
-      icon: "FileCheck", 
-      label: "Permits", 
-      path: "/escort/permits", 
-      badge: 0,
-      description: "Oversize/overweight escort permits by state"
-    },
-    { 
-      icon: "ShieldCheck", 
-      label: "Insurance", 
-      path: "/insurance", 
-      badge: 0,
-      description: "Escort vehicle insurance & liability coverage"
-    },
-    { 
       icon: "PenTool", 
       label: "Agreements", 
       path: "/agreements", 
       badge: 0,
-      description: "Escort service agreements & rate schedules"
+      description: "Escort service agreements"
     },
     { 
-      icon: "Receipt", 
-      label: "Invoices", 
-      path: "/invoices", 
+      icon: "ShieldAlert", 
+      label: "Safety & Reports", 
+      path: "/escort/incidents", 
       badge: 0,
-      description: "Invoice clients for completed escort services"
-    },
-    { 
-      icon: "FileText", 
-      label: "Documents", 
-      path: "/documents", 
-      badge: 0,
-      description: "License, certifications & insurance docs"
-    },
-    { 
-      icon: "Building2", 
-      label: "Company Profile", 
-      path: "/company", 
-      badge: 0,
-      description: "Manage your escort company profile & credentials"
+      description: "Incidents, safety reports & convoy documentation"
     },
     { 
       icon: "MessageSquare", 
@@ -984,11 +977,18 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Communication"
     },
     { 
+      icon: "FileText", 
+      label: "Documents", 
+      path: "/documents", 
+      badge: 0,
+      description: "License, certifications & insurance docs"
+    },
+    { 
       icon: "Wallet", 
       label: "EusoWallet", 
       path: "/wallet", 
       badge: 0,
-      description: "Account balance"
+      description: "Earnings, invoices, payouts & account balance"
     },
     { 
       icon: "Radio", 
@@ -1002,14 +1002,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Market Intelligence", 
       path: "/market-pricing", 
       badge: 0,
-      description: "Freight rates, demand heatmaps & surge pricing"
-    },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/settings", 
-      badge: 0,
-      description: "Profile, preferences & security"
+      description: "Rates, commodities, hot zones & 2026 freight intelligence"
     },
     { 
       icon: "Truck", 
@@ -1017,6 +1010,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/the-haul", 
       badge: 0,
       description: "Digital truck stop — lobby, missions, rewards"
+    },
+    { 
+      icon: "Settings", 
+      label: "Settings", 
+      path: "/settings", 
+      badge: 0,
+      description: "Profile, preferences & security"
     },
     { 
       icon: "Newspaper", 
@@ -1216,6 +1216,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Platform news and updates"
     },
     { 
+      icon: "AlertTriangle", 
+      label: "Report Incident", 
+      path: "/hazmat/incident-report", 
+      badge: 0,
+      description: "Report a safety, environmental, or facility incident"
+    },
+    { 
       icon: "HelpCircle", 
       label: "Support", 
       path: "/support", 
@@ -1358,6 +1365,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/news", 
       badge: 0,
       description: "Platform news and updates"
+    },
+    { 
+      icon: "AlertTriangle", 
+      label: "Report Incident", 
+      path: "/hazmat/incident-report", 
+      badge: 0,
+      description: "Report a safety, compliance, or regulatory incident"
     },
     { 
       icon: "HelpCircle", 

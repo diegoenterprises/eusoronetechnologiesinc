@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Navigation, MapPin, Clock, Battery, Signal, AlertTriangle, Route, Play, Square, RefreshCw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export default function DriverTracking() {
+  const { theme } = useTheme();
   const [isTracking, setIsTracking] = useState(false);
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [watchId, setWatchId] = useState<number | null>(null);
@@ -34,6 +36,10 @@ export default function DriverTracking() {
   );
 
   const submitLocation = (trpc as any).telemetry.submitLocation.useMutation();
+  const triggerSOS = (trpc as any).safetyAlerts.triggerSOS.useMutation({
+    onSuccess: () => toast.success("SOS alert sent — help is on the way"),
+    onError: (err: any) => toast.error("SOS failed", { description: err.message }),
+  });
 
   const startTracking = () => {
     if (!navigator.geolocation) {
@@ -180,7 +186,7 @@ export default function DriverTracking() {
         </Card>
       </div>
 
-      {/* Map */}
+      {/* Map + SOS Button (SOS anchored to map, not viewport) */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -189,13 +195,36 @@ export default function DriverTracking() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <TelemetryMap
-            center={currentPosition || { lat: 39.8283, lng: -98.5795 }}
-            zoom={currentPosition ? 14 : 4}
-            markers={mapMarkers}
-            currentLocation={currentPosition ? { ...currentPosition, label: "Current" } : undefined}
-            height="400px"
-          />
+          <div className="relative">
+            <TelemetryMap
+              center={currentPosition || { lat: 39.8283, lng: -98.5795 }}
+              zoom={currentPosition ? 14 : 4}
+              markers={mapMarkers}
+              currentLocation={currentPosition ? { ...currentPosition, label: "Current" } : undefined}
+              height="400px"
+              darkMode={theme === "dark"}
+            />
+            {/* SOS Button — pinned to bottom-right of the map */}
+            <div className="absolute bottom-4 right-4" style={{ zIndex: 10 }}>
+              <Button
+                size="lg"
+                variant="destructive"
+                className="rounded-full h-16 w-16 shadow-lg shadow-red-900/40 text-lg font-bold animate-pulse hover:animate-none"
+                onClick={() => {
+                  if (currentPosition) {
+                    triggerSOS.mutate({
+                      latitude: currentPosition.lat,
+                      longitude: currentPosition.lng,
+                    });
+                  } else {
+                    toast.error("Location not available — start tracking first");
+                  }
+                }}
+              >
+                SOS
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -231,25 +260,6 @@ export default function DriverTracking() {
           </CardContent>
         </Card>
       )}
-
-      {/* SOS Button */}
-      <div className="fixed bottom-6 right-6">
-        <Button
-          size="lg"
-          variant="destructive"
-          className="rounded-full h-16 w-16 shadow-lg"
-          onClick={() => {
-            if (currentPosition) {
-              (trpc as any).safetyAlerts.triggerSOS.useMutation().mutate({
-                latitude: currentPosition.lat,
-                longitude: currentPosition.lng,
-              });
-            }
-          }}
-        >
-          SOS
-        </Button>
-      </div>
     </div>
   );
 }

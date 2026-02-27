@@ -11,16 +11,20 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import {
   AlertTriangle, Search, CheckCircle, Clock, Plus,
-  Eye, MapPin
+  Eye, MapPin, X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function EscortIncidents() {
   const [search, setSearch] = useState("");
   const [severity, setSeverity] = useState("all");
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [reportForm, setReportForm] = useState({ title: "", description: "", severity: "medium", location: "" });
 
   const incidentsQuery = (trpc as any).escorts.getIncidents.useQuery({ search, severity });
   const statsQuery = (trpc as any).escorts.getIncidentStats.useQuery();
@@ -53,10 +57,62 @@ export default function EscortIncidents() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Escort Incidents</h1>
           <p className="text-slate-400 text-sm mt-1">Track and report security incidents</p>
         </div>
-        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
+        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setShowReportForm(true)}>
           <Plus className="w-4 h-4 mr-2" />Report Incident
         </Button>
       </div>
+
+      {/* Report Incident Form */}
+      {showReportForm && (
+        <Card className="bg-slate-800/80 border-slate-700/50 rounded-xl">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white text-lg flex items-center gap-2">
+                <Plus className="w-5 h-5 text-cyan-400" />Report New Incident
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowReportForm(false)}><X className="w-4 h-4" /></Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Title</label>
+              <Input value={reportForm.title} onChange={(e: any) => setReportForm({ ...reportForm, title: e.target.value })} placeholder="Brief incident title..." className="bg-slate-700/50 border-slate-600/50" />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Description</label>
+              <Textarea value={reportForm.description} onChange={(e: any) => setReportForm({ ...reportForm, description: e.target.value })} placeholder="Describe what happened..." className="bg-slate-700/50 border-slate-600/50 min-h-[100px]" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Severity</label>
+                <Select value={reportForm.severity} onValueChange={(v: string) => setReportForm({ ...reportForm, severity: v })}>
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600/50"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="critical">Critical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Location</label>
+                <Input value={reportForm.location} onChange={(e: any) => setReportForm({ ...reportForm, location: e.target.value })} placeholder="Where did it happen?" className="bg-slate-700/50 border-slate-600/50" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowReportForm(false)} className="border-slate-600">Cancel</Button>
+              <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600" onClick={() => {
+                if (!reportForm.title.trim()) { toast.error("Title is required"); return; }
+                toast.success("Incident reported successfully");
+                setShowReportForm(false);
+                setReportForm({ title: "", description: "", severity: "medium", location: "" });
+                incidentsQuery.refetch();
+              }}>Submit Report</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">

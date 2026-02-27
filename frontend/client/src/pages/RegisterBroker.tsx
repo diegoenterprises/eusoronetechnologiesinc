@@ -22,6 +22,8 @@ import {
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import DatePicker from "@/components/DatePicker";
+import CanopyConnectButton from "@/components/CanopyConnectButton";
+import type { CanopyPolicyData } from "@/components/CanopyConnectButton";
 
 interface BrokerFormData {
   // Step 1: Company Information
@@ -509,6 +511,25 @@ export default function RegisterBroker() {
       icon: <CreditCard className="w-5 h-5" />,
       component: (
         <div className="space-y-6">
+          <CanopyConnectButton
+            policyType="cargo"
+            verified={!!formData.policyNumber && !!formData.insuranceCatalyst && (formData as any)._canopyVerified}
+            onPolicyData={(data: CanopyPolicyData) => {
+              const updates: Partial<BrokerFormData> = { _canopyVerified: true } as any;
+              if (data.carrier) updates.insuranceCatalyst = data.carrier;
+              if (data.policyNumber) updates.policyNumber = data.policyNumber;
+              if (data.policyEnd) updates.expirationDate = data.policyEnd;
+              const cov = data.coverages?.find(c => c.type?.toLowerCase().includes('cargo') || c.type?.toLowerCase().includes('liability'));
+              if (cov?.limit) {
+                const num = parseInt(String(cov.limit).replace(/[^0-9]/g, ''));
+                if (num >= 1000000) updates.coverageAmount = '1000000';
+                else if (num >= 500000) updates.coverageAmount = '500000';
+                else if (num >= 250000) updates.coverageAmount = '250000';
+                else updates.coverageAmount = '100000';
+              }
+              updateFormData(updates);
+            }}
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">

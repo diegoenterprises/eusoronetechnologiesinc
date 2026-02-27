@@ -205,8 +205,12 @@ export default function EscortJobs() {
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-lg">${(job.rate || 0).toLocaleString()}</p>
-                            <p className="text-xs text-slate-500">${job.ratePerMile?.toFixed(2)}/mi</p>
+                            {job.rate > 0 ? (
+                              <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-lg">${job.rate.toLocaleString()}</p>
+                            ) : (
+                              <p className="text-sm font-medium text-slate-400">Rate TBD</p>
+                            )}
+                            {job.distance > 0 && <p className="text-xs text-slate-500">{job.distance} mi</p>}
                           </div>
                           {job.status === "available" ? (
                             <Button size="sm" className="bg-green-600 hover:bg-green-700 rounded-lg" onClick={() => acceptMutation.mutate({ jobId: job.id })} disabled={acceptMutation.isPending}>

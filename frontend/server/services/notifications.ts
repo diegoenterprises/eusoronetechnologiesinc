@@ -1026,7 +1026,11 @@ export type NotifyEvent =
   | { type: "agreement_executed"; agreementNumber: string }
   | { type: "agreement_terminated"; agreementNumber: string; reason?: string; terminatedBy?: string }
   | { type: "terminal_load_originated"; loadNumber: string; loadId: string | number; origin?: string; destination?: string; product?: string; shipperName?: string; terminalName?: string }
-  | { type: "cargo_exception"; loadNumber: string; exceptionType: string; loadId?: string | number; cargoType?: string; description?: string };
+  | { type: "cargo_exception"; loadNumber: string; exceptionType: string; loadId?: string | number; cargoType?: string; description?: string }
+  | { type: "insurance_expiring"; companyName: string; daysLeft: number; policyType?: string; policyNumber?: string }
+  | { type: "insurance_expired"; companyName: string; policyType?: string; policyNumber?: string }
+  | { type: "insurance_non_compliant"; companyName: string; reason: string }
+  | { type: "insurance_compliant"; companyName: string };
 
 /**
  * Persist a notification to the DB so it shows in the Notification Center.
@@ -1093,6 +1097,14 @@ function mapEventToNotification(event: NotifyEvent): {
       return { dbType: "load_update", category: "loads", title: `New Load from Your Terminal`, message: `${event.shipperName || "A shipper"} posted load ${event.loadNumber} originating from ${event.terminalName || "your terminal"}${event.origin && event.destination ? ` (${event.origin} \u2192 ${event.destination})` : ""}.`, actionUrl: `/loads/${event.loadId}`, extra: { loadNumber: event.loadNumber, terminalName: event.terminalName } };
     case "cargo_exception":
       return { dbType: "load_update", category: "loads", title: `Cargo Exception \u2014 ${formatStatus(event.exceptionType)}`, message: `Load ${event.loadNumber} has entered ${formatStatus(event.exceptionType)} state.${event.description ? " " + event.description : ""}${event.cargoType ? ` (${event.cargoType})` : ""}`, actionUrl: event.loadId ? `/loads/${event.loadId}` : undefined, extra: { loadNumber: event.loadNumber, exceptionType: event.exceptionType, cargoType: event.cargoType } };
+    case "insurance_expiring":
+      return { dbType: "system", category: "compliance", title: `Insurance Expiring in ${event.daysLeft} Day${event.daysLeft === 1 ? "" : "s"}`, message: `${event.companyName}'s ${event.policyType ? event.policyType.replace(/_/g, " ") + " " : ""}policy${event.policyNumber ? ` #${event.policyNumber}` : ""} expires in ${event.daysLeft} day${event.daysLeft === 1 ? "" : "s"}. Renew immediately to maintain platform compliance.`, actionUrl: "/insurance/verification", extra: { companyName: event.companyName, daysLeft: event.daysLeft } };
+    case "insurance_expired":
+      return { dbType: "system", category: "compliance", title: "Insurance Policy Expired", message: `${event.companyName}'s ${event.policyType ? event.policyType.replace(/_/g, " ") + " " : ""}policy${event.policyNumber ? ` #${event.policyNumber}` : ""} has expired. Upload renewed policy to restore compliance.`, actionUrl: "/insurance/verification", extra: { companyName: event.companyName } };
+    case "insurance_non_compliant":
+      return { dbType: "system", category: "compliance", title: "Insurance Non-Compliant", message: `${event.companyName} is non-compliant: ${event.reason}. Action required to continue operating on the platform.`, actionUrl: "/insurance/verification", extra: { companyName: event.companyName, reason: event.reason } };
+    case "insurance_compliant":
+      return { dbType: "system", category: "compliance", title: "Insurance Compliance Restored", message: `${event.companyName} is now fully compliant. All insurance requirements are satisfied.`, actionUrl: "/insurance/verification", extra: { companyName: event.companyName } };
     default:
       return { dbType: "system", category: "system", title: "Notification", message: "You have a new notification." };
   }
@@ -1155,8 +1167,108 @@ export function lookupAndNotify(userId: number, event: NotifyEvent): void {
         return notifyTerminalLoadOriginated({ ...base, loadNumber: event.loadNumber, loadId: event.loadId, origin: event.origin, destination: event.destination, product: event.product, shipperName: event.shipperName, terminalName: event.terminalName });
       case "cargo_exception":
         return notifyCargoException({ ...base, loadNumber: event.loadNumber, exceptionType: event.exceptionType, loadId: event.loadId, cargoType: event.cargoType, description: event.description });
+      case "insurance_expiring":
+        return notifyInsuranceExpiring({ ...base, companyName: event.companyName, daysLeft: event.daysLeft, policyType: event.policyType, policyNumber: event.policyNumber });
+      case "insurance_expired":
+        return notifyInsuranceExpired({ ...base, companyName: event.companyName, policyType: event.policyType, policyNumber: event.policyNumber });
+      case "insurance_non_compliant":
+        return notifyInsuranceNonCompliant({ ...base, companyName: event.companyName, reason: event.reason });
+      case "insurance_compliant":
+        return notifyInsuranceCompliant({ ...base, companyName: event.companyName });
     }
   }).catch(e => console.error("[lookupAndNotify]", e));
+}
+
+// ─── Insurance Compliance Notifications ──────────────────────────────
+
+async function notifyInsuranceExpiring(params: {
+  email: string; phone?: string; name: string;
+  companyName: string; daysLeft: number; policyType?: string; policyNumber?: string;
+}) {
+  const policyLabel = params.policyType ? params.policyType.replace(/_/g, " ") : "insurance";
+  const urgency = params.daysLeft <= 7 ? "URGENT" : "Reminder";
+  const accent = params.daysLeft <= 7 ? "#ef4444" : "#f59e0b";
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `${urgency}: ${policyLabel} Expires in ${params.daysLeft} Day${params.daysLeft === 1 ? "" : "s"} - EusoTrip`,
+    html: emailWrap(`Insurance Expiring — ${params.daysLeft} Day${params.daysLeft === 1 ? "" : "s"}`, `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Your company <strong style="color:#E2E8F0">${params.companyName}</strong>'s ${policyLabel} policy${params.policyNumber ? ` <strong>#${params.policyNumber}</strong>` : ""} expires in <strong style="color:${accent}">${params.daysLeft} day${params.daysLeft === 1 ? "" : "s"}</strong>.`)}
+      ${p("To maintain compliance and continue operating on the EusoTrip platform, please renew your policy before expiration.")}
+      ${infoTable(
+        infoRow("Company", params.companyName) +
+        (params.policyType ? infoRow("Policy Type", policyLabel) : "") +
+        (params.policyNumber ? infoRow("Policy #", params.policyNumber) : "") +
+        infoRow("Days Remaining", `<strong style="color:${accent}">${params.daysLeft}</strong>`)
+      )}
+      ${btn(`${APP_URL}/insurance/verification`, "Renew Insurance")}
+    `, accent),
+  }));
+  if (params.phone) {
+    safe(() => sendSms({ to: params.phone!, message: `EusoTrip ${urgency}: ${params.companyName}'s ${policyLabel} policy expires in ${params.daysLeft} day(s). Renew now to stay compliant.` }));
+  }
+}
+
+async function notifyInsuranceExpired(params: {
+  email: string; phone?: string; name: string;
+  companyName: string; policyType?: string; policyNumber?: string;
+}) {
+  const policyLabel = params.policyType ? params.policyType.replace(/_/g, " ") : "insurance";
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `CRITICAL: ${policyLabel} Has Expired - EusoTrip`,
+    html: emailWrap("Insurance Policy Expired", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Your company <strong style="color:#E2E8F0">${params.companyName}</strong>'s ${policyLabel} policy${params.policyNumber ? ` <strong>#${params.policyNumber}</strong>` : ""} has <strong style="color:#ef4444">expired</strong>.`)}
+      ${p("You may be operating without required coverage. Upload your renewed policy immediately to restore platform compliance.")}
+      ${infoTable(
+        infoRow("Company", params.companyName) +
+        (params.policyType ? infoRow("Policy Type", policyLabel) : "") +
+        (params.policyNumber ? infoRow("Policy #", params.policyNumber) : "") +
+        infoRow("Status", '<strong style="color:#ef4444">EXPIRED</strong>')
+      )}
+      ${btn(`${APP_URL}/insurance/verification`, "Upload Renewed Policy")}
+    `, "#ef4444"),
+  }));
+  if (params.phone) {
+    safe(() => sendSms({ to: params.phone!, message: `EusoTrip CRITICAL: ${params.companyName}'s ${policyLabel} policy has EXPIRED. Upload renewed policy immediately.` }));
+  }
+}
+
+async function notifyInsuranceNonCompliant(params: {
+  email: string; phone?: string; name: string;
+  companyName: string; reason: string;
+}) {
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `Action Required: Insurance Non-Compliant - EusoTrip`,
+    html: emailWrap("Insurance Non-Compliant", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Your company <strong style="color:#E2E8F0">${params.companyName}</strong> has been flagged as <strong style="color:#ef4444">non-compliant</strong> with EusoTrip insurance requirements.`)}
+      ${infoTable(infoRow("Reason", params.reason))}
+      ${p("Please take action immediately. Non-compliant companies may have restricted access to platform features including load posting, bidding, and dispatch.")}
+      ${btn(`${APP_URL}/insurance/verification`, "Resolve Compliance")}
+    `, "#ef4444"),
+  }));
+  if (params.phone) {
+    safe(() => sendSms({ to: params.phone!, message: `EusoTrip: ${params.companyName} is non-compliant — ${params.reason.slice(0, 80)}. Take action now.` }));
+  }
+}
+
+async function notifyInsuranceCompliant(params: {
+  email: string; phone?: string; name: string;
+  companyName: string;
+}) {
+  safe(() => emailService.send({
+    to: params.email,
+    subject: `Insurance Compliance Restored - EusoTrip`,
+    html: emailWrap("Compliance Restored", `
+      ${p(`Hello ${params.name},`)}
+      ${p(`Great news! <strong style="color:#E2E8F0">${params.companyName}</strong> is now <strong style="color:#10b981">fully compliant</strong> with all EusoTrip insurance requirements.`)}
+      ${p("All platform features are available without restriction.")}
+      ${btn(`${APP_URL}/dashboard`, "Go to Dashboard")}
+    `, "#10b981"),
+  }));
 }
 
 // ─── Exported Branded Email Builders ─────────────────────────────────

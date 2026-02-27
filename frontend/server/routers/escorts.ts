@@ -9,7 +9,7 @@
 import { z } from "zod";
 import { escortProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { loads, users, escortAssignments, convoys } from "../../drizzle/schema";
+import { loads, users, escortAssignments, convoys, locationHistory } from "../../drizzle/schema";
 import { eq, and, desc, asc, sql, gte, or, ne } from "drizzle-orm";
 
 const positionSchema = z.enum(["lead", "chase", "both"]);
@@ -40,6 +40,15 @@ function fmtLoc(loc: any): { city: string; state: string; address: string; lat: 
     lat: Number(l.lat || l.latitude || 0),
     lng: Number(l.lng || l.longitude || 0),
   };
+}
+
+// Haversine distance in meters
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 export const escortsRouter = router({
@@ -201,7 +210,10 @@ export const escortsRouter = router({
       if (!db) return [];
       try {
         const userId = await resolveEscortUserId(ctx.user);
-        const filters: any[] = [sql`${loads.status} IN ('posted','assigned')`];
+        // Only show loads that ACTUALLY need escort services
+        const escortFilter = sql`(${loads.requiresEscort} = true OR ${loads.cargoType} = 'oversized')`;
+        const statusFilter = sql`${loads.status} IN ('posted','assigned')`;
+        const filters: any[] = [escortFilter, statusFilter];
         if (input?.search) {
           const s = `%${input.search}%`;
           filters.push(sql`(${loads.loadNumber} LIKE ${s} OR JSON_EXTRACT(${loads.pickupLocation}, '$.city') LIKE ${s} OR JSON_EXTRACT(${loads.deliveryLocation}, '$.city') LIKE ${s})`);
@@ -210,10 +222,15 @@ export const escortsRouter = router({
           id: loads.id, loadNumber: loads.loadNumber, status: loads.status,
           cargoType: loads.cargoType, hazmatClass: loads.hazmatClass,
           pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
-          rate: loads.rate, distance: loads.distance, pickupDate: loads.pickupDate,
+          distance: loads.distance, pickupDate: loads.pickupDate, deliveryDate: loads.deliveryDate,
           weight: loads.weight, createdAt: loads.createdAt,
-        }).from(loads).where(and(...filters)).orderBy(desc(loads.createdAt)).limit(30);
+          commodityName: loads.commodityName, specialInstructions: loads.specialInstructions,
+          escortCount: loads.escortCount,
+        }).from(loads).where(and(...filters)).orderBy(desc(loads.createdAt)).limit(50);
 
+        if (rows.length === 0) return [];
+
+        // Get current user's applications
         let appliedLoadIds = new Set<number>();
         if (userId) {
           const applied = await db.select({ loadId: escortAssignments.loadId }).from(escortAssignments)
@@ -221,17 +238,43 @@ export const escortsRouter = router({
           appliedLoadIds = new Set(applied.map(a => a.loadId));
         }
 
+        // Get applicant counts per load
+        const loadIds = rows.map(r => r.id);
+        const applicantRows = await db.select({
+          loadId: escortAssignments.loadId,
+          count: sql<number>`count(*)`,
+          acceptedCount: sql<number>`SUM(CASE WHEN ${escortAssignments.status} IN ('accepted','en_route','on_site','escorting') THEN 1 ELSE 0 END)`,
+        }).from(escortAssignments)
+          .where(and(
+            sql`${escortAssignments.loadId} IN (${sql.raw(loadIds.join(',') || '0')})`,
+            ne(escortAssignments.status, 'cancelled'),
+          ))
+          .groupBy(escortAssignments.loadId);
+        const applicantMap = new Map(applicantRows.map(r => [r.loadId, { total: r.count, accepted: r.acceptedCount || 0 }]));
+
         return rows.map(r => {
           const o = fmtLoc(r.pickupLocation); const d = fmtLoc(r.deliveryLocation);
+          const escortsNeeded = r.escortCount || 1;
+          const apps = applicantMap.get(r.id) || { total: 0, accepted: 0 };
+          const positionsFilled = apps.accepted;
+          const positionsOpen = Math.max(0, escortsNeeded - positionsFilled);
+          const isUrgent = r.pickupDate && (new Date(r.pickupDate).getTime() - Date.now()) < 48 * 60 * 60 * 1000;
+
           return {
             id: String(r.id), loadNumber: r.loadNumber, status: r.status,
             cargoType: r.cargoType, hazmatClass: r.hazmatClass,
+            commodityName: r.commodityName || null,
+            equipmentType: null as string | null,
             origin: `${o.city}, ${o.state}`, destination: `${d.city}, ${d.state}`,
-            rate: r.rate ? parseFloat(String(r.rate)) : 0,
             distance: r.distance ? parseFloat(String(r.distance)) : 0,
-            pickupDate: r.pickupDate?.toISOString() || '',
             weight: r.weight ? parseFloat(String(r.weight)) : 0,
-            requiresEscort: true, applied: appliedLoadIds.has(r.id),
+            pickupDate: r.pickupDate?.toISOString() || '',
+            deliveryDate: r.deliveryDate?.toISOString() || '',
+            specialInstructions: r.specialInstructions || '',
+            escortsNeeded, positionsFilled, positionsOpen,
+            applicants: apps.total,
+            urgency: isUrgent ? 'urgent' : positionsOpen <= 0 ? 'filled' : 'normal',
+            applied: appliedLoadIds.has(r.id),
             postedAt: r.createdAt?.toISOString() || '',
           };
         });
@@ -244,21 +287,32 @@ export const escortsRouter = router({
     if (!db) return empty;
     try {
       const userId = await resolveEscortUserId(ctx.user);
-      const [posted] = await db.select({ count: sql<number>`count(*)`, avgRate: sql<string>`COALESCE(AVG(${loads.rate}), 0)` })
-        .from(loads).where(sql`${loads.status} IN ('posted','assigned')`);
+      const escortFilter = sql`(${loads.requiresEscort} = true OR ${loads.cargoType} = 'oversized')`;
+      const statusFilter = sql`${loads.status} IN ('posted','assigned')`;
+      const [posted] = await db.select({ count: sql<number>`count(*)` })
+        .from(loads).where(and(escortFilter, statusFilter));
       const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
       const [newThisWeek] = await db.select({ count: sql<number>`count(*)` }).from(loads)
-        .where(and(sql`${loads.status} IN ('posted','assigned')`, gte(loads.createdAt, weekAgo)));
+        .where(and(escortFilter, statusFilter, gte(loads.createdAt, weekAgo)));
+      // Urgent = pickup within 48 hours
+      const urgentCutoff = new Date(Date.now() + 48 * 60 * 60 * 1000);
+      const [urgentCount] = await db.select({ count: sql<number>`count(*)` }).from(loads)
+        .where(and(escortFilter, statusFilter, sql`${loads.pickupDate} IS NOT NULL AND ${loads.pickupDate} <= ${urgentCutoff}`));
       let myApps = 0;
       if (userId) {
         const [apps] = await db.select({ count: sql<number>`count(*)` }).from(escortAssignments)
           .where(and(eq(escortAssignments.escortUserId, userId), ne(escortAssignments.status, 'cancelled')));
         myApps = apps?.count || 0;
       }
+      // Avg escort rate from completed assignments
+      const [avgRateRow] = await db.select({ avg: sql<number>`AVG(CAST(${escortAssignments.rate} AS DECIMAL(10,2)))` })
+        .from(escortAssignments).where(and(eq(escortAssignments.status, 'completed'), sql`${escortAssignments.rate} IS NOT NULL AND ${escortAssignments.rate} > 0`));
       return {
         availableJobs: posted?.count || 0, available: posted?.count || 0,
-        avgPay: parseFloat(posted?.avgRate || '0'), avgRate: parseFloat(posted?.avgRate || '0'),
-        newThisWeek: newThisWeek?.count || 0, urgentJobs: 0, urgent: 0,
+        avgPay: avgRateRow?.avg ? Math.round(avgRateRow.avg) : 0,
+        avgRate: avgRateRow?.avg ? Math.round(avgRateRow.avg) : 0,
+        newThisWeek: newThisWeek?.count || 0,
+        urgentJobs: urgentCount?.count || 0, urgent: urgentCount?.count || 0,
         myApplications: myApps,
       };
     } catch { return empty; }
@@ -387,7 +441,9 @@ export const escortsRouter = router({
               id: String(r.id), loadNumber: r.loadNumber, status: r.status,
               cargoType: r.cargoType, hazmatClass: r.hazmatClass,
               origin: `${o.city}, ${o.state}`, destination: `${d.city}, ${d.state}`,
-              rate: r.rate ? parseFloat(String(r.rate)) : 0,
+              rate: 0,
+              escortRate: null as number | null,
+              loadRate: r.rate ? parseFloat(String(r.rate)) : 0,
               distance: r.distance ? parseFloat(String(r.distance)) : 0,
               pickupDate: r.pickupDate?.toISOString() || '',
               weight: r.weight ? parseFloat(String(r.weight)) : 0,
@@ -537,7 +593,7 @@ export const escortsRouter = router({
           cargoType: row.cargoType, hazmatClass: row.hazmatClass,
           origin: `${o.city}, ${o.state}`, originAddress: o.address, originLat: o.lat, originLng: o.lng,
           destination: `${d.city}, ${d.state}`, destAddress: d.address, destLat: d.lat, destLng: d.lng,
-          rate: (assignment?.rate ? parseFloat(String(assignment.rate)) : 0) || (row.rate ? parseFloat(String(row.rate)) : 0),
+          rate: assignment?.rate ? parseFloat(String(assignment.rate)) : 0,
           distance: row.distance ? parseFloat(String(row.distance)) : 0,
           pickupDate: row.pickupDate?.toISOString() || '', deliveryDate: row.deliveryDate?.toISOString() || '',
           weight: row.weight ? parseFloat(String(row.weight)) : 0,
@@ -550,6 +606,158 @@ export const escortsRouter = router({
   submitLocationUpdate: protectedProcedure
     .input(z.object({ jobId: z.string(), location: z.object({ lat: z.number(), lng: z.number() }), heading: z.number().optional(), speed: z.number().optional(), notes: z.string().optional() }))
     .mutation(async () => ({ success: true, timestamp: new Date().toISOString() })),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TEAM — Convoy crew for the escort's active/upcoming assignments
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getMyTeam: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) return [];
+
+      // Get all active/upcoming assignments for this escort
+      const myAssignments = await db.select({
+        id: escortAssignments.id,
+        loadId: escortAssignments.loadId,
+        convoyId: escortAssignments.convoyId,
+        position: escortAssignments.position,
+        status: escortAssignments.status,
+        rate: escortAssignments.rate,
+        rateType: escortAssignments.rateType,
+        startedAt: escortAssignments.startedAt,
+      }).from(escortAssignments)
+        .where(and(
+          eq(escortAssignments.escortUserId, userId),
+          sql`${escortAssignments.status} IN ('accepted','en_route','on_site','escorting','pending')`,
+        ))
+        .orderBy(desc(escortAssignments.createdAt))
+        .limit(10);
+
+      if (!myAssignments.length) return [];
+
+      const results = [];
+
+      for (const assignment of myAssignments) {
+        // Get load info
+        const [load] = await db.select({
+          loadNumber: loads.loadNumber,
+          cargoType: loads.cargoType,
+          pickupLocation: loads.pickupLocation,
+          deliveryLocation: loads.deliveryLocation,
+          distance: loads.distance,
+          pickupDate: loads.pickupDate,
+          deliveryDate: loads.deliveryDate,
+          driverId: loads.driverId,
+          catalystId: loads.catalystId,
+          status: loads.status,
+        }).from(loads).where(eq(loads.id, assignment.loadId)).limit(1);
+        if (!load) continue;
+
+        const o = fmtLoc(load.pickupLocation);
+        const d = fmtLoc(load.deliveryLocation);
+
+        // Get convoy info if exists
+        let convoyInfo: any = null;
+        if (assignment.convoyId) {
+          const [convoy] = await db.select().from(convoys)
+            .where(eq(convoys.id, assignment.convoyId)).limit(1);
+          if (convoy) {
+            convoyInfo = {
+              id: convoy.id,
+              status: convoy.status,
+              maxSpeedMph: convoy.maxSpeedMph,
+              targetLeadDistance: convoy.targetLeadDistanceMeters,
+              targetRearDistance: convoy.targetRearDistanceMeters,
+              startedAt: convoy.startedAt?.toISOString() || null,
+            };
+          }
+        }
+
+        // Get ALL escorts on this same load (teammates)
+        const teammates = await db.select({
+          id: escortAssignments.id,
+          escortUserId: escortAssignments.escortUserId,
+          position: escortAssignments.position,
+          status: escortAssignments.status,
+          rate: escortAssignments.rate,
+          rateType: escortAssignments.rateType,
+          startedAt: escortAssignments.startedAt,
+        }).from(escortAssignments)
+          .where(and(
+            eq(escortAssignments.loadId, assignment.loadId),
+            ne(escortAssignments.status, 'cancelled'),
+          ));
+
+        // Resolve names/contact for all teammates
+        const teamMembers = [];
+        for (const tm of teammates) {
+          const [u] = await db.select({
+            name: users.name, email: users.email, phone: users.phone,
+          }).from(users).where(eq(users.id, tm.escortUserId)).limit(1);
+          teamMembers.push({
+            assignmentId: tm.id,
+            userId: tm.escortUserId,
+            name: u?.name || "Escort",
+            email: u?.email || "",
+            phone: u?.phone || "",
+            position: tm.position,
+            status: tm.status,
+            isMe: tm.escortUserId === userId,
+          });
+        }
+
+        // Get driver info
+        let driver: any = null;
+        if (load.driverId) {
+          const [driverUser] = await db.select({
+            name: users.name, email: users.email, phone: users.phone,
+          }).from(users).where(eq(users.id, load.driverId)).limit(1);
+          if (driverUser) {
+            driver = { userId: load.driverId, name: driverUser.name || "Driver", email: driverUser.email || "", phone: driverUser.phone || "", role: "driver" };
+          }
+        }
+
+        // Get carrier/catalyst info
+        let carrier: any = null;
+        if (load.catalystId) {
+          const [carrierUser] = await db.select({
+            name: users.name, email: users.email, phone: users.phone,
+          }).from(users).where(eq(users.id, load.catalystId)).limit(1);
+          if (carrierUser) {
+            carrier = { userId: load.catalystId, name: carrierUser.name || "Carrier", email: carrierUser.email || "", phone: carrierUser.phone || "", role: "carrier" };
+          }
+        }
+
+        results.push({
+          assignmentId: assignment.id,
+          loadId: assignment.loadId,
+          loadNumber: load.loadNumber || `LD-${assignment.loadId}`,
+          loadStatus: load.status,
+          myPosition: assignment.position,
+          myStatus: assignment.status,
+          myRate: assignment.rate ? parseFloat(String(assignment.rate)) : 0,
+          myRateType: assignment.rateType || "flat",
+          cargoType: load.cargoType || "Freight",
+          origin: `${o.city}, ${o.state}`,
+          destination: `${d.city}, ${d.state}`,
+          distance: load.distance ? parseFloat(String(load.distance)) : 0,
+          pickupDate: load.pickupDate?.toISOString() || "",
+          deliveryDate: load.deliveryDate?.toISOString() || "",
+          convoy: convoyInfo,
+          teamMembers,
+          driver,
+          carrier,
+          totalEscorts: teamMembers.length,
+          startedAt: assignment.startedAt?.toISOString() || null,
+        });
+      }
+
+      return results;
+    } catch (e) { console.error('[Escorts] getMyTeam:', e); return []; }
+  }),
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PERMITS
@@ -908,5 +1116,364 @@ export const escortsRouter = router({
         await db.update(convoys).set({ status: "completed", completedAt: new Date() }).where(eq(convoys.id, assignment.convoyId));
       }
       return { success: true, assignmentId: input.assignmentId, newStatus: input.status };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CONVOY PROXIMITY GEOFENCE — escort must stay near the primary vehicle
+  // The truck/load vehicle serves as the moving geofence center
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getConvoyProximity: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return null;
+    try {
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) return null;
+
+      // Get active assignment with convoy
+      const [assignment] = await db.select({
+        id: escortAssignments.id,
+        convoyId: escortAssignments.convoyId,
+        position: escortAssignments.position,
+        loadId: escortAssignments.loadId,
+        status: escortAssignments.status,
+      }).from(escortAssignments)
+        .where(and(eq(escortAssignments.escortUserId, userId), sql`${escortAssignments.status} IN ('en_route','on_site','escorting')`))
+        .orderBy(desc(escortAssignments.updatedAt)).limit(1);
+      if (!assignment || !assignment.convoyId) return null;
+
+      // Get convoy info
+      const [convoy] = await db.select().from(convoys).where(eq(convoys.id, assignment.convoyId)).limit(1);
+      if (!convoy) return null;
+
+      // Separation thresholds
+      const isLead = assignment.position === "lead";
+      const maxDistanceMeters = isLead
+        ? (convoy.targetLeadDistanceMeters || 1200)
+        : (convoy.targetRearDistanceMeters || 800);
+      const warningThresholdMeters = Math.round(maxDistanceMeters * 0.8);
+
+      // Get latest positions for escort and primary vehicle
+      const [escortLoc] = await db.select({
+        lat: locationHistory.latitude, lng: locationHistory.longitude,
+        speed: locationHistory.speed, heading: locationHistory.heading,
+        ts: locationHistory.serverTimestamp,
+      }).from(locationHistory).where(eq(locationHistory.userId, userId))
+        .orderBy(desc(locationHistory.serverTimestamp)).limit(1);
+
+      const primaryUserId = convoy.loadUserId;
+      const [primaryLoc] = await db.select({
+        lat: locationHistory.latitude, lng: locationHistory.longitude,
+        speed: locationHistory.speed, heading: locationHistory.heading,
+        ts: locationHistory.serverTimestamp,
+      }).from(locationHistory).where(eq(locationHistory.userId, primaryUserId))
+        .orderBy(desc(locationHistory.serverTimestamp)).limit(1);
+
+      // Calculate distance
+      let distanceMeters: number | null = null;
+      let status: "ok" | "warning" | "critical" | "unknown" = "unknown";
+
+      if (escortLoc && primaryLoc) {
+        const eLat = Number(escortLoc.lat); const eLng = Number(escortLoc.lng);
+        const pLat = Number(primaryLoc.lat); const pLng = Number(primaryLoc.lng);
+        distanceMeters = Math.round(haversineDistance(eLat, eLng, pLat, pLng));
+
+        if (distanceMeters <= warningThresholdMeters) status = "ok";
+        else if (distanceMeters <= maxDistanceMeters) status = "warning";
+        else status = "critical";
+      }
+
+      return {
+        convoyId: assignment.convoyId,
+        assignmentId: assignment.id,
+        position: assignment.position,
+        distanceMeters,
+        maxDistanceMeters,
+        warningThresholdMeters,
+        status,
+        escortLocation: escortLoc ? {
+          lat: Number(escortLoc.lat), lng: Number(escortLoc.lng),
+          speed: escortLoc.speed ? Number(escortLoc.speed) : 0,
+          heading: escortLoc.heading ? Number(escortLoc.heading) : 0,
+          lastUpdate: escortLoc.ts?.toISOString() || null,
+        } : null,
+        primaryLocation: primaryLoc ? {
+          lat: Number(primaryLoc.lat), lng: Number(primaryLoc.lng),
+          speed: primaryLoc.speed ? Number(primaryLoc.speed) : 0,
+          heading: primaryLoc.heading ? Number(primaryLoc.heading) : 0,
+          lastUpdate: primaryLoc.ts?.toISOString() || null,
+        } : null,
+        convoyMaxSpeed: convoy.maxSpeedMph || 45,
+        convoyStatus: convoy.status,
+      };
+    } catch (e) { console.error('[Escorts] getConvoyProximity:', e); return null; }
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ROUTE RESTRICTIONS — prohibited roads, bridge clearances, weight limits
+  // for the current load's route (heavy haul / oversize awareness)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getRouteRestrictions: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return null;
+    try {
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) return null;
+
+      const [assignment] = await db.select({
+        loadId: escortAssignments.loadId,
+        convoyId: escortAssignments.convoyId,
+      }).from(escortAssignments)
+        .where(and(eq(escortAssignments.escortUserId, userId), sql`${escortAssignments.status} IN ('accepted','en_route','on_site','escorting')`))
+        .orderBy(desc(escortAssignments.updatedAt)).limit(1);
+      if (!assignment) return null;
+
+      const [load] = await db.select({
+        id: loads.id, loadNumber: loads.loadNumber,
+        cargoType: loads.cargoType, hazmatClass: loads.hazmatClass,
+        weight: loads.weight, specialInstructions: loads.specialInstructions,
+        pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
+      }).from(loads).where(eq(loads.id, assignment.loadId)).limit(1);
+      if (!load) return null;
+
+      const weight = load.weight ? parseFloat(String(load.weight)) : 0;
+      const isOversize = weight > 80000;
+      const isHazmat = !!load.hazmatClass;
+      const isSuperload = weight > 200000;
+
+      // Build restriction warnings based on load characteristics
+      const restrictions: Array<{
+        type: string; severity: "info" | "warning" | "critical";
+        title: string; description: string; icon: string;
+      }> = [];
+
+      if (isSuperload) {
+        restrictions.push({
+          type: "superload", severity: "critical",
+          title: "SUPERLOAD — Restricted Routing",
+          description: `Load weighs ${weight.toLocaleString()} lbs. Must follow pre-approved route only. No deviations without dispatch approval. Police escort may be required.`,
+          icon: "AlertOctagon",
+        });
+      } else if (isOversize) {
+        restrictions.push({
+          type: "oversize", severity: "warning",
+          title: "Oversize/Overweight Load",
+          description: `Load weighs ${weight.toLocaleString()} lbs (exceeds 80,000 lb limit). Follow permitted route — avoid restricted bridges, tunnels, and low clearances.`,
+          icon: "Scale",
+        });
+      }
+
+      if (isHazmat) {
+        restrictions.push({
+          type: "hazmat", severity: "critical",
+          title: `HazMat Class ${load.hazmatClass}`,
+          description: "Hazmat route restrictions apply. Avoid tunnels, densely populated areas, and non-designated hazmat routes. Maintain required placards visible.",
+          icon: "Flame",
+        });
+      }
+
+      // Time-of-day restrictions for oversize
+      const hour = new Date().getHours();
+      if (isOversize && (hour >= 22 || hour < 5)) {
+        restrictions.push({
+          type: "time_restriction", severity: "info",
+          title: "Night Movement Permitted",
+          description: "Many states prefer oversize loads travel at night (10PM-5AM) for reduced traffic. Verify state-specific night travel permits.",
+          icon: "Moon",
+        });
+      } else if (isOversize && (hour >= 7 && hour <= 9 || hour >= 16 && hour <= 18)) {
+        restrictions.push({
+          type: "rush_hour", severity: "warning",
+          title: "Rush Hour — Restricted Movement",
+          description: "Most states prohibit oversize loads during rush hours (7-9AM, 4-6PM). Check permits for time-of-day restrictions.",
+          icon: "Clock",
+        });
+      }
+
+      // Bridge/clearance warnings
+      restrictions.push({
+        type: "clearance", severity: "info",
+        title: "Bridge & Clearance Monitoring",
+        description: "Use height pole to verify all overhead clearances before the load passes. Minimum required clearance must exceed load height by 6 inches.",
+        icon: "ArrowUpFromLine",
+      });
+
+      // Weekend/holiday restrictions
+      const dayOfWeek = new Date().getDay();
+      if (isOversize && (dayOfWeek === 0 || dayOfWeek === 6)) {
+        restrictions.push({
+          type: "weekend", severity: "warning",
+          title: "Weekend Movement Restriction",
+          description: "Many states restrict oversize loads on weekends and holidays. Verify weekend permits are in place.",
+          icon: "Calendar",
+        });
+      }
+
+      return {
+        loadId: load.id,
+        loadNumber: load.loadNumber,
+        cargoType: load.cargoType,
+        hazmatClass: load.hazmatClass,
+        weight,
+        isOversize,
+        isHazmat,
+        isSuperload,
+        restrictions,
+        specialInstructions: load.specialInstructions || '',
+      };
+    } catch (e) { console.error('[Escorts] getRouteRestrictions:', e); return null; }
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ESCORT PROFILE — comprehensive profile data
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getProfile: protectedProcedure
+    .input(z.object({ escortId: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      try {
+        const userId = input?.escortId ? parseInt(input.escortId, 10) : await resolveEscortUserId(ctx.user);
+        if (!userId) return null;
+
+        const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+        if (!user) return null;
+
+        const meta = user.metadata ? (typeof user.metadata === 'string' ? JSON.parse(user.metadata) : user.metadata) : {};
+        const escortProfile = meta?.escortProfile || {};
+
+        // Stats from escort_assignments
+        const [totalStats] = await db.select({
+          totalConvoys: sql<number>`count(*)`,
+          totalEarnings: sql<string>`COALESCE(SUM(${escortAssignments.rate}), 0)`,
+        }).from(escortAssignments).where(and(eq(escortAssignments.escortUserId, userId), eq(escortAssignments.status, 'completed')));
+
+        const [activeStats] = await db.select({
+          activeJobs: sql<number>`count(*)`,
+        }).from(escortAssignments).where(and(eq(escortAssignments.escortUserId, userId), sql`${escortAssignments.status} IN ('accepted','en_route','on_site','escorting')`));
+
+        // Lead vs chase breakdown
+        const [leadCount] = await db.select({ count: sql<number>`count(*)` }).from(escortAssignments)
+          .where(and(eq(escortAssignments.escortUserId, userId), eq(escortAssignments.status, 'completed'), eq(escortAssignments.position, 'lead')));
+        const [chaseCount] = await db.select({ count: sql<number>`count(*)` }).from(escortAssignments)
+          .where(and(eq(escortAssignments.escortUserId, userId), eq(escortAssignments.status, 'completed'), eq(escortAssignments.position, 'chase')));
+
+        // On-time % (completed before delivery date)
+        const [onTimeResult] = await db.select({
+          total: sql<number>`count(*)`,
+          onTime: sql<number>`SUM(CASE WHEN ${escortAssignments.completedAt} <= ${loads.deliveryDate} OR ${loads.deliveryDate} IS NULL THEN 1 ELSE 0 END)`,
+        }).from(escortAssignments)
+          .innerJoin(loads, eq(escortAssignments.loadId, loads.id))
+          .where(and(eq(escortAssignments.escortUserId, userId), eq(escortAssignments.status, 'completed')));
+
+        const totalConvoys = totalStats?.totalConvoys || 0;
+        const onTimePct = onTimeResult?.total ? Math.round(((onTimeResult.onTime || 0) / onTimeResult.total) * 100) : 100;
+
+        return {
+          id: String(userId),
+          name: user.name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          profilePhoto: (user as any).profileImageUrl || '',
+          role: user.role,
+          verificationStatus: (user as any).accountStatus || 'pending',
+          createdAt: user.createdAt?.toISOString() || '',
+
+          // Professional info from metadata
+          positions: escortProfile.positions || { leadEscort: false, rearEscort: false, heightPole: false, routeSurvey: false },
+          preferredPosition: escortProfile.preferredPosition || '',
+          yearsExperience: escortProfile.yearsExperience || 0,
+          isIndependent: escortProfile.isIndependent ?? true,
+          escortCompany: escortProfile.escortCompany || '',
+          homeBase: escortProfile.homeBase || { city: '', state: '' },
+          willingToTravel: escortProfile.willingToTravel || 0,
+          heightPole: escortProfile.heightPole || null,
+
+          // Vehicle
+          vehicle: escortProfile.vehicle || null,
+          equipment: escortProfile.equipment || null,
+
+          // Stats
+          stats: {
+            totalConvoys,
+            totalMiles: escortProfile.totalMiles || 0,
+            onTimePercentage: onTimePct,
+            incidentCount: 0,
+            repeatClientRate: 0,
+            leadJobs: leadCount?.count || 0,
+            chaseJobs: chaseCount?.count || 0,
+          },
+
+          // Rating
+          rating: {
+            overall: escortProfile.rating?.overall || 0,
+            communication: escortProfile.rating?.communication || 0,
+            punctuality: escortProfile.rating?.punctuality || 0,
+            professionalism: escortProfile.rating?.professionalism || 0,
+            safetyAwareness: escortProfile.rating?.safetyAwareness || 0,
+            routeKnowledge: escortProfile.rating?.routeKnowledge || 0,
+            totalReviews: escortProfile.rating?.totalReviews || 0,
+          },
+
+          // Financial
+          wallet: {
+            balance: 0,
+            lifetimeEarnings: parseFloat(totalStats?.totalEarnings || '0'),
+            activeJobs: activeStats?.activeJobs || 0,
+          },
+
+          // Availability
+          availability: meta?.escortAvailability || {},
+
+          // Preferences
+          preferences: escortProfile.preferences || {},
+
+          // Certifications (from metadata until dedicated table)
+          stateCertifications: escortProfile.stateCertifications || [],
+        };
+      } catch (e) { console.error('[Escorts] getProfile:', e); return null; }
+    }),
+
+  updateProfile: protectedProcedure
+    .input(z.object({
+      positions: z.object({ leadEscort: z.boolean(), rearEscort: z.boolean(), heightPole: z.boolean(), routeSurvey: z.boolean() }).optional(),
+      preferredPosition: z.string().optional(),
+      yearsExperience: z.number().optional(),
+      isIndependent: z.boolean().optional(),
+      escortCompany: z.string().optional(),
+      homeBase: z.object({ city: z.string(), state: z.string() }).optional(),
+      willingToTravel: z.number().optional(),
+      heightPole: z.object({ maxHeight: z.number(), hasElectronicSensor: z.boolean() }).optional(),
+      vehicle: z.object({
+        make: z.string(), model: z.string(), year: z.number(), color: z.string(),
+        licensePlate: z.string(), licenseState: z.string(),
+      }).optional(),
+      preferences: z.record(z.string(), z.any()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) throw new Error("Auth required");
+      const [user] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
+      let meta: any = {};
+      try { meta = user?.metadata ? (typeof user.metadata === 'string' ? JSON.parse(user.metadata) : user.metadata) : {}; } catch { meta = {}; }
+      if (!meta.escortProfile) meta.escortProfile = {};
+      // Merge input into escortProfile
+      const ep = meta.escortProfile;
+      if (input.positions) ep.positions = input.positions;
+      if (input.preferredPosition) ep.preferredPosition = input.preferredPosition;
+      if (input.yearsExperience !== undefined) ep.yearsExperience = input.yearsExperience;
+      if (input.isIndependent !== undefined) ep.isIndependent = input.isIndependent;
+      if (input.escortCompany !== undefined) ep.escortCompany = input.escortCompany;
+      if (input.homeBase) ep.homeBase = input.homeBase;
+      if (input.willingToTravel !== undefined) ep.willingToTravel = input.willingToTravel;
+      if (input.heightPole) ep.heightPole = input.heightPole;
+      if (input.vehicle) ep.vehicle = input.vehicle;
+      if (input.preferences) ep.preferences = { ...ep.preferences, ...input.preferences };
+      await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
+      return { success: true, updatedAt: new Date().toISOString() };
     }),
 });

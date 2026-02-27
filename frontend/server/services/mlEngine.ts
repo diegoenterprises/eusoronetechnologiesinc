@@ -20,7 +20,7 @@
  */
 
 import { getDb } from "../db";
-import { loads, users, bids, companies } from "../../drizzle/schema";
+import { loads, users, bids, companies, escortAssignments } from "../../drizzle/schema";
 import { eq, desc, sql, and, gte, lte, or, ne, isNotNull } from "drizzle-orm";
 
 // ═══════════════════════════════════════════════════════════════
@@ -181,9 +181,33 @@ interface CarrierProfile {
   acceptedBidCount: number;
 }
 
+interface EscortRateStats {
+  totalAssignments: number;
+  completedAssignments: number;
+  avgFlatRate: number;
+  avgPerMileRate: number;
+  avgPerHourRate: number;
+  ratesByPosition: Record<string, { avg: number; count: number }>;
+  ratesByLane: Map<string, { avg: number; count: number; rates: number[] }>;
+  recentRates: number[];
+}
+
+export interface EscortRatePrediction {
+  estimatedFlatRate: number;
+  estimatedPerMile: number;
+  estimatedPerHour: number;
+  confidence: number;
+  priceRange: { low: number; high: number };
+  factors: { name: string; impact: number; direction: "up" | "down" | "neutral" }[];
+  marketCondition: string;
+  recommendation: string;
+  basedOnSamples: number;
+}
+
 interface ModelState {
   laneStats: Map<string, LaneStats>;
   carrierProfiles: Map<number, CarrierProfile>;
+  escortRateStats: EscortRateStats;
   globalAvgRatePerMile: number;
   globalAvgTransitDays: number;
   totalLoadsAnalyzed: number;
@@ -203,6 +227,11 @@ class MLEngine {
   private state: ModelState = {
     laneStats: new Map(),
     carrierProfiles: new Map(),
+    escortRateStats: {
+      totalAssignments: 0, completedAssignments: 0,
+      avgFlatRate: 0, avgPerMileRate: 0, avgPerHourRate: 0,
+      ratesByPosition: {}, ratesByLane: new Map(), recentRates: [],
+    },
     globalAvgRatePerMile: 2.25,
     globalAvgTransitDays: 2.5,
     totalLoadsAnalyzed: 0,
@@ -443,7 +472,78 @@ class MLEngine {
       this.state.totalCarriersAnalyzed = carrierMap.size;
       this.state.lastTrainedAt = new Date();
 
-      console.log(`[MLEngine] Trained in ${Date.now() - start}ms: ${allLoads.length} loads, ${laneMap.size} lanes, ${carrierMap.size} carriers`);
+      // ── 4. Learn from escort assignments ──
+      const escortStats: EscortRateStats = {
+        totalAssignments: 0, completedAssignments: 0,
+        avgFlatRate: 0, avgPerMileRate: 0, avgPerHourRate: 0,
+        ratesByPosition: {}, ratesByLane: new Map(), recentRates: [],
+      };
+      try {
+        const escortRows = await db.select({
+          id: escortAssignments.id,
+          rate: escortAssignments.rate,
+          rateType: escortAssignments.rateType,
+          position: escortAssignments.position,
+          status: escortAssignments.status,
+          loadId: escortAssignments.loadId,
+        }).from(escortAssignments).limit(2000);
+
+        // Build a loadId → lane map from allLoads
+        const loadLaneMap = new Map<number, { lane: string; distance: number }>();
+        for (const l of allLoads) {
+          const p = l.pickupLocation as any;
+          const d = l.deliveryLocation as any;
+          if (p?.state && d?.state) {
+            loadLaneMap.set(l.id, {
+              lane: `${(p.state as string).toUpperCase().substring(0, 2)}-${(d.state as string).toUpperCase().substring(0, 2)}`,
+              distance: l.distance ? parseFloat(String(l.distance)) : 0,
+            });
+          }
+        }
+
+        const flatRates: number[] = [];
+        const perMileRates: number[] = [];
+        const perHourRates: number[] = [];
+
+        for (const ea of escortRows) {
+          escortStats.totalAssignments++;
+          if (ea.status === 'completed') escortStats.completedAssignments++;
+          const rate = ea.rate ? parseFloat(String(ea.rate)) : 0;
+          if (rate <= 0) continue;
+
+          escortStats.recentRates.push(rate);
+          if (escortStats.recentRates.length > 200) escortStats.recentRates.shift();
+
+          const rateType = ea.rateType || 'flat';
+          if (rateType === 'flat') flatRates.push(rate);
+          else if (rateType === 'per_mile') perMileRates.push(rate);
+          else if (rateType === 'per_hour') perHourRates.push(rate);
+
+          // Position stats
+          const pos = ea.position || 'lead';
+          if (!escortStats.ratesByPosition[pos]) escortStats.ratesByPosition[pos] = { avg: 0, count: 0 };
+          const pp = escortStats.ratesByPosition[pos];
+          pp.count++;
+          pp.avg = ((pp.avg * (pp.count - 1)) + rate) / pp.count;
+
+          // Lane stats
+          const loadInfo = loadLaneMap.get(ea.loadId);
+          if (loadInfo) {
+            let laneData = escortStats.ratesByLane.get(loadInfo.lane);
+            if (!laneData) { laneData = { avg: 0, count: 0, rates: [] }; escortStats.ratesByLane.set(loadInfo.lane, laneData); }
+            laneData.rates.push(rate);
+            laneData.count++;
+            laneData.avg = laneData.rates.reduce((a, b) => a + b, 0) / laneData.count;
+          }
+        }
+
+        escortStats.avgFlatRate = flatRates.length > 0 ? flatRates.reduce((a, b) => a + b, 0) / flatRates.length : 0;
+        escortStats.avgPerMileRate = perMileRates.length > 0 ? perMileRates.reduce((a, b) => a + b, 0) / perMileRates.length : 0;
+        escortStats.avgPerHourRate = perHourRates.length > 0 ? perHourRates.reduce((a, b) => a + b, 0) / perHourRates.length : 0;
+      } catch (e) { console.error('[MLEngine] Escort training error:', e); }
+
+      this.state.escortRateStats = escortStats;
+      console.log(`[MLEngine] Trained in ${Date.now() - start}ms: ${allLoads.length} loads, ${laneMap.size} lanes, ${carrierMap.size} carriers, ${escortStats.totalAssignments} escort assignments`);
     } catch (e) {
       console.error("[MLEngine] Training error:", e);
     } finally {
@@ -1299,15 +1399,124 @@ class MLEngine {
   // DASHBOARD SUMMARY — all models in one call
   // ═══════════════════════════════════════════════════════════
 
+  // ═══════════════════════════════════════════════════════════
+  // 11. ESCORT RATE PREDICTION
+  // ═══════════════════════════════════════════════════════════
+
+  predictEscortRate(p: {
+    originState: string; destState: string; distance: number;
+    position?: string; rateType?: string; hazmat?: boolean;
+  }): EscortRatePrediction {
+    const es = this.state.escortRateStats;
+    const lane = `${p.originState.toUpperCase()}-${p.destState.toUpperCase()}`;
+    const laneData = es.ratesByLane.get(lane);
+    const month = new Date().getMonth() + 1;
+    const seasonal = this.state.seasonalFactors[month] || 1.0;
+    const factors: EscortRatePrediction["factors"] = [];
+    let confidence = 25;
+    let samples = 0;
+
+    // Base rates — industry benchmarks (fallback when no data)
+    let baseFlatRate = 450;     // $450 flat per job
+    let basePerMile = 2.25;     // $2.25/mile
+    let basePerHour = 45;       // $45/hr
+
+    // Learn from platform data if available
+    if (es.avgFlatRate > 0) { baseFlatRate = es.avgFlatRate; confidence += 15; }
+    if (es.avgPerMileRate > 0) { basePerMile = es.avgPerMileRate; confidence += 10; }
+    if (es.avgPerHourRate > 0) { basePerHour = es.avgPerHourRate; confidence += 10; }
+
+    // Lane-specific adjustments
+    if (laneData && laneData.count > 0) {
+      baseFlatRate = laneData.avg;
+      confidence += Math.min(30, laneData.count * 5);
+      samples = laneData.count;
+      factors.push({ name: "Lane Data", impact: 0, direction: "neutral" });
+    }
+
+    // Position premium
+    const positionData = es.ratesByPosition[p.position || 'lead'];
+    if (positionData && positionData.count > 0) {
+      const posRatio = positionData.avg / Math.max(baseFlatRate, 1);
+      if (Math.abs(posRatio - 1) > 0.05) {
+        factors.push({ name: "Position", impact: Math.round((posRatio - 1) * 100), direction: posRatio > 1 ? "up" : "down" });
+        baseFlatRate *= posRatio;
+      }
+    }
+
+    // Distance scaling for flat rate
+    const distFactor = p.distance > 0 ? Math.max(0.5, Math.min(2.0, p.distance / 300)) : 1.0;
+    baseFlatRate *= distFactor;
+    if (distFactor !== 1.0) factors.push({ name: "Distance", impact: Math.round((distFactor - 1) * 100), direction: distFactor > 1 ? "up" : "down" });
+
+    // Hazmat premium
+    if (p.hazmat) {
+      baseFlatRate *= 1.35;
+      basePerMile *= 1.35;
+      basePerHour *= 1.30;
+      factors.push({ name: "Hazmat Premium", impact: 35, direction: "up" });
+    }
+
+    // Seasonal
+    baseFlatRate *= seasonal;
+    basePerMile *= seasonal;
+    basePerHour *= seasonal;
+    if (seasonal !== 1.0) factors.push({ name: "Seasonal", impact: Math.round((seasonal - 1) * 100), direction: seasonal > 1 ? "up" : "down" });
+
+    const flat = Math.round(baseFlatRate * 100) / 100;
+    const perMile = Math.round(basePerMile * 100) / 100;
+    const perHour = Math.round(basePerHour * 100) / 100;
+    const stdDev = laneData && laneData.rates.length > 1
+      ? Math.sqrt(laneData.rates.reduce((s, r) => s + (r - laneData.avg) ** 2, 0) / laneData.rates.length)
+      : flat * 0.20;
+
+    confidence = Math.min(95, confidence);
+
+    return {
+      estimatedFlatRate: flat,
+      estimatedPerMile: perMile,
+      estimatedPerHour: perHour,
+      confidence: Math.round(confidence),
+      priceRange: { low: Math.max(50, Math.round(flat - stdDev)), high: Math.round(flat + stdDev) },
+      factors,
+      marketCondition: seasonal > 1.06 ? "High demand" : seasonal < 0.95 ? "Low season" : "Balanced",
+      recommendation: `Estimated escort rate for ${lane}: $${flat} flat, $${perMile}/mi, or $${perHour}/hr.` +
+        (samples > 0 ? ` Based on ${samples} historical escort jobs on this lane.` : " Based on industry benchmarks."),
+      basedOnSamples: samples,
+    };
+  }
+
+  getEscortRateStats() {
+    const es = this.state.escortRateStats;
+    return {
+      totalAssignments: es.totalAssignments,
+      completedAssignments: es.completedAssignments,
+      avgFlatRate: Math.round(es.avgFlatRate * 100) / 100,
+      avgPerMileRate: Math.round(es.avgPerMileRate * 100) / 100,
+      avgPerHourRate: Math.round(es.avgPerHourRate * 100) / 100,
+      topLanes: Array.from(es.ratesByLane.entries())
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 10)
+        .map(([lane, d]) => ({ lane, count: d.count, avgRate: Math.round(d.avg * 100) / 100 })),
+      positions: Object.entries(es.ratesByPosition).map(([pos, d]) => ({ position: pos, count: d.count, avgRate: Math.round(d.avg * 100) / 100 })),
+    };
+  }
+
   getModelStatus() {
+    const es = this.state.escortRateStats;
     return {
       lastTrainedAt: this.state.lastTrainedAt?.toISOString() || null,
       isTraining: this.state.isTraining,
       totalLoadsAnalyzed: this.state.totalLoadsAnalyzed,
       totalCarriersAnalyzed: this.state.totalCarriersAnalyzed,
+      totalEscortAssignments: es.totalAssignments,
       totalLanes: this.state.laneStats.size,
+      totalEscortLanes: es.ratesByLane.size,
       globalAvgRatePerMile: Math.round(this.state.globalAvgRatePerMile * 100) / 100,
       globalAvgTransitDays: Math.round(this.state.globalAvgTransitDays * 10) / 10,
+      escortAvgFlatRate: Math.round(es.avgFlatRate * 100) / 100,
+      escortAvgPerMileRate: Math.round(es.avgPerMileRate * 100) / 100,
+      escortAvgPerHourRate: Math.round(es.avgPerHourRate * 100) / 100,
       topLanes: Array.from(this.state.laneStats.entries())
         .sort((a, b) => b[1].sampleCount - a[1].sampleCount)
         .slice(0, 10)

@@ -262,7 +262,7 @@ export default function EsangFloatingButton() {
         onClick={() => {
           if (isOnEsang) {
             window.dispatchEvent(new Event('esang-dissolve'));
-            const prevPage = sessionStorage.getItem('esang-prev-page') || '/dashboard';
+            const prevPage = sessionStorage.getItem('esang-prev-page') || '/';
             setTimeout(() => {
               navigate(prevPage);
               setChatOpen(true);

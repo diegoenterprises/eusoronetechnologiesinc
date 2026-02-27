@@ -21,6 +21,7 @@ export const safetyAlertsRouter = router({
     const userId = ctx.user?.id;
     if (!userId) throw new Error("Not authenticated");
 
+    // 1. Insert the SOS alert record
     const [alert] = await db.insert(safetyAlerts).values({
       userId: Number(userId),
       loadId: input.loadId,
@@ -33,7 +34,100 @@ export const safetyAlertsRouter = router({
       eventTimestamp: new Date(),
     }).$returningId();
 
-    return { success: true, alertId: alert.id, message: "SOS alert sent. Emergency contacts notified." };
+    // 2. Get the driver's info for notification context
+    const [driver] = await db.select({
+      name: users.name,
+      companyId: users.companyId,
+      phone: users.phone,
+    }).from(users).where(eq(users.id, Number(userId))).limit(1);
+
+    const driverName = driver?.name || "Driver";
+    const companyId = driver?.companyId;
+    const coordsStr = input.latitude && input.longitude
+      ? `${input.latitude.toFixed(4)}, ${input.longitude.toFixed(4)}`
+      : "Unknown location";
+
+    // 3. Notify company admins and dispatch via lookupAndNotify
+    const notifiedUserIds = new Set<number>();
+    try {
+      const { lookupAndNotify } = await import("../services/notifications");
+      const { companies, loads } = await import("../../drizzle/schema");
+      const { inArray } = await import("drizzle-orm");
+
+      // Notify all admins/owners in the driver's company
+      if (companyId) {
+        const companyAdmins = await db.select({ id: users.id })
+          .from(users)
+          .where(and(
+            eq(users.companyId, companyId),
+            inArray(users.role, ["admin", "owner", "dispatcher", "safety_officer"] as any),
+          ))
+          .limit(10);
+
+        for (const admin of companyAdmins) {
+          if (admin.id === Number(userId)) continue; // Don't notify the person who triggered it
+          lookupAndNotify(admin.id, {
+            type: "cargo_exception",
+            loadNumber: input.loadId ? `Load #${input.loadId}` : "N/A",
+            exceptionType: "SOS_EMERGENCY",
+            description: `🚨 SOS EMERGENCY from ${driverName} at ${coordsStr}. ${input.message || "Emergency assistance requested."}`,
+          });
+          notifiedUserIds.add(admin.id);
+        }
+      }
+
+      // If load-specific, also notify shipper and carrier on the load
+      if (input.loadId) {
+        const [load] = await db.select({
+          shipperId: loads.shipperId,
+          catalystId: loads.catalystId,
+          loadNumber: loads.loadNumber,
+        }).from(loads).where(eq(loads.id, input.loadId)).limit(1);
+
+        if (load) {
+          const loadNum = load.loadNumber || `LD-${input.loadId}`;
+          const partyIds = [load.shipperId, load.catalystId].filter(Boolean) as number[];
+          for (const pid of partyIds) {
+            if (notifiedUserIds.has(pid) || pid === Number(userId)) continue;
+            lookupAndNotify(pid, {
+              type: "cargo_exception",
+              loadNumber: loadNum,
+              exceptionType: "SOS_EMERGENCY",
+              loadId: input.loadId,
+              description: `🚨 SOS from ${driverName} on ${loadNum} at ${coordsStr}. Immediate attention required.`,
+            });
+            notifiedUserIds.add(pid);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[SOS] Notification dispatch error:", e);
+    }
+
+    // 4. WebSocket broadcast — real-time alert to all safety/dispatch channels
+    try {
+      const { emitSafetyIncident } = await import("../_core/websocket");
+      emitSafetyIncident(String(companyId || ""), {
+        incidentId: String(alert.id),
+        type: "sos",
+        severity: "critical",
+        driverId: String(userId),
+        location: { lat: input.latitude, lng: input.longitude },
+        description: `SOS from ${driverName}${input.loadId ? ` on Load #${input.loadId}` : ""}: ${input.message || "Emergency assistance requested"}`,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.error("[SOS] WebSocket broadcast error:", e);
+    }
+
+    console.log(`[SOS] 🚨 Alert #${alert.id} from ${driverName} (userId=${userId}) at ${coordsStr} — ${notifiedUserIds.size} people notified`);
+
+    return {
+      success: true,
+      alertId: alert.id,
+      notifiedCount: notifiedUserIds.size,
+      message: `SOS alert broadcast. ${notifiedUserIds.size} emergency contacts notified.`,
+    };
   }),
 
   // Create safety alert (speeding, harsh braking, etc.)

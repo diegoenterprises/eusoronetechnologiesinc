@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function AdminTelemetry() {
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState("overview");
 
   const { data: fleetLocations, isLoading: fleetLoading, refetch } = (trpc as any).telemetry.getFleetLocations.useQuery(
@@ -173,6 +175,7 @@ export default function AdminTelemetry() {
                         radius: g.radiusMeters ?? undefined,
                       })) || []}
                       height="500px"
+                      darkMode={theme === "dark"}
                     />
                   )}
                 </CardContent>

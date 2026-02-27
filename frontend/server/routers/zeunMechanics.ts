@@ -22,7 +22,7 @@ import {
   vehicles,
 } from "../../drizzle/schema";
 
-const issueCategoryEnum = z.enum(["ENGINE", "BRAKES", "TRANSMISSION", "ELECTRICAL", "TIRES", "FUEL_SYSTEM", "COOLING", "EXHAUST", "STEERING", "SUSPENSION", "HVAC", "OTHER"]);
+const issueCategoryEnum = z.enum(["ENGINE", "BRAKES", "TRANSMISSION", "ELECTRICAL", "TIRES", "FUEL_SYSTEM", "COOLING", "EXHAUST", "STEERING", "SUSPENSION", "HVAC", "LIGHTING", "SIGNAGE", "COMMUNICATIONS", "HEIGHT_POLE", "OTHER"]);
 const severityEnum = z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
 const statusEnum = z.enum(["REPORTED", "DIAGNOSED", "ACKNOWLEDGED", "EN_ROUTE_TO_SHOP", "AT_SHOP", "UNDER_REPAIR", "WAITING_PARTS", "RESOLVED", "CANCELLED"]);
 
@@ -69,6 +69,43 @@ const SYMPTOM_PATTERNS: Record<string, { keywords: string[]; likelyIssues: Array
       { issue: "DEF quality issue", probability: 0.30, severity: "HIGH" },
       { issue: "DEF doser clogged", probability: 0.25, severity: "HIGH" },
       { issue: "NOx sensor failure", probability: 0.20, severity: "HIGH" },
+    ],
+  },
+  // Escort vehicle-specific symptom patterns
+  BEACON_FAILURE: {
+    keywords: ["beacon", "strobe", "amber light", "warning light", "led bar", "roof light", "flasher"],
+    likelyIssues: [
+      { issue: "Amber beacon bulb/LED failure", probability: 0.35, severity: "HIGH" },
+      { issue: "Strobe controller malfunction", probability: 0.25, severity: "HIGH" },
+      { issue: "Wiring short in light bar", probability: 0.20, severity: "MEDIUM" },
+      { issue: "Relay or fuse blown", probability: 0.15, severity: "MEDIUM" },
+    ],
+  },
+  SIGNAGE_ISSUE: {
+    keywords: ["sign", "oversize", "banner", "flag", "reflective", "magnetic", "wide load"],
+    likelyIssues: [
+      { issue: "Oversize load sign bracket failure", probability: 0.30, severity: "HIGH" },
+      { issue: "Flag/banner torn or missing", probability: 0.25, severity: "MEDIUM" },
+      { issue: "Magnetic mount not holding", probability: 0.25, severity: "MEDIUM" },
+      { issue: "Reflective tape degraded", probability: 0.15, severity: "LOW" },
+    ],
+  },
+  RADIO_COMMS: {
+    keywords: ["radio", "cb", "two-way", "antenna", "transmission", "static", "comms", "bluetooth", "gps tracker"],
+    likelyIssues: [
+      { issue: "CB radio transceiver failure", probability: 0.30, severity: "HIGH" },
+      { issue: "Antenna connection loose or broken", probability: 0.25, severity: "MEDIUM" },
+      { issue: "Two-way radio battery dead", probability: 0.20, severity: "MEDIUM" },
+      { issue: "GPS tracker power loss", probability: 0.15, severity: "HIGH" },
+    ],
+  },
+  HEIGHT_POLE_ISSUE: {
+    keywords: ["height pole", "pole", "extend", "stuck", "measurement", "mount", "quick-release", "bent"],
+    likelyIssues: [
+      { issue: "Height pole extension mechanism jammed", probability: 0.30, severity: "HIGH" },
+      { issue: "Pole mount cracked or broken", probability: 0.25, severity: "CRITICAL" },
+      { issue: "Measurement markings worn/unreadable", probability: 0.20, severity: "MEDIUM" },
+      { issue: "Quick-release latch failure", probability: 0.15, severity: "MEDIUM" },
     ],
   },
 };
