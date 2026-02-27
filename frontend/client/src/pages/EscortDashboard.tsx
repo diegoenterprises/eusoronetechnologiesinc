@@ -15,12 +15,18 @@ import {
   Clock, CheckCircle, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function EscortDashboard() {
   const statsQuery = (trpc as any).escorts.getDashboardStats.useQuery();
   const activeJobsQuery = (trpc as any).escorts.getActiveJobs.useQuery();
   const upcomingQuery = (trpc as any).escorts.getUpcomingJobs.useQuery({ limit: 5 });
   const certificationsQuery = (trpc as any).escorts.getCertificationStatus.useQuery();
+  const availabilityQuery = (trpc as any).escorts.getAvailability.useQuery();
+  const updateAvailabilityMutation = (trpc as any).escorts.updateAvailability.useMutation({
+    onSuccess: () => { toast.success("Availability updated"); availabilityQuery.refetch(); },
+    onError: (error: any) => toast.error("Failed to update", { description: error.message }),
+  });
 
   const stats = statsQuery.data;
 
@@ -109,7 +115,7 @@ export default function EscortDashboard() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Calendar className="w-5 h-5 text-yellow-400" />Upcoming Jobs</CardTitle></CardHeader>
           <CardContent className="p-0">
@@ -123,13 +129,40 @@ export default function EscortDashboard() {
                   <div key={job.id} className="p-3 flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="text-white font-medium">#{job.jobNumber}</p>
+                        <p className="text-white font-medium">#{job.loadNumber}</p>
                         <Badge className={cn("border-0 text-xs", job.position === "lead" ? "bg-blue-500/20 text-blue-400" : "bg-purple-500/20 text-purple-400")}>{job.position}</Badge>
                       </div>
                       <p className="text-xs text-slate-500">{job.origin} → {job.destination}</p>
-                      <p className="text-xs text-slate-500 flex items-center gap-1"><Clock className="w-3 h-3" />{job.startDate} @ {job.startTime}</p>
+                      {job.scheduledDate && <p className="text-xs text-slate-500 flex items-center gap-1"><Clock className="w-3 h-3" />{job.scheduledDate}</p>}
                     </div>
                     <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${job.pay}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-400" />My Availability</CardTitle></CardHeader>
+          <CardContent>
+            {availabilityQuery.isLoading ? (
+              <div className="space-y-2">{Array(7).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-9 rounded-lg" />)}</div>
+            ) : (
+              <div className="space-y-1.5">
+                {(availabilityQuery.data as any)?.map((day: any) => (
+                  <div
+                    key={day.dayOfWeek}
+                    className={cn(
+                      "p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-colors",
+                      day.available ? "bg-green-500/10 border-green-500/30 hover:bg-green-500/20" : "bg-slate-700/30 border-slate-600/30 hover:bg-slate-700/50"
+                    )}
+                    onClick={() => updateAvailabilityMutation.mutate({ dayOfWeek: day.dayOfWeek, available: !day.available })}
+                  >
+                    <span className="text-white font-medium text-sm">{day.dayName}</span>
+                    <Badge className={cn("border-0 text-xs", day.available ? "bg-green-500/20 text-green-400" : "bg-slate-500/20 text-slate-400")}>
+                      {day.available ? "Available" : "Unavailable"}
+                    </Badge>
                   </div>
                 ))}
               </div>

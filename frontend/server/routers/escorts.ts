@@ -598,14 +598,45 @@ export const escortsRouter = router({
       } catch { return []; }
     }),
 
-  getAvailability: protectedProcedure.query(async () => {
+  getAvailability: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return days.map((dayName, i) => ({ dayOfWeek: i, dayName, available: i >= 1 && i <= 5 }));
+    const defaults = days.map((dayName, i) => ({ dayOfWeek: i, dayName, available: i >= 1 && i <= 5 }));
+    if (!db) return defaults;
+    try {
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) return defaults;
+      const [user] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
+      if (!user?.metadata) return defaults;
+      const meta = typeof user.metadata === 'string' ? JSON.parse(user.metadata) : user.metadata;
+      const avail = meta?.escortAvailability;
+      if (!avail || typeof avail !== 'object') return defaults;
+      return days.map((dayName, i) => ({
+        dayOfWeek: i, dayName,
+        available: avail[String(i)] !== undefined ? Boolean(avail[String(i)]) : (i >= 1 && i <= 5),
+      }));
+    } catch { return defaults; }
   }),
 
   updateAvailability: protectedProcedure
     .input(z.object({ dayOfWeek: z.number(), available: z.boolean() }))
-    .mutation(async ({ input }) => ({ success: true, dayOfWeek: input.dayOfWeek, available: input.available, updatedAt: new Date().toISOString() })),
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) throw new Error("Auth required");
+      // Read current metadata, merge availability, write back
+      const [user] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
+      let meta: any = {};
+      try { meta = user?.metadata ? (typeof user.metadata === 'string' ? JSON.parse(user.metadata) : user.metadata) : {}; } catch { meta = {}; }
+      if (!meta.escortAvailability) {
+        // Initialize with Mon-Fri defaults
+        meta.escortAvailability = { '0': false, '1': true, '2': true, '3': true, '4': true, '5': true, '6': false };
+      }
+      meta.escortAvailability[String(input.dayOfWeek)] = input.available;
+      await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
+      return { success: true, dayOfWeek: input.dayOfWeek, available: input.available, updatedAt: new Date().toISOString() };
+    }),
 
   getUpcomingJobsLegacy: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
