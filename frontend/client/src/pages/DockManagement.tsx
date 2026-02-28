@@ -14,6 +14,7 @@ import {
   Clock, Truck, Package, Wrench, Play, Pause, RotateCcw,
   Plus, Settings, BarChart3, ArrowRight, Fuel, Droplets,
   Wifi, WifiOff, FileText, Zap, Database, Radio,
+  Cylinder, Flame, FlaskConical, Snowflake,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +45,7 @@ export default function DockManagement() {
     productName: "",
     quantity: "",
     destination: "",
-    bolType: "tanker" as "straight" | "order" | "hazmat" | "tanker" | "food_grade",
+    bolType: "petroleum" as "petroleum" | "crude" | "hazmat" | "chemical" | "lpg" | "food_grade",
     unNumber: "",
     trailerNumber: "",
     sealNumber: "",
@@ -589,17 +590,19 @@ export default function DockManagement() {
             {/* BOL Type Selector */}
             <div className="flex gap-2 flex-wrap">
               {[
-                { value: "tanker", label: "Tanker", icon: "🛢️" },
-                { value: "hazmat", label: "Hazmat", icon: "☢️" },
-                { value: "straight", label: "Standard", icon: "📦" },
-                { value: "food_grade", label: "Food Grade", icon: "🥛" },
+                { value: "petroleum", label: "Petroleum", Icon: Fuel },
+                { value: "crude", label: "Crude Oil", Icon: Cylinder },
+                { value: "hazmat", label: "Hazmat", Icon: AlertTriangle },
+                { value: "chemical", label: "Chemical", Icon: FlaskConical },
+                { value: "lpg", label: "LPG / Gas", Icon: Flame },
+                { value: "food_grade", label: "Food Grade", Icon: Snowflake },
               ].map(t => (
                 <button key={t.value} onClick={() => setBolForm(p => ({ ...p, bolType: t.value as any }))}
-                  className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
+                  className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border transition-all flex items-center gap-1.5",
                     bolForm.bolType === t.value 
                       ? "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-[#1473FF]/30 text-[#1473FF]" 
                       : "bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] text-slate-600 dark:text-slate-400")}>
-                  {t.icon} {t.label}
+                  <t.Icon className="w-3.5 h-3.5" /> {t.label}
                 </button>
               ))}
             </div>
@@ -638,7 +641,7 @@ export default function DockManagement() {
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Seal Number</label>
                 <Input value={bolForm.sealNumber} onChange={e => setBolForm(p => ({ ...p, sealNumber: e.target.value }))} placeholder="e.g. SEAL-5678" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
-              {bolForm.bolType === "hazmat" && (
+              {(bolForm.bolType === "hazmat" || bolForm.bolType === "chemical") && (
                 <div className="col-span-2">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">UN Number <span className="text-amber-500">(AI will auto-populate hazmat info)</span></label>
                   <Input value={bolForm.unNumber} onChange={e => setBolForm(p => ({ ...p, unNumber: e.target.value }))} placeholder="e.g. UN1203 (Gasoline)" className="rounded-xl bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30" />
@@ -675,14 +678,14 @@ export default function DockManagement() {
                       productType: bolForm.productType || bolForm.productName,
                       productName: bolForm.productName,
                       quantity: Number(bolForm.quantity),
-                      bolType: bolForm.bolType,
+                      bolType: bolForm.bolType === "crude" || bolForm.bolType === "lpg" ? "tanker" : bolForm.bolType === "chemical" ? "hazmat" : bolForm.bolType === "petroleum" ? "tanker" : bolForm.bolType,
                       unNumber: bolForm.unNumber || undefined,
                       trailerNumber: bolForm.trailerNumber || undefined,
                       sealNumber: bolForm.sealNumber || undefined,
                       freightCharges: bolForm.freightCharges,
                       poNumber: bolForm.poNumber || undefined,
                       specialInstructions: bolForm.specialInstructions || undefined,
-                      tankerInfo: bolForm.bolType === "tanker" ? {
+                      tankerInfo: ["petroleum", "crude", "lpg"].includes(bolForm.bolType) ? {
                         productType: bolForm.productType || bolForm.productName,
                         productName: bolForm.productName,
                         quantityGallons: Number(bolForm.quantity),
