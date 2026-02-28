@@ -154,6 +154,16 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     minSize: { w: 6, h: 6 }
   },
   {
+    id: 'stripe_connect',
+    name: 'Stripe Connect',
+    description: 'Payout account status, onboarding & management',
+    icon: Wallet,
+    category: 'financial',
+    roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
+    defaultSize: { w: 4, h: 4 },
+    minSize: { w: 3, h: 3 }
+  },
+  {
     id: 'spectra_match',
     name: 'SPECTRA-MATCH™',
     description: 'AI-powered crude oil & fuel product identification',

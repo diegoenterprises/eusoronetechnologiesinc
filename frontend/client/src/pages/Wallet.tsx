@@ -28,7 +28,7 @@ import {
   Smartphone, X, ArrowRight, Banknote, FileText, Receipt,
   Download, Search, Calendar, Filter, CheckCircle,
   CircleDollarSign, MailCheck, BrainCircuit, Scale, Droplets,
-  ShieldCheck, Fuel,
+  ShieldCheck, Fuel, ExternalLink, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DatePicker from "@/components/DatePicker";
@@ -76,6 +76,12 @@ export default function Wallet() {
     { periodStart: walletReconPeriod.start, periodEnd: walletReconPeriod.end },
     { enabled: activeTab === "eusoticket" && etSubTab === "recon" }
   );
+
+  // Stripe Connect payout account
+  const connectAccountQuery = _t.stripe?.getConnectAccount?.useQuery(undefined, { retry: false, staleTime: 60000 });
+  const createConnectAccountMutation = _t.stripe?.createConnectAccount?.useMutation();
+  const createConnectOnboardingLinkMutation = _t.stripe?.createConnectOnboardingLink?.useMutation();
+  const [connectLoading, setConnectLoading] = useState(false);
 
   const balanceQuery = _t.wallet.getBalance.useQuery();
   const transactionsQuery = _t.wallet.getTransactions.useQuery({ limit: 50 });
@@ -184,6 +190,32 @@ export default function Wallet() {
     } catch (err: any) {
       toast.error(err?.message || "Escrow release failed. Please try again.");
     }
+  };
+
+  const handleStartConnect = async () => {
+    setConnectLoading(true);
+    try {
+      let accountId = connectAccountQuery?.data?.accountId;
+      if (!accountId) {
+        const result = await createConnectAccountMutation.mutateAsync({ businessType: "individual" });
+        accountId = result.accountId;
+      }
+      if (accountId) {
+        const link = await createConnectOnboardingLinkMutation.mutateAsync({ accountId });
+        if (link?.url) { window.location.href = link.url; return; }
+      }
+      toast.error("Could not start Stripe Connect setup");
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("platform profile") || msg.includes("questionnaire") || msg.includes("complete your")) {
+        toast.error("Stripe Connect platform setup required", {
+          description: "The platform owner must complete the Connect questionnaire in the Stripe Dashboard before connected accounts can be created.",
+          duration: 10000,
+        });
+      } else {
+        toast.error(msg || "Stripe Connect setup failed");
+      }
+    } finally { setConnectLoading(false); }
   };
 
   const handlePayInvoice = (invoiceId: string) => {
@@ -684,6 +716,87 @@ export default function Wallet() {
       {/* ============================================================ */}
       {activeTab === "overview" && (
         <div className="space-y-6">
+          {/* ── Stripe Connect Payout Status ── */}
+          {!connectAccountQuery?.isLoading && (
+            <Card className={cn("rounded-xl border", 
+              connectAccountQuery?.data?.chargesEnabled && connectAccountQuery?.data?.payoutsEnabled
+                ? isLight ? "bg-emerald-50 border-emerald-200" : "bg-emerald-500/5 border-emerald-500/20"
+                : connectAccountQuery?.data?.hasAccount && connectAccountQuery?.data?.detailsSubmitted
+                ? isLight ? "bg-amber-50 border-amber-200" : "bg-amber-500/5 border-amber-500/20"
+                : isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/5 border-blue-500/20"
+            )}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={cn("p-2.5 rounded-xl",
+                      connectAccountQuery?.data?.chargesEnabled ? "bg-emerald-500/15" :
+                      connectAccountQuery?.data?.hasAccount && connectAccountQuery?.data?.detailsSubmitted ? "bg-amber-500/15" :
+                      connectAccountQuery?.data?.hasAccount ? "bg-orange-500/15" : "bg-blue-500/15"
+                    )}>
+                      <Landmark className={cn("w-5 h-5",
+                        connectAccountQuery?.data?.chargesEnabled ? "text-emerald-500" :
+                        connectAccountQuery?.data?.hasAccount && connectAccountQuery?.data?.detailsSubmitted ? "text-amber-500" :
+                        connectAccountQuery?.data?.hasAccount ? "text-orange-500" : "text-blue-500"
+                      )} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className={cn("font-semibold text-sm", isLight ? "text-slate-900" : "text-white")}>Payout Account</p>
+                        <Badge className={cn("border-0 text-[10px] font-bold",
+                          connectAccountQuery?.data?.chargesEnabled && connectAccountQuery?.data?.payoutsEnabled
+                            ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                            : connectAccountQuery?.data?.hasAccount && connectAccountQuery?.data?.detailsSubmitted
+                            ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                            : connectAccountQuery?.data?.hasAccount
+                            ? "bg-orange-500/20 text-orange-600 dark:text-orange-400"
+                            : "bg-blue-500/20 text-blue-600 dark:text-blue-400"
+                        )}>
+                          {connectAccountQuery?.data?.chargesEnabled && connectAccountQuery?.data?.payoutsEnabled
+                            ? "Active"
+                            : connectAccountQuery?.data?.hasAccount && connectAccountQuery?.data?.detailsSubmitted
+                            ? "Under Review"
+                            : connectAccountQuery?.data?.hasAccount
+                            ? "Incomplete"
+                            : "Not Set Up"}
+                        </Badge>
+                      </div>
+                      <p className={cn("text-xs mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>
+                        {connectAccountQuery?.data?.chargesEnabled && connectAccountQuery?.data?.payoutsEnabled
+                          ? "Stripe Connect is active — you can send and receive payments"
+                          : connectAccountQuery?.data?.hasAccount && connectAccountQuery?.data?.detailsSubmitted
+                          ? "Stripe is verifying your information (1-2 business days)"
+                          : connectAccountQuery?.data?.hasAccount
+                          ? "Additional information needed to activate payouts"
+                          : "Connect your bank account to receive earnings and payouts"}
+                      </p>
+                    </div>
+                  </div>
+                  {!(connectAccountQuery?.data?.chargesEnabled && connectAccountQuery?.data?.payoutsEnabled) && (
+                    <Button
+                      size="sm"
+                      onClick={handleStartConnect}
+                      disabled={connectLoading}
+                      className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-xs hover:opacity-90 border-0 shrink-0"
+                    >
+                      {connectLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <ExternalLink className="w-3.5 h-3.5 mr-1.5" />}
+                      {connectAccountQuery?.data?.hasAccount ? "Continue Setup" : "Set Up Payouts"}
+                    </Button>
+                  )}
+                  {connectAccountQuery?.data?.chargesEnabled && connectAccountQuery?.data?.payoutsEnabled && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => window.open("/settings?tab=billing", "_self")}
+                      className={cn("text-xs shrink-0", isLight ? "text-emerald-700 hover:bg-emerald-100" : "text-emerald-400 hover:bg-emerald-500/10")}
+                    >
+                      <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Manage
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[

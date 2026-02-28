@@ -526,7 +526,7 @@ export const quotesRouter = router({
         const { predictRate } = await import("../services/ai/forecastEngine");
         aiRate = predictRate([], input.pricing.total, {
           season: new Date().getMonth() + 1,
-          distance: input.distance || undefined,
+          distance: undefined,
         });
       } catch {}
 

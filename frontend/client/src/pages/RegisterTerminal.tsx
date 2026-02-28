@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
 import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import StripeConnectStep from "@/components/registration/StripeConnectStep";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { 
   Building2, User, FileText, Shield, MapPin,
-  CheckCircle, AlertCircle, Mail, Phone, Fuel, Database, Lock, ShieldCheck
+  CheckCircle, AlertCircle, Mail, Phone, Fuel, Database, Lock, ShieldCheck, Landmark
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -65,7 +66,10 @@ interface TerminalFormData {
   // Step 7: Compliance Integrations
   complianceIds: ComplianceIds;
   
-  // Step 8: Terms
+  // Step 8: Payment Setup
+  businessType: "individual" | "company" | "";
+  
+  // Step 9: Terms
   acceptTerms: boolean;
   acceptPrivacy: boolean;
   acceptCompliance: boolean;
@@ -100,6 +104,7 @@ const initialFormData: TerminalFormData = {
   password: "",
   confirmPassword: "",
   complianceIds: emptyComplianceIds,
+  businessType: "",
   acceptTerms: false,
   acceptPrivacy: false,
   acceptCompliance: false,
@@ -181,6 +186,10 @@ export default function RegisterTerminal() {
         Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
       ) || undefined,
     });
+
+    if (formData.businessType) {
+      try { localStorage.setItem("eusotrip_stripe_biz_type", formData.businessType); } catch {}
+    }
   };
 
   const steps: WizardStep[] = [
@@ -625,6 +634,26 @@ export default function RegisterTerminal() {
           onChange={(ids) => updateFormData({ complianceIds: ids })}
         />
       ),
+    },
+    {
+      id: "payment",
+      title: "Payment Setup",
+      description: "How you'll get paid on EusoTrip",
+      icon: <Landmark className="w-5 h-5" />,
+      component: (
+        <StripeConnectStep
+          businessType={formData.businessType}
+          onBusinessTypeChange={(t) => updateFormData({ businessType: t })}
+          role="TERMINAL_MANAGER"
+        />
+      ),
+      validate: () => {
+        if (!formData.businessType) {
+          toast.error("Please select how you'll receive payments");
+          return false;
+        }
+        return true;
+      },
     },
     {
       id: "terms",

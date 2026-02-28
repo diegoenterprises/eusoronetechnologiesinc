@@ -123,24 +123,89 @@ async function startServer() {
 
       console.log(`[Stripe Webhook] ${event.type}`);
 
+      // ── Wallet balance helpers ──
+      const { getDb: _getDb } = await import("../db");
+      const { wallets: _walletsT, walletTransactions: _wtT, users: _usersT } = await import("../../drizzle/schema");
+      const { eq: _eq, sql: _sql } = await import("drizzle-orm");
+
+      /** Credit a wallet by stripeConnectId — adds to availableBalance & totalReceived, records transaction */
+      const creditWalletByConnect = async (connectId: string, amountCents: number, desc: string, stripeId: string, type: "earnings" | "deposit" | "bonus" = "earnings") => {
+        const _db = await _getDb();
+        if (!_db || !connectId || amountCents <= 0) return;
+        const amt = (amountCents / 100).toFixed(2);
+        const [wallet] = await _db.select().from(_walletsT).where(_eq(_walletsT.stripeConnectId, connectId)).limit(1);
+        if (!wallet) { console.warn(`[Wallet] No wallet for Connect ${connectId}`); return; }
+        await _db.execute(_sql`UPDATE wallets SET availableBalance = availableBalance + ${amt}, totalReceived = totalReceived + ${amt} WHERE id = ${wallet.id}`);
+        await _db.insert(_wtT).values({ walletId: wallet.id, type, amount: amt, fee: "0", netAmount: amt, currency: "USD", status: "completed", description: desc, stripeTransferId: stripeId, completedAt: new Date() });
+        console.log(`[Wallet] Credited $${amt} to wallet ${wallet.id} (${connectId})`);
+      };
+
+      /** Credit a wallet by userId */
+      const creditWalletByUser = async (userId: number, amountCents: number, desc: string, stripeId: string, type: "earnings" | "deposit" | "bonus" = "earnings", loadId?: number, loadNumber?: string) => {
+        const _db = await _getDb();
+        if (!_db || !userId || amountCents <= 0) return;
+        const amt = (amountCents / 100).toFixed(2);
+        let [wallet] = await _db.select().from(_walletsT).where(_eq(_walletsT.userId, userId)).limit(1);
+        if (!wallet) {
+          try { await _db.insert(_walletsT).values({ userId, availableBalance: "0", pendingBalance: "0", reservedBalance: "0", currency: "USD" }); } catch {}
+          [wallet] = await _db.select().from(_walletsT).where(_eq(_walletsT.userId, userId)).limit(1);
+        }
+        if (!wallet) return;
+        await _db.execute(_sql`UPDATE wallets SET availableBalance = availableBalance + ${amt}, totalReceived = totalReceived + ${amt} WHERE id = ${wallet.id}`);
+        await _db.insert(_wtT).values({ walletId: wallet.id, type, amount: amt, fee: "0", netAmount: amt, currency: "USD", status: "completed", description: desc, stripePaymentId: stripeId, loadId: loadId || null, loadNumber: loadNumber || null, completedAt: new Date() });
+        console.log(`[Wallet] Credited $${amt} to wallet ${wallet.id} (user ${userId})`);
+      };
+
+      /** Debit a wallet by stripeConnectId — subtracts from availableBalance, increases totalSpent, records payout transaction */
+      const debitWalletByConnect = async (connectId: string, amountCents: number, desc: string, stripeId: string) => {
+        const _db = await _getDb();
+        if (!_db || !connectId || amountCents <= 0) return;
+        const amt = (amountCents / 100).toFixed(2);
+        const [wallet] = await _db.select().from(_walletsT).where(_eq(_walletsT.stripeConnectId, connectId)).limit(1);
+        if (!wallet) return;
+        await _db.execute(_sql`UPDATE wallets SET availableBalance = GREATEST(availableBalance - ${amt}, 0), totalSpent = totalSpent + ${amt}, lastWithdrawalAt = NOW() WHERE id = ${wallet.id}`);
+        await _db.insert(_wtT).values({ walletId: wallet.id, type: "payout", amount: amt, fee: "0", netAmount: amt, currency: "USD", status: "completed", description: desc, stripeTransferId: stripeId, completedAt: new Date() });
+        console.log(`[Wallet] Debited $${amt} from wallet ${wallet.id} (${connectId})`);
+      };
+
+      /** Reverse a failed debit — re-credit the wallet */
+      const reverseDebitByConnect = async (connectId: string, amountCents: number, desc: string) => {
+        const _db = await _getDb();
+        if (!_db || !connectId || amountCents <= 0) return;
+        const amt = (amountCents / 100).toFixed(2);
+        const [wallet] = await _db.select().from(_walletsT).where(_eq(_walletsT.stripeConnectId, connectId)).limit(1);
+        if (!wallet) return;
+        await _db.execute(_sql`UPDATE wallets SET availableBalance = availableBalance + ${amt}, totalSpent = GREATEST(totalSpent - ${amt}, 0) WHERE id = ${wallet.id}`);
+        console.log(`[Wallet] Reversed debit $${amt} on wallet ${wallet.id} (${connectId})`);
+      };
+
       switch (event.type) {
         case "checkout.session.completed": {
           const session = event.data.object;
-          console.log(`[Stripe Webhook] Checkout completed: ${session.id}, payment: ${session.payment_status}`);
-          // Record payment in database
-          const { getDb } = await import("../db");
-          const db = await getDb();
-          if (db && session.metadata?.loadId) {
+          const amountCents = session.amount_total || 0;
+          console.log(`[Stripe Webhook] Checkout completed: ${session.id}, payment: ${session.payment_status}, amount: $${amountCents / 100}`);
+          const _db1 = await _getDb();
+          if (_db1 && session.metadata?.loadId) {
             try {
-              await db.execute(
+              await _db1.execute(
                 `INSERT INTO payments (payer_id, amount, currency, payment_type, status, stripe_payment_id, load_id, created_at)
-                 VALUES (${session.metadata.userId || 0}, '${(session.amount_total || 0) / 100}', '${session.currency || "usd"}', 
+                 VALUES (${session.metadata.userId || 0}, '${amountCents / 100}', '${session.currency || "usd"}', 
                          '${session.metadata.paymentType || "load_payment"}', 'succeeded', '${session.payment_intent || session.id}', 
                          ${session.metadata.loadId}, NOW())`
               );
-            } catch (e) {
-              console.error("[Stripe Webhook] DB insert error:", e);
-            }
+            } catch (e) { console.error("[Stripe Webhook] DB insert error:", e); }
+          }
+          // Credit recipient wallet if metadata contains recipientUserId
+          if (session.metadata?.recipientUserId && amountCents > 0) {
+            try {
+              await creditWalletByUser(
+                Number(session.metadata.recipientUserId), amountCents,
+                `Payment received — Load #${session.metadata.loadNumber || session.metadata.loadId || "N/A"}`,
+                session.payment_intent || session.id, "earnings",
+                session.metadata.loadId ? Number(session.metadata.loadId) : undefined,
+                session.metadata.loadNumber || undefined
+              );
+            } catch (e) { console.warn("[Stripe Webhook] Checkout wallet credit error:", e); }
           }
           break;
         }
@@ -162,53 +227,77 @@ async function startServer() {
           break;
         }
         case "account.updated": {
-          // Stripe Connect account updated — sync status to wallets table
+          // Stripe Connect account updated — sync status to wallets table + notify user
           const account = event.data.object;
-          console.log(`[Stripe Webhook] Connect account updated: ${account.id}, charges_enabled: ${account.charges_enabled}`);
+          console.log(`[Stripe Webhook] Connect account updated: ${account.id}, charges_enabled: ${account.charges_enabled}, payouts_enabled: ${account.payouts_enabled}`);
           try {
-            const { getDb: getDb2 } = await import("../db");
-            const { wallets: walletsTable, users: usersTable } = await import("../../drizzle/schema");
-            const { eq: eq2 } = await import("drizzle-orm");
-            const db2 = await getDb2();
+            const db2 = await _getDb();
             if (db2) {
               const status = account.charges_enabled ? "active" : "pending";
-              await db2.update(walletsTable).set({ stripeAccountStatus: status }).where(eq2(walletsTable.stripeConnectId, account.id));
+              await db2.update(_walletsT).set({ stripeAccountStatus: status }).where(_eq(_walletsT.stripeConnectId, account.id));
               console.log(`[Stripe Webhook] Synced Connect status '${status}' for ${account.id}`);
+
+              // Notify user when their account becomes fully active
+              if (account.charges_enabled && account.payouts_enabled) {
+                try {
+                  const [connUser] = await db2.select({ id: _usersT.id }).from(_usersT).where(_eq(_usersT.stripeConnectId, account.id)).limit(1);
+                  if (connUser) {
+                    const { lookupAndNotify } = await import("../services/notifications");
+                    try { lookupAndNotify(connUser.id, { type: "payment_received", amount: 0, loadNumber: "Stripe Connect activated" } as any); } catch {}
+                    console.log(`[Stripe Webhook] Notified user ${connUser.id} — Connect account active`);
+                  }
+                } catch {}
+              }
             }
           } catch (e) { console.warn("[Stripe Webhook] Connect sync error:", e); }
           break;
         }
         case "transfer.created": {
+          // Money transferred to a connected account — credit their wallet
           const transfer = event.data.object;
-          console.log(`[Stripe Webhook] Transfer created: ${transfer.id}, amount: ${transfer.amount}`);
+          const transferAmt = transfer.amount || 0;
+          console.log(`[Stripe Webhook] Transfer created: ${transfer.id}, amount: $${transferAmt / 100}, destination: ${transfer.destination}`);
+          if (transfer.destination && transferAmt > 0) {
+            try {
+              const desc = transfer.description || `Platform transfer ${transfer.id}`;
+              await creditWalletByConnect(transfer.destination, transferAmt, desc, transfer.id, "earnings");
+            } catch (e) { console.warn("[Stripe Webhook] Transfer wallet credit error:", e); }
+          }
           break;
         }
         case "payout.paid": {
+          // Money paid out from connected account to their bank — debit wallet
           const payout = event.data.object;
-          console.log(`[Stripe Webhook] Payout completed: ${payout.id}, amount: $${(payout.amount || 0) / 100}`);
-          // Update wallet transaction status to completed
+          const payoutAmt = payout.amount || 0;
+          const payoutAccount = payout.destination?.account || event.account || "";
+          console.log(`[Stripe Webhook] Payout completed: ${payout.id}, amount: $${payoutAmt / 100}, account: ${payoutAccount}`);
           try {
-            const { getDb: getDb3 } = await import("../db");
-            const { walletTransactions: wtTable } = await import("../../drizzle/schema");
-            const { sql: sql2 } = await import("drizzle-orm");
-            const db3 = await getDb3();
+            const db3 = await _getDb();
             if (db3 && payout.id) {
-              await db3.execute(sql2`UPDATE wallet_transactions SET status = 'completed', completed_at = NOW() WHERE description LIKE ${'%' + payout.id + '%'} AND status = 'processing'`);
+              await db3.execute(_sql`UPDATE wallet_transactions SET status = 'completed', completed_at = NOW() WHERE description LIKE ${'%' + payout.id + '%'} AND status = 'processing'`);
             }
-          } catch (e) { console.warn("[Stripe Webhook] Payout sync error:", e); }
+          } catch (e) { console.warn("[Stripe Webhook] Payout tx sync error:", e); }
+          // Debit wallet balance
+          if (payoutAccount && payoutAmt > 0) {
+            try { await debitWalletByConnect(payoutAccount, payoutAmt, `Bank payout — ${payout.id}`, payout.id); } catch (e) { console.warn("[Stripe Webhook] Payout wallet debit error:", e); }
+          }
           break;
         }
         case "payout.failed": {
           const payout = event.data.object;
+          const failedAmt = payout.amount || 0;
+          const failedAccount = payout.destination?.account || event.account || "";
           console.error(`[Stripe Webhook] Payout failed: ${payout.id}, reason: ${payout.failure_message}`);
           try {
-            const { getDb: getDb4 } = await import("../db");
-            const { sql: sql3 } = await import("drizzle-orm");
-            const db4 = await getDb4();
+            const db4 = await _getDb();
             if (db4 && payout.id) {
-              await db4.execute(sql3`UPDATE wallet_transactions SET status = 'failed' WHERE description LIKE ${'%' + payout.id + '%'} AND status = 'processing'`);
+              await db4.execute(_sql`UPDATE wallet_transactions SET status = 'failed' WHERE description LIKE ${'%' + payout.id + '%'} AND status = 'processing'`);
             }
           } catch (e) { console.warn("[Stripe Webhook] Payout fail sync error:", e); }
+          // Reverse the debit — money stays in the connected account
+          if (failedAccount && failedAmt > 0) {
+            try { await reverseDebitByConnect(failedAccount, failedAmt, `Payout reversed — ${payout.id}`); } catch (e) { console.warn("[Stripe Webhook] Payout reversal error:", e); }
+          }
           break;
         }
         case "issuing_card.created":
@@ -230,47 +319,56 @@ async function startServer() {
         // Treasury events — escrow fund movements
         case "treasury.inbound_transfer.succeeded": {
           const inbound = event.data.object;
-          console.log(`[Stripe Webhook] Treasury inbound transfer succeeded: ${inbound.id}, amount: $${(inbound.amount || 0) / 100}, FA: ${inbound.financial_account}`);
+          const inboundAmt = inbound.amount || 0;
+          console.log(`[Stripe Webhook] Treasury inbound transfer succeeded: ${inbound.id}, amount: $${inboundAmt / 100}, FA: ${inbound.financial_account}`);
+          // Credit the wallet associated with this financial account
+          if (inbound.financial_account && inboundAmt > 0) {
+            try { await creditWalletByConnect(inbound.financial_account, inboundAmt, `Bank deposit — ${inbound.id}`, inbound.id, "deposit"); } catch (e) { console.warn("[Stripe Webhook] Treasury inbound wallet credit error:", e); }
+          }
           break;
         }
         case "treasury.inbound_transfer.failed": {
           const inbound = event.data.object;
           console.error(`[Stripe Webhook] Treasury inbound transfer failed: ${inbound.id}, reason: ${inbound.failure_details?.code}`);
           try {
-            const { getDb: getDbTi } = await import("../db");
-            const { sql: sqlTi } = await import("drizzle-orm");
-            const dbTi = await getDbTi();
+            const dbTi = await _getDb();
             if (dbTi && inbound.id) {
-              await dbTi.execute(sqlTi`UPDATE wallet_transactions SET status = 'failed' WHERE description LIKE ${'%' + inbound.id + '%'} AND status = 'pending'`);
+              await dbTi.execute(_sql`UPDATE wallet_transactions SET status = 'failed' WHERE description LIKE ${'%' + inbound.id + '%'} AND status = 'pending'`);
             }
           } catch (e) { console.warn("[Stripe Webhook] Treasury inbound fail sync error:", e); }
           break;
         }
         case "treasury.outbound_transfer.posted": {
           const outbound = event.data.object;
-          console.log(`[Stripe Webhook] Treasury outbound transfer posted: ${outbound.id}, amount: $${(outbound.amount || 0) / 100}`);
+          const outAmt = outbound.amount || 0;
+          console.log(`[Stripe Webhook] Treasury outbound transfer posted: ${outbound.id}, amount: $${outAmt / 100}`);
           try {
-            const { getDb: getDbTo } = await import("../db");
-            const { sql: sqlTo } = await import("drizzle-orm");
-            const dbTo = await getDbTo();
+            const dbTo = await _getDb();
             if (dbTo && outbound.id) {
-              await dbTo.execute(sqlTo`UPDATE wallet_transactions SET status = 'completed', completed_at = NOW() WHERE description LIKE ${'%' + outbound.id + '%'} AND status = 'pending'`);
+              await dbTo.execute(_sql`UPDATE wallet_transactions SET status = 'completed', completed_at = NOW() WHERE description LIKE ${'%' + outbound.id + '%'} AND status = 'pending'`);
             }
           } catch (e) { console.warn("[Stripe Webhook] Treasury outbound sync error:", e); }
+          // Debit wallet — money left the platform to bank
+          if (outbound.financial_account && outAmt > 0) {
+            try { await debitWalletByConnect(outbound.financial_account, outAmt, `Bank withdrawal — ${outbound.id}`, outbound.id); } catch (e) { console.warn("[Stripe Webhook] Treasury outbound wallet debit error:", e); }
+          }
           break;
         }
         case "treasury.outbound_transfer.failed":
         case "treasury.outbound_transfer.returned": {
           const outbound = event.data.object;
-          console.error(`[Stripe Webhook] Treasury outbound transfer ${event.type}: ${outbound.id}, amount: $${(outbound.amount || 0) / 100}`);
+          const failAmt = outbound.amount || 0;
+          console.error(`[Stripe Webhook] Treasury outbound transfer ${event.type}: ${outbound.id}, amount: $${failAmt / 100}`);
           try {
-            const { getDb: getDbTof } = await import("../db");
-            const { sql: sqlTof } = await import("drizzle-orm");
-            const dbTof = await getDbTof();
+            const dbTof = await _getDb();
             if (dbTof && outbound.id) {
-              await dbTof.execute(sqlTof`UPDATE wallet_transactions SET status = 'failed' WHERE description LIKE ${'%' + outbound.id + '%'} AND status IN ('pending', 'processing')`);
+              await dbTof.execute(_sql`UPDATE wallet_transactions SET status = 'failed' WHERE description LIKE ${'%' + outbound.id + '%'} AND status IN ('pending', 'processing')`);
             }
           } catch (e) { console.warn("[Stripe Webhook] Treasury outbound fail sync error:", e); }
+          // Reverse the debit — money stays in the account
+          if (outbound.financial_account && failAmt > 0) {
+            try { await reverseDebitByConnect(outbound.financial_account, failAmt, `Withdrawal reversed — ${outbound.id}`); } catch (e) { console.warn("[Stripe Webhook] Treasury outbound reversal error:", e); }
+          }
           break;
         }
         case "treasury.financial_account.features_status_updated": {
@@ -280,7 +378,12 @@ async function startServer() {
         }
         case "treasury.received_credit.succeeded": {
           const credit = event.data.object;
-          console.log(`[Stripe Webhook] Treasury received credit: ${credit.id}, amount: $${(credit.amount || 0) / 100}, FA: ${credit.financial_account}`);
+          const creditAmt = credit.amount || 0;
+          console.log(`[Stripe Webhook] Treasury received credit: ${credit.id}, amount: $${creditAmt / 100}, FA: ${credit.financial_account}`);
+          // Credit wallet — external funds received
+          if (credit.financial_account && creditAmt > 0) {
+            try { await creditWalletByConnect(credit.financial_account, creditAmt, `Received credit — ${credit.id}`, credit.id, "deposit"); } catch (e) { console.warn("[Stripe Webhook] Treasury credit wallet error:", e); }
+          }
           break;
         }
         default:

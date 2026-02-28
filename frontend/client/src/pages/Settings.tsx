@@ -18,7 +18,7 @@ import { getStripe } from "@/lib/stripe";
 import {
   Settings as SettingsIcon, User, Bell, Shield, CreditCard,
   Save, Loader2, Camera, CheckCircle, Plus, Trash2, Star,
-  Lock, Eye, EyeOff, Building2, AlertTriangle, Heart, Phone
+  Lock, Eye, EyeOff, Building2, AlertTriangle, Heart, Phone, Landmark, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -29,16 +29,21 @@ export default function Settings() {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle Stripe setup callback
+  // Handle Stripe setup / Connect onboarding callback
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const setup = params.get("setup");
+    const onboarding = params.get("onboarding");
     if (setup === "success") {
       toast.success("Payment method added successfully");
       setActiveTab("billing");
       window.history.replaceState({}, "", "/settings?tab=billing");
     } else if (setup === "cancelled") {
       toast.info("Payment method setup was cancelled");
+      setActiveTab("billing");
+      window.history.replaceState({}, "", "/settings?tab=billing");
+    } else if (onboarding === "complete") {
+      toast.success("Stripe Connect onboarding submitted! Your account is being verified.");
       setActiveTab("billing");
       window.history.replaceState({}, "", "/settings?tab=billing");
     }
@@ -92,6 +97,40 @@ export default function Settings() {
     retry: false,
     onError: () => {},
   });
+  const connectAccountQuery = (trpc as any).stripe.getConnectAccount.useQuery(undefined, {
+    enabled: activeTab === "billing",
+    retry: false,
+    staleTime: 60000,
+  });
+  const createConnectAccountMutation = (trpc as any).stripe.createConnectAccount.useMutation();
+  const createConnectOnboardingLinkMutation = (trpc as any).stripe.createConnectOnboardingLink.useMutation();
+
+  const [connectLoading, setConnectLoading] = useState(false);
+  const handleStartConnect = async () => {
+    setConnectLoading(true);
+    try {
+      let accountId = connectAccountQuery?.data?.accountId;
+      if (!accountId) {
+        const result = await createConnectAccountMutation.mutateAsync({ businessType: "individual" });
+        accountId = result.accountId;
+      }
+      if (accountId) {
+        const link = await createConnectOnboardingLinkMutation.mutateAsync({ accountId });
+        if (link?.url) { window.location.href = link.url; return; }
+      }
+      toast.error("Could not start Stripe Connect setup");
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("platform profile") || msg.includes("questionnaire") || msg.includes("complete your")) {
+        toast.error("Stripe Connect platform setup required", {
+          description: "The platform owner must complete the Connect questionnaire in the Stripe Dashboard before connected accounts can be created.",
+          duration: 10000,
+        });
+      } else {
+        toast.error(msg || "Stripe Connect setup failed");
+      }
+    } finally { setConnectLoading(false); }
+  };
 
   // --- Mutations ---
   const updateProfileMutation = (trpc as any).users.updateProfile.useMutation({
@@ -544,7 +583,62 @@ export default function Settings() {
         </TabsContent>
 
         {/* ======== BILLING TAB ======== */}
-        <TabsContent value="billing" className="mt-6">
+        <TabsContent value="billing" className="mt-6 space-y-6">
+          {/* ── Stripe Connect Status Card ── */}
+          <Card className={`${cardCls} border-blue-200/50 dark:border-blue-500/20`}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                <Landmark className="w-5 h-5 text-purple-500 dark:text-cyan-400" />Stripe Connect — Payouts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {connectAccountQuery?.isLoading ? (
+                <Skeleton className="h-20 w-full rounded-xl" />
+              ) : connectAccountQuery?.data?.hasAccount ? (
+                <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/40">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2.5 rounded-xl ${connectAccountQuery.data.chargesEnabled ? "bg-emerald-100 dark:bg-emerald-500/15" : "bg-amber-100 dark:bg-amber-500/15"}`}>
+                      <Landmark className={`w-5 h-5 ${connectAccountQuery.data.chargesEnabled ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-slate-900 dark:text-white font-medium text-sm">Stripe Connect Account</p>
+                        <Badge className={`border-0 text-xs font-semibold ${connectAccountQuery.data.chargesEnabled ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400"}`}>
+                          {connectAccountQuery.data.chargesEnabled ? "Active" : connectAccountQuery.data.detailsSubmitted ? "Under Review" : "Incomplete"}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {connectAccountQuery.data.chargesEnabled && connectAccountQuery.data.payoutsEnabled
+                          ? "You can send and receive payments on EusoTrip"
+                          : connectAccountQuery.data.detailsSubmitted
+                          ? "Stripe is verifying your information. This usually takes 1-2 business days."
+                          : "Additional information is needed to activate your account."}
+                      </p>
+                    </div>
+                  </div>
+                  {!connectAccountQuery.data.chargesEnabled && (
+                    <Button size="sm" onClick={handleStartConnect} disabled={connectLoading} className={btnCls}>
+                      {connectLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <ExternalLink className="w-4 h-4 mr-1" />}
+                      {connectAccountQuery.data.detailsSubmitted ? "Check Status" : "Continue Setup"}
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                    <Landmark className="w-8 h-8 text-blue-500 dark:text-cyan-400" />
+                  </div>
+                  <p className="text-slate-700 dark:text-slate-300 font-medium">Set up Stripe Connect to receive payments</p>
+                  <p className="text-slate-400 dark:text-slate-500 text-sm mt-1 max-w-md mx-auto">Connect your bank account through Stripe so you can receive payouts for completed loads, referrals, and other earnings.</p>
+                  <Button onClick={handleStartConnect} disabled={connectLoading} className={`mt-4 ${btnCls}`}>
+                    {connectLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Landmark className="w-4 h-4 mr-2" />}
+                    Set Up Stripe Connect
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className={`lg:col-span-2 ${cardCls}`}>
               <CardHeader className="pb-3 flex flex-row items-center justify-between">

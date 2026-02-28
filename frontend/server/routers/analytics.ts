@@ -306,7 +306,7 @@ export const analyticsRouter = router({
         let partnerCount = 0;
         try {
           const { supplyChainPartnerships } = await import("../../drizzle/schema");
-          const [p] = await db.select({ count: sql<number>`count(*)` }).from(supplyChainPartnerships).where(sql`${supplyChainPartnerships.companyAId} = ${companyId} OR ${supplyChainPartnerships.companyBId} = ${companyId}`);
+          const [p] = await db.select({ count: sql<number>`count(*)` }).from(supplyChainPartnerships).where(sql`${supplyChainPartnerships.fromCompanyId} = ${companyId} OR ${supplyChainPartnerships.toCompanyId} = ${companyId}`);
           partnerCount = p?.count || 0;
         } catch {}
 

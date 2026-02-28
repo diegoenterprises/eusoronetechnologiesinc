@@ -82,6 +82,7 @@ import {
   BidWinRateWidget, RealTimeTrackingWidget, CostBreakdownWidget,
   CustomerSatisfactionWidget
 } from "./widgets/PremiumAnalyticsWidgets";
+import StripeConnectWidget from "./widgets/StripeConnectWidget";
 import WidgetStore from "./widgets/WidgetStore";
 import Weather from "./Weather";
 import RoleBasedMap from "./RoleBasedMap";
@@ -236,6 +237,7 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
     case 'search': return <SearchWidget />;
     case 'messages': return <MessagesWidget />;
     case 'calendar': return <CalendarWidget />;
+    case 'stripe_connect': return <StripeConnectWidget />;
     
     // Shipper widgets
     case 'active_shipments': return <ActiveShipmentsWidget />;

@@ -1,7 +1,7 @@
 /**
  * STRIPE CONNECT PAYMENT SETUP — Registration Step
  * Collects business type and explains payment setup for post-registration onboarding.
- * Used in Catalyst, Shipper, Broker, Driver, Escort registration wizards.
+ * Used in ALL role registration wizards — every user who transacts on EusoTrip.
  */
 
 import React from "react";
@@ -17,7 +17,7 @@ type BusinessType = "individual" | "company" | "";
 interface StripeConnectStepProps {
   businessType: BusinessType;
   onBusinessTypeChange: (type: "individual" | "company") => void;
-  role: "CATALYST" | "SHIPPER" | "BROKER" | "DRIVER" | "ESCORT";
+  role: string;
 }
 
 const ROLE_CONTEXT: Record<string, { headline: string; benefits: string[] }> = {
@@ -64,6 +64,51 @@ const ROLE_CONTEXT: Record<string, { headline: string; benefits: string[] }> = {
       "Instant payout available after job completion",
       "Track escort earnings and mileage reimbursements",
       "Year-end tax document generation",
+    ],
+  },
+  DISPATCH: {
+    headline: "Receive dispatch commissions and fees directly",
+    benefits: [
+      "Earn dispatch fees paid directly to your bank",
+      "Track commissions per load and per driver",
+      "Instant payout option for same-day access",
+      "Tax-ready earnings reports and 1099 generation",
+    ],
+  },
+  TERMINAL_MANAGER: {
+    headline: "Collect terminal fees and loading charges seamlessly",
+    benefits: [
+      "Receive loading/unloading fees directly to your facility account",
+      "Automated detention billing and demurrage collection",
+      "Track rack pricing revenue and throughput payments",
+      "Full reconciliation and tax document generation",
+    ],
+  },
+  COMPLIANCE_OFFICER: {
+    headline: "Receive consulting fees and compliance service payments",
+    benefits: [
+      "Get paid for compliance audits and consulting services",
+      "Track per-engagement earnings and reimbursements",
+      "Direct deposit to your personal or business bank",
+      "Year-end tax documentation and reporting",
+    ],
+  },
+  SAFETY_MANAGER: {
+    headline: "Receive safety consulting and training payments",
+    benefits: [
+      "Collect fees for safety audits, training, and assessments",
+      "Track earnings per engagement and per company",
+      "Instant payout available after service completion",
+      "Tax-ready 1099 / W-2 document generation",
+    ],
+  },
+  FACTORING: {
+    headline: "Manage factoring disbursements and collections",
+    benefits: [
+      "Disburse factored payments directly to carriers",
+      "Collect shipper invoices through the platform",
+      "Automated fee deduction and reconciliation",
+      "Full transaction history and compliance reporting",
     ],
   },
 };

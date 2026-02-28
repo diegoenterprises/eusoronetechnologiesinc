@@ -606,8 +606,8 @@ export const stripeRouter = router({
       const appUrl = process.env.APP_URL || "https://eusotrip-app.azurewebsites.net";
       const accountLink = await stripe.accountLinks.create({
         account: input.accountId,
-        refresh_url: `${appUrl}/settings/payments?refresh=true`,
-        return_url: `${appUrl}/settings/payments?onboarding=complete`,
+        refresh_url: `${appUrl}/settings?tab=billing&refresh=true`,
+        return_url: `${appUrl}/settings?tab=billing&onboarding=complete`,
         type: "account_onboarding",
       });
 
