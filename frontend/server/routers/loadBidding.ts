@@ -132,38 +132,70 @@ export const loadBiddingRouter = router({
       } catch (e) { return []; }
     }),
 
-  /** Bidding stats for dashboard */
+  /** Bidding stats for dashboard — comprehensive analytics */
   getStats: protectedProcedure
     .query(async ({ ctx }) => {
+      const empty = { submitted: 0, received: 0, pending: 0, accepted: 0, rejected: 0, countered: 0, expired: 0, winRate: 0, avgBid: 0, totalWonValue: 0, avgResponseTimeHrs: 0, autoAccepted: 0, bidsByMonth: [] as { month: string; count: number; won: number }[] };
       const db = await getDb();
-      if (!db) return { submitted: 0, received: 0, pending: 0, accepted: 0, winRate: 0, avgBid: 0 };
+      if (!db) return empty;
       try {
         const userId = ctx.user?.id;
-        if (!userId) return { submitted: 0, received: 0, pending: 0, accepted: 0, winRate: 0, avgBid: 0 };
+        if (!userId) return empty;
 
-        const [submitted, pending, accepted] = await Promise.all([
-          db.select({ count: sql<number>`count(*)` }).from(loadBids)
-            .where(eq(loadBids.bidderUserId, userId)),
-          db.select({ count: sql<number>`count(*)` }).from(loadBids)
-            .where(and(eq(loadBids.bidderUserId, userId), eq(loadBids.status, "pending"))),
-          db.select({ count: sql<number>`count(*)` }).from(loadBids)
-            .where(and(eq(loadBids.bidderUserId, userId), eq(loadBids.status, "accepted"))),
+        const [submitted, pending, accepted, rejected, countered, expired, autoAcc, avgBidRes, wonValueRes] = await Promise.all([
+          db.select({ count: sql<number>`count(*)` }).from(loadBids).where(eq(loadBids.bidderUserId, userId)),
+          db.select({ count: sql<number>`count(*)` }).from(loadBids).where(and(eq(loadBids.bidderUserId, userId), eq(loadBids.status, "pending"))),
+          db.select({ count: sql<number>`count(*)` }).from(loadBids).where(and(eq(loadBids.bidderUserId, userId), or(eq(loadBids.status, "accepted"), eq(loadBids.status, "auto_accepted")))),
+          db.select({ count: sql<number>`count(*)` }).from(loadBids).where(and(eq(loadBids.bidderUserId, userId), eq(loadBids.status, "rejected"))),
+          db.select({ count: sql<number>`count(*)` }).from(loadBids).where(and(eq(loadBids.bidderUserId, userId), eq(loadBids.status, "countered"))),
+          db.select({ count: sql<number>`count(*)` }).from(loadBids).where(and(eq(loadBids.bidderUserId, userId), eq(loadBids.status, "expired"))),
+          db.select({ count: sql<number>`count(*)` }).from(loadBids).where(and(eq(loadBids.bidderUserId, userId), eq(loadBids.isAutoAccepted, true))),
+          db.select({ avg: sql<number>`COALESCE(AVG(CAST(${loadBids.bidAmount} AS DECIMAL)), 0)` }).from(loadBids).where(eq(loadBids.bidderUserId, userId)),
+          db.select({ total: sql<number>`COALESCE(SUM(CAST(${loadBids.bidAmount} AS DECIMAL)), 0)` }).from(loadBids).where(and(eq(loadBids.bidderUserId, userId), or(eq(loadBids.status, "accepted"), eq(loadBids.status, "auto_accepted")))),
         ]);
 
         const totalSub = submitted[0]?.count || 0;
         const totalAcc = accepted[0]?.count || 0;
         const winRate = totalSub > 0 ? Math.round((totalAcc / totalSub) * 100) : 0;
 
+        // Monthly bid trends (last 6 months)
+        let bidsByMonth: { month: string; count: number; won: number }[] = [];
+        try {
+          const monthRows = await db.select({
+            month: sql<string>`DATE_FORMAT(${loadBids.createdAt}, '%Y-%m')`,
+            count: sql<number>`count(*)`,
+            won: sql<number>`SUM(CASE WHEN ${loadBids.status} IN ('accepted','auto_accepted') THEN 1 ELSE 0 END)`,
+          }).from(loadBids).where(eq(loadBids.bidderUserId, userId)).groupBy(sql`DATE_FORMAT(${loadBids.createdAt}, '%Y-%m')`).orderBy(sql`DATE_FORMAT(${loadBids.createdAt}, '%Y-%m') DESC`).limit(6);
+          bidsByMonth = monthRows.reverse().map(r => ({ month: r.month, count: r.count || 0, won: r.won || 0 }));
+        } catch {}
+
+        // Received bids (bids on user's loads)
+        let received = 0;
+        try {
+          const myLoadIds = await db.select({ id: loads.id }).from(loads).where(eq(loads.shipperId, userId));
+          if (myLoadIds.length > 0) {
+            const [rc] = await db.select({ count: sql<number>`count(*)` }).from(loadBids).where(sql`${loadBids.loadId} IN (${sql.join(myLoadIds.map(l => sql`${l.id}`), sql`,`)})`);
+            received = rc?.count || 0;
+          }
+        } catch {}
+
         return {
           submitted: totalSub,
-          received: 0,
+          received,
           pending: pending[0]?.count || 0,
           accepted: totalAcc,
+          rejected: rejected[0]?.count || 0,
+          countered: countered[0]?.count || 0,
+          expired: expired[0]?.count || 0,
           winRate,
-          avgBid: 0,
+          avgBid: Math.round(avgBidRes[0]?.avg || 0),
+          totalWonValue: Math.round(wonValueRes[0]?.total || 0),
+          autoAccepted: autoAcc[0]?.count || 0,
+          avgResponseTimeHrs: 0,
+          bidsByMonth,
         };
       } catch (e) {
-        return { submitted: 0, received: 0, pending: 0, accepted: 0, winRate: 0, avgBid: 0 };
+        return { submitted: 0, received: 0, pending: 0, accepted: 0, rejected: 0, countered: 0, expired: 0, winRate: 0, avgBid: 0, totalWonValue: 0, avgResponseTimeHrs: 0, autoAccepted: 0, bidsByMonth: [] };
       }
     }),
 
@@ -220,7 +252,24 @@ export const loadBiddingRouter = router({
         return { id: result[0]?.id, status: "auto_accepted" };
       }
 
-      return { id: result[0]?.id, status: "pending" };
+      // Auto-index bid for AI semantic search (fire-and-forget)
+      try {
+        const { indexLoad } = await import("../services/embeddings/aiTurbocharge");
+        indexLoad({ id: result[0]?.id, loadNumber: `BID-${result[0]?.id}`, commodity: `Bid $${input.bidAmount} ${input.rateType} on load ${input.loadId}`, origin: input.equipmentType || "", destination: "", status: "pending" });
+      } catch {}
+
+      // AI Turbocharge: Fraud scoring on bid (fire-and-forget enrichment)
+      let aiFraudCheck: any = null;
+      try {
+        const { scoreBid } = await import("../services/ai/fraudScorer");
+        const recentBids = await db.select({ amount: loadBids.bidAmount }).from(loadBids)
+          .where(eq(loadBids.loadId, input.loadId)).limit(50);
+        const historicalAmounts = recentBids.map(b => parseFloat(String(b.amount)) || 0).filter(v => v > 0);
+        const marketAvg = historicalAmounts.length > 0 ? historicalAmounts.reduce((a, b) => a + b, 0) / historicalAmounts.length : input.bidAmount;
+        aiFraudCheck = scoreBid(input.bidAmount, historicalAmounts, marketAvg);
+      } catch {}
+
+      return { id: result[0]?.id, status: "pending", aiFraudCheck };
     }),
 
   /** Counter-offer on a bid */

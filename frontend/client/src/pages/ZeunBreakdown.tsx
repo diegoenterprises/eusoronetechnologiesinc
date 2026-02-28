@@ -4,7 +4,7 @@
  * Theme-aware | Brand gradient | Premium UX.
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -221,6 +221,18 @@ export default function ZeunBreakdown() {
     { emergencyType: emergencyDetail || "breakdown_highway" },
     { enabled: !!emergencyDetail }
   );
+
+  // Auto-detect SOS mode — when redirected from SOS button
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("sos") === "true") {
+      setSeverity("CRITICAL");
+      setShowEmergency(true);
+      setStep(4);
+      // Clean URL without reloading
+      window.history.replaceState({}, "", "/zeun-breakdown");
+    }
+  }, []);
 
   const addSymptom = (symptom: string) => {
     if (symptom.trim() && !symptoms.includes(symptom.trim())) {

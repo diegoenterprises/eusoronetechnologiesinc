@@ -5,7 +5,7 @@
 
 import { embeddingService, EmbeddingService } from "./embeddingService";
 
-type EntityType = "load" | "document" | "knowledge" | "carrier" | "rate_sheet" | "agreement" | "erg_guide" | "zone_intelligence";
+type EntityType = "load" | "document" | "knowledge" | "carrier" | "rate_sheet" | "agreement" | "erg_guide" | "zone_intelligence" | "support_ticket" | "message" | "compliance_record";
 
 interface IndexRequest {
   entityType: EntityType;
@@ -63,14 +63,72 @@ export async function indexEntity(req: IndexRequest): Promise<boolean> {
   }
 }
 
-// ── Core: Batch Index ────────────────────────────────────────────────────────
-export async function indexBatch(items: IndexRequest[]): Promise<{ indexed: number; skipped: number }> {
+// ── Core: Batch Index (parallelized) ─────────────────────────────────────────
+export async function indexBatch(items: IndexRequest[], concurrency = 5): Promise<{ indexed: number; skipped: number }> {
   let indexed = 0, skipped = 0;
-  for (const item of items) { (await indexEntity(item)) ? indexed++ : skipped++; }
+  // Process in parallel batches for throughput
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    const results = await Promise.allSettled(batch.map(item => indexEntity(item)));
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value) indexed++; else skipped++;
+    }
+  }
   return { indexed, skipped };
 }
 
-// ── Core: Semantic Search ────────────────────────────────────────────────────
+// ── In-Memory Candidate Cache ────────────────────────────────────────────────
+// Avoids hitting the DB on every semantic search — refreshes every 60s or on invalidation.
+interface CandidateRow { entityType: string; entityId: string; embedding: number[]; sourceText: string | null; metadata: unknown }
+let _candidateCache: CandidateRow[] = [];
+let _candidateCacheTs = 0;
+const CANDIDATE_CACHE_TTL_MS = 60_000;
+let _candidateCacheLoading = false;
+
+async function loadCandidates(entityTypes?: EntityType[]): Promise<CandidateRow[]> {
+  const now = Date.now();
+  // Return cache if fresh
+  if (_candidateCache.length > 0 && now - _candidateCacheTs < CANDIDATE_CACHE_TTL_MS) {
+    if (!entityTypes?.length) return _candidateCache;
+    const set = new Set(entityTypes as string[]);
+    return _candidateCache.filter(c => set.has(c.entityType));
+  }
+  // Avoid thundering herd
+  if (_candidateCacheLoading) {
+    if (!entityTypes?.length) return _candidateCache;
+    const set = new Set(entityTypes as string[]);
+    return _candidateCache.filter(c => set.has(c.entityType));
+  }
+  _candidateCacheLoading = true;
+  try {
+    const { getDb } = await import("../../db");
+    const { embeddings } = await import("../../../drizzle/schema");
+    const db = await getDb();
+    if (!db) { _candidateCacheLoading = false; return []; }
+    const rows = await db.select({
+      entityType: embeddings.entityType, entityId: embeddings.entityId,
+      embedding: embeddings.embedding, sourceText: embeddings.sourceText, metadata: embeddings.metadata,
+    }).from(embeddings);
+    _candidateCache = rows.map(c => ({
+      entityType: c.entityType, entityId: c.entityId,
+      embedding: Array.isArray(c.embedding) ? c.embedding as number[] : [],
+      sourceText: c.sourceText, metadata: c.metadata,
+    }));
+    _candidateCacheTs = now;
+    console.log(`[AITurbo] Candidate cache refreshed: ${_candidateCache.length} embeddings`);
+  } catch (err) { console.error("[AITurbo] loadCandidates error:", err); }
+  _candidateCacheLoading = false;
+  if (!entityTypes?.length) return _candidateCache;
+  const set = new Set(entityTypes as string[]);
+  return _candidateCache.filter(c => set.has(c.entityType));
+}
+
+/** Invalidate candidate cache (call after indexing new entities) */
+export function invalidateCandidateCache(): void {
+  _candidateCacheTs = 0;
+}
+
+// ── Core: Semantic Search (cached candidates) ────────────────────────────────
 export async function semanticSearch(
   query: string,
   opts: { entityTypes?: EntityType[]; topK?: number; threshold?: number } = {},
@@ -78,23 +136,12 @@ export async function semanticSearch(
   try {
     if (!(await embeddingService.isHealthy())) return [];
     const queryVec = await embeddingService.embedOne(query);
-    const { getDb } = await import("../../db");
-    const { embeddings } = await import("../../../drizzle/schema");
-    const { inArray } = await import("drizzle-orm");
-    const db = await getDb();
-    if (!db) return [];
-    const q = db.select({
-      entityType: embeddings.entityType, entityId: embeddings.entityId,
-      embedding: embeddings.embedding, sourceText: embeddings.sourceText, metadata: embeddings.metadata,
-    }).from(embeddings);
-    const candidates = opts.entityTypes?.length
-      ? await q.where(inArray(embeddings.entityType, opts.entityTypes as any))
-      : await q;
+    const candidates = await loadCandidates(opts.entityTypes);
     if (!candidates.length) return [];
     return embeddingService.search(
       queryVec.values,
       candidates.map(c => ({
-        embedding: Array.isArray(c.embedding) ? c.embedding as number[] : [],
+        embedding: c.embedding,
         entityId: c.entityId, entityType: c.entityType,
         text: c.sourceText || undefined, metadata: (c.metadata as Record<string, unknown>) || undefined,
       })),
@@ -115,6 +162,7 @@ export async function removeEntity(entityType: EntityType, entityId: string): Pr
     const db = await getDb();
     if (!db) return false;
     await db.delete(embeddings).where(and(eq(embeddings.entityType, entityType), eq(embeddings.entityId, entityId)));
+    invalidateCandidateCache();
     return true;
   } catch (err) { console.error(`[AITurbo] removeEntity error:`, err); return false; }
 }
@@ -204,4 +252,45 @@ export const searchAgreements = (q: string, topK = 10) => semanticSearch(q, { en
 export const searchRateSheets = (q: string, topK = 10) => semanticSearch(q, { entityTypes: ["rate_sheet"], topK });
 export const searchKnowledge = (q: string, topK = 10) => semanticSearch(q, { entityTypes: ["knowledge", "erg_guide"], topK });
 export const searchZones = (q: string, topK = 10) => semanticSearch(q, { entityTypes: ["zone_intelligence"], topK });
+export const searchSupportTickets = (q: string, topK = 10) => semanticSearch(q, { entityTypes: ["support_ticket"], topK });
+export const searchMessages = (q: string, topK = 10) => semanticSearch(q, { entityTypes: ["message"], topK });
+export const searchCompliance = (q: string, topK = 10) => semanticSearch(q, { entityTypes: ["compliance_record", "knowledge"], topK });
 export const searchAll = (q: string, topK = 15) => semanticSearch(q, { topK });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ADDITIONAL DOMAIN INDEXERS
+// ══════════════════════════════════════════════════════════════════════════════
+
+export function indexSupportTicket(ticket: Record<string, any>): void {
+  const text = [
+    `Support ticket: ${ticket.subject || ticket.title || "Untitled"}`,
+    ticket.category && `Category: ${ticket.category}`,
+    ticket.description && ticket.description.slice(0, 3000),
+    ticket.status && `Status: ${ticket.status}`,
+    ticket.priority && `Priority: ${ticket.priority}`,
+  ].filter(Boolean).join(". ");
+  indexEntity({ entityType: "support_ticket", entityId: String(ticket.id), text, metadata: { category: ticket.category, status: ticket.status } }).then(() => invalidateCandidateCache()).catch(() => {});
+}
+
+export function indexMessage(msg: Record<string, any>): void {
+  const text = [
+    msg.subject && `Subject: ${msg.subject}`,
+    msg.content && msg.content.slice(0, 2000),
+    msg.senderName && `From: ${msg.senderName}`,
+    msg.recipientName && `To: ${msg.recipientName}`,
+  ].filter(Boolean).join(". ");
+  if (text.length < 10) return;
+  indexEntity({ entityType: "message", entityId: String(msg.id), text, metadata: { senderId: msg.senderId, conversationId: msg.conversationId } }).then(() => invalidateCandidateCache()).catch(() => {});
+}
+
+export function indexComplianceRecord(record: Record<string, any>): void {
+  const text = [
+    `Compliance: ${record.type || record.category || "record"}`,
+    record.entityName && `Entity: ${record.entityName}`,
+    record.description && record.description.slice(0, 2000),
+    record.violation && `Violation: ${record.violation}`,
+    record.status && `Status: ${record.status}`,
+    record.severity && `Severity: ${record.severity}`,
+  ].filter(Boolean).join(". ");
+  indexEntity({ entityType: "compliance_record", entityId: String(record.id), text, metadata: { type: record.type, status: record.status } }).then(() => invalidateCandidateCache()).catch(() => {});
+}

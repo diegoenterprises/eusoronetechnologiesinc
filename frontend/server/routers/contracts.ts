@@ -158,6 +158,12 @@ export const contractsRouter = router({
         notes: input.notes || `Contract ${agrNum}`,
         status: 'draft' as any,
       } as any).$returningId();
+      // Auto-index contract for AI semantic search (fire-and-forget)
+      try {
+        const { indexAgreement } = await import("../services/embeddings/aiTurbocharge");
+        indexAgreement({ id: result.id, title: `Contract ${agrNum}`, type: input.type, parties: `Party A: user ${userId}, Party B: ${input.customerId}`, terms: `Rate: $${input.pricing.baseRate}/${input.pricing.rateType}. ${input.terms.startDate} to ${input.terms.endDate}` });
+      } catch {}
+
       return {
         id: String(result.id),
         contractNumber: agrNum,

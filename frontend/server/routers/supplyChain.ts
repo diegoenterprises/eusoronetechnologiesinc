@@ -36,6 +36,7 @@ import {
   users,
   loads,
   supplyChainPartnerships,
+  agreements,
 } from "../../drizzle/schema";
 import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
 import { fmcsaService } from "../services/fmcsa";
@@ -889,7 +890,54 @@ export const supplyChainRouter = router({
           return true;
         });
 
-        return combined;
+        // Enrich with agreement status per partner company
+        const partnerCompanyIds = Array.from(new Set(combined.map(p => p.partnerCompanyId).filter(Boolean))) as number[];
+        let agreementMap: Record<number, string> = {};
+        if (partnerCompanyIds.length > 0) {
+          try {
+            const relevantAgreements = await db
+              .select({
+                partyACompanyId: agreements.partyACompanyId,
+                partyBCompanyId: agreements.partyBCompanyId,
+                status: agreements.status,
+                expirationDate: agreements.expirationDate,
+              })
+              .from(agreements)
+              .where(
+                or(
+                  and(eq(agreements.partyACompanyId, companyId), inArray(agreements.partyBCompanyId, partnerCompanyIds)),
+                  and(eq(agreements.partyBCompanyId, companyId), inArray(agreements.partyACompanyId, partnerCompanyIds)),
+                )
+              );
+
+            // For each partner company, determine the best agreement status
+            // Priority: active > pending_signature/pending_review/negotiating/draft > expired > none
+            for (const agr of relevantAgreements) {
+              const partnerId = agr.partyACompanyId === companyId ? agr.partyBCompanyId : agr.partyACompanyId;
+              if (!partnerId) continue;
+              const current = agreementMap[partnerId];
+              const s = agr.status || "draft";
+              // Check if active agreement is actually expired by date
+              const isExpiredByDate = s === "active" && agr.expirationDate && new Date(agr.expirationDate) < new Date();
+              const effectiveStatus = isExpiredByDate ? "expired" : s;
+
+              if (effectiveStatus === "active") {
+                agreementMap[partnerId] = "active";
+              } else if (["pending_signature", "pending_review", "negotiating", "draft"].includes(effectiveStatus) && current !== "active") {
+                agreementMap[partnerId] = "pending";
+              } else if (effectiveStatus === "expired" && !current) {
+                agreementMap[partnerId] = "expired";
+              }
+            }
+          } catch (e) {
+            console.error("[SupplyChain] Agreement enrichment error:", e);
+          }
+        }
+
+        return combined.map(p => ({
+          ...p,
+          agreementStatus: (p.partnerCompanyId && agreementMap[p.partnerCompanyId]) || null,
+        }));
       } catch (error) {
         console.error("[SupplyChain] getMyPartners error:", error);
         return [];

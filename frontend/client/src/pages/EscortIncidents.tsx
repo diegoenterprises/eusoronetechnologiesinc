@@ -4,7 +4,7 @@
  * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,13 +12,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import {
   AlertTriangle, Search, CheckCircle, Clock, Plus,
-  Eye, MapPin, X
+  Eye, MapPin, X, Wrench
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+const ZeunBreakdown = lazy(() => import("./ZeunBreakdown"));
 
 export default function EscortIncidents() {
   const [search, setSearch] = useState("");
@@ -54,13 +57,27 @@ export default function EscortIncidents() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Escort Incidents</h1>
-          <p className="text-slate-400 text-sm mt-1">Track and report security incidents</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Safety & Reports</h1>
+          <p className="text-slate-400 text-sm mt-1">Incidents, diagnostics & breakdown reporting</p>
         </div>
-        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setShowReportForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />Report Incident
-        </Button>
       </div>
+
+      <Tabs defaultValue="incidents" className="space-y-6">
+        <TabsList className="bg-slate-800/60 border border-slate-700/50 rounded-lg p-1">
+          <TabsTrigger value="incidents" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-emerald-600 data-[state=active]:text-white rounded-md px-4 py-2 text-sm gap-2">
+            <AlertTriangle className="w-4 h-4" />Incidents
+          </TabsTrigger>
+          <TabsTrigger value="zeun" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-emerald-600 data-[state=active]:text-white rounded-md px-4 py-2 text-sm gap-2">
+            <Wrench className="w-4 h-4" />ZEUN Mechanics
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="incidents" className="space-y-6">
+          <div className="flex justify-end">
+            <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setShowReportForm(true)}>
+              <Plus className="w-4 h-4 mr-2" />Report Incident
+            </Button>
+          </div>
 
       {/* Report Incident Form */}
       {showReportForm && (
@@ -207,6 +224,14 @@ export default function EscortIncidents() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="zeun">
+          <Suspense fallback={<div className="space-y-4">{[1,2,3].map(i => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>}>
+            <ZeunBreakdown />
+          </Suspense>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

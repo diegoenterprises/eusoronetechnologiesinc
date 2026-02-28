@@ -11,13 +11,14 @@ import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplian
 import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import { FMCSALookup } from "@/components/registration/FMCSALookup";
 import type { FMCSAData } from "@/components/registration/FMCSALookup";
+import StripeConnectStep from "@/components/registration/StripeConnectStep";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Users, Building2, FileText, Shield, CreditCard, 
-  Upload, CheckCircle, AlertCircle, User, Mail, Phone, MapPin, Lock, ShieldCheck
+  Upload, CheckCircle, AlertCircle, User, Mail, Phone, MapPin, Lock, ShieldCheck, Landmark
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -67,7 +68,10 @@ interface BrokerFormData {
   // Step 7: Compliance Integrations
   complianceIds: ComplianceIds;
   
-  // Step 8: Terms
+  // Step 8: Payment Setup
+  businessType: "individual" | "company" | "";
+  
+  // Step 9: Terms
   acceptTerms: boolean;
   acceptPrivacy: boolean;
   acceptCompliance: boolean;
@@ -101,6 +105,7 @@ const initialFormData: BrokerFormData = {
   password: "",
   confirmPassword: "",
   complianceIds: emptyComplianceIds,
+  businessType: "",
   acceptTerms: false,
   acceptPrivacy: false,
   acceptCompliance: false,
@@ -194,6 +199,10 @@ export default function RegisterBroker() {
         Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
       ) || undefined,
     });
+
+    if (formData.businessType) {
+      try { localStorage.setItem("eusotrip_stripe_biz_type", formData.businessType); } catch {}
+    }
   };
 
   const steps: WizardStep[] = [
@@ -622,6 +631,26 @@ export default function RegisterBroker() {
           onChange={(ids) => updateFormData({ complianceIds: ids })}
         />
       ),
+    },
+    {
+      id: "payments",
+      title: "Payment Setup",
+      description: "How you'll manage payments on EusoTrip",
+      icon: <Landmark className="w-5 h-5" />,
+      component: (
+        <StripeConnectStep
+          businessType={formData.businessType}
+          onBusinessTypeChange={(t) => updateFormData({ businessType: t })}
+          role="BROKER"
+        />
+      ),
+      validate: () => {
+        if (!formData.businessType) {
+          toast.error("Please select your business type for payment setup");
+          return false;
+        }
+        return true;
+      },
     },
     {
       id: "terms",

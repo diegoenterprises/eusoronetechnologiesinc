@@ -201,68 +201,230 @@ export const analyticsRouter = router({
     }),
 
   /**
-   * Get summary for Analytics page
+   * Get summary for Analytics page — role-aware, per-company real KPIs
    */
   getSummary: protectedProcedure
     .input(z.object({ period: z.string().optional().default("month") }))
-    .query(async () => {
-      const db = await getDb();
-      if (!db) return {
+    .query(async ({ ctx, input }) => {
+      const empty = {
         revenue: 0, revenueChange: 0, totalLoads: 0, loadsChange: 0,
         milesLogged: 0, avgRatePerMile: 0, fleetUtilization: 0,
         customerSatisfaction: 0, completedLoads: 0, inTransitLoads: 0, pendingLoads: 0,
-        onTimeRate: 0, expenses: 0,
+        onTimeRate: 0, expenses: 0, cancelledLoads: 0,
+        vehicleCount: 0, driverCount: 0, partnerCount: 0, agreementCount: 0,
+        bidAcceptanceRate: 0, avgLoadValue: 0, safetyScore: 0,
+        memberSince: "", role: "", companyName: "",
       };
+      const db = await getDb();
+      if (!db) return empty;
 
       try {
-        const [totalLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads);
-        const [delivered] = await db.select({ count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(eq(loads.status, 'delivered'));
-        const [inTransit] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'in_transit'));
-        const [pending] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'posted'));
+        const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
+        const companyId = ctx.user?.companyId || 0;
+        const role = ((ctx.user as any)?.role || "").toLowerCase();
 
-        const revenue = delivered?.revenue || 0;
+        // Period date ranges
+        const now = new Date();
+        let periodStart = new Date(now);
+        let prevStart = new Date(now);
+        let prevEnd = new Date(now);
+        if (input.period === "week") {
+          periodStart.setDate(now.getDate() - 7);
+          prevStart.setDate(now.getDate() - 14);
+          prevEnd.setDate(now.getDate() - 7);
+        } else if (input.period === "year") {
+          periodStart = new Date(now.getFullYear(), 0, 1);
+          prevStart = new Date(now.getFullYear() - 1, 0, 1);
+          prevEnd = new Date(now.getFullYear(), 0, 1);
+        } else {
+          periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          prevEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+        }
+
+        // Determine which loads belong to this user/company
+        // Carriers (catalyst) see loads assigned to them, Shippers see loads they posted, others see company loads
+        const isShipper = role === "shipper";
+        const isCatalyst = role === "catalyst";
+        const isDriver = role === "driver";
+        const isBroker = role === "broker";
+
+        const ownerCol = isShipper ? loads.shipperId : loads.catalystId;
+        const ownerId = companyId;
+
+        // Current period loads
+        const [curLoads] = await db.select({
+          count: sql<number>`count(*)`,
+          revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+          miles: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)`,
+        }).from(loads).where(and(eq(ownerCol, ownerId), gte(loads.createdAt, periodStart)));
+
+        // Previous period loads for change calculation
+        const [prevLoads] = await db.select({
+          count: sql<number>`count(*)`,
+          revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+        }).from(loads).where(and(eq(ownerCol, ownerId), gte(loads.createdAt, prevStart), lte(loads.createdAt, prevEnd)));
+
+        // Status breakdowns for current period
+        const [delivered] = await db.select({ count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`, miles: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)` })
+          .from(loads).where(and(eq(ownerCol, ownerId), eq(loads.status, 'delivered'), gte(loads.createdAt, periodStart)));
+        const [inTransit] = await db.select({ count: sql<number>`count(*)` })
+          .from(loads).where(and(eq(ownerCol, ownerId), sql`${loads.status} IN ('in_transit','loading','unloading','en_route_pickup','at_pickup','at_delivery')`));
+        const [pending] = await db.select({ count: sql<number>`count(*)` })
+          .from(loads).where(and(eq(ownerCol, ownerId), sql`${loads.status} IN ('posted','bidding','draft')`));
+        const [cancelled] = await db.select({ count: sql<number>`count(*)` })
+          .from(loads).where(and(eq(ownerCol, ownerId), eq(loads.status, 'cancelled'), gte(loads.createdAt, periodStart)));
+
+        // All-time loads for the company (for total metrics)
+        const [allTimeLoads] = await db.select({
+          count: sql<number>`count(*)`,
+          revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+          miles: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)`,
+        }).from(loads).where(eq(ownerCol, ownerId));
+
+        // On-time delivery rate (delivered loads where actualDeliveryDate <= estimatedDeliveryDate)
+        const [onTimeData] = await db.select({
+          total: sql<number>`count(*)`,
+          onTime: sql<number>`SUM(CASE WHEN ${loads.actualDeliveryDate} IS NOT NULL AND ${loads.estimatedDeliveryDate} IS NOT NULL AND ${loads.actualDeliveryDate} <= ${loads.estimatedDeliveryDate} THEN 1 WHEN ${loads.actualDeliveryDate} IS NULL AND ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`,
+        }).from(loads).where(and(eq(ownerCol, ownerId), eq(loads.status, 'delivered')));
+        const onTimeRate = (onTimeData?.total || 0) > 0 ? Math.round(((onTimeData?.onTime || 0) / onTimeData.total) * 100) : 0;
+
+        // Fleet utilization (vehicles in_use / total vehicles)
+        let fleetUtilization = 0;
+        let vehicleCount = 0;
+        let driverCount = 0;
+        try {
+          const [totalVeh] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(eq(vehicles.companyId, companyId));
+          const [inUseVeh] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), eq(vehicles.status, 'in_use')));
+          vehicleCount = totalVeh?.count || 0;
+          fleetUtilization = vehicleCount > 0 ? Math.round(((inUseVeh?.count || 0) / vehicleCount) * 100) : 0;
+          const [drvs] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, companyId));
+          driverCount = drvs?.count || 0;
+        } catch {}
+
+        // Partner count
+        let partnerCount = 0;
+        try {
+          const { supplyChainPartnerships } = await import("../../drizzle/schema");
+          const [p] = await db.select({ count: sql<number>`count(*)` }).from(supplyChainPartnerships).where(sql`${supplyChainPartnerships.companyAId} = ${companyId} OR ${supplyChainPartnerships.companyBId} = ${companyId}`);
+          partnerCount = p?.count || 0;
+        } catch {}
+
+        // Agreement count
+        let agreementCount = 0;
+        try {
+          const { agreements } = await import("../../drizzle/schema");
+          const [a] = await db.select({ count: sql<number>`count(*)` }).from(agreements).where(and(sql`${agreements.partyACompanyId} = ${companyId} OR ${agreements.partyBCompanyId} = ${companyId}`, eq(agreements.status, 'active')));
+          agreementCount = a?.count || 0;
+        } catch {}
+
+        // Bid acceptance rate (for brokers/catalysts)
+        let bidAcceptanceRate = 0;
+        try {
+          const [totalBids] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(eq(bids.catalystId, companyId));
+          const [acceptedBids] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.catalystId, companyId), eq(bids.status, 'accepted')));
+          bidAcceptanceRate = (totalBids?.count || 0) > 0 ? Math.round(((acceptedBids?.count || 0) / totalBids.count) * 100) : 0;
+        } catch {}
+
+        // Safety score (average driver safety score)
+        let safetyScore = 0;
+        try {
+          const [ss] = await db.select({ avg: sql<number>`COALESCE(AVG(${drivers.safetyScore}), 0)` }).from(drivers).where(eq(drivers.companyId, companyId));
+          safetyScore = Math.round(ss?.avg || 0);
+        } catch {}
+
+        // Member info
+        let memberSince = "";
+        let companyName = "";
+        try {
+          const [userInfo] = await db.select({ createdAt: users.createdAt }).from(users).where(eq(users.id, userId)).limit(1);
+          memberSince = userInfo?.createdAt?.toISOString()?.split('T')[0] || "";
+          if (companyId) {
+            const [co] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, companyId)).limit(1);
+            companyName = co?.name || "";
+          }
+        } catch {}
+
+        // Revenue & load change percentages
+        const currentRev = Math.round(curLoads?.revenue || 0);
+        const prevRev = Math.round(prevLoads?.revenue || 0);
+        const revenueChange = prevRev > 0 ? Math.round(((currentRev - prevRev) / prevRev) * 100) : (currentRev > 0 ? 100 : 0);
+        const currentLoadCount = curLoads?.count || 0;
+        const prevLoadCount = prevLoads?.count || 0;
+        const loadsChange = prevLoadCount > 0 ? Math.round(((currentLoadCount - prevLoadCount) / prevLoadCount) * 100) : (currentLoadCount > 0 ? 100 : 0);
+
+        const totalMiles = Math.round(allTimeLoads?.miles || 0);
+        const avgRatePerMile = totalMiles > 0 ? Math.round(((allTimeLoads?.revenue || 0) / totalMiles) * 100) / 100 : 0;
         const completedCount = delivered?.count || 0;
-        const avgRate = completedCount > 0 ? revenue / completedCount : 0;
+        const avgLoadValue = (allTimeLoads?.count || 0) > 0 ? Math.round((allTimeLoads.revenue || 0) / allTimeLoads.count) : 0;
+
+        // Customer satisfaction estimate (based on on-time + cancel rate)
+        const cancelRate = (allTimeLoads?.count || 0) > 0 ? (cancelled?.count || 0) / allTimeLoads.count : 0;
+        const customerSatisfaction = Math.max(0, Math.min(100, Math.round(onTimeRate * 0.7 + (1 - cancelRate) * 30)));
 
         return {
-          revenue,
-          revenueChange: 0,
-          totalLoads: totalLoads?.count || 0,
-          loadsChange: 0,
-          milesLogged: 0,
-          avgRatePerMile: avgRate > 0 ? Math.round(avgRate * 100) / 100 : 0,
-          fleetUtilization: 0,
-          customerSatisfaction: 0,
+          revenue: currentRev,
+          revenueChange,
+          totalLoads: currentLoadCount,
+          loadsChange,
+          milesLogged: totalMiles,
+          avgRatePerMile,
+          fleetUtilization,
+          customerSatisfaction,
           completedLoads: completedCount,
           inTransitLoads: inTransit?.count || 0,
           pendingLoads: pending?.count || 0,
-          onTimeRate: 0,
+          cancelledLoads: cancelled?.count || 0,
+          onTimeRate,
           expenses: 0,
+          vehicleCount,
+          driverCount,
+          partnerCount,
+          agreementCount,
+          bidAcceptanceRate,
+          avgLoadValue,
+          safetyScore,
+          memberSince,
+          role,
+          companyName,
         };
       } catch (error) {
         console.error('[Analytics] getSummary error:', error);
-        return {
-          revenue: 0, revenueChange: 0, totalLoads: 0, loadsChange: 0,
-          milesLogged: 0, avgRatePerMile: 0, fleetUtilization: 0,
-          customerSatisfaction: 0, completedLoads: 0, inTransitLoads: 0, pendingLoads: 0,
-          onTimeRate: 0, expenses: 0,
-        };
+        return empty;
       }
     }),
 
   /**
-   * Get trends for Analytics page
+   * Get trends for Analytics page — role-aware, per-company
    */
   getTrends: protectedProcedure
     .input(z.object({ period: z.string().optional() }).optional())
-    .query(async () => {
+    .query(async ({ ctx }) => {
       const db = await getDb();
-      if (!db) return { revenue: [], loads: [] };
+      if (!db) return [];
       try {
-        const rows = await db.select({ month: sql<string>`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`, rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`, count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'delivered')).groupBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`).orderBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m') DESC`).limit(12);
-        const data = rows.reverse();
-        return { revenue: data.map(r => ({ period: r.month, value: Math.round(r.rev || 0) })), loads: data.map(r => ({ period: r.month, value: r.count || 0 })) };
-      } catch { return { revenue: [], loads: [] }; }
+        const companyId = ctx.user?.companyId || 0;
+        const role = ((ctx.user as any)?.role || "").toLowerCase();
+        const isShipper = role === "shipper";
+        const ownerCol = isShipper ? loads.shipperId : loads.catalystId;
+
+        const rows = await db.select({
+          month: sql<string>`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`,
+          revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+          loads: sql<number>`count(*)`,
+          miles: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)`,
+        }).from(loads)
+          .where(eq(ownerCol, companyId))
+          .groupBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`)
+          .orderBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m') DESC`)
+          .limit(12);
+        return rows.reverse().map(r => ({
+          period: r.month,
+          revenue: Math.round(r.revenue || 0),
+          loads: r.loads || 0,
+          miles: Math.round(r.miles || 0),
+        }));
+      } catch { return []; }
     }),
 
   /**

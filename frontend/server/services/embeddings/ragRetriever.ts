@@ -28,8 +28,39 @@ export interface RAGContext {
 
 // ── Retriever ────────────────────────────────────────────────────────────────
 
+// ── Intent-Based Entity Type Routing ─────────────────────────────────────────
+// Analyzes query keywords to route to the most relevant knowledge domains,
+// dramatically improving retrieval precision vs. blind all-entity search.
+const INTENT_PATTERNS: Array<{ pattern: RegExp; entityTypes: string[] }> = [
+  { pattern: /\b(hazmat|UN\d{4}|spill|chemical|placards?|erg|toxic|flammable|corrosive|explosive|h2s|hydrogen sulfide|bleve|scba)\b/i, entityTypes: ["knowledge", "erg_guide"] },
+  { pattern: /\b(dtc|fault code|spn|fmi|check engine|derate|aftertreatment|def|dpf|egr|coolant|oil pressure|brake|tire|maintenance|mechanic|diagnostic|breakdown)\b/i, entityTypes: ["knowledge"] },
+  { pattern: /\b(rate|per barrel|per mile|surcharge|fsc|fuel|tariff|pricing|cost|charge|fee|schedule a)\b/i, entityTypes: ["knowledge", "rate_sheet"] },
+  { pattern: /\b(hos|hours of service|eld|drive time|rest|sleeper|14.hour|11.hour|duty|off.duty|log|fmcsa|csa|dot inspection|drug test|clearinghouse|compliance|violation|audit)\b/i, entityTypes: ["knowledge", "compliance_record"] },
+  { pattern: /\b(load|freight|haul|route|lane|pickup|delivery|dispatch|tracking|bol|run ticket)\b/i, entityTypes: ["knowledge", "load"] },
+  { pattern: /\b(carrier|company|mc.?number|dot.?number|usdot|authority|broker|catalyst|fleet)\b/i, entityTypes: ["knowledge", "carrier"] },
+  { pattern: /\b(badge|xp|level|mission|crate|eusomiles|gamification|achievement|leaderboard|the haul)\b/i, entityTypes: ["knowledge"] },
+  { pattern: /\b(document|cdl|medical card|insurance|certificate|permit|license|ifta|irp|twic)\b/i, entityTypes: ["knowledge", "document"] },
+  { pattern: /\b(weather|wildfire|seismic|flood|storm|zone|corridor|i-\d+|interstate|pipeline)\b/i, entityTypes: ["knowledge", "zone_intelligence"] },
+  { pattern: /\b(crude|wti|brent|api gravity|sulfur|sweet|sour|gasoline|diesel|propane|lpg|jet fuel|ngl|refinery|terminal)\b/i, entityTypes: ["knowledge"] },
+  { pattern: /\b(agreement|contract|msa|nda|lease|terms|signature)\b/i, entityTypes: ["knowledge", "agreement"] },
+  { pattern: /\b(spectra|product identification|viscosity|flash point|pour point|tan|bs.?w)\b/i, entityTypes: ["knowledge"] },
+];
+
+function inferEntityTypes(query: string): string[] | undefined {
+  const matched = new Set<string>();
+  for (const { pattern, entityTypes } of INTENT_PATTERNS) {
+    if (pattern.test(query)) {
+      for (const et of entityTypes) matched.add(et);
+    }
+  }
+  // Always include general knowledge if we matched anything domain-specific
+  if (matched.size > 0) matched.add("knowledge");
+  return matched.size > 0 ? Array.from(matched) : undefined;
+}
+
 /**
  * Retrieve the most relevant knowledge chunks for a user query.
+ * Uses cached candidates (via aiTurbocharge) + intent-based routing for precision.
  * Falls back gracefully if the embedding service is unavailable.
  */
 export async function retrieveContext(
@@ -51,63 +82,23 @@ export async function retrieveContext(
       return { chunks: [], totalCandidates: 0, retrievalTimeMs: Date.now() - start };
     }
 
-    // Embed the query
+    // Embed the query (uses LRU cache for repeat queries)
     const queryVec = await embeddingService.embedOne(query);
 
-    // Load candidates from DB
-    const { getDb } = await import("../../db");
-    const { embeddings } = await import("../../../drizzle/schema");
-    const { inArray } = await import("drizzle-orm");
-    const db = await getDb();
-    if (!db) {
-      return { chunks: [], totalCandidates: 0, retrievalTimeMs: Date.now() - start };
-    }
+    // Use intent-based routing if no explicit entity types provided
+    const effectiveTypes = options.entityTypes?.length ? options.entityTypes : inferEntityTypes(query);
 
-    let candidates;
-    if (options.entityTypes && options.entityTypes.length > 0) {
-      candidates = await db
-        .select({
-          entityType: embeddings.entityType,
-          entityId: embeddings.entityId,
-          embedding: embeddings.embedding,
-          sourceText: embeddings.sourceText,
-          metadata: embeddings.metadata,
-        })
-        .from(embeddings)
-        .where(inArray(embeddings.entityType, options.entityTypes as any));
-    } else {
-      candidates = await db
-        .select({
-          entityType: embeddings.entityType,
-          entityId: embeddings.entityId,
-          embedding: embeddings.embedding,
-          sourceText: embeddings.sourceText,
-          metadata: embeddings.metadata,
-        })
-        .from(embeddings);
-    }
-
-    if (candidates.length === 0) {
-      return { chunks: [], totalCandidates: 0, retrievalTimeMs: Date.now() - start };
-    }
-
-    // Cosine similarity search
-    const results = embeddingService.search(
-      queryVec.values,
-      candidates.map(c => ({
-        embedding: Array.isArray(c.embedding) ? c.embedding as number[] : [],
-        entityId: c.entityId,
-        entityType: c.entityType,
-        text: c.sourceText || undefined,
-        metadata: (c.metadata as Record<string, unknown>) || undefined,
-      })),
+    // Use the cached candidate system from aiTurbocharge (avoids DB hit per query)
+    const { semanticSearch } = await import("./aiTurbocharge");
+    const results = await semanticSearch(query, {
+      entityTypes: effectiveTypes as any,
       topK,
       threshold,
-    );
+    });
 
     const chunks: RetrievedChunk[] = results.map(r => ({
       text: r.text || "",
-      score: Math.round(r.score * 10000) / 10000,
+      score: r.score,
       entityType: r.entityType || "",
       entityId: r.entityId || "",
       metadata: r.metadata,
@@ -115,7 +106,7 @@ export async function retrieveContext(
 
     return {
       chunks,
-      totalCandidates: candidates.length,
+      totalCandidates: results.length,
       retrievalTimeMs: Date.now() - start,
     };
   } catch (err) {

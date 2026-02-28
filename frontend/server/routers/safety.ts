@@ -701,7 +701,10 @@ export const safetyRouter = router({
     try {
       const companyId = ctx.user?.companyId || 0;
       const [result] = await db.insert(incidents).values({ companyId, driverId: input?.driverId ? parseInt(input.driverId) : null, type: 'accident', severity: (input?.severity || 'minor') as any, status: 'reported', description: input?.description || '', occurredAt: input?.date ? new Date(input.date) : new Date() } as any);
-      return { success: true, reportId: String((result as any).insertId || 0) };
+      const reportId = (result as any).insertId || 0;
+      // Auto-index safety report for AI semantic search (fire-and-forget)
+      try { const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge"); indexComplianceRecord({ id: reportId, type: "accident_report", description: input?.description || "", status: "reported", severity: input?.severity || "minor" }); } catch {}
+      return { success: true, reportId: String(reportId) };
     } catch (e) { console.error('[Safety] submitAccidentReport error:', e); throw new Error('Failed to submit report'); }
   }),
   updateReportStatus: protectedProcedure.input(z.object({ reportId: z.string(), status: z.string() })).mutation(async ({ input }) => {

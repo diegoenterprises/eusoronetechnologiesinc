@@ -465,6 +465,12 @@ export const rateSheetRouter = router({
         } catch (e) { console.error("[RateSheet] create error:", e); }
       }
 
+      // Auto-index rate sheet for AI semantic search (fire-and-forget)
+      try {
+        const { indexRateSheet } = await import("../services/embeddings/aiTurbocharge");
+        indexRateSheet({ id, name: input.name, commodity: input.issuedBy, rateType: "per_barrel", baseRate: input.rateTiers?.[0]?.ratePerBarrel });
+      } catch {}
+
       return {
         success: true,
         id,

@@ -72,6 +72,8 @@ export const driverQualificationRouter = router({
         fileUrl: '',
         status: 'active',
       }).$returningId();
+      // Auto-index DQ document for AI semantic search (fire-and-forget)
+      try { const { indexDocument } = await import("../services/embeddings/aiTurbocharge"); indexDocument({ id: result.id, title: input.name, type: `dq_${input.type}`, content: `Driver qualification ${input.type} document: ${input.name} for driver ${input.driverId}` }); } catch {}
       return { documentId: String(result.id), uploadedBy: ctx.user?.id, uploadedAt: new Date().toISOString() };
     }),
 
@@ -134,6 +136,8 @@ export const driverQualificationRouter = router({
         fileUrl: '',
         status: 'pending',
       }).$returningId();
+      // Auto-index employment verification for AI semantic search (fire-and-forget)
+      try { const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge"); indexComplianceRecord({ id: result.id, type: "employment_verification", description: `Employment verification for ${input.employer.company} (${input.employer.startDate} to ${input.employer.endDate})`, status: "pending", severity: "minor" }); } catch {}
       return { requestId: String(result.id), status: 'pending', requestedBy: ctx.user?.id, requestedAt: new Date().toISOString() };
     }),
 
@@ -191,6 +195,8 @@ export const driverQualificationRouter = router({
         fileUrl: '',
         status: 'active',
       }).$returningId();
+      // Auto-index annual review for AI semantic search (fire-and-forget)
+      try { const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge"); indexComplianceRecord({ id: result.id, type: "annual_review", description: `Annual driver review ${year} for driver ${input.driverId}`, status: "completed", severity: "minor" }); } catch {}
       return { reviewId: String(result.id), driverId: input.driverId, completedBy: ctx.user?.id, completedAt: new Date().toISOString(), nextReviewDue: new Date(Date.now() + 365 * 86400000).toISOString() };
     }),
 

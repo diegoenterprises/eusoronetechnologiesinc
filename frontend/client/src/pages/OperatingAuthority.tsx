@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Shield, FileText, CheckCircle, XCircle, AlertTriangle, Plus, Search, Building2, Truck, ArrowRight, Clock, Handshake, Scale, Eye, ChevronRight, Zap, Lock, MapPin, ArrowUpRight, Users, Phone, Globe, Star, Loader2, Leaf, TrendingUp, BarChart3, Calendar, Activity, ShieldAlert, ShieldCheck, Wind, Flame, Heart, Target, Info, ArrowDownRight, Minus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import DatePicker from "@/components/DatePicker";
 
 const LEASE_TYPE_LABEL: Record<string, { label: string; color: string; bg: string; desc: string }> = {
@@ -47,7 +48,24 @@ const VEHICLE_TYPES = [
   { value: "step_deck", label: "Step Deck" },
 ];
 
+const ROLE_CONFIG: Record<string, { heading: string; subheading: string; tabs: string[]; canCreateLease: boolean }> = {
+  CATALYST:         { heading: "Operating Authority", subheading: "FMCSR Part 376 · Lease Management · Equipment Authority", tabs: ["overview", "leases", "equipment", "browse", "intelligence"], canCreateLease: true },
+  SHIPPER:          { heading: "Operating Authority", subheading: "Carrier authority verification & lease status", tabs: ["overview", "leases", "browse"], canCreateLease: false },
+  BROKER:           { heading: "Authority Verify", subheading: "Verify carrier authority, MC/DOT & lease compliance", tabs: ["overview", "leases", "browse"], canCreateLease: false },
+  DISPATCH:         { heading: "Operating Authority", subheading: "Carrier authority & lease verification for dispatch", tabs: ["overview", "leases", "browse"], canCreateLease: false },
+  DRIVER:           { heading: "Operating Authority", subheading: "Authority you operate under & lease status", tabs: ["overview", "browse"], canCreateLease: false },
+  ESCORT:           { heading: "Authority Verify", subheading: "Verify carrier authority for oversized & escort loads", tabs: ["overview", "browse"], canCreateLease: false },
+  TERMINAL_MANAGER: { heading: "Operating Authority", subheading: "Carrier authority verification & supply chain compliance", tabs: ["overview", "leases", "equipment", "browse", "intelligence"], canCreateLease: true },
+  COMPLIANCE_OFFICER: { heading: "Authority Compliance", subheading: "Audit lease arrangements & FMCSR Part 376 compliance", tabs: ["overview", "leases", "equipment", "browse", "intelligence"], canCreateLease: false },
+  SAFETY_MANAGER:   { heading: "Authority & Safety", subheading: "Lease compliance audits & safety verification", tabs: ["overview", "leases", "browse", "intelligence"], canCreateLease: false },
+  FACTORING:        { heading: "Operating Authority", subheading: "Carrier authority & lease status for factoring", tabs: ["overview", "browse"], canCreateLease: false },
+};
+const DEFAULT_ROLE_CONFIG = { heading: "Operating Authority", subheading: "FMCSR Part 376 · Lease Management", tabs: ["overview", "browse"], canCreateLease: false };
+
 export default function OperatingAuthority() {
+  const { user } = useAuth();
+  const userRole = (user as any)?.role?.toUpperCase() || "";
+  const rc = ROLE_CONFIG[userRole] || DEFAULT_ROLE_CONFIG;
   const [activeTab, setActiveTab] = useState<"overview" | "leases" | "equipment" | "browse" | "intelligence">("overview");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showAddVehicle, setShowAddVehicle] = useState(false);
@@ -119,13 +137,14 @@ export default function OperatingAuthority() {
 
   const complianceScore = authority?.complianceScore ?? 0;
 
-  const tabs = [
+  const allTabs = [
     { key: "overview", label: "Overview", icon: Shield },
     { key: "leases", label: "Lease Agreements", icon: Handshake },
     { key: "equipment", label: "Equipment", icon: Truck },
     { key: "browse", label: "Find Authority", icon: Search },
     { key: "intelligence", label: "2026 Intel", icon: Zap },
   ] as const;
+  const tabs = allTabs.filter(t => rc.tabs.includes(t.key));
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
@@ -133,18 +152,20 @@ export default function OperatingAuthority() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-            Operating Authority
+            {rc.heading}
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            FMCSR Part 376 · Lease Management · Authority Verification
+            {rc.subheading}
           </p>
         </div>
-        <Button
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl shadow-lg shadow-blue-500/20"
-          onClick={() => setShowCreateDialog(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />New Lease
-        </Button>
+        {rc.canCreateLease && (
+          <Button
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl shadow-lg shadow-blue-500/20"
+            onClick={() => setShowCreateDialog(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />New Lease
+          </Button>
+        )}
       </div>
 
       {/* ─── TAB NAV ─── */}
@@ -531,9 +552,11 @@ export default function OperatingAuthority() {
 
           <div className="flex items-center justify-between">
             <p className="text-white font-semibold text-sm">{equipment.length} Vehicle{equipment.length !== 1 ? "s" : ""} Registered</p>
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl" size="sm" onClick={() => setShowAddVehicle(true)}>
-              <Plus className="w-4 h-4 mr-2" />Add Equipment
-            </Button>
+            {rc.canCreateLease && (
+              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl" size="sm" onClick={() => setShowAddVehicle(true)}>
+                <Plus className="w-4 h-4 mr-2" />Add Equipment
+              </Button>
+            )}
           </div>
           {equipmentQuery?.isLoading ? (
             <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
@@ -542,10 +565,12 @@ export default function OperatingAuthority() {
               <CardContent className="py-16 text-center">
                 <Truck className="w-14 h-14 text-slate-600 mx-auto mb-4" />
                 <p className="text-white font-semibold text-lg">No Equipment Registered</p>
-                <p className="text-slate-500 text-sm mt-1">Register your fleet vehicles to track authority assignments, lease-on status, and 2027 EPA compliance.</p>
-                <Button className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl" onClick={() => setShowAddVehicle(true)}>
-                  <Plus className="w-4 h-4 mr-2" />Register First Vehicle
-                </Button>
+                <p className="text-slate-500 text-sm mt-1">{rc.canCreateLease ? "Register your fleet vehicles to track authority assignments, lease-on status, and 2027 EPA compliance." : "No fleet equipment registered under this authority."}</p>
+                {rc.canCreateLease && (
+                  <Button className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl" onClick={() => setShowAddVehicle(true)}>
+                    <Plus className="w-4 h-4 mr-2" />Register First Vehicle
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (
@@ -576,9 +601,11 @@ export default function OperatingAuthority() {
                               {epaStatus === "compliant" ? "EPA 2027 Ready" : epaStatus === "near" ? "Near Compliant" : "Pre-2021 — Upgrade"}
                             </Badge>
                           </div>
-                          <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8 p-0" onClick={() => { if (confirm("Remove this vehicle from your fleet?")) removeVehicleMut.mutate({ vehicleId: v.vehicleId }); }}>
-                            <XCircle className="w-4 h-4" />
-                          </Button>
+                          {rc.canCreateLease && (
+                            <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8 p-0" onClick={() => { if (confirm("Remove this vehicle from your fleet?")) removeVehicleMut.mutate({ vehicleId: v.vehicleId }); }}>
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -709,13 +736,15 @@ export default function OperatingAuthority() {
                           </div>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg text-xs px-4"
-                        onClick={() => { setSelectedCarrier(c); setShowFMCSALeaseDialog(true); }}
-                      >
-                        <Handshake className="w-3.5 h-3.5 mr-1.5" />Start Lease
-                      </Button>
+                      {rc.canCreateLease && (
+                        <Button
+                          size="sm"
+                          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg text-xs px-4"
+                          onClick={() => { setSelectedCarrier(c); setShowFMCSALeaseDialog(true); }}
+                        >
+                          <Handshake className="w-3.5 h-3.5 mr-1.5" />Start Lease
+                        </Button>
+                      )}
                     </div>
 
                     {/* Key Info Grid */}

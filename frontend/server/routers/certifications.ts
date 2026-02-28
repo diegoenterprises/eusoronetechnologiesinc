@@ -161,6 +161,8 @@ export const certificationsRouter = router({
         userId, type: input.type, name: input.name,
         expiryDate: new Date(input.expiresAt), status: 'pending' as any,
       } as any).$returningId();
+      // Auto-index certification for AI semantic search (fire-and-forget)
+      try { const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge"); indexComplianceRecord({ id: result[0]?.id, type: `cert_${input.type}`, description: `${input.name} certification for user ${userId}. Expires: ${input.expiresAt}`, status: "pending", severity: "minor" }); } catch {}
       return { id: `cert_${result[0]?.id}`, status: 'pending', createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
     }),
 

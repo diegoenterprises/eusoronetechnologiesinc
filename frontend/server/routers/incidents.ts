@@ -138,7 +138,25 @@ export const incidentsRouter = router({
       } as any);
       const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
 
-      return { id: String(insertedId), incidentNumber: `INC-${String(insertedId).padStart(5, "0")}`, status: "reported", reportedBy: ctx.user?.id, reportedAt: new Date().toISOString() };
+      // Auto-index incident for AI semantic search (fire-and-forget)
+      try {
+        const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge");
+        indexComplianceRecord({ id: insertedId, type: input.type, description: input.description, status: "reported", severity: input.severity });
+      } catch {}
+
+      // AI Turbocharge: NLP severity classification + entity extraction
+      let aiAnalysis: any = null;
+      try {
+        const { classifyText, classifyIncidentSeverity, extractEntities, analyzeSentiment } = await import("../services/ai/nlpProcessor");
+        aiAnalysis = {
+          classification: classifyText(input.description),
+          severity: classifyIncidentSeverity(input.description),
+          entities: extractEntities(input.description),
+          sentiment: analyzeSentiment(input.description),
+        };
+      } catch {}
+
+      return { id: String(insertedId), incidentNumber: `INC-${String(insertedId).padStart(5, "0")}`, status: "reported", reportedBy: ctx.user?.id, reportedAt: new Date().toISOString(), aiAnalysis };
     }),
 
   /**

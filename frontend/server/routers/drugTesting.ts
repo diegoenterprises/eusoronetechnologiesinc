@@ -141,6 +141,9 @@ export const drugTestingRouter = router({
       } as any);
       const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
 
+      // Auto-index drug test for AI semantic search (fire-and-forget)
+      try { const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge"); indexComplianceRecord({ id: insertedId, type: `drug_test_${input.testType}`, description: `${input.testType} drug test scheduled for driver ${input.driverId} on ${input.scheduledDate}`, status: "scheduled", severity: "minor" }); } catch {}
+
       return {
         id: String(insertedId),
         driverId: input.driverId,

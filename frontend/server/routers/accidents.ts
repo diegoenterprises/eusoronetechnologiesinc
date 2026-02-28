@@ -180,10 +180,27 @@ export const accidentsRouter = router({
         occurredAt: new Date(`${input.date}T${input.time}`), location: `${input.location.address}, ${input.location.city}, ${input.location.state}`,
         description: input.description, injuries: input.injuries, fatalities: input.fatalities,
       } as any).$returningId();
+      // Auto-index accident for AI semantic search (fire-and-forget)
+      try {
+        const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge");
+        indexComplianceRecord({ id: result[0]?.id, type: incidentType, description: `${input.description}. Location: ${input.location.city}, ${input.location.state}. ${input.hazmatRelease ? "HAZMAT RELEASE" : ""}`, status: "reported", severity: severityMap[input.severity] || "minor" });
+      } catch {}
+
+      // AI Turbocharge: NLP severity classification + entity extraction on accident
+      let aiAnalysis: any = null;
+      try {
+        const { classifyIncidentSeverity, extractEntities, analyzeSentiment } = await import("../services/ai/nlpProcessor");
+        aiAnalysis = {
+          severity: classifyIncidentSeverity(input.description),
+          entities: extractEntities(input.description),
+          sentiment: analyzeSentiment(input.description),
+        };
+      } catch {}
+
       return {
         id: `acc_${result[0]?.id}`, reportNumber: `ACC-${new Date().getFullYear()}-${String(result[0]?.id).padStart(5, '0')}`,
         status: 'reported', dotReportable: isDotReportable, drugTestRequired: isDotReportable,
-        reportedBy: ctx.user?.id, reportedAt: new Date().toISOString(),
+        reportedBy: ctx.user?.id, reportedAt: new Date().toISOString(), aiAnalysis,
       };
     }),
 

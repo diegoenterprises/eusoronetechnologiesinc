@@ -658,57 +658,49 @@ export default function RateSheetReconciliation() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-            Rate Sheet & Reconciliation
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
+              EusoRate
+            </h1>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
+              <DollarSign className="w-3 h-3 text-blue-500" />
+              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Intelligence</span>
+            </div>
+          </div>
           <p className="text-slate-400 text-sm mt-1">
-            Crude oil hauling rates, surcharges, and billing reconciliation
+            Rate calculation, schedule management, surcharges, and billing reconciliation
           </p>
         </div>
       </div>
 
       {/* Stats Strip */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className={cn("p-4 flex items-center gap-3", cell)}>
-          <div className="p-2.5 rounded-xl bg-blue-500/10"><DollarSign className="w-5 h-5 text-blue-400" /></div>
-          <div>
-            <p className="text-xs text-slate-500">Rate Tiers</p>
-            <p className="text-lg font-bold text-slate-800 dark:text-white">{tiers.length}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+        {[
+          { l: "Rate Tiers", v: tiers.length, I: BarChart3, c: "text-blue-500", b: "from-blue-500/10 to-blue-600/5" },
+          { l: "Min Barrels", v: surcharges.minimumBarrels || 160, I: Droplets, c: "text-emerald-500", b: "from-emerald-500/10 to-emerald-600/5" },
+          { l: "FSC Baseline", v: `$${surcharges.fscBaselineDieselPrice || "3.75"}`, I: Fuel, c: "text-amber-500", b: "from-amber-500/10 to-amber-600/5" },
+          { l: "Wait Rate", v: `$${surcharges.waitTimeRatePerHour || 85}/hr`, I: Clock, c: "text-red-500", b: "from-red-500/10 to-red-600/5" },
+          { l: "Saved Sheets", v: mySheets.length, I: FileText, c: "text-purple-500", b: "from-purple-500/10 to-purple-600/5" },
+          { l: "Diesel", v: dieselData?.source === "EIA" ? `$${dieselData.price.toFixed(2)}` : "—", I: Fuel, c: "text-cyan-500", b: "from-cyan-500/10 to-cyan-600/5" },
+        ].map((k) => (
+          <div key={k.l} className={cn("rounded-2xl p-3 bg-gradient-to-br border", `${k.b} border-slate-200/60 dark:border-slate-700/30`)}>
+            <k.I className={cn("w-4 h-4 mb-1", k.c)} />
+            <p className={cn("text-xl font-bold", k.c)}>{k.v}</p>
+            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{k.l}</p>
           </div>
-        </div>
-        <div className={cn("p-4 flex items-center gap-3", cell)}>
-          <div className="p-2.5 rounded-xl bg-emerald-500/10"><Truck className="w-5 h-5 text-emerald-400" /></div>
-          <div>
-            <p className="text-xs text-slate-500">Min Barrels</p>
-            <p className="text-lg font-bold text-slate-800 dark:text-white">{surcharges.minimumBarrels || 160}</p>
-          </div>
-        </div>
-        <div className={cn("p-4 flex items-center gap-3", cell)}>
-          <div className="p-2.5 rounded-xl bg-amber-500/10"><Fuel className="w-5 h-5 text-amber-400" /></div>
-          <div>
-            <p className="text-xs text-slate-500">FSC Baseline</p>
-            <p className="text-lg font-bold text-slate-800 dark:text-white">${surcharges.fscBaselineDieselPrice || "3.75"}/gal</p>
-          </div>
-        </div>
-        <div className={cn("p-4 flex items-center gap-3", cell)}>
-          <div className="p-2.5 rounded-xl bg-red-500/10"><Clock className="w-5 h-5 text-red-400" /></div>
-          <div>
-            <p className="text-xs text-slate-500">Wait Rate</p>
-            <p className="text-lg font-bold text-slate-800 dark:text-white">${surcharges.waitTimeRatePerHour || 85}/hr</p>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl bg-slate-100 dark:bg-white/[0.04] w-fit">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
-            className={cn("flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+            className={cn("flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all",
               activeTab === t.id
-                ? "bg-white dark:bg-white/[0.08] text-slate-800 dark:text-white shadow-sm"
-                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
+                : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
             )}>
-            <t.icon className="w-4 h-4" />{t.label}
+            <t.icon className="w-3.5 h-3.5" />{t.label}
           </button>
         ))}
       </div>

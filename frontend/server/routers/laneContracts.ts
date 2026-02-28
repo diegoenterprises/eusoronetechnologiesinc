@@ -203,6 +203,12 @@ export const laneContractsRouter = router({
         status: "active",
       }).$returningId();
 
+      // Auto-index lane contract for AI semantic search (fire-and-forget)
+      try {
+        const { indexAgreement } = await import("../services/embeddings/aiTurbocharge");
+        indexAgreement({ id: result[0]?.id, title: `Lane ${input.originCity},${input.originState} → ${input.destinationCity},${input.destinationState}`, type: "lane_commitment", parties: `Shipper ${ctx.user!.id} / Catalyst ${input.catalystId}`, terms: `$${input.contractedRate} ${input.rateType}, ${input.volumeCommitment || 0} loads/mo, ${input.equipmentType || "any"} ${input.hazmatRequired ? "HAZMAT" : ""}` });
+      } catch {}
+
       return { id: result[0]?.id, success: true };
     }),
 

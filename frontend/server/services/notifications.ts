@@ -1271,6 +1271,68 @@ async function notifyInsuranceCompliant(params: {
   }));
 }
 
+// ─── SOS Emergency Contact Notification ──────────────────────────────
+
+/**
+ * Send SOS alert to the user's emergency contact — SMS + branded email.
+ * Called directly from the triggerSOS procedure (not through lookupAndNotify,
+ * because the recipient is NOT a platform user).
+ */
+export async function notifySOSEmergencyContact(params: {
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+  contactRelationship: string;
+  userName: string;
+  userPhone?: string;
+  latitude: number;
+  longitude: number;
+  message?: string;
+  timestamp: string;
+}): Promise<void> {
+  const coordsStr = `${params.latitude.toFixed(4)}, ${params.longitude.toFixed(4)}`;
+  const mapsUrl = `https://www.google.com/maps?q=${params.latitude},${params.longitude}`;
+  const timeStr = new Date(params.timestamp).toLocaleString("en-US", {
+    timeZone: "America/Chicago", month: "short", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit", hour12: true,
+  });
+
+  // SMS — concise, urgent
+  safe(() => sendSms({
+    to: params.contactPhone,
+    message: `EusoTrip SOS ALERT: ${params.userName} has triggered an emergency SOS at ${timeStr} CT. Location: ${mapsUrl} — ${params.message || "Immediate assistance requested."}. You are listed as their emergency contact. Call ${params.userPhone || "them"} immediately.`,
+  }));
+
+  // Email — branded, detailed
+  safe(() => emailService.send({
+    to: params.contactEmail,
+    subject: `URGENT SOS ALERT — ${params.userName} Needs Help - EusoTrip`,
+    html: emailWrap("SOS Emergency Alert", `
+      ${p(`Dear ${params.contactName},`)}
+      ${p(`You are receiving this message because you are listed as the <strong style="color:#E2E8F0">emergency contact</strong> (${params.contactRelationship}) for <strong style="color:#E2E8F0">${params.userName}</strong> on the EusoTrip platform.`)}
+      <div style="margin:20px 0;padding:20px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:14px">
+        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#ef4444;letter-spacing:-0.2px">SOS TRIGGERED</p>
+        <p style="margin:0;color:#CBD5E1;font-size:14px;line-height:1.6">${params.userName} has activated an emergency SOS signal from their vehicle. This may indicate a breakdown, medical event, accident, or other urgent situation requiring immediate attention.</p>
+      </div>
+      ${infoTable(
+        infoRow("Who", `<strong style="color:#E2E8F0">${params.userName}</strong>`) +
+        (params.userPhone ? infoRow("Their Phone", `<a href="tel:${params.userPhone}" style="color:#60A5FA;text-decoration:none">${params.userPhone}</a>`) : "") +
+        infoRow("When", timeStr + " CT") +
+        infoRow("GPS Coordinates", coordsStr) +
+        (params.message ? infoRow("Message", params.message) : "")
+      )}
+      ${btn(mapsUrl, "View Location on Map", "#ef4444")}
+      ${p(`<strong style="color:#E2E8F0">What you should do:</strong>`)}
+      <ol style="margin:0 0 16px;padding-left:20px;color:#94A3B8;font-size:14px;line-height:2">
+        <li>Try to reach ${params.userName} by phone immediately</li>
+        <li>If you cannot reach them, consider contacting local emergency services (911)</li>
+        <li>Use the map link above to see their last known location</li>
+      </ol>
+      ${p(`<span style="color:#64748B;font-size:13px">EusoTrip has also dispatched roadside assistance diagnostics on their end. This alert was generated automatically when the SOS button was activated.</span>`)}
+    `, "#ef4444"),
+  }));
+}
+
 // ─── Exported Branded Email Builders ─────────────────────────────────
 
 /**

@@ -6837,6 +6837,7 @@ export const embeddings = mysqlTable(
     entityType: mysqlEnum("entity_type", [
       "load", "document", "knowledge", "carrier",
       "rate_sheet", "agreement", "erg_guide", "zone_intelligence",
+      "support_ticket", "message", "compliance_record",
     ]).notNull(),
     entityId: varchar("entity_id", { length: 255 }).notNull(),
     contentHash: varchar("content_hash", { length: 16 }).notNull(),

@@ -171,6 +171,12 @@ export const companiesRouter = router({
         await db.update(companies).set(updateData).where(eq(companies.id, targetId));
       }
 
+      // Re-index carrier for AI semantic search on every update (fire-and-forget)
+      try {
+        const { indexCarrier } = await import("../services/embeddings/aiTurbocharge");
+        indexCarrier({ id: targetId, name: (input as any).name || "", dotNumber: (input as any).dotNumber || "", mcNumber: (input as any).mcNumber || "", description: (input as any).description || "" });
+      } catch {}
+
       return { success: true };
     }),
 

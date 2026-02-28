@@ -19,6 +19,7 @@ import { embeddingService, EmbeddingService } from "../services/embeddings/embed
 const ENTITY_TYPES = [
   "load", "document", "knowledge", "carrier",
   "rate_sheet", "agreement", "erg_guide", "zone_intelligence",
+  "support_ticket", "message", "compliance_record",
 ] as const;
 
 export const embeddingsRouter = router({
@@ -33,6 +34,7 @@ export const embeddingsRouter = router({
       model: embeddingService.modelId,
       dimensions: embeddingService.dimensions,
       serviceUrl: embeddingService.serviceUrl,
+      queryCache: embeddingService.cacheStats,
     };
   }),
 
@@ -71,7 +73,7 @@ export const embeddingsRouter = router({
           .select({ contentHash: embeddings.contentHash })
           .from(embeddings)
           .where(and(
-            eq(embeddings.entityType, item.entityType),
+            eq(embeddings.entityType, item.entityType as any),
             eq(embeddings.entityId, item.entityId),
           ))
           .limit(1);
@@ -108,7 +110,7 @@ export const embeddingsRouter = router({
 
         // Upsert: delete + insert (MySQL-friendly)
         await db.delete(embeddings).where(and(
-          eq(embeddings.entityType, item.entityType),
+          eq(embeddings.entityType, item.entityType as any),
           eq(embeddings.entityId, item.entityId),
         ));
         await db.insert(embeddings).values({ ...row, createdAt: new Date() });
@@ -119,7 +121,7 @@ export const embeddingsRouter = router({
     }),
 
   /**
-   * Semantic search — embed a query and find the closest matches.
+   * Semantic search — uses cached candidates via aiTurbocharge for speed.
    */
   search: protectedProcedure
     .input(z.object({
@@ -129,64 +131,24 @@ export const embeddingsRouter = router({
       threshold: z.number().min(0).max(1).default(0.3),
     }))
     .query(async ({ input }) => {
-      const { getDb } = await import("../db");
-      const { embeddings } = await import("../../drizzle/schema");
-      const { eq, inArray } = await import("drizzle-orm");
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-
-      // Embed the query
-      const queryVec = await embeddingService.embedOne(input.query);
-
-      // Load candidate embeddings from DB (filtered by entity type if specified)
-      let candidates;
-      if (input.entityTypes && input.entityTypes.length > 0) {
-        candidates = await db
-          .select({
-            entityType: embeddings.entityType,
-            entityId: embeddings.entityId,
-            embedding: embeddings.embedding,
-            sourceText: embeddings.sourceText,
-            metadata: embeddings.metadata,
-          })
-          .from(embeddings)
-          .where(inArray(embeddings.entityType, input.entityTypes));
-      } else {
-        candidates = await db
-          .select({
-            entityType: embeddings.entityType,
-            entityId: embeddings.entityId,
-            embedding: embeddings.embedding,
-            sourceText: embeddings.sourceText,
-            metadata: embeddings.metadata,
-          })
-          .from(embeddings);
-      }
-
-      // Compute cosine similarity and rank
-      const results = embeddingService.search(
-        queryVec.values,
-        candidates.map(c => ({
-          embedding: Array.isArray(c.embedding) ? c.embedding as number[] : [],
-          entityId: c.entityId,
-          entityType: c.entityType,
-          text: c.sourceText || undefined,
-          metadata: (c.metadata as Record<string, unknown>) || undefined,
-        })),
-        input.topK,
-        input.threshold,
-      );
+      const { semanticSearch } = await import("../services/embeddings/aiTurbocharge");
+      const results = await semanticSearch(input.query, {
+        entityTypes: input.entityTypes.length > 0 ? input.entityTypes as any : undefined,
+        topK: input.topK,
+        threshold: input.threshold,
+      });
 
       return {
         query: input.query,
         results: results.map(r => ({
           entityType: r.entityType,
           entityId: r.entityId,
-          score: Math.round(r.score * 10000) / 10000,
+          score: r.score,
           text: r.text?.slice(0, 500),
           metadata: r.metadata,
         })),
-        totalCandidates: candidates.length,
+        totalCandidates: results.length,
+        cacheStats: embeddingService.cacheStats,
       };
     }),
 
@@ -206,7 +168,7 @@ export const embeddingsRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       await db.delete(embeddings).where(and(
-        eq(embeddings.entityType, input.entityType),
+        eq(embeddings.entityType, input.entityType as any),
         inArray(embeddings.entityId, input.entityIds),
       ));
 

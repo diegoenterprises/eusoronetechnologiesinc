@@ -129,6 +129,29 @@ export const searchRouter = router({
         results.push({ id: String(d.id), type: "document", title: d.name || "Document", subtitle: d.type || "file", match: 75 });
       }
 
+      // ── AI SEMANTIC SEARCH AUGMENTATION ──────────────────────────────
+      // If SQL text matching found few results, augment with Perplexity embedding search
+      if (results.length < 8) {
+        try {
+          const { searchAll } = await import("../services/embeddings/aiTurbocharge");
+          const semanticHits = await searchAll(input.query, 12);
+          const existingIds = new Set(results.map(r => r.id));
+          for (const hit of semanticHits) {
+            if (existingIds.has(hit.entityId)) continue;
+            const typeMap: Record<string, string> = { load: "load", carrier: "company", document: "document", agreement: "document", rate_sheet: "document", knowledge: "knowledge", zone_intelligence: "zone", support_ticket: "support", message: "message" };
+            const matchScore = Math.round(hit.score * 100);
+            results.push({
+              id: hit.entityId,
+              type: typeMap[hit.entityType] || hit.entityType,
+              title: hit.text.slice(0, 80),
+              subtitle: `AI match · ${matchScore}% relevance · ${hit.entityType}`,
+              match: matchScore,
+            });
+            existingIds.add(hit.entityId);
+          }
+        } catch { /* embedding service unavailable — degrade gracefully */ }
+      }
+
       // Sort by match score descending
       results.sort((a, b) => b.match - a.match);
 
@@ -179,6 +202,17 @@ export const searchRouter = router({
       // Company suggestions
       const compSuggs = await db.select({ id: companies.id, name: companies.name }).from(companies).where(sql`${companies.name} LIKE ${q}`).limit(2);
       for (const c of compSuggs) results.push({ text: c.name || "", type: "company", id: String(c.id) });
+      // AI semantic suggestions if SQL yields few
+      if (results.length < 4) {
+        try {
+          const { searchAll } = await import("../services/embeddings/aiTurbocharge");
+          const hits = await searchAll(input.query, 4);
+          const existingIds = new Set(results.map(r => r.id));
+          for (const hit of hits.filter(h => h.score > 0.35 && !existingIds.has(h.entityId))) {
+            results.push({ text: hit.text.slice(0, 60), type: hit.entityType, id: hit.entityId });
+          }
+        } catch {}
+      }
       return results.slice(0, input.limit || 8);
     } catch { return []; }
   }),
@@ -192,11 +226,23 @@ export const searchRouter = router({
       if (input.status) conds.push(eq(loads.status, input.status as any));
       const rows = await db.select({ id: loads.id, loadNumber: loads.loadNumber, status: loads.status, cargoType: loads.cargoType, commodityName: loads.commodityName, pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation })
         .from(loads).where(and(...conds)).orderBy(desc(loads.createdAt)).limit(input.limit || 20);
-      return rows.map(l => ({
+      const results = rows.map(l => ({
         id: String(l.id), loadNumber: l.loadNumber || `LOAD-${l.id}`, status: l.status,
         cargoType: l.cargoType, commodity: l.commodityName || "",
         origin: (l.pickupLocation as any)?.city || "", destination: (l.deliveryLocation as any)?.city || "",
       }));
+      // Augment with AI semantic search if few results
+      if (results.length < 5) {
+        try {
+          const { searchLoads: semanticSearchLoads } = await import("../services/embeddings/aiTurbocharge");
+          const hits = await semanticSearchLoads(input.query, 8);
+          const existingIds = new Set(results.map(r => r.id));
+          for (const hit of hits.filter(h => h.score > 0.3 && !existingIds.has(h.entityId))) {
+            results.push({ id: hit.entityId, loadNumber: `AI-${hit.entityId}`, status: null as any, cargoType: null as any, commodity: hit.text.slice(0, 60), origin: "", destination: "" });
+          }
+        } catch {}
+      }
+      return results;
     } catch { return []; }
   }),
 
@@ -225,10 +271,23 @@ export const searchRouter = router({
       if (companyId) conds.push(eq(documents.companyId, companyId));
       const rows = await db.select({ id: documents.id, name: documents.name, type: documents.type, status: documents.status, expiryDate: documents.expiryDate })
         .from(documents).where(and(...conds)).orderBy(desc(documents.createdAt)).limit(input.limit || 10);
-      return rows.map(d => ({
+      const results = rows.map(d => ({
         id: String(d.id), name: d.name, type: d.type, status: d.status || "active",
         expiresAt: d.expiryDate?.toISOString().split("T")[0] || "",
       }));
+      // Augment with AI semantic document search if few results
+      if (results.length < 3) {
+        try {
+          const { searchDocuments: semanticSearchDocs } = await import("../services/embeddings/aiTurbocharge");
+          const hits = await semanticSearchDocs(input.query, 5);
+          const existingIds = new Set(results.map(r => r.id));
+          for (const hit of hits.filter(h => h.score > 0.3 && !existingIds.has(h.entityId))) {
+            const meta = (hit.metadata || {}) as any;
+            results.push({ id: hit.entityId, name: hit.text.slice(0, 80), type: meta.type || "unknown", status: "active", expiresAt: "" });
+          }
+        } catch {}
+      }
+      return results;
     } catch { return []; }
   }),
 
@@ -240,7 +299,20 @@ export const searchRouter = router({
       const conds: any[] = [or(sql`${companies.name} LIKE ${q}`, sql`${companies.mcNumber} LIKE ${q}`, sql`${companies.dotNumber} LIKE ${q}`)];
       const rows = await db.select({ id: companies.id, name: companies.name, mcNumber: companies.mcNumber, dotNumber: companies.dotNumber })
         .from(companies).where(and(...conds)).limit(input.limit || 10);
-      return rows.map(c => ({ id: String(c.id), name: c.name || '', mcNumber: c.mcNumber || '', dotNumber: c.dotNumber || '', status: 'active' }));
+      const results = rows.map(c => ({ id: String(c.id), name: c.name || '', mcNumber: c.mcNumber || '', dotNumber: c.dotNumber || '', status: 'active' }));
+      // Augment with AI semantic carrier search if few results
+      if (results.length < 5) {
+        try {
+          const { searchCarriers: semanticSearchCarriers } = await import("../services/embeddings/aiTurbocharge");
+          const hits = await semanticSearchCarriers(input.query, 8);
+          const existingIds = new Set(results.map(r => r.id));
+          for (const hit of hits.filter(h => h.score > 0.3 && !existingIds.has(h.entityId))) {
+            const meta = (hit.metadata || {}) as any;
+            results.push({ id: hit.entityId, name: hit.text.slice(0, 60), mcNumber: meta.mcNumber || '', dotNumber: meta.dotNumber || '', status: 'active' });
+          }
+        } catch {}
+      }
+      return results;
     } catch { return []; }
   }),
 

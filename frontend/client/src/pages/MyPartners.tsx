@@ -19,11 +19,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { toast } from "sonner";
 import { Portal } from "@/components/ui/portal";
 import {
@@ -31,8 +32,10 @@ import {
   Truck, Package, Shield, UserPlus, CheckCircle, Clock,
   AlertTriangle, XCircle, BadgeCheck, Send, Mail, Phone,
   Loader2, ArrowUpRight, ArrowDownLeft, MoreHorizontal,
-  Handshake, Activity, Filter,
+  Handshake, Activity, Filter, PenTool, FileWarning,
 } from "lucide-react";
+
+const AgreementsLibrary = lazy(() => import("./AgreementsLibrary"));
 
 type PartnerType = { toRole: string; relationship: string; label: string; description: string };
 
@@ -183,6 +186,19 @@ export default function MyPartners() {
     return <Badge className={cn("border text-[10px] font-semibold px-2 py-0.5", isLight ? `${colors.lightBg} ${colors.light} border-transparent` : `${colors.bg} ${colors.text} border-transparent`)}>{label}</Badge>;
   };
 
+  const getAgreementBadge = (agreementStatus: string | null) => {
+    if (!agreementStatus) return null;
+    const m: Record<string, { cls: string; icon: any; label: string }> = {
+      active: { cls: isLight ? "bg-emerald-100 text-emerald-700 border-emerald-300" : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", icon: PenTool, label: "Active Agreement" },
+      pending: { cls: isLight ? "bg-amber-100 text-amber-700 border-amber-300" : "bg-amber-500/15 text-amber-400 border-amber-500/30", icon: Clock, label: "Pending Agreement" },
+      expired: { cls: isLight ? "bg-red-100 text-red-700 border-red-300" : "bg-red-500/15 text-red-400 border-red-500/30", icon: FileWarning, label: "Agreement Expired" },
+    };
+    const s = m[agreementStatus];
+    if (!s) return null;
+    const Icon = s.icon;
+    return <Badge className={cn("border text-[10px] font-semibold px-2 py-0.5 gap-1", s.cls)}><Icon className="w-3 h-3" />{s.label}</Badge>;
+  };
+
   const handleAddPartner = useCallback(() => {
     if (!apSelectedCompany || !apSelectedType) { toast.error("Select a company and partner type"); return; }
     const metaNotes = JSON.stringify({
@@ -213,12 +229,26 @@ export default function MyPartners() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             {config?.heading || "My Partners"}
           </h1>
-          <p className={subtextCls}>{config?.subheading || "Your supply chain connections"}</p>
+          <p className={subtextCls}>{config?.subheading || "Partners, agreements & supply chain connections"}</p>
         </div>
-        <Button onClick={() => setShowAddModal(true)} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm">
-          <Plus className="w-4 h-4 mr-2" />Add Partner
-        </Button>
       </div>
+
+      <Tabs defaultValue="partners" className="space-y-6">
+        <TabsList className={cn("border rounded-lg p-1", isLight ? "bg-slate-100 border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
+          <TabsTrigger value="partners" className={cn("data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1473FF] data-[state=active]:to-[#BE01FF] data-[state=active]:text-white rounded-md px-4 py-2 text-sm gap-2", isLight ? "text-slate-600" : "")}>
+            <Handshake className="w-4 h-4" />Partners
+          </TabsTrigger>
+          <TabsTrigger value="agreements" className={cn("data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1473FF] data-[state=active]:to-[#BE01FF] data-[state=active]:text-white rounded-md px-4 py-2 text-sm gap-2", isLight ? "text-slate-600" : "")}>
+            <PenTool className="w-4 h-4" />Agreements
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="partners" className="space-y-6">
+          <div className="flex justify-end">
+            <Button onClick={() => setShowAddModal(true)} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm">
+              <Plus className="w-4 h-4 mr-2" />Add Partner
+            </Button>
+          </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -323,6 +353,7 @@ export default function MyPartners() {
                         <h3 className={cn("font-semibold", isLight ? "text-slate-800" : "text-white")}>{partner.companyName || "Unknown Company"}</h3>
                         {getRoleBadge(role)}
                         {getStatusBadge(partner.status || "pending")}
+                        {getAgreementBadge(partner.agreementStatus)}
                         {partner.direction === "inbound" && (
                           <Badge className={cn("border text-[10px] px-2 py-0.5", isLight ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-slate-700/50 text-slate-400 border-slate-600/30")}>
                             <ArrowDownLeft className="w-3 h-3 mr-0.5" />Added you
@@ -392,6 +423,14 @@ export default function MyPartners() {
           })
         )}
       </div>
+        </TabsContent>
+
+        <TabsContent value="agreements">
+          <Suspense fallback={<div className="space-y-4">{[1,2,3].map(i => <Skeleton key={i} className={cn("h-32 w-full rounded-xl", isLight ? "bg-slate-100" : "")} />)}</div>}>
+            <AgreementsLibrary />
+          </Suspense>
+        </TabsContent>
+      </Tabs>
 
       {/* Add Partner Modal */}
       {showAddModal && (

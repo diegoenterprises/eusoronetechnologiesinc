@@ -911,6 +911,15 @@ async function startServer() {
       }
     }, 20000);
 
+    // AI TURBOCHARGE — Seed knowledge base for RAG + warm embedding candidate cache
+    setTimeout(async () => {
+      try {
+        const { seedKnowledgeBase } = await import("../services/embeddings/ragRetriever");
+        const result = await seedKnowledgeBase();
+        console.log(`[AITurbo] Knowledge base seeded: ${result.indexed} indexed, ${result.errors} errors`);
+      } catch (err) { console.warn("[AITurbo] Knowledge seeding deferred:", (err as any)?.message?.slice(0, 80)); }
+    }, 25000);
+
     // Start Hot Zones data sync v5.0 — orchestrator + scheduler (22+ data sources)
     setTimeout(async () => {
       try {

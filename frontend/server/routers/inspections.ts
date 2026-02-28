@@ -161,6 +161,13 @@ export const inspectionsRouter = router({
       } as any);
       const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
 
+      // Auto-index inspection for AI semantic search (fire-and-forget)
+      try {
+        const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge");
+        const defects = input.items.filter((i: any) => i.status === "fail").map((i: any) => i.label || i.id).join(", ");
+        indexComplianceRecord({ id: insertedId, type: `inspection_${input.type}`, description: `Vehicle ${input.vehicleId} ${input.type} inspection. ${input.defectsFound ? `Defects: ${defects}. Safe: ${input.safeToOperate}` : "No defects"}`, status: input.safeToOperate ? "passed" : "failed", severity: input.safeToOperate ? "minor" : "major" });
+      } catch {}
+
       return {
         id: String(insertedId),
         status: "submitted",

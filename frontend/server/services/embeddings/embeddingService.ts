@@ -19,6 +19,9 @@ const EMBEDDING_DIMS = 1024;            // pplx-embed-v1-0.6b output dimensions
 const MAX_BATCH_SIZE = 64;              // TEI default max batch
 const REQUEST_TIMEOUT_MS = 30_000;
 const MAX_RETRIES = 2;
+const HEALTH_CACHE_TTL_MS = 60_000;     // Cache health status for 60s (was 30s)
+const QUERY_CACHE_MAX = 256;            // LRU cache size for query embeddings
+const QUERY_CACHE_TTL_MS = 300_000;     // 5 min TTL for cached query vectors
 
 // ── Types ────────────────────────────────────────────────────────────────────
 export interface EmbeddingVector {
@@ -89,11 +92,54 @@ async function fetchWithRetry(url: string, init: RequestInit, retries = MAX_RETR
   throw new Error("[EmbeddingService] fetchWithRetry: exhausted retries");
 }
 
+// ── LRU Query Vector Cache ───────────────────────────────────────────────────
+interface CachedVector { vec: EmbeddingVector; ts: number }
+class QueryVectorCache {
+  private map = new Map<string, CachedVector>();
+  private maxSize: number;
+  private ttlMs: number;
+  hits = 0;
+  misses = 0;
+
+  constructor(maxSize = QUERY_CACHE_MAX, ttlMs = QUERY_CACHE_TTL_MS) {
+    this.maxSize = maxSize;
+    this.ttlMs = ttlMs;
+  }
+
+  get(key: string): EmbeddingVector | null {
+    const entry = this.map.get(key);
+    if (!entry) { this.misses++; return null; }
+    if (Date.now() - entry.ts > this.ttlMs) {
+      this.map.delete(key);
+      this.misses++;
+      return null;
+    }
+    // LRU: move to end
+    this.map.delete(key);
+    this.map.set(key, entry);
+    this.hits++;
+    return entry.vec;
+  }
+
+  set(key: string, vec: EmbeddingVector): void {
+    if (this.map.size >= this.maxSize) {
+      // Evict oldest (first key)
+      const oldest = this.map.keys().next().value;
+      if (oldest !== undefined) this.map.delete(oldest);
+    }
+    this.map.set(key, { vec, ts: Date.now() });
+  }
+
+  get size() { return this.map.size; }
+  get stats() { return { size: this.map.size, hits: this.hits, misses: this.misses, hitRate: this.hits + this.misses > 0 ? Math.round(this.hits / (this.hits + this.misses) * 100) : 0 }; }
+}
+
 // ── Core Service ─────────────────────────────────────────────────────────────
 export class EmbeddingService {
   private baseUrl: string;
   private healthy: boolean | null = null;
   private lastHealthCheck = 0;
+  private queryCache = new QueryVectorCache();
 
   constructor() {
     this.baseUrl = ENV.embeddingServiceUrl || "http://localhost:8090";
@@ -103,8 +149,8 @@ export class EmbeddingService {
   // ── Health Check ─────────────────────────────────────────────────────────
   async isHealthy(): Promise<boolean> {
     const now = Date.now();
-    // Cache health for 30s
-    if (this.healthy !== null && now - this.lastHealthCheck < 30_000) {
+    // Cache health for 60s (reduced API chatter)
+    if (this.healthy !== null && now - this.lastHealthCheck < HEALTH_CACHE_TTL_MS) {
       return this.healthy;
     }
     try {
@@ -139,12 +185,19 @@ export class EmbeddingService {
 
   /**
    * Embed a single text and return its vector.
+   * Uses LRU cache to avoid re-embedding identical queries.
    */
   async embedOne(text: string): Promise<EmbeddingVector> {
+    // Check LRU cache first
+    const cached = this.queryCache.get(text);
+    if (cached) return cached;
+
     const results = await this.embed([text]);
     if (results.length === 0) {
       throw new Error("[EmbeddingService] embedOne: no results returned");
     }
+    // Cache the result
+    this.queryCache.set(text, results[0].embedding);
     return results[0].embedding;
   }
 
@@ -226,6 +279,7 @@ export class EmbeddingService {
   get dimensions(): number { return EMBEDDING_DIMS; }
   get modelId(): string { return "perplexity-ai/pplx-embed-v1-0.6b"; }
   get serviceUrl(): string { return this.baseUrl; }
+  get cacheStats() { return this.queryCache.stats; }
 
   // ── Private ──────────────────────────────────────────────────────────────
   private async embedBatch(texts: string[], offsetIndex: number): Promise<EmbeddingResult[]> {

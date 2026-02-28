@@ -300,12 +300,26 @@ export const registrationRouter = router({
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.contactEmail, phone: input.contactPhone, name: input.contactName, role: "SHIPPER" }).catch(() => {});
 
+      // Auto-index company for AI semantic search (fire-and-forget)
+      try {
+        const { indexCarrier } = await import("../services/embeddings/aiTurbocharge");
+        indexCarrier({ id: companyId, companyName: input.companyName, serviceAreas: input.state });
+      } catch {}
+
+      // AI Turbocharge: Registration fraud scoring
+      let aiFraudCheck: any = null;
+      try {
+        const { scoreRegistration } = await import("../services/ai/fraudScorer");
+        aiFraudCheck = scoreRegistration({ email: input.contactEmail, phone: input.contactPhone, companyName: input.companyName });
+      } catch {}
+
       return {
         success: true,
         userId,
         companyId,
         message: "Registration submitted. Please check your email to verify your account.",
         verificationRequired: true,
+        aiFraudCheck,
       };
     }),
 
@@ -452,6 +466,19 @@ export const registrationRouter = router({
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.contactEmail, phone: input.contactPhone, name: input.contactName, role: "CATALYST" }).catch(() => {});
 
+      // Auto-index carrier for AI semantic search (fire-and-forget)
+      try {
+        const { indexCarrier } = await import("../services/embeddings/aiTurbocharge");
+        indexCarrier({ id: companyId, companyName: input.companyName, dotNumber: input.usdotNumber, mcNumber: input.mcNumber, equipmentTypes: input.equipmentTypes, hazmatCertified: input.hazmatEndorsed, serviceAreas: (input.processAgentStates || [input.state]).join(", "), specializations: input.catalystType });
+      } catch {}
+
+      // AI Turbocharge: Registration fraud scoring
+      let aiFraudCheck: any = null;
+      try {
+        const { scoreRegistration } = await import("../services/ai/fraudScorer");
+        aiFraudCheck = scoreRegistration({ email: input.contactEmail, phone: input.contactPhone, companyName: input.companyName, dotNumber: input.usdotNumber, mcNumber: input.mcNumber });
+      } catch {}
+
       return {
         success: true,
         userId,
@@ -459,6 +486,7 @@ export const registrationRouter = router({
         saferVerification,
         message: "Registration submitted. USDOT verification in progress.",
         verificationRequired: true,
+        aiFraudCheck,
       };
     }),
 
@@ -689,6 +717,13 @@ export const registrationRouter = router({
       seedUserOperatingStates(db, userId, input.state, []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.contactEmail, phone: input.contactPhone, name: input.contactName, role: "BROKER" }).catch(() => {});
+
+      // Auto-index broker for AI semantic search (fire-and-forget)
+      try {
+        const { indexCarrier } = await import("../services/embeddings/aiTurbocharge");
+        indexCarrier({ id: companyId, companyName: input.companyName, dotNumber: input.usdotNumber, mcNumber: input.mcNumber, serviceAreas: input.state, specializations: "freight broker" });
+      } catch {}
+
       return { success: true, userId, companyId, verificationRequired: true };
     }),
 
@@ -960,6 +995,13 @@ export const registrationRouter = router({
       seedUserOperatingStates(db, userId, input.state, []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: input.managerName, role: "TERMINAL_MANAGER" }).catch(() => {});
+
+      // Auto-index terminal for AI semantic search (fire-and-forget)
+      try {
+        const { indexCarrier } = await import("../services/embeddings/aiTurbocharge");
+        indexCarrier({ id: companyId, companyName: input.facilityName, name: input.ownerCompany, serviceAreas: input.state, specializations: `terminal ${input.facilityType || "facility"}` });
+      } catch {}
+
       return { success: true, userId, companyId, verificationRequired: true };
     }),
 

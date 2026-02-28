@@ -18,7 +18,7 @@ import { getStripe } from "@/lib/stripe";
 import {
   Settings as SettingsIcon, User, Bell, Shield, CreditCard,
   Save, Loader2, Camera, CheckCircle, Plus, Trash2, Star,
-  Lock, Eye, EyeOff, Building2, AlertTriangle
+  Lock, Eye, EyeOff, Building2, AlertTriangle, Heart, Phone
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -61,6 +61,14 @@ export default function Settings() {
     marketingEmails: false,
   });
 
+  // --- Emergency contact state ---
+  const [emergencyForm, setEmergencyForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    relationship: "",
+  });
+
   // --- Security form state ---
   const [securityForm, setSecurityForm] = useState({
     currentPassword: "",
@@ -78,6 +86,7 @@ export default function Settings() {
   // --- Queries ---
   const profileQuery = (trpc as any).users.getProfile.useQuery();
   const preferencesQuery = (trpc as any).users.getPreferences.useQuery();
+  const emergencyContactQuery = (trpc as any).users.getEmergencyContact.useQuery();
   const paymentMethodsQuery = (trpc as any).stripe.listPaymentMethods.useQuery(undefined, {
     enabled: activeTab === "billing",
     retry: false,
@@ -103,6 +112,11 @@ export default function Settings() {
   const uploadPictureMutation = (trpc as any).users.uploadProfilePicture.useMutation({
     onSuccess: () => { toast.success("Profile picture saved"); profileQuery.refetch(); },
     onError: (error: any) => toast.error("Failed to upload picture", { description: error.message }),
+  });
+
+  const updateEmergencyContactMutation = (trpc as any).users.updateEmergencyContact.useMutation({
+    onSuccess: () => { toast.success("Emergency contact saved"); emergencyContactQuery.refetch(); },
+    onError: (error: any) => toast.error("Failed to save emergency contact", { description: error.message }),
   });
 
   const createSetupCheckoutMutation = (trpc as any).stripe.createSetupCheckout.useMutation({
@@ -144,6 +158,18 @@ export default function Settings() {
     }
   }, [profile]);
 
+  // Sync emergency contact when loaded
+  useEffect(() => {
+    if (emergencyContactQuery.data) {
+      setEmergencyForm({
+        name: emergencyContactQuery.data.name || "",
+        phone: emergencyContactQuery.data.phone || "",
+        email: emergencyContactQuery.data.email || "",
+        relationship: emergencyContactQuery.data.relationship || "",
+      });
+    }
+  }, [emergencyContactQuery.data]);
+
   // Sync notification preferences when loaded
   useEffect(() => {
     if (preferences) {
@@ -166,6 +192,14 @@ export default function Settings() {
       phone: profileForm.phone.trim(),
       company: profileForm.company.trim(),
     });
+  };
+
+  const handleSaveEmergencyContact = () => {
+    if (!emergencyForm.name.trim()) { toast.error("Emergency contact name is required"); return; }
+    if (!emergencyForm.phone.trim()) { toast.error("Emergency contact phone is required"); return; }
+    if (!emergencyForm.email.trim()) { toast.error("Emergency contact email is required"); return; }
+    if (!emergencyForm.relationship.trim()) { toast.error("Relationship is required"); return; }
+    updateEmergencyContactMutation.mutate(emergencyForm);
   };
 
   const handleSavePreferences = () => {
@@ -333,6 +367,64 @@ export default function Settings() {
               </CardContent>
             </Card>
           </div>
+
+          {/* ── Emergency Contact Card ── */}
+          <Card className={`mt-6 ${cardCls} border-red-200/50 dark:border-red-500/20`}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                <Heart className="w-5 h-5 text-red-500" />Emergency Contact
+                <span className="text-xs font-normal text-slate-400 dark:text-slate-500 ml-2">Used when SOS is triggered</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {emergencyContactQuery.isLoading ? (
+                <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              ) : (
+                <div className="space-y-5">
+                  {!emergencyContactQuery.data && (
+                    <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 mb-2">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-amber-700 dark:text-amber-400">No emergency contact on file. When SOS is triggered, your emergency contact will be notified by SMS and email immediately. Please add one now.</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Full Name</Label>
+                      <Input value={emergencyForm.name} onChange={(e: any) => setEmergencyForm(s => ({ ...s, name: e.target.value }))} className={inputCls} placeholder="Jane Doe" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Relationship</Label>
+                      <Input value={emergencyForm.relationship} onChange={(e: any) => setEmergencyForm(s => ({ ...s, relationship: e.target.value }))} className={inputCls} placeholder="Spouse, Parent, Sibling..." />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Phone Number</Label>
+                      <Input value={emergencyForm.phone} onChange={(e: any) => setEmergencyForm(s => ({ ...s, phone: e.target.value }))} className={inputCls} placeholder="(555) 000-0000" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Email Address</Label>
+                      <Input value={emergencyForm.email} onChange={(e: any) => setEmergencyForm(s => ({ ...s, email: e.target.value }))} className={inputCls} placeholder="emergency@email.com" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button onClick={handleSaveEmergencyContact} className="bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 text-white rounded-lg" disabled={updateEmergencyContactMutation.isPending}>
+                      {updateEmergencyContactMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Heart className="w-4 h-4 mr-2" />}
+                      Save Emergency Contact
+                    </Button>
+                    {emergencyContactQuery.data && (
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        Contact on file
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ======== NOTIFICATIONS TAB ======== */}

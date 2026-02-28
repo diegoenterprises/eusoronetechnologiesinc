@@ -366,6 +366,12 @@ export const messagesRouter = router({
         }
       } catch {}
 
+      // Auto-index message for AI semantic search (fire-and-forget)
+      try {
+        const { indexMessage } = await import("../services/embeddings/aiTurbocharge");
+        indexMessage({ id: msgId, content: input.content, senderName: sender?.name, conversationId: convId, senderId: userId });
+      } catch {}
+
       return {
         id: String(msgId),
         conversationId: String(convId),

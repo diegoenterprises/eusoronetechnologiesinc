@@ -527,6 +527,22 @@ export const hotZonesRouter = router({
         }
       } catch { /* mlEngine or sidecar unavailable */ }
 
+      // AI Turbocharge: Forecast engine — anomaly detection + trend analysis on zone rates
+      const aiTrendMap: Record<string, { trend: string; anomaly: boolean }> = {};
+      try {
+        const { analyzeTrend, detectAnomaly } = await import("../services/ai/forecastEngine");
+        for (const zone of HOT_ZONES) {
+          const baseRate = zone.avgRate;
+          const dbRate = dbData.avgRateByState[zone.state] || 0;
+          if (dbRate > 0) {
+            const series = [baseRate, baseRate * 0.98, baseRate * 1.01, dbRate];
+            const trend = analyzeTrend(series);
+            const anomaly = detectAnomaly(dbRate, [baseRate, baseRate * 0.98, baseRate * 1.01], 2.0);
+            aiTrendMap[zone.id] = { trend: trend.direction, anomaly: anomaly.isAnomaly };
+          }
+        }
+      } catch {}
+
       const feed = HOT_ZONES.map(zone => {
         const intel = hasZoneIntel ? zoneIntel[zone.id] : null;
 
@@ -612,6 +628,8 @@ export const hotZonesRouter = router({
           seismicRiskLevel: intel?.seismicRiskLevel || "Low",
           epaFacilitiesCount: intel ? Number(intel.epaFacilitiesCount) || 0 : 0,
           platformLoads: dbLoads, timestamp: new Date().toISOString(),
+          aiRateTrend: aiTrendMap[zone.id]?.trend || null,
+          aiRateAnomaly: aiTrendMap[zone.id]?.anomaly || false,
         };
         return { ...zd, roleMetrics: buildRoleMetrics(role, zd) };
       });
@@ -689,6 +707,22 @@ export const hotZonesRouter = router({
         zoneKnowledge = [...zoneHits, ...knowledgeHits].filter(h => h.score > 0.3).map(h => h.text.slice(0, 200));
       } catch { /* embedding service unavailable */ }
 
+      // AI Turbocharge: H3 hex cell + geo intelligence enrichment
+      let geoAnalysis: any = null;
+      try {
+        const { latLngToHex, getHexNeighbors, hexArea, scoreProximity } = await import("../services/ai/geoIntelligence");
+        const hexId = latLngToHex(zone.center.lat, zone.center.lng, 1);
+        const neighbors = getHexNeighbors(hexId);
+        geoAnalysis = {
+          hexId,
+          hexResolution: 1,
+          hexAreaSqMi: Math.round(hexArea(1)),
+          neighborHexes: neighbors.length,
+          zoneRadiusMiles: zone.radius,
+          loadDensity: +(zone.loadCount / Math.max(Math.PI * zone.radius * zone.radius, 1)).toFixed(4),
+        };
+      } catch {}
+
       return {
         ...zone, roleContext: roleCtx,
         fuelPrice: zoneFuel?.diesel || null, fuelPriceUpdated: zoneFuel?.updatedAt || null,
@@ -696,6 +730,7 @@ export const hotZonesRouter = router({
         weatherRiskLevel: zoneWeather.filter(a => ["Extreme","Severe"].includes(a.severity)).length > 2 ? "HIGH" : zoneWeather.length > 0 ? "MODERATE" : "LOW",
         complianceRiskScore: Math.round((zoneWeather.filter(a => ["Extreme","Severe"].includes(a.severity)).length * 20) + (zone.hazmatClasses?.length || 0) * 15 + (zone.loadToTruckRatio > 2.5 ? 20 : 0) + (zone.oversizedFrequency === "VERY_HIGH" ? 10 : zone.oversizedFrequency === "HIGH" ? 5 : 0)),
         aiKnowledge: zoneKnowledge,
+        geoAnalysis,
       };
     }),
 
@@ -716,14 +751,30 @@ export const hotZonesRouter = router({
         .filter(z => z.distance <= input.radiusMiles)
         .sort((a, b) => b.loadToTruckRatio - a.loadToTruckRatio);
       if (role === "ESCORT") nearby = nearby.filter(z => z.topEquipment.some(e => ["FLATBED","HAZMAT"].includes(e)) || ["HIGH","VERY_HIGH"].includes(z.oversizedFrequency));
+      // AI Turbocharge: H3 proximity scoring on opportunities
+      let aiProximityRanked = nearby.map(z => ({
+        zoneId: z.id, zoneName: z.name, distance: z.distance, avgRate: z.avgRate,
+        loadToTruckRatio: z.loadToTruckRatio, surgeMultiplier: z.surgeMultiplier,
+        topEquipment: z.topEquipment, reasons: z.reasons,
+        estimatedEarnings: +(z.avgRate * z.distance * 0.85).toFixed(0),
+        hazmatClasses: z.hazmatClasses, oversizedFrequency: z.oversizedFrequency,
+        aiProximityScore: 0, aiProximityZone: "" as string,
+      }));
+      try {
+        const { scoreProximity } = await import("../services/ai/geoIntelligence");
+        for (const opp of aiProximityRanked) {
+          const zone = HOT_ZONES.find(h => h.id === opp.zoneId);
+          if (zone) {
+            const prox = scoreProximity(input.lat, input.lng, zone.center.lat, zone.center.lng, input.radiusMiles);
+            opp.aiProximityScore = prox.score;
+            opp.aiProximityZone = prox.zone;
+          }
+        }
+        aiProximityRanked.sort((a, b) => b.aiProximityScore - a.aiProximityScore);
+      } catch {}
+
       return {
-        opportunities: nearby.map(z => ({
-          zoneId: z.id, zoneName: z.name, distance: z.distance, avgRate: z.avgRate,
-          loadToTruckRatio: z.loadToTruckRatio, surgeMultiplier: z.surgeMultiplier,
-          topEquipment: z.topEquipment, reasons: z.reasons,
-          estimatedEarnings: +(z.avgRate * z.distance * 0.85).toFixed(0),
-          hazmatClasses: z.hazmatClasses, oversizedFrequency: z.oversizedFrequency,
-        })),
+        opportunities: aiProximityRanked,
         roleContext: getRoleContext(role),
         searchRadius: input.radiusMiles, timestamp: new Date().toISOString(),
       };

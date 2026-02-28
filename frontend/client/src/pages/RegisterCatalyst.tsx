@@ -12,6 +12,7 @@ import type { ComplianceIds } from "@/components/registration/ComplianceIntegrat
 import { FMCSALookup } from "@/components/registration/FMCSALookup";
 import type { FMCSAData } from "@/components/registration/FMCSALookup";
 import { ProductPicker, CompliancePreview } from "@/components/registration/CompliancePreview";
+import StripeConnectStep from "@/components/registration/StripeConnectStep";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { 
   Truck, Building2, FileText, Shield, CreditCard, 
   Upload, CheckCircle, AlertCircle, User, Mail, Phone,
-  MapPin, Hash, Search, Loader2, Lock, ShieldCheck
+  MapPin, Hash, Search, Loader2, Lock, ShieldCheck, Landmark
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -92,7 +93,10 @@ interface CatalystFormData {
   // Step 9: Compliance Integrations
   complianceIds: ComplianceIds;
   
-  // Step 10: Terms
+  // Step 10: Payment Setup
+  businessType: "individual" | "company" | "";
+  
+  // Step 11: Terms
   acceptTerms: boolean;
   acceptPrivacy: boolean;
   acceptSafetyPolicy: boolean;
@@ -141,6 +145,7 @@ const initialFormData: CatalystFormData = {
   password: "",
   confirmPassword: "",
   complianceIds: emptyComplianceIds,
+  businessType: "",
   acceptTerms: false,
   acceptPrivacy: false,
   acceptSafetyPolicy: false,
@@ -292,6 +297,11 @@ export default function RegisterCatalyst() {
       cargoExpiration: formData.cargoExpiration || undefined,
       complianceIds: Object.keys(complianceIds).length > 0 ? complianceIds : undefined,
     });
+
+    // Store business type preference for post-login Stripe Connect onboarding
+    if (formData.businessType) {
+      try { localStorage.setItem("eusotrip_stripe_biz_type", formData.businessType); } catch {}
+    }
   };
 
   const steps: WizardStep[] = [
@@ -849,6 +859,26 @@ export default function RegisterCatalyst() {
           onChange={(ids) => updateFormData({ complianceIds: ids })}
         />
       ),
+    },
+    {
+      id: "payments",
+      title: "Payment Setup",
+      description: "How you'll get paid on EusoTrip",
+      icon: <Landmark className="w-5 h-5" />,
+      component: (
+        <StripeConnectStep
+          businessType={formData.businessType}
+          onBusinessTypeChange={(t) => updateFormData({ businessType: t })}
+          role="CATALYST"
+        />
+      ),
+      validate: () => {
+        if (!formData.businessType) {
+          toast.error("Please select your business type for payment setup");
+          return false;
+        }
+        return true;
+      },
     },
     {
       id: "terms",

@@ -104,7 +104,41 @@ export const safetyAlertsRouter = router({
       console.error("[SOS] Notification dispatch error:", e);
     }
 
-    // 4. WebSocket broadcast — real-time alert to all safety/dispatch channels
+    // 4. Notify user's personal emergency contact (SMS + branded email)
+    let emergencyContactNotified = false;
+    try {
+      const [userMeta] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, Number(userId))).limit(1);
+      let meta: any = {};
+      try { meta = userMeta?.metadata ? JSON.parse(userMeta.metadata as string) : {}; } catch { meta = {}; }
+      const ec = meta.emergencyContact;
+      if (ec?.phone && ec?.email && ec?.name) {
+        const { notifySOSEmergencyContact } = await import("../services/notifications");
+        await notifySOSEmergencyContact({
+          contactName: ec.name,
+          contactPhone: ec.phone,
+          contactEmail: ec.email,
+          contactRelationship: ec.relationship || "Emergency Contact",
+          userName: driverName,
+          userPhone: driver?.phone || undefined,
+          latitude: input.latitude,
+          longitude: input.longitude,
+          message: input.message,
+          timestamp: new Date().toISOString(),
+        });
+        emergencyContactNotified = true;
+        // Update alert record with who was alerted
+        await db.update(safetyAlerts)
+          .set({ message: `${input.message || "SOS - Emergency assistance requested"} — Alerted ${ec.name}` })
+          .where(eq(safetyAlerts.id, alert.id));
+        console.log(`[SOS] Emergency contact ${ec.name} (${ec.phone}) notified for user ${driverName}`);
+      } else {
+        console.log(`[SOS] No emergency contact on file for user ${driverName} (userId=${userId})`);
+      }
+    } catch (e) {
+      console.error("[SOS] Emergency contact notification error:", e);
+    }
+
+    // 5. WebSocket broadcast — real-time alert to all safety/dispatch channels
     try {
       const { emitSafetyIncident } = await import("../_core/websocket");
       emitSafetyIncident(String(companyId || ""), {
@@ -120,13 +154,14 @@ export const safetyAlertsRouter = router({
       console.error("[SOS] WebSocket broadcast error:", e);
     }
 
-    console.log(`[SOS] 🚨 Alert #${alert.id} from ${driverName} (userId=${userId}) at ${coordsStr} — ${notifiedUserIds.size} people notified`);
+    console.log(`[SOS] Alert #${alert.id} from ${driverName} (userId=${userId}) at ${coordsStr} — ${notifiedUserIds.size} people notified, emergencyContact=${emergencyContactNotified}`);
 
     return {
       success: true,
       alertId: alert.id,
       notifiedCount: notifiedUserIds.size,
-      message: `SOS alert broadcast. ${notifiedUserIds.size} emergency contacts notified.`,
+      emergencyContactNotified,
+      message: `SOS alert broadcast. ${notifiedUserIds.size} platform contacts notified.${emergencyContactNotified ? " Emergency contact alerted via SMS and email." : ""}`,
     };
   }),
 
@@ -190,21 +225,34 @@ export const safetyAlertsRouter = router({
       status: safetyAlerts.status,
       eventTimestamp: safetyAlerts.eventTimestamp,
       userName: users.name,
+      userPhone: users.phone,
+      userRole: users.role,
+      userMetadata: users.metadata,
     }).from(safetyAlerts).leftJoin(users, eq(safetyAlerts.userId, users.id)).where(and(...conditions)).orderBy(desc(safetyAlerts.eventTimestamp)).limit(input.limit);
 
-    return alerts.map(a => ({
-      id: a.id,
-      userId: a.userId,
-      userName: a.userName || "Driver",
-      loadId: a.loadId,
-      type: a.type,
-      severity: a.severity,
-      latitude: a.lat ? Number(a.lat) : null,
-      longitude: a.lng ? Number(a.lng) : null,
-      message: a.message,
-      status: a.status,
-      timestamp: a.eventTimestamp?.toISOString(),
-    }));
+    return alerts.map(a => {
+      let emergencyContact: { name: string; phone: string; email: string; relationship: string } | null = null;
+      try {
+        const meta = a.userMetadata ? JSON.parse(a.userMetadata as string) : {};
+        if (meta.emergencyContact?.name) emergencyContact = meta.emergencyContact;
+      } catch {}
+      return {
+        id: a.id,
+        userId: a.userId,
+        userName: a.userName || "Driver",
+        userPhone: a.userPhone || null,
+        userRole: a.userRole || null,
+        loadId: a.loadId,
+        type: a.type,
+        severity: a.severity,
+        latitude: a.lat ? Number(a.lat) : null,
+        longitude: a.lng ? Number(a.lng) : null,
+        message: a.message,
+        status: a.status,
+        timestamp: a.eventTimestamp?.toISOString(),
+        emergencyContact,
+      };
+    });
   }),
 
   // Acknowledge an alert

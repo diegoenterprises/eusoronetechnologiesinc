@@ -114,12 +114,27 @@ export const negotiationsRouter = router({
             currentOffer: { amount: input.proposedRate, proposedBy: userId, proposedAt: new Date().toISOString() },
             totalRounds: 1, status: 'open' as any,
           } as any).$returningId();
+          // Auto-index negotiation for AI semantic search (fire-and-forget)
+          try {
+            const { indexLoad } = await import("../services/embeddings/aiTurbocharge");
+            indexLoad({ id: result[0]?.id, loadNumber: negNum, commodity: `Rate negotiation $${input.proposedRate} on load ${input.loadId}`, origin: "", destination: "", status: "negotiation" });
+          } catch {}
+          // AI Turbocharge: Rate prediction + market position analysis
+          let aiRate: any = null;
+          try {
+            const { predictRate } = await import("../services/ai/forecastEngine");
+            aiRate = predictRate([], input.proposedRate, {
+              isHazmat: input.cargoType === 'hazmat' || input.cargoType === 'petroleum',
+              season: new Date().getMonth() + 1,
+            });
+          } catch {}
+
           return {
             negotiationId: result[0]?.id || Date.now(), loadId: input.loadId,
             proposedRate: input.proposedRate, platformFee,
             netAfterFee: Math.round((input.proposedRate - platformFee) * 100) / 100,
             status: "INITIATED" as NegotiationState, proposedBy: ctx.user?.id, round: 1,
-            createdAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(), aiRate,
           };
         } catch (e) { /* fall through */ }
       }

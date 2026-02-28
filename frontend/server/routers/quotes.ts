@@ -514,6 +514,22 @@ export const quotesRouter = router({
         pickupDate: new Date(input.pickupDate),
         specialInstructions: input.notes || null,
       } as any).$returningId();
+      // Auto-index quote for AI semantic search (fire-and-forget)
+      try {
+        const { indexLoad } = await import("../services/embeddings/aiTurbocharge");
+        indexLoad({ id: result[0]?.id, loadNumber, commodity: input.commodity || "", origin: `${input.origin.city}, ${input.origin.state}`, destination: `${input.destination.city}, ${input.destination.state}`, status: "quote" });
+      } catch {}
+
+      // AI Turbocharge: Rate prediction for quote
+      let aiRate: any = null;
+      try {
+        const { predictRate } = await import("../services/ai/forecastEngine");
+        aiRate = predictRate([], input.pricing.total, {
+          season: new Date().getMonth() + 1,
+          distance: input.distance || undefined,
+        });
+      } catch {}
+
       return {
         id: String(result[0]?.id),
         quoteNumber: loadNumber,
@@ -521,6 +537,7 @@ export const quotesRouter = router({
         createdBy: userId,
         createdAt: new Date().toISOString(),
         validUntil: new Date(Date.now() + input.validDays * 86400000).toISOString(),
+        aiRate,
       };
     }),
 

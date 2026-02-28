@@ -146,6 +146,8 @@ export const trainingRouter = router({
         expiresAt: new Date(input.dueDate),
       } as any);
       const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+      // Auto-index training assignment for AI semantic search (fire-and-forget)
+      try { const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge"); indexComplianceRecord({ id: insertedId, type: "training_assignment", description: `Training course ${input.courseId} assigned to driver ${input.driverId}. Due: ${input.dueDate}`, status: "assigned", severity: "minor" }); } catch {}
       return { success: true, assignmentId: String(insertedId), assignedBy: ctx.user?.id, assignedAt: new Date().toISOString() };
     }),
 

@@ -149,10 +149,30 @@ export const claimsRouter = router({
         severity: 'moderate' as any,
         occurredAt: new Date(),
       }).$returningId();
+      // Auto-index claim for AI semantic search (fire-and-forget)
+      try {
+        const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge");
+        indexComplianceRecord({ id: result.id, type: `claim_${input.type}`, description: `Claim on load ${input.loadId}: $${input.amount} - ${input.description}`, status: "submitted", severity: "moderate" });
+      } catch {}
+
+      // AI Turbocharge: NLP classification + fraud scoring on claim
+      let aiClassification: any = null;
+      let aiFraudCheck: any = null;
+      try {
+        const { classifyText, classifyIncidentSeverity } = await import("../services/ai/nlpProcessor");
+        const { scoreClaim } = await import("../services/ai/fraudScorer");
+        aiClassification = {
+          ...classifyText(input.description),
+          severity: classifyIncidentSeverity(input.description),
+        };
+        aiFraudCheck = scoreClaim(input.amount, 0);
+      } catch {}
+
       return {
         id: `claim_${result.id}`,
         claimNumber: `CLM-${new Date().getFullYear()}-${String(result.id).padStart(5, '0')}`,
         status: 'submitted', filedBy: ctx.user?.id, filedAt: new Date().toISOString(),
+        aiClassification, aiFraudCheck,
       };
     }),
 

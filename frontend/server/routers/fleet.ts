@@ -118,8 +118,23 @@ export const fleetRouter = router({
         const companyId = ctx.user?.companyId || 0;
         
         const vehicleList = await db
-          .select()
+          .select({
+            id: vehicles.id,
+            companyId: vehicles.companyId,
+            vin: vehicles.vin,
+            make: vehicles.make,
+            model: vehicles.model,
+            year: vehicles.year,
+            licensePlate: vehicles.licensePlate,
+            vehicleType: vehicles.vehicleType,
+            mileage: vehicles.mileage,
+            currentDriverId: vehicles.currentDriverId,
+            currentLocation: vehicles.currentLocation,
+            status: vehicles.status,
+            driverName: users.name,
+          })
           .from(vehicles)
+          .leftJoin(users, eq(vehicles.currentDriverId, users.id))
           .where(eq(vehicles.companyId, companyId))
           .orderBy(desc(vehicles.createdAt))
           .limit(50);
@@ -131,8 +146,12 @@ export const fleetRouter = router({
           make: v.make || '',
           model: v.model || '',
           year: v.year || 0,
+          vin: v.vin || '',
+          mileage: v.mileage || 0,
           status: v.status === 'available' ? 'active' : v.status,
-          driver: null,
+          currentLocation: v.currentLocation,
+          driver: v.driverName || null,
+          currentDriverId: v.currentDriverId || null,
           location: 'Unknown',
         }));
 

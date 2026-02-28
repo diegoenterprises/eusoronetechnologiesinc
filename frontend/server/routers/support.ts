@@ -313,12 +313,31 @@ export const supportRouter = router({
         });
       } catch {}
 
+      // Auto-index support ticket for AI semantic search (fire-and-forget)
+      try {
+        const { indexSupportTicket } = await import("../services/embeddings/aiTurbocharge");
+        indexSupportTicket({ id: ticketId, subject: input.subject, description: messageBody, category: finalCategory, status: "open", priority: input.priority });
+      } catch {}
+
+      // AI Turbocharge: Sentiment analysis + NLP enrichment on support ticket
+      let aiAnalysis: any = null;
+      try {
+        const { analyzeSentiment, extractKeywords, classifyText: nlpClassify } = await import("../services/ai/nlpProcessor");
+        const fullText = `${input.subject} ${messageBody}`;
+        aiAnalysis = {
+          sentiment: analyzeSentiment(fullText),
+          keywords: extractKeywords(fullText, 5),
+          classification: nlpClassify(fullText),
+        };
+      } catch {}
+
       return {
         id: String(ticketId),
         ticketNumber,
         status: "open",
         createdBy: userId,
         createdAt: new Date().toISOString(),
+        aiAnalysis,
       };
     }),
 

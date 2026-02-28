@@ -196,6 +196,8 @@ export const maintenanceRouter = router({
         estimatedCostMin: input.estimatedCost ? String(input.estimatedCost) : '0',
         priority: 'MEDIUM' as any,
       } as any).$returningId();
+      // Auto-index maintenance for AI semantic search (fire-and-forget)
+      try { const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge"); indexComplianceRecord({ id: result[0]?.id, type: "maintenance", description: `${input.type} maintenance for vehicle ${input.vehicleId}. Scheduled: ${input.scheduledDate}. ${input.description || ""}`, status: "scheduled", severity: "minor" }); } catch {}
       return { success: true, maintenanceId: String(result[0]?.id), scheduledDate: input.scheduledDate };
     }),
 

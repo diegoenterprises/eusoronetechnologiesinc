@@ -320,8 +320,30 @@ export const driversRouter = router({
           .from(drivers)
           .where(and(...conditions));
 
+        // Look up assigned vehicles for these drivers
+        const driverUserIds = driverList.map(d => d.userId).filter(Boolean) as number[];
+        const vehicleMap: Record<number, { id: number; licensePlate: string | null; make: string | null; model: string | null; year: number | null }> = {};
+        if (driverUserIds.length > 0) {
+          try {
+            const { vehicles } = await import("../../drizzle/schema");
+            const { inArray } = await import("drizzle-orm");
+            const assignedVehicles = await db.select({
+              id: vehicles.id,
+              currentDriverId: vehicles.currentDriverId,
+              licensePlate: vehicles.licensePlate,
+              make: vehicles.make,
+              model: vehicles.model,
+              year: vehicles.year,
+            }).from(vehicles).where(inArray(vehicles.currentDriverId, driverUserIds));
+            for (const v of assignedVehicles) {
+              if (v.currentDriverId) vehicleMap[v.currentDriverId] = v;
+            }
+          } catch {}
+        }
+
         const result = driverList.map(d => {
           const nameParts = (d.userName || '').split(' ');
+          const assignedVehicle = d.userId ? vehicleMap[d.userId] : null;
           return {
             id: String(d.id),
             name: d.userName || 'Unknown',
@@ -335,6 +357,8 @@ export const driversRouter = router({
             hoursAvailable: 11,
             safetyScore: d.safetyScore || 100,
             hireDate: d.createdAt?.toISOString().split('T')[0] || '',
+            truckNumber: assignedVehicle ? (assignedVehicle.licensePlate || `VEH-${assignedVehicle.id}`) : null,
+            assignedVehicle: assignedVehicle ? `${assignedVehicle.year || ''} ${assignedVehicle.make || ''} ${assignedVehicle.model || ''}`.trim() : null,
           };
         });
 

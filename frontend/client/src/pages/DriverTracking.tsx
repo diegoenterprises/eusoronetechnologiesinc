@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Navigation, MapPin, Clock, Battery, Signal, AlertTriangle, Route, Play, Square, RefreshCw } from "lucide-react";
+import { Navigation, MapPin, Clock, Battery, Signal, AlertTriangle, Route, Play, Square, RefreshCw, Phone, User, Shield, ExternalLink, X, CheckCircle, Heart } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { TelemetryMap } from "../components/maps/TelemetryMap";
@@ -18,6 +18,7 @@ export default function DriverTracking() {
   const { theme } = useTheme();
   const [isTracking, setIsTracking] = useState(false);
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [expandedAlert, setExpandedAlert] = useState<number | null>(null);
   const [watchId, setWatchId] = useState<number | null>(null);
 
   const { data: liveLocation, isLoading: locationLoading, refetch: refetchLocation } = (trpc as any).telemetry.getLiveLocation.useQuery(
@@ -30,14 +31,28 @@ export default function DriverTracking() {
     { enabled: false }
   );
 
-  const { data: activeAlerts } = (trpc as any).safetyAlerts.getActiveAlerts.useQuery(
-    { limit: 5 },
+  const { data: activeAlerts, refetch: refetchAlerts } = (trpc as any).safetyAlerts.getActiveAlerts.useQuery(
+    { limit: 20 },
     { refetchInterval: 30000 }
   );
 
+  const acknowledgeAlert = (trpc as any).safetyAlerts.acknowledgeAlert.useMutation({
+    onSuccess: () => { toast.success("Alert acknowledged"); refetchAlerts(); setExpandedAlert(null); },
+    onError: (err: any) => toast.error("Failed", { description: err.message }),
+  });
+  const resolveAlert = (trpc as any).safetyAlerts.resolveAlert.useMutation({
+    onSuccess: () => { toast.success("Alert resolved"); refetchAlerts(); setExpandedAlert(null); },
+    onError: (err: any) => toast.error("Failed", { description: err.message }),
+  });
+
   const submitLocation = (trpc as any).telemetry.submitLocation.useMutation();
   const triggerSOS = (trpc as any).safetyAlerts.triggerSOS.useMutation({
-    onSuccess: () => toast.success("SOS alert sent — help is on the way"),
+    onSuccess: (data: any) => {
+      toast.success(data?.emergencyContactNotified
+        ? "SOS sent — emergency contact notified via SMS and email"
+        : "SOS alert sent — help is on the way");
+      window.location.href = "/zeun-breakdown?sos=true";
+    },
     onError: (err: any) => toast.error("SOS failed", { description: err.message }),
   });
 
@@ -204,8 +219,8 @@ export default function DriverTracking() {
               height="400px"
               darkMode={theme === "dark"}
             />
-            {/* SOS Button — pinned to bottom-right of the map */}
-            <div className="absolute bottom-4 right-4" style={{ zIndex: 10 }}>
+            {/* SOS Button — pinned to left-center of the map */}
+            <div className="absolute left-4 top-1/2 -translate-y-1/2" style={{ zIndex: 10 }}>
               <Button
                 size="lg"
                 variant="destructive"
@@ -230,32 +245,147 @@ export default function DriverTracking() {
 
       {/* Active Alerts */}
       {activeAlerts && activeAlerts.length > 0 && (
-        <Card>
+        <Card className="border-red-500/20">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
-              Active Alerts
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-orange-500" />
+                Active Alerts
+              </CardTitle>
+              <Badge variant="destructive" className="text-xs">{activeAlerts.length}</Badge>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {activeAlerts.map((alert: any) => (
-                <div
-                  key={alert.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <Badge variant={alert.severity === "emergency" ? "destructive" : alert.severity === "critical" ? "destructive" : "secondary"}>
-                      {alert.severity}
-                    </Badge>
-                    <span className="font-medium">{alert.type.replace(/_/g, " ")}</span>
-                    {alert.message && <span className="text-muted-foreground">{alert.message}</span>}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {activeAlerts.map((alert: any) => {
+                const isExpanded = expandedAlert === alert.id;
+                return (
+                  <div
+                    key={alert.id}
+                    className={`rounded-xl border transition-all cursor-pointer ${
+                      isExpanded
+                        ? "bg-red-500/10 border-red-500/30 col-span-full"
+                        : "bg-muted/50 border-border hover:border-red-500/30 hover:bg-red-500/5"
+                    }`}
+                    onClick={() => setExpandedAlert(isExpanded ? null : alert.id)}
+                  >
+                    {/* Alert Header */}
+                    <div className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-3">
+                        <Badge variant={alert.severity === "emergency" ? "destructive" : "secondary"} className="uppercase text-[10px] font-bold">
+                          {alert.severity}
+                        </Badge>
+                        <div>
+                          <p className="font-semibold text-sm">{alert.userName}</p>
+                          <p className="text-xs text-muted-foreground">{alert.type?.replace(/_/g, " ")}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {alert.timestamp ? new Date(alert.timestamp).toLocaleTimeString() : ""}
+                      </span>
+                    </div>
+                    <div className="px-4 pb-2">
+                      <p className="text-sm text-muted-foreground">{alert.message}</p>
+                    </div>
+
+                    {/* Expanded Detail Panel */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4 pt-2 border-t border-red-500/20 space-y-4" onClick={(e) => e.stopPropagation()}>
+                        {/* Person Info */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border">
+                            <User className="w-4 h-4 text-blue-500 shrink-0" />
+                            <div>
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Person</p>
+                              <p className="text-sm font-semibold">{alert.userName}</p>
+                              {alert.userRole && <p className="text-[10px] text-muted-foreground capitalize">{alert.userRole.replace(/_/g, " ")}</p>}
+                            </div>
+                          </div>
+                          {alert.userPhone && (
+                            <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border">
+                              <Phone className="w-4 h-4 text-green-500 shrink-0" />
+                              <div>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Phone</p>
+                                <a href={`tel:${alert.userPhone}`} className="text-sm font-semibold text-green-500 hover:underline">{alert.userPhone}</a>
+                              </div>
+                            </div>
+                          )}
+                          {alert.latitude && alert.longitude && (
+                            <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border">
+                              <MapPin className="w-4 h-4 text-red-500 shrink-0" />
+                              <div>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Location</p>
+                                <a
+                                  href={`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm font-semibold text-blue-500 hover:underline flex items-center gap-1"
+                                >
+                                  {alert.latitude.toFixed(4)}, {alert.longitude.toFixed(4)}
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Emergency Contact */}
+                        {alert.emergencyContact && (
+                          <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Heart className="w-4 h-4 text-amber-500" />
+                              <p className="text-xs font-bold text-amber-500 uppercase tracking-wider">Emergency Contact</p>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <div>
+                                <p className="text-[10px] text-muted-foreground">Name</p>
+                                <p className="text-sm font-semibold">{alert.emergencyContact.name}</p>
+                                {alert.emergencyContact.relationship && <p className="text-[10px] text-muted-foreground capitalize">{alert.emergencyContact.relationship}</p>}
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-muted-foreground">Phone</p>
+                                <a href={`tel:${alert.emergencyContact.phone}`} className="text-sm font-semibold text-green-500 hover:underline">{alert.emergencyContact.phone}</a>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-muted-foreground">Email</p>
+                                <a href={`mailto:${alert.emergencyContact.email}`} className="text-sm font-semibold text-blue-500 hover:underline">{alert.emergencyContact.email}</a>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Timestamp + Load */}
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{alert.timestamp ? new Date(alert.timestamp).toLocaleString() : "Unknown"}</span>
+                          {alert.loadId && <span className="flex items-center gap-1"><Route className="w-3 h-3" />Load #{alert.loadId}</span>}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-lg text-xs"
+                            disabled={acknowledgeAlert.isPending}
+                            onClick={() => acknowledgeAlert.mutate({ alertId: alert.id })}
+                          >
+                            <CheckCircle className="w-3.5 h-3.5 mr-1" />Acknowledge
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-lg text-xs border-green-500/30 text-green-500 hover:bg-green-500/10"
+                            disabled={resolveAlert.isPending}
+                            onClick={() => resolveAlert.mutate({ alertId: alert.id })}
+                          >
+                            <Shield className="w-3.5 h-3.5 mr-1" />Resolve
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    {alert.timestamp ? new Date(alert.timestamp).toLocaleTimeString() : ""}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
 import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import StripeConnectStep from "@/components/registration/StripeConnectStep";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { 
   Car, User, FileText, Shield, MapPin, 
-  Upload, CheckCircle, AlertCircle, Mail, Phone, Award, Lock, ShieldCheck
+  Upload, CheckCircle, AlertCircle, Mail, Phone, Award, Lock, ShieldCheck, Landmark
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -78,7 +79,10 @@ interface EscortFormData {
   // Step 9: Compliance Integrations
   complianceIds: ComplianceIds;
   
-  // Step 10: Terms
+  // Step 10: Payment Setup
+  businessType: "individual" | "company" | "";
+  
+  // Step 11: Terms
   acceptTerms: boolean;
   acceptBackground: boolean;
 }
@@ -119,6 +123,7 @@ const initialFormData: EscortFormData = {
   password: "",
   confirmPassword: "",
   complianceIds: emptyComplianceIds,
+  businessType: "",
   acceptTerms: false,
   acceptBackground: false,
 };
@@ -200,6 +205,10 @@ export default function RegisterEscort() {
         Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
       ) || undefined,
     });
+
+    if (formData.businessType) {
+      try { localStorage.setItem("eusotrip_stripe_biz_type", formData.businessType); } catch {}
+    }
   };
 
   const steps: WizardStep[] = [
@@ -703,6 +712,26 @@ export default function RegisterEscort() {
           onChange={(ids) => updateFormData({ complianceIds: ids })}
         />
       ),
+    },
+    {
+      id: "payments",
+      title: "Payment Setup",
+      description: "How you'll get paid on EusoTrip",
+      icon: <Landmark className="w-5 h-5" />,
+      component: (
+        <StripeConnectStep
+          businessType={formData.businessType}
+          onBusinessTypeChange={(t) => updateFormData({ businessType: t })}
+          role="ESCORT"
+        />
+      ),
+      validate: () => {
+        if (!formData.businessType) {
+          toast.error("Please select how you'll receive payments");
+          return false;
+        }
+        return true;
+      },
     },
     {
       id: "terms",

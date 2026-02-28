@@ -425,6 +425,26 @@ class ESANGAIService {
       contextPrompt += `\nUser geolocation: ${context.latitude.toFixed(4)}°N, ${context.longitude.toFixed(4)}°W — use this to give location-aware answers (nearby services, weather, route info, fuel prices, terminals).`;
     }
 
+    // AI Turbocharge: NLP pre-processing — intent detection, entity extraction, sentiment
+    try {
+      const { detectIntent, extractEntities, analyzeSentiment } = await import("../services/ai/nlpProcessor");
+      const intent = detectIntent(message);
+      const entities = extractEntities(message);
+      const sentiment = analyzeSentiment(message);
+      const entityParts: string[] = [];
+      if (entities.locations.length > 0) entityParts.push(...entities.locations.map((l: { text: string; type: string }) => `location:${l.text}`));
+      if (entities.amounts.length > 0) entityParts.push(...entities.amounts.map((a: { text: string; value: number }) => `amount:$${a.value}`));
+      if (entities.hazmat.length > 0) entityParts.push(...entities.hazmat.map((h: { unNumber?: string; productName?: string }) => `hazmat:${h.unNumber || h.productName || "unknown"}`));
+      if (entities.dates.length > 0) entityParts.push(...entities.dates.map((d: { text: string }) => `date:${d.text}`));
+      if (intent.intent !== "unknown" || entityParts.length > 0) {
+        contextPrompt += `\n\n[AI NLP Pre-Analysis]`;
+        contextPrompt += `\nDetected intent: ${intent.intent} (confidence: ${(intent.confidence * 100).toFixed(0)}%)`;
+        if (entityParts.length > 0) contextPrompt += `\nExtracted entities: ${entityParts.join(", ")}`;
+        if (sentiment.sentiment !== "NEUTRAL") contextPrompt += `\nUser sentiment: ${sentiment.sentiment} (${(Math.abs(sentiment.score) * 100).toFixed(0)}%)`;
+        contextPrompt += `\nUse this analysis to give a more precise, targeted response.`;
+      }
+    } catch {}
+
     // RAG: Retrieve relevant knowledge from embedding index (non-blocking, graceful fallback)
     try {
       const { retrieveContext, formatRAGContext } = await import("../services/embeddings/ragRetriever");

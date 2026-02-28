@@ -201,6 +201,11 @@ export const documentsRouter = router({
           console.log(`[Documents] upload SUCCESS: insertId=${(result as any).insertId} stored ${input.fileData.length} chars`);
           const uid = typeof userId === "number" ? userId : parseInt(String(userId), 10) || 0;
           if (uid) { fireGamificationEvent({ userId: uid, type: "document_uploaded", value: 1 }); fireGamificationEvent({ userId: uid, type: "platform_action", value: 1 }); }
+          // Auto-index document for AI semantic search (fire-and-forget)
+          try {
+            const { indexDocument } = await import("../services/embeddings/aiTurbocharge");
+            indexDocument({ id: (result as any).insertId, title: input.name, type: input.category, content: input.name });
+          } catch {}
           return {
             id: `d${(result as any).insertId}`,
             name: input.name,
@@ -256,6 +261,11 @@ export const documentsRouter = router({
             });
             savedId = `d${(insertResult as any).insertId}`;
             console.log(`[Documents] digitize save SUCCESS: id=${savedId} stored ${input.fileData.length} chars`);
+            // Auto-index digitized doc for AI semantic search (fire-and-forget)
+            try {
+              const { indexDocument } = await import("../services/embeddings/aiTurbocharge");
+              indexDocument({ id: (insertResult as any).insertId, title: result.classification.documentTitle || input.filename, type: result.classification.category, content: `${result.classification.documentTitle || ""} ${result.classification.category} ${result.ocr.text?.slice(0, 500) || ""}`.trim() });
+            } catch {}
           } catch (err: any) {
             console.error("[Documents] digitize save error:", err?.message?.slice(0, 200));
           }

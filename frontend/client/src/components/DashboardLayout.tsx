@@ -92,6 +92,7 @@ import {
   Car,
   FileCheck,
   Receipt,
+  Landmark,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -236,6 +237,92 @@ function NotificationBell({ onNavigate }: { onNavigate: (path: string) => void }
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+// --- Stripe Connect Onboarding Banner ---
+function StripeConnectBanner() {
+  const [dismissed, setDismissed] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+  const connectQuery = (trpc as any).stripe?.getConnectAccount?.useQuery(undefined, { retry: false, staleTime: 60000 });
+  const createAccountMutation = (trpc as any).stripe?.createConnectAccount?.useMutation();
+  const createLinkMutation = (trpc as any).stripe?.createConnectOnboardingLink?.useMutation();
+
+  // Check if user has stored business type preference from registration
+  const storedBizType = typeof window !== "undefined" ? localStorage.getItem("eusotrip_stripe_biz_type") : null;
+  const hasAccount = connectQuery?.data?.hasAccount;
+  const isActive = connectQuery?.data?.status === "active";
+  const needsAction = connectQuery?.data?.requiresAction;
+
+  // Don't show if: dismissed, already active, no stored preference, or still loading
+  if (dismissed || isActive || !storedBizType || connectQuery?.isLoading) return null;
+  // Don't show if has account and doesn't need action
+  if (hasAccount && !needsAction) return null;
+
+  const handleSetup = async () => {
+    setConnecting(true);
+    try {
+      let accountId = connectQuery?.data?.accountId;
+      if (!accountId) {
+        const result = await createAccountMutation.mutateAsync({
+          businessType: storedBizType as "individual" | "company",
+        });
+        accountId = result.accountId;
+      }
+      if (accountId) {
+        const link = await createLinkMutation.mutateAsync({ accountId });
+        if (link?.url) {
+          localStorage.removeItem("eusotrip_stripe_biz_type");
+          window.location.href = link.url;
+          return;
+        }
+      }
+    } catch (err: any) {
+      console.warn("[StripeConnect] Setup error:", err?.message);
+    }
+    setConnecting(false);
+  };
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    try { sessionStorage.setItem("eusotrip_stripe_banner_dismissed", "1"); } catch {}
+  };
+
+  // Check session dismissal
+  if (typeof window !== "undefined" && sessionStorage.getItem("eusotrip_stripe_banner_dismissed")) return null;
+
+  return (
+    <div className={`mx-3 sm:mx-4 md:mx-6 mt-3 rounded-xl border overflow-hidden ${isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200" : "bg-gradient-to-r from-blue-500/5 to-purple-500/5 border-blue-500/20"}`}>
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center flex-shrink-0">
+          <Landmark className="w-4.5 h-4.5 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm font-bold ${isLight ? "text-slate-800" : "text-white"}`}>
+            {needsAction ? "Complete your payment setup" : "Connect your bank account to get paid"}
+          </p>
+          <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+            {needsAction ? "Your Stripe account needs additional information." : "Set up Stripe Connect to send and receive payments on EusoTrip."}
+          </p>
+        </div>
+        <button
+          onClick={handleSetup}
+          disabled={connecting}
+          className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1.5 flex-shrink-0"
+        >
+          {connecting ? (
+            <><span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />Setting up...</>
+          ) : (
+            <><Landmark className="w-3.5 h-3.5" />{needsAction ? "Continue Setup" : "Set Up Now"}</>
+          )}
+        </button>
+        <button onClick={handleDismiss} className={`p-1 rounded-md hover:bg-slate-500/10 ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -912,6 +999,8 @@ export default function DashboardLayout({
         <main className={`flex-1 flex flex-col overflow-y-auto overflow-x-hidden smooth-scroll ${theme === "light" ? "bg-[#f8f9fb]" : "bg-gray-950/50"}`}>
           {/* Approval status banner for pending/suspended users */}
           <ApprovalBanner />
+          {/* Stripe Connect onboarding prompt for newly registered users */}
+          <StripeConnectBanner />
 
           <AnimatePresence mode="wait">
             <DominoPage key={location} className="p-3 sm:p-4 md:p-6">

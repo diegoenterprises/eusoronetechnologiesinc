@@ -595,6 +595,49 @@ export const usersRouter = router({
       }
     }),
 
+  // Get emergency contact from user metadata
+  getEmergencyContact: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = await ensureUserExists(ctx.user);
+      if (!userId) throw new Error("Could not resolve user");
+
+      const [user] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
+      let meta: any = {};
+      try { meta = user?.metadata ? JSON.parse(user.metadata as string) : {}; } catch { meta = {}; }
+      const ec = meta.emergencyContact || null;
+      return ec as { name: string; phone: string; email: string; relationship: string } | null;
+    }),
+
+  // Update emergency contact in user metadata
+  updateEmergencyContact: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1, "Emergency contact name is required"),
+      phone: z.string().min(7, "Phone number is required"),
+      email: z.string().email("Valid email is required"),
+      relationship: z.string().min(1, "Relationship is required"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = await ensureUserExists(ctx.user);
+      if (!userId) throw new Error("Could not resolve user");
+
+      const [user] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
+      let meta: any = {};
+      try { meta = user?.metadata ? JSON.parse(user.metadata as string) : {}; } catch { meta = {}; }
+      meta.emergencyContact = {
+        name: input.name.trim(),
+        phone: input.phone.trim(),
+        email: input.email.trim(),
+        relationship: input.relationship.trim(),
+        updatedAt: new Date().toISOString(),
+      };
+      await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
+      return { success: true };
+    }),
+
   // Upload profile picture (base64)
   uploadProfilePicture: protectedProcedure
     .input(z.object({ imageData: z.string() }))

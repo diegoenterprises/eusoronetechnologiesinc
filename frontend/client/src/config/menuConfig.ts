@@ -86,7 +86,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "My Partners", 
       path: "/partners", 
       badge: 0,
-      description: "Carriers, brokers & terminals in your supply chain"
+      description: "Partners, agreements & supply chain connections"
     },
     { 
       icon: "Database", 
@@ -115,13 +115,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/messages", 
       badge: 0,
       description: "Communication with catalysts"
-    },
-    { 
-      icon: "PenTool", 
-      label: "Agreements", 
-      path: "/agreements", 
-      badge: 0,
-      description: "Manage & sign catalyst agreements"
     },
     { 
       icon: "Repeat", 
@@ -267,7 +260,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "My Partners", 
       path: "/partners", 
       badge: 0,
-      description: "Shippers, brokers, drivers & terminals in your network"
+      description: "Partners, agreements & network connections"
     },
     { 
       icon: "Database", 
@@ -289,13 +282,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/authority", 
       badge: 0,
       description: "MC/DOT authority, lease-ons & trip leases"
-    },
-    { 
-      icon: "PenTool", 
-      label: "Agreements", 
-      path: "/agreements", 
-      badge: 0,
-      description: "View & sign shipper agreements"
     },
     { 
       icon: "FileText", 
@@ -446,7 +432,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "My Partners", 
       path: "/partners", 
       badge: 0,
-      description: "Shippers, carriers & terminals you connect"
+      description: "Partners, agreements & brokered connections"
     },
     { 
       icon: "Shield", 
@@ -454,13 +440,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/authority", 
       badge: 0,
       description: "Verify carrier authority & lease status"
-    },
-    { 
-      icon: "PenTool", 
-      label: "Agreements", 
-      path: "/agreements", 
-      badge: 0,
-      description: "Manage shipper & catalyst contracts"
     },
     { 
       icon: "FileText", 
@@ -643,7 +622,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "My Partners", 
       path: "/partners", 
       badge: 0,
-      description: "Your carrier & dispatch contacts"
+      description: "Partners, agreements & carrier contacts"
     },
     { 
       icon: "Navigation", 
@@ -774,7 +753,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "My Partners", 
       path: "/partners", 
       badge: 0,
-      description: "Carriers, shippers & drivers you coordinate"
+      description: "Partners, agreements & dispatch coordination"
     },
     { 
       icon: "Shield", 
@@ -796,13 +775,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/ai-assistant", 
       badge: 0,
       description: "ESANG AI chat"
-    },
-    { 
-      icon: "PenTool", 
-      label: "Agreements", 
-      path: "/agreements", 
-      badge: 0,
-      description: "Dispatch service agreements"
     },
     { 
       icon: "FileText", 
@@ -939,7 +911,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "My Partners", 
       path: "/partners", 
       badge: 0,
-      description: "Carriers you provide escort services for"
+      description: "Partners, agreements & escort service clients"
     },
     { 
       icon: "Navigation", 
@@ -956,18 +928,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Verify carrier authority for oversized loads"
     },
     { 
-      icon: "PenTool", 
-      label: "Agreements", 
-      path: "/agreements", 
-      badge: 0,
-      description: "Escort service agreements"
-    },
-    { 
       icon: "ShieldAlert", 
       label: "Safety & Reports", 
       path: "/escort/incidents", 
       badge: 0,
-      description: "Incidents, safety reports & convoy documentation"
+      description: "Incidents, safety reports, ZEUN Mechanics & convoy documentation"
     },
     { 
       icon: "MessageSquare", 
@@ -1051,7 +1016,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "My Partners", 
       path: "/partners", 
       badge: 0,
-      description: "Carriers, shippers & brokers you factor for"
+      description: "Partners, agreements & factoring clients"
     },
     { 
       icon: "FileText", 
@@ -1115,7 +1080,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "My Partners", 
       path: "/partners", 
       badge: 0,
-      description: "Generalized supply chain partner management"
+      description: "Partners, agreements & supply chain management"
     },
     { 
       icon: "Users", 
@@ -1151,13 +1116,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/staff", 
       badge: 0,
       description: "Access controllers & validation links"
-    },
-    { 
-      icon: "PenTool", 
-      label: "Agreements", 
-      path: "/agreements", 
-      badge: 0,
-      description: "Terminal access & service agreements"
     },
     { 
       icon: "FileText", 
@@ -1315,7 +1273,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "My Partners", 
       path: "/partners", 
       badge: 0,
-      description: "Companies in your compliance network"
+      description: "Partners, agreements & compliance network"
     },
     { 
       icon: "BarChart3", 
@@ -1459,7 +1417,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "My Partners", 
       path: "/partners", 
       badge: 0,
-      description: "Companies in your safety program"
+      description: "Partners, agreements & safety program"
     },
     { 
       icon: "AlertCircle", 

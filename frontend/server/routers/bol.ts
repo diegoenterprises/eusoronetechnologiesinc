@@ -525,6 +525,12 @@ export const bolRouter = router({
         }
       }
       
+      // Auto-index BOL for AI semantic search (fire-and-forget)
+      try {
+        const { indexDocument } = await import("../services/embeddings/aiTurbocharge");
+        indexDocument({ id: bolNumber, title: `BOL ${bolNumber}`, type: "bol", content: `${input.shipper?.name || ""} to ${input.consignee?.name || ""}. ${input.productName || input.bolType || ""}`.trim() });
+      } catch {}
+
       return {
         success: true,
         bolNumber,
@@ -1140,6 +1146,12 @@ export const bolRouter = router({
       } catch (e) {
         console.error("[BOL] auto-generate from load error:", e);
       }
+
+      // Auto-index auto-generated BOL for AI semantic search (fire-and-forget)
+      try {
+        const { indexDocument } = await import("../services/embeddings/aiTurbocharge");
+        indexDocument({ id: bolNumber, title: `BOL ${bolNumber} - ${load.loadNumber}`, type: "bol", content: `${bolDoc.shipper?.name || ""} to ${bolDoc.consignee?.name || ""}. ${bolDoc.commodityName || cargoType}. ${bolDoc.hazmatClass ? `Hazmat class ${bolDoc.hazmatClass} UN${bolDoc.unNumber}` : ""}`.trim() });
+      } catch {}
 
       return { success: true, bolNumber, bolType, cargoType, loadNumber: load.loadNumber };
     }),

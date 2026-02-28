@@ -123,9 +123,14 @@ export default function FleetCommandCenter() {
                   </div>
                   {sb(v.status)}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-slate-400">
+                <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
                   <span className="flex items-center gap-1"><Gauge className="w-3 h-3" />{v.mileage ? `${(v.mileage/1000).toFixed(0)}k mi` : "N/A"}</span>
                   {v.currentLocation && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{v.currentLocation.city}</span>}
+                  {v.driver ? (
+                    <span className="flex items-center gap-1 text-blue-400 font-medium"><Users className="w-3 h-3" />{v.driver}</span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-slate-500 italic"><Users className="w-3 h-3" />No driver</span>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -146,11 +151,16 @@ export default function FleetCommandCenter() {
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", d.status === "driving" ? "bg-blue-500/15" : d.status === "active" ? "bg-green-500/15" : "bg-slate-500/15")}>
                       <Users className={cn("w-5 h-5", d.status === "driving" ? "text-blue-500" : d.status === "active" ? "text-green-500" : "text-slate-400")} />
                     </div>
-                    <div><p className={cn("font-semibold text-sm", L ? "text-slate-800" : "text-white")}>{d.name}</p><p className="text-xs text-slate-400">CDL: {d.cdlNumber || "N/A"} {d.truckNumber && `| ${d.truckNumber}`}</p></div>
+                    <div><p className={cn("font-semibold text-sm", L ? "text-slate-800" : "text-white")}>{d.name}</p><p className="text-xs text-slate-400">CDL: {d.cdlNumber || d.licenseNumber || "N/A"}</p></div>
                   </div>
                   {sb(d.status)}
                 </div>
-                <div className="flex items-center justify-between text-xs text-slate-400">
+                <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
+                  {d.truckNumber || d.assignedVehicle ? (
+                    <span className="flex items-center gap-1 text-blue-400 font-medium"><Truck className="w-3 h-3" />{d.truckNumber}{d.assignedVehicle ? ` · ${d.assignedVehicle}` : ""}</span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-slate-500 italic"><Truck className="w-3 h-3" />No vehicle assigned</span>
+                  )}
                   {d.hosRemaining !== undefined && <span className={cn("flex items-center gap-1", d.hosRemaining < 2 ? "text-red-500 font-bold" : "")}><Clock className="w-3 h-3" />HOS: {d.hosRemaining}h</span>}
                   <Phone className="w-3.5 h-3.5 hover:text-blue-500 cursor-pointer" onClick={(e: any) => e.stopPropagation()} />
                 </div>

@@ -303,12 +303,30 @@ export const loadsRouter = router({
         });
       } catch { /* embedding service unavailable */ }
 
+      // AI Turbocharge: OSRM ETA + rate prediction (fire-and-forget enrichment)
+      let aiEta: any = null;
+      let aiRate: any = null;
+      try {
+        const { calculateETA } = await import("../services/ai/osrmRouter");
+        const { predictRate } = await import("../services/ai/forecastEngine");
+        if (input?.originLat && input?.originLng && input?.destLat && input?.destLng) {
+          aiEta = await calculateETA(
+            { lat: input.originLat, lng: input.originLng },
+            { lat: input.destLat, lng: input.destLng },
+            { isHazmat: !!input?.hazmatClass }
+          );
+        }
+        aiRate = predictRate([], input?.rate ? parseFloat(String(input.rate)) : 0, {
+          isHazmat: !!input?.hazmatClass, season: new Date().getMonth() + 1,
+        });
+      } catch {}
+
       // Fire gamification event for load creation
       const dbCreatorId = await resolveUserId(ctx.user);
       if (dbCreatorId) fireGamificationEvent({ userId: dbCreatorId, type: "load_created", value: 1 });
       fireGamificationEvent({ userId: dbCreatorId, type: "platform_action", value: 1 });
 
-      return { success: true, id: String(insertedId), loadId: String(insertedId), loadNumber };
+      return { success: true, id: String(insertedId), loadId: String(insertedId), loadNumber, aiEta, aiRate };
     }),
 
   update: protectedProcedure
