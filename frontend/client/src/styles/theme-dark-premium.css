@@ -154,7 +154,7 @@
    ============================================================ */
 
 .dark [role="dialog"] {
-  background-color: rgba(10, 12, 20, 0.98) !important;
+  background-color: rgb(10, 12, 20) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
@@ -164,7 +164,7 @@
 
 .dark [role="listbox"],
 .dark [role="menu"] {
-  background-color: rgba(12, 14, 24, 0.98) !important;
+  background-color: rgb(12, 14, 24) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
 

@@ -103,6 +103,53 @@ async function startServer() {
   app.use(cookieParser());
 
   // =========================================================================
+  // TEMPORARY: Stripe Connect platform diagnostic (remove after debugging)
+  // =========================================================================
+  app.get("/api/debug/stripe-connect", async (_req, res) => {
+    try {
+      const { stripe } = await import("../stripe/service");
+      const platform = await stripe.accounts.retrieve();
+
+      // Test 1: transfers only
+      let test1 = "";
+      try {
+        const t = await stripe.accounts.create({ type: "express", country: "US", email: "diag@eusotrip.com", business_type: "individual", capabilities: { transfers: { requested: true } }, metadata: { diag: "1" } });
+        try { await stripe.accounts.del(t.id); } catch {}
+        test1 = "SUCCESS";
+      } catch (e: any) { test1 = `${e.type}: ${e.raw?.code || ""} — ${e.message}`; }
+
+      // Test 2: card_payments + transfers
+      let test2 = "";
+      try {
+        const t2 = await stripe.accounts.create({ type: "express", country: "US", email: "diag2@eusotrip.com", business_type: "individual", capabilities: { card_payments: { requested: true }, transfers: { requested: true } }, metadata: { diag: "2" } });
+        try { await stripe.accounts.del(t2.id); } catch {}
+        test2 = "SUCCESS";
+      } catch (e: any) { test2 = `${e.type}: ${e.raw?.code || ""} — ${e.message}`; }
+
+      // Test 3: standard account type
+      let test3 = "";
+      try {
+        const t3 = await stripe.accounts.create({ type: "standard", email: "diag3@eusotrip.com", metadata: { diag: "3" } });
+        try { await stripe.accounts.del(t3.id); } catch {}
+        test3 = "SUCCESS";
+      } catch (e: any) { test3 = `${e.type}: ${e.raw?.code || ""} — ${e.message}`; }
+
+      res.json({
+        platformId: platform.id,
+        chargesEnabled: platform.charges_enabled,
+        payoutsEnabled: platform.payouts_enabled,
+        detailsSubmitted: platform.details_submitted,
+        country: platform.country,
+        requirements: (platform as any).requirements,
+        settings: (platform as any).settings,
+        test_express_transfers: test1,
+        test_express_card_and_transfers: test2,
+        test_standard: test3,
+      });
+    } catch (e: any) { res.json({ error: e.message }); }
+  });
+
+  // =========================================================================
   // STRIPE WEBHOOK (must be before JSON body parser — needs raw body)
   // =========================================================================
   app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
@@ -865,6 +912,14 @@ async function startServer() {
         preWarmCache();
       } catch {}
     }, 5000);
+
+    // Run pending DB migrations (audit hash chain columns)
+    setTimeout(async () => {
+      try {
+        const { runAuditHashChainMigration } = await import("../migrations/run0011_audit_hash_chain");
+        await runAuditHashChainMigration();
+      } catch (e) { console.warn("[Migration] Audit hash chain deferred:", (e as any)?.message); }
+    }, 8000);
 
     // ML Engine — self-training models (rate prediction, carrier match, ETA, demand, anomaly, etc.)
     setTimeout(async () => {

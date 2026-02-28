@@ -68,6 +68,27 @@ async function resolveDbUserId(email: string): Promise<number> {
   }
 }
 
+// ─── Cargo type normalizer (maps AI free-text to valid enum) ─────────────────
+const CARGO_TYPE_MAP: Record<string, string> = {
+  diesel: "petroleum", gasoline: "petroleum", fuel: "petroleum", crude: "petroleum",
+  "crude oil": "petroleum", jet: "petroleum", kerosene: "petroleum", naphtha: "petroleum",
+  propane: "gas", lpg: "gas", lng: "gas", cng: "gas", butane: "gas",
+  "natural gas": "gas", methane: "gas", ethane: "gas",
+  acid: "chemicals", caustic: "chemicals", solvent: "chemicals", ethanol: "chemicals",
+  methanol: "chemicals", ammonia: "chemicals", chlorine: "chemicals", fertilizer: "chemicals",
+  food: "refrigerated", produce: "refrigerated", frozen: "refrigerated", dairy: "refrigerated",
+  heavy: "oversized", machinery: "oversized", overweight: "oversized",
+  water: "liquid", oil: "liquid", brine: "liquid", slurry: "liquid",
+  general: "general", hazmat: "hazmat", hazardous: "hazmat",
+  refrigerated: "refrigerated", oversized: "oversized", liquid: "liquid",
+  gas: "gas", chemicals: "chemicals", petroleum: "petroleum",
+};
+function normalizeCargoType(raw: unknown): string {
+  if (typeof raw !== "string" || !raw) return "general";
+  const lower = raw.toLowerCase().trim();
+  return CARGO_TYPE_MAP[lower] || "general";
+}
+
 // ─── Action Registry (whitelist) ─────────────────────────────────────────────
 
 const ACTION_REGISTRY: Record<string, ActionDef> = {
@@ -597,6 +618,18 @@ export async function executeAction(
   if (!actionDef.allowedRoles.includes(context.role)) {
     logAudit(context.userId, actionName, false, `Role '${context.role}' not allowed`);
     return { success: false, action: actionName, message: `Your role (${context.role}) doesn't have permission for this action.` };
+  }
+
+  // 2b. Pre-process params to fix common AI mismatches
+  if (actionName === "create_load") {
+    if (rawParams.cargoType) rawParams.cargoType = normalizeCargoType(rawParams.cargoType);
+    if (typeof rawParams.rate === "number") rawParams.rate = String(rawParams.rate);
+    if (typeof rawParams.weight === "number") rawParams.weight = String(rawParams.weight);
+    if (typeof rawParams.volume === "number") rawParams.volume = String(rawParams.volume);
+  }
+  if (actionName === "submit_bid") {
+    if (typeof rawParams.amount === "string") rawParams.amount = parseFloat(rawParams.amount) || 0;
+    if (typeof rawParams.loadId === "string") rawParams.loadId = parseInt(rawParams.loadId, 10) || 0;
   }
 
   // 3. Validate params with zod

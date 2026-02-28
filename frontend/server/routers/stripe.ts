@@ -543,20 +543,26 @@ export const stripeRouter = router({
         }
       }
 
-      const account = await stripe.accounts.create({
-        type: "express",
-        country: "US",
-        email: ctx.user.email || undefined,
-        business_type: input.businessType,
-        capabilities: {
-          transfers: { requested: true },
-        },
-        metadata: {
-          userId: String(userId),
-          platform: "eusotrip",
-          userRole: ctx.user.role || "catalyst",
-        },
-      });
+      let account;
+      try {
+        account = await stripe.accounts.create({
+          type: "express",
+          country: "US",
+          email: ctx.user.email || undefined,
+          business_type: input.businessType,
+          capabilities: {
+            transfers: { requested: true },
+          },
+          metadata: {
+            userId: String(userId),
+            platform: "eusotrip",
+            userRole: ctx.user.role || "catalyst",
+          },
+        });
+      } catch (stripeErr: any) {
+        console.error(`[Stripe Connect] Account creation failed: ${stripeErr.type} — ${stripeErr.message}`, stripeErr.raw?.message || "");
+        throw new Error(stripeErr.message || "Failed to create Stripe Connect account");
+      }
 
       // Store connect account ID on BOTH users and wallets tables
       if (db) {
@@ -644,6 +650,48 @@ export const stripeRouter = router({
         };
       } catch {
         return { hasAccount: false, status: "none" };
+      }
+    }),
+
+  /**
+   * Diagnostic: check platform Connect readiness
+   */
+  debugConnectStatus: protectedProcedure
+    .query(async () => {
+      try {
+        // Retrieve the platform's own account
+        const platformAccount = await stripe.accounts.retrieve() as any;
+        
+        // Try a test account creation to see the exact error
+        let createError = null;
+        try {
+          const testAccount = await stripe.accounts.create({
+            type: "express",
+            country: "US",
+            email: "test-diagnostic@eusotrip.com",
+            business_type: "individual",
+            capabilities: { transfers: { requested: true } },
+            metadata: { diagnostic: "true" },
+          });
+          // If it succeeds, delete the test account
+          try { await stripe.accounts.del(testAccount.id); } catch {}
+          createError = "SUCCESS — account creation works!";
+        } catch (e: any) {
+          createError = `${e.type}: ${e.message}`;
+        }
+
+        return {
+          platformId: platformAccount.id,
+          chargesEnabled: platformAccount.charges_enabled,
+          payoutsEnabled: platformAccount.payouts_enabled,
+          detailsSubmitted: platformAccount.details_submitted,
+          country: platformAccount.country,
+          businessType: platformAccount.business_type,
+          requirements: platformAccount.requirements,
+          createTestResult: createError,
+        };
+      } catch (e: any) {
+        return { error: e.message };
       }
     }),
 

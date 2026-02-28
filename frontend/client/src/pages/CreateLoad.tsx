@@ -51,13 +51,13 @@ export default function CreateLoad() {
       return;
     }
     createMutation.mutate({
-      pickupLocation: { address: "", city: formData.originCity, state: formData.originState, zipCode: "", lat: 0, lng: 0 },
-      deliveryLocation: { address: "", city: formData.destinationCity, state: formData.destinationState, zipCode: "", lat: 0, lng: 0 },
-      pickupDate: new Date(formData.pickupDate),
-      deliveryDate: new Date(formData.deliveryDate),
-      weight: parseInt(formData.weight) || 0,
-      rate: parseFloat(formData.rate) || 0,
-      equipment: formData.equipmentType,
+      origin: [formData.originCity, formData.originState].filter(Boolean).join(", "),
+      destination: [formData.destinationCity, formData.destinationState].filter(Boolean).join(", "),
+      pickupDate: formData.pickupDate || undefined,
+      deliveryDate: formData.deliveryDate || undefined,
+      weight: formData.weight || undefined,
+      rate: formData.rate || undefined,
+      equipment: formData.equipmentType || undefined,
       productName: formData.commodity || undefined,
     } as any);
   };

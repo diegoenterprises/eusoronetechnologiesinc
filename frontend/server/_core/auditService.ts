@@ -133,6 +133,7 @@ function getUserAgent(req?: Request): string {
  * Initialized lazily on first call. Thread-safe for single Node.js process.
  */
 let _chainTipHash: string | null = null;
+let _columnsLimited = false;
 
 function genesisHash(): string {
   return crypto.createHash("sha256").update("EUSOTRIP_GENESIS_BLOCK_2025").digest("hex");
@@ -177,22 +178,40 @@ export async function recordAuditEvent(event: AuditEvent, req?: Request): Promis
       previousHash, now.toISOString(), uidStr, actionStr, event.entityType, eidStr, metaStr
     );
 
-    await db.insert(auditLogs).values({
+    const baseValues: any = {
       userId: event.userId ? (typeof event.userId === "string" ? parseInt(event.userId, 10) || null : event.userId as number) : null,
       action: actionStr,
       entityType: event.entityType,
       entityId: event.entityId ? (typeof event.entityId === "string" ? parseInt(event.entityId, 10) || null : event.entityId as number) : null,
       changes: event.changes || null,
-      metadata: event.metadata || null,
-      severity,
       ipAddress: event.ipAddress || getClientIP(req),
       userAgent: event.userAgent || getUserAgent(req),
-      previousHash,
-      entryHash,
-    } as any);
+    };
 
-    // Advance the chain tip
-    _chainTipHash = entryHash;
+    // Try with extended columns first, fallback to base columns if they don't exist
+    if (!_columnsLimited) {
+      try {
+        await db.insert(auditLogs).values({
+          ...baseValues,
+          metadata: event.metadata || null,
+          severity,
+          previousHash,
+          entryHash,
+        } as any);
+        _chainTipHash = entryHash;
+        return;
+      } catch (colErr: any) {
+        if (colErr?.cause?.code === "ER_BAD_FIELD_ERROR" || colErr?.message?.includes("Unknown column")) {
+          _columnsLimited = true; // remember: don't try extended columns again
+          console.warn("[AUDIT] Extended columns missing — falling back to base insert. Run migration 0011.");
+        } else {
+          throw colErr;
+        }
+      }
+    }
+
+    // Fallback: insert without extended columns
+    await db.insert(auditLogs).values(baseValues as any);
   } catch (error) {
     // Audit logging must never crash the application
     console.error(`[AUDIT] Failed to record event ${event.category}:${event.action}:`, error);
