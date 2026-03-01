@@ -5,10 +5,11 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import HotZoneMap from "@/components/HotZoneMap";
+import SatelliteIntelligenceMap from "@/components/maps/SatelliteIntelligenceMap";
 import {
   Flame, TrendingUp, TrendingDown, Truck, MapPin, Fuel, CloudRain,
   AlertTriangle, Shield, ChevronRight, Layers, Activity, Zap,
-  BarChart3, RefreshCw, Clock, Navigation, Eye, Filter,
+  BarChart3, RefreshCw, Clock, Navigation, Eye, Filter, Satellite, Map as MapIcon,
 } from "lucide-react";
 
 // ── ZONE ACTION → ROUTE MAPPING (all 12 user types) ──
@@ -104,6 +105,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
   const [equipFilter, setEquipFilter] = useState<string>("");
   const [showLayers, setShowLayers] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [mapMode, setMapMode] = useState<"svg" | "satellite">("svg");
   const mapRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, refetch } = trpc.hotZones.getRateFeed.useQuery(
@@ -232,6 +234,25 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                 </select>
                 <Filter className={`absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none ${equipFilter ? "text-[#1473FF]" : isLight ? "text-slate-400" : "text-white/40"}`} />
               </div>
+              {/* Map mode toggle */}
+              <div className={`flex items-center rounded-xl overflow-hidden border ${isLight ? "border-slate-200" : "border-white/[0.08]"}`}>
+                <button onClick={() => setMapMode("svg")}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-all ${
+                    mapMode === "svg"
+                      ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white"
+                      : isLight ? "bg-slate-50 text-slate-500 hover:bg-slate-100" : "bg-white/[0.04] text-white/40 hover:bg-white/[0.08]"
+                  }`}>
+                  <MapIcon className="w-3.5 h-3.5" /> SVG
+                </button>
+                <button onClick={() => setMapMode("satellite")}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-all ${
+                    mapMode === "satellite"
+                      ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white"
+                      : isLight ? "bg-slate-50 text-slate-500 hover:bg-slate-100" : "bg-white/[0.04] text-white/40 hover:bg-white/[0.08]"
+                  }`}>
+                  <Satellite className="w-3.5 h-3.5" /> Satellite
+                </button>
+              </div>
               <button onClick={handleForceRefresh} disabled={isRefreshing}
                 className={`p-2 rounded-xl transition-all ${isRefreshing ? "opacity-60 cursor-wait" : ""} ${isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-white/[0.06] text-white/40 hover:bg-white/[0.1]"}`}>
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
@@ -344,17 +365,31 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
       {/* ── INTERACTIVE HEATMAP ── */}
       {!isLoading && zones.length > 0 && (
         <div className="max-w-[1600px] mx-auto px-6 pt-6">
-          <HotZoneMap
-            zones={sortedZones}
-            coldZones={coldZones}
-            roleCtx={roleCtx}
-            selectedZone={selectedZone}
-            onSelectZone={setSelectedZone}
-            isLight={isLight}
-            activeLayers={activeLayers}
-            intel={mapIntel}
-            roadIntel={roadIntel}
-          />
+          {mapMode === "satellite" ? (
+            <SatelliteIntelligenceMap
+              zones={sortedZones}
+              coldZones={coldZones}
+              roleCtx={roleCtx}
+              selectedZone={selectedZone}
+              onSelectZone={setSelectedZone}
+              isLight={isLight}
+              activeLayers={activeLayers}
+              intel={mapIntel}
+              roadIntel={roadIntel}
+            />
+          ) : (
+            <HotZoneMap
+              zones={sortedZones}
+              coldZones={coldZones}
+              roleCtx={roleCtx}
+              selectedZone={selectedZone}
+              onSelectZone={setSelectedZone}
+              isLight={isLight}
+              activeLayers={activeLayers}
+              intel={mapIntel}
+              roadIntel={roadIntel}
+            />
+          )}
         </div>
       )}
 
