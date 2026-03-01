@@ -256,6 +256,53 @@ async function startServer() {
           }
           break;
         }
+        case "payment_intent.succeeded": {
+          // Destination charge succeeded — credit recipient wallet if transfer_data present
+          const pi = event.data.object;
+          const piAmount = pi.amount || 0;
+          const piTransfer = (pi as any).transfer_data?.destination;
+          const piFee = (pi as any).application_fee_amount || 0;
+          console.log(`[Stripe Webhook] PaymentIntent succeeded: ${pi.id}, amount: $${piAmount / 100}, destination: ${piTransfer || 'none'}, fee: $${piFee / 100}`);
+          // Record payment in DB
+          if (pi.metadata?.loadId) {
+            try {
+              const _dbPI = await _getDb();
+              if (_dbPI) {
+                await _dbPI.execute(
+                  _sql`INSERT INTO payments (payer_id, amount, currency, payment_type, status, stripe_payment_id, load_id, created_at)
+                       VALUES (${pi.metadata.userId || 0}, ${(piAmount / 100).toFixed(2)}, ${pi.currency || "usd"}, 
+                               ${pi.metadata.paymentType || "load_payment"}, 'succeeded', ${pi.id}, 
+                               ${pi.metadata.loadId}, NOW())`
+                );
+              }
+            } catch (e) { console.warn("[Stripe Webhook] PI payment record error:", e); }
+          }
+          // Credit recipient wallet (destination connected account gets funds via transfer)
+          if (piTransfer && piAmount > 0) {
+            const netCents = piAmount - piFee;
+            try {
+              await creditWalletByConnect(piTransfer, netCents, `Payment received — ${pi.description || pi.id}`, pi.id, "earnings");
+            } catch (e) { console.warn("[Stripe Webhook] PI wallet credit error:", e); }
+          }
+          // Also credit by userId if present in metadata
+          if (!piTransfer && pi.metadata?.recipientUserId && piAmount > 0) {
+            try {
+              await creditWalletByUser(
+                Number(pi.metadata.recipientUserId), piAmount,
+                `Payment received — ${pi.description || `Load #${pi.metadata.loadNumber || pi.metadata.loadId || "N/A"}`}`,
+                pi.id, "earnings",
+                pi.metadata.loadId ? Number(pi.metadata.loadId) : undefined,
+                pi.metadata.loadNumber || undefined
+              );
+            } catch (e) { console.warn("[Stripe Webhook] PI wallet credit (user) error:", e); }
+          }
+          break;
+        }
+        case "payment_intent.payment_failed": {
+          const piFail = event.data.object;
+          console.error(`[Stripe Webhook] PaymentIntent failed: ${piFail.id}, error: ${(piFail as any).last_payment_error?.message}`);
+          break;
+        }
         case "invoice.paid": {
           const invoice = event.data.object;
           console.log(`[Stripe Webhook] Invoice paid: ${invoice.id}, amount: ${invoice.amount_paid}`);
@@ -280,18 +327,18 @@ async function startServer() {
           try {
             const db2 = await _getDb();
             if (db2) {
-              const status = account.charges_enabled ? "active" : "pending";
+              const status = account.charges_enabled && account.payouts_enabled ? "active" : account.details_submitted ? "pending" : "restricted";
               await db2.update(_walletsT).set({ stripeAccountStatus: status }).where(_eq(_walletsT.stripeConnectId, account.id));
-              console.log(`[Stripe Webhook] Synced Connect status '${status}' for ${account.id}`);
+              console.log(`[Stripe Webhook] Synced Connect status '${status}' for ${account.id} (charges: ${account.charges_enabled}, payouts: ${account.payouts_enabled})`);
 
-              // Notify user when their account becomes fully active
+              // Notify user when their account becomes fully active (charges + payouts enabled)
               if (account.charges_enabled && account.payouts_enabled) {
                 try {
-                  const [connUser] = await db2.select({ id: _usersT.id }).from(_usersT).where(_eq(_usersT.stripeConnectId, account.id)).limit(1);
+                  const [connUser] = await db2.select({ id: _usersT.id, email: _usersT.email }).from(_usersT).where(_eq(_usersT.stripeConnectId, account.id)).limit(1);
                   if (connUser) {
                     const { lookupAndNotify } = await import("../services/notifications");
-                    try { lookupAndNotify(connUser.id, { type: "payment_received", amount: 0, loadNumber: "Stripe Connect activated" } as any); } catch {}
-                    console.log(`[Stripe Webhook] Notified user ${connUser.id} — Connect account active`);
+                    try { lookupAndNotify(connUser.id, { type: "payment_received", amount: 0, loadNumber: "Your EusoWallet payout account is now active! You can receive payments and request payouts." } as any); } catch {}
+                    console.log(`[Stripe Webhook] Notified user ${connUser.id} — Connect account fully active`);
                   }
                 } catch {}
               }

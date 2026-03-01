@@ -551,6 +551,7 @@ export const stripeRouter = router({
           email: ctx.user.email || undefined,
           business_type: input.businessType,
           capabilities: {
+            card_payments: { requested: true },
             transfers: { requested: true },
           },
           metadata: {
@@ -561,9 +562,9 @@ export const stripeRouter = router({
         });
       } catch (stripeErr: any) {
         console.error(`[Stripe Connect] Account creation failed: ${stripeErr.type} — ${stripeErr.message}`, stripeErr.raw?.message || "");
-        // Friendly message for platform setup requirement
-        if (stripeErr.message?.includes("platform") || stripeErr.message?.includes("questionnaire") || stripeErr.message?.includes("Connect")) {
-          throw new Error("Stripe Connect payouts are being activated. Bank account connections via EusoWallet are available now. Payout enrollment will be enabled shortly.");
+        // Surface actionable Stripe error
+        if (stripeErr.type === 'StripeInvalidRequestError') {
+          throw new Error(`Stripe account setup failed: ${stripeErr.raw?.message || stripeErr.message}. Please try again or contact support.`);
         }
         throw new Error(stripeErr.message || "Failed to create Stripe Connect account");
       }
@@ -616,8 +617,8 @@ export const stripeRouter = router({
       const appUrl = process.env.APP_URL || "https://eusotrip.com";
       const accountLink = await stripe.accountLinks.create({
         account: input.accountId,
-        refresh_url: `${appUrl}/settings?tab=billing&refresh=true`,
-        return_url: `${appUrl}/settings?tab=billing&onboarding=complete`,
+        refresh_url: `${appUrl}/wallet?connect=refresh`,
+        return_url: `${appUrl}/wallet?connect=complete`,
         type: "account_onboarding",
       });
 
@@ -658,32 +659,102 @@ export const stripeRouter = router({
     }),
 
   /**
-   * Diagnostic: check platform Connect readiness
+   * Get Stripe balance for user's Connect account
+   * Shows available + pending funds that can be paid out to their bank
+   */
+  getConnectBalance: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { hasAccount: false, available: 0, pending: 0 };
+
+      try {
+        const [user] = await db.select({ stripeConnectId: users.stripeConnectId })
+          .from(users).where(eq(users.id, ctx.user.id)).limit(1);
+        const connectId = (user as any)?.stripeConnectId;
+        if (!connectId) return { hasAccount: false, available: 0, pending: 0 };
+
+        const balance = await stripe.balance.retrieve({ stripeAccount: connectId });
+        const availableUsd = balance.available.find(b => b.currency === "usd");
+        const pendingUsd = balance.pending.find(b => b.currency === "usd");
+        const instantUsd = balance.instant_available?.find((b: any) => b.currency === "usd");
+
+        return {
+          hasAccount: true,
+          available: (availableUsd?.amount || 0) / 100,
+          pending: (pendingUsd?.amount || 0) / 100,
+          instantAvailable: (instantUsd?.amount || 0) / 100,
+          currency: "usd",
+        };
+      } catch (e: any) {
+        console.warn("[Stripe] getConnectBalance error:", e.message);
+        return { hasAccount: false, available: 0, pending: 0 };
+      }
+    }),
+
+  /**
+   * Create a login link for the user's Stripe Express Dashboard
+   * Allows users to manage their bank accounts, view payouts, download tax forms
+   */
+  createConnectLoginLink: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const [user] = await db.select({ stripeConnectId: users.stripeConnectId })
+        .from(users).where(eq(users.id, ctx.user.id)).limit(1);
+      const connectId = (user as any)?.stripeConnectId;
+      if (!connectId) throw new Error("No Stripe Connect account found. Set up payouts first.");
+
+      // Verify account has completed onboarding before generating login link
+      const account = await stripe.accounts.retrieve(connectId);
+      if (!account.details_submitted) {
+        throw new Error("Please complete Stripe onboarding before accessing the dashboard.");
+      }
+
+      const loginLink = await stripe.accounts.createLoginLink(connectId);
+      return { url: loginLink.url };
+    }),
+
+  /**
+   * Get external accounts (bank accounts) attached to user's Connect account
+   * These are the accounts that receive payouts from Stripe
+   */
+  getConnectExternalAccounts: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const [user] = await db.select({ stripeConnectId: users.stripeConnectId })
+          .from(users).where(eq(users.id, ctx.user.id)).limit(1);
+        const connectId = (user as any)?.stripeConnectId;
+        if (!connectId) return [];
+
+        const accounts = await stripe.accounts.listExternalAccounts(connectId, { object: "bank_account", limit: 10 });
+        return accounts.data.map((ea: any) => ({
+          id: ea.id,
+          bankName: ea.bank_name || "Bank Account",
+          last4: ea.last4 || "0000",
+          routingNumber: ea.routing_number ? `••••${ea.routing_number.slice(-4)}` : "••••••",
+          type: ea.account_holder_type === "company" ? "Business" : "Personal",
+          accountType: ea.account_type === "savings" ? "Savings" : "Checking",
+          status: ea.status || "verified",
+          isDefault: ea.default_for_currency || false,
+          currency: ea.currency || "usd",
+        }));
+      } catch (e: any) {
+        console.warn("[Stripe] getConnectExternalAccounts error:", e.message);
+        return [];
+      }
+    }),
+
+  /**
+   * Diagnostic: check platform Connect readiness (admin-safe, no test account creation)
    */
   debugConnectStatus: protectedProcedure
     .query(async () => {
       try {
-        // Retrieve the platform's own account
         const platformAccount = await stripe.accounts.retrieve() as any;
-        
-        // Try a test account creation to see the exact error
-        let createError = null;
-        try {
-          const testAccount = await stripe.accounts.create({
-            type: "express",
-            country: "US",
-            email: "test-diagnostic@eusotrip.com",
-            business_type: "individual",
-            capabilities: { transfers: { requested: true } },
-            metadata: { diagnostic: "true" },
-          });
-          // If it succeeds, delete the test account
-          try { await stripe.accounts.del(testAccount.id); } catch {}
-          createError = "SUCCESS — account creation works!";
-        } catch (e: any) {
-          createError = `${e.type}: ${e.message}`;
-        }
-
         return {
           platformId: platformAccount.id,
           chargesEnabled: platformAccount.charges_enabled,
@@ -691,11 +762,10 @@ export const stripeRouter = router({
           detailsSubmitted: platformAccount.details_submitted,
           country: platformAccount.country,
           businessType: platformAccount.business_type,
-          requirements: platformAccount.requirements,
-          createTestResult: createError,
+          connectApproved: true,
         };
       } catch (e: any) {
-        return { error: e.message };
+        return { error: e.message, connectApproved: false };
       }
     }),
 

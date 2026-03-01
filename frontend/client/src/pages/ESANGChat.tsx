@@ -19,7 +19,8 @@ import {
   MessageSquare, Lightbulb, HelpCircle, Beaker,
   Target, Brain, Shield, Flame, TrendingUp,
   Truck, Package, Route, BarChart3, Gauge, FileCheck,
-  ShieldCheck, Activity, Zap, Building2, ClipboardList
+  ShieldCheck, Activity, Zap, Building2, ClipboardList,
+  Database, Sparkles
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
@@ -100,6 +101,7 @@ export default function ESANGChat() {
   const historyQuery = (trpc as any).esang.getChatHistory.useQuery();
   const suggestionsQuery = (trpc as any).esang.getSuggestions.useQuery();
   const learningStatsQuery = (trpc as any).spectraMatch.getLearningStats.useQuery();
+  const memoryStatsQuery = (trpc as any).esang.getMemoryStats.useQuery();
 
   const sendMutation = (trpc as any).esang.chat.useMutation({
     onSuccess: (data: any) => {
@@ -109,6 +111,7 @@ export default function ESANGChat() {
         // Suggestions are handled via the sidebar
       }
       (utils as any).esang.getChatHistory.invalidate();
+      (utils as any).esang.getMemoryStats.invalidate();
     },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
@@ -330,6 +333,41 @@ export default function ESANGChat() {
                     <div className="flex items-center gap-2.5 py-1 px-2"><Shield className="w-3 h-3 flex-shrink-0 text-purple-400/60" /><span>Safety info</span></div>
                   </div>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* AgentKeeper Cognitive Memory Stats */}
+          <Card className={cn("bg-gradient-to-br rounded-xl", isLight ? "from-blue-50 to-indigo-50 border-blue-200 shadow-sm" : "from-blue-500/5 to-indigo-500/5 border-blue-500/30")}>
+            <CardHeader className="pb-2">
+              <CardTitle className={cn("text-sm flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
+                <Database className={cn("w-4 h-4", isLight ? "text-blue-600" : "text-blue-400")} />
+                Memory
+                <Badge className={cn("border-0 text-[9px] ml-auto", isLight ? "bg-blue-100 text-blue-600" : "bg-blue-500/20 text-blue-400")}>CRE</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {memoryStatsQuery.isLoading ? (
+                <Skeleton className="h-12 w-full" />
+              ) : (
+                <>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={isLight ? "text-slate-500" : "text-slate-400"}>Stored Facts</span>
+                    <span className={cn("font-bold", isLight ? "text-blue-600" : "text-blue-400")}>{memoryStatsQuery.data?.totalFacts || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={isLight ? "text-slate-500" : "text-slate-400"}>Critical</span>
+                    <span className={cn("font-bold", isLight ? "text-amber-600" : "text-amber-400")}>{memoryStatsQuery.data?.criticalFacts || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={isLight ? "text-slate-500" : "text-slate-400"}>Token Budget</span>
+                    <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">{memoryStatsQuery.data?.totalTokens || 0}</span>
+                  </div>
+                  <div className={cn("text-[10px] mt-1 flex items-center gap-1", isLight ? "text-slate-400" : "text-slate-500")}>
+                    <Sparkles className="w-3 h-3" />
+                    <span>Cognitive persistence active</span>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

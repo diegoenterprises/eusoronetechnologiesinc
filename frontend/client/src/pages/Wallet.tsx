@@ -79,9 +79,12 @@ export default function Wallet() {
 
   // Stripe Connect payout account
   const connectAccountQuery = _t.stripe?.getConnectAccount?.useQuery(undefined, { retry: false, staleTime: 60000 });
+  const connectBalanceQuery = _t.stripe?.getConnectBalance?.useQuery(undefined, { retry: false, staleTime: 30000 });
   const createConnectAccountMutation = _t.stripe?.createConnectAccount?.useMutation();
   const createConnectOnboardingLinkMutation = _t.stripe?.createConnectOnboardingLink?.useMutation();
+  const createConnectLoginLinkMutation = _t.stripe?.createConnectLoginLink?.useMutation();
   const [connectLoading, setConnectLoading] = useState(false);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
 
   const balanceQuery = _t.wallet.getBalance.useQuery();
   const transactionsQuery = _t.wallet.getTransactions.useQuery({ limit: 50 });
@@ -206,15 +209,7 @@ export default function Wallet() {
       }
       toast.error("Could not start Stripe Connect setup");
     } catch (err: any) {
-      const msg = err?.message || "";
-      if (msg.includes("platform profile") || msg.includes("questionnaire") || msg.includes("complete your")) {
-        toast.error("Stripe Connect platform setup required", {
-          description: "The platform owner must complete the Connect questionnaire in the Stripe Dashboard before connected accounts can be created.",
-          duration: 10000,
-        });
-      } else {
-        toast.error(msg || "Stripe Connect setup failed");
-      }
+      toast.error(err?.message || "Stripe Connect setup failed. Please try again.");
     } finally { setConnectLoading(false); }
   };
 
@@ -641,6 +636,29 @@ export default function Wallet() {
               </div>
             ))}
           </div>
+          {/* Stripe Connect Balance (live from Stripe) */}
+          {(connectBalanceQuery?.data?.hasAccount || balance?.stripeBalance) && (
+            <div className={`mt-3 p-3 rounded-2xl ${isLight ? 'bg-emerald-50/80 border border-emerald-200/50' : 'bg-emerald-500/[0.06] border border-emerald-500/[0.12]'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldCheck className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
+                <p className={`text-xs font-semibold ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>Stripe Payout Balance</p>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: "Available", value: connectBalanceQuery?.data?.available ?? balance?.stripeBalance?.available ?? 0 },
+                  { label: "Pending", value: connectBalanceQuery?.data?.pending ?? balance?.stripeBalance?.pending ?? 0 },
+                  { label: "Instant", value: connectBalanceQuery?.data?.instantAvailable ?? balance?.stripeBalance?.instantAvailable ?? 0 },
+                ].map((box) => (
+                  <div key={box.label} className="text-center">
+                    <p className={`text-[10px] ${isLight ? 'text-emerald-600' : 'text-emerald-500/80'}`}>{box.label}</p>
+                    <p className={`font-bold text-sm ${isLight ? 'text-emerald-800' : 'text-emerald-300'}`}>
+                      {showBalance ? `$${box.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '••••'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -786,10 +804,20 @@ export default function Wallet() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => window.open("/settings?tab=billing", "_self")}
+                      disabled={dashboardLoading}
+                      onClick={async () => {
+                        setDashboardLoading(true);
+                        try {
+                          const result = await createConnectLoginLinkMutation.mutateAsync();
+                          if (result?.url) window.open(result.url, "_blank");
+                        } catch (err: any) {
+                          toast.error(err?.message || "Could not open Stripe dashboard");
+                        } finally { setDashboardLoading(false); }
+                      }}
                       className={cn("text-xs shrink-0", isLight ? "text-emerald-700 hover:bg-emerald-100" : "text-emerald-400 hover:bg-emerald-500/10")}
                     >
-                      <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Manage
+                      {dashboardLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <ExternalLink className="w-3.5 h-3.5 mr-1.5" />}
+                      Stripe Dashboard
                     </Button>
                   )}
                 </div>

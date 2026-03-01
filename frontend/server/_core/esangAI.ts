@@ -456,6 +456,18 @@ class ESANGAIService {
       // RAG unavailable — continue without it (embedding service may be offline)
     }
 
+    // AgentKeeper CRE: Reconstruct persistent cognitive context from DB-backed memory
+    // Facts survive restarts, provider switches, and context window limits
+    try {
+      const { reconstructContext: cogReconstruct } = await import("../services/esangCognitive");
+      const cognitiveContext = await cogReconstruct(userId, message, 1500);
+      if (cognitiveContext) {
+        contextPrompt += cognitiveContext;
+      }
+    } catch (cogErr) {
+      // Cognitive engine unavailable — continue without persistent memory
+    }
+
     try {
       const response = await this.callGeminiAPI(message, history, contextPrompt);
 
@@ -521,6 +533,13 @@ class ESANGAIService {
         history = history.slice(-20);
       }
       this.conversationHistory.set(userId, history);
+
+      // AgentKeeper CRE: Learn from this conversation turn (fire-and-forget)
+      // Extracts facts and persists to DB for cross-session memory
+      try {
+        const { learnFromConversation } = await import("../services/esangCognitive");
+        learnFromConversation(userId, message, finalMessage).catch(() => {});
+      } catch { /* Cognitive engine unavailable */ }
 
       return response;
     } catch (error) {

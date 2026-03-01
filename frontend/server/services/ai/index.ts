@@ -203,6 +203,7 @@ export function getAIServicesHealth(): {
     { name: "Embedding Service (TEI)", status: "active" as const, type: "embeddings" },
     { name: "RAG Retriever", status: "active" as const, type: "rag" },
     { name: "ESANG AI (Gemini)", status: "active" as const, type: "chat_ai" },
+    { name: "Cognitive Engine (AgentKeeper CRE)", status: "active" as const, type: "memory_persistence" },
   ];
 
   return { services, totalServices: services.length, version: "1.0.0" };

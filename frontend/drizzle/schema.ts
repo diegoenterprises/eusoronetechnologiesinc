@@ -6895,3 +6895,40 @@ export const insuranceComplianceChecks = mysqlTable(
 
 export type InsuranceComplianceCheck = typeof insuranceComplianceChecks.$inferSelect;
 
+// ============================================================================
+// ESANG COGNITIVE MEMORY — AgentKeeper-inspired persistence layer
+// Stores per-user facts with dense embeddings for semantic retrieval.
+// Facts survive restarts, provider switches, and context window limits.
+// ============================================================================
+
+export const esangMemories = mysqlTable(
+  "esang_memories",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: varchar("user_id", { length: 255 }).notNull(),
+    content: text("content").notNull(),
+    category: mysqlEnum("category", [
+      "profile", "preference", "pattern", "context", "knowledge", "action_history",
+    ]).notNull().default("context"),
+    critical: boolean("critical").notNull().default(false),
+    embedding: json("embedding"),                // Dense vector (1024-dim) for semantic search
+    dimensions: int("dimensions").default(1024),
+    tokenCount: int("token_count").default(0),   // Pre-computed for budget management
+    accessCount: int("access_count").default(0),
+    sourceConversationId: varchar("source_conversation_id", { length: 100 }),
+    metadata: json("metadata").$type<Record<string, unknown>>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    lastAccessedAt: timestamp("last_accessed_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("em_user_idx").on(table.userId),
+    userCategoryIdx: index("em_user_category_idx").on(table.userId, table.category),
+    criticalIdx: index("em_critical_idx").on(table.userId, table.critical),
+    accessIdx: index("em_access_idx").on(table.lastAccessedAt),
+  })
+);
+
+export type EsangMemory = typeof esangMemories.$inferSelect;
+export type InsertEsangMemory = typeof esangMemories.$inferInsert;
+

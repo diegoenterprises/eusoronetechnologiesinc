@@ -210,6 +210,26 @@ export const walletRouter = router({
       const pending = parseFloat(wallet.pendingBalance || "0");
       const reserved = parseFloat(wallet.reservedBalance || "0");
 
+      // Fetch Stripe Connect balance if user has a Connect account
+      let stripeBalance: { available: number; pending: number; instantAvailable: number } | null = null;
+      try {
+        const [userRow] = await db.select({ stripeConnectId: users.stripeConnectId })
+          .from(users).where(eq(users.id, userId)).limit(1);
+        if (userRow?.stripeConnectId) {
+          const bal = await safeStripeCall(() => stripe.balance.retrieve({ stripeAccount: userRow.stripeConnectId! }));
+          if (bal) {
+            const avUsd = bal.available.find(b => b.currency === "usd");
+            const pnUsd = bal.pending.find(b => b.currency === "usd");
+            const inUsd = bal.instant_available?.find((b: any) => b.currency === "usd");
+            stripeBalance = {
+              available: (avUsd?.amount || 0) / 100,
+              pending: (pnUsd?.amount || 0) / 100,
+              instantAvailable: (inUsd?.amount || 0) / 100,
+            };
+          }
+        }
+      } catch {}
+
       return {
         available,
         pending,
@@ -222,6 +242,7 @@ export const walletRouter = router({
         totalReceived: parseFloat(wallet.totalReceived || "0"),
         totalSpent: parseFloat(wallet.totalSpent || "0"),
         paymentMethods: methods.length,
+        stripeBalance,
       };
     }),
 
@@ -515,6 +536,11 @@ export const walletRouter = router({
       let stripePayoutId: string | null = null;
       const [userRow] = await db.select({ stripeConnectId: users.stripeConnectId }).from(users).where(eq(users.id, userId)).limit(1);
       if (userRow?.stripeConnectId) {
+        // Verify payouts are enabled on the Connect account before attempting
+        const account = await safeStripeCall(() => stripe.accounts.retrieve(userRow.stripeConnectId!));
+        if (account && !account.payouts_enabled) {
+          throw new Error("Payouts are not yet enabled on your Stripe account. Please complete onboarding in your Wallet settings.");
+        }
         const payout = await safeStripeCall(() => stripe.payouts.create({
           amount: Math.round(netAmount * 100),
           currency: "usd",
@@ -1438,7 +1464,7 @@ export const walletRouter = router({
 
   /**
    * Get connected bank accounts
-   * Stripe Financial Connections / Treasury API
+   * Priority: Connect external accounts → Customer payment methods → DB payout methods
    */
   getBankAccounts: auditedProtectedProcedure
     .query(async ({ ctx }) => {
@@ -1446,9 +1472,27 @@ export const walletRouter = router({
       const userId = Number(ctx.user?.id) || 0;
       if (!db) return [];
 
-      // Try Stripe Payment Methods API for real bank accounts
       const userRow = await ensureStripeCustomer(db, userId);
 
+      // 1. Check Connect external accounts first (these are the real payout destinations)
+      if (userRow?.stripeConnectId) {
+        const connectBanks = await safeStripeCall(async () => {
+          const accounts = await stripe.accounts.listExternalAccounts(userRow.stripeConnectId!, { object: "bank_account", limit: 10 });
+          return accounts.data.map((ea: any) => ({
+            id: ea.id,
+            bankName: ea.bank_name || "Bank Account",
+            last4: ea.last4 || "0000",
+            type: ea.account_type === "savings" ? "Savings" : "Checking",
+            status: ea.status || "verified",
+            routingNumber: ea.routing_number ? `••••${ea.routing_number.slice(-4)}` : "••••••",
+            source: "connect" as const,
+            isDefault: ea.default_for_currency || false,
+          }));
+        });
+        if (connectBanks && connectBanks.length > 0) return connectBanks;
+      }
+
+      // 2. Check Customer payment methods (us_bank_account)
       if (userRow?.stripeCustomerId) {
         const stripeBanks = await safeStripeCall(async () => {
           const methods = await stripe.customers.listPaymentMethods(userRow.stripeCustomerId!, { type: "us_bank_account", limit: 10 });
@@ -1459,12 +1503,14 @@ export const walletRouter = router({
             type: pm.us_bank_account?.account_type === "savings" ? "Savings" : "Checking",
             status: pm.us_bank_account?.status_details ? "pending" : "verified",
             routingNumber: `••••••${(pm.us_bank_account?.last4 || "00").slice(-2)}`,
+            source: "customer" as const,
+            isDefault: false,
           }));
         });
         if (stripeBanks && stripeBanks.length > 0) return stripeBanks;
       }
 
-      // Fallback: DB payout methods
+      // 3. Fallback: DB payout methods
       try {
         const methods = await db.select()
           .from(payoutMethods)
@@ -1477,6 +1523,8 @@ export const walletRouter = router({
           type: "Checking",
           status: "verified",
           routingNumber: "••••••" + (m.last4 || "0000").slice(-2),
+          source: "database" as const,
+          isDefault: m.isDefault || false,
         }));
       } catch {
         return [];

@@ -672,6 +672,28 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX icc_checked_at_idx (checkedAt)
     )`);
 
+    // --- esang_memories table (AgentKeeper cognitive persistence) ---
+    await ensureTable("esang_memories", `CREATE TABLE IF NOT EXISTS esang_memories (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id VARCHAR(255) NOT NULL,
+      content TEXT NOT NULL,
+      category ENUM('profile','preference','pattern','context','knowledge','action_history') NOT NULL DEFAULT 'context',
+      critical TINYINT(1) NOT NULL DEFAULT 0,
+      embedding JSON DEFAULT NULL,
+      dimensions INT DEFAULT 1024,
+      token_count INT DEFAULT 0,
+      access_count INT DEFAULT 0,
+      source_conversation_id VARCHAR(100) DEFAULT NULL,
+      metadata JSON DEFAULT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      last_accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX em_user_idx (user_id),
+      INDEX em_user_category_idx (user_id, category),
+      INDEX em_critical_idx (user_id, critical),
+      INDEX em_access_idx (last_accessed_at)
+    )`);
+
     console.log("[SchemaSync] Done.");
   } catch (err: any) {
     console.warn("[SchemaSync] Non-fatal error:", err?.message?.slice(0, 200));

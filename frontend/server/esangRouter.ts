@@ -194,12 +194,69 @@ export const esangRouter = router({
     }),
 
   /**
-   * Clear chat history
+   * Clear chat history + optionally clear cognitive memory
    */
-  clearHistory: protectedProcedure.mutation(async ({ ctx }) => {
-    esangAI.clearHistory(String(ctx.user.id));
-    return { success: true };
+  clearHistory: protectedProcedure
+    .input(z.object({ clearCognitiveMemory: z.boolean().optional() }).optional())
+    .mutation(async ({ ctx, input }) => {
+      esangAI.clearHistory(String(ctx.user.id));
+      if (input?.clearCognitiveMemory) {
+        try {
+          const { forget } = await import("./services/esangCognitive");
+          await forget(String(ctx.user.id));
+        } catch {}
+      }
+      return { success: true };
+    }),
+
+  /**
+   * AgentKeeper Cognitive Memory — Stats
+   */
+  getMemoryStats: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      const { getStats } = await import("./services/esangCognitive");
+      return await getStats(String(ctx.user.id));
+    } catch {
+      return { totalFacts: 0, criticalFacts: 0, categories: {}, oldestFact: null, newestFact: null, totalTokens: 0 };
+    }
   }),
+
+  /**
+   * AgentKeeper Cognitive Memory — Store a fact manually
+   */
+  rememberFact: protectedProcedure
+    .input(z.object({
+      content: z.string().min(3).max(1000),
+      critical: z.boolean().optional(),
+      category: z.enum(["profile", "preference", "pattern", "context", "knowledge", "action_history"]).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const { remember } = await import("./services/esangCognitive");
+        const id = await remember(String(ctx.user.id), input.content, {
+          critical: input.critical,
+          category: input.category,
+        });
+        return { success: !!id, factId: id };
+      } catch {
+        return { success: false, factId: null };
+      }
+    }),
+
+  /**
+   * AgentKeeper Cognitive Memory — Forget a specific fact
+   */
+  forgetFact: protectedProcedure
+    .input(z.object({ factId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const { forget } = await import("./services/esangCognitive");
+        const ok = await forget(String(ctx.user.id), input.factId);
+        return { success: ok };
+      } catch {
+        return { success: false };
+      }
+    }),
 
   /**
    * MULTI-MODEL INTENT CLASSIFICATION & ROUTING
