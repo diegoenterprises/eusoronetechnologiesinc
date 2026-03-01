@@ -561,6 +561,10 @@ export const stripeRouter = router({
         });
       } catch (stripeErr: any) {
         console.error(`[Stripe Connect] Account creation failed: ${stripeErr.type} — ${stripeErr.message}`, stripeErr.raw?.message || "");
+        // Friendly message for platform setup requirement
+        if (stripeErr.message?.includes("platform") || stripeErr.message?.includes("questionnaire") || stripeErr.message?.includes("Connect")) {
+          throw new Error("Stripe Connect payouts are being activated. Bank account connections via EusoWallet are available now. Payout enrollment will be enabled shortly.");
+        }
         throw new Error(stripeErr.message || "Failed to create Stripe Connect account");
       }
 
