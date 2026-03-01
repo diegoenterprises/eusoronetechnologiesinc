@@ -156,6 +156,7 @@ export default function SatelliteIntelligenceMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const overlaysRef = useRef<any[]>([]);
+  const hoverInfoRef = useRef<any>(null);
 
   const [mapsReady, setMapsReady] = useState(false);
   const [mapType, setMapType] = useState<string>("hybrid");
@@ -289,33 +290,55 @@ export default function SatelliteIntelligenceMap({
           zIndex: isSelected ? 10 : 1,
         });
 
-        circle.addListener("click", () => {
-          onSelectZone(selectedZone === z.zoneId ? null : z.zoneId);
-          // Show info window
+        // Hover → rich tooltip (matches SVG map intel)
+        circle.addListener("mouseover", () => {
+          if (hoverInfoRef.current) hoverInfoRef.current.close();
+          const availCount = (z.liveLoads || 0);
           const info = new g.InfoWindow({
             position: { lat, lng },
             content: `
-              <div style="font-family:system-ui;padding:4px;min-width:180px">
-                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-                  <span style="width:8px;height:8px;border-radius:50%;background:${sev.stroke};display:inline-block"></span>
-                  <strong style="font-size:13px">${z.zoneName}</strong>
+              <div style="font-family:system-ui;padding:6px 8px;min-width:200px;max-width:260px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                  <strong style="font-size:13px;color:#0f172a">${z.zoneName}</strong>
+                  <span style="font-size:10px;font-weight:700;color:#fff;background:${sev.stroke};padding:2px 7px;border-radius:6px;text-transform:uppercase;letter-spacing:0.5px">${z.demandLevel}</span>
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px;color:#64748b">
-                  <div>Rate<br/><strong style="color:#0f172a;font-size:13px">$${Number(z.liveRate || 0).toFixed(2)}/mi</strong></div>
-                  <div>Demand<br/><strong style="color:${sev.stroke};font-size:13px">${z.demandLevel}</strong></div>
-                  <div>Loads<br/><strong style="color:#0f172a;font-size:13px">${z.liveLoads || 0}</strong></div>
-                  <div>Trucks<br/><strong style="color:#0f172a;font-size:13px">${z.liveTrucks || 0}</strong></div>
-                  <div>Surge<br/><strong style="color:#0f172a;font-size:13px">${Number(z.liveSurge || 1).toFixed(2)}x</strong></div>
-                  <div>L:T Ratio<br/><strong style="color:#0f172a;font-size:13px">${Number(z.liveRatio || 1).toFixed(1)}x</strong></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px;color:#64748b">
+                  <div style="text-align:center;padding:4px;background:#f8fafc;border-radius:6px">
+                    <div style="font-size:14px;font-weight:700;color:#0f172a">${z.liveLoads || 0}</div>
+                    <div>Loads</div>
+                  </div>
+                  <div style="text-align:center;padding:4px;background:#f8fafc;border-radius:6px">
+                    <div style="font-size:14px;font-weight:700;color:#1473FF">$${Number(z.liveRate || 0).toFixed(2)}<span style="font-size:10px;font-weight:400">/mi</span></div>
+                    <div>Rate</div>
+                  </div>
+                  <div style="text-align:center;padding:4px;background:#f8fafc;border-radius:6px">
+                    <div style="font-size:14px;font-weight:700;color:#0f172a">${z.liveTrucks || 0}</div>
+                    <div>Trucks</div>
+                  </div>
                 </div>
-                <div style="margin-top:6px;padding-top:6px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8">
-                  Peak: ${z.peakHours || "N/A"} · Fuel: $${Number(z.fuelPrice || 0).toFixed(2)}/gal
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;font-size:10px;color:#64748b">
+                  <div>Surge: <strong style="color:#0f172a">${Number(z.liveSurge || 1).toFixed(2)}x</strong></div>
+                  <div>L:T Ratio: <strong style="color:${sev.stroke}">${Number(z.liveRatio || 1).toFixed(1)}x</strong></div>
+                </div>
+                <div style="margin-top:6px;padding-top:6px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:9px;color:#94a3b8">Peak: ${z.peakHours || "N/A"} · Fuel: $${Number(z.fuelPrice || 0).toFixed(2)}/gal</span>
+                  <span style="font-size:10px;font-weight:600;color:#22C55E">${availCount} available</span>
                 </div>
               </div>
             `,
+            disableAutoPan: true,
           });
           info.open(map);
-          overlaysRef.current.push(info);
+          hoverInfoRef.current = info;
+        });
+
+        circle.addListener("mouseout", () => {
+          if (hoverInfoRef.current) { hoverInfoRef.current.close(); hoverInfoRef.current = null; }
+        });
+
+        // Click → select zone + fly to
+        circle.addListener("click", () => {
+          onSelectZone(selectedZone === z.zoneId ? null : z.zoneId);
         });
 
         overlaysRef.current.push(circle);
@@ -361,21 +384,29 @@ export default function SatelliteIntelligenceMap({
           zIndex: 5,
         });
 
-        const info = new g.InfoWindow({
-          content: `
-            <div style="font-family:system-ui;padding:2px;min-width:150px">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-                <span style="width:10px;height:10px;border-radius:50%;background:${cfg.color};display:inline-block"></span>
-                <strong style="font-size:12px">${fac.name}</strong>
+        // Hover tooltip for facilities
+        marker.addListener("mouseover", () => {
+          if (hoverInfoRef.current) hoverInfoRef.current.close();
+          const info = new g.InfoWindow({
+            content: `
+              <div style="font-family:system-ui;padding:4px 6px;min-width:160px">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+                  <span style="width:10px;height:10px;border-radius:50%;background:${cfg.color};display:inline-block"></span>
+                  <strong style="font-size:12px;color:#0f172a">${fac.name}</strong>
+                </div>
+                <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">${fac.type}</div>
               </div>
-              <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">${fac.type}</div>
-            </div>
-          `,
+            `,
+            disableAutoPan: true,
+          });
+          info.open(map, marker);
+          hoverInfoRef.current = info;
         });
-        marker.addListener("click", () => info.open(map, marker));
+        marker.addListener("mouseout", () => {
+          if (hoverInfoRef.current) { hoverInfoRef.current.close(); hoverInfoRef.current = null; }
+        });
 
         overlaysRef.current.push(marker);
-        overlaysRef.current.push(info);
         pointCount++;
       });
     }
@@ -400,20 +431,28 @@ export default function SatelliteIntelligenceMap({
           zIndex: 8,
         });
 
-        const info = new g.InfoWindow({
-          content: `
-            <div style="font-family:system-ui;padding:2px">
-              <strong style="font-size:12px">Driver #${ping.driverId}</strong>
-              ${ping.speed ? `<div style="font-size:11px;color:#22C55E;font-weight:600">${ping.speed.toFixed(0)} mph</div>` : ""}
-              ${ping.roadName ? `<div style="font-size:10px;color:#64748b">${ping.roadName}</div>` : ""}
-              ${ping.pingAt ? `<div style="font-size:9px;color:#94a3b8">${new Date(ping.pingAt).toLocaleTimeString()}</div>` : ""}
-            </div>
-          `,
+        // Hover tooltip for fleet pings
+        marker.addListener("mouseover", () => {
+          if (hoverInfoRef.current) hoverInfoRef.current.close();
+          const info = new g.InfoWindow({
+            content: `
+              <div style="font-family:system-ui;padding:4px 6px">
+                <strong style="font-size:12px;color:#0f172a">Driver #${ping.driverId}</strong>
+                ${ping.speed ? `<div style="font-size:11px;color:#22C55E;font-weight:700">${ping.speed.toFixed(0)} mph</div>` : ""}
+                ${ping.roadName ? `<div style="font-size:10px;color:#64748b">${ping.roadName}</div>` : ""}
+                ${ping.pingAt ? `<div style="font-size:9px;color:#94a3b8">${new Date(ping.pingAt).toLocaleTimeString()}</div>` : ""}
+              </div>
+            `,
+            disableAutoPan: true,
+          });
+          info.open(map, marker);
+          hoverInfoRef.current = info;
         });
-        marker.addListener("click", () => info.open(map, marker));
+        marker.addListener("mouseout", () => {
+          if (hoverInfoRef.current) { hoverInfoRef.current.close(); hoverInfoRef.current = null; }
+        });
 
         overlaysRef.current.push(marker);
-        overlaysRef.current.push(info);
         pointCount++;
       });
     }
