@@ -365,6 +365,27 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
       {/* ── INTERACTIVE HEATMAP ── */}
       {!isLoading && zones.length > 0 && (
         <div className="max-w-[1600px] mx-auto px-6 pt-6">
+          {/* Map mode toolbar — always visible (including embedded mode) */}
+          <div className="flex items-center justify-end gap-2 mb-3">
+            <div className={`flex items-center rounded-xl overflow-hidden border ${isLight ? "border-slate-200" : "border-white/[0.08]"}`}>
+              <button onClick={() => setMapMode("svg")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-all ${
+                  mapMode === "svg"
+                    ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white"
+                    : isLight ? "bg-white text-slate-500 hover:bg-slate-50" : "bg-white/[0.03] text-white/40 hover:bg-white/[0.06]"
+                }`}>
+                <MapIcon className="w-3 h-3" /> Map
+              </button>
+              <button onClick={() => setMapMode("satellite")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-all ${
+                  mapMode === "satellite"
+                    ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white"
+                    : isLight ? "bg-white text-slate-500 hover:bg-slate-50" : "bg-white/[0.03] text-white/40 hover:bg-white/[0.06]"
+                }`}>
+                <Satellite className="w-3 h-3" /> Satellite
+              </button>
+            </div>
+          </div>
           {mapMode === "satellite" ? (
             <SatelliteIntelligenceMap
               zones={sortedZones}
