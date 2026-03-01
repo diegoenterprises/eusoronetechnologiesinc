@@ -189,7 +189,7 @@ export default function SatelliteIntelligenceMap({
       zoomControl: false,
       gestureHandling: "greedy",
       tilt: 0,
-      styles: mapType === "roadmap" ? DARK_STYLE : undefined,
+      styles: mapType === "roadmap" && !isLight ? DARK_STYLE : undefined,
     });
     mapRef.current = map;
 
@@ -226,7 +226,8 @@ export default function SatelliteIntelligenceMap({
 
     // Clear previous overlays
     overlaysRef.current.forEach(o => {
-      if ("setMap" in o) (o as any).setMap(null);
+      if (typeof o.close === "function") o.close();
+      else if ("setMap" in o) (o as any).setMap(null);
     });
     overlaysRef.current = [];
     let pointCount = 0;
@@ -560,7 +561,7 @@ export default function SatelliteIntelligenceMap({
   }
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden border border-white/[0.06]" style={{ height: 560 }}>
+    <div className={`relative w-full rounded-2xl overflow-hidden border ${isLight ? "border-slate-200" : "border-white/[0.06]"}`} style={{ height: 560 }}>
       {/* ── MAP CONTAINER ── */}
       <div ref={containerRef} className="w-full h-full" />
 
@@ -598,7 +599,7 @@ export default function SatelliteIntelligenceMap({
               <button key={mt.id} onClick={() => setMapType(mt.id)}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-medium transition-all w-full ${
                   active
-                    ? "bg-gradient-to-r from-[#1473FF]/20 to-[#BE01FF]/20 text-white"
+                    ? isLight ? "bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 text-[#1473FF] font-semibold" : "bg-gradient-to-r from-[#1473FF]/20 to-[#BE01FF]/20 text-white"
                     : isLight ? "text-slate-500 hover:bg-slate-100" : "text-white/40 hover:bg-white/[0.06]"
                 }`}>
                 <Icon className="w-3 h-3" />
@@ -636,7 +637,7 @@ export default function SatelliteIntelligenceMap({
               Layers
             </span>
             <button onClick={() => setShowPanel(false)} className={`p-0.5 rounded ${isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]"}`}>
-              <EyeOff className="w-3 h-3 text-white/30" />
+              <EyeOff className={`w-3 h-3 ${isLight ? "text-slate-400" : "text-white/30"}`} />
             </button>
           </div>
           {SAT_LAYERS.map(layer => {
@@ -689,7 +690,7 @@ export default function SatelliteIntelligenceMap({
           ))}
         </div>
         {visibleLayers.includes("facilities") && (
-          <div className="flex items-center gap-3 mt-1.5 pt-1.5 border-t border-white/[0.04]">
+          <div className={`flex items-center gap-3 mt-1.5 pt-1.5 border-t ${isLight ? "border-slate-200/60" : "border-white/[0.04]"}`}>
             {Object.entries(FACILITY_ICONS).map(([type, cfg]) => (
               <div key={type} className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full" style={{ background: cfg.color }} />
@@ -733,7 +734,9 @@ export default function SatelliteIntelligenceMap({
 
       {/* ── GRADIENT BORDER (brand accent) ── */}
       <div className="absolute inset-0 pointer-events-none z-[2] rounded-2xl" style={{
-        boxShadow: "inset 0 0 0 1px rgba(20,115,255,0.15), inset 0 0 30px rgba(20,115,255,0.03)",
+        boxShadow: isLight
+          ? "inset 0 0 0 1px rgba(20,115,255,0.1)"
+          : "inset 0 0 0 1px rgba(20,115,255,0.15), inset 0 0 30px rgba(20,115,255,0.03)",
       }} />
     </div>
   );
