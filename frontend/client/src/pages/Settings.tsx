@@ -43,7 +43,7 @@ export default function Settings() {
       setActiveTab("billing");
       window.history.replaceState({}, "", "/settings?tab=billing");
     } else if (onboarding === "complete") {
-      toast.success("Stripe Connect onboarding submitted! Your account is being verified.");
+      toast.success("EusoConnect setup submitted! Your account is being verified.");
       setActiveTab("billing");
       window.history.replaceState({}, "", "/settings?tab=billing");
     }
@@ -118,17 +118,9 @@ export default function Settings() {
         const link = await createConnectOnboardingLinkMutation.mutateAsync({ accountId });
         if (link?.url) { window.location.href = link.url; return; }
       }
-      toast.error("Could not start Stripe Connect setup");
+      toast.error("Could not start EusoConnect bank setup");
     } catch (err: any) {
-      const msg = err?.message || "";
-      if (msg.includes("platform profile") || msg.includes("questionnaire") || msg.includes("complete your")) {
-        toast.error("Stripe Connect platform setup required", {
-          description: "The platform owner must complete the Connect questionnaire in the Stripe Dashboard before connected accounts can be created.",
-          duration: 10000,
-        });
-      } else {
-        toast.error(msg || "Stripe Connect setup failed");
-      }
+      toast.error(err?.message || "EusoConnect setup failed. Please try again.");
     } finally { setConnectLoading(false); }
   };
 
@@ -163,11 +155,11 @@ export default function Settings() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        toast.error("Could not open Stripe checkout");
+        toast.error("Could not open payment setup");
         setAddingCard(false);
       }
     },
-    onError: (error: any) => { toast.error("Failed to connect to Stripe", { description: error.message }); setAddingCard(false); },
+    onError: (error: any) => { toast.error("Failed to connect payment provider", { description: error.message }); setAddingCard(false); },
   });
 
   const removePaymentMethodMutation = (trpc as any).stripe.removePaymentMethod.useMutation({
@@ -584,11 +576,11 @@ export default function Settings() {
 
         {/* ======== BILLING TAB ======== */}
         <TabsContent value="billing" className="mt-6 space-y-6">
-          {/* ── Stripe Connect Status Card ── */}
+          {/* ── EusoConnect Bank Status Card ── */}
           <Card className={`${cardCls} border-blue-200/50 dark:border-blue-500/20`}>
             <CardHeader className="pb-3">
               <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
-                <Landmark className="w-5 h-5 text-purple-500 dark:text-cyan-400" />Stripe Connect — Payouts
+                <Landmark className="w-5 h-5 text-purple-500 dark:text-cyan-400" />EusoConnect — Payouts
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -602,7 +594,7 @@ export default function Settings() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="text-slate-900 dark:text-white font-medium text-sm">Stripe Connect Account</p>
+                        <p className="text-slate-900 dark:text-white font-medium text-sm">Payout Account</p>
                         <Badge className={`border-0 text-xs font-semibold ${connectAccountQuery.data.chargesEnabled ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400"}`}>
                           {connectAccountQuery.data.chargesEnabled ? "Active" : connectAccountQuery.data.detailsSubmitted ? "Under Review" : "Incomplete"}
                         </Badge>
@@ -611,7 +603,7 @@ export default function Settings() {
                         {connectAccountQuery.data.chargesEnabled && connectAccountQuery.data.payoutsEnabled
                           ? "You can send and receive payments on EusoTrip"
                           : connectAccountQuery.data.detailsSubmitted
-                          ? "Stripe is verifying your information. This usually takes 1-2 business days."
+                          ? "Your information is being verified. This usually takes 1-2 business days."
                           : "Additional information is needed to activate your account."}
                       </p>
                     </div>
@@ -628,11 +620,11 @@ export default function Settings() {
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <Landmark className="w-8 h-8 text-blue-500 dark:text-cyan-400" />
                   </div>
-                  <p className="text-slate-700 dark:text-slate-300 font-medium">Set up Stripe Connect to receive payments</p>
-                  <p className="text-slate-400 dark:text-slate-500 text-sm mt-1 max-w-md mx-auto">Connect your bank account through Stripe so you can receive payouts for completed loads, referrals, and other earnings.</p>
+                  <p className="text-slate-700 dark:text-slate-300 font-medium">Set up EusoConnect to receive payments</p>
+                  <p className="text-slate-400 dark:text-slate-500 text-sm mt-1 max-w-md mx-auto">Connect your bank account so you can receive payouts for completed loads, referrals, and other earnings.</p>
                   <Button onClick={handleStartConnect} disabled={connectLoading} className={`mt-4 ${btnCls}`}>
                     {connectLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Landmark className="w-4 h-4 mr-2" />}
-                    Set Up Stripe Connect
+                    EusoConnect to Bank
                   </Button>
                 </div>
               )}
@@ -714,7 +706,7 @@ export default function Settings() {
                   <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20">
                     <div className="flex items-start gap-2">
                       <Lock className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-blue-700 dark:text-blue-400">All payments are secured via Stripe. Your card details never touch our servers.</p>
+                      <p className="text-xs text-blue-700 dark:text-blue-400">All payments are secured with bank-level encryption. Your card details never touch our servers.</p>
                     </div>
                   </div>
                 </div>

@@ -240,7 +240,7 @@ function NotificationBell({ onNavigate }: { onNavigate: (path: string) => void }
   );
 }
 
-// --- Stripe Connect Onboarding Banner ---
+// --- EusoConnect Bank Onboarding Banner ---
 function StripeConnectBanner() {
   const [dismissed, setDismissed] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -280,7 +280,7 @@ function StripeConnectBanner() {
         }
       }
     } catch (err: any) {
-      console.warn("[StripeConnect] Setup error:", err?.message);
+      console.warn("[EusoConnect] Setup error:", err?.message);
     }
     setConnecting(false);
   };
@@ -304,7 +304,7 @@ function StripeConnectBanner() {
             {needsAction ? "Complete your payment setup" : "Connect your bank account to get paid"}
           </p>
           <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-            {needsAction ? "Your Stripe account needs additional information." : "Set up Stripe Connect to send and receive payments on EusoTrip."}
+            {needsAction ? "Your EusoConnect account needs additional information." : "Set up EusoConnect to send and receive payments on EusoTrip."}
           </p>
         </div>
         <button
@@ -999,7 +999,7 @@ export default function DashboardLayout({
         <main className={`flex-1 flex flex-col overflow-y-auto overflow-x-hidden smooth-scroll ${theme === "light" ? "bg-[#f8f9fb]" : "bg-gray-950/50"}`}>
           {/* Approval status banner for pending/suspended users */}
           <ApprovalBanner />
-          {/* Stripe Connect onboarding prompt for newly registered users */}
+          {/* EusoConnect bank onboarding prompt for newly registered users */}
           <StripeConnectBanner />
 
           <AnimatePresence mode="wait">

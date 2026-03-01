@@ -1,7 +1,7 @@
 /**
  * EUSOWALLET - Digital Wallet & Fintech Infrastructure
  * 
- * Powered by Stripe Connect, Issuing & Treasury APIs
+ * Funded & credited via Stripe (behind the scenes)
  * Features:
  * - Standalone digital wallet with real balance
  * - Send/receive money between platform users
@@ -207,9 +207,9 @@ export default function Wallet() {
         const link = await createConnectOnboardingLinkMutation.mutateAsync({ accountId });
         if (link?.url) { window.location.href = link.url; return; }
       }
-      toast.error("Could not start Stripe Connect setup");
+      toast.error("Could not start EusoConnect bank setup");
     } catch (err: any) {
-      toast.error(err?.message || "Stripe Connect setup failed. Please try again.");
+      toast.error(err?.message || "EusoConnect bank setup failed. Please try again.");
     } finally { setConnectLoading(false); }
   };
 
@@ -636,12 +636,12 @@ export default function Wallet() {
               </div>
             ))}
           </div>
-          {/* Stripe Connect Balance (live from Stripe) */}
+          {/* EusoWallet Payout Balance (live) */}
           {(connectBalanceQuery?.data?.hasAccount || balance?.stripeBalance) && (
             <div className={`mt-3 p-3 rounded-2xl ${isLight ? 'bg-emerald-50/80 border border-emerald-200/50' : 'bg-emerald-500/[0.06] border border-emerald-500/[0.12]'}`}>
               <div className="flex items-center gap-2 mb-2">
                 <ShieldCheck className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
-                <p className={`text-xs font-semibold ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>Stripe Payout Balance</p>
+                <p className={`text-xs font-semibold ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>Payout Balance</p>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {[
@@ -734,7 +734,7 @@ export default function Wallet() {
       {/* ============================================================ */}
       {activeTab === "overview" && (
         <div className="space-y-6">
-          {/* ── Stripe Connect Payout Status ── */}
+          {/* ── EusoConnect Bank Status ── */}
           {!connectAccountQuery?.isLoading && (
             <Card className={cn("rounded-xl border", 
               connectAccountQuery?.data?.chargesEnabled && connectAccountQuery?.data?.payoutsEnabled
@@ -780,9 +780,9 @@ export default function Wallet() {
                       </div>
                       <p className={cn("text-xs mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>
                         {connectAccountQuery?.data?.chargesEnabled && connectAccountQuery?.data?.payoutsEnabled
-                          ? "Stripe Connect is active — you can send and receive payments"
+                          ? "EusoConnect is active — you can send and receive payments"
                           : connectAccountQuery?.data?.hasAccount && connectAccountQuery?.data?.detailsSubmitted
-                          ? "Stripe is verifying your information (1-2 business days)"
+                          ? "Your information is being verified (1-2 business days)"
                           : connectAccountQuery?.data?.hasAccount
                           ? "Additional information needed to activate payouts"
                           : "Connect your bank account to receive earnings and payouts"}
@@ -797,7 +797,7 @@ export default function Wallet() {
                       className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-xs hover:opacity-90 border-0 shrink-0"
                     >
                       {connectLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <ExternalLink className="w-3.5 h-3.5 mr-1.5" />}
-                      {connectAccountQuery?.data?.hasAccount ? "Continue Setup" : "Set Up Payouts"}
+                      {connectAccountQuery?.data?.hasAccount ? "Continue Setup" : "EusoConnect to Bank"}
                     </Button>
                   )}
                   {connectAccountQuery?.data?.chargesEnabled && connectAccountQuery?.data?.payoutsEnabled && (
@@ -811,13 +811,13 @@ export default function Wallet() {
                           const result = await createConnectLoginLinkMutation.mutateAsync();
                           if (result?.url) window.open(result.url, "_blank");
                         } catch (err: any) {
-                          toast.error(err?.message || "Could not open Stripe dashboard");
+                          toast.error(err?.message || "Could not open account dashboard");
                         } finally { setDashboardLoading(false); }
                       }}
                       className={cn("text-xs shrink-0", isLight ? "text-emerald-700 hover:bg-emerald-100" : "text-emerald-400 hover:bg-emerald-500/10")}
                     >
                       {dashboardLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <ExternalLink className="w-3.5 h-3.5 mr-1.5" />}
-                      Stripe Dashboard
+                      Account Dashboard
                     </Button>
                   )}
                 </div>
@@ -1117,7 +1117,7 @@ export default function Wallet() {
                     <div className={cn("p-3 rounded-xl border", isLight ? "bg-white/80 border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
                       <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>Payment Processing</p>
                       <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{feeSchedule.paymentProcessingPercent}% + ${feeSchedule.paymentProcessingFlat}</p>
-                      <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>Stripe Connect</p>
+                      <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>EusoConnect</p>
                     </div>
                     <div className={cn("p-3 rounded-xl border", isLight ? "bg-white/80 border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
                       <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>Included Free</p>
@@ -1516,7 +1516,7 @@ export default function Wallet() {
               </Button>
               <div className={`flex items-center gap-2 text-xs ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
                 <Lock className="w-3.5 h-3.5" />
-                Secured by Stripe Connect. Transfers are instant between EusoWallet users.
+                Transfers are instant between EusoWallet users. Secured with bank-level encryption.
               </div>
             </CardContent>
           </Card>
@@ -1639,7 +1639,7 @@ export default function Wallet() {
                   </h3>
                   <p className={`text-sm mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                     Link your bank account to fund your EusoWallet, receive payouts, and enable escrow deposits.
-                    Powered by Stripe Financial Connections with bank-level encryption.
+                    Bank-level encryption with secure verification.
                   </p>
                   <div className={`mt-3 flex flex-wrap items-center gap-3 text-sm ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
                     <span className="flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-green-400" /> ACH transfers</span>
@@ -1950,10 +1950,13 @@ export default function Wallet() {
         </div>
       )}
 
-      {/* Stripe Powered Footer */}
-      <div className={`text-center py-4 flex items-center justify-center gap-2 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
-        <Lock className="w-3.5 h-3.5" />
-        <span className="text-xs">Powered by Stripe Connect, Issuing & Treasury · Bank-level security · FDIC eligible</span>
+      {/* Powered by Stripe Footer */}
+      <div className={`text-center py-4 flex flex-col items-center gap-1 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+        <div className="flex items-center gap-2">
+          <Lock className="w-3.5 h-3.5" />
+          <span className="text-xs font-medium">EusoWallet · Bank-level security · FDIC eligible</span>
+        </div>
+        <span className="text-[10px] opacity-60">Powered by Stripe</span>
       </div>
     </div>
   );

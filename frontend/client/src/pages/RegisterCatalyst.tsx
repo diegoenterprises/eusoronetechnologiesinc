@@ -298,7 +298,7 @@ export default function RegisterCatalyst() {
       complianceIds: Object.keys(complianceIds).length > 0 ? complianceIds : undefined,
     });
 
-    // Store business type preference for post-login Stripe Connect onboarding
+    // Store business type preference for post-login EusoConnect bank onboarding
     if (formData.businessType) {
       try { localStorage.setItem("eusotrip_stripe_biz_type", formData.businessType); } catch {}
     }

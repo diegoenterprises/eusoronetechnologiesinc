@@ -155,7 +155,7 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
   },
   {
     id: 'stripe_connect',
-    name: 'Stripe Connect',
+    name: 'EusoConnect',
     description: 'Payout account status, onboarding & management',
     icon: Wallet,
     category: 'financial',

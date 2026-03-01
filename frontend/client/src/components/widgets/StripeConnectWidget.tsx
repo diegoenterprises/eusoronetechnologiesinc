@@ -1,7 +1,7 @@
 /**
- * STRIPE CONNECT STATUS WIDGET
+ * EUSOCONNECT STATUS WIDGET
  * Lightweight dashboard widget — quick-glance payout status linking to EusoWallet.
- * Available to ALL roles.
+ * Available to ALL roles. Powered by Stripe (behind the scenes).
  */
 
 import React from "react";

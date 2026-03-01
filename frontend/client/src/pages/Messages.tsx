@@ -135,7 +135,7 @@ export default function Messages() {
       conversationsQuery.refetch();
       toast.success(
         data.type === "payment_sent" ? `$${data.amount.toFixed(2)} sent` : `$${data.amount.toFixed(2)} requested`,
-        { description: data.type === "payment_sent" ? "Payment sent via Stripe" : "Payment request sent" }
+        { description: data.type === "payment_sent" ? "Payment sent via EusoWallet" : "Payment request sent" }
       );
     },
     onError: (err: any) => toast.error("Payment failed", { description: err.message }),
@@ -503,7 +503,7 @@ export default function Messages() {
                                   <p className={cn("text-xs font-semibold", message.type === "payment_sent" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-amber-400")}>
                                     {message.type === "payment_sent" ? "Payment Sent" : "Payment Request"}
                                   </p>
-                                  <p className="text-[10px] text-slate-500">via Stripe</p>
+                                  <p className="text-[10px] text-slate-500">via EusoWallet</p>
                                 </div>
                               </div>
                               <p className="text-white text-xl font-bold">
@@ -757,10 +757,10 @@ export default function Messages() {
                 className="bg-slate-700/50 border-slate-600/50 rounded-xl text-sm"
               />
 
-              {/* Stripe badge */}
+              {/* Payment security badge */}
               <div className="flex items-center justify-center gap-2 text-slate-500 text-[10px]">
                 <CreditCard className="w-3 h-3" />
-                <span>Powered by Stripe · Secure payments</span>
+                <span>EusoWallet · Secure payments</span>
               </div>
 
               {/* Submit */}
