@@ -4,7 +4,7 @@
  * Uses OpenWeatherMap API for real-time weather data
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { 
   Cloud, CloudRain, CloudSnow, Sun, CloudDrizzle, 
@@ -51,6 +51,11 @@ export default function Weather({ location: locationProp, compact = false, expan
     try { return localStorage.getItem('eusotrip_weather_location') || ''; } catch { return ''; }
   });
   const [locationInput, setLocationInput] = useState(customLocation);
+  const [suggestions, setSuggestions] = useState<Array<{ name: string; state?: string; country: string; lat: number; lon: number }>>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const activeLocation = customLocation || locationProp;
 
@@ -70,16 +75,53 @@ export default function Weather({ location: locationProp, compact = false, expan
     fetchWeather();
   }, [activeLocation]);
 
-  const saveLocation = () => {
-    try { localStorage.setItem('eusotrip_weather_location', locationInput); } catch {}
-    setCustomLocation(locationInput);
+  const selectSuggestion = (s: { name: string; state?: string; country: string }) => {
+    const label = s.state ? `${s.name}, ${s.state}, ${s.country}` : `${s.name}, ${s.country}`;
+    setLocationInput(label);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    try { localStorage.setItem('eusotrip_weather_location', label); } catch {}
+    setCustomLocation(label);
     setShowSettings(false);
+  };
+
+  const searchCities = useCallback((query: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (query.length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
+    debounceRef.current = setTimeout(async () => {
+      setSuggestionsLoading(true);
+      try {
+        const key = import.meta.env.VITE_OPENWEATHER_API_KEY || "";
+        const res = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=8&appid=${key}`);
+        if (res.ok) {
+          const data = await res.json();
+          // Deduplicate by name+state+country
+          const seen = new Set<string>();
+          const unique = data.filter((d: any) => {
+            const k = `${d.name}-${d.state || ''}-${d.country}`;
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+          });
+          setSuggestions(unique);
+          setShowSuggestions(unique.length > 0);
+        }
+      } catch { setSuggestions([]); }
+      setSuggestionsLoading(false);
+    }, 300);
+  }, []);
+
+  const handleLocationInput = (val: string) => {
+    setLocationInput(val);
+    searchCities(val);
   };
 
   const clearLocation = () => {
     try { localStorage.removeItem('eusotrip_weather_location'); } catch {}
     setCustomLocation('');
     setLocationInput('');
+    setSuggestions([]);
+    setShowSuggestions(false);
     setShowSettings(false);
   };
 
@@ -311,29 +353,41 @@ export default function Weather({ location: locationProp, compact = false, expan
             <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-gray-300">Set Location</p>
-                <button onClick={() => setShowSettings(false)} className="p-0.5 rounded hover:bg-white/10">
+                <button onClick={() => { setShowSettings(false); setShowSuggestions(false); }} className="p-0.5 rounded hover:bg-white/10">
                   <X className="w-3 h-3 text-gray-500" />
                 </button>
               </div>
-              <div className="flex gap-2">
+              <div className="relative">
                 <input
+                  ref={inputRef}
                   type="text"
                   value={locationInput}
-                  onChange={(e) => setLocationInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && saveLocation()}
-                  placeholder="City name (e.g. Houston, TX)"
-                  className="flex-1 px-3 py-1.5 text-sm rounded-lg bg-slate-700 border border-slate-600 text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
+                  onChange={(e) => handleLocationInput(e.target.value)}
+                  onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+                  placeholder="Search city (e.g. Kansas City, KS)"
+                  className="w-full px-3 py-1.5 text-sm rounded-lg bg-slate-700 border border-slate-600 text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
                 />
-                <button onClick={saveLocation} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors">
-                  Save
-                </button>
+                {suggestionsLoading && (
+                  <Loader2 className="absolute right-2.5 top-2 w-3.5 h-3.5 animate-spin text-cyan-400" />
+                )}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute z-50 left-0 right-0 mt-1 rounded-lg bg-slate-800 border border-slate-600 shadow-xl max-h-48 overflow-y-auto">
+                    {suggestions.map((s, i) => (
+                      <button key={i} onClick={() => selectSuggestion(s)}
+                        className="w-full px-3 py-2 text-left text-sm text-white hover:bg-cyan-500/20 flex items-center gap-2 transition-colors">
+                        <MapPin className="w-3 h-3 text-cyan-400 flex-shrink-0" />
+                        <span>{s.name}{s.state ? `, ${s.state}` : ''}, {s.country}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               {customLocation && (
                 <button onClick={clearLocation} className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors">
                   Reset to device location
                 </button>
               )}
-              <p className="text-[10px] text-gray-600">Leave blank to auto-detect from your device</p>
+              <p className="text-[10px] text-gray-600">Select a city from the dropdown to set your weather location</p>
             </div>
           )}
 
