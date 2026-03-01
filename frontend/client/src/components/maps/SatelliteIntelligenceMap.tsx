@@ -165,6 +165,39 @@ export default function SatelliteIntelligenceMap({
   const [showPanel, setShowPanel] = useState(true);
   const [dataPoints, setDataPoints] = useState(0);
 
+  // ── INJECT CSS for Google Maps InfoWindow theme overrides ──
+  useEffect(() => {
+    const id = "sat-intel-iw-styles";
+    if (document.getElementById(id)) { document.getElementById(id)!.remove(); }
+    const style = document.createElement("style");
+    style.id = id;
+    style.textContent = isLight ? `
+      .sat-map-light .gm-style-iw-c {
+        background: #ffffff !important;
+        border-radius: 14px !important;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06) !important;
+        padding: 0 !important;
+        border: 1px solid #e2e8f0 !important;
+      }
+      .sat-map-light .gm-style-iw-d { overflow: hidden !important; padding: 0 !important; }
+      .sat-map-light .gm-style-iw-tc::after { background: #ffffff !important; }
+      .sat-map-light .gm-ui-hover-effect > span { background-color: #64748b !important; }
+    ` : `
+      .sat-map-dark .gm-style-iw-c {
+        background: #0c1222 !important;
+        border-radius: 14px !important;
+        box-shadow: 0 4px 30px rgba(0,0,0,0.6), 0 0 20px rgba(20,115,255,0.08) !important;
+        padding: 0 !important;
+        border: 1px solid rgba(20,115,255,0.15) !important;
+      }
+      .sat-map-dark .gm-style-iw-d { overflow: hidden !important; padding: 0 !important; }
+      .sat-map-dark .gm-style-iw-tc::after { background: #0c1222 !important; }
+      .sat-map-dark .gm-ui-hover-effect > span { background-color: #94a3b8 !important; }
+    `;
+    document.head.appendChild(style);
+    return () => { document.getElementById(id)?.remove(); };
+  }, [isLight]);
+
   // Wait for Google Maps
   useEffect(() => {
     const check = () => !!(window as any).google?.maps?.visualization;
@@ -294,35 +327,42 @@ export default function SatelliteIntelligenceMap({
         circle.addListener("mouseover", () => {
           if (hoverInfoRef.current) hoverInfoRef.current.close();
           const availCount = (z.liveLoads || 0);
+          // Theme-aware colors
+          const bg = isLight ? "#ffffff" : "#0c1222";
+          const cardBg = isLight ? "#f1f5f9" : "#162032";
+          const tp = isLight ? "#0f172a" : "#f1f5f9";
+          const ts = isLight ? "#64748b" : "#94a3b8";
+          const tm = isLight ? "#94a3b8" : "#475569";
+          const bdr = isLight ? "#e2e8f0" : "#1e3a5f";
           const info = new g.InfoWindow({
             position: { lat, lng },
             content: `
-              <div style="font-family:system-ui;padding:6px 8px;min-width:200px;max-width:260px">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-                  <strong style="font-size:13px;color:#0f172a">${z.zoneName}</strong>
-                  <span style="font-size:10px;font-weight:700;color:#fff;background:${sev.stroke};padding:2px 7px;border-radius:6px;text-transform:uppercase;letter-spacing:0.5px">${z.demandLevel}</span>
+              <div style="font-family:'Inter',system-ui,-apple-system,sans-serif;padding:10px 12px;min-width:220px;max-width:280px;background:${bg};border-radius:10px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                  <strong style="font-size:13px;color:${tp};line-height:1.2">${z.zoneName}</strong>
+                  <span style="font-size:9px;font-weight:700;color:#fff;background:${sev.stroke};padding:3px 8px;border-radius:8px;text-transform:uppercase;letter-spacing:0.6px;margin-left:8px;white-space:nowrap">${z.demandLevel}</span>
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px;color:#64748b">
-                  <div style="text-align:center;padding:4px;background:#f8fafc;border-radius:6px">
-                    <div style="font-size:14px;font-weight:700;color:#0f172a">${z.liveLoads || 0}</div>
-                    <div>Loads</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px;color:${ts}">
+                  <div style="text-align:center;padding:6px 4px;background:${cardBg};border-radius:8px">
+                    <div style="font-size:16px;font-weight:800;color:${tp};line-height:1">${z.liveLoads || 0}</div>
+                    <div style="margin-top:2px;font-size:9px">Loads</div>
                   </div>
-                  <div style="text-align:center;padding:4px;background:#f8fafc;border-radius:6px">
-                    <div style="font-size:14px;font-weight:700;color:#1473FF">$${Number(z.liveRate || 0).toFixed(2)}<span style="font-size:10px;font-weight:400">/mi</span></div>
-                    <div>Rate</div>
+                  <div style="text-align:center;padding:6px 4px;background:${cardBg};border-radius:8px">
+                    <div style="font-size:16px;font-weight:800;color:#1473FF;line-height:1">$${Number(z.liveRate || 0).toFixed(2)}<span style="font-size:9px;font-weight:500">/mi</span></div>
+                    <div style="margin-top:2px;font-size:9px">Rate</div>
                   </div>
-                  <div style="text-align:center;padding:4px;background:#f8fafc;border-radius:6px">
-                    <div style="font-size:14px;font-weight:700;color:#0f172a">${z.liveTrucks || 0}</div>
-                    <div>Trucks</div>
+                  <div style="text-align:center;padding:6px 4px;background:${cardBg};border-radius:8px">
+                    <div style="font-size:16px;font-weight:800;color:${tp};line-height:1">${z.liveTrucks || 0}</div>
+                    <div style="margin-top:2px;font-size:9px">Trucks</div>
                   </div>
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;font-size:10px;color:#64748b">
-                  <div>Surge: <strong style="color:#0f172a">${Number(z.liveSurge || 1).toFixed(2)}x</strong></div>
-                  <div>L:T Ratio: <strong style="color:${sev.stroke}">${Number(z.liveRatio || 1).toFixed(1)}x</strong></div>
+                <div style="display:flex;justify-content:space-between;margin-top:8px;padding:0 2px;font-size:10px;color:${ts}">
+                  <span>Surge: <strong style="color:${tp}">${Number(z.liveSurge || 1).toFixed(2)}x</strong></span>
+                  <span>L:T Ratio: <strong style="color:${sev.stroke}">${Number(z.liveRatio || 1).toFixed(1)}x</strong></span>
                 </div>
-                <div style="margin-top:6px;padding-top:6px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
-                  <span style="font-size:9px;color:#94a3b8">Peak: ${z.peakHours || "N/A"} · Fuel: $${Number(z.fuelPrice || 0).toFixed(2)}/gal</span>
-                  <span style="font-size:10px;font-weight:600;color:#22C55E">${availCount} available</span>
+                <div style="margin-top:8px;padding-top:7px;border-top:1px solid ${bdr};display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:9px;color:${tm}">Peak: ${z.peakHours || "N/A"} · Fuel: $${Number(z.fuelPrice || 0).toFixed(2)}/gal</span>
+                  <span style="font-size:10px;font-weight:700;color:#22C55E">${availCount} avail</span>
                 </div>
               </div>
             `,
@@ -387,14 +427,17 @@ export default function SatelliteIntelligenceMap({
         // Hover tooltip for facilities
         marker.addListener("mouseover", () => {
           if (hoverInfoRef.current) hoverInfoRef.current.close();
+          const bg = isLight ? "#ffffff" : "#0c1222";
+          const tp = isLight ? "#0f172a" : "#f1f5f9";
+          const ts = isLight ? "#64748b" : "#94a3b8";
           const info = new g.InfoWindow({
             content: `
-              <div style="font-family:system-ui;padding:4px 6px;min-width:160px">
-                <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-                  <span style="width:10px;height:10px;border-radius:50%;background:${cfg.color};display:inline-block"></span>
-                  <strong style="font-size:12px;color:#0f172a">${fac.name}</strong>
+              <div style="font-family:'Inter',system-ui,sans-serif;padding:8px 10px;min-width:170px;background:${bg};border-radius:8px">
+                <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+                  <span style="width:10px;height:10px;border-radius:50%;background:${cfg.color};display:inline-block;box-shadow:0 0 6px ${cfg.color}60"></span>
+                  <strong style="font-size:12px;color:${tp}">${fac.name}</strong>
                 </div>
-                <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">${fac.type}</div>
+                <div style="font-size:9px;color:${ts};text-transform:uppercase;letter-spacing:0.6px;font-weight:600;margin-left:17px">${fac.type}</div>
               </div>
             `,
             disableAutoPan: true,
@@ -434,13 +477,19 @@ export default function SatelliteIntelligenceMap({
         // Hover tooltip for fleet pings
         marker.addListener("mouseover", () => {
           if (hoverInfoRef.current) hoverInfoRef.current.close();
+          const bg = isLight ? "#ffffff" : "#0c1222";
+          const tp = isLight ? "#0f172a" : "#f1f5f9";
+          const ts = isLight ? "#64748b" : "#94a3b8";
           const info = new g.InfoWindow({
             content: `
-              <div style="font-family:system-ui;padding:4px 6px">
-                <strong style="font-size:12px;color:#0f172a">Driver #${ping.driverId}</strong>
-                ${ping.speed ? `<div style="font-size:11px;color:#22C55E;font-weight:700">${ping.speed.toFixed(0)} mph</div>` : ""}
-                ${ping.roadName ? `<div style="font-size:10px;color:#64748b">${ping.roadName}</div>` : ""}
-                ${ping.pingAt ? `<div style="font-size:9px;color:#94a3b8">${new Date(ping.pingAt).toLocaleTimeString()}</div>` : ""}
+              <div style="font-family:'Inter',system-ui,sans-serif;padding:8px 10px;background:${bg};border-radius:8px">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#22C55E;display:inline-block;box-shadow:0 0 6px #22C55E60"></span>
+                  <strong style="font-size:12px;color:${tp}">Driver #${ping.driverId}</strong>
+                </div>
+                ${ping.speed ? `<div style="font-size:13px;color:#22C55E;font-weight:800;margin-top:3px;margin-left:14px">${ping.speed.toFixed(0)} mph</div>` : ""}
+                ${ping.roadName ? `<div style="font-size:10px;color:${ts};margin-left:14px">${ping.roadName}</div>` : ""}
+                ${ping.pingAt ? `<div style="font-size:9px;color:${ts};margin-left:14px;opacity:0.6">${new Date(ping.pingAt).toLocaleTimeString()}</div>` : ""}
               </div>
             `,
             disableAutoPan: true,
@@ -568,7 +617,7 @@ export default function SatelliteIntelligenceMap({
     }
 
     setDataPoints(pointCount);
-  }, [zones, coldZones, visibleLayers, selectedZone, intel, roadIntel, onSelectZone]);
+  }, [zones, coldZones, visibleLayers, selectedZone, intel, roadIntel, onSelectZone, isLight]);
 
   // ── SELECTED ZONE FLY-TO ──
   useEffect(() => {
@@ -602,7 +651,7 @@ export default function SatelliteIntelligenceMap({
   return (
     <div className={`relative w-full rounded-2xl overflow-hidden border ${isLight ? "border-slate-200" : "border-white/[0.06]"}`} style={{ height: 560 }}>
       {/* ── MAP CONTAINER ── */}
-      <div ref={containerRef} className="w-full h-full" />
+      <div ref={containerRef} className={`w-full h-full ${isLight ? "sat-map-light" : "sat-map-dark"}`} />
 
       {/* ── SCANLINE OVERLAY (subtle satellite aesthetic) ── */}
       <div className="absolute inset-0 pointer-events-none z-[1]" style={{
