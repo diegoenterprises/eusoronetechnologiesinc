@@ -321,8 +321,8 @@ export const stripeRouter = router({
           },
         ],
         mode: "payment" as const,
-        success_url: `${process.env.APP_URL || "https://eusotrip-app.azurewebsites.net"}/payments/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.APP_URL || "https://eusotrip-app.azurewebsites.net"}/payments/cancelled`,
+        success_url: `${process.env.APP_URL || "https://eusotrip.com"}/payments/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.APP_URL || "https://eusotrip.com"}/payments/cancelled`,
         customer_email: ctx.user.email || undefined,
         client_reference_id: String(ctx.user.id),
         metadata: {
@@ -389,8 +389,8 @@ export const stripeRouter = router({
           },
         ],
         mode: "subscription",
-        success_url: `${process.env.APP_URL || "https://eusotrip-app.azurewebsites.net"}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.APP_URL || "https://eusotrip-app.azurewebsites.net"}/subscription/cancelled`,
+        success_url: `${process.env.APP_URL || "https://eusotrip.com"}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.APP_URL || "https://eusotrip.com"}/subscription/cancelled`,
         metadata: {
           userId: String(ctx.user.id),
           planId: input.planId,
@@ -609,7 +609,7 @@ export const stripeRouter = router({
   createConnectOnboardingLink: protectedProcedure
     .input(z.object({ accountId: z.string() }))
     .mutation(async ({ input }) => {
-      const appUrl = process.env.APP_URL || "https://eusotrip-app.azurewebsites.net";
+      const appUrl = process.env.APP_URL || "https://eusotrip.com";
       const accountLink = await stripe.accountLinks.create({
         account: input.accountId,
         refresh_url: `${appUrl}/settings?tab=billing&refresh=true`,

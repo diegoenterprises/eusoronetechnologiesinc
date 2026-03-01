@@ -109,7 +109,7 @@ export default function ZeunBreakdown() {
   const [emergencyDetail, setEmergencyDetail] = useState<string | null>(null);
   const cc = cn("rounded-2xl border backdrop-blur-sm transition-all", L ? "bg-white/80 border-slate-200/80 shadow-sm" : "bg-slate-800/40 border-slate-700/40");
 
-  // ── VIGA Visual Intelligence State ──
+  // ── Zeun Visual Intelligence State ──
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
@@ -637,14 +637,14 @@ export default function ZeunBreakdown() {
               </div>
             )}
 
-            {/* ── VIGA Visual Scan — Photo-based AI Diagnosis ── */}
+            {/* ── Zeun Visual Scan — Photo-based AI Diagnosis ── */}
             <div className={cn("p-4 rounded-xl border-2 border-dashed transition-all", L ? "border-purple-300/50 bg-purple-50/30" : "border-purple-500/30 bg-purple-500/5")}>
               <div className="flex items-center gap-2 mb-3">
                 <div className="p-1.5 rounded-lg bg-gradient-to-r from-[#1473FF] to-[#BE01FF]">
                   <Camera className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <p className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>VIGA Visual Scan</p>
+                  <p className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>Zeun Visual Scan</p>
                   <p className="text-[10px] text-slate-400">Take a photo of the issue — AI diagnoses from the image</p>
                 </div>
               </div>

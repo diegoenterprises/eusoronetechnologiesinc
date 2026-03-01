@@ -339,7 +339,7 @@ function ZeunMechanicsPanel({ loadId }: { loadId: number }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// VIGA VISUAL INTELLIGENCE — Photo-based AI verification panel
+// ZEUN VISUAL INTELLIGENCE — Photo-based AI verification panel
 // Gauge reading, Seal verification, DVIR, Cargo condition
 // ═══════════════════════════════════════════════════════════════
 
@@ -419,7 +419,7 @@ function VIGAVisualPanel({ loadId }: { loadId: number }) {
           <Camera className="w-3.5 h-3.5 text-white" />
         </div>
         <div className="text-left flex-1">
-          <span className="text-zinc-200 font-medium text-sm">VIGA Visual Intelligence</span>
+          <span className="text-zinc-200 font-medium text-sm">Zeun Visual Intelligence</span>
           <p className="text-[10px] text-zinc-500">Photo-based AI verification & diagnostics</p>
         </div>
         {expanded ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
@@ -1159,7 +1159,7 @@ export default function ActiveTrip() {
       {/* ZEUN Vehicle Health */}
       <ZeunMechanicsPanel loadId={activeLoad.id} />
 
-      {/* VIGA Visual Intelligence — Photo-based AI verification */}
+      {/* Zeun Visual Intelligence — Photo-based AI verification */}
       <VIGAVisualPanel loadId={activeLoad.id} />
 
       {/* Compliance Panel */}
