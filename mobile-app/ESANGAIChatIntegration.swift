@@ -17,6 +17,14 @@ class ESANGAIChatIntegration: NSObject, ObservableObject {
     @Published var driverRecommendations: [DriverRecommendation] = []
     @Published var loadOptimizations: [LoadOptimization] = []
     
+    // MARK: - ANE Edge Intelligence
+    @Published var aneAvailable: Bool = false
+    @Published var edgeConfidence: Float = 0
+    @Published var lastResponseSource: String = "cloud"
+    @Published var edgeSuggestions: [EdgeSuggestion] = []
+    private let edgeEngine = ESANGEdgeEngine.shared
+    private let hotZonesProcessor = ANEHotZonesProcessor.shared
+    
     // MARK: - Private Properties
     private var cancellables = Set<AnyCancellable>()
     private let chatBackendURL = "https://api.eusotrip.com/esang-ai/chat"
@@ -54,6 +62,34 @@ class ESANGAIChatIntegration: NSObject, ObservableObject {
         setupWebSocketConnection()
         loadChatHistory()
         setupAutoReconnect()
+        initializeEdgeEngine()
+    }
+    
+    // MARK: - ANE Edge Engine Setup
+    private func initializeEdgeEngine() {
+        // Sync ANE availability status
+        aneAvailable = ANERuntime.shared.isAvailable
+        edgeConfidence = edgeEngine.confidenceLevel
+        
+        // Keep edge engine network status in sync
+        edgeEngine.$isOnline
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in }
+            .store(in: &cancellables)
+        
+        // Monitor edge engine confidence
+        edgeEngine.$confidenceLevel
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$edgeConfidence)
+        
+        // Sync connection status to edge engine
+        $isConnected
+            .sink { [weak self] connected in
+                self?.edgeEngine.updateNetworkStatus(online: connected)
+            }
+            .store(in: &cancellables)
+        
+        ANELog.info("ESANG Chat ↔ Edge Engine linked | ANE: \(aneAvailable ? "ON" : "OFF")")
     }
     
     // MARK: - WebSocket Connection Management
@@ -154,7 +190,7 @@ class ESANGAIChatIntegration: NSObject, ObservableObject {
         }
     }
     
-    // MARK: - Chat Message Sending
+    // MARK: - Chat Message Sending (Hybrid: Cloud + ANE Edge)
     func sendChatMessage(_ text: String, context: ChatContext? = nil) async throws {
         guard !text.isEmpty else { return }
         guard text.count <= config.maxMessageLength else {
@@ -174,12 +210,85 @@ class ESANGAIChatIntegration: NSObject, ObservableObject {
             self.isProcessing = true
         }
         
-        // Send via WebSocket if connected, otherwise use REST API
+        // Hybrid routing: Cloud (WebSocket/REST) → ANE Edge fallback
         if isConnected {
-            try sendViaWebSocket(userMessage)
+            // Online: try cloud first
+            do {
+                try sendViaWebSocket(userMessage)
+                DispatchQueue.main.async { self.lastResponseSource = "cloud" }
+            } catch {
+                // Cloud failed — fall through to edge
+                let edgeResponse = await processViaEdge(text: text, context: context)
+                appendEdgeResponse(edgeResponse, for: userMessage)
+            }
         } else {
-            try await sendViaREST(userMessage)
+            // Offline: route entirely through ANE Edge Engine
+            let edgeResponse = await processViaEdge(text: text, context: context)
+            appendEdgeResponse(edgeResponse, for: userMessage)
         }
+    }
+    
+    // MARK: - ANE Edge Processing
+    
+    /// Process a message through the on-device ANE Edge Engine
+    private func processViaEdge(text: String, context: ChatContext?) async -> EdgeResponse {
+        // Convert ChatContext → DriverContext for edge engine
+        let driverContext = DriverContext(
+            location: context?.marketConditions.flatMap { conditions in
+                if let lat = conditions["lat"], let lng = conditions["lng"] {
+                    return ["lat": lat, "lng": lng]
+                }
+                return nil
+            },
+            locationDescription: nil,
+            hosRemainingMinutes: context?.marketConditions?["hos_remaining"].flatMap { Int($0) },
+            loadStatus: context?.loadId != nil ? "loaded" : "empty",
+            loadOrigin: nil,
+            loadDestination: nil,
+            weatherCondition: nil,
+            fuelLevelPercent: nil,
+            truckType: nil,
+            hazmatEndorsement: nil,
+            currentSpeed: nil,
+            nearbyFacilities: nil
+        )
+        
+        return await edgeEngine.processMessage(text, context: driverContext)
+    }
+    
+    /// Append an edge response to the chat as an AI message
+    private func appendEdgeResponse(_ response: EdgeResponse, for userMessage: ChatMessage) {
+        let sourceTag = response.source == .aneLocal ? " [On-Device AI]" : ""
+        
+        let aiMessage = ChatMessage(
+            id: UUID().uuidString,
+            content: response.text,
+            role: .assistant,
+            timestamp: Date(),
+            context: userMessage.context,
+            metadata: [
+                "source": response.source.rawValue,
+                "confidence": String(format: "%.2f", response.confidence),
+                "ane_powered": response.source == .aneLocal ? "true" : "false"
+            ]
+        )
+        
+        DispatchQueue.main.async {
+            self.chatMessages.append(aiMessage)
+            self.isProcessing = false
+            self.lastResponseSource = response.source.rawValue
+            self.edgeSuggestions = response.suggestions
+        }
+    }
+    
+    /// Record a user correction to improve on-device model
+    func recordUserCorrection(originalInput: String, correctedOutput: String) {
+        edgeEngine.recordCorrection(originalInput: originalInput, correctedOutput: correctedOutput)
+    }
+    
+    /// Get ANE + Edge Engine diagnostics
+    func getEdgeDiagnostics() -> EdgeDiagnostics {
+        return edgeEngine.diagnostics()
     }
     
     private func sendViaWebSocket(_ message: ChatMessage) throws {
