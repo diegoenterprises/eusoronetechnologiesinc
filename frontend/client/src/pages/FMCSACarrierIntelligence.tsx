@@ -640,6 +640,22 @@ export default function FMCSACarrierIntelligence() {
               </div>
             )}
 
+            {/* Error state */}
+            {snapshot.isError && (
+              <div className="flex flex-col items-center justify-center py-20">
+                <AlertTriangle className="w-8 h-8 text-red-400 mb-3" />
+                <p className="text-sm text-red-400 mb-2">Failed to load carrier data</p>
+                <button onClick={() => snapshot.refetch()} className="text-xs text-blue-400 hover:text-blue-300 underline">Try again</button>
+              </div>
+            )}
+
+            {/* No data state */}
+            {!snapshot.isLoading && !snapshot.isError && !snapshot.data && selectedDot && (
+              <div className="flex flex-col items-center justify-center py-20">
+                <p className="text-sm text-gray-500">No carrier data found for DOT# {selectedDot}</p>
+              </div>
+            )}
+
             {/* Carrier Header Card */}
             {snapshot.data && (
               <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-white/10 rounded-xl p-5 mb-6">

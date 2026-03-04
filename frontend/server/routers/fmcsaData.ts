@@ -62,15 +62,20 @@ export const fmcsaRouter = router({
   getSnapshot: protectedProcedure
     .input(z.object({ dotNumber: z.string() }))
     .query(async ({ input }) => {
-      const snap = await getCarrierSnapshot(input.dotNumber);
-      if (!snap) return null;
-      // Convert Date fields to strings so React doesn't crash on render
-      return {
-        ...snap,
-        insuranceExpiryDate: fmtDate(snap.insuranceExpiryDate),
-        oosDate: fmtDate(snap.oosDate),
-        snapshotDate: snap.snapshotDate instanceof Date ? snap.snapshotDate.toISOString() : String(snap.snapshotDate || ""),
-      };
+      try {
+        const snap = await getCarrierSnapshot(input.dotNumber);
+        if (!snap) return null;
+        // Convert Date fields to strings so React doesn't crash on render
+        return {
+          ...snap,
+          insuranceExpiryDate: fmtDate(snap.insuranceExpiryDate),
+          oosDate: fmtDate(snap.oosDate),
+          snapshotDate: snap.snapshotDate instanceof Date ? snap.snapshotDate.toISOString() : String(snap.snapshotDate || ""),
+        };
+      } catch (err) {
+        console.error("[fmcsaData.getSnapshot] Error:", err);
+        return null;
+      }
     }),
   
   // ========================================================================
@@ -579,11 +584,11 @@ export const fmcsaRouter = router({
         }
       };
       
-      // Active census = carriers with active authority
-      const safeActiveCount = async (): Promise<number> => {
+      // Active census = carriers with at least 1 power unit (excludes shell/defunct)
+      const safeActiveCensusCount = async (): Promise<number> => {
         try {
           const [rows]: any = await pool.query(
-            `SELECT COUNT(*) as count FROM fmcsa_census c INNER JOIN fmcsa_authority a ON a.dot_number = c.dot_number AND a.authority_status = 'ACTIVE'`
+            `SELECT COUNT(*) as count FROM fmcsa_census WHERE nbr_power_unit > 0`
           );
           return rows[0]?.count || 0;
         } catch {
@@ -591,7 +596,7 @@ export const fmcsaRouter = router({
         }
       };
       const [census, authority, insurance, crashes, inspections, violations, sms, monitored] = await Promise.all([
-        safeActiveCount(),
+        safeActiveCensusCount(),
         safeCount("fmcsa_authority"),
         safeCount("fmcsa_insurance"),
         safeCount("fmcsa_crashes"),

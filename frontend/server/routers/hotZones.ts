@@ -497,19 +497,18 @@ async function getDbEnhancement(): Promise<DbEnhancement> {
       if (st) result.trucksByState[st] = Number(r.cnt);
     });
 
-    // ═══ FMCSA CENSUS ENRICHMENT (active carriers only) ═══
+    // ═══ FMCSA CENSUS ENRICHMENT (active carriers: power_units > 0) ═══
     try {
       const [censusRows] = await db.execute(
-        sql`SELECT c.phy_state as state,
+        sql`SELECT phy_state as state,
                    COUNT(*) as carriers,
-                   COALESCE(SUM(c.nbr_power_unit), 0) as power_units,
-                   COALESCE(SUM(c.driver_total), 0) as drivers,
-                   COUNT(CASE WHEN c.hm_flag = 'Y' THEN 1 END) as hazmat,
-                   AVG(NULLIF(c.nbr_power_unit, 0)) as avg_fleet
-            FROM fmcsa_census c
-            INNER JOIN fmcsa_authority a ON a.dot_number = c.dot_number AND a.authority_status = 'ACTIVE'
-            WHERE c.phy_state IS NOT NULL AND c.phy_state != ''
-            GROUP BY c.phy_state`
+                   COALESCE(SUM(nbr_power_unit), 0) as power_units,
+                   COALESCE(SUM(driver_total), 0) as drivers,
+                   COUNT(CASE WHEN hm_flag = 'Y' THEN 1 END) as hazmat,
+                   AVG(NULLIF(nbr_power_unit, 0)) as avg_fleet
+            FROM fmcsa_census
+            WHERE phy_state IS NOT NULL AND phy_state != '' AND nbr_power_unit > 0
+            GROUP BY phy_state`
       ) as any;
       for (const r of censusRows || []) {
         const st = r.state;
@@ -525,11 +524,10 @@ async function getDbEnhancement(): Promise<DbEnhancement> {
     // ═══ FMCSA CARGO/EQUIPMENT DISTRIBUTION (active carriers only) ═══
     try {
       const [cargoRows] = await db.execute(
-        sql`SELECT c.phy_state as state, c.cargo_carried as cargo, COUNT(*) as cnt
-            FROM fmcsa_census c
-            INNER JOIN fmcsa_authority a ON a.dot_number = c.dot_number AND a.authority_status = 'ACTIVE'
-            WHERE c.phy_state IS NOT NULL AND c.cargo_carried IS NOT NULL AND c.cargo_carried != ''
-            GROUP BY c.phy_state, c.cargo_carried
+        sql`SELECT phy_state as state, cargo_carried as cargo, COUNT(*) as cnt
+            FROM fmcsa_census
+            WHERE phy_state IS NOT NULL AND cargo_carried IS NOT NULL AND cargo_carried != '' AND nbr_power_unit > 0
+            GROUP BY phy_state, cargo_carried
             ORDER BY cnt DESC
             LIMIT 500`
       ) as any;
@@ -539,16 +537,15 @@ async function getDbEnhancement(): Promise<DbEnhancement> {
       }
     } catch {}
 
-    // ═══ FMCSA CRASHES (90-day, active carriers only) ═══
+    // ═══ FMCSA CRASHES (90-day by state) ═══
     try {
       const [crashRows] = await db.execute(
-        sql`SELECT cr.state, COUNT(*) as cnt,
-                   COALESCE(SUM(cr.fatalities), 0) as fat,
-                   COALESCE(SUM(cr.injuries), 0) as inj
-            FROM fmcsa_crashes cr
-            INNER JOIN fmcsa_authority a ON a.dot_number = cr.dot_number AND a.authority_status = 'ACTIVE'
-            WHERE cr.state IS NOT NULL AND cr.report_date > DATE_SUB(NOW(), INTERVAL 90 DAY)
-            GROUP BY cr.state`
+        sql`SELECT state, COUNT(*) as cnt,
+                   COALESCE(SUM(fatalities), 0) as fat,
+                   COALESCE(SUM(injuries), 0) as inj
+            FROM fmcsa_crashes
+            WHERE state IS NOT NULL AND report_date > DATE_SUB(NOW(), INTERVAL 90 DAY)
+            GROUP BY state`
       ) as any;
       for (const r of crashRows || []) {
         result.fmcsaCrashesByState[r.state] = {
@@ -557,16 +554,15 @@ async function getDbEnhancement(): Promise<DbEnhancement> {
       }
     } catch {}
 
-    // ═══ FMCSA INSPECTIONS (30-day, active carriers only) ═══
+    // ═══ FMCSA INSPECTIONS (30-day by state) ═══
     try {
       const [inspRows] = await db.execute(
-        sql`SELECT ins.report_state as state, COUNT(*) as cnt,
-                   COALESCE(SUM(ins.total_violations), 0) as viols,
-                   SUM(CASE WHEN ins.driver_oos = 'Y' OR ins.vehicle_oos = 'Y' THEN 1 ELSE 0 END) as oos
-            FROM fmcsa_inspections ins
-            INNER JOIN fmcsa_authority a ON a.dot_number = ins.dot_number AND a.authority_status = 'ACTIVE'
-            WHERE ins.report_state IS NOT NULL AND ins.inspection_date > DATE_SUB(NOW(), INTERVAL 30 DAY)
-            GROUP BY ins.report_state`
+        sql`SELECT report_state as state, COUNT(*) as cnt,
+                   COALESCE(SUM(total_violations), 0) as viols,
+                   SUM(CASE WHEN driver_oos = 'Y' OR vehicle_oos = 'Y' THEN 1 ELSE 0 END) as oos
+            FROM fmcsa_inspections
+            WHERE report_state IS NOT NULL AND inspection_date > DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY report_state`
       ) as any;
       for (const r of inspRows || []) {
         const cnt = Number(r.cnt);
@@ -1824,19 +1820,18 @@ export const hotZonesRouter = router({
 
       const result: any = { timestamp: new Date().toISOString() };
 
-      // ── 1. Carrier density + power units + drivers by state (active only) ──
+      // ── 1. Carrier density + power units + drivers by state (active: power_units > 0) ──
       try {
         const [rows] = await db.execute(
-          sql`SELECT c.phy_state as state,
+          sql`SELECT phy_state as state,
                      COUNT(*) as carriers,
-                     COALESCE(SUM(c.nbr_power_unit), 0) as power_units,
-                     COALESCE(SUM(c.driver_total), 0) as drivers,
-                     COUNT(CASE WHEN c.hm_flag = 'Y' THEN 1 END) as hazmat_carriers,
-                     AVG(c.nbr_power_unit) as avg_fleet_size
-              FROM fmcsa_census c
-              INNER JOIN fmcsa_authority a ON a.dot_number = c.dot_number AND a.authority_status = 'ACTIVE'
-              WHERE c.phy_state IS NOT NULL AND c.phy_state != ''
-              GROUP BY c.phy_state
+                     COALESCE(SUM(nbr_power_unit), 0) as power_units,
+                     COALESCE(SUM(driver_total), 0) as drivers,
+                     COUNT(CASE WHEN hm_flag = 'Y' THEN 1 END) as hazmat_carriers,
+                     AVG(nbr_power_unit) as avg_fleet_size
+              FROM fmcsa_census
+              WHERE phy_state IS NOT NULL AND phy_state != '' AND nbr_power_unit > 0
+              GROUP BY phy_state
               ORDER BY carriers DESC
               LIMIT 51`
         ) as any;
@@ -1853,13 +1848,12 @@ export const hotZonesRouter = router({
       // ── 2. Equipment / cargo distribution by state (active only) ──
       try {
         const [rows] = await db.execute(
-          sql`SELECT c.phy_state as state,
-                     c.cargo_carried as cargo,
+          sql`SELECT phy_state as state,
+                     cargo_carried as cargo,
                      COUNT(*) as cnt
-              FROM fmcsa_census c
-              INNER JOIN fmcsa_authority a ON a.dot_number = c.dot_number AND a.authority_status = 'ACTIVE'
-              WHERE c.phy_state IS NOT NULL AND c.cargo_carried IS NOT NULL AND c.cargo_carried != ''
-              GROUP BY c.phy_state, c.cargo_carried
+              FROM fmcsa_census
+              WHERE phy_state IS NOT NULL AND cargo_carried IS NOT NULL AND cargo_carried != '' AND nbr_power_unit > 0
+              GROUP BY phy_state, cargo_carried
               ORDER BY cnt DESC
               LIMIT 500`
         ) as any;
@@ -1876,22 +1870,21 @@ export const hotZonesRouter = router({
         }));
       } catch { result.equipmentByState = []; }
 
-      // ── 3. Fleet size distribution (active carriers only) ──
+      // ── 3. Fleet size distribution (active carriers: power_units > 0) ──
       try {
         const [rows] = await db.execute(
           sql`SELECT
                 CASE
-                  WHEN c.nbr_power_unit <= 5 THEN 'small'
-                  WHEN c.nbr_power_unit <= 25 THEN 'medium'
-                  WHEN c.nbr_power_unit <= 100 THEN 'large'
+                  WHEN nbr_power_unit <= 5 THEN 'small'
+                  WHEN nbr_power_unit <= 25 THEN 'medium'
+                  WHEN nbr_power_unit <= 100 THEN 'large'
                   ELSE 'mega'
                 END as tier,
                 COUNT(*) as cnt,
-                SUM(c.nbr_power_unit) as total_units,
-                SUM(c.driver_total) as total_drivers
-              FROM fmcsa_census c
-              INNER JOIN fmcsa_authority a ON a.dot_number = c.dot_number AND a.authority_status = 'ACTIVE'
-              WHERE c.nbr_power_unit > 0
+                SUM(nbr_power_unit) as total_units,
+                SUM(driver_total) as total_drivers
+              FROM fmcsa_census
+              WHERE nbr_power_unit > 0
               GROUP BY tier
               ORDER BY cnt DESC`
         ) as any;
@@ -1903,20 +1896,19 @@ export const hotZonesRouter = router({
         }));
       } catch { result.fleetSizeDistribution = []; }
 
-      // ── 4. Crash hotspots — active carriers, 90-day ──
+      // ── 4. Crash hotspots — 90-day by state ──
       try {
         const [rows] = await db.execute(
-          sql`SELECT cr.state,
+          sql`SELECT state,
                      COUNT(*) as crashes,
-                     COALESCE(SUM(cr.fatalities), 0) as fatalities,
-                     COALESCE(SUM(cr.injuries), 0) as injuries,
-                     SUM(CASE WHEN cr.hazmat_released = 'Y' THEN 1 ELSE 0 END) as hazmat_releases,
-                     AVG(cr.latitude) as avg_lat,
-                     AVG(cr.longitude) as avg_lng
-              FROM fmcsa_crashes cr
-              INNER JOIN fmcsa_authority a ON a.dot_number = cr.dot_number AND a.authority_status = 'ACTIVE'
-              WHERE cr.state IS NOT NULL AND cr.report_date > DATE_SUB(NOW(), INTERVAL 90 DAY)
-              GROUP BY cr.state
+                     COALESCE(SUM(fatalities), 0) as fatalities,
+                     COALESCE(SUM(injuries), 0) as injuries,
+                     SUM(CASE WHEN hazmat_released = 'Y' THEN 1 ELSE 0 END) as hazmat_releases,
+                     AVG(latitude) as avg_lat,
+                     AVG(longitude) as avg_lng
+              FROM fmcsa_crashes
+              WHERE state IS NOT NULL AND report_date > DATE_SUB(NOW(), INTERVAL 90 DAY)
+              GROUP BY state
               ORDER BY crashes DESC
               LIMIT 51`
         ) as any;
@@ -1931,18 +1923,17 @@ export const hotZonesRouter = router({
         }));
       } catch { result.crashHotspots = []; }
 
-      // ── 5. Inspection activity by state (30-day, active carriers only) ──
+      // ── 5. Inspection activity by state (30-day) ──
       try {
         const [rows] = await db.execute(
-          sql`SELECT ins.report_state as state,
+          sql`SELECT report_state as state,
                      COUNT(*) as inspections,
-                     COALESCE(SUM(ins.total_violations), 0) as violations,
-                     SUM(CASE WHEN ins.driver_oos = 'Y' OR ins.vehicle_oos = 'Y' THEN 1 ELSE 0 END) as oos_count,
-                     AVG(ins.total_violations) as avg_violations
-              FROM fmcsa_inspections ins
-              INNER JOIN fmcsa_authority a ON a.dot_number = ins.dot_number AND a.authority_status = 'ACTIVE'
-              WHERE ins.report_state IS NOT NULL AND ins.inspection_date > DATE_SUB(NOW(), INTERVAL 30 DAY)
-              GROUP BY ins.report_state
+                     COALESCE(SUM(total_violations), 0) as violations,
+                     SUM(CASE WHEN driver_oos = 'Y' OR vehicle_oos = 'Y' THEN 1 ELSE 0 END) as oos_count,
+                     AVG(total_violations) as avg_violations
+              FROM fmcsa_inspections
+              WHERE report_state IS NOT NULL AND inspection_date > DATE_SUB(NOW(), INTERVAL 30 DAY)
+              GROUP BY report_state
               ORDER BY inspections DESC
               LIMIT 51`
         ) as any;
@@ -1955,9 +1946,9 @@ export const hotZonesRouter = router({
         }));
       } catch { result.inspectionActivity = []; }
 
-      // ── 6. Total record counts (active carriers only for census) ──
+      // ── 6. Total record counts (active carriers for census) ──
       try {
-        const [[c1]]: any = await db.execute(sql`SELECT COUNT(*) as cnt FROM fmcsa_census c INNER JOIN fmcsa_authority a ON a.dot_number = c.dot_number AND a.authority_status = 'ACTIVE'`);
+        const [[c1]]: any = await db.execute(sql`SELECT COUNT(*) as cnt FROM fmcsa_census WHERE nbr_power_unit > 0`);
         const [[c2]]: any = await db.execute(sql`SELECT COUNT(*) as cnt FROM fmcsa_crashes`);
         const [[c3]]: any = await db.execute(sql`SELECT COUNT(*) as cnt FROM fmcsa_inspections`);
         const [[c4]]: any = await db.execute(sql`SELECT COUNT(*) as cnt FROM fmcsa_violations`);
