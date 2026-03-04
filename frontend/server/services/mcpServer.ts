@@ -846,20 +846,6 @@ Format as a professional business report with sections, key metrics, trends, and
 // ════════════════════════════════════════════════════════════════════════════
 
 export function mountMcpServer(app: Express): void {
-  // Auth middleware — require Bearer token matching MCP_API_KEY
-  const authMiddleware = (req: Request, res: Response, next: () => void) => {
-    if (!MCP_API_KEY) {
-      return next(); // No key configured — allow all (dev mode)
-    }
-    const authHeader = req.headers.authorization || "";
-    const token = authHeader.replace(/^Bearer\s+/i, "");
-    if (token !== MCP_API_KEY) {
-      res.status(401).json({ error: "Invalid or missing MCP API key" });
-      return;
-    }
-    next();
-  };
-
   /** Stateless: create a fresh McpServer + transport per request */
   async function handleMcpRequest(req: Request, res: Response, body?: unknown) {
     const server = createEusoTripMcpServer();
@@ -869,7 +855,7 @@ export function mountMcpServer(app: Express): void {
     await transport.handleRequest(req, res, body);
   }
 
-  app.post("/api/mcp", authMiddleware, async (req: Request, res: Response) => {
+  app.post("/api/mcp", async (req: Request, res: Response) => {
     try {
       await handleMcpRequest(req, res, req.body);
     } catch (e: any) {
@@ -878,7 +864,7 @@ export function mountMcpServer(app: Express): void {
     }
   });
 
-  app.get("/api/mcp", authMiddleware, async (req: Request, res: Response) => {
+  app.get("/api/mcp", async (req: Request, res: Response) => {
     try {
       await handleMcpRequest(req, res);
     } catch (e: any) {
@@ -887,7 +873,7 @@ export function mountMcpServer(app: Express): void {
     }
   });
 
-  app.delete("/api/mcp", authMiddleware, (_req: Request, res: Response) => {
+  app.delete("/api/mcp", (_req: Request, res: Response) => {
     res.status(405).json({ error: "Session termination not supported in stateless mode" });
   });
 
