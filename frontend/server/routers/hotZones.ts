@@ -445,6 +445,9 @@ async function getDbFuelPrices(): Promise<ExtCache["fuelPrices"]> {
 }
 
 // ── DB ENHANCEMENT (Platform + FMCSA 9.8M records) ──
+let _dbEnhCache: { data: DbEnhancement; ts: number } | null = null;
+const DB_ENH_TTL = 60_000; // 60s cache — FMCSA data doesn't change in seconds
+
 interface DbEnhancement {
   loadsByState: Record<string, number>;
   totalPlatformLoads: number;
@@ -462,6 +465,9 @@ interface DbEnhancement {
   fmcsaTotalCensus: number;
 }
 async function getDbEnhancement(): Promise<DbEnhancement> {
+  // Return cached result if fresh (avoids re-running 5 heavy GROUP BY queries every poll)
+  if (_dbEnhCache && Date.now() - _dbEnhCache.ts < DB_ENH_TTL) return _dbEnhCache.data;
+
   const result: DbEnhancement = {
     loadsByState: {}, totalPlatformLoads: 0, avgRateByState: {}, trucksByState: {},
     fmcsaCarriersByState: {}, fmcsaPowerUnitsByState: {}, fmcsaDriversByState: {},
@@ -568,7 +574,54 @@ async function getDbEnhancement(): Promise<DbEnhancement> {
     } catch {}
 
   } catch (e) { /* DB may not be ready */ }
+  _dbEnhCache = { data: result, ts: Date.now() };
   return result;
+}
+
+// ── CACHED FORECAST + AI TREND (avoid re-running on every poll) ──
+let _forecastCache: { data: Record<string, { trend: string; nextWeek: number | null }>; ts: number } | null = null;
+const FORECAST_TTL = 300_000; // 5 min
+
+async function getCachedForecasts(): Promise<Record<string, { trend: string; nextWeek: number | null }>> {
+  if (_forecastCache && Date.now() - _forecastCache.ts < FORECAST_TTL) return _forecastCache.data;
+  const map: Record<string, { trend: string; nextWeek: number | null }> = {};
+  try {
+    const { mlEngine } = await import("../services/mlEngine");
+    if (mlEngine.isReady()) {
+      const uniqueStates = Array.from(new Set(HOT_ZONES.map(z => z.state)));
+      await Promise.all(uniqueStates.map(async (st) => {
+        try {
+          const fc = await mlEngine.forecastDemandAdvanced({ originState: st });
+          if (fc.confidence > 40) map[st] = { trend: fc.trend, nextWeek: fc.nextWeekForecast };
+        } catch { /* skip */ }
+      }));
+    }
+  } catch { /* mlEngine or sidecar unavailable */ }
+  _forecastCache = { data: map, ts: Date.now() };
+  return map;
+}
+
+let _aiTrendCache: { data: Record<string, { trend: string; anomaly: boolean }>; ts: number } | null = null;
+const AI_TREND_TTL = 120_000; // 2 min
+
+async function getCachedAiTrends(dbData: DbEnhancement): Promise<Record<string, { trend: string; anomaly: boolean }>> {
+  if (_aiTrendCache && Date.now() - _aiTrendCache.ts < AI_TREND_TTL) return _aiTrendCache.data;
+  const map: Record<string, { trend: string; anomaly: boolean }> = {};
+  try {
+    const { analyzeTrend, detectAnomaly } = await import("../services/ai/forecastEngine");
+    for (const zone of HOT_ZONES) {
+      const baseRate = zone.avgRate;
+      const dbRate = dbData.avgRateByState[zone.state] || 0;
+      if (dbRate > 0) {
+        const series = [baseRate, baseRate * 0.98, baseRate * 1.01, dbRate];
+        const trend = analyzeTrend(series);
+        const anomaly = detectAnomaly(dbRate, [baseRate, baseRate * 0.98, baseRate * 1.01], 2.0);
+        map[zone.id] = { trend: trend.direction, anomaly: anomaly.isAnomaly };
+      }
+    }
+  } catch {}
+  _aiTrendCache = { data: map, ts: Date.now() };
+  return map;
 }
 
 // ── MAIN ROUTER ──
@@ -602,38 +655,11 @@ export const hotZonesRouter = router({
       // If platform data is too sparse, blend with market intelligence baselines
       const PLATFORM_DATA_THRESHOLD = 10; // need at least 10 total platform loads to trust DB counts
 
-      // Pre-compute demand forecasts per state (async, outside map)
-      const stateForecastMap: Record<string, { trend: string; nextWeek: number | null }> = {};
-      try {
-        const { mlEngine } = await import("../services/mlEngine");
-        if (mlEngine.isReady()) {
-          const uniqueStates = Array.from(new Set(HOT_ZONES.map(z => z.state)));
-          await Promise.all(uniqueStates.map(async (st) => {
-            try {
-              const fc = await mlEngine.forecastDemandAdvanced({ originState: st });
-              if (fc.confidence > 40) {
-                stateForecastMap[st] = { trend: fc.trend, nextWeek: fc.nextWeekForecast };
-              }
-            } catch { /* skip */ }
-          }));
-        }
-      } catch { /* mlEngine or sidecar unavailable */ }
+      // Pre-compute demand forecasts per state — cached 5 min to avoid sidecar round-trips every poll
+      const stateForecastMap = await getCachedForecasts();
 
-      // AI Turbocharge: Forecast engine — anomaly detection + trend analysis on zone rates
-      const aiTrendMap: Record<string, { trend: string; anomaly: boolean }> = {};
-      try {
-        const { analyzeTrend, detectAnomaly } = await import("../services/ai/forecastEngine");
-        for (const zone of HOT_ZONES) {
-          const baseRate = zone.avgRate;
-          const dbRate = dbData.avgRateByState[zone.state] || 0;
-          if (dbRate > 0) {
-            const series = [baseRate, baseRate * 0.98, baseRate * 1.01, dbRate];
-            const trend = analyzeTrend(series);
-            const anomaly = detectAnomaly(dbRate, [baseRate, baseRate * 0.98, baseRate * 1.01], 2.0);
-            aiTrendMap[zone.id] = { trend: trend.direction, anomaly: anomaly.isAnomaly };
-          }
-        }
-      } catch {}
+      // AI Turbocharge: Forecast engine — cached 2 min
+      const aiTrendMap = await getCachedAiTrends(dbData);
 
       // ── FMCSA cargo_carried → topEquipment mapping ──
       const CARGO_TO_EQUIP: Record<string, string> = {
@@ -827,7 +853,7 @@ export const hotZonesRouter = router({
           : dbData.totalPlatformLoads > 0
             ? `EusoTrip Platform (${dbData.totalPlatformLoads} loads) + EIA + NWS`
             : "EusoTrip Market Intelligence + EIA + NWS",
-        refreshInterval: 10, timestamp: new Date().toISOString(),
+        refreshInterval: 30, timestamp: new Date().toISOString(),
         _meta: {
           zoneIntelligence: { fresh: hasZoneIntel, status: hasZoneIntel ? getFreshnessStatus("ZONE_INTELLIGENCE", 0) : "expired" },
           fuelPrices: { fresh: Object.keys(fuelPrices).length > 0, status: Object.keys(fuelPrices).length > 0 ? getFreshnessStatus("FUEL_PRICES", 0) : "expired" },

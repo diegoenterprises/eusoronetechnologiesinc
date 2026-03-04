@@ -110,28 +110,28 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
 
   const { data, isLoading, refetch } = trpc.hotZones.getRateFeed.useQuery(
     { equipment: equipFilter || undefined, layers: activeLayers.length > 0 ? activeLayers : undefined },
-    { refetchInterval: 10000 }
+    { refetchInterval: 30_000, staleTime: 20_000 }
   );
 
   const { data: mapIntel } = trpc.hotZones.getMapIntelligence.useQuery(
     undefined,
-    { refetchInterval: 60000, staleTime: 30000 }
+    { refetchInterval: 120_000, staleTime: 60_000 }
   );
 
   // Terminal integration intelligence — enriched by connected terminals' API keys
-  const { data: termIntel } = (trpc as any).hotZones?.getTerminalIntelligence?.useQuery?.(undefined, { refetchInterval: 120000, staleTime: 60000 }) || { data: null };
+  const { data: termIntel } = (trpc as any).hotZones?.getTerminalIntelligence?.useQuery?.(undefined, { refetchInterval: 180_000, staleTime: 120_000 }) || { data: null };
 
   // FMCSA Intelligence — 9.8M carrier records: density, equipment, crashes, inspections by state
-  const { data: fmcsaIntel } = (trpc as any).hotZones?.getFMCSAIntelligence?.useQuery?.(undefined, { refetchInterval: 300000, staleTime: 120000 }) || { data: null };
+  const { data: fmcsaIntel } = (trpc as any).hotZones?.getFMCSAIntelligence?.useQuery?.(undefined, { refetchInterval: 300_000, staleTime: 180_000 }) || { data: null };
 
   // Road Intelligence — crowd-sourced road segments from driver GPS + live pings
-  const { data: roadIntel } = (trpc as any).hotZones?.getRoadIntelligence?.useQuery?.(undefined, { refetchInterval: 15000, staleTime: 10000 }) || { data: null };
+  const { data: roadIntel } = (trpc as any).hotZones?.getRoadIntelligence?.useQuery?.(undefined, { refetchInterval: 60_000, staleTime: 30_000 }) || { data: null };
 
   // ELD Fleet GPS — symbiotic live positions from connected ELD providers
-  const { data: eldGPS } = (trpc as any).eld?.getFleetGPS?.useQuery?.(undefined, { refetchInterval: 30000, staleTime: 15000 }) || { data: null };
+  const { data: eldGPS } = (trpc as any).eld?.getFleetGPS?.useQuery?.(undefined, { refetchInterval: 60_000, staleTime: 30_000 }) || { data: null };
 
-  // Merge ELD GPS locations into roadIntel livePings for the satellite map
-  const mergedRoadIntel = (() => {
+  // Merge ELD GPS locations into roadIntel livePings — memoized to avoid recompute on every render
+  const mergedRoadIntel = useMemo(() => {
     if (!roadIntel && !eldGPS?.locations?.length) return roadIntel;
     const basePings = roadIntel?.livePings || [];
     const eldPings = (eldGPS?.locations || []).map((loc: any) => ({
@@ -143,7 +143,6 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
       roadName: loc.roadName || null,
       pingAt: loc.timestamp || new Date().toISOString(),
     }));
-    // Deduplicate by driverId (prefer ELD data as more recent)
     const seen = new Set<string>();
     const merged = [...eldPings, ...basePings].filter((p: any) => {
       const key = `${p.driverId}-${p.lat?.toFixed(3)}-${p.lng?.toFixed(3)}`;
@@ -159,7 +158,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
         liveDrivers: new Set(merged.map((p: any) => p.driverId)).size,
       },
     };
-  })();
+  }, [roadIntel, eldGPS]);
 
   const zones = data?.zones || [];
   const coldZones = data?.coldZones || [];
