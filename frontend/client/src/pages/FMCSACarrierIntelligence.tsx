@@ -41,7 +41,7 @@ function ScoreGauge({ label, score, alert, max = 100 }: { label: string; score: 
         {alert && <AlertTriangle className="w-3.5 h-3.5 text-red-400" />}
       </div>
       <div className={`text-xl font-bold ${color}`}>
-        {score != null ? score.toFixed(1) : "N/A"}
+        {score != null ? Number(score).toFixed(1) : "N/A"}
       </div>
       <div className="w-full h-1.5 bg-gray-700 rounded-full mt-2">
         <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
@@ -217,7 +217,7 @@ function VerificationChecklist({ dotNumber }: { dotNumber: string }) {
     { label: "Operating Authority", key: "authority", detail: snap?.authorityStatus || "Unknown", weight: "15 pts" },
     { label: "Insurance (BIPD ≥$750K)", key: "insurance",
       detail: snap?.bipdCoverageAmount
-        ? `$${(snap.bipdCoverageAmount / 1000).toFixed(0)}K — ${snap?.insuranceStatus || "Unknown"}`
+        ? `$${(Number(snap.bipdCoverageAmount) / 1000).toFixed(0)}K — ${snap?.insuranceStatus || "Unknown"}`
         : snap?.insuranceStatus || "Unknown",
       weight: "15 pts",
     },
@@ -263,7 +263,7 @@ function VerificationChecklist({ dotNumber }: { dotNumber: string }) {
     },
     { label: "Violations/Power Unit", key: null,
       passed: (snap?.violationsPerUnit ?? 0) < 1.5,
-      detail: snap?.violationsPerUnit != null ? `${snap.violationsPerUnit.toFixed(2)} per truck` : "N/A",
+      detail: snap?.violationsPerUnit != null ? `${Number(snap.violationsPerUnit).toFixed(2)} per truck` : "N/A",
       weight: "4 pts",
     },
   ];
@@ -719,7 +719,7 @@ export default function FMCSACarrierIntelligence() {
                   <div className="bg-black/20 rounded-lg p-2.5">
                     <div className="text-xs text-gray-500">BIPD on File</div>
                     <div className="text-sm font-medium text-gray-200">
-                      {snapshot.data.bipdInsuranceOnFile ? `$${(snapshot.data.bipdInsuranceOnFile / 1000).toFixed(0)}K` : "N/A"}
+                      {snapshot.data.bipdInsuranceOnFile ? `$${(Number(snapshot.data.bipdInsuranceOnFile) / 1000).toFixed(0)}K` : "N/A"}
                     </div>
                   </div>
                   <div className="bg-black/20 rounded-lg p-2.5">
@@ -731,7 +731,7 @@ export default function FMCSACarrierIntelligence() {
                   <div className="bg-black/20 rounded-lg p-2.5">
                     <div className="text-xs text-gray-500">Unsafe Driving</div>
                     <div className={`text-sm font-medium ${snapshot.data.unsafeDrivingAlert ? "text-red-400" : "text-emerald-400"}`}>
-                      {snapshot.data.unsafeDrivingScore?.toFixed(1) || "N/A"}
+                      {snapshot.data.unsafeDrivingScore != null ? Number(snapshot.data.unsafeDrivingScore).toFixed(1) : "N/A"}
                       {snapshot.data.unsafeDrivingAlert && <AlertTriangle className="w-3 h-3 inline ml-0.5" />}
                     </div>
                   </div>
@@ -942,7 +942,7 @@ export default function FMCSACarrierIntelligence() {
                             </div>
                             <div className="text-right">
                               <div className="text-sm font-medium text-emerald-400">
-                                {p.bipdLimit ? `$${(p.bipdLimit / 1000).toFixed(0)}K` : "On File"}
+                                {p.bipdLimit ? `$${(Number(p.bipdLimit) / 1000).toFixed(0)}K` : "On File"}
                               </div>
                               <div className="text-xs text-gray-500">
                                 {p.coverageFrom} → {p.coverageTo}
@@ -985,13 +985,13 @@ export default function FMCSACarrierIntelligence() {
                   <div className="bg-white/5 rounded-lg p-4 border border-white/5">
                     <div className="text-xs text-gray-400 mb-1">Driver OOS Rate</div>
                     <div className={`text-2xl font-bold ${(smsScores.data.oosRates.driver || 0) > 7 ? "text-red-400" : "text-emerald-400"}`}>
-                      {smsScores.data.oosRates.driver?.toFixed(1) || "0"}%
+                      {smsScores.data.oosRates.driver != null ? Number(smsScores.data.oosRates.driver).toFixed(1) : "0"}%
                     </div>
                   </div>
                   <div className="bg-white/5 rounded-lg p-4 border border-white/5">
                     <div className="text-xs text-gray-400 mb-1">Vehicle OOS Rate</div>
                     <div className={`text-2xl font-bold ${(smsScores.data.oosRates.vehicle || 0) > 21 ? "text-red-400" : "text-emerald-400"}`}>
-                      {smsScores.data.oosRates.vehicle?.toFixed(1) || "0"}%
+                      {smsScores.data.oosRates.vehicle != null ? Number(smsScores.data.oosRates.vehicle).toFixed(1) : "0"}%
                     </div>
                   </div>
                 </div>
@@ -1014,9 +1014,9 @@ export default function FMCSACarrierIntelligence() {
                           {smsScores.data.history.map((h: any, i: number) => (
                             <tr key={i} className="border-b border-white/5">
                               <td className="px-3 py-2 text-gray-300">{h.runDate}</td>
-                              <td className="px-3 py-2 text-right">{h.unsafeDriving?.toFixed(1) || "—"}</td>
-                              <td className="px-3 py-2 text-right">{h.hos?.toFixed(1) || "—"}</td>
-                              <td className="px-3 py-2 text-right">{h.vehicleMaintenance?.toFixed(1) || "—"}</td>
+                              <td className="px-3 py-2 text-right">{h.unsafeDriving != null ? Number(h.unsafeDriving).toFixed(1) : "—"}</td>
+                              <td className="px-3 py-2 text-right">{h.hos != null ? Number(h.hos).toFixed(1) : "—"}</td>
+                              <td className="px-3 py-2 text-right">{h.vehicleMaintenance != null ? Number(h.vehicleMaintenance).toFixed(1) : "—"}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1074,12 +1074,12 @@ export default function FMCSACarrierIntelligence() {
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <span className="text-gray-400">BIPD Required:</span>
-                      <span className="ml-2">{authority.data.insurance.bipdRequired ? `$${(authority.data.insurance.bipdRequired / 1000).toFixed(0)}K` : "N/A"}</span>
+                      <span className="ml-2">{authority.data.insurance.bipdRequired ? `$${(Number(authority.data.insurance.bipdRequired) / 1000).toFixed(0)}K` : "N/A"}</span>
                     </div>
                     <div>
                       <span className="text-gray-400">BIPD On File:</span>
                       <span className={`ml-2 font-medium ${authority.data.insurance.compliant ? "text-emerald-400" : "text-red-400"}`}>
-                        {authority.data.insurance.bipdOnFile ? `$${(authority.data.insurance.bipdOnFile / 1000).toFixed(0)}K` : "N/A"}
+                        {authority.data.insurance.bipdOnFile ? `$${(Number(authority.data.insurance.bipdOnFile) / 1000).toFixed(0)}K` : "N/A"}
                       </span>
                     </div>
                     <div>
@@ -1110,7 +1110,7 @@ export default function FMCSACarrierIntelligence() {
                           </div>
                           <div className="text-right">
                             <div className="text-sm font-medium text-emerald-400">
-                              {p.bipdLimit ? `$${(p.bipdLimit / 1000).toFixed(0)}K` : "Active"}
+                              {p.bipdLimit ? `$${(Number(p.bipdLimit) / 1000).toFixed(0)}K` : "Active"}
                             </div>
                             <div className="text-xs text-gray-500">{p.coverageFrom} → {p.coverageTo}</div>
                           </div>
@@ -1226,7 +1226,7 @@ export default function FMCSACarrierIntelligence() {
                             <td className={`px-3 py-2 text-center ${c.injuries > 0 ? "text-yellow-400" : ""}`}>{c.injuries}</td>
                             <td className="px-3 py-2 text-center">{c.towAway ? "Yes" : "No"}</td>
                             <td className="px-3 py-2 text-center">{c.hazmatReleased ? "Yes" : "No"}</td>
-                            <td className="px-3 py-2 text-right">{c.severityWeight?.toFixed(1) || "—"}</td>
+                            <td className="px-3 py-2 text-right">{c.severityWeight != null ? Number(c.severityWeight).toFixed(1) : "—"}</td>
                           </tr>
                         ))}
                       </tbody>
