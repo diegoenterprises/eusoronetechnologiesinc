@@ -717,4 +717,28 @@ export const platformFeesRouter = router({
         },
       };
     }),
+
+  seedDefaultFees: adminProcedure.mutation(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database unavailable");
+    const existing = await db.select({ id: platformFeeConfigs.id }).from(platformFeeConfigs).limit(1);
+    if (existing.length > 0) return { seeded: false, message: "Fee configs already exist" };
+
+    const defaults = [
+      { feeCode: "LOAD_BOOK", name: "Load Booking Fee", transactionType: "load_booking" as const, feeType: "percentage" as const, baseRate: "5.0000", minFee: "25.00", maxFee: "5000.00" },
+      { feeCode: "LOAD_COMP", name: "Load Completion Fee", transactionType: "load_completion" as const, feeType: "percentage" as const, baseRate: "5.0000", minFee: "25.00", maxFee: "5000.00" },
+      { feeCode: "INSTANT_PAY", name: "Instant Pay Fee", transactionType: "instant_pay" as const, feeType: "percentage" as const, baseRate: "2.0000", minFee: "5.00", maxFee: "500.00" },
+      { feeCode: "CASH_ADV", name: "Cash Advance Fee", transactionType: "cash_advance" as const, feeType: "percentage" as const, baseRate: "3.5000", minFee: "10.00", maxFee: "1000.00" },
+      { feeCode: "P2P_XFER", name: "P2P Transfer Fee", transactionType: "p2p_transfer" as const, feeType: "percentage" as const, baseRate: "1.0000", minFee: "1.00", maxFee: "100.00" },
+      { feeCode: "WALLET_WD", name: "Wallet Withdrawal Fee", transactionType: "wallet_withdrawal" as const, feeType: "percentage" as const, baseRate: "1.5000", minFee: "2.00", maxFee: "500.00" },
+      { feeCode: "SUB_FEE", name: "Subscription Fee", transactionType: "subscription" as const, feeType: "flat" as const, flatAmount: "0.00", baseRate: "0.0000", minFee: "0.00", maxFee: "0.00" },
+      { feeCode: "PREMIUM", name: "Premium Feature Fee", transactionType: "premium_feature" as const, feeType: "percentage" as const, baseRate: "2.5000", minFee: "5.00", maxFee: "500.00" },
+    ];
+
+    for (const cfg of defaults) {
+      await db.insert(platformFeeConfigs).values({ ...cfg, isActive: true, platformShare: "100.00", processorShare: "0.00" });
+    }
+    console.log("[PlatformFees] Seeded 8 default fee configurations");
+    return { seeded: true, count: defaults.length };
+  }),
 });
