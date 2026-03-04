@@ -532,10 +532,13 @@ export const walletRouter = router({
       }
       const netAmount = input.amount - fee;
 
-      // Execute real Stripe payout if user has a Connect account
+      // Execute real Stripe payout — requires Stripe Connect account
       let stripePayoutId: string | null = null;
       const [userRow] = await db.select({ stripeConnectId: users.stripeConnectId }).from(users).where(eq(users.id, userId)).limit(1);
-      if (userRow?.stripeConnectId) {
+      if (!userRow?.stripeConnectId) {
+        throw new Error("Please connect your bank account via Stripe Connect before requesting a payout.");
+      }
+      if (userRow.stripeConnectId) {
         // Verify payouts are enabled on the Connect account before attempting
         const account = await safeStripeCall(() => stripe.accounts.retrieve(userRow.stripeConnectId!));
         if (account && !account.payouts_enabled) {
@@ -562,6 +565,7 @@ export const walletRouter = router({
         fee: String(fee),
         netAmount: String(-netAmount),
         status: stripePayoutId ? "processing" : (input.instant ? "processing" : "pending"),
+        stripeTransferId: stripePayoutId,
         description: `${input.instant ? "Instant payout" : "Standard payout"}${stripePayoutId ? ` (${stripePayoutId})` : ''}`,
       }).$returningId();
 
