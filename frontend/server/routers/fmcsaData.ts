@@ -579,8 +579,19 @@ export const fmcsaRouter = router({
         }
       };
       
+      // Active census = carriers with active authority
+      const safeActiveCount = async (): Promise<number> => {
+        try {
+          const [rows]: any = await pool.query(
+            `SELECT COUNT(*) as count FROM fmcsa_census c INNER JOIN fmcsa_authority a ON a.dot_number = c.dot_number AND a.authority_status = 'ACTIVE'`
+          );
+          return rows[0]?.count || 0;
+        } catch {
+          return 0;
+        }
+      };
       const [census, authority, insurance, crashes, inspections, violations, sms, monitored] = await Promise.all([
-        safeCount("fmcsa_census"),
+        safeActiveCount(),
         safeCount("fmcsa_authority"),
         safeCount("fmcsa_insurance"),
         safeCount("fmcsa_crashes"),
