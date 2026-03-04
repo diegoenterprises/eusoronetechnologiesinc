@@ -263,20 +263,60 @@ async function startServer() {
           const piTransfer = (pi as any).transfer_data?.destination;
           const piFee = (pi as any).application_fee_amount || 0;
           console.log(`[Stripe Webhook] PaymentIntent succeeded: ${pi.id}, amount: $${piAmount / 100}, destination: ${piTransfer || 'none'}, fee: $${piFee / 100}`);
-          // Record payment in DB
-          if (pi.metadata?.loadId) {
+
+          const _dbPI = await _getDb();
+          let paymentRecordId: number | null = null;
+
+          // Record payment in DB via Drizzle ORM
+          if (_dbPI && pi.metadata?.loadId) {
             try {
-              const _dbPI = await _getDb();
-              if (_dbPI) {
-                await _dbPI.execute(
-                  _sql`INSERT INTO payments (payer_id, amount, currency, payment_type, status, stripe_payment_id, load_id, created_at)
-                       VALUES (${pi.metadata.userId || 0}, ${(piAmount / 100).toFixed(2)}, ${pi.currency || "usd"}, 
-                               ${pi.metadata.paymentType || "load_payment"}, 'succeeded', ${pi.id}, 
-                               ${pi.metadata.loadId}, NOW())`
-                );
-              }
+              const { payments: _paymentsT, loads: _loadsT } = await import("../../drizzle/schema");
+              const payerIdNum = Number(pi.metadata.userId || 0);
+              const loadIdNum = Number(pi.metadata.loadId);
+              const amtStr = (piAmount / 100).toFixed(2);
+
+              // Find payee (catalyst assigned to the load)
+              const [loadRow] = await _dbPI.select({ catalystId: _loadsT.catalystId, shipperId: _loadsT.shipperId }).from(_loadsT).where(_eq(_loadsT.id, loadIdNum)).limit(1);
+              const payeeIdNum = loadRow?.catalystId || 0;
+
+              const insertResult = await _dbPI.insert(_paymentsT).values({
+                loadId: loadIdNum,
+                payerId: payerIdNum,
+                payeeId: payeeIdNum,
+                amount: amtStr,
+                currency: pi.currency || "usd",
+                paymentType: "load_payment",
+                status: "succeeded",
+                stripePaymentIntentId: pi.id,
+                stripeChargeId: pi.latest_charge || null,
+              });
+              paymentRecordId = (insertResult as any)?.[0]?.insertId || null;
+              console.log(`[Stripe Webhook] Payment record created: id=${paymentRecordId}, load=${loadIdNum}`);
+
+              // ── Update load status to "paid" ──
+              try {
+                await _dbPI.update(_loadsT).set({ status: "paid" }).where(_eq(_loadsT.id, loadIdNum));
+                console.log(`[Stripe Webhook] Load ${loadIdNum} status → paid`);
+              } catch (e: any) { console.warn("[Stripe Webhook] Load status update error:", e?.message); }
+
+              // ── Calculate platform fee & record in platform_revenue ──
+              try {
+                const { feeCalculator } = await import("../services/feeCalculator");
+                const feeResult = await feeCalculator.calculateFee({
+                  userId: payerIdNum,
+                  userRole: "SHIPPER",
+                  transactionType: "load_completion",
+                  amount: piAmount / 100,
+                  loadId: loadIdNum,
+                });
+                if (feeResult.finalFee > 0 && paymentRecordId) {
+                  await feeCalculator.recordFeeCollection(paymentRecordId, "load_completion", payerIdNum, piAmount / 100, feeResult);
+                  console.log(`[Stripe Webhook] Platform fee recorded: $${feeResult.finalFee.toFixed(2)} (load ${loadIdNum})`);
+                }
+              } catch (e: any) { console.warn("[Stripe Webhook] Fee calculation error:", e?.message); }
             } catch (e) { console.warn("[Stripe Webhook] PI payment record error:", e); }
           }
+
           // Credit recipient wallet (destination connected account gets funds via transfer)
           if (piTransfer && piAmount > 0) {
             const netCents = piAmount - piFee;
@@ -478,6 +518,81 @@ async function startServer() {
           if (credit.financial_account && creditAmt > 0) {
             try { await creditWalletByConnect(credit.financial_account, creditAmt, `Received credit — ${credit.id}`, credit.id, "deposit"); } catch (e) { console.warn("[Stripe Webhook] Treasury credit wallet error:", e); }
           }
+          break;
+        }
+        case "charge.refunded": {
+          // Refund issued — debit wallet, reverse platform_revenue, update payment record
+          const charge = event.data.object;
+          const refundAmountCents = charge.amount_refunded || 0;
+          const chargeId = charge.id;
+          const piId = charge.payment_intent;
+          console.log(`[Stripe Webhook] Charge refunded: ${chargeId}, refund amount: $${refundAmountCents / 100}, PI: ${piId}`);
+
+          try {
+            const dbRefund = await _getDb();
+            if (dbRefund && refundAmountCents > 0) {
+              const { payments: _paymentsT2, platformRevenue: _prT, loads: _loadsT2 } = await import("../../drizzle/schema");
+              const refundAmt = (refundAmountCents / 100).toFixed(2);
+
+              // Find the original payment record
+              let originalPayment: any = null;
+              if (piId) {
+                [originalPayment] = await dbRefund.select().from(_paymentsT2).where(_eq(_paymentsT2.stripePaymentIntentId, piId)).limit(1);
+              }
+              if (!originalPayment && chargeId) {
+                [originalPayment] = await dbRefund.select().from(_paymentsT2).where(_eq(_paymentsT2.stripeChargeId, chargeId)).limit(1);
+              }
+
+              // Update payment status to refunded
+              if (originalPayment) {
+                await dbRefund.update(_paymentsT2).set({ status: "refunded" }).where(_eq(_paymentsT2.id, originalPayment.id));
+                console.log(`[Stripe Webhook] Payment ${originalPayment.id} → refunded`);
+
+                // Debit wallet — remove the credited amount
+                if (originalPayment.payeeId) {
+                  const [payeeWallet] = await dbRefund.select().from(_walletsT).where(_eq(_walletsT.userId, originalPayment.payeeId)).limit(1);
+                  if (payeeWallet) {
+                    await dbRefund.execute(_sql`UPDATE wallets SET availableBalance = GREATEST(availableBalance - ${refundAmt}, 0) WHERE id = ${payeeWallet.id}`);
+                    await dbRefund.insert(_wtT).values({
+                      walletId: payeeWallet.id, type: "refund" as any, amount: `-${refundAmt}`,
+                      fee: "0", netAmount: `-${refundAmt}`, currency: "USD", status: "completed",
+                      description: `Refund — Payment #${originalPayment.id}`, stripePaymentId: chargeId, completedAt: new Date(),
+                    });
+                    console.log(`[Stripe Webhook] Wallet ${payeeWallet.id} debited $${refundAmt} (refund)`);
+                  }
+                }
+
+                // Reverse platform_revenue entry
+                try {
+                  const [revenueEntry] = await dbRefund.select().from(_prT).where(_eq(_prT.transactionId, originalPayment.id)).limit(1);
+                  if (revenueEntry) {
+                    await dbRefund.insert(_prT).values({
+                      transactionId: originalPayment.id,
+                      transactionType: "refund",
+                      userId: originalPayment.payerId,
+                      grossAmount: `-${refundAmt}`,
+                      feeAmount: `-${revenueEntry.feeAmount}`,
+                      netAmount: `-${(refundAmountCents / 100 - parseFloat(revenueEntry.feeAmount)).toFixed(2)}`,
+                      platformShare: `-${revenueEntry.platformShare}`,
+                      processorShare: `-${revenueEntry.processorShare || "0"}`,
+                      feeBreakdown: { baseFee: 0, finalFee: 0 },
+                      metadata: { originalRevenueId: revenueEntry.id, chargeId },
+                      processedAt: new Date(),
+                    });
+                    console.log(`[Stripe Webhook] Platform revenue reversed for payment ${originalPayment.id}`);
+                  }
+                } catch (e: any) { console.warn("[Stripe Webhook] Revenue reversal error:", e?.message); }
+
+                // If load-related, update load status back from 'paid'
+                if (originalPayment.loadId) {
+                  try {
+                    await dbRefund.update(_loadsT2).set({ status: "delivered" }).where(_eq(_loadsT2.id, originalPayment.loadId));
+                    console.log(`[Stripe Webhook] Load ${originalPayment.loadId} status reverted → delivered (refund)`);
+                  } catch (e: any) { console.warn("[Stripe Webhook] Load status revert error:", e?.message); }
+                }
+              }
+            }
+          } catch (e: any) { console.error("[Stripe Webhook] Refund processing error:", e?.message); }
           break;
         }
         default:
