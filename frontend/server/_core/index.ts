@@ -879,6 +879,16 @@ async function startServer() {
     }
   });
 
+  // =========================================================================
+  // MCP SERVER — Claude Cowork custom connector (Model Context Protocol)
+  // =========================================================================
+  try {
+    const { mountMcpServer } = await import("../services/mcpServer");
+    mountMcpServer(app);
+  } catch (e: any) {
+    console.warn("[MCP] Failed to mount MCP server:", e?.message?.slice(0, 100));
+  }
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // tRPC API (protected by RBAC middleware in trpc.ts)
