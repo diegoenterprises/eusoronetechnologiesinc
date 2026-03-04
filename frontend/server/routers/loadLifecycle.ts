@@ -25,7 +25,7 @@ import { z } from "zod";
 import { router, isolatedApprovedProcedure as protectedProcedure } from "../_core/trpc";
 import { feeCalculator } from "../services/feeCalculator";
 import { getDb } from "../db";
-import { loads, vehicles, escortAssignments } from "../../drizzle/schema";
+import { loads, vehicles, escortAssignments, settlements, wallets, walletTransactions } from "../../drizzle/schema";
 import { eq, and, ne, sql } from "drizzle-orm";
 
 import {
@@ -968,6 +968,73 @@ export const loadLifecycleRouter = router({
       // Route intelligence on DELIVERED
       if (transition.to === "DELIVERED") {
         await generateRouteReport(numericLoadId, ctx.user?.id || 0);
+
+        // ── SETTLEMENT AUTOMATION — create settlement & credit carrier wallet ──
+        try {
+          const _sDb = await getDb();
+          if (_sDb && load) {
+            const loadRate = parseFloat(load.rate || "0");
+            if (loadRate > 0) {
+              const carrierId = load.catalystId || load.driverId || 0;
+              const feeResult = await feeCalculator.calculateFee({
+                userId: load.shipperId,
+                userRole: "SHIPPER",
+                transactionType: "load_completion",
+                amount: loadRate,
+                loadId: numericLoadId,
+              });
+              const platformFee = feeResult.finalFee;
+              const carrierPay = loadRate - platformFee;
+
+              await _sDb.insert(settlements).values({
+                loadId: numericLoadId,
+                shipperId: load.shipperId,
+                carrierId,
+                driverId: load.driverId || null,
+                loadRate: loadRate.toFixed(2),
+                platformFeePercent: feeResult.breakdown?.baseRate?.toString() || "5.00",
+                platformFeeAmount: platformFee.toFixed(2),
+                carrierPayment: carrierPay.toFixed(2),
+                totalShipperCharge: loadRate.toFixed(2),
+                status: "pending",
+              });
+
+              // Credit carrier wallet
+              if (carrierId) {
+                let [cWallet] = await _sDb.select().from(wallets).where(eq(wallets.userId, carrierId)).limit(1);
+                if (!cWallet) {
+                  try { await _sDb.insert(wallets).values({ userId: carrierId, availableBalance: "0", pendingBalance: "0", reservedBalance: "0", currency: "USD" }); } catch {}
+                  [cWallet] = await _sDb.select().from(wallets).where(eq(wallets.userId, carrierId)).limit(1);
+                }
+                if (cWallet) {
+                  await _sDb.execute(sql`UPDATE wallets SET availableBalance = availableBalance + ${carrierPay.toFixed(2)}, totalReceived = totalReceived + ${carrierPay.toFixed(2)} WHERE id = ${cWallet.id}`);
+                  await _sDb.insert(walletTransactions).values({
+                    walletId: cWallet.id,
+                    type: "earnings",
+                    amount: carrierPay.toFixed(2),
+                    fee: platformFee.toFixed(2),
+                    netAmount: carrierPay.toFixed(2),
+                    currency: "USD",
+                    status: "completed",
+                    description: `Settlement — Load #${load.loadNumber || numericLoadId}`,
+                    loadId: numericLoadId,
+                    loadNumber: load.loadNumber || null,
+                    completedAt: new Date(),
+                  });
+                }
+              }
+
+              // Record platform revenue
+              try {
+                await feeCalculator.recordFeeCollection(numericLoadId, "load_completion", load.shipperId, loadRate, feeResult);
+              } catch {}
+
+              console.log(`[Settlement] Load ${numericLoadId} settled: rate=$${loadRate}, fee=$${platformFee.toFixed(2)}, carrier=$${carrierPay.toFixed(2)}`);
+            }
+          }
+        } catch (settleErr: any) {
+          console.warn(`[Settlement] Auto-settle error for load ${numericLoadId}:`, settleErr?.message);
+        }
       }
 
       // Convoy sync — check if this state change satisfies a sync point

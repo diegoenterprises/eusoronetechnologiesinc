@@ -429,6 +429,40 @@ export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = typeof payments.$inferInsert;
 
 // ============================================================================
+// SETTLEMENTS
+// ============================================================================
+
+export const settlements = mysqlTable(
+  "settlements",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    shipperId: int("shipperId").notNull(),
+    carrierId: int("carrierId").notNull(),
+    driverId: int("driverId"),
+    loadRate: decimal("loadRate", { precision: 12, scale: 2 }).notNull(),
+    platformFeePercent: decimal("platformFeePercent", { precision: 5, scale: 2 }).default("5.00"),
+    platformFeeAmount: decimal("platformFeeAmount", { precision: 12, scale: 2 }).notNull(),
+    carrierPayment: decimal("carrierPayment", { precision: 12, scale: 2 }).notNull(),
+    accessorialCharges: decimal("accessorialCharges", { precision: 12, scale: 2 }).default("0.00"),
+    totalShipperCharge: decimal("totalShipperCharge", { precision: 12, scale: 2 }).notNull(),
+    status: mysqlEnum("status", ["pending", "processing", "completed", "failed", "disputed"]).default("pending").notNull(),
+    stripeTransferId: varchar("stripeTransferId", { length: 255 }),
+    settledAt: timestamp("settledAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: unique("idx_settlement_load").on(table.loadId),
+    carrierIdx: index("idx_settlement_carrier").on(table.carrierId),
+    statusIdx: index("idx_settlement_status").on(table.status),
+  })
+);
+
+export type Settlement = typeof settlements.$inferSelect;
+export type InsertSettlement = typeof settlements.$inferInsert;
+
+// ============================================================================
 // MESSAGES & CONVERSATIONS
 // ============================================================================
 
