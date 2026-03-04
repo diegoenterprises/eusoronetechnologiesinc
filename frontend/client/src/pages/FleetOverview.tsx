@@ -193,6 +193,19 @@ export default function FleetOverview() {
                 <SelectItem value="truck">Trucks</SelectItem>
                 <SelectItem value="tanker">Tankers</SelectItem>
                 <SelectItem value="trailer">Trailers</SelectItem>
+                <SelectItem value="reefer">Reefer</SelectItem>
+                <SelectItem value="flatbed">Flatbed</SelectItem>
+                <SelectItem value="dry_van">Dry Van</SelectItem>
+                <SelectItem value="lowboy">Lowboy</SelectItem>
+                <SelectItem value="step_deck">Step Deck</SelectItem>
+                <SelectItem value="intermodal">Intermodal</SelectItem>
+                <SelectItem value="auto_carrier">Auto Carrier</SelectItem>
+                <SelectItem value="livestock">Livestock</SelectItem>
+                <SelectItem value="dump_trailer">Dump Trailer</SelectItem>
+                <SelectItem value="bulk_hopper">Bulk Hopper</SelectItem>
+                <SelectItem value="grain_hopper">Grain Hopper</SelectItem>
+                <SelectItem value="log_trailer">Log Trailer</SelectItem>
+                <SelectItem value="water_tank">Water Tank</SelectItem>
               </SelectContent>
             </Select>
           </div>

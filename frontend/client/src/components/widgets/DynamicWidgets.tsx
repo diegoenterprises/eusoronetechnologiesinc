@@ -2090,6 +2090,14 @@ export const MaintenanceScheduleWidget: React.FC = () => {
   );
 };
 
+const EQUIP_LABELS: Record<string, string> = {
+  tankers: "Tankers", dryVan: "Dry Van", flatbed: "Flatbed", reefer: "Reefer",
+  lowboy: "Lowboy", stepDeck: "Step Deck", intermodal: "Intermodal", autoCarrier: "Auto Carrier",
+  livestock: "Livestock", dumpTrailer: "Dump Trailer", bulkHopper: "Bulk Hopper",
+  grainHopper: "Grain Hopper", logTrailer: "Log Trailer", waterTank: "Water Tank", hazmat: "Hazmat",
+};
+const EQUIP_COLORS = ["bg-blue-500", "bg-purple-500", "bg-green-500", "bg-amber-500", "bg-rose-500", "bg-cyan-500", "bg-indigo-500", "bg-teal-500", "bg-orange-500", "bg-pink-500", "bg-emerald-500", "bg-violet-500", "bg-sky-500", "bg-lime-500", "bg-fuchsia-500"];
+
 export const EquipmentUtilizationWidget: React.FC = () => {
   const { data: equipmentData, isLoading } = trpc.dashboard.getEquipmentAvailability.useQuery(undefined, {
     refetchInterval: 300000,
@@ -2098,6 +2106,10 @@ export const EquipmentUtilizationWidget: React.FC = () => {
   const equipment = equipmentData || { tankers: { total: 0, available: 0, inUse: 0, maintenance: 0 }, dryVan: { total: 0, available: 0, inUse: 0, maintenance: 0 }, flatbed: { total: 0, available: 0, inUse: 0, maintenance: 0 } };
 
   const getUtilization = (item: { total: number; inUse: number }) => item.total > 0 ? Math.round((item.inUse / item.total) * 100) : 0;
+
+  const equipEntries = Object.entries(equipment as Record<string, any>).filter(
+    ([, v]) => v && typeof v === "object" && "total" in v && v.total > 0
+  );
 
   return (
     <ResponsiveWidget>
@@ -2111,36 +2123,19 @@ export const EquipmentUtilizationWidget: React.FC = () => {
             <>
               <span className="text-sm text-gray-400">Equipment Utilization</span>
               <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-gray-400">Tankers</span>
-                    <span className="text-white">{equipment.tankers.inUse}/{equipment.tankers.total} ({getUtilization(equipment.tankers)}%)</span>
-                  </div>
-                  <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${getUtilization(equipment.tankers)}%` }} />
-                  </div>
-                </div>
-                {isExpanded && (
-                  <>
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-400">Dry Van</span>
-                        <span className="text-white">{equipment.dryVan.inUse}/{equipment.dryVan.total} ({getUtilization(equipment.dryVan)}%)</span>
-                      </div>
-                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-purple-500 rounded-full" style={{ width: `${getUtilization(equipment.dryVan)}%` }} />
-                      </div>
+                {(isExpanded ? equipEntries : equipEntries.slice(0, 3)).map(([key, item], idx) => (
+                  <div key={key}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-400">{EQUIP_LABELS[key] || key.replace(/([A-Z])/g, " $1").trim()}</span>
+                      <span className="text-white">{item.inUse}/{item.total} ({getUtilization(item)}%)</span>
                     </div>
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-400">Flatbed</span>
-                        <span className="text-white">{equipment.flatbed.inUse}/{equipment.flatbed.total} ({getUtilization(equipment.flatbed)}%)</span>
-                      </div>
-                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${getUtilization(equipment.flatbed)}%` }} />
-                      </div>
+                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div className={`h-full ${EQUIP_COLORS[idx % EQUIP_COLORS.length]} rounded-full`} style={{ width: `${getUtilization(item)}%` }} />
                     </div>
-                  </>
+                  </div>
+                ))}
+                {!isExpanded && equipEntries.length > 3 && (
+                  <div className="text-[10px] text-gray-500 text-center">+{equipEntries.length - 3} more types</div>
                 )}
               </div>
             </>

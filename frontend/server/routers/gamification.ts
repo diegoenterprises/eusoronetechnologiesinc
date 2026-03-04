@@ -1282,8 +1282,18 @@ export const gamificationRouter = router({
       if (!db) throw new Error("Database not available");
 
       const userId = Number(ctx.user?.id) || 0;
-      const userName = (ctx.user as any)?.name || "Anonymous";
       const userRole = (ctx.user as any)?.role || "USER";
+
+      // Resolve display name from DB (JWT doesn't carry name)
+      let userName = "Anonymous";
+      if (userId && db) {
+        try {
+          const [row] = await db.execute(sql`SELECT name, email FROM users WHERE id = ${userId} LIMIT 1`) as any;
+          const u = (Array.isArray(row) ? row[0] : row) as any;
+          if (u?.name) userName = u.name;
+          else if (u?.email) userName = u.email.split("@")[0];
+        } catch { /* non-critical */ }
+      }
 
       // ---- CONTENT MODERATION ----
       const msg = input.message.toLowerCase();

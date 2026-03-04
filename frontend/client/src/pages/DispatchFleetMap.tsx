@@ -16,6 +16,7 @@ import {
   Phone, MessageSquare, RefreshCw, Filter, Maximize2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ELDConnectionPanel from "@/components/ELDConnectionPanel";
 
 export default function DispatchFleetMap() {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -91,6 +92,9 @@ export default function DispatchFleetMap() {
           </Button>
         </div>
       </div>
+
+      {/* ELD Connection Status */}
+      <ELDConnectionPanel compact />
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (

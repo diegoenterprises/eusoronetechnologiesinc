@@ -121,8 +121,45 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
   // Terminal integration intelligence — enriched by connected terminals' API keys
   const { data: termIntel } = (trpc as any).hotZones?.getTerminalIntelligence?.useQuery?.(undefined, { refetchInterval: 120000, staleTime: 60000 }) || { data: null };
 
+  // FMCSA Intelligence — 9.8M carrier records: density, equipment, crashes, inspections by state
+  const { data: fmcsaIntel } = (trpc as any).hotZones?.getFMCSAIntelligence?.useQuery?.(undefined, { refetchInterval: 300000, staleTime: 120000 }) || { data: null };
+
   // Road Intelligence — crowd-sourced road segments from driver GPS + live pings
   const { data: roadIntel } = (trpc as any).hotZones?.getRoadIntelligence?.useQuery?.(undefined, { refetchInterval: 15000, staleTime: 10000 }) || { data: null };
+
+  // ELD Fleet GPS — symbiotic live positions from connected ELD providers
+  const { data: eldGPS } = (trpc as any).eld?.getFleetGPS?.useQuery?.(undefined, { refetchInterval: 30000, staleTime: 15000 }) || { data: null };
+
+  // Merge ELD GPS locations into roadIntel livePings for the satellite map
+  const mergedRoadIntel = (() => {
+    if (!roadIntel && !eldGPS?.locations?.length) return roadIntel;
+    const basePings = roadIntel?.livePings || [];
+    const eldPings = (eldGPS?.locations || []).map((loc: any) => ({
+      driverId: loc.driverId || loc.vehicleId || 0,
+      lat: loc.lat,
+      lng: loc.lng,
+      speed: loc.speed || null,
+      heading: loc.heading || null,
+      roadName: loc.roadName || null,
+      pingAt: loc.timestamp || new Date().toISOString(),
+    }));
+    // Deduplicate by driverId (prefer ELD data as more recent)
+    const seen = new Set<string>();
+    const merged = [...eldPings, ...basePings].filter((p: any) => {
+      const key = `${p.driverId}-${p.lat?.toFixed(3)}-${p.lng?.toFixed(3)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    return {
+      ...roadIntel,
+      livePings: merged,
+      stats: {
+        ...roadIntel?.stats,
+        liveDrivers: new Set(merged.map((p: any) => p.driverId)).size,
+      },
+    };
+  })();
 
   const zones = data?.zones || [];
   const coldZones = data?.coldZones || [];
@@ -231,6 +268,16 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                   <option value="FLATBED">Flatbed</option>
                   <option value="TANKER">Tanker</option>
                   <option value="HAZMAT">Hazmat</option>
+                  <option value="LOWBOY">Lowboy</option>
+                  <option value="STEP_DECK">Step Deck</option>
+                  <option value="INTERMODAL">Intermodal</option>
+                  <option value="AUTO_CARRIER">Auto Carrier</option>
+                  <option value="LIVESTOCK">Livestock</option>
+                  <option value="DUMP_TRAILER">Dump Trailer</option>
+                  <option value="BULK_HOPPER">Bulk Hopper</option>
+                  <option value="GRAIN_HOPPER">Grain Hopper</option>
+                  <option value="LOG_TRAILER">Log Trailer</option>
+                  <option value="WATER_TANK">Water Tank</option>
                 </select>
                 <Filter className={`absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none ${equipFilter ? "text-[#1473FF]" : isLight ? "text-slate-400" : "text-white/40"}`} />
               </div>
@@ -289,6 +336,62 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
           )}
         </div>
       </div>
+      )}
+
+      {/* ── FMCSA INTELLIGENCE BANNER — 9.8M carrier records ── */}
+      {!embedded && data?.fmcsaDataAvailable && fmcsaIntel && (
+        <div className={`border-b ${isLight ? "bg-gradient-to-r from-rose-50/80 to-amber-50/80 border-slate-200/60" : "bg-gradient-to-r from-rose-500/[0.04] to-amber-500/[0.04] border-white/[0.04]"}`}>
+          <div className="max-w-[1600px] mx-auto px-6 py-2.5 flex items-center gap-6 overflow-x-auto">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="w-5 h-5 rounded-md bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center">
+                <Shield className="w-3 h-3 text-white" />
+              </div>
+              <span className={`text-[11px] font-medium ${isLight ? "text-slate-600" : "text-white/50"}`}>FMCSA Intelligence</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${isLight ? "bg-rose-100 text-rose-600" : "bg-rose-500/15 text-rose-400"}`}>
+                {data.fmcsaTotalRecords ? `${(data.fmcsaTotalRecords / 1000000).toFixed(1)}M records` : "Live"}
+              </span>
+            </div>
+            {fmcsaIntel.carriersByState?.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <Truck className={`w-3 h-3 ${isLight ? "text-slate-400" : "text-white/30"}`} />
+                <span className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>Carriers</span>
+                <span className={`text-[11px] font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>
+                  {fmcsaIntel.carriersByState.reduce((s: number, r: any) => s + r.carriers, 0).toLocaleString()}
+                </span>
+              </div>
+            )}
+            {fmcsaIntel.crashHotspots?.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <AlertTriangle className={`w-3 h-3 ${isLight ? "text-red-400" : "text-red-400/60"}`} />
+                <span className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>Crashes (90d)</span>
+                <span className={`text-[11px] font-semibold tabular-nums text-red-400`}>
+                  {fmcsaIntel.crashHotspots.reduce((s: number, r: any) => s + r.crashes, 0).toLocaleString()}
+                </span>
+              </div>
+            )}
+            {fmcsaIntel.inspectionActivity?.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <Eye className={`w-3 h-3 ${isLight ? "text-slate-400" : "text-white/30"}`} />
+                <span className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>Inspections (30d)</span>
+                <span className={`text-[11px] font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>
+                  {fmcsaIntel.inspectionActivity.reduce((s: number, r: any) => s + r.inspections, 0).toLocaleString()}
+                </span>
+              </div>
+            )}
+            {fmcsaIntel.fleetSizeDistribution?.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <BarChart3 className={`w-3 h-3 ${isLight ? "text-slate-400" : "text-white/30"}`} />
+                <span className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>Power Units</span>
+                <span className={`text-[11px] font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>
+                  {fmcsaIntel.fleetSizeDistribution.reduce((s: number, r: any) => s + r.totalUnits, 0).toLocaleString()}
+                </span>
+              </div>
+            )}
+            <span className={`ml-auto text-[9px] flex-shrink-0 ${isLight ? "text-slate-400" : "text-white/20"}`}>
+              FMCSA Census + SMS + Crashes + Inspections
+            </span>
+          </div>
+        </div>
       )}
 
       {/* ── TERMINAL NETWORK INTELLIGENCE — powered by connected terminals ── */}
@@ -396,7 +499,8 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
               isLight={isLight}
               activeLayers={activeLayers}
               intel={mapIntel}
-              roadIntel={roadIntel}
+              roadIntel={mergedRoadIntel}
+              fmcsaIntel={fmcsaIntel}
             />
           ) : (
             <HotZoneMap
@@ -408,7 +512,8 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
               isLight={isLight}
               activeLayers={activeLayers}
               intel={mapIntel}
-              roadIntel={roadIntel}
+              roadIntel={mergedRoadIntel}
+              fmcsaIntel={fmcsaIntel}
             />
           )}
         </div>
@@ -582,6 +687,55 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                                 </span>
                               )}
                             </div>
+                            {/* FMCSA 9.8M Record Enrichment */}
+                            {zone.fmcsa && (zone.fmcsa.carriers > 0 || zone.fmcsa.crashes90d > 0) && (
+                              <div className={`mt-2 pt-2 border-t ${isLight ? "border-slate-100" : "border-white/[0.04]"}`}>
+                                <div className={`text-[10px] uppercase tracking-wider mb-1.5 ${isLight ? "text-slate-400" : "text-white/30"}`}>FMCSA Intelligence</div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  {zone.fmcsa.carriers > 0 && (
+                                    <div>
+                                      <div className={`text-[10px] ${isLight ? "text-slate-400" : "text-white/25"}`}>Carriers</div>
+                                      <div className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>{zone.fmcsa.carriers.toLocaleString()}</div>
+                                    </div>
+                                  )}
+                                  {zone.fmcsa.powerUnits > 0 && (
+                                    <div>
+                                      <div className={`text-[10px] ${isLight ? "text-slate-400" : "text-white/25"}`}>Power Units</div>
+                                      <div className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>{zone.fmcsa.powerUnits.toLocaleString()}</div>
+                                    </div>
+                                  )}
+                                  {zone.fmcsa.drivers > 0 && (
+                                    <div>
+                                      <div className={`text-[10px] ${isLight ? "text-slate-400" : "text-white/25"}`}>Drivers</div>
+                                      <div className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>{zone.fmcsa.drivers.toLocaleString()}</div>
+                                    </div>
+                                  )}
+                                  {zone.fmcsa.crashes90d > 0 && (
+                                    <div>
+                                      <div className={`text-[10px] ${isLight ? "text-slate-400" : "text-white/25"}`}>Crashes (90d)</div>
+                                      <div className="text-xs font-semibold tabular-nums text-red-400">{zone.fmcsa.crashes90d.toLocaleString()}</div>
+                                    </div>
+                                  )}
+                                  {zone.fmcsa.inspections30d > 0 && (
+                                    <div>
+                                      <div className={`text-[10px] ${isLight ? "text-slate-400" : "text-white/25"}`}>Inspections (30d)</div>
+                                      <div className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>{zone.fmcsa.inspections30d.toLocaleString()}</div>
+                                    </div>
+                                  )}
+                                  {zone.fmcsa.oosRate > 0 && (
+                                    <div>
+                                      <div className={`text-[10px] ${isLight ? "text-slate-400" : "text-white/25"}`}>OOS Rate</div>
+                                      <div className={`text-xs font-semibold tabular-nums ${zone.fmcsa.oosRate > 25 ? "text-red-400" : zone.fmcsa.oosRate > 15 ? "text-amber-400" : isLight ? "text-slate-700" : "text-white/80"}`}>{zone.fmcsa.oosRate}%</div>
+                                    </div>
+                                  )}
+                                </div>
+                                {zone.fmcsa.hazmatCarriers > 0 && (
+                                  <div className={`mt-1.5 text-[10px] ${isLight ? "text-slate-500" : "text-white/35"}`}>
+                                    {zone.fmcsa.hazmatCarriers.toLocaleString()} hazmat-authorized carriers · Avg fleet size: {zone.fmcsa.avgFleetSize}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                             {/* Role actions */}
                             {roleCtx?.zoneActions && (
                               <div className="flex flex-wrap gap-2 pt-1">
@@ -666,8 +820,33 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
               {coldZones.map((cz: any) => (
                 <div key={cz.id} className={`px-3 py-2 rounded-xl text-xs ${isLight ? "bg-blue-50/50 text-slate-500 border border-blue-100" : "bg-blue-500/[0.04] text-white/30 border border-blue-500/10"}`}>
                   <span className="font-medium">{cz.name}</span>
+                  {cz.state && <span className="ml-1 opacity-60">{cz.state}</span>}
                   <span className={`ml-2 tabular-nums ${isLight ? "text-blue-500" : "text-blue-400/60"}`}>${Number(cz.liveRate).toFixed(2)}/mi</span>
                   <span className="ml-1 opacity-60">· {cz.reason}</span>
+                  {cz.liveTrucks > 0 && (
+                    <span className={`ml-2 tabular-nums ${isLight ? "text-slate-400" : "text-white/20"}`}>
+                      · {cz.liveTrucks.toLocaleString()} trucks
+                    </span>
+                  )}
+                  {cz.fmcsa?.carriers > 0 && (
+                    <span className={`ml-1 tabular-nums ${isLight ? "text-slate-400" : "text-white/20"}`}>
+                      · {cz.fmcsa.carriers.toLocaleString()} carriers
+                    </span>
+                  )}
+                  {cz.fuelPrice != null && (
+                    <span className={`ml-1 ${isLight ? "text-amber-500" : "text-amber-400/50"}`}>
+                      · Diesel ${Number(cz.fuelPrice).toFixed(2)}
+                    </span>
+                  )}
+                  {(cz.topEquipment || []).length > 0 && (
+                    <span className="ml-2">
+                      {(cz.topEquipment || []).slice(0, 3).map((eq: string) => (
+                        <span key={eq} className={`inline-block px-1.5 py-0 rounded text-[9px] mr-1 ${isLight ? "bg-blue-100/80 text-blue-500" : "bg-blue-500/10 text-blue-400/50"}`}>
+                          {eq.replace(/_/g, " ")}
+                        </span>
+                      ))}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

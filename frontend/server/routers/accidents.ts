@@ -8,7 +8,8 @@ import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { incidents, users, vehicles, drivers } from "../../drizzle/schema";
+import { incidents, users, vehicles, drivers, companies } from "../../drizzle/schema";
+import { getCrashSummary, getInspectionSummary, getSafetyScores } from "../services/fmcsaBulkLookup";
 
 const accidentSeveritySchema = z.enum(["minor", "moderate", "severe", "fatal"]);
 const accidentTypeSchema = z.enum([
@@ -87,6 +88,26 @@ export const accidentsRouter = router({
           dotReportable: false,
         }));
 
+        // ── FMCSA Bulk Data: carrier crash context ──
+        let fmcsaCrashContext: any = null;
+        try {
+          const [comp] = await db.select({ dotNumber: companies.dotNumber }).from(companies).where(eq(companies.id, companyId)).limit(1);
+          if (comp?.dotNumber) {
+            const crashData = await getCrashSummary(comp.dotNumber, 3);
+            if (crashData) {
+              fmcsaCrashContext = {
+                totalFmcsaCrashes: crashData.totalCrashes,
+                fmcsaFatalities: crashData.totalFatalities,
+                fmcsaInjuries: crashData.totalInjuries,
+                fmcsaTowAways: crashData.towAways,
+                fmcsaHazmatReleases: crashData.hazmatReleases,
+                recentFmcsaCrashes: crashData.recentCrashes,
+                dataSource: 'fmcsa_bulk_9.8M',
+              };
+            }
+          }
+        } catch {}
+
         return {
           accidents,
           total: totalCount?.count || 0,
@@ -95,6 +116,7 @@ export const accidentsRouter = router({
             dotReportable: 0,
             openInvestigations: accidents.filter(a => a.status === 'investigating').length,
           },
+          fmcsaCrashContext,
         };
       } catch (error) {
         console.error('[Accidents] list error:', error);
@@ -321,6 +343,24 @@ export const accidentsRouter = router({
           critical: sql<number>`SUM(CASE WHEN ${incidents.severity} = 'critical' THEN 1 ELSE 0 END)`,
           withInjuries: sql<number>`SUM(CASE WHEN ${incidents.injuries} > 0 OR ${incidents.fatalities} > 0 THEN 1 ELSE 0 END)`,
         }).from(incidents).where(eq(incidents.companyId, companyId));
+        // ── FMCSA Bulk Data: enriched crash statistics ──
+        let fmcsaStats: any = null;
+        try {
+          const [comp] = await db.select({ dotNumber: companies.dotNumber }).from(companies).where(eq(companies.id, companyId)).limit(1);
+          if (comp?.dotNumber) {
+            const [crashData, sms] = await Promise.all([
+              getCrashSummary(comp.dotNumber),
+              getSafetyScores(comp.dotNumber),
+            ]);
+            fmcsaStats = {
+              fmcsaCrashes: crashData ? { total: crashData.totalCrashes, fatalities: crashData.totalFatalities, injuries: crashData.totalInjuries, towAways: crashData.towAways, hazmatReleases: crashData.hazmatReleases } : null,
+              crashIndicator: sms ? { score: sms.crashIndicatorScore, alert: sms.crashIndicatorAlert } : null,
+              unsafeDriving: sms ? { score: sms.unsafeDrivingScore, alert: sms.unsafeDrivingAlert } : null,
+              dataSource: 'fmcsa_bulk_9.8M',
+            };
+          }
+        } catch {}
+
         return {
           period: input.period, total: stats?.total || 0,
           byType: { collision: stats?.accidents || 0, property_damage: stats?.propDamage || 0, cargo_shift: 0 },
@@ -329,6 +369,7 @@ export const accidentsRouter = router({
           preventability: { preventable: 0, nonPreventable: 0, undetermined: stats?.total || 0 },
           costs: { totalRepairCosts: 0, totalClaimsPaid: 0, totalLegalCosts: 0 },
           rate: { perMillionMiles: 0, industryAverage: 0, trend: 'stable' }, topCauses: [],
+          fmcsaStats,
         };
       } catch (e) { return { period: input.period, total: 0, byType: { collision: 0, property_damage: 0, cargo_shift: 0 }, bySeverity: { minor: 0, moderate: 0, severe: 0, fatal: 0 }, dotReportable: 0, preventability: { preventable: 0, nonPreventable: 0, undetermined: 0 }, costs: { totalRepairCosts: 0, totalClaimsPaid: 0, totalLegalCosts: 0 }, rate: { perMillionMiles: 0, industryAverage: 0, trend: 'stable' }, topCauses: [] }; }
     }),
@@ -340,31 +381,53 @@ export const accidentsRouter = router({
     .input(z.object({
       accidentId: z.string(),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      let dotNumber = '';
+      let accidentData: any = null;
+      if (db) {
+        try {
+          const companyId = ctx.user?.companyId || 0;
+          const [comp] = await db.select({ dotNumber: companies.dotNumber }).from(companies).where(eq(companies.id, companyId)).limit(1);
+          dotNumber = comp?.dotNumber || '';
+          const numId = parseInt(input.accidentId.replace('acc_', ''), 10);
+          const [inc] = await db.select().from(incidents).where(eq(incidents.id, numId)).limit(1);
+          accidentData = inc;
+        } catch {}
+      }
+
+      // ── Pull carrier crash history + safety from FMCSA bulk data ──
+      const [crashData, inspData, sms] = await Promise.all([
+        dotNumber ? getCrashSummary(dotNumber) : null,
+        dotNumber ? getInspectionSummary(dotNumber) : null,
+        dotNumber ? getSafetyScores(dotNumber) : null,
+      ]);
+
+      const isDot = accidentData && ((accidentData.fatalities || 0) > 0 || (accidentData.injuries || 0) > 0);
       return {
         accidentId: input.accidentId,
-        reportStatus: "not_required",
-        submissionDeadline: null,
+        reportStatus: isDot ? 'required' : 'not_required',
+        submissionDeadline: isDot ? new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0] : null,
         dataElements: {
-          reportNumber: "ACC-2025-00015",
-          reportDate: "2025-01-18",
-          state: "TX",
-          county: "McLennan",
-          city: "Waco",
-          route: "I-35",
-          milePost: "245",
-          vehicleConfiguration: "Truck Tractor - Semi-Trailer",
-          cargoBodyType: "Tank",
-          hazmatInvolvement: "No",
-          hazmatReleased: "No",
-          trafficwayType: "Interstate",
-          crashType: "Rear-End",
-          weatherCondition: "Clear",
-          lightCondition: "Daylight",
-          roadSurfaceCondition: "Dry",
-          fatalities: 0,
-          injuries: 0,
+          reportNumber: accidentData ? `ACC-${new Date().getFullYear()}-${String(accidentData.id).padStart(5, '0')}` : '',
+          reportDate: accidentData?.occurredAt?.toISOString().split('T')[0] || '',
+          state: accidentData?.location?.split(',').pop()?.trim() || '',
+          fatalities: accidentData?.fatalities || 0,
+          injuries: accidentData?.injuries || 0,
           towaway: false,
+        },
+        // ── FMCSA Carrier Safety Intelligence ──
+        fmcsaCarrierHistory: {
+          dotNumber,
+          crashesOnRecord: crashData?.totalCrashes || 0,
+          totalFatalities: crashData?.totalFatalities || 0,
+          totalInjuries: crashData?.totalInjuries || 0,
+          inspectionsOnRecord: inspData?.totalInspections || 0,
+          violationsOnRecord: inspData?.totalViolations || 0,
+          crashIndicator: sms ? { score: sms.crashIndicatorScore, alert: sms.crashIndicatorAlert } : null,
+          unsafeDriving: sms ? { score: sms.unsafeDrivingScore, alert: sms.unsafeDrivingAlert } : null,
+          recentCrashes: crashData?.recentCrashes || [],
+          dataSource: 'fmcsa_bulk_9.8M',
         },
       };
     }),

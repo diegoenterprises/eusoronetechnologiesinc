@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Search, CheckCircle, XCircle, AlertTriangle, Loader2,
-  Building2, Shield, Truck, FileText, Activity, Lock, FlaskConical
+  Building2, Shield, Truck, FileText, Activity, Lock, FlaskConical,
+  Database, BarChart3, ShieldCheck, ShieldX, ShieldAlert,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -140,6 +141,29 @@ function InsuranceLine({ label, onFile, required }: { label: string; onFile: boo
 }
 
 // ============================================================================
+// SAFETY SCORE BAR — compact inline score gauge for registration
+// ============================================================================
+
+function SafetyScoreBar({ label, score, alert, maxScore = 100 }: { label: string; score: number | null | undefined; alert?: boolean; maxScore?: number }) {
+  if (score == null) return null;
+  const pct = Math.min((score / maxScore) * 100, 100);
+  const color = alert ? "bg-red-500" : score > 65 ? "bg-amber-500" : "bg-green-500";
+  const textColor = alert ? "text-red-400" : score > 65 ? "text-amber-400" : "text-green-400";
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-slate-400 w-28 shrink-0">{label}</span>
+      <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className={`text-xs font-mono font-medium w-10 text-right ${textColor}`}>
+        {score.toFixed(1)}
+      </span>
+      {alert && <AlertTriangle className="w-3 h-3 text-red-400 shrink-0" />}
+    </div>
+  );
+}
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -148,6 +172,7 @@ export function FMCSALookup({
 }: FMCSALookupProps) {
   const [lookupStatus, setLookupStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [bulkData, setBulkData] = useState<any>(null);
 
   const dotQuery = (trpc as any).fmcsa.lookupByDOT.useQuery(
     { dotNumber },
@@ -159,6 +184,12 @@ export function FMCSALookup({
     { enabled: false }
   );
 
+  // Bulk data prefill query — uses local FMCSA ETL tables for instant verification
+  const bulkPrefill = (trpc as any).registration.fmcsaPrefill.useQuery(
+    { dotNumber },
+    { enabled: false }
+  );
+
   const handleDOTLookup = useCallback(async () => {
     if (!/^\d{5,8}$/.test(dotNumber)) {
       setErrorMsg("USDOT must be 5-8 digits");
@@ -166,11 +197,87 @@ export function FMCSALookup({
     }
     setLookupStatus("loading");
     setErrorMsg("");
+    setBulkData(null);
+
+    // Fire both queries in parallel: bulk data (instant) + live API
+    const [bulkResult, liveResult] = await Promise.allSettled([
+      bulkPrefill.refetch(),
+      dotQuery.refetch(),
+    ]);
+
+    // Process bulk data (instant verification + safety scores)
+    if (bulkResult.status === "fulfilled" && bulkResult.value?.data?.found) {
+      setBulkData(bulkResult.value.data);
+    }
+
+    // Process live API data (full profile + authority)
     try {
-      const result = await dotQuery.refetch();
-      const data = result.data;
+      const data = liveResult.status === "fulfilled" ? liveResult.value?.data : null;
       if (data && data.verified) {
         onDataLoaded(data);
+        setLookupStatus("done");
+      } else if (bulkResult.status === "fulfilled" && bulkResult.value?.data?.found) {
+        // Live API failed but bulk data available — still show as done
+        const bd = bulkResult.value.data;
+        const syntheticData: FMCSAData = {
+          verified: true,
+          companyProfile: {
+            legalName: bd.prefill.companyName || "",
+            dba: bd.prefill.dba || null,
+            phone: bd.prefill.contactPhone || null,
+            email: bd.prefill.contactEmail || null,
+            physicalAddress: {
+              street: bd.prefill.streetAddress || "",
+              city: bd.prefill.city || "",
+              state: bd.prefill.state || "",
+              zip: bd.prefill.zipCode || "",
+              country: bd.prefill.country || "US",
+            },
+            mailingAddress: { street: "", city: "", state: "", zip: "" },
+            fleetSize: bd.prefill.powerUnits || 0,
+            driverCount: bd.prefill.driverCount || 0,
+          },
+          authority: {
+            dotNumber: bd.prefill.dotNumber || dotNumber,
+            allowedToOperate: bd.verification?.authorityStatus === "ACTIVE",
+            operatingStatus: bd.verification?.authorityStatus || "UNKNOWN",
+            commonAuthority: bd.verification?.commonAuthGranted ? "A" : "N",
+            contractAuthority: "N",
+            brokerAuthority: bd.verification?.brokerAuthGranted ? "A" : "N",
+            catalystOperation: bd.prefill.carrierOperation || null,
+            catalystOperationCode: null,
+            docketNumbers: [],
+          },
+          safety: {
+            rating: bd.verification?.outOfService ? "OUT OF SERVICE" : "NOT RATED",
+            ratingDate: null,
+            crashTotal: 0, fatalCrash: 0, injCrash: 0, towCrash: 0,
+            inspections: {
+              driver: { total: bd.safety?.totalInspections || 0, oos: 0, rate: bd.safety?.driverOosRate || 0 },
+              vehicle: { total: 0, oos: 0, rate: bd.safety?.vehicleOosRate || 0 },
+              hazmat: { total: 0, oos: 0, rate: 0 },
+            },
+            basics: [],
+          },
+          insurance: {
+            bipdOnFile: bd.verification?.bipdInsuranceOnFile || false,
+            bipdRequired: true,
+            bipdAmount: null,
+            cargoOnFile: bd.verification?.cargoInsuranceOnFile || false,
+            cargoRequired: false,
+            bondOnFile: false, bondRequired: false,
+          },
+          hazmat: { authorized: bd.prefill.hazmatAuthorized || false, cargoTypes: [] },
+          isBlocked: bd.verification?.outOfService,
+          blockReason: bd.verification?.outOfService ? `Carrier is OUT OF SERVICE: ${bd.verification.oosReason || "Active OOS order"}` : undefined,
+          warnings: [
+            ...(bd.safety?.unsafeDrivingAlert ? ["FMCSA Unsafe Driving BASIC alert — elevated risk"] : []),
+            ...(bd.safety?.hosAlert ? ["FMCSA Hours of Service BASIC alert — elevated risk"] : []),
+            ...(bd.safety?.vehicleMaintenanceAlert ? ["FMCSA Vehicle Maintenance BASIC alert — elevated risk"] : []),
+            ...(!bd.verification?.bipdInsuranceOnFile ? ["No BIPD insurance on file"] : []),
+          ],
+        };
+        onDataLoaded(syntheticData);
         setLookupStatus("done");
       } else {
         setErrorMsg(data?.error || "Catalyst not found");
@@ -181,7 +288,7 @@ export function FMCSALookup({
       setErrorMsg(err.message || "Lookup failed");
       setLookupStatus("error");
     }
-  }, [dotNumber, dotQuery, onDataLoaded]);
+  }, [dotNumber, dotQuery, bulkPrefill, onDataLoaded]);
 
   const handleMCLookup = useCallback(async () => {
     const cleanMC = mcNumber.replace(/^MC-?/i, "");
@@ -420,6 +527,143 @@ export function FMCSALookup({
                   <p className="font-medium">{d.hazmat?.authorized ? <span className="text-green-400">YES</span> : <span className="text-slate-500">NO</span>}</p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* FMCSA Bulk Data — Instant Verification & Safety Scores */}
+          {bulkData && !compact && (
+            <div className="p-4 rounded-lg bg-gradient-to-r from-indigo-500/10 to-blue-500/10 border border-indigo-500/20">
+              <div className="flex items-center gap-2 mb-3">
+                <Database className="w-4 h-4 text-indigo-400" />
+                <span className="text-sm font-semibold text-white">Instant Verification</span>
+                <Badge className={`text-[10px] ml-auto ${
+                  bulkData.verification?.outOfService ? "bg-red-500/20 text-red-400" :
+                  bulkData.verification?.authorityStatus === "ACTIVE" ? "bg-green-500/20 text-green-400" :
+                  "bg-amber-500/20 text-amber-400"
+                }`}>
+                  {bulkData.verification?.outOfService ? (
+                    <><ShieldX className="w-3 h-3 mr-1" /> OUT OF SERVICE</>
+                  ) : bulkData.verification?.authorityStatus === "ACTIVE" ? (
+                    <><ShieldCheck className="w-3 h-3 mr-1" /> VERIFIED</>
+                  ) : (
+                    <><ShieldAlert className="w-3 h-3 mr-1" /> {bulkData.verification?.authorityStatus}</>
+                  )}
+                </Badge>
+                {bulkData.source === "bulk_data" && (
+                  <Badge className="bg-blue-500/15 text-blue-400 text-[10px] px-1.5 py-0">Instant</Badge>
+                )}
+              </div>
+
+              {/* Verification Checklist Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+                <div className="p-2 rounded bg-slate-700/30">
+                  <span className="text-slate-500 text-[10px] block">Authority</span>
+                  <p className={`text-xs font-medium ${
+                    bulkData.verification?.authorityStatus === "ACTIVE" ? "text-green-400" : "text-red-400"
+                  }`}>{bulkData.verification?.authorityStatus || "Unknown"}</p>
+                </div>
+                <div className="p-2 rounded bg-slate-700/30">
+                  <span className="text-slate-500 text-[10px] block">BIPD Insurance</span>
+                  <p className={`text-xs font-medium ${
+                    bulkData.verification?.bipdInsuranceOnFile ? "text-green-400" : "text-amber-400"
+                  }`}>{bulkData.verification?.bipdInsuranceOnFile ? "On File" : "Not Filed"}</p>
+                </div>
+                <div className="p-2 rounded bg-slate-700/30">
+                  <span className="text-slate-500 text-[10px] block">BOC-3 Filing</span>
+                  <p className={`text-xs font-medium ${
+                    bulkData.verification?.boc3OnFile ? "text-green-400" : "text-amber-400"
+                  }`}>{bulkData.verification?.boc3OnFile ? "On File" : "Not Filed"}</p>
+                </div>
+                <div className="p-2 rounded bg-slate-700/30">
+                  <span className="text-slate-500 text-[10px] block">Inspection OOS Rate</span>
+                  <p className={`text-xs font-medium ${
+                    (bulkData.verification?.inspectionOosRate || 0) > 25 ? "text-red-400" : "text-green-400"
+                  }`}>{bulkData.verification?.inspectionOosRate?.toFixed(1) || "0"}%</p>
+                </div>
+                <div className="p-2 rounded bg-slate-700/30">
+                  <span className="text-slate-500 text-[10px] block">Out of Service</span>
+                  <p className={`text-xs font-medium ${
+                    bulkData.verification?.outOfService ? "text-red-400" : "text-green-400"
+                  }`}>{bulkData.verification?.outOfService ? "YES" : "Clear"}</p>
+                </div>
+                <div className="p-2 rounded bg-slate-700/30">
+                  <span className="text-slate-500 text-[10px] block">Verification Score</span>
+                  <p className={`text-xs font-medium ${
+                    (bulkData.verification?.verificationScore || 0) >= 80 ? "text-green-400" :
+                    (bulkData.verification?.verificationScore || 0) >= 60 ? "text-blue-400" :
+                    (bulkData.verification?.verificationScore || 0) >= 40 ? "text-amber-400" : "text-red-400"
+                  }`}>{bulkData.verification?.verificationScore || 0}/100</p>
+                </div>
+              </div>
+
+              {/* HazMat Carrier Alert — Doc Upload Required */}
+              {bulkData.verification?.isHazmat && (
+                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-3">
+                  <div className="flex items-start gap-2">
+                    <FlaskConical className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs text-amber-300 font-semibold">HazMat Carrier Detected</p>
+                      <p className="text-[10px] text-amber-300/70 mt-0.5">
+                        HazMat carriers must upload required documents (CDL H-endorsement, TWIC card, Security Threat Assessment) 
+                        for OCR/AI verification after registration. Platform access for hazmat loads is gated until documents are verified.
+                      </p>
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {(bulkData.verification?.docsRequired || [])
+                          .filter((doc: string) => doc.includes("HazMat") || doc.includes("TWIC") || doc.includes("Security") || doc.includes("PHMSA") || doc.includes("HMSP"))
+                          .map((doc: string, i: number) => (
+                            <Badge key={i} className="bg-amber-500/20 text-amber-300 text-[9px] px-1.5 py-0 border border-amber-500/30">
+                              {doc}
+                            </Badge>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SMS BASIC Safety Scores */}
+              {bulkData.safety && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <BarChart3 className="w-3.5 h-3.5 text-indigo-400" />
+                    <span className="text-xs font-medium text-slate-300">SMS BASIC Safety Scores</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <SafetyScoreBar label="Unsafe Driving" score={bulkData.safety.unsafeDrivingScore} alert={bulkData.safety.unsafeDrivingAlert} />
+                    <SafetyScoreBar label="HOS Compliance" score={bulkData.safety.hosScore} alert={bulkData.safety.hosAlert} />
+                    <SafetyScoreBar label="Vehicle Maint" score={bulkData.safety.vehicleMaintenanceScore} alert={bulkData.safety.vehicleMaintenanceAlert} />
+                    <SafetyScoreBar label="Crash Indicator" score={bulkData.safety.crashIndicatorScore} />
+                  </div>
+                  <div className="flex gap-4 mt-2 text-[10px] text-slate-500">
+                    <span>Inspections: {bulkData.safety.totalInspections || 0}</span>
+                    <span>Driver OOS: {bulkData.safety.driverOosRate?.toFixed(1) || "0"}%</span>
+                    <span>Vehicle OOS: {bulkData.safety.vehicleOosRate?.toFixed(1) || "0"}%</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Insurance Policies from bulk data */}
+              {bulkData.verification?.insurancePolicies?.length > 0 && (
+                <div className="mt-3">
+                  <span className="text-[10px] text-slate-500 block mb-1">Active Insurance Policies</span>
+                  <div className="space-y-1">
+                    {bulkData.verification.insurancePolicies.slice(0, 3).map((p: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between p-1.5 rounded bg-slate-700/30 text-[10px]">
+                        <span className="text-slate-300">{p.type} — {p.carrier}</span>
+                        <span className="text-green-400 font-medium">
+                          {p.bipdLimit ? `$${(p.bipdLimit / 1000).toFixed(0)}K` : p.cargoLimit ? `$${(p.cargoLimit / 1000).toFixed(0)}K cargo` : "Active"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {bulkData.verification?.outOfService && bulkData.verification.oosReason && (
+                <div className="mt-2 p-2 rounded bg-red-500/10 border border-red-500/20">
+                  <span className="text-[10px] text-red-400 font-medium">OOS Reason: {bulkData.verification.oosReason}</span>
+                </div>
+              )}
             </div>
           )}
 

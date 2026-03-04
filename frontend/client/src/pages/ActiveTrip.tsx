@@ -26,8 +26,10 @@ import {
   Moon, Play, Pause,
   Thermometer, Snowflake, FlaskConical, ShieldAlert,
   Camera, Eye, ImageIcon, ChevronDown, ChevronUp, Lock, Package,
+  Mountain,
 } from "lucide-react";
 import { toast } from "sonner";
+import ELDConnectionPanel from "@/components/ELDConnectionPanel";
 
 // ═══════════════════════════════════════════════════════════════
 // SOS BUTTON COMPONENT — The most important UI element
@@ -1015,6 +1017,104 @@ function HOSCompactPanel() {
 // MAIN ACTIVE TRIP DASHBOARD
 // ═══════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════
+// EUSOROADS LiDAR — Compact road condition panel
+// Fetches LiDAR road intelligence at driver's current GPS position
+// ═══════════════════════════════════════════════════════════════
+
+function EusoRoadsLiDARPanel() {
+  const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const id = navigator.geolocation.watchPosition(
+      (pos) => setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 10000 }
+    );
+    return () => navigator.geolocation.clearWatch(id);
+  }, []);
+
+  const { data: lidar } = (trpc as any).eld?.getLiDARAtPoint?.useQuery?.(
+    gps ? { lat: gps.lat, lng: gps.lng } : undefined,
+    { enabled: !!gps, refetchInterval: 30000, staleTime: 15000 }
+  ) || { data: null };
+
+  if (!lidar?.elevation && !lidar?.nearestSegment) {
+    return (
+      <div className="rounded-xl bg-zinc-900/60 dark:bg-white/[0.03] border border-zinc-800 dark:border-zinc-200/10 p-3 flex items-center gap-3">
+        <Mountain className="w-4 h-4 text-zinc-600" />
+        <span className="text-xs text-zinc-500">EusoRoads LiDAR — Acquiring road data...</span>
+      </div>
+    );
+  }
+
+  const seg = lidar?.nearestSegment;
+  const elev = lidar?.elevation?.ft;
+  const risk = seg?.truckRiskScore;
+  const gradient = seg?.gradientPct;
+  const iri = seg?.iriScore;
+  const surface = seg?.surfaceQuality;
+
+  const riskColor = risk != null
+    ? risk > 65 ? "text-red-400" : risk > 40 ? "text-amber-400" : risk > 20 ? "text-yellow-400" : "text-emerald-400"
+    : "text-zinc-500";
+  const surfaceColor = surface === "excellent" ? "text-emerald-400" : surface === "good" ? "text-green-400" : surface === "fair" ? "text-amber-400" : surface === "poor" ? "text-red-400" : "text-zinc-500";
+
+  const gradeAbs = Math.abs(gradient || 0);
+  const gradeIcon = gradeAbs > 6 ? "!" : gradeAbs > 3 ? "~" : "";
+
+  return (
+    <div className="rounded-xl bg-zinc-900/60 dark:bg-white/[0.03] border border-zinc-800 dark:border-zinc-200/10 p-3 space-y-2">
+      <div className="flex items-center gap-2">
+        <Mountain className="w-4 h-4 text-purple-400" />
+        <span className="text-xs font-semibold text-purple-300">EusoRoads LiDAR</span>
+        {seg?.roadName && <span className="text-xs text-zinc-500 ml-auto truncate max-w-[140px]">{seg.roadName}</span>}
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {elev != null && (
+          <div className="text-center">
+            <div className="text-xs text-zinc-500">Elev</div>
+            <div className="text-sm font-medium text-zinc-200">{Math.round(elev)}ft</div>
+          </div>
+        )}
+        {gradient != null && (
+          <div className="text-center">
+            <div className="text-xs text-zinc-500">Grade {gradeIcon}</div>
+            <div className={`text-sm font-medium ${gradeAbs > 6 ? "text-red-400" : gradeAbs > 3 ? "text-amber-400" : "text-zinc-200"}`}>
+              {gradient > 0 ? "+" : ""}{gradient.toFixed(1)}%
+            </div>
+          </div>
+        )}
+        {surface && (
+          <div className="text-center">
+            <div className="text-xs text-zinc-500">Surface</div>
+            <div className={`text-sm font-medium capitalize ${surfaceColor}`}>{surface}</div>
+          </div>
+        )}
+        {risk != null && (
+          <div className="text-center">
+            <div className="text-xs text-zinc-500">Risk</div>
+            <div className={`text-sm font-medium ${riskColor}`}>{risk}/100</div>
+          </div>
+        )}
+      </div>
+      {gradeAbs > 6 && (
+        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-2 py-1">
+          <AlertTriangle className="w-3 h-3 text-red-400 flex-shrink-0" />
+          <span className="text-xs text-red-300">Steep grade ahead — use low gear, reduce speed</span>
+        </div>
+      )}
+      {iri != null && iri > 170 && (
+        <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1">
+          <AlertTriangle className="w-3 h-3 text-amber-400 flex-shrink-0" />
+          <span className="text-xs text-amber-300">Rough road surface — reduce speed, monitor cargo</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ActiveTrip() {
   const [, navigate] = useLocation();
 
@@ -1117,7 +1217,7 @@ export default function ActiveTrip() {
           </div>
           <div className="flex items-center gap-1.5">
             <Scale className="w-3.5 h-3.5 text-zinc-500" />
-            <span className="text-xs text-zinc-400">{Number(activeLoad.weight || 0).toLocaleString()} lbs</span>
+            <span className="text-xs text-zinc-400">{Number(activeLoad.weight || 0).toLocaleString()} {(activeLoad as any).weightUnit || "lbs"}</span>
           </div>
           {activeLoad.hazmatClass && (
             <div className="flex items-center gap-1.5">
@@ -1130,6 +1230,70 @@ export default function ActiveTrip() {
           </button>
         </div>
       </div>
+
+      {/* Cargo & Equipment Info Panel */}
+      {(() => { const ld = activeLoad as any; return (
+      <div className="rounded-2xl bg-zinc-900/60 border border-zinc-800 p-4 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <Package className="w-4 h-4 text-purple-400" />
+          <span className="text-zinc-300 font-medium text-sm">Cargo & Equipment</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {ld.commodity && (
+            <div className="bg-zinc-800/50 rounded-lg p-2.5">
+              <p className="text-[10px] text-zinc-500 uppercase">Product</p>
+              <p className="text-sm font-medium text-zinc-200 truncate">{ld.commodity}</p>
+            </div>
+          )}
+          {ld.equipmentType && (
+            <div className="bg-zinc-800/50 rounded-lg p-2.5">
+              <p className="text-[10px] text-zinc-500 uppercase">Equipment</p>
+              <p className="text-sm font-medium text-zinc-200 capitalize truncate">{(ld.equipmentType || "").replace(/_/g, " ")}</p>
+            </div>
+          )}
+          {(ld.quantity || ld.quantityUnit) && (
+            <div className="bg-zinc-800/50 rounded-lg p-2.5">
+              <p className="text-[10px] text-zinc-500 uppercase">Quantity</p>
+              <p className="text-sm font-medium text-zinc-200">
+                {Number(ld.quantity || 0).toLocaleString()} {ld.quantityUnit || "units"}
+              </p>
+            </div>
+          )}
+          {Number(activeLoad.weight) > 0 && (
+            <div className="bg-zinc-800/50 rounded-lg p-2.5">
+              <p className="text-[10px] text-zinc-500 uppercase">Gross Weight</p>
+              <p className="text-sm font-medium text-zinc-200">
+                {Number(activeLoad.weight).toLocaleString()} {ld.weightUnit || "lbs"}
+              </p>
+            </div>
+          )}
+        </div>
+        {/* Equipment requirements row */}
+        <div className="flex flex-wrap gap-1.5">
+          {ld.equipmentType && (ld.equipmentType.includes("tank") || ld.equipmentType.includes("tanker")) && (
+            <>
+              <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 text-[10px] font-medium">Tanker Endorsement Required</span>
+              {ld.hazmatClass && <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-300 text-[10px] font-medium">Hazmat Endorsement</span>}
+            </>
+          )}
+          {ld.hoseType && (
+            <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 text-[10px] font-medium">Hose: {ld.hoseType}</span>
+          )}
+          {ld.hoseLength && (
+            <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 text-[10px] font-medium">{ld.hoseLength}ft hose</span>
+          )}
+          {ld.pumpRequired && (
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-medium">Pump Required</span>
+          )}
+          {ld.compressorRequired && (
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-medium">Compressor Required</span>
+          )}
+          {ld.cargoType && (
+            <span className="px-2 py-0.5 rounded-full bg-zinc-700/50 text-zinc-300 text-[10px] font-medium capitalize">{ld.cargoType}</span>
+          )}
+        </div>
+      </div>
+      ); })()}
 
       {/* Cargo Exception Banner */}
       <CargoExceptionBanner status={activeLoad.status} />
@@ -1145,6 +1309,12 @@ export default function ActiveTrip() {
 
       {/* HOS Compact Gauges — Real-time driving/duty/cycle awareness */}
       <HOSCompactPanel />
+
+      {/* ELD Connection Status — Symbiotic integration badge */}
+      <ELDConnectionPanel compact />
+
+      {/* EusoRoads LiDAR — Real-time road condition intelligence */}
+      <EusoRoadsLiDARPanel />
 
       {/* State Crossing Tracker */}
       {tripData && (

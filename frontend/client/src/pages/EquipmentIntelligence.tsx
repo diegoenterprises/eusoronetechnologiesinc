@@ -55,6 +55,22 @@ const VEHICLE_TYPE_LABELS: Record<string, string> = {
   dry_van: "Dry Van",
   lowboy: "Lowboy",
   step_deck: "Step Deck",
+  double_drop: "Double Drop",
+  conestoga: "Conestoga",
+  gas_tank: "Gas Tank",
+  cryogenic: "Cryogenic Tank",
+  hazmat_van: "Hazmat Van",
+  food_grade_tank: "Food-Grade Tank",
+  water_tank: "Water Tank",
+  auto_carrier: "Auto Carrier",
+  livestock: "Livestock",
+  log_trailer: "Log Trailer",
+  grain_hopper: "Grain Hopper",
+  bulk_hopper: "Bulk Hopper",
+  pneumatic: "Pneumatic",
+  dump_trailer: "End Dump",
+  intermodal: "Intermodal",
+  curtainside: "Curtainside",
 };
 
 const VEHICLE_TYPE_COLORS: Record<string, { icon: string; bg: string }> = {
@@ -65,6 +81,22 @@ const VEHICLE_TYPE_COLORS: Record<string, { icon: string; bg: string }> = {
   dry_van: { icon: "text-emerald-500", bg: "bg-emerald-500/15" },
   lowboy: { icon: "text-red-500", bg: "bg-red-500/15" },
   step_deck: { icon: "text-yellow-500", bg: "bg-yellow-500/15" },
+  double_drop: { icon: "text-red-400", bg: "bg-red-400/15" },
+  conestoga: { icon: "text-amber-500", bg: "bg-amber-500/15" },
+  gas_tank: { icon: "text-violet-500", bg: "bg-violet-500/15" },
+  cryogenic: { icon: "text-indigo-500", bg: "bg-indigo-500/15" },
+  hazmat_van: { icon: "text-rose-500", bg: "bg-rose-500/15" },
+  food_grade_tank: { icon: "text-lime-500", bg: "bg-lime-500/15" },
+  water_tank: { icon: "text-sky-500", bg: "bg-sky-500/15" },
+  auto_carrier: { icon: "text-teal-500", bg: "bg-teal-500/15" },
+  livestock: { icon: "text-amber-600", bg: "bg-amber-600/15" },
+  log_trailer: { icon: "text-green-700", bg: "bg-green-700/15" },
+  grain_hopper: { icon: "text-yellow-600", bg: "bg-yellow-600/15" },
+  bulk_hopper: { icon: "text-stone-500", bg: "bg-stone-500/15" },
+  pneumatic: { icon: "text-zinc-500", bg: "bg-zinc-500/15" },
+  dump_trailer: { icon: "text-neutral-500", bg: "bg-neutral-500/15" },
+  intermodal: { icon: "text-blue-400", bg: "bg-blue-400/15" },
+  curtainside: { icon: "text-fuchsia-500", bg: "bg-fuchsia-500/15" },
   trailer: { icon: "text-slate-500", bg: "bg-slate-500/15" },
 };
 
@@ -285,7 +317,7 @@ export function EquipmentIntelligencePanel() {
           ) : (
             <>
               {/* Group vehicles: tractors first, then trailers */}
-              {["tractor", "tanker", "flatbed", "refrigerated", "dry_van", "lowboy", "step_deck", "trailer"].map(vType => {
+              {["tractor", "dry_van", "reefer", "refrigerated", "flatbed", "step_deck", "lowboy", "double_drop", "conestoga", "tanker", "gas_tank", "cryogenic", "hazmat_van", "food_grade_tank", "water_tank", "auto_carrier", "livestock", "log_trailer", "grain_hopper", "bulk_hopper", "pneumatic", "dump_trailer", "intermodal", "curtainside", "trailer"].map(vType => {
                 const group = myVehicles.filter(v => v.vehicleType === vType);
                 if (group.length === 0) return null;
                 const colors = VEHICLE_TYPE_COLORS[vType] || VEHICLE_TYPE_COLORS.trailer;

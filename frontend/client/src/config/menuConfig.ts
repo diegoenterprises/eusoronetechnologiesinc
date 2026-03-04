@@ -145,6 +145,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Wallet, invoices, payments, cards & escrow"
     },
     { 
+      icon: "Receipt", 
+      label: "Accessorials", 
+      path: "/accessorials", 
+      badge: 0,
+      description: "Detention, lumper, TONU & accessorial fee management"
+    },
+    { 
       icon: "Building2", 
       label: "Company", 
       path: "/company", 
@@ -317,6 +324,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/wallet", 
       badge: 0,
       description: "Wallet, earnings & payments"
+    },
+    { 
+      icon: "Receipt", 
+      label: "Accessorials", 
+      path: "/accessorials", 
+      badge: 0,
+      description: "Detention, lumper, TONU & accessorial fee management"
     },
     { 
       icon: "Radio", 
@@ -1153,6 +1167,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Billing, detention fees, invoices & payments"
     },
     { 
+      icon: "Receipt", 
+      label: "Accessorials", 
+      path: "/accessorials", 
+      badge: 0,
+      description: "Detention, lumper, TONU & accessorial fee management"
+    },
+    { 
       icon: "Settings", 
       label: "Settings", 
       path: "/settings", 
@@ -1680,11 +1701,68 @@ export const menuConfigs: Record<string, MenuItem[]> = {
  * @param role - User role (SHIPPER, CATALYST, BROKER, DRIVER, DISPATCH, ESCORT, TERMINAL_MANAGER, ADMIN, SUPER_ADMIN)
  * @returns Array of menu items for the given role
  */
+// Roles that qualify for ELD Intelligence (everyone except FACTORING — financial only)
+const ELD_QUALIFYING_ROLES = new Set([
+  'SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT',
+  'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER', 'ADMIN', 'SUPER_ADMIN',
+]);
+
+// Role-specific ELD descriptions for organic context
+const ELD_DESCRIPTIONS: Record<string, string> = {
+  SHIPPER: "Carrier ELD tracking, fleet health & road intelligence on your shipments",
+  CATALYST: "Fleet ELD health, HOS compliance, LiDAR road intelligence & network",
+  BROKER: "Carrier ELD monitoring, fleet GPS & road condition alerts",
+  DRIVER: "Your ELD status, HOS clocks, road conditions & LiDAR intelligence",
+  DISPATCH: "Fleet ELD health, driver HOS compliance & road intelligence",
+  ESCORT: "Convoy ELD tracking, driver HOS & road condition alerts",
+  TERMINAL_MANAGER: "Inbound fleet ELD status, HOS compliance & road intelligence",
+  COMPLIANCE_OFFICER: "ELD compliance dashboard, HOS violations & fleet health",
+  SAFETY_MANAGER: "Fleet ELD safety monitoring, HOS violations & road condition risks",
+  ADMIN: "Platform ELD monitoring, fleet health & compliance overview",
+  SUPER_ADMIN: "Platform-wide ELD health, fleet compliance & road intelligence",
+};
+
 export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   if (!role) return menuConfigs.default;
   
   const normalizedRole = String(role).toUpperCase() as UserRole;
-  return menuConfigs[normalizedRole] || menuConfigs.default;
+  const menu = menuConfigs[normalizedRole] || menuConfigs.default;
+
+  let result = [...menu];
+
+  // Dynamically inject ELD Intelligence for qualifying roles
+  if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/eld')) {
+    const eldItem: MenuItem = {
+      icon: "Activity",
+      label: "ELD Intelligence",
+      path: "/eld",
+      badge: 0,
+      description: ELD_DESCRIPTIONS[normalizedRole] || "Fleet ELD health, HOS compliance & road intelligence",
+    };
+    // Insert before Market Intelligence or before The Haul (organic position)
+    const miIdx = result.findIndex(m => m.path === '/market-pricing');
+    const insertIdx = miIdx >= 0 ? miIdx : result.findIndex(m => m.path === '/the-haul');
+    if (insertIdx >= 0) result.splice(insertIdx, 0, eldItem);
+    else result.push(eldItem);
+  }
+
+  // Dynamically inject Carrier Intelligence (FMCSA Bulk Data) for qualifying roles
+  if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/carrier-intelligence')) {
+    const ciItem: MenuItem = {
+      icon: "Database",
+      label: "Carrier Intelligence",
+      path: "/carrier-intelligence",
+      badge: 0,
+      description: "FMCSA carrier vetting — authority, insurance, safety scores, inspections & monitoring",
+    };
+    // Insert after ELD Intelligence or after FMCSA Lookup
+    const eldIdx = result.findIndex(m => m.path === '/eld');
+    const fmcsaIdx = result.findIndex(m => m.path === '/fmcsa-lookup');
+    const ciInsertIdx = eldIdx >= 0 ? eldIdx + 1 : fmcsaIdx >= 0 ? fmcsaIdx + 1 : result.length;
+    result.splice(ciInsertIdx, 0, ciItem);
+  }
+
+  return result;
 }
 
 /**

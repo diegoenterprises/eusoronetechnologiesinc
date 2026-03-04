@@ -18,11 +18,13 @@ import {
 import { WS_EVENTS } from "@shared/websocket-events";
 import { emailService } from "../_core/email";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
+import { getCarrierSafetyIntel, getSafetyScores, getOOSStatus } from "../services/fmcsaBulkLookup";
 import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
 import { feeCalculator } from "../services/feeCalculator";
 import { lookupAndNotify } from "../services/notifications";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { ownershipFilter } from "../services/security/isolation/ownership-verifier";
+import { serverCalcWeight } from "@shared/cargoCalculations";
 
 async function resolveUserId(ctxUser: any): Promise<number> {
   const db = await getDb();
@@ -212,7 +214,12 @@ export const loadsRouter = router({
             cargoType,
             hazmatClass: input?.hazmatClass || null,
             unNumber: input?.unNumber || null,
-            weight: input?.weight || null,
+            weight: input?.weight || (
+              // Server-side weight fallback: auto-calc when frontend sends quantity but no weight
+              input?.quantity && input?.quantityUnit
+                ? String(serverCalcWeight(Number(input.quantity), input.quantityUnit, input.productName || "") || "")
+                : null
+            ) || null,
             weightUnit: input?.weightUnit || "lbs",
             volume: input?.quantity || null,
             volumeUnit: input?.quantityUnit === "Gallons" ? "gal" : input?.quantityUnit === "Barrels" ? "bbl" : input?.quantityUnit?.toLowerCase() || "gal",
@@ -2164,6 +2171,33 @@ export const bidsRouter = router({
     const [load] = await db.select().from(loads).where(eq(loads.id, bid.loadId)).limit(1);
     const userId = await resolveUserId(ctx.user);
     if (load && load.shipperId !== userId) throw new Error("Only the load owner can accept bids");
+
+    // ── FMCSA Safety Gate: verify carrier before bid award ──
+    let fmcsaSafetyGate: any = null;
+    try {
+      const [catalystCompany] = await db.select({ dotNumber: companies.dotNumber, name: companies.name }).from(companies).where(eq(companies.id, bid.catalystId)).limit(1);
+      if (catalystCompany?.dotNumber) {
+        const [oos, safetyScores] = await Promise.all([
+          getOOSStatus(catalystCompany.dotNumber),
+          getSafetyScores(catalystCompany.dotNumber),
+        ]);
+        fmcsaSafetyGate = {
+          dotNumber: catalystCompany.dotNumber,
+          carrierName: catalystCompany.name,
+          outOfService: oos.outOfService,
+          oosReason: oos.reason,
+          basicAlerts: safetyScores ? [safetyScores.unsafeDrivingAlert, safetyScores.hosAlert, safetyScores.vehicleMaintenanceAlert, safetyScores.crashIndicatorAlert].filter(Boolean).length : 0,
+          passed: !oos.outOfService,
+          dataSource: 'fmcsa_bulk_9.8M',
+        };
+        if (oos.outOfService) {
+          throw new Error(`FMCSA Safety Gate BLOCKED: Carrier ${catalystCompany.name} (DOT ${catalystCompany.dotNumber}) is OUT OF SERVICE — ${oos.reason}`);
+        }
+      }
+    } catch (gateErr: any) {
+      if (gateErr.message?.includes('FMCSA Safety Gate BLOCKED')) throw gateErr;
+    }
+
     await db.update(bids).set({ status: 'accepted' } as any).where(eq(bids.id, bidIdNum));
     // Reject all other pending bids on this load
     await db.update(bids).set({ status: 'rejected' } as any).where(and(eq(bids.loadId, bid.loadId), sql`${bids.id} != ${bidIdNum}`, eq(bids.status, 'pending')));
@@ -2179,7 +2213,7 @@ export const bidsRouter = router({
     const pickup = load?.pickupLocation as any || {};
     const delivery = load?.deliveryLocation as any || {};
     lookupAndNotify(bid.catalystId, { type: "load_assigned", loadNumber: load?.loadNumber || '', origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : undefined, destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : undefined });
-    return { success: true, bidId: input.bidId };
+    return { success: true, bidId: input.bidId, fmcsaSafetyGate };
   }),
   reject: protectedProcedure.input(z.object({ bidId: z.string(), reason: z.string().optional() })).mutation(async ({ ctx, input }) => {
     const db = await getDb();

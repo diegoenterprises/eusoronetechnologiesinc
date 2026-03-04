@@ -118,6 +118,15 @@ export function getLoadTitle(load: {
   if (ct === "gas") return "Gas Load";
   if (ct === "refrigerated") return "Refrigerated Load";
   if (ct === "oversized") return "Oversized Load";
+  if (ct === "livestock") return "Livestock Transport";
+  if (ct === "vehicles") return "Vehicle Transport";
+  if (ct === "timber") return "Timber / Log Load";
+  if (ct === "grain") return "Grain Load";
+  if (ct === "dry_bulk") return "Dry Bulk Load";
+  if (ct === "food_grade") return "Food-Grade Liquid";
+  if (ct === "water") return "Water Haul";
+  if (ct === "intermodal") return "Intermodal Container";
+  if (ct === "cryogenic") return "Cryogenic Load";
 
   return "Dry Freight";
 }
@@ -152,6 +161,9 @@ const EQUIPMENT_LABELS: Record<string, string> = {
   intermodal:      "Intermodal Container Chassis",
   auto_carrier:    "Auto Carrier / Car Hauler",
   livestock:       "Livestock / Cattle Pot",
+  log_trailer:     "Log Trailer",
+  grain_hopper:    "Grain Hopper",
+  grain_trailer:   "Grain Hopper",
   // Legacy / alias keys
   tank:            "Liquid Tank Trailer",
   liquid_tank:     "Liquid Tank Trailer",
@@ -183,6 +195,15 @@ export function getEquipmentLabel(
   if (ct === "chemicals") return "Chemical Tank Trailer";
   if (ct === "refrigerated") return "Refrigerated (Reefer)";
   if (ct === "oversized") return "Flatbed";
+  if (ct === "livestock") return "Livestock / Cattle Pot";
+  if (ct === "vehicles") return "Auto Carrier / Car Hauler";
+  if (ct === "timber") return "Log Trailer";
+  if (ct === "grain") return "Grain Hopper";
+  if (ct === "dry_bulk") return "Dry Bulk / Hopper";
+  if (ct === "food_grade") return "Food-Grade Liquid Tank";
+  if (ct === "water") return "Water Tank";
+  if (ct === "intermodal") return "Intermodal Container Chassis";
+  if (ct === "cryogenic") return "Cryogenic Tank";
 
   // 3. Derive from hazmatClass
   const inferred = inferTrailerFromHazmat(hazmatClass);
@@ -231,6 +252,9 @@ const EQUIP_ANIM: Record<string, AnimationType> = {
   intermodal:      "intermodal",   // ISO container chassis
   auto_carrier:    "autocarrier",  // Car hauler
   livestock:       "livestock",    // Cattle pot
+  log_trailer:     "flatbed",      // Log trailer variant
+  grain_hopper:    "hopper",       // Grain-specific hopper
+  grain_trailer:   "hopper",       // Grain-specific hopper
   // Legacy / alias keys
   tank:            "liquid",
   liquid_tank:     "liquid",
@@ -262,7 +286,14 @@ export function inferAnimationType(
   if (ct === "chemicals") return "liquid";
   if (ct === "refrigerated" || ct === "frozen") return "reefer";
   if (ct === "oversized") return "flatbed";
-  if (ct === "grain" || ct === "cement" || ct === "sand") return "hopper";
+  if (ct === "grain" || ct === "cement" || ct === "sand" || ct === "dry_bulk") return "hopper";
+  if (ct === "livestock") return "livestock";
+  if (ct === "vehicles") return "autocarrier";
+  if (ct === "timber") return "flatbed";
+  if (ct === "food_grade") return "liquid";
+  if (ct === "water") return "liquid";
+  if (ct === "intermodal") return "intermodal";
+  if (ct === "cryogenic") return "cryogenic";
 
   // 3. Hazmat class → proper trailer animation
   const inferred = inferTrailerFromHazmat(hazmatClass);

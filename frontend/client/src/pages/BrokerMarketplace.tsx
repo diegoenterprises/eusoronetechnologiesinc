@@ -142,7 +142,23 @@ export default function BrokerMarketplace() {
                   <SelectItem value="dry_van">Dry Van</SelectItem>
                   <SelectItem value="reefer">Reefer</SelectItem>
                   <SelectItem value="flatbed">Flatbed</SelectItem>
+                  <SelectItem value="step_deck">Step Deck</SelectItem>
+                  <SelectItem value="lowboy">Lowboy</SelectItem>
+                  <SelectItem value="double_drop">Double Drop</SelectItem>
+                  <SelectItem value="conestoga">Conestoga</SelectItem>
                   <SelectItem value="tanker">Tanker</SelectItem>
+                  <SelectItem value="gas_tank">Gas Tank</SelectItem>
+                  <SelectItem value="cryogenic">Cryogenic</SelectItem>
+                  <SelectItem value="hazmat_van">Hazmat Van</SelectItem>
+                  <SelectItem value="food_grade_tank">Food-Grade Tank</SelectItem>
+                  <SelectItem value="water_tank">Water Tank</SelectItem>
+                  <SelectItem value="auto_carrier">Auto Carrier</SelectItem>
+                  <SelectItem value="livestock">Livestock</SelectItem>
+                  <SelectItem value="log_trailer">Log Trailer</SelectItem>
+                  <SelectItem value="grain_hopper">Grain Hopper</SelectItem>
+                  <SelectItem value="bulk_hopper">Bulk Hopper</SelectItem>
+                  <SelectItem value="dump_trailer">End Dump</SelectItem>
+                  <SelectItem value="intermodal">Intermodal</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>

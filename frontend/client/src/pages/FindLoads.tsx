@@ -25,7 +25,7 @@ import {
 import { useLocation } from "wouter";
 import LoadCargoAnimation from "@/components/LoadCargoAnimation";
 
-type EquipFilter = "all" | "tanker" | "flatbed" | "dry_van" | "reefer" | "hopper" | "cryogenic" | "hazmat" | "pneumatic" | "end_dump" | "intermodal_chassis" | "curtain_side";
+type EquipFilter = "all" | "tanker" | "flatbed" | "dry_van" | "reefer" | "hopper" | "cryogenic" | "hazmat" | "pneumatic" | "end_dump" | "intermodal_chassis" | "curtain_side" | "step_deck" | "lowboy" | "double_drop" | "conestoga" | "auto_carrier" | "livestock" | "log_trailer" | "grain_hopper" | "food_grade_tank" | "water_tank";
 type SortKey = "rate_desc" | "rate_asc" | "rpm_desc" | "distance_asc" | "distance_desc" | "newest" | "pickup";
 type ViewMode = "expanded" | "compact";
 
@@ -111,10 +111,16 @@ export default function FindLoads() {
 
   const equipTabs: { id: EquipFilter; label: string }[] = [
     { id: "all", label: `All (${allLoads.length})` },
-    { id: "tanker", label: "Tanker" }, { id: "flatbed", label: "Flatbed" },
     { id: "dry_van", label: "Dry Van" }, { id: "reefer", label: "Reefer" },
+    { id: "flatbed", label: "Flatbed" }, { id: "step_deck", label: "Step Deck" },
+    { id: "lowboy", label: "Lowboy" }, { id: "double_drop", label: "Double Drop" },
+    { id: "conestoga", label: "Conestoga" },
+    { id: "tanker", label: "Tanker" }, { id: "cryogenic", label: "Cryogenic" },
+    { id: "food_grade_tank", label: "Food Tank" }, { id: "water_tank", label: "Water" },
+    { id: "auto_carrier", label: "Auto Carrier" }, { id: "livestock", label: "Livestock" },
+    { id: "log_trailer", label: "Log Trailer" }, { id: "grain_hopper", label: "Grain" },
     { id: "hopper", label: "Bulk/Hopper" }, { id: "pneumatic", label: "Pneumatic" },
-    { id: "end_dump", label: "End Dump" }, { id: "cryogenic", label: "Cryogenic" },
+    { id: "end_dump", label: "End Dump" },
     { id: "intermodal_chassis", label: "Intermodal" }, { id: "curtain_side", label: "Curtain Side" },
     { id: "hazmat", label: "Hazmat" },
   ];

@@ -287,7 +287,7 @@ export const esangRouter = router({
       const msg = input.message.toLowerCase();
 
       // Rule-based intent classification (fast path — no API call needed)
-      let intent: "COMMAND" | "NEGOTIATION" | "COMPLIANCE_QUERY" | "GENERAL_QUESTION" | "NEWS_SUMMARY" = "GENERAL_QUESTION";
+      let intent: "COMMAND" | "NEGOTIATION" | "COMPLIANCE_QUERY" | "CARRIER_QUERY" | "MARKET_QUERY" | "GENERAL_QUESTION" | "NEWS_SUMMARY" = "GENERAL_QUESTION";
       let modelTarget: "logic" | "creative" = "creative";
       let confidence = 0.85;
 
@@ -298,20 +298,32 @@ export const esangRouter = router({
         modelTarget = "logic";
         confidence = 0.92;
       }
+      // Carrier Intelligence patterns (DOT#, MC#, carrier lookup, safety, insurance, authority, verify)
+      else if (/dot\s*#?\s*\d{4,}|mc\s*#?\s*\d{4,}|carrier.*(?:look|search|find|check|verify|vet)|(?:look|search|find|check|verify).*carrier|safety\s*score|basic\s*score|oos\s*(?:order|rate)|inspection.*(?:history|record)|crash.*(?:history|record)|authority.*(?:status|check)|insurance.*(?:status|check|valid|expir)|carrier.*(?:insurance|authority|safety)|verify.*dot|dot.*verify/.test(msg)) {
+        intent = "CARRIER_QUERY";
+        modelTarget = "logic";
+        confidence = 0.94;
+      }
+      // Market Intelligence patterns (rate prediction, fuel prices, lane rates)
+      else if (/market.*rate|rate.*(?:predict|estimate|forecast)|lane.*(?:rate|price)|fuel.*price|diesel.*price|spot.*rate|what.*(?:rate|cost).*(?:ship|haul|move)|how much.*(?:ship|haul|move)|freight.*rate/.test(msg)) {
+        intent = "MARKET_QUERY";
+        modelTarget = "logic";
+        confidence = 0.91;
+      }
       // Negotiation patterns
-      else if (/\$[\d,.]+|rate|counter.?offer|negotiate|bid|i.?ll do it for|price|per mile/.test(msg)) {
+      else if (/\$[\d,.]+|counter.?offer|negotiate|i.?ll do it for|per mile/.test(msg)) {
         intent = "NEGOTIATION";
         modelTarget = "logic";
         confidence = 0.90;
       }
       // Compliance / ERG patterns
-      else if (/erg|un\d{4}|hazmat|compliance|hos|dot|fmcsa|placard|endorsement|hazard class|isolation distance|ppe|emergency/.test(msg)) {
+      else if (/erg|un\d{4}|hazmat|compliance|hos|placard|endorsement|hazard class|isolation distance|ppe|emergency/.test(msg)) {
         intent = "COMPLIANCE_QUERY";
         modelTarget = "logic";
         confidence = 0.95;
       }
       // News patterns
-      else if (/news|market|update|summary|trend|headline|what.?s happening/.test(msg)) {
+      else if (/news|market.*update|summary|trend|headline|what.?s happening/.test(msg)) {
         intent = "NEWS_SUMMARY";
         modelTarget = "creative";
         confidence = 0.88;
@@ -437,25 +449,25 @@ export const esangRouter = router({
     const role = (ctx.user?.role || "SHIPPER").toUpperCase();
     switch (role) {
       case "SHIPPER":
-        return ["Get rate estimate for a lane", "Track my active shipments", "Find available catalysts", "Check compliance status", "Identify product with SPECTRA-MATCH"];
+        return ["Get market rate for TX → IL lane", "Verify carrier DOT# 2247581", "Track my active shipments", "Check fuel prices in Texas", "Find available catalysts", "Identify product with SPECTRA-MATCH"];
       case "CATALYST":
-        return ["Find loads matching my equipment", "Check fuel surcharge rates", "Review my bid history", "Fleet compliance check", "Optimize my routes"];
+        return ["Find loads matching my equipment", "What's the spot rate TX to CA?", "Check my safety scores", "Review my bid history", "Check diesel prices", "Optimize my routes"];
       case "DRIVER":
-        return ["Check my HOS status", "View assigned loads", "Report an incident", "Find nearest fuel stop", "ERG hazmat lookup"];
+        return ["Check my HOS status", "View assigned loads", "Find nearest fuel stop", "ERG hazmat lookup", "Report a mechanical issue", "Check diesel price in my state"];
       case "BROKER":
-        return ["Analyze lane pricing", "Match catalyst to load", "Check margin on active loads", "Market rate intelligence", "Catalyst compliance verify"];
+        return ["Verify carrier DOT# 2247581", "Analyze lane pricing TX → OH", "Check carrier insurance status", "Market rate intelligence", "Carrier safety score check", "Match catalyst to load"];
       case "TERMINAL_MANAGER":
-        return ["View terminal throughput", "Identify product with SPECTRA-MATCH", "Check tank inventory", "Review pending run tickets", "Safety compliance audit"];
+        return ["View terminal throughput", "Identify product with SPECTRA-MATCH", "Check tank inventory", "Review pending run tickets", "Safety compliance audit", "Carrier authority check"];
       case "ESCORT":
-        return ["View available escort jobs", "Check my certifications", "Analyze escort rates in my area", "View my schedule", "State permit requirements"];
+        return ["View available escort jobs", "Analyze escort rates in my area", "Check my certifications", "View my schedule", "State permit requirements", "Check fuel prices"];
       case "ADMIN": case "SUPER_ADMIN":
-        return ["System health overview", "User activity summary", "Compliance dashboard", "Revenue analytics", "Platform diagnostics"];
+        return ["Verify carrier DOT# 2247581", "System health overview", "Carrier safety score analysis", "Market rate prediction", "Revenue analytics", "Platform diagnostics"];
       case "COMPLIANCE_OFFICER":
-        return ["Run compliance audit", "Check catalyst insurance", "Review HOS violations", "DOT inspection results", "Safety score analysis"];
+        return ["Verify carrier DOT# 2247581", "Check carrier insurance status", "Review carrier inspection history", "Carrier safety score analysis", "Run compliance audit", "DOT OOS order check"];
       case "SAFETY_MANAGER":
-        return ["ERG 2024 hazmat lookup", "Incident report summary", "Safety training status", "Fleet safety scores", "Emergency response plan"];
+        return ["Carrier safety score analysis", "Review carrier crash history", "ERG 2024 hazmat lookup", "Fleet safety scores", "Carrier inspection history", "Emergency response plan"];
       default:
-        return ["How can you help me?", "What are my active tasks?", "Show my dashboard summary"];
+        return ["How can you help me?", "What are my active tasks?", "Check market rates", "Show my dashboard summary"];
     }
   }),
   // ── ESANG AI Deep Integrations ──────────────────────────────────────────

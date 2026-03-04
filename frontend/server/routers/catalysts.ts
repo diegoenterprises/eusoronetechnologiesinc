@@ -11,6 +11,7 @@ import { catalystProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { companies, users, vehicles, loads, bids, documents } from "../../drizzle/schema";
 import { eq, and, desc, sql, count, gte, or } from "drizzle-orm";
+import { getCarrierSafetyIntel, getSafetyScores } from "../services/fmcsaBulkLookup";
 
 import {
   emitBidReceived,
@@ -1113,19 +1114,51 @@ export const catalystsRouter = router({
         const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
         if (!company) return null;
 
+        // ── FMCSA Bulk Data: census, authority, insurance profile ──
+        const fmcsaIntel = company.dotNumber
+          ? await getCarrierSafetyIntel(company.dotNumber)
+          : null;
+
         return {
           id: String(company.id),
           companyName: company.name,
-          mcNumber: company.mcNumber || '',
+          mcNumber: fmcsaIntel?.authority?.docketNumber || company.mcNumber || '',
           dotNumber: company.dotNumber || '',
           contactName: '',
           email: company.email || '',
-          phone: company.phone || '',
+          phone: fmcsaIntel?.census?.telephone || company.phone || '',
           address: `${company.address || ''}, ${company.city || ''}, ${company.state || ''} ${company.zipCode || ''}`,
           verified: company.complianceStatus === 'compliant',
           memberSince: company.createdAt?.toISOString().split('T')[0] || '',
-          liabilityInsurance: { amount: 0, expiration: company.insuranceExpiry?.toISOString().split('T')[0] || '' },
-          cargoInsurance: { amount: 0, expiration: company.insuranceExpiry?.toISOString().split('T')[0] || '' },
+          liabilityInsurance: {
+            amount: fmcsaIntel?.insurance?.bipdLimit || 0,
+            expiration: fmcsaIntel?.insurance?.nearestExpiry || company.insuranceExpiry?.toISOString().split('T')[0] || '',
+            isCompliant: fmcsaIntel?.insurance?.isCompliant ?? false,
+          },
+          cargoInsurance: {
+            amount: fmcsaIntel?.insurance?.cargoLimit || 0,
+            expiration: company.insuranceExpiry?.toISOString().split('T')[0] || '',
+            hasCargo: fmcsaIntel?.insurance?.hasCargo ?? false,
+          },
+          // ── FMCSA Profile Intelligence ──
+          fmcsa: fmcsaIntel ? {
+            legalName: fmcsaIntel.census?.legalName || null,
+            riskTier: fmcsaIntel.riskTier,
+            riskScore: fmcsaIntel.riskScore,
+            outOfService: fmcsaIntel.outOfService,
+            oosReason: fmcsaIntel.oosReason,
+            authorityStatus: fmcsaIntel.authority?.authorityStatus || null,
+            commonAuthActive: fmcsaIntel.authority?.commonAuthActive ?? null,
+            powerUnits: fmcsaIntel.census?.nbrPowerUnit || 0,
+            driverTotal: fmcsaIntel.census?.driverTotal || 0,
+            hazmatAuthorized: fmcsaIntel.census?.hmFlag || false,
+            carrierOperation: fmcsaIntel.census?.carrierOperation || null,
+            mcs150Mileage: fmcsaIntel.census?.mcs150Mileage || 0,
+            alerts: fmcsaIntel.alerts,
+            crashes: fmcsaIntel.crashes ? { total: fmcsaIntel.crashes.totalCrashes, fatalities: fmcsaIntel.crashes.totalFatalities } : null,
+            inspections: fmcsaIntel.inspections ? { total: fmcsaIntel.inspections.totalInspections, violations: fmcsaIntel.inspections.totalViolations } : null,
+            dataSource: 'fmcsa_bulk_9.8M',
+          } : null,
         };
       } catch (error) {
         console.error('[Catalysts] getProfile error:', error);
@@ -1148,15 +1181,41 @@ export const catalystsRouter = router({
         const [totalRevenue] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.catalystId, companyId), eq(loads.status, 'delivered')));
         const [avgRate] = await db.select({ avg: sql<number>`COALESCE(AVG(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(eq(loads.catalystId, companyId));
 
+        // ── FMCSA Bulk Data: safety score from SMS BASICs ──
+        let fmcsaSafetyScore = 0;
+        let fmcsaData: any = null;
+        try {
+          const [comp] = await db.select({ dotNumber: companies.dotNumber }).from(companies).where(eq(companies.id, companyId)).limit(1);
+          if (comp?.dotNumber) {
+            const sms = await getSafetyScores(comp.dotNumber);
+            if (sms) {
+              const alertPenalty = [sms.unsafeDrivingAlert, sms.hosAlert, sms.vehicleMaintenanceAlert, sms.crashIndicatorAlert, sms.hazmatAlert].filter(Boolean).length * 12;
+              fmcsaSafetyScore = Math.max(0, 100 - alertPenalty);
+              fmcsaData = {
+                unsafeDriving: { score: sms.unsafeDrivingScore, alert: sms.unsafeDrivingAlert },
+                hos: { score: sms.hosScore, alert: sms.hosAlert },
+                vehicleMaintenance: { score: sms.vehicleMaintenanceScore, alert: sms.vehicleMaintenanceAlert },
+                crashIndicator: { score: sms.crashIndicatorScore, alert: sms.crashIndicatorAlert },
+                driverOosRate: sms.driverOosRate,
+                vehicleOosRate: sms.vehicleOosRate,
+                inspectionsTotal: sms.inspectionsTotal,
+                lastRunDate: sms.runDate,
+                dataSource: 'fmcsa_bulk_9.8M',
+              };
+            }
+          }
+        } catch {}
+
         return {
           totalLoads: totalLoads?.count || 0,
           totalRevenue: totalRevenue?.sum || 0,
           avgRatePerMile: 0,
           onTimeDeliveryRate: 0,
-          safetyScore: 0,
+          safetyScore: fmcsaSafetyScore,
           avgPaymentReceived: 0,
           loadsCompleted: completed?.count || 0,
           onTimeRate: 0,
+          fmcsaSafety: fmcsaData,
         };
       } catch (error) {
         console.error('[Catalysts] getStats error:', error);

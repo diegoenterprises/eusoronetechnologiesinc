@@ -161,7 +161,7 @@ export default function ProfileSetup() {
           <div>
             <label className={labelCls}>Preferred Equipment</label>
             <div className="flex flex-wrap gap-2">
-              {["tanker", "flatbed", "dry_van", "reefer", "hopper", "lowboy"].map((eq) => (
+              {["dry_van", "reefer", "flatbed", "step_deck", "lowboy", "double_drop", "conestoga", "tanker", "gas_tank", "cryogenic", "hazmat_van", "food_grade_tank", "water_tank", "auto_carrier", "livestock", "log_trailer", "grain_hopper", "bulk_hopper", "pneumatic", "dump_trailer", "intermodal", "curtainside"].map((eq) => (
                 <button
                   key={eq}
                   onClick={() => update("preferredEquipment", eq)}

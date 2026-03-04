@@ -1125,6 +1125,20 @@ async function startServer() {
       } catch (err) { console.warn("[AITurbo] Knowledge seeding deferred:", (err as any)?.message?.slice(0, 80)); }
     }, 25000);
 
+    // Start FMCSA ETL Cron — daily 12PM CT scrape of ALL FMCSA datasets for instant verification
+    setTimeout(async () => {
+      try {
+        if (process.env.FMCSA_ENABLE_DAILY_ETL !== "false") {
+          const { startFmcsaCron } = await import("../etl/fmcsaCron");
+          await startFmcsaCron();
+        } else {
+          console.log("[FMCSA Cron] FMCSA ETL disabled (FMCSA_ENABLE_DAILY_ETL=false)");
+        }
+      } catch (err) {
+        console.error("[FMCSA Cron] Failed to start ETL scheduler:", err);
+      }
+    }, 30000);
+
     // Start Hot Zones data sync v5.0 — orchestrator + scheduler (22+ data sources)
     setTimeout(async () => {
       try {

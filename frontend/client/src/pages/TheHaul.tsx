@@ -15,6 +15,7 @@ import {
   Trophy, Target, Gift, MessageCircle, Send, Shield, Star,
   Zap, Clock, Users, TrendingUp, Award, Flame, ChevronRight,
   MapPin, Truck, CheckCircle, Crown, RefreshCw, Package, XCircle, BrainCircuit,
+  Activity, Radio, Wifi, Navigation,
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
@@ -58,6 +59,7 @@ export default function TheHaul() {
   const cratesQ = (trpc as any).gamification?.getCrates?.useQuery?.() || { data: null };
   const seasonQ = (trpc as any).gamification?.getCurrentSeason?.useQuery?.() || { data: null };
   const statsQ = (trpc as any).gamification?.getStats?.useQuery?.() || { data: null };
+  const eldNetQ = (trpc as any).eld?.getELDNetworkStats?.useQuery?.(undefined, { staleTime: 120000 }) || { data: null };
   const leaderboardQ = (trpc as any).gamification?.getLeaderboard?.useQuery?.({ period: "month", category: "points", limit: 20, roleFilter: lbScope }) || { data: null, isLoading: false };
 
   const postMut = (trpc as any).gamification?.postLobbyMessage?.useMutation?.({
@@ -202,6 +204,38 @@ export default function TheHaul() {
         </div>
       )}
 
+      {/* ── ELD Network Effect — Platform Achievement Banner ── */}
+      {eldNetQ.data && (
+        <div className={cn("rounded-xl p-4 flex items-center gap-4 flex-wrap", isLight ? "bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200" : "bg-gradient-to-r from-[#1473FF]/5 to-[#BE01FF]/5 border border-[#1473FF]/20")}>
+          <div className={cn("p-2.5 rounded-xl", isLight ? "bg-blue-100" : "bg-[#1473FF]/20")}>
+            <Radio className="w-5 h-5 text-[#1473FF]" />
+          </div>
+          <div className="flex-1 min-w-[200px]">
+            <div className="flex items-center gap-2">
+              <span className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>ELD Network</span>
+              <Badge className={cn("border-0 text-[9px] font-bold", {
+                "bg-slate-500/20 text-slate-400": eldNetQ.data.networkStrength === "building",
+                "bg-blue-500/20 text-blue-400": eldNetQ.data.networkStrength === "growing",
+                "bg-emerald-500/20 text-emerald-400": eldNetQ.data.networkStrength === "strong",
+                "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white": eldNetQ.data.networkStrength === "dominant",
+              })}>{(eldNetQ.data.networkStrength || "building").toUpperCase()}</Badge>
+            </div>
+            <p className={cn("text-xs mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>
+              {eldNetQ.data.totalDevicesConnected} devices · {eldNetQ.data.totalDriversTracked} drivers · {eldNetQ.data.roadMilesMapped} mi mapped
+              {(eldNetQ.data.lidarSegmentsEnriched || 0) > 0 && <> · <Navigation className="w-3 h-3 inline text-purple-400" /> {eldNetQ.data.lidarSegmentsEnriched} LiDAR</>}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className={cn("rounded-lg text-xs", isLight ? "border-blue-200 text-blue-600 hover:bg-blue-50" : "border-[#1473FF]/30 text-[#1473FF] hover:bg-[#1473FF]/10")}
+            onClick={() => window.location.href = "/eld"}
+          >
+            <Activity className="w-3.5 h-3.5 mr-1.5" />ELD Intelligence
+          </Button>
+        </div>
+      )}
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className={cn("rounded-xl p-1", isLight ? "bg-slate-100" : "bg-slate-800/50")}>
           <TabsTrigger value="lobby" className="rounded-lg text-sm gap-1.5"><MessageCircle className="w-4 h-4" /> Lobby</TabsTrigger>
@@ -260,6 +294,14 @@ export default function TheHaul() {
               <CardContent className="space-y-3">{activeM.map((m: any) => { const pct = m.targetValue > 0 ? (m.currentProgress / m.targetValue) * 100 : 0; return (
                 <div key={m.id} className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-slate-700/50")}>
                   <div className="flex items-start justify-between mb-2"><div><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{m.name}</p><p className="text-xs text-slate-400 mt-0.5">{m.description}</p></div><div className="text-right"><p className="text-sm font-bold text-yellow-400">+{m.xpReward} XP</p><Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]">{m.type}</Badge></div></div>
+                  {/* Cargo-aware context badges */}
+                  {(m.cargoType || m.equipmentType || (m.category && /tanker|hazmat|liquid|bulk/i.test(m.category))) && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {m.equipmentType && <Badge className="bg-blue-500/15 text-blue-300 border-0 text-[10px]"><Truck className="w-2.5 h-2.5 mr-0.5" />{(m.equipmentType || "").replace(/_/g, " ")}</Badge>}
+                      {m.cargoType && <Badge className="bg-amber-500/15 text-amber-300 border-0 text-[10px]"><Package className="w-2.5 h-2.5 mr-0.5" />{m.cargoType}</Badge>}
+                      {m.category && /hazmat/i.test(m.category) && <Badge className="bg-red-500/15 text-red-300 border-0 text-[10px]"><Shield className="w-2.5 h-2.5 mr-0.5" />Hazmat</Badge>}
+                    </div>
+                  )}
                   <div className="flex items-center gap-3"><Progress value={pct} className="flex-1 h-2" /><span className="text-xs text-slate-400">{Math.round(pct)}%</span></div>
                   <div className="flex items-center gap-2 mt-2">
                     {m.status === "completed" && <Button size="sm" className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs h-7" onClick={() => claimMut.mutate({ missionId: m.id })}><Gift className="w-3 h-3 mr-1" />Claim</Button>}
@@ -275,6 +317,13 @@ export default function TheHaul() {
                   {m.source === "esang_ai" && <div className="absolute top-0 right-0 px-2 py-0.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-[9px] text-white font-medium rounded-bl-lg">AI</div>}
                   <p className={cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white")}>{m.name}</p>
                   <p className="text-[11px] text-slate-400 mt-1">{m.description}</p>
+                  {(m.cargoType || m.equipmentType || (m.category && /tanker|hazmat|liquid|bulk/i.test(m.category))) && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {m.equipmentType && <Badge className="bg-blue-500/15 text-blue-300 border-0 text-[10px]"><Truck className="w-2.5 h-2.5 mr-0.5" />{(m.equipmentType || "").replace(/_/g, " ")}</Badge>}
+                      {m.cargoType && <Badge className="bg-amber-500/15 text-amber-300 border-0 text-[10px]"><Package className="w-2.5 h-2.5 mr-0.5" />{m.cargoType}</Badge>}
+                      {m.category && /hazmat/i.test(m.category) && <Badge className="bg-red-500/15 text-red-300 border-0 text-[10px]"><Shield className="w-2.5 h-2.5 mr-0.5" />Hazmat</Badge>}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-2"><Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-[10px]">{m.category}</Badge><Badge className="bg-slate-500/20 text-slate-400 border-0 text-[10px]">{m.type}</Badge>{m.hosCompliant && <Badge className="bg-green-500/20 text-green-400 border-0 text-[10px]">HOS</Badge>}</div>
                     <div className="flex items-center gap-2"><span className="text-xs font-bold text-yellow-400">+{m.xpReward} XP</span>

@@ -89,9 +89,20 @@ export default function Opportunities() {
         <SelectContent>
           <SelectItem value="all">All Categories</SelectItem>
           <SelectItem value="hazmat">HazMat</SelectItem>
-          <SelectItem value="oversized">Oversized</SelectItem>
           <SelectItem value="refrigerated">Refrigerated</SelectItem>
           <SelectItem value="flatbed">Flatbed</SelectItem>
+          <SelectItem value="step_deck">Step Deck</SelectItem>
+          <SelectItem value="lowboy">Lowboy</SelectItem>
+          <SelectItem value="double_drop">Double Drop</SelectItem>
+          <SelectItem value="conestoga">Conestoga</SelectItem>
+          <SelectItem value="oversized">Oversized</SelectItem>
+          <SelectItem value="tanker">Tanker</SelectItem>
+          <SelectItem value="auto_carrier">Auto Carrier</SelectItem>
+          <SelectItem value="livestock">Livestock</SelectItem>
+          <SelectItem value="log_trailer">Log Trailer</SelectItem>
+          <SelectItem value="grain_hopper">Grain Hopper</SelectItem>
+          <SelectItem value="bulk_hopper">Bulk Hopper</SelectItem>
+          <SelectItem value="intermodal">Intermodal</SelectItem>
         </SelectContent>
       </Select>
 

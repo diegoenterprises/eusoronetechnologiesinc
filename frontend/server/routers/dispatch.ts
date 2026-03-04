@@ -9,10 +9,11 @@ import { z } from "zod";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
-import { drivers, loads, users, escortAssignments, convoys } from "../../drizzle/schema";
+import { drivers, loads, users, escortAssignments, convoys, companies } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, isNull, ne } from "drizzle-orm";
 import { emitDispatchEvent, emitDriverStatusChange, emitLoadStatusChange, emitNotification, emitEscortJobAssigned, emitEscortJobAvailable } from "../_core/websocket";
 import { WS_EVENTS } from "@shared/websocket-events";
+import { getSafetyScores, getOOSStatus, getInsuranceStatus } from "../services/fmcsaBulkLookup";
 
 const loadStatusSchema = z.enum([
   "unassigned", "assigned", "en_route_pickup", "at_pickup", 
@@ -32,7 +33,7 @@ export const dispatchRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) {
-        return { active: 0, activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0, inTransit: 0, issues: 0, completedToday: 0, totalDrivers: 0, availableDrivers: 0 };
+        return { active: 0, activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0, inTransit: 0, issues: 0, completedToday: 0, totalDrivers: 0, availableDrivers: 0, fmcsaSafety: null };
       }
 
       try {
@@ -79,6 +80,34 @@ export const dispatchRouter = router({
         const onLoadIds = new Set(driversOnLoads.map(l => l.driverId));
         const availableDrivers = (totalDrivers?.count || 0) - onLoadIds.size;
 
+        // ── FMCSA Bulk Data: carrier safety verification ──
+        let fmcsaSafety: any = null;
+        try {
+          const [comp] = await db.select({ dotNumber: companies.dotNumber }).from(companies).where(eq(companies.id, companyId)).limit(1);
+          if (comp?.dotNumber) {
+            const [sms, oos, ins] = await Promise.all([
+              getSafetyScores(comp.dotNumber),
+              getOOSStatus(comp.dotNumber),
+              getInsuranceStatus(comp.dotNumber),
+            ]);
+            const alertCount = sms ? [sms.unsafeDrivingAlert, sms.hosAlert, sms.vehicleMaintenanceAlert, sms.crashIndicatorAlert].filter(Boolean).length : 0;
+            fmcsaSafety = {
+              dotNumber: comp.dotNumber,
+              outOfService: oos.outOfService,
+              oosReason: oos.reason,
+              basicAlerts: alertCount,
+              unsafeDrivingAlert: sms?.unsafeDrivingAlert || false,
+              hosAlert: sms?.hosAlert || false,
+              vehicleMaintenanceAlert: sms?.vehicleMaintenanceAlert || false,
+              crashIndicatorAlert: sms?.crashIndicatorAlert || false,
+              insuranceCompliant: ins?.isCompliant ?? true,
+              driverOosRate: sms?.driverOosRate ?? null,
+              vehicleOosRate: sms?.vehicleOosRate ?? null,
+              dataSource: 'fmcsa_bulk_9.8M',
+            };
+          }
+        } catch {}
+
         return {
           active: activeLoads?.count || 0,
           activeLoads: activeLoads?.count || 0,
@@ -90,6 +119,7 @@ export const dispatchRouter = router({
           completedToday: completedToday?.count || 0,
           totalDrivers: totalDrivers?.count || 0,
           availableDrivers: Math.max(0, availableDrivers),
+          fmcsaSafety,
         };
       } catch (error) {
         console.error('[Dispatch] getDashboardStats error:', error);

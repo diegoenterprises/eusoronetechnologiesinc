@@ -63,12 +63,28 @@ const CONTAINER_TYPES = [
 ];
 
 const EQUIPMENT_TYPES = [
-  { value: "tanker", label: "Tanker Truck" },
   { value: "dryvan", label: "Dry Van" },
-  { value: "flatbed", label: "Flatbed" },
-  { value: "reefer", label: "Refrigerated" },
-  { value: "lowboy", label: "Lowboy" },
-  { value: "stepdeck", label: "Step Deck" },
+  { value: "reefer", label: "Refrigerated (Reefer)" },
+  { value: "flatbed", label: "Standard Flatbed" },
+  { value: "stepdeck", label: "Step Deck / Drop Deck" },
+  { value: "lowboy", label: "Lowboy / RGN" },
+  { value: "double_drop", label: "Double Drop / Stretch" },
+  { value: "conestoga", label: "Conestoga (Rolling-Tarp)" },
+  { value: "tanker", label: "Petroleum Tank (MC-306)" },
+  { value: "gas_tank", label: "Pressurized Gas Tank (MC-331)" },
+  { value: "cryogenic", label: "Cryogenic Tank (MC-338)" },
+  { value: "hazmat_van", label: "Hazmat-Rated Van" },
+  { value: "food_grade_tank", label: "Food-Grade Liquid Tank" },
+  { value: "water_tank", label: "Water Tank" },
+  { value: "auto_carrier", label: "Auto Carrier / Car Hauler" },
+  { value: "livestock", label: "Livestock / Cattle Pot" },
+  { value: "log_trailer", label: "Log Trailer" },
+  { value: "grain_hopper", label: "Grain Hopper" },
+  { value: "bulk_hopper", label: "Dry Bulk / Pneumatic Hopper" },
+  { value: "pneumatic", label: "Pneumatic Tank" },
+  { value: "dump_trailer", label: "End Dump / Bottom Dump" },
+  { value: "intermodal", label: "Intermodal Container Chassis" },
+  { value: "curtainside", label: "Curtainside / Tautliner" },
 ];
 
 interface LoadFormData {

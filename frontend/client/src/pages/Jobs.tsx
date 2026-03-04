@@ -31,7 +31,7 @@ interface Load {
   deliveryDate: string;
   pay: number;
   distance: number;
-  type: "HAZMAT" | "REEFER" | "DRY_VAN" | "FLATBED" | "TANKER";
+  type: "HAZMAT" | "REEFER" | "DRY_VAN" | "FLATBED" | "TANKER" | "STEP_DECK" | "LOWBOY" | "DOUBLE_DROP" | "CONESTOGA" | "AUTO_CARRIER" | "LIVESTOCK" | "LOG_TRAILER" | "GRAIN_HOPPER" | "BULK_HOPPER" | "INTERMODAL" | "CURTAINSIDE";
   status: "AVAILABLE" | "BIDDING" | "ASSIGNED" | "IN_TRANSIT" | "COMPLETED";
   hazmatClass?: string;
   unNumber?: string;
@@ -147,8 +147,22 @@ export default function JobsPage() {
         return "bg-blue-900/30 text-blue-400 border-blue-700";
       case "TANKER":
         return "bg-orange-900/30 text-orange-400 border-orange-700";
-      case "FLATBED":
+      case "FLATBED": case "STEP_DECK": case "CONESTOGA":
         return "bg-purple-900/30 text-purple-400 border-purple-700";
+      case "LOWBOY": case "DOUBLE_DROP":
+        return "bg-rose-900/30 text-rose-400 border-rose-700";
+      case "AUTO_CARRIER":
+        return "bg-teal-900/30 text-teal-400 border-teal-700";
+      case "LIVESTOCK":
+        return "bg-amber-900/30 text-amber-400 border-amber-700";
+      case "LOG_TRAILER":
+        return "bg-green-900/30 text-green-400 border-green-700";
+      case "GRAIN_HOPPER": case "BULK_HOPPER":
+        return "bg-yellow-900/30 text-yellow-400 border-yellow-700";
+      case "INTERMODAL":
+        return "bg-sky-900/30 text-sky-400 border-sky-700";
+      case "CURTAINSIDE":
+        return "bg-fuchsia-900/30 text-fuchsia-400 border-fuchsia-700";
       default:
         return "bg-gray-900/30 text-slate-400 border-gray-700";
     }
@@ -388,10 +402,21 @@ export default function JobsPage() {
             >
               <option value="ALL">All Types</option>
               <option value="HAZMAT">HazMat</option>
-              <option value="REEFER">Reefer</option>
               <option value="DRY_VAN">Dry Van</option>
+              <option value="REEFER">Reefer</option>
               <option value="FLATBED">Flatbed</option>
+              <option value="STEP_DECK">Step Deck</option>
+              <option value="LOWBOY">Lowboy</option>
+              <option value="DOUBLE_DROP">Double Drop</option>
+              <option value="CONESTOGA">Conestoga</option>
               <option value="TANKER">Tanker</option>
+              <option value="AUTO_CARRIER">Auto Carrier</option>
+              <option value="LIVESTOCK">Livestock</option>
+              <option value="LOG_TRAILER">Log Trailer</option>
+              <option value="GRAIN_HOPPER">Grain Hopper</option>
+              <option value="BULK_HOPPER">Bulk Hopper</option>
+              <option value="INTERMODAL">Intermodal</option>
+              <option value="CURTAINSIDE">Curtainside</option>
             </select>
 
             <Button

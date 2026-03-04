@@ -16,6 +16,7 @@ import {
   Coffee, Timer, TrendingDown, Gauge, Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ELDConnectionPanel from "@/components/ELDConnectionPanel";
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string; lightBg: string }> = {
   driving:  { label: "Driving",  color: "text-emerald-500", bg: "bg-emerald-500",  lightBg: "bg-emerald-100" },
@@ -93,6 +94,9 @@ export default function DriverHOS() {
           )}
         </div>
       </div>
+
+      {/* ELD Connection Status */}
+      <ELDConnectionPanel compact />
 
       {/* Main Clocks */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -150,24 +150,27 @@ export default function CreateLoad() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="dry_van">Dry Van (53ft)</SelectItem>
-                  <SelectItem value="flatbed">Standard Flatbed</SelectItem>
                   <SelectItem value="reefer">Refrigerated (Reefer)</SelectItem>
-                  <SelectItem value="tanker">Petroleum Tank (MC-306)</SelectItem>
-                  <SelectItem value="gas_tank">Pressurized Gas Tank (MC-331)</SelectItem>
-                  <SelectItem value="cryogenic">Cryogenic Tank (MC-338)</SelectItem>
-                  <SelectItem value="food_grade_tank">Food-Grade Liquid Tank</SelectItem>
-                  <SelectItem value="water_tank">Water Tank</SelectItem>
+                  <SelectItem value="flatbed">Standard Flatbed</SelectItem>
                   <SelectItem value="step_deck">Step Deck / Drop Deck</SelectItem>
                   <SelectItem value="lowboy">Lowboy / RGN</SelectItem>
                   <SelectItem value="double_drop">Double Drop / Stretch</SelectItem>
-                  <SelectItem value="hazmat_van">Hazmat-Rated Dry Van</SelectItem>
                   <SelectItem value="conestoga">Conestoga (Rolling-Tarp)</SelectItem>
-                  <SelectItem value="curtainside">Curtainside / Tautliner</SelectItem>
-                  <SelectItem value="bulk_hopper">Dry Bulk / Pneumatic Hopper</SelectItem>
-                  <SelectItem value="dump_trailer">End Dump / Bottom Dump</SelectItem>
-                  <SelectItem value="intermodal">Intermodal Container Chassis</SelectItem>
+                  <SelectItem value="tanker">Petroleum Tank (MC-306)</SelectItem>
+                  <SelectItem value="gas_tank">Pressurized Gas Tank (MC-331)</SelectItem>
+                  <SelectItem value="cryogenic">Cryogenic Tank (MC-338)</SelectItem>
+                  <SelectItem value="hazmat_van">Hazmat-Rated Van</SelectItem>
+                  <SelectItem value="food_grade_tank">Food-Grade Liquid Tank</SelectItem>
+                  <SelectItem value="water_tank">Water Tank</SelectItem>
                   <SelectItem value="auto_carrier">Auto Carrier / Car Hauler</SelectItem>
                   <SelectItem value="livestock">Livestock / Cattle Pot</SelectItem>
+                  <SelectItem value="log_trailer">Log Trailer</SelectItem>
+                  <SelectItem value="grain_hopper">Grain Hopper</SelectItem>
+                  <SelectItem value="bulk_hopper">Dry Bulk / Pneumatic Hopper</SelectItem>
+                  <SelectItem value="pneumatic">Pneumatic Tank</SelectItem>
+                  <SelectItem value="dump_trailer">End Dump / Bottom Dump</SelectItem>
+                  <SelectItem value="intermodal">Intermodal Container Chassis</SelectItem>
+                  <SelectItem value="curtainside">Curtainside / Tautliner</SelectItem>
                 </SelectContent>
               </Select>
             </div>

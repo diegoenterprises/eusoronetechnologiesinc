@@ -449,7 +449,301 @@ export const trailerRegulatoryRouter = router({
       };
     }),
 
-  // 8. getRegulatorySummary — quick overview of all regulatory requirements for a trailer type
+  // 8. getStepDeckRegulations — oversize, securement, height clearance
+  getStepDeckRegulations: protectedProcedure
+    .input(z.object({
+      productId: z.string().optional(),
+      productName: z.string().optional(),
+      weight: z.number().optional(),
+      width: z.number().optional(),
+      height: z.number().optional(),
+    }).optional())
+    .query(({ input }) => {
+      const width = input?.width || 0;
+      const height = input?.height || 0;
+      const weight = input?.weight || 0;
+      const alerts: Array<{ severity: "warning" | "critical"; message: string }> = [];
+      if (width > 8.5) alerts.push({ severity: "warning", message: `Load width ${width}ft exceeds 8.5ft legal limit. Width permit required.` });
+      if (height > 13.5) alerts.push({ severity: "warning", message: `Load height ${height}ft exceeds 13.5ft. Height permit required. Verify bridge clearances.` });
+      if (weight > 80000) alerts.push({ severity: "critical", message: `GVW ${weight.toLocaleString()} lbs exceeds 80,000 lb limit. Overweight permit required.` });
+
+      return {
+        trailerType: "step_deck",
+        title: "Step Deck / Drop Deck Regulatory Compliance",
+        cargoSecurement: {
+          cfr: "49 CFR 393.100-393.136",
+          title: "Cargo Securement — Step Deck Specific",
+          requirements: [
+            { id: "sd_cs_001", rule: "49 CFR 393.126", title: "Heavy Equipment", desc: "4 tiedowns minimum for equipment >10,000 lbs. Chains required. Prevent all movement." },
+            { id: "sd_cs_002", rule: "49 CFR 393.110(b)", title: "Minimum WLL", desc: "Aggregate WLL >= 50% cargo weight forward, rearward, and each side." },
+            { id: "sd_cs_003", rule: "49 CFR 393.104", title: "Tiedown Condition", desc: "No knots in webbing. All components rated for load. Edge protectors on sharp edges." },
+          ],
+        },
+        heightAdvantage: {
+          title: "Step Deck Height Advantage",
+          guidelines: [
+            { id: "sd_ha_001", title: "Upper Deck", desc: "~60in from ground — same as standard flatbed. Useful for shorter items." },
+            { id: "sd_ha_002", title: "Lower Deck", desc: "~38-42in from ground — provides ~18-22in extra height clearance vs flatbed." },
+            { id: "sd_ha_003", title: "Loading", desc: "Equipment drives up ramps onto lower deck. No crane required for self-propelled loads." },
+          ],
+        },
+        alerts,
+        inspectionChecklist: [
+          "Verify all chains/binders rated for load weight (Grade 70/80)",
+          "Check ramp condition and weight rating for drive-on loading",
+          "Confirm equipment is drained of fluids and bucket/blade lowered",
+          "Verify aggregate WLL >= 50% cargo weight in all directions",
+          "Check oversize permits on-board if applicable",
+          "Confirm bridge clearance for route (lower deck advantage)",
+          "Document load dimensions and weight on BOL",
+        ],
+      };
+    }),
+
+  // 9. getAutoCarrierRegulations — vehicle transport, VIN verification, damage reporting
+  getAutoCarrierRegulations: protectedProcedure
+    .input(z.object({
+      vehicleCount: z.number().optional(),
+      hasExotics: z.boolean().optional(),
+      hasNonRunning: z.boolean().optional(),
+    }).optional())
+    .query(({ input }) => {
+      const vehicleCount = input?.vehicleCount || 0;
+      const hasExotics = input?.hasExotics || false;
+      const hasNonRunning = input?.hasNonRunning || false;
+
+      return {
+        trailerType: "auto_carrier",
+        title: "Auto Carrier Regulatory Compliance",
+        vehicleSecurement: {
+          cfr: "49 CFR 393.128",
+          title: "Automobile & Light Truck Securement",
+          requirements: [
+            { id: "ac_vs_001", rule: "49 CFR 393.128(a)", title: "Minimum Tiedowns", desc: "Minimum 2 tiedowns per vehicle. Must prevent forward, rearward, and lateral movement." },
+            { id: "ac_vs_002", rule: "49 CFR 393.128(b)", title: "Wheel Chocks/Tire Straps", desc: "Vehicles must be secured by tire straps, wheel nets, or wheel chocks plus tiedowns." },
+            { id: "ac_vs_003", rule: "49 CFR 393.104", title: "Tiedown Rating", desc: "Each tiedown must have sufficient WLL. Ratchet straps or chains per vehicle weight." },
+            { id: "ac_vs_004", rule: "49 CFR 393.128(c)", title: "Parking Brake", desc: "Set parking brake on each vehicle. Transmission in Park (auto) or gear (manual)." },
+          ],
+        },
+        conditionReporting: {
+          title: "Vehicle Condition Reporting",
+          requirements: [
+            { id: "ac_cr_001", title: "Pre-Transport Inspection", desc: "Walk-around inspection of every vehicle at pickup. Document existing damage with photos." },
+            { id: "ac_cr_002", title: "Condition Report (BOL)", desc: "Detailed condition report signed by shipper and driver. Note scratches, dents, chips." },
+            { id: "ac_cr_003", title: "Delivery Inspection", desc: "Walk-around at delivery. Any new damage must be noted and reported immediately." },
+            { id: "ac_cr_004", title: "VIN Verification", desc: "Verify VIN matches BOL for every vehicle loaded. Cross-check make/model/color." },
+          ],
+        },
+        specialConsiderations: {
+          title: "Special Vehicle Types",
+          requirements: [
+            ...(hasExotics ? [{ id: "ac_sc_001", title: "Exotic/Luxury Vehicles", desc: "Enclosed carrier recommended. No stacking above exotics. Extra padding/blankets. Covered transport only." }] : []),
+            ...(hasNonRunning ? [{ id: "ac_sc_002", title: "Non-Running / Salvage", desc: "Winch required for loading. Verify fluid containment — drip pans under engine/trans. Secure with additional tiedowns." }] : []),
+            { id: "ac_sc_003", title: "Electric Vehicles (EVs)", desc: "Heavy due to batteries (4,000-6,000 lbs). May reduce load count. Verify SOC (state of charge) is 20-80%." },
+            { id: "ac_sc_004", title: "Drip Pans", desc: "Place drip pans under all vehicles to prevent fluid leaks onto vehicles below." },
+          ],
+        },
+        alerts: vehicleCount > 10 ? [{
+          severity: "warning" as const,
+          message: `${vehicleCount} vehicles exceeds typical open carrier capacity of 7-10 vehicles. May need multiple loads.`,
+        }] : [],
+        inspectionChecklist: [
+          "Verify VIN for each vehicle matches BOL",
+          "Complete condition report with photos at pickup",
+          "Set parking brake and transmission in Park on each vehicle",
+          "Verify minimum 2 tiedowns per vehicle (tire straps or wheel nets)",
+          "Place drip pans under all vehicles",
+          hasExotics ? "Use enclosed carrier for exotic/luxury vehicles" : null,
+          hasNonRunning ? "Verify winch capacity for non-running vehicles" : null,
+          "Check carrier dimensions: 8.5ft width / 13.5ft height / 75ft length",
+          "Document vehicle count, VINs, and condition on BOL",
+        ].filter(Boolean),
+      };
+    }),
+
+  // 10. getLivestockRegulations — 28-Hour Law, USDA health certs, animal welfare
+  getLivestockRegulations: protectedProcedure
+    .input(z.object({
+      animalType: z.string().optional(),
+      headCount: z.number().optional(),
+      isInterstate: z.boolean().optional(),
+    }).optional())
+    .query(({ input }) => {
+      const isInterstate = input?.isInterstate !== false;
+
+      return {
+        trailerType: "livestock",
+        title: "Livestock Transport Regulatory Compliance",
+        twentyEightHourLaw: {
+          statute: "49 USC 80502",
+          title: "28-Hour Law — Animal Transport",
+          requirements: [
+            { id: "ls_28_001", rule: "49 USC 80502(a)", title: "Maximum Transit Time", desc: "Animals may not be confined >28 consecutive hours without unloading for feed, water, and rest." },
+            { id: "ls_28_002", rule: "49 USC 80502(b)", title: "Rest Period", desc: "Minimum 5 consecutive hours of rest after unloading. Adequate feed, water, and space." },
+            { id: "ls_28_003", rule: "49 USC 80502(c)", title: "Extension to 36 Hours", desc: "Shipper may request extension to 36 hours by written consent. Document on BOL." },
+            { id: "ls_28_004", title: "Penalty", desc: "Violation: $500-$5,000 per offense. USDA APHIS enforcement." },
+          ],
+        },
+        usdaHealth: isInterstate ? {
+          title: "USDA Interstate Health Requirements",
+          requirements: [
+            { id: "ls_uh_001", title: "Certificate of Veterinary Inspection (CVI)", desc: "Required for interstate transport. Issued by accredited veterinarian within 30 days." },
+            { id: "ls_uh_002", title: "Brand Inspection", desc: "Required in western states (MT, WY, SD, CO, NM, NV, ID, etc.). Proof of ownership." },
+            { id: "ls_uh_003", title: "Brucellosis/TB Testing", desc: "Some states require negative test results for cattle. Check destination state requirements." },
+            { id: "ls_uh_004", title: "Trichomoniasis Testing", desc: "Required for breeding bulls in many states. Test within 60 days." },
+            { id: "ls_uh_005", title: "USDA Back Tags", desc: "Back tags required for cattle moving to slaughter. Applied at origin." },
+          ],
+        } : null,
+        animalWelfare: {
+          title: "Animal Welfare & Loading Standards",
+          requirements: [
+            { id: "ls_aw_001", title: "Loading Density", desc: "Cattle: 14-17 sq ft per head (1200 lb). Hogs: 3.6-4.0 sq ft per head (250 lb). Do NOT overload." },
+            { id: "ls_aw_002", title: "Ventilation", desc: "Adequate airflow. Adjust louvers for temperature. Livestock generates significant heat." },
+            { id: "ls_aw_003", title: "Non-Slip Flooring", desc: "Trailer floor must have non-slip surface. Sand or shavings for bedding." },
+            { id: "ls_aw_004", title: "Heat Stress", desc: "Above 80F: reduce loading density 10-15%. Above 90F: consider delaying transport." },
+            { id: "ls_aw_005", title: "Cold Stress", desc: "Below 20F: bedding required. Wind chill protection. Fresh-shorn sheep extremely vulnerable." },
+            { id: "ls_aw_006", title: "Water", desc: "Water available during rest stops. Cattle drink 10-20 gallons/day." },
+          ],
+        },
+        hosExemption: {
+          title: "FMCSA HOS Exemption for Livestock",
+          requirements: [
+            { id: "ls_hos_001", title: "Agricultural Exemption", desc: "Livestock carriers exempt from HOS within 150 air-miles of source. Check state-specific rules." },
+            { id: "ls_hos_002", title: "Adverse Conditions", desc: "Animal welfare emergency allows extended driving to reach unloading facility." },
+          ],
+        },
+        alerts: [],
+        inspectionChecklist: [
+          "Verify CVI (health certificate) is current and on-board",
+          "Check brand inspection documentation (western states)",
+          "Verify loading density is within USDA guidelines",
+          "Confirm trailer ventilation and non-slip flooring",
+          "Check bedding material if required by temperature",
+          "Verify 28-hour timer — plan rest stops accordingly",
+          "Check water and feed supplies",
+          "Confirm destination state entry requirements met",
+          "Document head count, species, and origin on BOL",
+        ],
+      };
+    }),
+
+  // 11. getLogTrailerRegulations — 49 CFR 393.116, timber transport
+  getLogTrailerRegulations: protectedProcedure
+    .input(z.object({
+      weight: z.number().optional(),
+      logLength: z.number().optional(),
+    }).optional())
+    .query(({ input }) => {
+      const weight = input?.weight || 0;
+      const alerts: Array<{ severity: "warning" | "critical"; message: string }> = [];
+      if (weight > 88000) alerts.push({ severity: "critical", message: `Weight ${weight.toLocaleString()} lbs exceeds typical timber overweight tolerance. Check state limits.` });
+
+      return {
+        trailerType: "log_trailer",
+        title: "Log Trailer Regulatory Compliance",
+        cargoSecurement: {
+          cfr: "49 CFR 393.116",
+          title: "Logs — Specific Securement Requirements",
+          requirements: [
+            { id: "lt_cs_001", rule: "49 CFR 393.116(a)", title: "Shortwood (<=10ft Bunks)", desc: "Minimum 2 tiedowns per stack. Outer logs must not extend above stakes." },
+            { id: "lt_cs_002", rule: "49 CFR 393.116(b)", title: "Longwood (Tree-Length)", desc: "Center bunk tiedowns plus end restraints. Prevent forward/rearward shifting." },
+            { id: "lt_cs_003", rule: "49 CFR 393.116(c)", title: "Independent Stacks", desc: "Each stack must be independently secured. Adjacent stack failure must not cause cascade." },
+            { id: "lt_cs_004", rule: "49 CFR 393.116(d)", title: "Wrapper Chains", desc: "Wrapper chains around each bunk. Binders tight. No slack." },
+            { id: "lt_cs_005", title: "Stakes/Bolsters", desc: "Trailer stakes must be in good condition. Proper height above log stack. Check welds." },
+          ],
+        },
+        weightCompliance: {
+          title: "Timber Weight Compliance",
+          requirements: [
+            { id: "lt_wc_001", title: "State Overweight Tolerance", desc: "Many states allow 5-10% overweight for timber/forest products. Check route states." },
+            { id: "lt_wc_002", title: "Scaled Weight", desc: "Get scaled weight ticket at origin (log yard or scale). Some states require certified scales." },
+            { id: "lt_wc_003", title: "Axle Weight Distribution", desc: "Tri-axle and spread-axle trailers common. Proper bunk placement for weight distribution." },
+          ],
+        },
+        safetyRequirements: {
+          title: "Logging Truck Safety",
+          requirements: [
+            { id: "lt_sr_001", title: "Road Conditions", desc: "Logging roads often unpaved, steep, narrow. Low-range gearing. Jake brake recommended." },
+            { id: "lt_sr_002", title: "Rollover Risk", desc: "High center of gravity. Reduce speed on curves. Load wider logs on bottom." },
+            { id: "lt_sr_003", title: "Debris", desc: "Loose bark and limbs must be secured. No debris falling from load onto roadway." },
+          ],
+        },
+        alerts,
+        inspectionChecklist: [
+          "Verify wrapper chains tight on each bunk",
+          "Check all stakes/bolsters for damage or cracks",
+          "Confirm no logs extend above stake height",
+          "Get scaled weight ticket at origin",
+          "Check state timber transport permits on-board",
+          "Verify binders are properly tightened",
+          "Remove loose bark/debris that could fall on roadway",
+          "Check brake system — logging trucks need maximum braking",
+          "Document species, volume (MBF or tons), and destination on BOL",
+        ],
+      };
+    }),
+
+  // 12. getGrainHopperRegulations — USDA grain inspection, harvest overweight
+  getGrainHopperRegulations: protectedProcedure
+    .input(z.object({
+      grainType: z.string().optional(),
+      bushels: z.number().optional(),
+      isHarvestSeason: z.boolean().optional(),
+    }).optional())
+    .query(({ input }) => {
+      const bushels = input?.bushels || 0;
+      const isHarvest = input?.isHarvestSeason || false;
+
+      return {
+        trailerType: "grain_hopper",
+        title: "Grain Hopper Regulatory Compliance",
+        usdaGrading: {
+          title: "USDA Federal Grain Inspection Service (FGIS)",
+          requirements: [
+            { id: "gh_ug_001", title: "Grade Determination", desc: "Grain graded at elevator by FGIS-licensed inspector. Grade determines price and acceptance." },
+            { id: "gh_ug_002", title: "Moisture Content", desc: "Must meet grade spec. Corn: 15.5% max (#2). Wet grain may be docked or rejected." },
+            { id: "gh_ug_003", title: "Test Weight", desc: "Bushel weight determines grade. Corn #2: 54 lbs/bu min. Wheat #1: 60 lbs/bu min." },
+            { id: "gh_ug_004", title: "Foreign Material / Damage", desc: "Max % foreign material, damaged kernels, heat damage per grade. Affects price." },
+            { id: "gh_ug_005", title: "Mycotoxin Testing", desc: "Aflatoxin, DON/vomitoxin, fumonisin testing may be required. FDA action levels apply." },
+          ],
+        },
+        weightCompliance: {
+          title: "Weight Compliance & Harvest Exemptions",
+          requirements: [
+            { id: "gh_wc_001", title: "Federal GVW", desc: "80,000 lbs on interstate. Grain hopper tare ~12,000-14,000 lbs. Max payload ~46,000 lbs." },
+            { id: "gh_wc_002", title: "Harvest Exemption", desc: isHarvest
+              ? "HARVEST SEASON ACTIVE: Many states allow 5-10% overweight for grain from field to elevator. Check state-specific rules."
+              : "Outside harvest season — standard weight limits apply. Some states have year-round ag tolerance." },
+            { id: "gh_wc_003", title: "Scale Tickets", desc: "Weigh at certified scale. Weight ticket required for elevator delivery." },
+          ],
+        },
+        trailerRequirements: {
+          title: "Grain Hopper Trailer Requirements",
+          requirements: [
+            { id: "gh_tr_001", title: "Clean Trailer", desc: "No cross-contamination. Sweep thoroughly between grain types. Identity-preserved (IP) loads need dedicated clean trailers." },
+            { id: "gh_tr_002", title: "Hopper Lids", desc: "All lids must seal completely. Moisture intrusion ruins grain. Check gaskets." },
+            { id: "gh_tr_003", title: "Hopper Gates", desc: "Gates must open/close properly for gravity unloading. No grain leakage during transport." },
+            { id: "gh_tr_004", title: "Fumigation Records", desc: "If hauling stored grain, fumigation records may be required. Document treatment dates/chemicals." },
+          ],
+        },
+        alerts: bushels > 1000 ? [{
+          severity: "warning" as const,
+          message: `${bushels.toLocaleString()} bushels may exceed single-trailer capacity (~900-1000 bushels typical). Verify weight.`,
+        }] : [],
+        inspectionChecklist: [
+          "Sweep trailer clean — no residual grain from prior load",
+          "Check all hopper lids seal properly (gaskets intact)",
+          "Verify hopper gates operate and don't leak",
+          "Get scaled weight at certified scale",
+          isHarvest ? "Verify harvest season overweight tolerance for route states" : "Confirm weight within 80,000 lb GVW limit",
+          "Check grain moisture and condition before loading",
+          "Document grain type, grade, bushels, and weight on BOL",
+          "Verify destination elevator acceptance criteria",
+        ].filter(Boolean),
+      };
+    }),
+
+  // 13. getRegulatorySummary — quick overview of all regulatory requirements for a trailer type
   getRegulatorySummary: protectedProcedure
     .input(z.object({
       trailerType: z.string(),
@@ -505,6 +799,62 @@ export const trailerRegulatoryRouter = router({
           keyRequirements: ["NSF 61 certification (potable)", "Chlorine residual testing (potable)", "SWD well permits (oilfield)", "Surge/baffle safety — highest rollover risk", "5% headspace for thermal expansion"],
           driverEndorsements: ["CDL Class A", "N (Tanker) Endorsement"],
           permitTypes: ["State water hauler permit (potable)", "EPA UIC Class II (oilfield disposal)", "SPCC plan (near waterways)"],
+        },
+        step_deck: {
+          title: "Step Deck / Drop Deck",
+          primaryRegulations: ["49 CFR 393.100-393.136 (Cargo Securement)", "49 CFR 393.126 (Heavy Vehicles/Equipment)", "State Oversize/Overweight Laws"],
+          keyRequirements: ["WLL >= 50% cargo weight each direction", "4-point chain minimum for equipment >10,000 lbs", "Height clearance advantage — verify bridge ratings", "Oversize permits if width >8.5ft", "Equipment must be drained of fluids/fuel"],
+          driverEndorsements: ["CDL Class A"],
+          permitTypes: ["Width Permit", "Height Permit", "Overweight Permit"],
+        },
+        lowboy: {
+          title: "Lowboy / RGN",
+          primaryRegulations: ["49 CFR 393.126 (Heavy Vehicles/Equipment/Machinery)", "49 CFR 393.100-393.136 (Cargo Securement)", "State Superload Laws", "FHWA Bridge Formula"],
+          keyRequirements: ["Detachable gooseneck for drive-on loading", "4-point chain minimum — Grade 80 chains for >40k lbs", "Route survey for superloads (bridge ratings, turn radii)", "Pilot/escort vehicles for oversize", "Equipment drained, blade/bucket lowered"],
+          driverEndorsements: ["CDL Class A"],
+          permitTypes: ["Width Permit", "Height Permit", "Overweight Permit", "Superload Permit", "State DOT Route Approval"],
+        },
+        double_drop: {
+          title: "Double Drop / Stretch",
+          primaryRegulations: ["49 CFR 393.126 (Heavy Vehicles/Equipment)", "49 CFR 393.100-393.136 (Cargo Securement)", "State Superload Laws"],
+          keyRequirements: ["Maximum well depth for tall cargo", "Route survey mandatory for height-critical loads", "Bridge clearance verification at every overpass", "Multi-axle weight distribution", "Escort vehicles front and rear"],
+          driverEndorsements: ["CDL Class A"],
+          permitTypes: ["Width Permit", "Height Permit", "Length Permit", "Overweight Permit", "Superload Permit"],
+        },
+        conestoga: {
+          title: "Conestoga (Rolling-Tarp)",
+          primaryRegulations: ["49 CFR 393.100-393.136 (Cargo Securement)", "49 CFR 393.118 (Metal Coils/Pipe)", "49 CFR 393.114 (Lumber)"],
+          keyRequirements: ["Weather protection without tarping delay", "Same securement as flatbed — WLL >= 50%", "Coil racks for steel coils", "No moisture damage for paper/drywall/cement", "Side-loading capability for forklifts"],
+          driverEndorsements: ["CDL Class A"],
+          permitTypes: ["Overweight Permit (if applicable)"],
+        },
+        auto_carrier: {
+          title: "Auto Carrier / Car Hauler",
+          primaryRegulations: ["49 CFR 393.128 (Automobiles/Light Trucks)", "49 CFR 393.104 (Tiedown Devices)", "FMCSA Vehicle Transport Regulations"],
+          keyRequirements: ["Minimum 2 tiedowns per vehicle (49 CFR 393.128)", "Prevent forward/rearward/lateral movement", "Drip pans for fluid leaks", "VIN verification before loading", "Damage inspection report (condition report) at pickup and delivery", "Maximum 8.5ft width / 13.5ft height / 75ft length"],
+          driverEndorsements: ["CDL Class A"],
+          permitTypes: [],
+        },
+        livestock: {
+          title: "Livestock / Cattle Pot",
+          primaryRegulations: ["49 USC 80502 (28-Hour Law)", "USDA APHIS 9 CFR (Animal Transport)", "FMCSA HOS Exemption for Livestock", "State Brand Inspection Laws"],
+          keyRequirements: ["28-Hour Rule: unload for feed/water/rest every 28 hrs", "USDA health certificates for interstate transport", "Brand inspection at origin (western states)", "Temperature monitoring — heat stress kills", "Trailer ventilation and non-slip flooring", "Loading density per USDA guidelines"],
+          driverEndorsements: ["CDL Class A"],
+          permitTypes: ["USDA Health Certificate (CVI)", "State Brand Inspection", "State Livestock Transport Permit"],
+        },
+        log_trailer: {
+          title: "Log Trailer",
+          primaryRegulations: ["49 CFR 393.116 (Logs — Specific Securement)", "State Forest Products Transport Laws", "State Weight Tolerance (Timber)"],
+          keyRequirements: ["49 CFR 393.116: minimum 2 tiedowns for <10ft bunk", "Each stack independently secured", "Wrapper chains on each bunk", "No logs extending beyond trailer stakes", "Scaled weight ticket from certified scales", "State timber harvest permits"],
+          driverEndorsements: ["CDL Class A"],
+          permitTypes: ["State Timber Transport Permit", "Forest Road Access Permit", "Agricultural/Timber Overweight Tolerance"],
+        },
+        grain_hopper: {
+          title: "Grain Hopper",
+          primaryRegulations: ["USDA Federal Grain Inspection Service (FGIS)", "23 USC 127 (Weight Limits)", "State Harvest Season Overweight Tolerance"],
+          keyRequirements: ["USDA grade inspection at elevator", "Certified scale weight tickets", "Hopper lids sealed to prevent moisture/contamination", "Clean trailer — no cross-contamination between grain types", "Fumigation records if stored grain", "Harvest season overweight tolerance (5-10% in many states)"],
+          driverEndorsements: ["CDL Class A"],
+          permitTypes: ["Harvest Season Overweight Permit", "State Agricultural Exemption"],
         },
       };
 

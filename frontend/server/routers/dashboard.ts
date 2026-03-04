@@ -28,6 +28,7 @@ import {
   certifications,
 } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte, count, sum } from "drizzle-orm";
+import { getSafetyScores, getCrashSummary, getInsuranceStatus, getAuthority, getOOSStatus } from "../services/fmcsaBulkLookup";
 
 // Helper to get date ranges
 const getDateRange = (days: number) => {
@@ -299,7 +300,7 @@ export const dashboardRouter = router({
         .where(eq(companies.id, companyId))
         .limit(1);
 
-      const alerts = [];
+      const alerts: any[] = [];
       
       if (company[0]) {
         if (company[0].insuranceExpiry && new Date(company[0].insuranceExpiry) < thirtyDaysFromNow) {
@@ -317,6 +318,40 @@ export const dashboardRouter = router({
             message: 'Hazmat license expires soon',
             expiry: company[0].hazmatExpiry,
           });
+        }
+
+        // ── FMCSA Bulk Data: insurance, authority, OOS alerts ──
+        const dotNumber = company[0].dotNumber;
+        if (dotNumber) {
+          try {
+            const [fmcsaIns, fmcsaAuth, oosStatus, sms] = await Promise.all([
+              getInsuranceStatus(dotNumber),
+              getAuthority(dotNumber),
+              getOOSStatus(dotNumber),
+              getSafetyScores(dotNumber),
+            ]);
+            if (oosStatus.outOfService) {
+              alerts.push({ type: 'oos', severity: 'critical', message: `FMCSA Out of Service: ${oosStatus.reason}`, source: 'fmcsa_bulk' });
+            }
+            if (fmcsaIns && !fmcsaIns.isCompliant) {
+              alerts.push({ type: 'insurance', severity: 'critical', message: 'FMCSA: Insurance below minimum BIPD ($750K)', bipdOnFile: fmcsaIns.bipdLimit, source: 'fmcsa_bulk' });
+            }
+            if (fmcsaIns && fmcsaIns.nearestExpiry) {
+              const expiryDate = new Date(fmcsaIns.nearestExpiry);
+              if (expiryDate < thirtyDaysFromNow) {
+                alerts.push({ type: 'insurance', severity: 'warning', message: `FMCSA: Insurance expiring ${fmcsaIns.nearestExpiry}`, expiry: fmcsaIns.nearestExpiry, source: 'fmcsa_bulk' });
+              }
+            }
+            if (fmcsaAuth && !fmcsaAuth.commonAuthActive && !fmcsaAuth.brokerAuthActive) {
+              alerts.push({ type: 'authority', severity: 'critical', message: `FMCSA: No active operating authority (status: ${fmcsaAuth.authorityStatus})`, source: 'fmcsa_bulk' });
+            }
+            if (sms) {
+              if (sms.unsafeDrivingAlert) alerts.push({ type: 'safety', severity: 'warning', message: `FMCSA BASIC Alert: Unsafe Driving (${sms.unsafeDrivingScore})`, source: 'fmcsa_bulk' });
+              if (sms.hosAlert) alerts.push({ type: 'safety', severity: 'warning', message: `FMCSA BASIC Alert: HOS Compliance (${sms.hosScore})`, source: 'fmcsa_bulk' });
+              if (sms.crashIndicatorAlert) alerts.push({ type: 'safety', severity: 'warning', message: `FMCSA BASIC Alert: Crash Indicator (${sms.crashIndicatorScore})`, source: 'fmcsa_bulk' });
+              if (sms.vehicleMaintenanceAlert) alerts.push({ type: 'safety', severity: 'warning', message: `FMCSA BASIC Alert: Vehicle Maintenance (${sms.vehicleMaintenanceScore})`, source: 'fmcsa_bulk' });
+            }
+          } catch {}
         }
       }
 
@@ -400,8 +435,29 @@ export const dashboardRouter = router({
       const t = totalInsp?.count || 0;
       const oosRate = t > 0 ? Math.round(((oosInsp?.count || 0) / t) * 100) : 0;
       const defectRate = t > 0 ? Math.round(((defectInsp?.count || 0) / t) * 100) : 0;
-      const mkScore = (rate: number) => ({ score: rate, threshold: 65, status: rate > 65 ? 'alert' : rate > 50 ? 'warning' : 'ok' });
-      return { unsafeDriving: mkScore(defectRate), hosCompliance: mkScore(0), driverFitness: mkScore(0), controlledSubstances: mkScore(0), vehicleMaintenance: mkScore(oosRate), hazmatCompliance: mkScore(0), crashIndicator: mkScore(0), lastUpdated: new Date().toISOString() };
+
+      // ── FMCSA Bulk Data: real SMS BASIC scores ──
+      const [comp] = await db.select({ dotNumber: companies.dotNumber }).from(companies).where(eq(companies.id, companyId)).limit(1);
+      const dotNumber = comp?.dotNumber || '';
+      const sms = dotNumber ? await getSafetyScores(dotNumber) : null;
+
+      const mkScore = (fmcsaScore: number | null, fallback: number, threshold: number) => {
+        const score = fmcsaScore ?? fallback;
+        return { score, threshold, status: score > threshold ? 'alert' : score > (threshold * 0.77) ? 'warning' : 'ok', fmcsaData: fmcsaScore !== null };
+      };
+
+      return {
+        unsafeDriving: mkScore(sms?.unsafeDrivingScore ?? null, defectRate, 65),
+        hosCompliance: mkScore(sms?.hosScore ?? null, 0, 65),
+        driverFitness: mkScore(sms?.driverFitnessScore ?? null, 0, 80),
+        controlledSubstances: mkScore(sms?.controlledSubstancesScore ?? null, 0, 80),
+        vehicleMaintenance: mkScore(sms?.vehicleMaintenanceScore ?? null, oosRate, 80),
+        hazmatCompliance: mkScore(sms?.hazmatScore ?? null, 0, 80),
+        crashIndicator: mkScore(sms?.crashIndicatorScore ?? null, 0, 65),
+        lastUpdated: sms?.runDate || new Date().toISOString(),
+        dataSource: sms ? 'fmcsa_bulk_9.8M' : 'platform_internal',
+        fmcsaOosRates: sms ? { driver: sms.driverOosRate, vehicle: sms.vehicleOosRate } : null,
+      };
     } catch { return getSeedCSAScores(); }
   }),
 
@@ -542,7 +598,20 @@ export const dashboardRouter = router({
       const [major] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), sql`${incidents.severity} IN ('major','critical')`, gte(incidents.occurredAt, startOfYear)));
       const [fatal] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), sql`${incidents.fatalities} > 0`, gte(incidents.occurredAt, startOfYear)));
       const [lastInc] = await db.select({ occurredAt: incidents.occurredAt }).from(incidents).where(eq(incidents.companyId, companyId)).orderBy(sql`${incidents.occurredAt} DESC`).limit(1);
-      return { ytd: ytd?.count || 0, lastIncident: lastInc?.occurredAt?.toISOString().split('T')[0] || 'N/A', severity: { minor: minor?.count || 0, major: major?.count || 0, fatal: fatal?.count || 0 }, trend: '0%', preventable: 0, nonPreventable: 0 };
+
+      // ── FMCSA Bulk Data: carrier crash history context ──
+      let fmcsaCrashData: any = null;
+      try {
+        const [comp] = await db.select({ dotNumber: companies.dotNumber }).from(companies).where(eq(companies.id, companyId)).limit(1);
+        if (comp?.dotNumber) {
+          const crashData = await getCrashSummary(comp.dotNumber, 3);
+          if (crashData) {
+            fmcsaCrashData = { totalOnRecord: crashData.totalCrashes, fatalities: crashData.totalFatalities, injuries: crashData.totalInjuries, towAways: crashData.towAways, hazmatReleases: crashData.hazmatReleases, dataSource: 'fmcsa_bulk_9.8M' };
+          }
+        }
+      } catch {}
+
+      return { ytd: ytd?.count || 0, lastIncident: lastInc?.occurredAt?.toISOString().split('T')[0] || 'N/A', severity: { minor: minor?.count || 0, major: major?.count || 0, fatal: fatal?.count || 0 }, trend: '0%', preventable: 0, nonPreventable: 0, fmcsaCrashData };
     } catch { return getSeedAccidentTracker(); }
   }),
 

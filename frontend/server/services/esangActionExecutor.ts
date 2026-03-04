@@ -582,6 +582,378 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
       };
     },
   },
+  // ── FMCSA Carrier Intelligence Actions ─────────────────────────────────────
+
+  carrier_lookup: {
+    allowedRoles: ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+    description: "Look up a carrier by DOT number, MC number, or company name. Returns carrier profile, authority, insurance, and safety summary.",
+    schema: z.object({
+      dotNumber: z.string().optional(),
+      query: z.string().optional(),
+    }),
+    handler: async (_ctx, params) => {
+      const p = params as { dotNumber?: string; query?: string };
+      try {
+        const { lookupCarrier, searchCarriers } = await import("./carrierMonitor");
+        if (p.dotNumber) {
+          const carrier = await lookupCarrier(p.dotNumber.replace(/\D/g, ""));
+          if (carrier) {
+            return {
+              success: true, action: "carrier_lookup",
+              message: `**${carrier.legalName}** (DOT# ${carrier.dotNumber})\n• MC#: ${carrier.mcNumber || "N/A"}\n• Authority: ${carrier.authorityStatus || "N/A"} | Insurance: ${carrier.insuranceStatus || "N/A"}\n• Drivers: ${carrier.drivers || 0} | Power Units: ${carrier.powerUnits || 0}\n• HazMat: ${carrier.hazmat ? "Yes" : "No"} | OOS Order: ${carrier.oosOrder ? "YES ⚠️" : "None"}\n• Phone: ${carrier.phone || "N/A"} | ${carrier.city || ""}, ${carrier.state || ""}`,
+              data: carrier as any,
+            };
+          }
+          return { success: false, action: "carrier_lookup", message: `No carrier found for DOT# ${p.dotNumber}` };
+        }
+        if (p.query) {
+          const results = await searchCarriers(p.query, 5);
+          if (results.length > 0) {
+            const list = results.map(c => `• **${c.legalName}** — DOT# ${c.dotNumber}${c.mcNumber ? ` | MC# ${c.mcNumber}` : ""}`).join("\n");
+            return { success: true, action: "carrier_lookup", message: `Found ${results.length} carrier(s):\n${list}`, data: { carriers: results } };
+          }
+          return { success: false, action: "carrier_lookup", message: `No carriers found matching "${p.query}"` };
+        }
+        return { success: false, action: "carrier_lookup", message: "Please provide a DOT number or search query." };
+      } catch (err: any) {
+        return { success: false, action: "carrier_lookup", message: "Carrier lookup service unavailable.", error: err?.message };
+      }
+    },
+  },
+
+  carrier_safety: {
+    allowedRoles: ["SHIPPER", "CATALYST", "BROKER", "DISPATCH", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+    description: "Get SMS BASIC safety scores for a carrier by DOT number. Shows unsafe driving, HOS, vehicle maintenance, crash indicator, and other BASIC scores.",
+    schema: z.object({ dotNumber: z.string() }),
+    handler: async (_ctx, params) => {
+      const p = params as { dotNumber: string };
+      try {
+        const { getCarrierSnapshot } = await import("./carrierMonitor");
+        const snapshot = await getCarrierSnapshot(p.dotNumber.replace(/\D/g, ""));
+        if (!snapshot) return { success: false, action: "carrier_safety", message: `No safety data found for DOT# ${p.dotNumber}` };
+
+        const lines: string[] = [`**Safety Scores for ${snapshot.legalName}** (DOT# ${snapshot.dotNumber})`];
+        const scores: Array<[string, number | null, boolean]> = [
+          ["Unsafe Driving", snapshot.unsafeDrivingScore, snapshot.unsafeDrivingAlert],
+          ["HOS Compliance", snapshot.hosScore, snapshot.hosAlert],
+          ["Vehicle Maintenance", snapshot.vehicleMaintenanceScore, snapshot.vehicleMaintenanceAlert],
+          ["Crash Indicator", snapshot.crashIndicatorScore, snapshot.crashIndicatorAlert],
+          ["HazMat", snapshot.hazmatScore, snapshot.hazmatAlert],
+        ];
+        for (const [label, score, alert] of scores) {
+          if (score != null) {
+            const flag = alert ? " ⚠️ ALERT" : score > 50 ? " ⚡ Elevated" : " ✅";
+            lines.push(`• ${label}: **${score.toFixed(1)}**${flag}`);
+          }
+        }
+        lines.push(`• OOS Order: ${snapshot.oosOrderActive ? "YES ⚠️" : "None"}`);
+        lines.push(`• Insurance Status: ${snapshot.insuranceStatus || "Unknown"}`);
+        lines.push(`• Authority Status: ${snapshot.authorityStatus || "Unknown"}`);
+
+        return { success: true, action: "carrier_safety", message: lines.join("\n"), data: snapshot as any };
+      } catch (err: any) {
+        // Fallback: try SAFER API
+        try {
+          const { fetchCarrierFromSaferApi } = await import("./carrierMonitor");
+          const apiData = await fetchCarrierFromSaferApi(p.dotNumber.replace(/\D/g, ""));
+          if (apiData) {
+            const c = apiData.carrier;
+            const lines = [`**${c.legalName || "Carrier"}** (DOT# ${p.dotNumber}) — via FMCSA API`];
+            lines.push(`• Driver OOS Rate: ${c.driverOosRate || 0}% | Vehicle OOS Rate: ${c.vehicleOosRate || 0}%`);
+            lines.push(`• Driver Inspections: ${c.driverInsp || 0} | Vehicle Inspections: ${c.vehicleInsp || 0}`);
+            if (apiData.basics?.length) {
+              for (const b of apiData.basics) {
+                const name = b.basicName || b.basicsName || "Unknown";
+                const score = b.basicsMeasure ?? b.measure ?? b.percentile ?? "N/A";
+                lines.push(`• ${name}: ${score}`);
+              }
+            }
+            return { success: true, action: "carrier_safety", message: lines.join("\n"), data: apiData as any };
+          }
+        } catch {}
+        return { success: false, action: "carrier_safety", message: "Safety data unavailable.", error: err?.message };
+      }
+    },
+  },
+
+  carrier_insurance: {
+    allowedRoles: ["SHIPPER", "CATALYST", "BROKER", "DISPATCH", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+    description: "Check insurance status and filings for a carrier by DOT number",
+    schema: z.object({ dotNumber: z.string() }),
+    handler: async (_ctx, params) => {
+      const p = params as { dotNumber: string };
+      try {
+        const dot = p.dotNumber.replace(/\D/g, "");
+        const { getPool } = await import("../db");
+        const pool = getPool();
+        let activeRows: any[] = [];
+        if (pool) {
+          try {
+            const [rows]: any = await pool.query(
+              `SELECT * FROM fmcsa_insurance WHERE dot_number = ? AND is_active = TRUE ORDER BY coverage_to DESC LIMIT 5`, [dot]
+            );
+            activeRows = rows || [];
+          } catch {}
+        }
+        if (activeRows.length > 0) {
+          const lines = [`**Active Insurance for DOT# ${dot}** (${activeRows.length} policy/policies)`];
+          for (const r of activeRows) {
+            lines.push(`• ${r.insurance_type || "General"}: ${r.insurance_carrier || "N/A"} — BIPD $${r.bipd_max_limit ? Number(r.bipd_max_limit).toLocaleString() : "N/A"} (${r.coverage_from || "?"} to ${r.coverage_to || "?"})`);
+          }
+          return { success: true, action: "carrier_insurance", message: lines.join("\n"), data: { active: activeRows } };
+        }
+        // Fallback to SAFER API
+        const { fetchCarrierFromSaferApi } = await import("./carrierMonitor");
+        const apiData = await fetchCarrierFromSaferApi(dot);
+        if (apiData) {
+          const c = apiData.carrier;
+          const lines = [`**Insurance for DOT# ${dot}** (via FMCSA API)`];
+          lines.push(`• BIPD Insurance Required: ${c.bipdInsuranceRequired || "N/A"}`);
+          lines.push(`• BIPD Insurance On File: ${c.bipdInsuranceOnFile || "N/A"}`);
+          lines.push(`• Cargo Insurance Required: ${c.cargoInsuranceRequired || "N/A"}`);
+          lines.push(`• Cargo Insurance On File: ${c.cargoInsuranceOnFile || "N/A"}`);
+          lines.push(`• Bond Insurance Required: ${c.bondInsuranceRequired || "N/A"}`);
+          lines.push(`• Bond Insurance On File: ${c.bondInsuranceOnFile || "N/A"}`);
+          return { success: true, action: "carrier_insurance", message: lines.join("\n"), data: { api: c } };
+        }
+        return { success: false, action: "carrier_insurance", message: `No insurance data found for DOT# ${dot}` };
+      } catch (err: any) {
+        return { success: false, action: "carrier_insurance", message: "Insurance lookup unavailable.", error: err?.message };
+      }
+    },
+  },
+
+  carrier_authority: {
+    allowedRoles: ["SHIPPER", "CATALYST", "BROKER", "DISPATCH", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+    description: "Check operating authority status (common, contract, broker) for a carrier by DOT number",
+    schema: z.object({ dotNumber: z.string() }),
+    handler: async (_ctx, params) => {
+      const p = params as { dotNumber: string };
+      try {
+        const dot = p.dotNumber.replace(/\D/g, "");
+        const { getPool } = await import("../db");
+        const pool = getPool();
+        let row: any = null;
+        if (pool) {
+          try {
+            const [rows]: any = await pool.query(`SELECT * FROM fmcsa_authority WHERE dot_number = ? ORDER BY fetched_at DESC LIMIT 1`, [dot]);
+            row = rows?.[0];
+          } catch {}
+        }
+        if (row) {
+          const lines = [`**Authority for DOT# ${dot}**`];
+          lines.push(`• Status: ${row.authority_status || "Unknown"}`);
+          lines.push(`• Common Authority: ${row.common_auth_granted ? "Granted" : "None"}${row.common_auth_revoked ? " (REVOKED)" : ""}`);
+          lines.push(`• Contract Authority: ${row.contract_auth_granted ? "Granted" : "None"}${row.contract_auth_revoked ? " (REVOKED)" : ""}`);
+          lines.push(`• Broker Authority: ${row.broker_auth_granted ? "Granted" : "None"}${row.broker_auth_revoked ? " (REVOKED)" : ""}`);
+          return { success: true, action: "carrier_authority", message: lines.join("\n"), data: row };
+        }
+        // Fallback
+        const { fetchCarrierFromSaferApi } = await import("./carrierMonitor");
+        const apiData = await fetchCarrierFromSaferApi(dot);
+        if (apiData) {
+          const c = apiData.carrier;
+          const lines = [`**Authority for DOT# ${dot}** (via FMCSA API)`];
+          lines.push(`• Common Authority: ${c.commonAuthorityStatus || "N/A"}`);
+          lines.push(`• Contract Authority: ${c.contractAuthorityStatus || "N/A"}`);
+          lines.push(`• Broker Authority: ${c.brokerAuthorityStatus || "N/A"}`);
+          return { success: true, action: "carrier_authority", message: lines.join("\n"), data: { api: c } };
+        }
+        return { success: false, action: "carrier_authority", message: `No authority data for DOT# ${dot}` };
+      } catch (err: any) {
+        return { success: false, action: "carrier_authority", message: "Authority lookup unavailable.", error: err?.message };
+      }
+    },
+  },
+
+  verify_carrier: {
+    allowedRoles: ["SHIPPER", "CATALYST", "BROKER", "DISPATCH", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+    description: "Run a full carrier verification check (authority, insurance, safety, OOS) to determine if a carrier is eligible to haul a load",
+    schema: z.object({
+      dotNumber: z.string(),
+      loadType: z.string().default("general"),
+    }),
+    handler: async (_ctx, params) => {
+      const p = params as { dotNumber: string; loadType: string };
+      try {
+        const dot = p.dotNumber.replace(/\D/g, "");
+        const { getCarrierSnapshot } = await import("./carrierMonitor");
+        const snapshot = await getCarrierSnapshot(dot);
+        if (!snapshot) return { success: false, action: "verify_carrier", message: `Could not find carrier DOT# ${dot}` };
+
+        const issues: string[] = [];
+        if (!snapshot.authorityStatus || snapshot.authorityStatus === "NONE") issues.push("❌ No active operating authority");
+        if (snapshot.insuranceStatus !== "VALID") issues.push("⚠️ Insurance status: " + (snapshot.insuranceStatus || "Unknown"));
+        if (snapshot.oosOrderActive) issues.push("❌ Active Out-of-Service order");
+        const basicScores: Array<[string, number | null]> = [
+          ["Unsafe Driving", snapshot.unsafeDrivingScore],
+          ["HOS", snapshot.hosScore],
+          ["Vehicle Maintenance", snapshot.vehicleMaintenanceScore],
+          ["Crash Indicator", snapshot.crashIndicatorScore],
+          ["HazMat", snapshot.hazmatScore],
+        ];
+        for (const [name, score] of basicScores) {
+          if (score != null && score > 75) issues.push(`⚠️ ${name} BASIC score: ${score.toFixed(1)} (above intervention threshold)`);
+        }
+
+        const verified = issues.length === 0;
+        const status = verified ? "✅ VERIFIED — Carrier is eligible" : issues.length <= 2 ? "⚠️ WARNINGS — Review required" : "❌ BLOCKED — Carrier has critical issues";
+        const lines = [`**Carrier Verification: ${snapshot.legalName}** (DOT# ${dot})`, status];
+        if (issues.length > 0) lines.push(...issues);
+        else lines.push("• Authority: Active", "• Insurance: Current", "• Safety scores: Within thresholds", "• No OOS orders");
+
+        return { success: true, action: "verify_carrier", message: lines.join("\n"), data: { verified, issues, snapshot } as any };
+      } catch (err: any) {
+        return { success: false, action: "verify_carrier", message: "Verification service unavailable.", error: err?.message };
+      }
+    },
+  },
+
+  carrier_inspections: {
+    allowedRoles: ["SHIPPER", "CATALYST", "BROKER", "DISPATCH", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+    description: "Get recent inspection history for a carrier by DOT number",
+    schema: z.object({ dotNumber: z.string(), limit: z.number().max(20).default(10) }),
+    handler: async (_ctx, params) => {
+      const p = params as { dotNumber: string; limit: number };
+      try {
+        const dot = p.dotNumber.replace(/\D/g, "");
+        const { getPool } = await import("../db");
+        const pool = getPool();
+        if (!pool) return { success: false, action: "carrier_inspections", message: "Database unavailable" };
+        const [rows]: any = await pool.query(
+          `SELECT inspection_date, report_state, insp_level_id, driver_oos, vehicle_oos, total_violations FROM fmcsa_inspections WHERE dot_number = ? ORDER BY inspection_date DESC LIMIT ?`,
+          [dot, p.limit]
+        );
+        if (!rows || rows.length === 0) return { success: true, action: "carrier_inspections", message: `No inspection records found for DOT# ${dot}`, data: { inspections: [] } };
+        const lines = [`**Recent Inspections for DOT# ${dot}** (${rows.length} records)`];
+        let oosCount = 0;
+        for (const r of rows) {
+          const oos = (r.driver_oos === "Y" || r.vehicle_oos === "Y");
+          if (oos) oosCount++;
+          lines.push(`• ${r.inspection_date || "?"} | ${r.report_state || "?"} | Level ${r.insp_level_id || "?"} | Violations: ${r.total_violations || 0}${oos ? " | **OOS**" : ""}`);
+        }
+        lines.push(`\nOOS rate in sample: ${((oosCount / rows.length) * 100).toFixed(1)}%`);
+        return { success: true, action: "carrier_inspections", message: lines.join("\n"), data: { inspections: rows, oosRate: (oosCount / rows.length) * 100 } };
+      } catch (err: any) {
+        return { success: false, action: "carrier_inspections", message: "Inspection data unavailable.", error: err?.message };
+      }
+    },
+  },
+
+  carrier_crashes: {
+    allowedRoles: ["SHIPPER", "CATALYST", "BROKER", "DISPATCH", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+    description: "Get crash history for a carrier by DOT number",
+    schema: z.object({ dotNumber: z.string(), limit: z.number().max(20).default(10) }),
+    handler: async (_ctx, params) => {
+      const p = params as { dotNumber: string; limit: number };
+      try {
+        const dot = p.dotNumber.replace(/\D/g, "");
+        const { getPool } = await import("../db");
+        const pool = getPool();
+        if (!pool) return { success: false, action: "carrier_crashes", message: "Database unavailable" };
+        const [rows]: any = await pool.query(
+          `SELECT report_date, state, city, fatalities, injuries, tow_away, hazmat_released FROM fmcsa_crashes WHERE dot_number = ? ORDER BY report_date DESC LIMIT ?`,
+          [dot, p.limit]
+        );
+        if (!rows || rows.length === 0) return { success: true, action: "carrier_crashes", message: `No crash records found for DOT# ${dot}`, data: { crashes: [] } };
+        let totalFatalities = 0, totalInjuries = 0;
+        const lines = [`**Crash History for DOT# ${dot}** (${rows.length} records)`];
+        for (const r of rows) {
+          totalFatalities += r.fatalities || 0;
+          totalInjuries += r.injuries || 0;
+          const severity = r.fatalities > 0 ? "🔴 FATAL" : r.injuries > 0 ? "🟡 INJURY" : r.tow_away === "Y" ? "🟠 TOW" : "⚪ MINOR";
+          lines.push(`• ${r.report_date || "?"} | ${r.city ? r.city + ", " : ""}${r.state || "?"} | ${severity}${r.hazmat_released === "Y" ? " | HAZMAT RELEASE" : ""}`);
+        }
+        lines.push(`\n**Totals:** ${totalFatalities} fatalities, ${totalInjuries} injuries in ${rows.length} crashes`);
+        return { success: true, action: "carrier_crashes", message: lines.join("\n"), data: { crashes: rows, totalFatalities, totalInjuries } };
+      } catch (err: any) {
+        return { success: false, action: "carrier_crashes", message: "Crash data unavailable.", error: err?.message };
+      }
+    },
+  },
+
+  // ── Market Intelligence Actions ───────────────────────────────────────────
+
+  market_rate_prediction: {
+    allowedRoles: ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "ADMIN", "SUPER_ADMIN"],
+    description: "Get ML-powered market rate prediction for a freight lane (origin state, destination state, distance, equipment type)",
+    schema: z.object({
+      originState: z.string(),
+      destState: z.string(),
+      distance: z.number().positive(),
+      equipmentType: z.string().optional(),
+      cargoType: z.string().optional(),
+      weight: z.number().optional(),
+    }),
+    handler: async (_ctx, params) => {
+      const p = params as any;
+      try {
+        const { mlEngine } = await import("./mlEngine");
+        if (!mlEngine.isReady()) return { success: false, action: "market_rate_prediction", message: "ML engine is training. Try again shortly." };
+        const pred = mlEngine.predictRate({
+          originState: p.originState.toUpperCase().substring(0, 2),
+          destState: p.destState.toUpperCase().substring(0, 2),
+          distance: p.distance,
+          equipmentType: p.equipmentType,
+          cargoType: p.cargoType,
+          weight: p.weight,
+        });
+        const lines = [
+          `**Market Rate: ${p.originState} → ${p.destState}** (${p.distance} mi)`,
+          `• Predicted Spot Rate: **$${pred.predictedSpotRate.toLocaleString()}**`,
+          `• Rate per Mile: **$${(pred.predictedSpotRate / Math.max(p.distance, 1)).toFixed(2)}/mi**`,
+          `• Market Condition: ${pred.marketCondition}`,
+          `• Confidence: ${pred.confidence}%`,
+          `• ${pred.recommendation}`,
+        ];
+        if (pred.factors?.length) {
+          lines.push(`\n**Factors:**`);
+          for (const f of pred.factors.slice(0, 5)) {
+            lines.push(`• ${f.name}: ${f.direction === "up" ? "📈" : f.direction === "down" ? "📉" : "➡️"} ${f.impact}%`);
+          }
+        }
+        return { success: true, action: "market_rate_prediction", message: lines.join("\n"), data: pred as any };
+      } catch (err: any) {
+        return { success: false, action: "market_rate_prediction", message: "ML rate prediction unavailable.", error: err?.message };
+      }
+    },
+  },
+
+  fuel_price_check: {
+    allowedRoles: ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    description: "Get current fuel prices for a state or nationally",
+    schema: z.object({ state: z.string().optional() }),
+    handler: async (_ctx, params) => {
+      const p = params as { state?: string };
+      try {
+        const { getPool } = await import("../db");
+        const pool = getPool();
+        if (!pool) return { success: false, action: "fuel_price_check", message: "Database unavailable" };
+        let rows: any[] = [];
+        try {
+          if (p.state) {
+            const [r]: any = await pool.query(`SELECT * FROM hz_fuel_prices WHERE state = ? ORDER BY effective_date DESC LIMIT 1`, [p.state.toUpperCase()]);
+            rows = r || [];
+          }
+          if (rows.length === 0) {
+            const [r]: any = await pool.query(`SELECT * FROM hz_fuel_prices WHERE state = 'US' OR state IS NULL ORDER BY effective_date DESC LIMIT 1`);
+            rows = r || [];
+          }
+        } catch {}
+        if (rows.length > 0) {
+          const r = rows[0];
+          return {
+            success: true, action: "fuel_price_check",
+            message: `**Fuel Prices${p.state ? ` (${p.state})` : " (National)"}** as of ${r.effective_date || "recent"}\n• Diesel: $${r.diesel_price || "N/A"}/gal\n• Regular: $${r.regular_price || "N/A"}/gal`,
+            data: r,
+          };
+        }
+        return { success: true, action: "fuel_price_check", message: "Fuel price data not yet available. National average diesel: ~$3.80/gal." };
+      } catch (err: any) {
+        return { success: false, action: "fuel_price_check", message: "Fuel price service unavailable.", error: err?.message };
+      }
+    },
+  },
 };
 
 // ─── Audit Log ───────────────────────────────────────────────────────────────

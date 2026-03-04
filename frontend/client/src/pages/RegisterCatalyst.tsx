@@ -79,6 +79,14 @@ interface CatalystFormData {
   powerUnits: string;
   drivers: string;
   hazmatCertifiedDrivers: string;
+  // Equipment Capabilities
+  hoseTypes: string[];
+  hoseLengths: string[];
+  fittingTypes: string[];
+  hasPump: boolean;
+  hasCompressor: boolean;
+  hasBottomLoadCapability: boolean;
+  hasVaporRecovery: boolean;
   
   // Step 7: Address
   streetAddress: string;
@@ -138,6 +146,13 @@ const initialFormData: CatalystFormData = {
   powerUnits: "",
   drivers: "",
   hazmatCertifiedDrivers: "",
+  hoseTypes: [],
+  hoseLengths: [],
+  fittingTypes: [],
+  hasPump: false,
+  hasCompressor: false,
+  hasBottomLoadCapability: false,
+  hasVaporRecovery: false,
   streetAddress: "",
   city: "",
   state: "",
@@ -152,16 +167,28 @@ const initialFormData: CatalystFormData = {
 };
 
 const EQUIPMENT_TYPES = [
-  { value: "liquid_tank", label: "Liquid Tank Trailer (MC-306/DOT-406)", hazmat: true },
-  { value: "gas_tank", label: "Pressurized Gas Tank (MC-331)", hazmat: true },
-  { value: "dry_van", label: "Dry Van", hazmat: false },
+  { value: "dry_van", label: "Dry Van (53ft)", hazmat: false },
   { value: "reefer", label: "Refrigerated (Reefer)", hazmat: false },
-  { value: "flatbed", label: "Flatbed", hazmat: false },
-  { value: "bulk_hopper", label: "Dry Bulk / Hopper", hazmat: false },
-  { value: "hazmat_van", label: "Hazmat Box / Van", hazmat: true },
+  { value: "flatbed", label: "Standard Flatbed", hazmat: false },
+  { value: "step_deck", label: "Step Deck / Drop Deck", hazmat: false },
+  { value: "lowboy", label: "Lowboy / RGN", hazmat: false },
+  { value: "double_drop", label: "Double Drop / Stretch", hazmat: false },
+  { value: "conestoga", label: "Conestoga (Rolling-Tarp)", hazmat: false },
+  { value: "liquid_tank", label: "Petroleum Tank (MC-306/DOT-406)", hazmat: true },
+  { value: "gas_tank", label: "Pressurized Gas Tank (MC-331)", hazmat: true },
   { value: "cryogenic", label: "Cryogenic Tank (MC-338)", hazmat: true },
-  { value: "food_grade_tank", label: "Food-Grade Liquid Tank (Milk, Juice, Oil)", hazmat: false },
-  { value: "water_tank", label: "Water Tank (Potable / Non-Potable)", hazmat: false },
+  { value: "hazmat_van", label: "Hazmat-Rated Van", hazmat: true },
+  { value: "food_grade_tank", label: "Food-Grade Liquid Tank", hazmat: false },
+  { value: "water_tank", label: "Water Tank", hazmat: false },
+  { value: "auto_carrier", label: "Auto Carrier / Car Hauler", hazmat: false },
+  { value: "livestock", label: "Livestock / Cattle Pot", hazmat: false },
+  { value: "log_trailer", label: "Log Trailer", hazmat: false },
+  { value: "grain_hopper", label: "Grain Hopper", hazmat: false },
+  { value: "bulk_hopper", label: "Dry Bulk / Pneumatic Hopper", hazmat: false },
+  { value: "pneumatic", label: "Pneumatic Tank", hazmat: false },
+  { value: "dump_trailer", label: "End Dump / Bottom Dump", hazmat: false },
+  { value: "intermodal", label: "Intermodal Container Chassis", hazmat: false },
+  { value: "curtainside", label: "Curtainside / Tautliner", hazmat: false },
 ];
 
 const US_STATES = [
@@ -296,6 +323,16 @@ export default function RegisterCatalyst() {
       cargoCoverage: formData.cargoCoverage || undefined,
       cargoExpiration: formData.cargoExpiration || undefined,
       complianceIds: Object.keys(complianceIds).length > 0 ? complianceIds : undefined,
+      // Equipment capabilities
+      equipmentCapabilities: {
+        hoseTypes: formData.hoseTypes.length > 0 ? formData.hoseTypes : undefined,
+        hoseLengths: formData.hoseLengths.length > 0 ? formData.hoseLengths : undefined,
+        fittingTypes: formData.fittingTypes.length > 0 ? formData.fittingTypes : undefined,
+        hasPump: formData.hasPump || undefined,
+        hasCompressor: formData.hasCompressor || undefined,
+        hasBottomLoadCapability: formData.hasBottomLoadCapability || undefined,
+        hasVaporRecovery: formData.hasVaporRecovery || undefined,
+      },
     });
 
     // Store business type preference for post-login EusoConnect bank onboarding
@@ -754,6 +791,82 @@ export default function RegisterCatalyst() {
               />
             </div>
           </div>
+
+          {/* Equipment Capabilities — shown when tanker equipment is selected */}
+          {(formData.equipmentTypes.some((e: string) => e.includes("tank") || e.includes("pneumatic") || e.includes("cryogenic") || e === "food_grade_tank" || e === "water_tank")) && (
+            <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 space-y-4">
+              <div className="flex items-center gap-2">
+                <Truck className="w-4 h-4 text-blue-400" />
+                <span className="text-white font-semibold text-sm">Loading Equipment Capabilities</span>
+                <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-400">Tanker Fleet</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-slate-300 text-xs">Hose Types Available</Label>
+                  <div className="space-y-1.5">
+                    {[
+                      { v: "petroleum", l: "Petroleum" }, { v: "chemical", l: "Chemical" },
+                      { v: "food_grade", l: "Food-Grade" }, { v: "composite", l: "Composite" },
+                      { v: "steam", l: "Steam" }, { v: "dry_bulk", l: "Dry Bulk" },
+                    ].map(h => (
+                      <label key={h.v} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox checked={formData.hoseTypes.includes(h.v)} onCheckedChange={(c) => {
+                          const next = c ? [...formData.hoseTypes, h.v] : formData.hoseTypes.filter((x: string) => x !== h.v);
+                          updateFormData({ hoseTypes: next } as any);
+                        }} />
+                        <span className="text-xs text-slate-300">{h.l}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-300 text-xs">Hose Lengths</Label>
+                  <div className="space-y-1.5">
+                    {["25", "50", "75", "100"].map(len => (
+                      <label key={len} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox checked={formData.hoseLengths.includes(len)} onCheckedChange={(c) => {
+                          const next = c ? [...formData.hoseLengths, len] : formData.hoseLengths.filter((x: string) => x !== len);
+                          updateFormData({ hoseLengths: next } as any);
+                        }} />
+                        <span className="text-xs text-slate-300">{len} ft</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-300 text-xs">Fitting Types</Label>
+                  <div className="space-y-1.5">
+                    {[
+                      { v: "cam_lock", l: "Cam Lock" }, { v: "dry_break", l: "Dry Break" },
+                      { v: "hammer_union", l: "Hammer Union" }, { v: "api_coupler", l: "API Bottom Coupler" },
+                      { v: "tri_clamp", l: "Tri-Clamp (Sanitary)" }, { v: "npt", l: "NPT Threaded" },
+                    ].map(f => (
+                      <label key={f.v} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox checked={formData.fittingTypes.includes(f.v)} onCheckedChange={(c) => {
+                          const next = c ? [...formData.fittingTypes, f.v] : formData.fittingTypes.filter((x: string) => x !== f.v);
+                          updateFormData({ fittingTypes: next } as any);
+                        }} />
+                        <span className="text-xs text-slate-300">{f.l}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-4 pt-2 border-t border-blue-500/10">
+                {[
+                  { key: "hasPump", label: "On-board Pump" },
+                  { key: "hasCompressor", label: "Air Compressor" },
+                  { key: "hasBottomLoadCapability", label: "Bottom Load Capable" },
+                  { key: "hasVaporRecovery", label: "Vapor Recovery System" },
+                ].map(opt => (
+                  <label key={opt.key} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox checked={(formData as any)[opt.key]} onCheckedChange={(c) => updateFormData({ [opt.key]: !!c } as any)} />
+                    <span className="text-sm text-slate-300">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="p-4 rounded-lg bg-slate-700/30">
             <p className="text-sm text-slate-400">

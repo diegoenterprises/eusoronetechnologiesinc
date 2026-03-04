@@ -15,7 +15,11 @@
     "simulation:verbose": "tsx simulation/index.ts --verbose",
     "simulation:dashboard": "tsx simulation/index.ts -c dashboard",
     "simulation:wallet": "tsx simulation/index.ts -c wallet",
-    "simulation:loads": "tsx simulation/index.ts -c loads"
+    "simulation:loads": "tsx simulation/index.ts -c loads",
+    "etl:fmcsa": "tsx server/etl/fmcsaEtl.ts",
+    "etl:fmcsa:daily": "tsx server/etl/fmcsaEtl.ts --dataset=daily",
+    "etl:fmcsa:sms": "tsx server/etl/fmcsaEtl.ts --dataset=sms",
+    "etl:cron": "tsx server/etl/fmcsaCron.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",

@@ -3,6 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { companies, vehicles, users } from "../../drizzle/schema";
+import { getInstantVerification } from "../services/instantVerification";
 
 // Ensure the current user has a company — creates one if needed, returns companyId
 async function ensureCompanyForUser(ctxUser: any): Promise<number> {
@@ -104,6 +105,39 @@ export const companiesRouter = router({
       const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
       if (!company) return null;
 
+      // ── FMCSA Instant Verification enrichment ──
+      let fmcsaIntel: any = null;
+      if (company.dotNumber) {
+        try {
+          const iv = await getInstantVerification(company.dotNumber);
+          if (iv) {
+            fmcsaIntel = {
+              verificationScore: iv.verificationScore,
+              verificationTier: iv.verificationTier,
+              legalName: iv.legalName,
+              dbaName: iv.dbaName,
+              fleet: iv.fleet,
+              equipment: iv.equipment,
+              classification: iv.classification,
+              authority: iv.authority,
+              insurance: iv.insurance,
+              safety: iv.safety ? {
+                alertCount: iv.safety.alertCount,
+                unsafeDriving: iv.safety.unsafeDriving,
+                hos: iv.safety.hos,
+                vehicleMaintenance: iv.safety.vehicleMaintenance,
+                crashIndicator: iv.safety.crashIndicator,
+              } : null,
+              crashes: iv.crashes,
+              outOfService: iv.outOfService,
+              flags: iv.flags,
+              docsRequired: iv.docsRequired,
+              dataSource: iv.dataSource,
+            };
+          }
+        } catch {}
+      }
+
       return {
         ...company,
         type: "catalyst",
@@ -111,6 +145,7 @@ export const companiesRouter = router({
         logo: company.logo || null,
         website: company.website || "",
         description: company.description || "",
+        fmcsaIntel,
       };
     }),
 
@@ -200,7 +235,14 @@ export const companiesRouter = router({
     .input(
       z.object({
         companyId: z.number(),
-        type: z.enum(["tractor", "trailer", "tanker", "flatbed", "refrigerated", "dry_van", "lowboy", "step_deck"]),
+        type: z.enum([
+          "tractor", "trailer", "tanker", "flatbed", "refrigerated", "dry_van", "lowboy", "step_deck",
+          "hopper", "pneumatic", "end_dump", "intermodal_chassis", "curtain_side",
+          "pilot_car", "escort_truck", "height_pole_vehicle", "route_survey_vehicle",
+          "reefer", "auto_carrier", "car_hauler", "moving_van", "log_trailer", "livestock_trailer",
+          "grain_trailer", "dump_trailer", "container_chassis", "conestoga", "rgn", "double_drop",
+          "roll_off", "box_truck", "specialized", "oversize", "chemical_tanker", "stock_trailer", "pole_trailer",
+        ]),
         make: z.string(),
         model: z.string(),
         year: z.number(),

@@ -147,6 +147,7 @@ import { rateNegotiationsRouter } from "./routers/rateNegotiations";
 import { laneContractsRouter } from "./routers/laneContracts";
 import { stripeRouter } from "./routers/stripe";
 import { fmcsaRouter } from "./routers/fmcsa";
+import { fmcsaRouter as fmcsaDataRouter } from "./routers/fmcsaData";
 import { complianceNetworksRouter } from "./routers/complianceNetworks";
 import { sidebarRouter } from "./routers/sidebar";
 import { encryptionRouter } from "./routers/encryption";
@@ -1198,6 +1199,9 @@ export const appRouter = router({
 
   // FMCSA QCMobile API — USDOT/MC lookup, auto-populate registration
   fmcsa: fmcsaRouter,
+
+  // FMCSA Bulk Data ETL — Carrier411 replacement (census, authority, insurance, safety, monitoring)
+  fmcsaData: fmcsaDataRouter,
 
   // Compliance Network Memberships (Avetta, ISNetworld, Veriforce, etc.)
   complianceNetworks: complianceNetworksRouter,

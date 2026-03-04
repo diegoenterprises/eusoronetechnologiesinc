@@ -561,12 +561,15 @@ export const stripeRouter = router({
           },
         });
       } catch (stripeErr: any) {
-        console.error(`[Stripe Connect] Account creation failed: ${stripeErr.type} — ${stripeErr.message}`, stripeErr.raw?.message || "");
-        // Surface actionable Stripe error
+        console.error(`[EusoConnect] Account creation failed: ${stripeErr.type} — ${stripeErr.message}`, stripeErr.raw?.message || "");
+        // Surface actionable error with EusoWallet branding
         if (stripeErr.type === 'StripeInvalidRequestError') {
-          throw new Error(`Stripe account setup failed: ${stripeErr.raw?.message || stripeErr.message}. Please try again or contact support.`);
+          throw new Error(`EusoWallet account setup is being configured. Bank account connections via EusoWallet are available now. Payout enrollment will be enabled shortly.`);
         }
-        throw new Error(stripeErr.message || "Failed to create Stripe Connect account");
+        if (stripeErr.message?.includes("platform") || stripeErr.message?.includes("questionnaire") || stripeErr.message?.includes("Connect")) {
+          throw new Error("EusoWallet payouts are being activated. Bank account connections via EusoWallet are available now. Payout enrollment will be enabled shortly.");
+        }
+        throw new Error(stripeErr.message || "Failed to set up EusoWallet account");
       }
 
       // Store connect account ID on BOTH users and wallets tables
@@ -703,12 +706,12 @@ export const stripeRouter = router({
       const [user] = await db.select({ stripeConnectId: users.stripeConnectId })
         .from(users).where(eq(users.id, ctx.user.id)).limit(1);
       const connectId = (user as any)?.stripeConnectId;
-      if (!connectId) throw new Error("No Stripe Connect account found. Set up payouts first.");
+      if (!connectId) throw new Error("No EusoWallet account found. Set up payouts first.");
 
       // Verify account has completed onboarding before generating login link
       const account = await stripe.accounts.retrieve(connectId);
       if (!account.details_submitted) {
-        throw new Error("Please complete Stripe onboarding before accessing the dashboard.");
+        throw new Error("Please complete EusoWallet onboarding before accessing the dashboard.");
       }
 
       const loginLink = await stripe.accounts.createLoginLink(connectId);

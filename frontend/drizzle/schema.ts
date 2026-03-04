@@ -177,6 +177,25 @@ export const vehicles = mysqlTable(
       "escort_truck",
       "height_pole_vehicle",
       "route_survey_vehicle",
+      "reefer",
+      "auto_carrier",
+      "car_hauler",
+      "moving_van",
+      "log_trailer",
+      "livestock_trailer",
+      "grain_trailer",
+      "dump_trailer",
+      "container_chassis",
+      "conestoga",
+      "rgn",
+      "double_drop",
+      "roll_off",
+      "box_truck",
+      "specialized",
+      "oversize",
+      "chemical_tanker",
+      "stock_trailer",
+      "pole_trailer",
     ]).notNull(),
     capacity: decimal("capacity", { precision: 10, scale: 2 }),
     mileage: int("mileage"),
@@ -241,6 +260,15 @@ export const loads = mysqlTable(
       "gas",
       "chemicals",
       "petroleum",
+      "livestock",
+      "vehicles",
+      "timber",
+      "grain",
+      "dry_bulk",
+      "food_grade",
+      "water",
+      "intermodal",
+      "cryogenic",
     ]).notNull(),
     hazmatClass: varchar("hazmatClass", { length: 10 }),
     unNumber: varchar("unNumber", { length: 10 }),
@@ -6768,6 +6796,31 @@ export const roadSegments = mysqlTable(
     // Hazmat / compliance flags
     hasHazmatTraffic: boolean("hasHazmatTraffic").default(false),
     hasOversizedTraffic: boolean("hasOversizedTraffic").default(false),
+    // ── LiDAR-ENRICHED FIELDS — Ultra-accurate road geometry from 3DEP/DOT LiDAR ──
+    // Elevation profile (feet above sea level)
+    elevationStartFt: decimal("elevationStartFt", { precision: 8, scale: 2 }),
+    elevationEndFt: decimal("elevationEndFt", { precision: 8, scale: 2 }),
+    elevationMinFt: decimal("elevationMinFt", { precision: 8, scale: 2 }),
+    elevationMaxFt: decimal("elevationMaxFt", { precision: 8, scale: 2 }),
+    // Grade/gradient (percent slope — critical for heavy trucks & fuel planning)
+    gradientPct: decimal("gradientPct", { precision: 5, scale: 2 }),
+    maxGradientPct: decimal("maxGradientPct", { precision: 5, scale: 2 }),
+    // IRI — International Roughness Index (in/mi) — gold standard for road surface quality
+    iriScore: decimal("iriScore", { precision: 7, scale: 2 }),
+    // Lane geometry (feet)
+    laneWidthFt: decimal("laneWidthFt", { precision: 5, scale: 1 }),
+    shoulderWidthFt: decimal("shoulderWidthFt", { precision: 5, scale: 1 }),
+    laneCount: int("laneCount"),
+    // Road curvature (degrees per 100ft — sharper = higher)
+    curvatureDeg: decimal("curvatureDeg", { precision: 6, scale: 2 }),
+    // Bridge/tunnel clearance (feet — critical for oversized loads)
+    minClearanceFt: decimal("minClearanceFt", { precision: 5, scale: 1 }),
+    // LiDAR data provenance
+    lidarSource: varchar("lidarSource", { length: 100 }),
+    lidarResolutionM: decimal("lidarResolutionM", { precision: 4, scale: 2 }),
+    lidarEnrichedAt: timestamp("lidarEnrichedAt"),
+    // Truck-specific risk score (0-100, computed from gradient + IRI + curvature + clearance)
+    truckRiskScore: int("truckRiskScore"),
     // Coverage freshness — when this segment was last driven by our network
     firstTraversedAt: timestamp("firstTraversedAt").notNull(),
     lastTraversedAt: timestamp("lastTraversedAt").notNull(),

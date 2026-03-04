@@ -36,6 +36,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { calcLiquidWeightLbs, toGallons } from "@/lib/cargoCalculations";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
 import type { ParsedAddress } from "@/components/AddressAutocomplete";
 
@@ -207,6 +208,18 @@ export default function TerminalCreateLoad() {
     const originAddr = terminal?.address || `${terminal?.city || "Houston"}, ${terminal?.state || "TX"}`;
     const destAddr = form.destinationAddress || `${form.destinationCity}, ${form.destinationState}`;
 
+    // Auto-calculate weight from quantity + product density
+    const qtyNum = Number(form.quantity) || 0;
+    const qtyUnit = form.quantityUnit === "bbl" ? "Barrels" : form.quantityUnit === "lbs" ? "lbs" : "Gallons";
+    let autoWeight: string | undefined;
+    if (qtyNum > 0 && form.quantityUnit !== "lbs") {
+      const gallons = toGallons(qtyNum, qtyUnit);
+      const { weightLbs } = calcLiquidWeightLbs(gallons, form.productName || "Petroleum product");
+      autoWeight = String(weightLbs);
+    } else if (qtyNum > 0 && form.quantityUnit === "lbs") {
+      autoWeight = String(Math.round(qtyNum));
+    }
+
     createLoadMut.mutate({
       origin: originAddr,
       destination: destAddr,
@@ -217,6 +230,8 @@ export default function TerminalCreateLoad() {
       equipment: "tanker",
       hazmatClass: form.hazmatClass || undefined,
       unNumber: form.unNumber || undefined,
+      weight: autoWeight,
+      weightUnit: "lbs",
       quantity: form.quantity || undefined,
       quantityUnit: form.quantityUnit === "bbl" ? "Barrels" : "Gallons",
       productName: form.productName || "Petroleum product",

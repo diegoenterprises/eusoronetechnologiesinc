@@ -138,17 +138,31 @@ async function computeZoneMetrics(
     } catch {}
   }
 
-  // ── FMCSA CARRIER COUNT — real truck availability when no platform trucks ──
+  // ── FMCSA CARRIER COUNT — real truck availability from bulk ETL data ──
   if (liveTrucks === 0) {
+    // Primary: FMCSA bulk census (900K+ carriers from daily ETL)
     try {
-      const carrierRows: any[] = await db.execute(
-        sql`SELECT COUNT(*) as cnt FROM hz_carrier_safety
-            WHERE physical_state IN (${stateIn})
-              AND safety_rating NOT IN ('Unsatisfactory')`
+      const bulkRows: any[] = await db.execute(
+        sql`SELECT COUNT(*) as cnt, SUM(COALESCE(nbr_power_unit, 0)) as total_units
+            FROM fmcsa_census
+            WHERE phy_state IN (${stateIn})
+              AND carrier_operation IS NOT NULL`
       );
-      // Use ~10% of registered carriers as an active-truck estimate
-      liveTrucks = Math.round((Number(carrierRows[0]?.cnt) || 0) * 0.1);
-    } catch {}
+      const totalUnits = Number(bulkRows[0]?.total_units) || 0;
+      const carrierCnt = Number(bulkRows[0]?.cnt) || 0;
+      // Use actual power units if available, otherwise estimate 10% of carriers
+      liveTrucks = totalUnits > 0 ? Math.round(totalUnits * 0.05) : Math.round(carrierCnt * 0.1);
+    } catch {
+      // Fallback: hz_carrier_safety (API-fed, limited)
+      try {
+        const carrierRows: any[] = await db.execute(
+          sql`SELECT COUNT(*) as cnt FROM hz_carrier_safety
+              WHERE physical_state IN (${stateIn})
+                AND safety_rating NOT IN ('Unsatisfactory')`
+        );
+        liveTrucks = Math.round((Number(carrierRows[0]?.cnt) || 0) * 0.1);
+      } catch {}
+    }
   }
 
   const loadToTruckRatio = liveTrucks > 0 ? (liveLoads / liveTrucks).toFixed(2) : "0";
@@ -206,20 +220,60 @@ async function computeZoneMetrics(
     }
   } catch {}
 
-  // ── SAFETY METRICS (FMCSA) ──
+  // ── SAFETY METRICS (FMCSA bulk ETL + fallback to hz_carrier_safety) ──
   let avgCarrierSafetyScore: string | null = null;
   let carriersWithViolations = 0;
+  let recentCrashCount = 0;
+  let recentInspectionCount = 0;
 
+  // Primary: FMCSA bulk SMS scores from daily ETL
   try {
-    const safetyRows: any[] = await db.execute(
+    const smsRows: any[] = await db.execute(
       sql`SELECT
-            AVG(COALESCE(unsafe_driving_score, 0) + COALESCE(vehicle_maintenance_score, 0) + COALESCE(hazmat_compliance_score, 0)) / 3 as avg_score,
-            COUNT(CASE WHEN safety_rating IN ('Conditional', 'Unsatisfactory') THEN 1 END) as violations
-          FROM hz_carrier_safety
-          WHERE physical_state IN (${stateIn})`
+            AVG(COALESCE(s.unsafe_driving_score, 0) + COALESCE(s.vehicle_maintenance_score, 0) + COALESCE(s.hos_score, 0)) / 3 as avg_score,
+            COUNT(CASE WHEN s.unsafe_driving_alert = 'Y' OR s.vehicle_maintenance_alert = 'Y' OR s.hos_alert = 'Y' THEN 1 END) as with_alerts
+          FROM fmcsa_sms_scores s
+          JOIN fmcsa_census c ON s.dot_number = c.dot_number
+          WHERE c.phy_state IN (${stateIn})
+            AND s.run_date = (SELECT MAX(run_date) FROM fmcsa_sms_scores)`
     );
-    avgCarrierSafetyScore = safetyRows[0]?.avg_score ? String(Number(safetyRows[0].avg_score).toFixed(2)) : null;
-    carriersWithViolations = Number(safetyRows[0]?.violations) || 0;
+    if (smsRows[0]?.avg_score) {
+      avgCarrierSafetyScore = String(Number(smsRows[0].avg_score).toFixed(2));
+      carriersWithViolations = Number(smsRows[0]?.with_alerts) || 0;
+    }
+  } catch {
+    // Fallback: hz_carrier_safety
+    try {
+      const safetyRows: any[] = await db.execute(
+        sql`SELECT
+              AVG(COALESCE(unsafe_driving_score, 0) + COALESCE(vehicle_maintenance_score, 0) + COALESCE(hazmat_compliance_score, 0)) / 3 as avg_score,
+              COUNT(CASE WHEN safety_rating IN ('Conditional', 'Unsatisfactory') THEN 1 END) as violations
+            FROM hz_carrier_safety
+            WHERE physical_state IN (${stateIn})`
+      );
+      avgCarrierSafetyScore = safetyRows[0]?.avg_score ? String(Number(safetyRows[0].avg_score).toFixed(2)) : null;
+      carriersWithViolations = Number(safetyRows[0]?.violations) || 0;
+    } catch {}
+  }
+
+  // FMCSA bulk crashes (30-day window for zone risk)
+  try {
+    const crashRows: any[] = await db.execute(
+      sql`SELECT COUNT(*) as cnt FROM fmcsa_crashes
+          WHERE state IN (${stateIn})
+            AND report_date > DATE_SUB(NOW(), INTERVAL 30 DAY)`
+    );
+    recentCrashCount = Number(crashRows[0]?.cnt) || 0;
+  } catch {}
+
+  // FMCSA bulk inspections (30-day window for zone activity)
+  try {
+    const inspRows: any[] = await db.execute(
+      sql`SELECT COUNT(*) as cnt FROM fmcsa_inspections
+          WHERE report_state IN (${stateIn})
+            AND inspection_date > DATE_SUB(NOW(), INTERVAL 30 DAY)`
+    );
+    recentInspectionCount = Number(inspRows[0]?.cnt) || 0;
   } catch {}
 
   // ── HAZMAT INCIDENTS (PHMSA) ──
@@ -472,6 +526,8 @@ async function computeZoneMetrics(
     complianceFactors: JSON.stringify({
       violationRate,
       carrierViolations: carriersWithViolations,
+      recentCrashes: recentCrashCount,
+      recentInspections: recentInspectionCount,
       recentSpills,
       activeRoadClosures,
       truckParkingAvailable,

@@ -46,7 +46,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
   // Auto-populate from user's real load history
   const SUPPORTED_STATES = ["TX","CA","FL","IL","GA","OH","PA","NJ","NY","WA","LA","CO","AZ","NV","TN","NC"];
   const SUPPORTED_COMMODITIES = ["general","electronics","pharmaceuticals","auto parts","food and beverage","alcohol","clothing","building materials","metals"];
-  const SUPPORTED_EQUIPMENT = ["dry_van","reefer","flatbed","tanker"];
+  const SUPPORTED_EQUIPMENT = ["dry_van","reefer","flatbed","tanker","step_deck","lowboy","double_drop","conestoga","cryogenic","food_grade_tank","water_tank","auto_carrier","livestock","log_trailer","grain_hopper","bulk_hopper","pneumatic","dump_trailer","intermodal","curtainside","hazmat_van","gas_tank"];
   const laneDefaults = (trpc as any).marketIntelligence?.getMyLaneDefaults?.useQuery?.() || { data: null };
   useEffect(() => {
     const d = laneDefaults.data;
@@ -168,7 +168,25 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                   <option value="dry_van">Dry Van</option>
                   <option value="reefer">Reefer</option>
                   <option value="flatbed">Flatbed</option>
-                  <option value="tanker">Tanker</option>
+                  <option value="step_deck">Step Deck</option>
+                  <option value="lowboy">Lowboy / RGN</option>
+                  <option value="double_drop">Double Drop</option>
+                  <option value="conestoga">Conestoga</option>
+                  <option value="tanker">Tanker (MC-306)</option>
+                  <option value="gas_tank">Gas Tank (MC-331)</option>
+                  <option value="cryogenic">Cryogenic (MC-338)</option>
+                  <option value="hazmat_van">Hazmat Van</option>
+                  <option value="food_grade_tank">Food-Grade Tank</option>
+                  <option value="water_tank">Water Tank</option>
+                  <option value="auto_carrier">Auto Carrier</option>
+                  <option value="livestock">Livestock</option>
+                  <option value="log_trailer">Log Trailer</option>
+                  <option value="grain_hopper">Grain Hopper</option>
+                  <option value="bulk_hopper">Bulk Hopper</option>
+                  <option value="pneumatic">Pneumatic</option>
+                  <option value="dump_trailer">End Dump</option>
+                  <option value="intermodal">Intermodal</option>
+                  <option value="curtainside">Curtainside</option>
                 </select>
                 <select value={commodity} onChange={e => setCommodity(e.target.value)} className="bg-slate-800/60 border border-slate-700/50 rounded-lg px-2 py-1.5 text-xs" title="Commodity type">
                   <option value="general">General Freight</option>
@@ -219,7 +237,25 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                 <option value="dry_van">Dry Van</option>
                 <option value="reefer">Reefer</option>
                 <option value="flatbed">Flatbed</option>
-                <option value="tanker">Tanker</option>
+                <option value="step_deck">Step Deck</option>
+                <option value="lowboy">Lowboy / RGN</option>
+                <option value="double_drop">Double Drop</option>
+                <option value="conestoga">Conestoga</option>
+                <option value="tanker">Tanker (MC-306)</option>
+                <option value="gas_tank">Gas Tank (MC-331)</option>
+                <option value="cryogenic">Cryogenic (MC-338)</option>
+                <option value="hazmat_van">Hazmat Van</option>
+                <option value="food_grade_tank">Food-Grade Tank</option>
+                <option value="water_tank">Water Tank</option>
+                <option value="auto_carrier">Auto Carrier</option>
+                <option value="livestock">Livestock</option>
+                <option value="log_trailer">Log Trailer</option>
+                <option value="grain_hopper">Grain Hopper</option>
+                <option value="bulk_hopper">Bulk Hopper</option>
+                <option value="pneumatic">Pneumatic</option>
+                <option value="dump_trailer">End Dump</option>
+                <option value="intermodal">Intermodal</option>
+                <option value="curtainside">Curtainside</option>
               </select>
               <select value={commodity} onChange={e => setCommodity(e.target.value)} className="bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80">
                 <option value="general">General Freight</option>
@@ -273,7 +309,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
 
             {/* Lane-Specific Estimates — driven by the parameters above */}
             <div>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Estimates for {laneOrigin} → {laneDest} · {distance} mi · {equipment === "dry_van" ? "Dry Van" : equipment === "reefer" ? "Reefer" : equipment === "flatbed" ? "Flatbed" : "Tanker"} · {commodity === "general" ? "General Freight" : commodity} · {weight.toLocaleString()} lbs</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Estimates for {laneOrigin} → {laneDest} · {distance} mi · {equipment.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} · {commodity === "general" ? "General Freight" : commodity} · {weight.toLocaleString()} lbs</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/30 flex flex-col items-center relative">
                   <ScoreRing score={theftRisk.data?.overallScore || 0} color={theftRisk.data?.overallScore > 50 ? "#f87171" : theftRisk.data?.overallScore > 25 ? "#fbbf24" : "#34d399"} label="Theft Risk" />

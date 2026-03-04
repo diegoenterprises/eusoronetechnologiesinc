@@ -628,7 +628,7 @@ const equipmentTypeSchema = z.enum([
   "tanker", "dry_van", "flatbed", "reefer", "step_deck", "lowboy",
   "gas_tank", "cryogenic", "hazmat_van", "bulk_hopper", "food_grade_tank",
   "water_tank", "conestoga", "curtainside", "intermodal", "double_drop",
-  "dump_trailer", "auto_carrier", "livestock",
+  "dump_trailer", "auto_carrier", "livestock", "log_trailer", "grain_hopper",
   "hopper", "pneumatic", "end_dump", "intermodal_chassis", "curtain_side",
 ]);
 
@@ -771,14 +771,14 @@ export const loadBoardRouter = router({
       }
 
       // ── Derive cargoType from equipment type (never lose trailer info) ──
-      const EQUIP_TO_CARGO: Record<string, "general" | "hazmat" | "refrigerated" | "oversized" | "liquid" | "gas" | "chemicals" | "petroleum"> = {
+      const EQUIP_TO_CARGO: Record<string, string> = {
         tanker: "petroleum", gas_tank: "gas", cryogenic: "gas",
         food_grade_tank: "liquid", water_tank: "liquid",
         reefer: "refrigerated",
         flatbed: "general", step_deck: "oversized", lowboy: "oversized", double_drop: "oversized",
         dry_van: "general", hazmat_van: "general", conestoga: "general", curtainside: "general", intermodal: "general",
         bulk_hopper: "general", dump_trailer: "general",
-        auto_carrier: "general", livestock: "general",
+        auto_carrier: "vehicles", livestock: "livestock", log_trailer: "timber", grain_hopper: "grain",
         hopper: "general", pneumatic: "general", end_dump: "general",
         intermodal_chassis: "general", curtain_side: "general",
       };
@@ -799,7 +799,7 @@ export const loadBoardRouter = router({
         shipperId: profile.userId,
         loadNumber,
         status: "posted",
-        cargoType: derivedCargo,
+        cargoType: derivedCargo as any,
         hazmatClass: isHazmat ? (input.hazmatClass || "9") : null,
         commodityName: input.commodity,
         weight: String(input.weight),

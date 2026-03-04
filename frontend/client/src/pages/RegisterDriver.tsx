@@ -65,6 +65,12 @@ interface DriverFormData {
   hazmatTrainingProvider: string;
   securityTrainingDate: string;
   additionalCerts: string[];
+  // Equipment Experience
+  equipmentExperience: string[];
+  hoseExperience: boolean;
+  pumpExperience: boolean;
+  bottomLoadExperience: boolean;
+  vaporRecoveryExperience: boolean;
   
   // Step 7: Account Security
   password: string;
@@ -110,6 +116,11 @@ const initialFormData: DriverFormData = {
   hazmatTrainingProvider: "",
   securityTrainingDate: "",
   additionalCerts: [],
+  equipmentExperience: [],
+  hoseExperience: false,
+  pumpExperience: false,
+  bottomLoadExperience: false,
+  vaporRecoveryExperience: false,
   password: "",
   confirmPassword: "",
   complianceIds: emptyComplianceIds,
@@ -197,6 +208,12 @@ export default function RegisterDriver() {
       hazmatTrainingProvider: formData.hazmatTrainingProvider || undefined,
       securityTrainingDate: formData.securityTrainingDate || undefined,
       additionalCerts: formData.additionalCerts?.length ? formData.additionalCerts : undefined,
+      // Equipment experience
+      equipmentExperience: formData.equipmentExperience?.length ? formData.equipmentExperience : undefined,
+      hoseExperience: formData.hoseExperience || undefined,
+      pumpExperience: formData.pumpExperience || undefined,
+      bottomLoadExperience: formData.bottomLoadExperience || undefined,
+      vaporRecoveryExperience: formData.vaporRecoveryExperience || undefined,
       pspConsent: formData.acceptTerms,
       backgroundCheckConsent: formData.acceptBackgroundCheck,
       drugTestConsent: formData.acceptDrugTest,
@@ -667,6 +684,53 @@ export default function RegisterDriver() {
                 >
                   {cert}
                 </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Equipment Experience */}
+          <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 space-y-4">
+            <div className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-blue-400" />
+              <span className="text-white font-semibold text-sm">Equipment Experience</span>
+              <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-400">Optional</Badge>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300 text-xs">Trailer Types Operated</Label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "Liquid Tank (MC-306)", "Pressurized Gas (MC-331)", "Cryogenic (MC-338)",
+                  "Food-Grade Tank", "Dry Van", "Reefer", "Flatbed", "Step Deck",
+                  "Lowboy", "Hopper/Pneumatic", "End Dump", "Auto Carrier",
+                ].map(eq => (
+                  <Badge
+                    key={eq}
+                    variant={formData.equipmentExperience.includes(eq) ? "default" : "outline"}
+                    className="cursor-pointer text-xs"
+                    onClick={() => {
+                      if (formData.equipmentExperience.includes(eq)) {
+                        updateFormData({ equipmentExperience: formData.equipmentExperience.filter((x: string) => x !== eq) } as any);
+                      } else {
+                        updateFormData({ equipmentExperience: [...formData.equipmentExperience, eq] } as any);
+                      }
+                    }}
+                  >
+                    {eq}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4 pt-2 border-t border-blue-500/10">
+              {[
+                { key: "hoseExperience", label: "Hose connections & loading" },
+                { key: "pumpExperience", label: "On-board pump operation" },
+                { key: "bottomLoadExperience", label: "Bottom loading procedures" },
+                { key: "vaporRecoveryExperience", label: "Vapor recovery systems" },
+              ].map(opt => (
+                <label key={opt.key} className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox checked={(formData as any)[opt.key]} onCheckedChange={(c) => updateFormData({ [opt.key]: !!c } as any)} />
+                  <span className="text-sm text-slate-300">{opt.label}</span>
+                </label>
               ))}
             </div>
           </div>

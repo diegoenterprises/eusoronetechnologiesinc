@@ -1152,19 +1152,39 @@ export default function RateSheetReconciliation() {
                         const t = e.target.value;
                         if (t === "tanker") { setNewSheetRateUnit("per_barrel"); setNewSheetProduct("Crude Oil"); }
                         else if (t === "reefer") { setNewSheetRateUnit("per_mile"); setNewSheetProduct("Refrigerated Goods"); }
-                        else if (t === "flatbed" || t === "step_deck" || t === "lowboy") { setNewSheetRateUnit("per_mile"); setNewSheetProduct("Heavy Equipment"); }
+                        else if (t === "flatbed" || t === "step_deck" || t === "lowboy" || t === "double_drop" || t === "conestoga") { setNewSheetRateUnit("per_mile"); setNewSheetProduct("Heavy Equipment"); }
+                        else if (t === "auto_carrier") { setNewSheetRateUnit("per_mile"); setNewSheetProduct("Vehicles"); }
+                        else if (t === "livestock") { setNewSheetRateUnit("per_mile"); setNewSheetProduct("Cattle"); }
+                        else if (t === "log_trailer") { setNewSheetRateUnit("per_mile"); setNewSheetProduct("Timber / Logs"); }
+                        else if (t === "grain_hopper") { setNewSheetRateUnit("per_mile"); setNewSheetProduct("Corn"); }
+                        else if (t === "food_grade_tank") { setNewSheetRateUnit("per_mile"); setNewSheetProduct("Milk"); }
+                        else if (t === "water_tank") { setNewSheetRateUnit("per_mile"); setNewSheetProduct("Potable Water"); }
                         else { setNewSheetRateUnit("per_mile"); setNewSheetProduct("General Freight"); }
                       }}
                         className="w-full h-9 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] text-sm px-3 text-slate-800 dark:text-white">
                         {[
-                          { v: "tanker", l: "Tanker" },
                           { v: "dry_van", l: "Dry Van" },
                           { v: "reefer", l: "Reefer" },
                           { v: "flatbed", l: "Flatbed" },
                           { v: "step_deck", l: "Step Deck" },
-                          { v: "lowboy", l: "Lowboy" },
-                          { v: "hopper", l: "Hopper / Pneumatic" },
-                          { v: "intermodal", l: "Intermodal Container" },
+                          { v: "lowboy", l: "Lowboy / RGN" },
+                          { v: "double_drop", l: "Double Drop" },
+                          { v: "conestoga", l: "Conestoga" },
+                          { v: "tanker", l: "Tanker (MC-306)" },
+                          { v: "gas_tank", l: "Gas Tank (MC-331)" },
+                          { v: "cryogenic", l: "Cryogenic (MC-338)" },
+                          { v: "hazmat_van", l: "Hazmat Van" },
+                          { v: "food_grade_tank", l: "Food-Grade Tank" },
+                          { v: "water_tank", l: "Water Tank" },
+                          { v: "auto_carrier", l: "Auto Carrier" },
+                          { v: "livestock", l: "Livestock" },
+                          { v: "log_trailer", l: "Log Trailer" },
+                          { v: "grain_hopper", l: "Grain Hopper" },
+                          { v: "hopper", l: "Bulk Hopper" },
+                          { v: "pneumatic", l: "Pneumatic" },
+                          { v: "dump_trailer", l: "End Dump" },
+                          { v: "intermodal", l: "Intermodal" },
+                          { v: "curtainside", l: "Curtainside" },
                         ].map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
                       </select>
                     </div>
@@ -1174,14 +1194,28 @@ export default function RateSheetReconciliation() {
                       <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Product Type</label>
                       <select value={newSheetProduct} onChange={e => setNewSheetProduct(e.target.value)}
                         className="w-full h-9 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] text-sm px-3 text-slate-800 dark:text-white">
-                        {(newSheetTrailer === "tanker"
-                          ? ["Crude Oil", "NGL", "Condensate", "Refined Products", "LPG", "Biofuels", "Chemicals", "Water", "Brine"]
+                        {(newSheetTrailer === "tanker" || newSheetTrailer === "gas_tank" || newSheetTrailer === "cryogenic"
+                          ? ["Crude Oil", "NGL", "Condensate", "Refined Products", "LPG", "Biofuels", "Chemicals", "Water", "Brine", "Propane", "LNG", "Nitrogen", "Oxygen"]
                           : newSheetTrailer === "reefer"
                           ? ["Refrigerated Goods", "Frozen Goods", "Produce", "Dairy", "Pharmaceuticals", "Meat & Poultry"]
-                          : newSheetTrailer === "flatbed" || newSheetTrailer === "step_deck" || newSheetTrailer === "lowboy"
-                          ? ["Heavy Equipment", "Steel & Metal", "Lumber", "Machinery", "Construction Materials", "Wind Energy Components"]
-                          : newSheetTrailer === "hopper"
-                          ? ["Sand & Gravel", "Cement", "Grain", "Fly Ash", "Plastic Pellets"]
+                          : newSheetTrailer === "flatbed" || newSheetTrailer === "step_deck" || newSheetTrailer === "lowboy" || newSheetTrailer === "double_drop" || newSheetTrailer === "conestoga"
+                          ? ["Heavy Equipment", "Steel & Metal", "Lumber", "Machinery", "Construction Materials", "Wind Energy Components", "Pipe", "Concrete Barriers"]
+                          : newSheetTrailer === "food_grade_tank"
+                          ? ["Milk", "Juice", "Cooking Oil", "Liquid Sugar", "Wine", "Chocolate"]
+                          : newSheetTrailer === "water_tank"
+                          ? ["Potable Water", "Non-Potable Water", "Frac Water", "Produced Water", "Brine"]
+                          : newSheetTrailer === "auto_carrier"
+                          ? ["Vehicles", "Sedans", "SUVs", "Trucks", "Luxury/Exotic", "Salvage"]
+                          : newSheetTrailer === "livestock"
+                          ? ["Cattle", "Hogs", "Sheep", "Horses", "Poultry"]
+                          : newSheetTrailer === "log_trailer"
+                          ? ["Timber / Logs", "Pulpwood", "Lumber", "Utility Poles"]
+                          : newSheetTrailer === "grain_hopper"
+                          ? ["Corn", "Wheat", "Soybeans", "Barley", "Oats", "Sorghum", "Rice"]
+                          : newSheetTrailer === "hopper" || newSheetTrailer === "pneumatic"
+                          ? ["Sand & Gravel", "Cement", "Grain", "Fly Ash", "Plastic Pellets", "Calcium Carbonate"]
+                          : newSheetTrailer === "dump_trailer"
+                          ? ["Sand", "Gravel", "Dirt", "Aggregates", "Asphalt", "Coal"]
                           : ["General Freight", "Electronics", "Consumer Goods", "Auto Parts", "Industrial Supplies", "Paper Products"]
                         ).map(p => <option key={p} value={p}>{p}</option>)}
                       </select>
@@ -1306,7 +1340,7 @@ export default function RateSheetReconciliation() {
                                 </span>
                               )}
                               <span className="text-[9px] text-purple-500 bg-purple-500/10 px-1.5 py-0.5 rounded font-medium">
-                                <Truck className="w-2.5 h-2.5 inline mr-0.5" />{{ tanker: "Tanker", dry_van: "Dry Van", reefer: "Reefer", flatbed: "Flatbed", step_deck: "Step Deck", lowboy: "Lowboy", hopper: "Hopper", intermodal: "Container" }[sheet.trailerType as string] || sheet.trailerType || "Tanker"}
+                                <Truck className="w-2.5 h-2.5 inline mr-0.5" />{{ tanker: "Tanker", dry_van: "Dry Van", reefer: "Reefer", flatbed: "Flatbed", step_deck: "Step Deck", lowboy: "Lowboy", double_drop: "Double Drop", conestoga: "Conestoga", gas_tank: "Gas Tank", cryogenic: "Cryogenic", hazmat_van: "Hazmat Van", food_grade_tank: "Food Tank", water_tank: "Water Tank", auto_carrier: "Auto Carrier", livestock: "Livestock", log_trailer: "Log Trailer", grain_hopper: "Grain Hopper", hopper: "Hopper", pneumatic: "Pneumatic", dump_trailer: "End Dump", intermodal: "Intermodal", curtainside: "Curtainside" }[sheet.trailerType as string] || sheet.trailerType || "Tanker"}
                               </span>
                               <span className="text-[9px] text-slate-400">{sheet.productType || "Crude Oil"}</span>
                             </div>

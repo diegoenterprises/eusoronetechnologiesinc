@@ -16,6 +16,7 @@ interface HotZoneMapProps {
   isLight: boolean;
   activeLayers: string[];
   intel?: any;
+  fmcsaIntel?: any;
   roadIntel?: {
     segments?: { id: number; startLat: number; startLng: number; endLat: number; endLng: number; roadName?: string; roadType?: string; traversalCount: number; avgSpeed?: number; congestion?: string; surfaceQuality?: string; hasHazmat?: boolean; lastTraversed?: string; state?: string }[];
     livePings?: { driverId: number; lat: number; lng: number; speed?: number; heading?: number; roadName?: string; pingAt?: string }[];
@@ -583,7 +584,7 @@ const CITIES: { n: string; lat: number; lng: number; tier: number; st: string }[
   { n:"Camden", lat:39.93, lng:-75.12, tier:3, st:"NJ" },
 ];
 
-export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, onSelectZone, isLight, activeLayers, intel, roadIntel }: HotZoneMapProps) {
+export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, onSelectZone, isLight, activeLayers, intel, roadIntel, fmcsaIntel }: HotZoneMapProps) {
   const cRef = useRef<HTMLDivElement>(null);
   const [vb, setVb] = useState({ x: 0, y: 0, w: 800, h: 380 });
   const [panning, setPanning] = useState(false);
@@ -606,6 +607,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
   const [showLocks, setShowLocks] = useState(false);
   const [showEmissions, setShowEmissions] = useState(false);
   const [showFuelMap, setShowFuelMap] = useState(false);
+  const [showFmcsa, setShowFmcsa] = useState(true);
   const [intelTip, setIntelTip] = useState<{ px: number; py: number; data: any; type: string } | null>(null);
 
   const zoomPct = useMemo(() => Math.round((800 / vb.w) * 100), [vb.w]);
@@ -1203,6 +1205,89 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
             );
           })}
 
+          {/* ═══ FMCSA INTELLIGENCE OVERLAYS — 9.8M carrier records ═══ */}
+
+          {/* FMCSA CARRIER DENSITY CHOROPLETH — state fill by carrier count */}
+          {showFmcsa && fmcsaIntel?.carriersByState?.length > 0 && (() => {
+            const data = fmcsaIntel.carriersByState as { state: string; carriers: number }[];
+            const max = Math.max(...data.map((d: any) => d.carriers));
+            const stMap: Record<string, number> = {};
+            data.forEach((d: any) => { stMap[d.state] = d.carriers; });
+            return STATES.map(st => {
+              const cnt = stMap[st.id];
+              if (!cnt) return null;
+              const t = Math.min(1, cnt / (max * 0.6));
+              return (
+                <path key={`fmcsa-den-${st.id}`} d={st.d}
+                  fill={`rgba(244,63,94,${0.04 + t * 0.22})`}
+                  className="pointer-events-none" />
+              );
+            });
+          })()}
+
+          {/* FMCSA CRASH HOTSPOT MARKERS — per state, sized by crash count */}
+          {showFmcsa && fmcsaIntel?.crashHotspots?.length > 0 && fmcsaIntel.crashHotspots.map((ch: any) => {
+            if (!ch.avgLat || !ch.avgLng) return null;
+            const [cx2, cy2] = proj(ch.avgLng, ch.avgLat);
+            const cr = s(Math.max(2.5, Math.min(7, Math.sqrt(ch.crashes) / 8)));
+            return (
+              <g key={`fmcsa-cr-${ch.state}`} className="cursor-pointer"
+                onMouseMove={(e) => showIntelTip(e, ch, "fmcsa_crash")}
+                onMouseLeave={() => setIntelTip(null)}>
+                <circle cx={cx2} cy={cy2} r={cr * 2.5} fill="#EF4444" opacity={0.1}>
+                  <animate attributeName="opacity" values="0.06;0.14;0.06" dur="3s" repeatCount="indefinite" />
+                </circle>
+                <circle cx={cx2} cy={cy2} r={cr} fill="#EF4444" opacity={0.55} stroke="white" strokeWidth={s(0.2)} />
+                {detail !== "lo" && ch.crashes >= 50 && (
+                  <text x={cx2} y={cy2 + cr + s(4)} textAnchor="middle" fontSize={s(3)} fill="#EF4444" fontWeight="600" className="select-none pointer-events-none">
+                    {ch.crashes >= 1000 ? `${(ch.crashes/1000).toFixed(0)}k` : ch.crashes} crashes
+                  </text>
+                )}
+              </g>
+            );
+          })}
+
+          {/* FMCSA INSPECTION BADGES — per state on state centers */}
+          {showFmcsa && detail !== "lo" && fmcsaIntel?.inspectionActivity?.length > 0 && (() => {
+            const byState: Record<string, any> = {};
+            for (const ia of (fmcsaIntel.inspectionActivity as any[])) byState[ia.state] = ia;
+            return STATE_CENTERS.filter(sc => byState[sc.id] && byState[sc.id].inspections > 100).map(sc => {
+              const ia = byState[sc.id];
+              const [cx2, cy2] = proj(sc.lng, sc.lat);
+              const oosHigh = ia.avgViolations > 2;
+              return (
+                <g key={`fmcsa-insp-${sc.id}`} className="select-none pointer-events-none">
+                  <circle cx={cx2 - s(12)} cy={cy2 + s(8)} r={s(4)} fill={oosHigh ? "#F59E0B" : "#3B82F6"} opacity={0.7} />
+                  <text x={cx2 - s(12)} y={cy2 + s(10)} textAnchor="middle" fontSize={s(2.8)} fill="white" fontWeight="700">
+                    {ia.inspections >= 1000 ? `${(ia.inspections/1000).toFixed(0)}k` : ia.inspections}
+                  </text>
+                </g>
+              );
+            });
+          })()}
+
+          {/* FMCSA CARRIER COUNT LABELS — on state centers at hi zoom */}
+          {showFmcsa && detail === "hi" && fmcsaIntel?.carriersByState?.length > 0 && (() => {
+            const byState: Record<string, any> = {};
+            for (const cs of (fmcsaIntel.carriersByState as any[])) byState[cs.state] = cs;
+            return STATE_CENTERS.filter(sc => byState[sc.id]).map(sc => {
+              const cs = byState[sc.id];
+              const [cx2, cy2] = proj(sc.lng, sc.lat);
+              return (
+                <g key={`fmcsa-cnt-${sc.id}`} className="select-none pointer-events-none">
+                  <text x={cx2} y={cy2 + s(14)} textAnchor="middle" fontSize={s(3.2)} fill={isLight ? "#BE185D" : "#FB7185"} fontWeight="600" opacity={0.6}>
+                    {cs.carriers >= 1000 ? `${(cs.carriers/1000).toFixed(0)}k` : cs.carriers} carriers
+                  </text>
+                  {cs.hazmatCarriers > 0 && (
+                    <text x={cx2} y={cy2 + s(19)} textAnchor="middle" fontSize={s(2.8)} fill={isLight ? "#92400E" : "#FBBF24"} fontWeight="600" opacity={0.5}>
+                      {cs.hazmatCarriers >= 1000 ? `${(cs.hazmatCarriers/1000).toFixed(0)}k` : cs.hazmatCarriers} hazmat
+                    </text>
+                  )}
+                </g>
+              );
+            });
+          })()}
+
           {/* EMISSIONS FACILITY MARKERS (CAMPD) */}
           {showEmissions && (intel?.emissions || []).map((em: any) => {
             const [emx, emy] = proj(em.lng, em.lat);
@@ -1475,6 +1560,21 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                     Seismic: {z.seismicRiskLevel}
                   </text>
                 )}
+                {/* FMCSA Carrier Risk layer — carrier count + OOS badge per zone */}
+                {activeLayers.includes("carrier_fmcsa") && z.fmcsa && z.fmcsa.carriers > 0 && (
+                  <g className="select-none pointer-events-none">
+                    <rect x={zx - r - s(32)} y={zy + r + s(14)} width={s(30)} height={s(detail === "hi" ? 16 : 9)} rx={s(3)}
+                      fill={isLight ? "rgba(255,241,242,0.92)" : "rgba(80,10,30,0.9)"} stroke="#F43F5E" strokeWidth={s(0.4)} opacity={0.9} />
+                    <text x={zx - r - s(17)} y={zy + r + s(20.5)} textAnchor="middle" fontSize={s(3.8)} fill="#F43F5E" fontWeight="700">
+                      {z.fmcsa.carriers >= 1000 ? `${(z.fmcsa.carriers/1000).toFixed(0)}k` : z.fmcsa.carriers} carriers
+                    </text>
+                    {detail === "hi" && z.fmcsa.oosRate > 0 && (
+                      <text x={zx - r - s(17)} y={zy + r + s(26)} textAnchor="middle" fontSize={s(3.2)} fill={z.fmcsa.oosRate > 25 ? "#EF4444" : "#FB923C"} fontWeight="600">
+                        OOS {z.fmcsa.oosRate}%
+                      </text>
+                    )}
+                  </g>
+                )}
                 {/* Spread/Margin Opportunity layer */}
                 {activeLayers.includes("spread_opportunity") && (
                   <g className="select-none pointer-events-none">
@@ -1661,6 +1761,15 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                   </div>
                 );
               })()}
+              {/* FMCSA zone data in tooltip */}
+              {tip.z.fmcsa && tip.z.fmcsa.carriers > 0 && (
+                <div className={`mt-1.5 pt-1.5 border-t space-y-0.5 text-[10px] ${isLight ? "border-slate-100" : "border-white/5"}`}>
+                  <div className="flex justify-between"><span className="text-rose-400">Carriers</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.fmcsa.carriers.toLocaleString()}</span></div>
+                  {tip.z.fmcsa.powerUnits > 0 && <div className="flex justify-between"><span className="text-rose-400">Power Units</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.fmcsa.powerUnits.toLocaleString()}</span></div>}
+                  {tip.z.fmcsa.crashes90d > 0 && <div className="flex justify-between"><span className="text-red-400">Crashes (90d)</span><span className="font-bold text-red-400">{tip.z.fmcsa.crashes90d.toLocaleString()}</span></div>}
+                  {tip.z.fmcsa.oosRate > 0 && <div className="flex justify-between"><span className="text-amber-400">OOS Rate</span><span className={`font-bold ${tip.z.fmcsa.oosRate > 25 ? "text-red-400" : "text-amber-400"}`}>{tip.z.fmcsa.oosRate}%</span></div>}
+                </div>
+              )}
               {tip.z.peakHours && <div className={`mt-1.5 pt-1 border-t text-[9px] ${isLight ? "border-slate-100 text-slate-400" : "border-white/5 text-white/30"}`}>Peak: {tip.z.peakHours}</div>}
             </motion.div>
           )}
@@ -1748,6 +1857,19 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                   </div>
                 </div>
               )}
+              {intelTip.type === "fmcsa_crash" && (
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                    <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>FMCSA Crash Data — {intelTip.data.state}</span>
+                  </div>
+                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                    <div>{intelTip.data.crashes?.toLocaleString()} crashes (90 days)</div>
+                    {intelTip.data.fatalities > 0 && <div className="font-semibold text-red-400">{intelTip.data.fatalities} fatalities</div>}
+                    {intelTip.data.injuries > 0 && <div>{intelTip.data.injuries.toLocaleString()} injuries</div>}
+                  </div>
+                </div>
+              )}
               {intelTip.type === "emission" && (
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -1805,6 +1927,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
               { label: "Locks", on: showLocks, toggle: () => setShowLocks(p => !p), color: "#0EA5E9" },
               { label: "CO2", on: showEmissions, toggle: () => setShowEmissions(p => !p), color: "#F59E0B" },
               { label: "Fuel$", on: showFuelMap, toggle: () => setShowFuelMap(p => !p), color: "#D97706" },
+              { label: "FMCSA", on: showFmcsa, toggle: () => setShowFmcsa(p => !p), color: "#F43F5E" },
             ].map(({ label, on, toggle, color }) => (
               <button key={label} onClick={toggle}
                 className={`px-1.5 py-0.5 rounded text-[9px] font-semibold transition-all leading-tight ${
@@ -1859,6 +1982,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
           <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full" style={{ background: rv.elevColor }} />Elev</div>
           <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full bg-blue-400 opacity-50" />Cold</div>
           {showLidar && <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full" style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)", boxShadow: "0 0 3px #BE01FF" }} />Euso Roads</div>}
+          {showFmcsa && <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full bg-rose-500" />FMCSA</div>}
         </div>
 
         {/* ── MINIMAP ── */}

@@ -444,15 +444,30 @@ async function getDbFuelPrices(): Promise<ExtCache["fuelPrices"]> {
   }
 }
 
-// ── DB ENHANCEMENT ──
+// ── DB ENHANCEMENT (Platform + FMCSA 9.8M records) ──
 interface DbEnhancement {
   loadsByState: Record<string, number>;
   totalPlatformLoads: number;
   avgRateByState: Record<string, number>;
   trucksByState: Record<string, number>;
+  // FMCSA census enrichment
+  fmcsaCarriersByState: Record<string, number>;
+  fmcsaPowerUnitsByState: Record<string, number>;
+  fmcsaDriversByState: Record<string, number>;
+  fmcsaHazmatByState: Record<string, number>;
+  fmcsaAvgFleetByState: Record<string, number>;
+  fmcsaEquipByState: Record<string, { type: string; count: number }[]>;
+  fmcsaCrashesByState: Record<string, { count: number; fatalities: number; injuries: number }>;
+  fmcsaInspByState: Record<string, { count: number; violations: number; oosRate: number }>;
+  fmcsaTotalCensus: number;
 }
 async function getDbEnhancement(): Promise<DbEnhancement> {
-  const result: DbEnhancement = { loadsByState: {}, totalPlatformLoads: 0, avgRateByState: {}, trucksByState: {} };
+  const result: DbEnhancement = {
+    loadsByState: {}, totalPlatformLoads: 0, avgRateByState: {}, trucksByState: {},
+    fmcsaCarriersByState: {}, fmcsaPowerUnitsByState: {}, fmcsaDriversByState: {},
+    fmcsaHazmatByState: {}, fmcsaAvgFleetByState: {}, fmcsaEquipByState: {},
+    fmcsaCrashesByState: {}, fmcsaInspByState: {}, fmcsaTotalCensus: 0,
+  };
   try {
     const db = await getDb(); if (!db) return result;
     // Active loads by state with average rate
@@ -475,6 +490,83 @@ async function getDbEnhancement(): Promise<DbEnhancement> {
       const st = (r.st || '').replace(/"/g, '');
       if (st) result.trucksByState[st] = Number(r.cnt);
     });
+
+    // ═══ FMCSA CENSUS ENRICHMENT (3.1M carriers) ═══
+    try {
+      const [censusRows] = await db.execute(
+        sql`SELECT phy_state as state,
+                   COUNT(*) as carriers,
+                   COALESCE(SUM(nbr_power_unit), 0) as power_units,
+                   COALESCE(SUM(driver_total), 0) as drivers,
+                   COUNT(CASE WHEN hm_flag = 'Y' THEN 1 END) as hazmat,
+                   AVG(NULLIF(nbr_power_unit, 0)) as avg_fleet
+            FROM fmcsa_census
+            WHERE phy_state IS NOT NULL AND phy_state != ''
+            GROUP BY phy_state`
+      ) as any;
+      for (const r of censusRows || []) {
+        const st = r.state;
+        result.fmcsaCarriersByState[st] = Number(r.carriers);
+        result.fmcsaPowerUnitsByState[st] = Number(r.power_units);
+        result.fmcsaDriversByState[st] = Number(r.drivers);
+        result.fmcsaHazmatByState[st] = Number(r.hazmat);
+        result.fmcsaAvgFleetByState[st] = r.avg_fleet ? +Number(r.avg_fleet).toFixed(1) : 0;
+        result.fmcsaTotalCensus += Number(r.carriers);
+      }
+    } catch { /* fmcsa_census may not exist */ }
+
+    // ═══ FMCSA CARGO/EQUIPMENT DISTRIBUTION (top cargo per state) ═══
+    try {
+      const [cargoRows] = await db.execute(
+        sql`SELECT phy_state as state, cargo_carried as cargo, COUNT(*) as cnt
+            FROM fmcsa_census
+            WHERE phy_state IS NOT NULL AND cargo_carried IS NOT NULL AND cargo_carried != ''
+            GROUP BY phy_state, cargo_carried
+            ORDER BY cnt DESC
+            LIMIT 500`
+      ) as any;
+      for (const r of cargoRows || []) {
+        if (!result.fmcsaEquipByState[r.state]) result.fmcsaEquipByState[r.state] = [];
+        result.fmcsaEquipByState[r.state].push({ type: r.cargo, count: Number(r.cnt) });
+      }
+    } catch {}
+
+    // ═══ FMCSA CRASHES (90-day by state) ═══
+    try {
+      const [crashRows] = await db.execute(
+        sql`SELECT state, COUNT(*) as cnt,
+                   COALESCE(SUM(fatalities), 0) as fat,
+                   COALESCE(SUM(injuries), 0) as inj
+            FROM fmcsa_crashes
+            WHERE state IS NOT NULL AND report_date > DATE_SUB(NOW(), INTERVAL 90 DAY)
+            GROUP BY state`
+      ) as any;
+      for (const r of crashRows || []) {
+        result.fmcsaCrashesByState[r.state] = {
+          count: Number(r.cnt), fatalities: Number(r.fat), injuries: Number(r.inj),
+        };
+      }
+    } catch {}
+
+    // ═══ FMCSA INSPECTIONS (30-day by state) ═══
+    try {
+      const [inspRows] = await db.execute(
+        sql`SELECT report_state as state, COUNT(*) as cnt,
+                   COALESCE(SUM(total_violations), 0) as viols,
+                   SUM(CASE WHEN driver_oos = 'Y' OR vehicle_oos = 'Y' THEN 1 ELSE 0 END) as oos
+            FROM fmcsa_inspections
+            WHERE report_state IS NOT NULL AND inspection_date > DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY report_state`
+      ) as any;
+      for (const r of inspRows || []) {
+        const cnt = Number(r.cnt);
+        result.fmcsaInspByState[r.state] = {
+          count: cnt, violations: Number(r.viols),
+          oosRate: cnt > 0 ? +(Number(r.oos) / cnt * 100).toFixed(1) : 0,
+        };
+      }
+    } catch {}
+
   } catch (e) { /* DB may not be ready */ }
   return result;
 }
@@ -543,6 +635,36 @@ export const hotZonesRouter = router({
         }
       } catch {}
 
+      // ── FMCSA cargo_carried → topEquipment mapping ──
+      const CARGO_TO_EQUIP: Record<string, string> = {
+        "General Freight": "DRY_VAN", "Household Goods": "DRY_VAN", "Metal: sheets, coils, rolls": "FLATBED",
+        "Motor Vehicles": "AUTO_CARRIER", "Drive/Tow away": "AUTO_CARRIER", "Logs, Poles, Beams, Lumber": "LOG_TRAILER",
+        "Building Materials": "FLATBED", "Mobile Homes": "LOWBOY", "Machinery, Large Objects": "LOWBOY",
+        "Fresh Produce": "REEFER", "Liquids/Gases": "TANKER", "Intermodal Cont.": "INTERMODAL",
+        "Passengers": "DRY_VAN", "Oilfield Equipment": "STEP_DECK", "Livestock": "LIVESTOCK",
+        "Grain, Feed, Hay": "GRAIN_HOPPER", "Coal/Coke": "DUMP_TRAILER", "Meat": "REEFER",
+        "Garbage/Refuse": "DUMP_TRAILER", "US Mail": "DRY_VAN", "Chemicals": "TANKER",
+        "Commodities Dry Bulk": "BULK_HOPPER", "Refrigerated Food": "REEFER", "Beverages": "REEFER",
+        "Paper Products": "DRY_VAN", "Utilities": "FLATBED", "Agricultural/Farm Supplies": "FLATBED",
+        "Construction": "STEP_DECK", "Water Well": "WATER_TANK",
+      };
+
+      function deriveTopEquipment(state: string, fallback: string[]): string[] {
+        const cargos = dbData.fmcsaEquipByState[state];
+        if (!cargos || cargos.length === 0) return fallback;
+        const equipCounts: Record<string, number> = {};
+        for (const c of cargos) {
+          const eq = CARGO_TO_EQUIP[c.type] || "DRY_VAN";
+          equipCounts[eq] = (equipCounts[eq] || 0) + c.count;
+        }
+        return Object.entries(equipCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([k]) => k);
+      }
+
+      const hasFMCSA = dbData.fmcsaTotalCensus > 0;
+
       const feed = HOT_ZONES.map(zone => {
         const intel = hasZoneIntel ? zoneIntel[zone.id] : null;
 
@@ -551,27 +673,35 @@ export const hotZonesRouter = router({
         const dbRate = dbData.avgRateByState[zone.state] || 0;
         const platformMature = dbData.totalPlatformLoads >= PLATFORM_DATA_THRESHOLD;
 
-        // Blend strategy: use DB data when platform is mature, otherwise use market baselines
-        // When DB has some data but is sparse, blend: max(dbValue, baseline * scaleFactor)
+        // ── FMCSA real data for this zone's state ──
+        const fmcsaCarriers = dbData.fmcsaCarriersByState[zone.state] || 0;
+        const fmcsaPowerUnits = dbData.fmcsaPowerUnitsByState[zone.state] || 0;
+        const fmcsaDrivers = dbData.fmcsaDriversByState[zone.state] || 0;
+        const fmcsaHazmat = dbData.fmcsaHazmatByState[zone.state] || 0;
+        const fmcsaAvgFleet = dbData.fmcsaAvgFleetByState[zone.state] || 0;
+        const fmcsaCrashes = dbData.fmcsaCrashesByState[zone.state] || null;
+        const fmcsaInsp = dbData.fmcsaInspByState[zone.state] || null;
+
         const intelLoads = intel ? Number(intel.liveLoads) || 0 : 0;
         const intelTrucks = intel ? Number(intel.liveTrucks) || 0 : 0;
 
         // ── VOLUME METRICS: loads & trucks ──
-        // Only trust zone intelligence volume data when it's meaningfully populated
-        // (e.g., USDA has 10+ rate reports or FMCSA has real carrier counts)
-        // Otherwise use market baselines. Risk/compliance/safety metrics from gov data are separate.
-        const VOLUME_THRESHOLD = 10; // need 10+ to trust as real volume signal
+        // Priority: zone_intelligence > platform DB > FMCSA power units > market baselines
+        const VOLUME_THRESHOLD = 10;
         let liveLoads: number;
         let liveTrucks: number;
         if (intelLoads >= VOLUME_THRESHOLD || intelTrucks >= VOLUME_THRESHOLD) {
-          // Zone intelligence has meaningful volume data from USDA/FMCSA
           liveLoads = intelLoads >= VOLUME_THRESHOLD ? intelLoads : zone.loadCount;
           liveTrucks = intelTrucks >= VOLUME_THRESHOLD ? intelTrucks : zone.truckCount;
         } else if (platformMature && dbLoads > 5) {
           liveLoads = dbLoads;
           liveTrucks = Math.max(dbTrucks, Math.round(dbLoads / zone.loadToTruckRatio));
+        } else if (fmcsaPowerUnits > 0) {
+          // Use FMCSA power units as real truck availability proxy (5% active in zone at any time)
+          liveTrucks = Math.max(Math.round(fmcsaPowerUnits * 0.05), zone.truckCount);
+          const hourFactor = 0.85 + Math.sin(Date.now() / 3600000 * Math.PI / 12) * 0.15;
+          liveLoads = Math.round(zone.loadCount * hourFactor);
         } else {
-          // Market baselines with time-of-day variation
           const hourFactor = 0.85 + Math.sin(Date.now() / 3600000 * Math.PI / 12) * 0.15;
           liveLoads = Math.round(zone.loadCount * hourFactor);
           liveTrucks = Math.round(zone.truckCount * hourFactor);
@@ -585,7 +715,6 @@ export const hotZonesRouter = router({
         const liveRate = intelRate > 0.5 ? intelRate : platformMature && dbRate > 0 ? dbRate : zone.avgRate;
         const liveRatio = liveTrucks > 0 ? +(liveLoads / liveTrucks).toFixed(2) : zone.loadToTruckRatio;
         const liveSurge = intel && Number(intel.surgeMultiplier) > 0 ? Number(intel.surgeMultiplier) : +(liveRatio > 2.5 ? 1 + (liveRatio - 1) * 0.2 : 1 + (liveRatio - 1) * 0.1).toFixed(2);
-        // Rate change vs baseline — shows market delta when USDA or platform data available
         const rateChange = intelRate > 0.5 ? +(liveRate - zone.avgRate).toFixed(2) : platformMature && dbRate > 0 ? +(liveRate - zone.avgRate).toFixed(2) : 0;
         const rateChangePct = intelRate > 0.5 || (platformMature && dbRate > 0) ? +(((liveRate - zone.avgRate) / zone.avgRate) * 100).toFixed(1) : 0;
 
@@ -595,16 +724,18 @@ export const hotZonesRouter = router({
 
         // Weather: prefer hz_zone_intelligence aggregated weather, then hz_weather_alerts, then inline NWS
         const zoneWeather = weatherAlerts.filter(a => a.state.includes(zone.state) && ["Extreme","Severe"].includes(a.severity));
-        const intelWeatherAlerts = intel ? Number(intel.activeWeatherAlerts) || 0 : 0;
         const intelMaxSeverity = intel?.maxWeatherSeverity || null;
 
-        // Compliance & safety from pre-computed intelligence — fall back to formula if intel score is 0/null
+        // Compliance & safety — blend FMCSA inspection OOS rate into score
         const intelCompRisk = intel ? Math.round(Number(intel.complianceRiskScore) || 0) : 0;
-        const formulaCompRisk = Math.round((zoneWeather.length * 20) + (zone.hazmatClasses?.length || 0) * 15 + (liveRatio > 2.5 ? 20 : 0) + ((zone.oversizedFrequency === "VERY_HIGH" ? 10 : zone.oversizedFrequency === "HIGH" ? 5 : 0)));
+        const fmcsaRiskBoost = fmcsaInsp ? Math.round(fmcsaInsp.oosRate * 0.5) : 0;
+        const formulaCompRisk = Math.round((zoneWeather.length * 20) + (zone.hazmatClasses?.length || 0) * 15 + (liveRatio > 2.5 ? 20 : 0) + ((zone.oversizedFrequency === "VERY_HIGH" ? 10 : zone.oversizedFrequency === "HIGH" ? 5 : 0)) + fmcsaRiskBoost);
         const compRisk = intelCompRisk > 0 ? intelCompRisk : formulaCompRisk;
         const wxLevel = intelMaxSeverity ? (["Severe","Extreme"].includes(intelMaxSeverity) ? "HIGH" : intelMaxSeverity !== "None" ? "MODERATE" : "LOW") : (zoneWeather.length > 2 ? "HIGH" : zoneWeather.length > 0 ? "MODERATE" : "LOW");
 
-        // Demand prediction from pre-computed forecasts (async work done before .map)
+        // ── topEquipment: prefer real FMCSA cargo distribution ──
+        const realEquipment = hasFMCSA ? deriveTopEquipment(zone.state, zone.topEquipment) : zone.topEquipment;
+
         const zoneForecast = stateForecastMap[zone.state];
 
         const zd = {
@@ -614,7 +745,7 @@ export const hotZonesRouter = router({
           nextWeekForecast: zoneForecast?.nextWeek || null,
           liveRate, liveLoads, liveTrucks, liveRatio, liveSurge,
           rateChange, rateChangePercent: rateChangePct,
-          topEquipment: zone.topEquipment, reasons: zone.reasons, peakHours: zone.peakHours,
+          topEquipment: realEquipment, reasons: zone.reasons, peakHours: zone.peakHours,
           hazmatClasses: zone.hazmatClasses, oversizedFrequency: zone.oversizedFrequency,
           fuelPrice: zoneFuel?.diesel || null, fuelPriceUpdated: zoneFuel?.updatedAt || null,
           weatherAlerts: zoneWeather.slice(0, 3), weatherRiskLevel: wxLevel,
@@ -630,6 +761,20 @@ export const hotZonesRouter = router({
           platformLoads: dbLoads, timestamp: new Date().toISOString(),
           aiRateTrend: aiTrendMap[zone.id]?.trend || null,
           aiRateAnomaly: aiTrendMap[zone.id]?.anomaly || false,
+          // ── FMCSA 9.8M record enrichment (new in v5) ──
+          fmcsa: {
+            carriers: fmcsaCarriers,
+            powerUnits: fmcsaPowerUnits,
+            drivers: fmcsaDrivers,
+            hazmatCarriers: fmcsaHazmat,
+            avgFleetSize: fmcsaAvgFleet,
+            crashes90d: fmcsaCrashes ? fmcsaCrashes.count : 0,
+            crashFatalities: fmcsaCrashes ? fmcsaCrashes.fatalities : 0,
+            crashInjuries: fmcsaCrashes ? fmcsaCrashes.injuries : 0,
+            inspections30d: fmcsaInsp ? fmcsaInsp.count : 0,
+            violations30d: fmcsaInsp ? fmcsaInsp.violations : 0,
+            oosRate: fmcsaInsp ? fmcsaInsp.oosRate : 0,
+          },
         };
         return { ...zd, roleMetrics: buildRoleMetrics(role, zd) };
       });
@@ -637,12 +782,47 @@ export const hotZonesRouter = router({
       let filtered = filterZonesForRole(role, [...feed]);
       if (input?.equipment) filtered = filtered.filter(z => z.topEquipment.includes(input.equipment!));
       filtered = sortZonesForRole(role, filtered);
-      const coldFeed = COLD_ZONES.map(z => ({ ...z, liveRate: +(z.surgeMultiplier * 2.20).toFixed(2), liveSurge: z.surgeMultiplier, timestamp: new Date().toISOString() }));
+
+      // ── COLD ZONES: enriched with real FMCSA data ──
+      const STATE_FOR_COLD: Record<string, string> = {
+        "cz-bil": "MT", "cz-far": "ND", "cz-chy": "WY", "cz-boi": "ID",
+        "cz-lit": "AR", "cz-abq": "NM", "cz-oma": "NE",
+      };
+      const coldFeed = COLD_ZONES.map(z => {
+        const st = STATE_FOR_COLD[z.id] || "";
+        const czCarriers = dbData.fmcsaCarriersByState[st] || 0;
+        const czPowerUnits = dbData.fmcsaPowerUnitsByState[st] || 0;
+        const czDrivers = dbData.fmcsaDriversByState[st] || 0;
+        const czCrashes = dbData.fmcsaCrashesByState[st] || null;
+        const czInsp = dbData.fmcsaInspByState[st] || null;
+        const czFuel = fuelPrices[st] || null;
+        const czRate = dbData.avgRateByState[st] || +(z.surgeMultiplier * 2.20).toFixed(2);
+        return {
+          ...z, state: st,
+          liveRate: czRate,
+          liveSurge: z.surgeMultiplier,
+          liveTrucks: czPowerUnits > 0 ? Math.round(czPowerUnits * 0.05) : 0,
+          fuelPrice: czFuel?.diesel || null,
+          topEquipment: hasFMCSA ? deriveTopEquipment(st, ["DRY_VAN"]) : ["DRY_VAN"],
+          fmcsa: {
+            carriers: czCarriers, powerUnits: czPowerUnits, drivers: czDrivers,
+            crashes90d: czCrashes ? czCrashes.count : 0,
+            inspections30d: czInsp ? czInsp.count : 0,
+            oosRate: czInsp ? czInsp.oosRate : 0,
+          },
+          timestamp: new Date().toISOString(),
+        };
+      });
+      const fmcsaTotal = dbData.fmcsaTotalCensus;
       return {
         zones: filtered, coldZones: coldFeed, roleContext,
         platformDataAvailable: dbData.totalPlatformLoads > 0,
-        externalDataStatus: { fuelPrices: Object.keys(fuelPrices).length > 0, weatherAlerts: weatherAlerts.length > 0 },
-        feedSource: hasZoneIntel
+        fmcsaDataAvailable: hasFMCSA,
+        fmcsaTotalRecords: fmcsaTotal,
+        externalDataStatus: { fuelPrices: Object.keys(fuelPrices).length > 0, weatherAlerts: weatherAlerts.length > 0, fmcsaCensus: hasFMCSA },
+        feedSource: hasFMCSA
+          ? `EusoTrip Intelligence (${dbData.totalPlatformLoads} loads) + FMCSA (${(fmcsaTotal / 1000000).toFixed(1)}M carriers) + 27 Gov Sources`
+          : hasZoneIntel
           ? `EusoTrip Intelligence (${dbData.totalPlatformLoads} loads) + 27 Gov Sources (NWS, EIA, FMCSA, USGS, PHMSA, NIFC, FEMA, EPA, USDA, USACE)`
           : dbData.totalPlatformLoads > 0
             ? `EusoTrip Platform (${dbData.totalPlatformLoads} loads) + EIA + NWS`
@@ -652,8 +832,9 @@ export const hotZonesRouter = router({
           zoneIntelligence: { fresh: hasZoneIntel, status: hasZoneIntel ? getFreshnessStatus("ZONE_INTELLIGENCE", 0) : "expired" },
           fuelPrices: { fresh: Object.keys(fuelPrices).length > 0, status: Object.keys(fuelPrices).length > 0 ? getFreshnessStatus("FUEL_PRICES", 0) : "expired" },
           weatherAlerts: { fresh: weatherAlerts.length > 0, status: weatherAlerts.length > 0 ? getFreshnessStatus("WEATHER_ALERTS", 0) : "expired" },
+          fmcsaCensus: { fresh: hasFMCSA, records: fmcsaTotal },
           fetchedAt: new Date().toISOString(),
-          dataSources: hasZoneIntel ? 27 : dbData.totalPlatformLoads > 0 ? 3 : 1,
+          dataSources: hasFMCSA ? 28 : hasZoneIntel ? 27 : dbData.totalPlatformLoads > 0 ? 3 : 1,
         },
         marketPulse: {
           avgRate: filtered.length > 0 ? +(filtered.reduce((s, z) => s + z.liveRate, 0) / filtered.length).toFixed(2) : 0,
@@ -1497,7 +1678,10 @@ export const hotZonesRouter = router({
                      roadName, roadType, traversalCount, uniqueDrivers,
                      avgSpeedMph, congestionLevel, surfaceQuality,
                      hasHazmatTraffic, lastTraversedAt, lengthMiles, state,
-                     encodedPolyline
+                     encodedPolyline,
+                     elevationStartFt, elevationEndFt, gradientPct, maxGradientPct,
+                     iriScore, curvatureDeg, minClearanceFt, truckRiskScore,
+                     laneWidthFt, laneCount, lidarSource, lidarEnrichedAt
                    FROM road_segments
                    WHERE ${filters.join(" AND ")}
                    ORDER BY lastTraversedAt DESC
@@ -1521,6 +1705,17 @@ export const hotZonesRouter = router({
           lengthMiles: r.lengthMiles ? Number(r.lengthMiles) : null,
           state: r.state,
           polyline: r.encodedPolyline,
+          // LiDAR-enriched fields (EusoRoads symbiotic layer)
+          elevationFt: r.elevationStartFt ? Number(r.elevationStartFt) : null,
+          gradientPct: r.gradientPct ? Number(r.gradientPct) : null,
+          maxGradientPct: r.maxGradientPct ? Number(r.maxGradientPct) : null,
+          iriScore: r.iriScore ? Number(r.iriScore) : null,
+          curvatureDeg: r.curvatureDeg ? Number(r.curvatureDeg) : null,
+          minClearanceFt: r.minClearanceFt ? Number(r.minClearanceFt) : null,
+          truckRiskScore: r.truckRiskScore != null ? Number(r.truckRiskScore) : null,
+          laneWidthFt: r.laneWidthFt ? Number(r.laneWidthFt) : null,
+          laneCount: r.laneCount,
+          lidarEnriched: !!r.lidarEnrichedAt,
         }));
 
         // Fetch live pings (last 5 minutes)
@@ -1546,9 +1741,13 @@ export const hotZonesRouter = router({
           } catch { /* table may not exist yet */ }
         }
 
-        // Quick stats
+        // Quick stats (including LiDAR enrichment coverage)
         const [statsRow] = await db.execute(
-          sql`SELECT COUNT(*) as cnt, SUM(CAST(lengthMiles AS DECIMAL(10,3))) as miles FROM road_segments`
+          sql`SELECT COUNT(*) as cnt,
+                     SUM(CAST(lengthMiles AS DECIMAL(10,3))) as miles,
+                     SUM(CASE WHEN lidarEnrichedAt IS NOT NULL THEN 1 ELSE 0 END) as lidarCnt,
+                     AVG(CASE WHEN truckRiskScore IS NOT NULL THEN truckRiskScore END) as avgRisk
+              FROM road_segments`
         ) as any;
         const st = (statsRow || [])[0] || {};
 
@@ -1559,6 +1758,8 @@ export const hotZonesRouter = router({
             totalSegments: Number(st.cnt || 0),
             totalMiles: Number(Number(st.miles || 0).toFixed(1)),
             liveDrivers: new Set(livePings.map((p: any) => p.driverId)).size,
+            lidarEnriched: Number(st.lidarCnt || 0),
+            avgTruckRisk: st.avgRisk != null ? Math.round(Number(st.avgRisk)) : null,
           },
         };
       } catch (e) {
@@ -1575,6 +1776,166 @@ export const hotZonesRouter = router({
       } catch {
         return { totalSegments: 0, totalMilesMapped: 0, totalTraversals: 0, uniqueDriversContributed: 0, topRoads: [], coverageByState: [] };
       }
+    }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // FMCSA INTELLIGENCE — 9.8M record enrichment for map overlays
+  // Carrier density, equipment distribution, fleet size breakdown,
+  // crash hotspots, inspection activity, violation density by state
+  // ═══════════════════════════════════════════════════════════════
+  getFMCSAIntelligence: protectedProcedure
+    .query(async () => {
+      const CACHE_KEY = "fmcsa_intel";
+      const cached_data = getFromCache(CACHE_KEY);
+      if (cached_data) return cached_data;
+
+      const db = await getDb();
+      if (!db) return { carriersByState: [], equipmentByState: [], fleetSizeDistribution: [], crashHotspots: [], inspectionActivity: [], totalRecords: { census: 0, crashes: 0, inspections: 0, violations: 0 }, timestamp: new Date().toISOString() };
+
+      const result: any = { timestamp: new Date().toISOString() };
+
+      // ── 1. Carrier density + power units + drivers by state ──
+      try {
+        const [rows] = await db.execute(
+          sql`SELECT phy_state as state,
+                     COUNT(*) as carriers,
+                     COALESCE(SUM(nbr_power_unit), 0) as power_units,
+                     COALESCE(SUM(driver_total), 0) as drivers,
+                     COUNT(CASE WHEN hm_flag = 'Y' THEN 1 END) as hazmat_carriers,
+                     AVG(nbr_power_unit) as avg_fleet_size
+              FROM fmcsa_census
+              WHERE phy_state IS NOT NULL AND phy_state != ''
+              GROUP BY phy_state
+              ORDER BY carriers DESC
+              LIMIT 51`
+        ) as any;
+        result.carriersByState = (rows || []).map((r: any) => ({
+          state: r.state,
+          carriers: Number(r.carriers),
+          powerUnits: Number(r.power_units),
+          drivers: Number(r.drivers),
+          hazmatCarriers: Number(r.hazmat_carriers),
+          avgFleetSize: r.avg_fleet_size ? Number(Number(r.avg_fleet_size).toFixed(1)) : 0,
+        }));
+      } catch { result.carriersByState = []; }
+
+      // ── 2. Equipment / cargo distribution by state ──
+      try {
+        const [rows] = await db.execute(
+          sql`SELECT phy_state as state,
+                     cargo_carried as cargo,
+                     COUNT(*) as cnt
+              FROM fmcsa_census
+              WHERE phy_state IS NOT NULL AND cargo_carried IS NOT NULL AND cargo_carried != ''
+              GROUP BY phy_state, cargo_carried
+              ORDER BY cnt DESC
+              LIMIT 500`
+        ) as any;
+        // Group by state → { state, cargoTypes: [{ type, count }] }
+        const byState: Record<string, { type: string; count: number }[]> = {};
+        for (const r of rows || []) {
+          if (!byState[r.state]) byState[r.state] = [];
+          byState[r.state].push({ type: r.cargo, count: Number(r.cnt) });
+        }
+        result.equipmentByState = Object.entries(byState).map(([state, types]) => ({
+          state,
+          cargoTypes: types.sort((a, b) => b.count - a.count).slice(0, 10),
+          totalCarriers: types.reduce((s, t) => s + t.count, 0),
+        }));
+      } catch { result.equipmentByState = []; }
+
+      // ── 3. Fleet size distribution (small/medium/large/mega) ──
+      try {
+        const [rows] = await db.execute(
+          sql`SELECT
+                CASE
+                  WHEN nbr_power_unit <= 5 THEN 'small'
+                  WHEN nbr_power_unit <= 25 THEN 'medium'
+                  WHEN nbr_power_unit <= 100 THEN 'large'
+                  ELSE 'mega'
+                END as tier,
+                COUNT(*) as cnt,
+                SUM(nbr_power_unit) as total_units,
+                SUM(driver_total) as total_drivers
+              FROM fmcsa_census
+              WHERE nbr_power_unit > 0
+              GROUP BY tier
+              ORDER BY cnt DESC`
+        ) as any;
+        result.fleetSizeDistribution = (rows || []).map((r: any) => ({
+          tier: r.tier,
+          carriers: Number(r.cnt),
+          totalUnits: Number(r.total_units),
+          totalDrivers: Number(r.total_drivers),
+        }));
+      } catch { result.fleetSizeDistribution = []; }
+
+      // ── 4. Crash hotspots — recent crashes with lat/lng for map markers ──
+      try {
+        const [rows] = await db.execute(
+          sql`SELECT state,
+                     COUNT(*) as crashes,
+                     COALESCE(SUM(fatalities), 0) as fatalities,
+                     COALESCE(SUM(injuries), 0) as injuries,
+                     SUM(CASE WHEN hazmat_released = 'Y' THEN 1 ELSE 0 END) as hazmat_releases,
+                     AVG(latitude) as avg_lat,
+                     AVG(longitude) as avg_lng
+              FROM fmcsa_crashes
+              WHERE state IS NOT NULL AND report_date > DATE_SUB(NOW(), INTERVAL 90 DAY)
+              GROUP BY state
+              ORDER BY crashes DESC
+              LIMIT 51`
+        ) as any;
+        result.crashHotspots = (rows || []).map((r: any) => ({
+          state: r.state,
+          crashes: Number(r.crashes),
+          fatalities: Number(r.fatalities),
+          injuries: Number(r.injuries),
+          hazmatReleases: Number(r.hazmat_releases),
+          avgLat: r.avg_lat ? Number(Number(r.avg_lat).toFixed(4)) : null,
+          avgLng: r.avg_lng ? Number(Number(r.avg_lng).toFixed(4)) : null,
+        }));
+      } catch { result.crashHotspots = []; }
+
+      // ── 5. Inspection activity by state (30-day) ──
+      try {
+        const [rows] = await db.execute(
+          sql`SELECT report_state as state,
+                     COUNT(*) as inspections,
+                     COALESCE(SUM(total_violations), 0) as violations,
+                     SUM(CASE WHEN driver_oos = 'Y' OR vehicle_oos = 'Y' THEN 1 ELSE 0 END) as oos_count,
+                     AVG(total_violations) as avg_violations
+              FROM fmcsa_inspections
+              WHERE report_state IS NOT NULL AND inspection_date > DATE_SUB(NOW(), INTERVAL 30 DAY)
+              GROUP BY report_state
+              ORDER BY inspections DESC
+              LIMIT 51`
+        ) as any;
+        result.inspectionActivity = (rows || []).map((r: any) => ({
+          state: r.state,
+          inspections: Number(r.inspections),
+          violations: Number(r.violations),
+          oosCount: Number(r.oos_count),
+          avgViolations: r.avg_violations ? Number(Number(r.avg_violations).toFixed(1)) : 0,
+        }));
+      } catch { result.inspectionActivity = []; }
+
+      // ── 6. Total record counts ──
+      try {
+        const [[c1]]: any = await db.execute(sql`SELECT COUNT(*) as cnt FROM fmcsa_census`);
+        const [[c2]]: any = await db.execute(sql`SELECT COUNT(*) as cnt FROM fmcsa_crashes`);
+        const [[c3]]: any = await db.execute(sql`SELECT COUNT(*) as cnt FROM fmcsa_inspections`);
+        const [[c4]]: any = await db.execute(sql`SELECT COUNT(*) as cnt FROM fmcsa_violations`);
+        result.totalRecords = {
+          census: Number(c1?.cnt || 0),
+          crashes: Number(c2?.cnt || 0),
+          inspections: Number(c3?.cnt || 0),
+          violations: Number(c4?.cnt || 0),
+        };
+      } catch { result.totalRecords = { census: 0, crashes: 0, inspections: 0, violations: 0 }; }
+
+      setInCache(CACHE_KEY, result, "FMCSA_INTEL");
+      return result;
     }),
 
   // Admin: Get sync log history from DB

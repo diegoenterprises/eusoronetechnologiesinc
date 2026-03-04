@@ -274,6 +274,7 @@ const DriverSafetyScorecardPage = lazy(() => import("./pages/DriverSafetyScoreca
 const DrugAlcoholTestingPage = lazy(() => import("./pages/DrugAlcoholTesting"));
 const DVIRManagementPage = lazy(() => import("./pages/DVIRManagement"));
 const ELDIntegrationPage = lazy(() => import("./pages/ELDIntegration"));
+const FMCSACarrierIntelligencePage = lazy(() => import("./pages/FMCSACarrierIntelligence"));
 const EquipmentMgmtPage = lazy(() => import("./pages/EquipmentManagement"));
 const ERGGuidePage = lazy(() => import("./pages/ERGGuide"));
 const ERGLookupPage = lazy(() => import("./pages/ERGLookup"));
@@ -352,6 +353,7 @@ const InboundDashboard = lazy(() => import("./pages/InboundDashboard"));
 const DTNSyncDashboard = lazy(() => import("./pages/DTNSyncDashboard"));
 const IntegrationsPortal = lazy(() => import("./pages/IntegrationsPortal"));
 // IntegrationKeys fused into IntegrationsPortal
+const AccessorialManagement = lazy(() => import("./pages/AccessorialManagement"));
 
 function Router() {
   // Role constants for route protection
@@ -369,6 +371,7 @@ function Router() {
   const ADMN: UserRole[] = ["ADMIN","SUPER_ADMIN"];
   const SUPR: UserRole[] = ["SUPER_ADMIN"];
   const LOAD: UserRole[] = ["SHIPPER","CATALYST","BROKER","DRIVER","DISPATCH","ADMIN","SUPER_ADMIN"];
+  const ELDR: UserRole[] = ["SHIPPER","CATALYST","BROKER","DRIVER","DISPATCH","ESCORT","TERMINAL_MANAGER","COMPLIANCE_OFFICER","SAFETY_MANAGER","ADMIN","SUPER_ADMIN"];
 
   // Helper: wrap page in DashboardLayout + ProtectedRoute
   const guard = (roles: UserRole[], Page: React.ReactNode) => () => (
@@ -425,6 +428,7 @@ function Router() {
       <Route path={"/zeun-breakdown"} component={guard(ALL, <ZeunBreakdown />)} />
       <Route path={"/zeun-fleet"} component={guard(ALL, <ZeunFleetDashboard />)} />
       <Route path={"/admin/zeun"} component={guard(ADMN, <ZeunAdminDashboard />)} />
+      <Route path={"/eld"} component={guard(ELDR, <ELDIntegrationPage />)} />
       <Route path={"/hot-zones"} component={guard(ALL, <HotZones />)} />
       <Route path={"/ratings"} component={guard(ALL, <RatingsReviews />)} />
       <Route path={"/claims"} component={guard(ALL, <ClaimsPage />)} />
@@ -442,6 +446,7 @@ function Router() {
       <Route path={"/erg/guide"} component={guard(ALL, <ERGGuidePage />)} />
       <Route path={"/erg/lookup"} component={guard(ALL, <ERGLookupPage />)} />
       <Route path={"/fmcsa-lookup"} component={guard([...CARR, ...BROK, ...COMP, ...SHIP], <SAFERLookupPage />)} />
+      <Route path={"/carrier-intelligence"} component={guard(ELDR, <FMCSACarrierIntelligencePage />)} />
       <Route path={"/hazmat/certifications"} component={guard(ALL, <HazmatCertsPage />)} />
       <Route path={"/insurance"} component={guard([...CARR, ...BROK, ...COMP, "ESCORT"], <InsuranceMgmtPage />)} />
       <Route path={"/insurance/per-load"} component={guard([...CARR, ...SHIP, ...BROK], <PerLoadInsurance />)} />
@@ -656,6 +661,7 @@ function Router() {
       <Route path={"/my-terminals"} component={guard([...SHIP, ...CARR, ...BROK], <MyTerminals />)} />
       <Route path={"/spectra-match"} component={guard(TERM, <SpectraMatch />)} />
       <Route path={"/detention"} component={guard([...TERM, ...CARR, ...SHIP], <DetentionTrackingPage />)} />
+      <Route path={"/accessorials"} component={guard([...TERM, ...CARR, ...SHIP, ...DISP, ...ADMN], <AccessorialManagement />)} />
       <Route path={"/euso-ticket"} component={guard(TERM, <EusoTicket />)} />
       <Route path={"/run-tickets"} component={guard(TERM, <EusoTicket />)} />
       <Route path={"/inbound"} component={guard(TERM, <InboundDashboard />)} />

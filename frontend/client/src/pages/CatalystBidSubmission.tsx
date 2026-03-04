@@ -124,9 +124,14 @@ export default function CatalystBidSubmission() {
   const rateIntel = useMemo(() => {
     if (!distance || (!bidAmount && !ratePerMileInput)) return null;
     const isHazmat = isSpectraQualified(load?.cargoType, load?.commodity, load?.hazmatClass);
-    const isReefer = load?.equipmentType === "reefer";
-    const isFlatbed = load?.equipmentType === "flatbed";
-    const baseRate = isHazmat ? 4.20 : isReefer ? 3.10 : isFlatbed ? 2.90 : 2.50;
+    const et = (load?.equipmentType || "").toLowerCase();
+    const EQUIP_BASE_RATES: Record<string, number> = {
+      reefer: 3.10, flatbed: 2.90, step_deck: 3.00, lowboy: 3.50, double_drop: 3.60,
+      conestoga: 2.95, auto_carrier: 2.80, livestock: 3.20, log_trailer: 2.70,
+      grain_hopper: 2.60, food_grade_tank: 3.30, water_tank: 2.40, bulk_hopper: 2.65,
+      dump_trailer: 2.55, intermodal: 2.45, curtainside: 2.60, pneumatic: 2.70,
+    };
+    const baseRate = isHazmat ? 4.20 : EQUIP_BASE_RATES[et] || 2.50;
     const distFactor = distance < 200 ? 1.25 : distance < 500 ? 1.0 : 0.85;
     const marketRPM = Math.round(baseRate * distFactor * 100) / 100;
     const marketLow = Math.round(marketRPM * 0.75 * 100) / 100;

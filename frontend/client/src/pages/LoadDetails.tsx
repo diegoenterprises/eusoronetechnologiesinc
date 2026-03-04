@@ -966,9 +966,10 @@ export default function LoadDetails() {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: "Equipment", value: getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass), icon: <Truck className="w-4 h-4 text-blue-500" /> },
-                { label: "Weight", value: `${Number(load.weight || 0).toLocaleString()} ${load.weightUnit || "Lbs"}`, icon: <Package className="w-4 h-4 text-purple-500" /> },
                 { label: "Commodity", value: getLoadTitle(load), icon: <Package className="w-4 h-4 text-orange-500" /> },
                 { label: "Cargo Type", value: (load.cargoType || "general").charAt(0).toUpperCase() + (load.cargoType || "general").slice(1), icon: <FileText className="w-4 h-4 text-cyan-500" /> },
+                ...(load.quantity ? [{ label: "Quantity", value: `${Number(load.quantity).toLocaleString()} ${load.quantityUnit || "units"}`, icon: <Scale className="w-4 h-4 text-indigo-500" /> }] : []),
+                { label: "Weight", value: `${Number(load.weight || 0).toLocaleString()} ${load.weightUnit || "lbs"}`, icon: <Scale className="w-4 h-4 text-purple-500" /> },
               ].map((item) => (
                 <div key={item.label} className={cellCls}>
                   <div className="flex items-center gap-2 mb-1">{item.icon}<span className="text-[10px] text-slate-400 uppercase">{item.label}</span></div>
@@ -976,6 +977,51 @@ export default function LoadDetails() {
                 </div>
               ))}
             </div>
+
+            {/* Equipment Requirements */}
+            {(load.hoseType || load.hoseLength || load.pumpRequired || load.compressorRequired || load.fittingType || load.bottomLoadRequired || load.vaporRecoveryRequired) && (
+              <div className={cn("p-3 rounded-xl border", isLight ? "bg-blue-50/50 border-blue-200/50" : "bg-blue-500/5 border-blue-500/15")}>
+                <p className={cn("text-[10px] font-semibold uppercase tracking-wider mb-2", isLight ? "text-blue-600" : "text-blue-400")}>Equipment Requirements</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {load.hoseType && (
+                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-blue-100 text-blue-700" : "bg-blue-500/15 text-blue-300")}>
+                      Hose: {load.hoseType}
+                    </span>
+                  )}
+                  {load.hoseLength && (
+                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-blue-100 text-blue-700" : "bg-blue-500/15 text-blue-300")}>
+                      {load.hoseLength}ft hose
+                    </span>
+                  )}
+                  {load.fittingType && (
+                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-purple-100 text-purple-700" : "bg-purple-500/15 text-purple-300")}>
+                      Fittings: {load.fittingType}
+                    </span>
+                  )}
+                  {load.pumpRequired && (
+                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-amber-100 text-amber-700" : "bg-amber-500/15 text-amber-300")}>
+                      Pump Required
+                    </span>
+                  )}
+                  {load.compressorRequired && (
+                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-amber-100 text-amber-700" : "bg-amber-500/15 text-amber-300")}>
+                      Compressor Required
+                    </span>
+                  )}
+                  {load.bottomLoadRequired && (
+                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-cyan-100 text-cyan-700" : "bg-cyan-500/15 text-cyan-300")}>
+                      Bottom Load
+                    </span>
+                  )}
+                  {load.vaporRecoveryRequired && (
+                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/15 text-emerald-300")}>
+                      Vapor Recovery
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {load.notes && !String(load.notes).includes("[WARNING]") && (
               <div className={cellCls}>
                 <p className="text-[10px] text-slate-400 uppercase mb-1">Notes</p>

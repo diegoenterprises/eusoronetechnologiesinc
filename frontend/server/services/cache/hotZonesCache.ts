@@ -23,6 +23,7 @@ const CACHE_TTL: Record<string, number> = {
   FEMA_DISASTERS: 21600,
   RATE_INDICES: 3600,
   LOCK_STATUS: 1800,
+  FMCSA_INTEL: 300,
 };
 
 export function getFromCache<T>(key: string): T | undefined {

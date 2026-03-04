@@ -19,6 +19,7 @@ import {
   AlertTriangle, Phone, Clock, Activity, Package, Navigation,
   Radio, UserPlus, X, Gauge
 } from "lucide-react";
+import ELDConnectionPanel from "@/components/ELDConnectionPanel";
 
 type ViewMode = "fleet" | "drivers";
 
@@ -89,6 +90,9 @@ export default function FleetCommandCenter() {
           </div>
         ))}
       </div>
+
+      {/* ELD Connection Status */}
+      <ELDConnectionPanel compact />
 
       {/* View Switcher + Search */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">

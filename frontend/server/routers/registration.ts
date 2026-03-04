@@ -7,7 +7,7 @@
 import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
 import { router, auditedPublicProcedure, auditedProtectedProcedure, sensitiveData } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, getPool } from "../db";
 import { users, companies, documents, userOperatingStates } from "../../drizzle/schema";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
@@ -15,6 +15,7 @@ import { initNewUserGamification } from "../services/missionGenerator";
 import { notifyRegistration } from "../services/notifications";
 import { emailService } from "../_core/email";
 import { fmcsaService } from "../services/fmcsa";
+import { getInstantVerification, crossReferenceInputs, extractMLFeatures, storeVerificationEvent, auditPlatformCompanies, inferEquipmentFromCargo } from "../services/instantVerification";
 
 const hazmatClassSchema = z.enum(["2", "3", "4", "5", "6", "7", "8", "9"]);
 
@@ -383,14 +384,55 @@ export const registrationRouter = router({
       const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.contactEmail)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
 
+      // ── Instant FMCSA Verification: full carrier intelligence ──
       const saferVerification = await verifyUSDOT(input.usdotNumber);
+      const instantVerif = await getInstantVerification(input.usdotNumber);
+
+      // ── REGISTRATION GATE: Block carriers that fail critical checks ──
+      // Triggers: OOS order, no authority, no insurance → hard block
+      if (instantVerif) {
+        if (instantVerif.outOfService) {
+          throw new Error(`Registration blocked: Carrier DOT# ${input.usdotNumber} has an active Out-of-Service order. Resolve the OOS order with FMCSA before registering.`);
+        }
+        if (instantVerif.verificationTier === "FLAGGED") {
+          throw new Error(`Registration blocked: Carrier DOT# ${input.usdotNumber} is flagged by FMCSA. ${instantVerif.flags.join(", ")}. Contact FMCSA to resolve compliance issues before registering.`);
+        }
+        // Authority check — must have at least one active authority type
+        if (instantVerif.authority && !instantVerif.authority.commonAuthActive && !instantVerif.authority.contractAuthActive && !instantVerif.authority.brokerAuthActive) {
+          throw new Error(`Registration blocked: No active operating authority found for DOT# ${input.usdotNumber}. Common, contract, or broker authority must be active to register.`);
+        }
+        // Insurance check — must have BIPD insurance on file
+        if (instantVerif.insurance && !instantVerif.insurance.bipdOnFile && !instantVerif.insurance.isCompliant) {
+          throw new Error(`Registration blocked: No BIPD insurance on file for DOT# ${input.usdotNumber}. Active liability insurance is required to register.`);
+        }
+      }
+
+      // Cross-reference user inputs against FMCSA record
+      let crossRef: any = null;
+      if (instantVerif) {
+        crossRef = crossReferenceInputs({
+          companyName: input.companyName,
+          dba: input.dba,
+          streetAddress: input.streetAddress,
+          city: input.city,
+          state: input.state,
+          zipCode: input.zipCode,
+          phone: input.contactPhone,
+          email: input.contactEmail,
+          powerUnits: input.fleetSize?.powerUnits,
+          drivers: input.fleetSize?.drivers,
+          hazmatEndorsed: input.hazmatEndorsed,
+          mcNumber: input.mcNumber,
+        }, instantVerif);
+      }
+
       const passwordHash = await bcrypt.hash(input.password, 12);
 
       const companyResult = await db.insert(companies).values({
         name: input.companyName,
-        legalName: input.companyName,
+        legalName: instantVerif?.legalName || input.companyName,
         dotNumber: input.usdotNumber,
-        mcNumber: input.mcNumber,
+        mcNumber: input.mcNumber || instantVerif?.authority?.docketNumber || undefined,
         ein: input.einNumber,
         address: input.streetAddress,
         city: input.city,
@@ -398,8 +440,8 @@ export const registrationRouter = router({
         zipCode: input.zipCode,
         phone: input.contactPhone,
         email: input.contactEmail,
-        description: input.dba ? `DBA: ${input.dba}` : undefined,
-        complianceStatus: saferVerification.verified ? "pending" : "non_compliant",
+        description: input.dba ? `DBA: ${input.dba}` : (instantVerif?.dbaName ? `DBA: ${instantVerif.dbaName}` : undefined),
+        complianceStatus: instantVerif?.outOfService ? "non_compliant" : (saferVerification.verified ? "pending" : "non_compliant"),
       }).$returningId();
 
       const companyId = Number(companyResult[0]?.id);
@@ -479,13 +521,47 @@ export const registrationRouter = router({
         aiFraudCheck = scoreRegistration({ email: input.contactEmail, phone: input.contactPhone, companyName: input.companyName, dotNumber: input.usdotNumber, mcNumber: input.mcNumber });
       } catch {}
 
+      // ── Store ML verification event (fire-and-forget) ──
+      if (instantVerif && crossRef) {
+        try {
+          const mlFeatures = extractMLFeatures(instantVerif, crossRef);
+          storeVerificationEvent(mlFeatures, "registration", userId, companyId).catch(() => {});
+        } catch {}
+      }
+
       return {
         success: true,
         userId,
         companyId,
         saferVerification,
-        message: "Registration submitted. USDOT verification in progress.",
-        verificationRequired: true,
+        // Instant verification intelligence
+        instantVerification: instantVerif ? {
+          verificationScore: instantVerif.verificationScore,
+          verificationTier: instantVerif.verificationTier,
+          legalName: instantVerif.legalName,
+          fleet: instantVerif.fleet,
+          equipment: instantVerif.equipment,
+          classification: instantVerif.classification,
+          authority: instantVerif.authority,
+          insurance: instantVerif.insurance,
+          safety: instantVerif.safety,
+          crashes: instantVerif.crashes,
+          outOfService: instantVerif.outOfService,
+          flags: instantVerif.flags,
+          docsRequired: instantVerif.docsRequired,
+        } : null,
+        crossReference: crossRef ? {
+          overallMatch: crossRef.overallMatch,
+          discrepancies: crossRef.discrepancies,
+          recommendations: crossRef.recommendations,
+          riskLevel: crossRef.riskLevel,
+        } : null,
+        message: instantVerif?.verificationTier === "INSTANT_VERIFIED"
+          ? "Registration submitted. Carrier instantly verified from FMCSA records."
+          : instantVerif?.verificationTier === "FLAGGED"
+          ? "Registration submitted. ⚠️ Carrier flagged — admin review required."
+          : "Registration submitted. USDOT verification in progress.",
+        verificationRequired: instantVerif?.verificationTier !== "INSTANT_VERIFIED",
         aiFraudCheck,
       };
     }),
@@ -661,11 +737,32 @@ export const registrationRouter = router({
       if (!db) throw new Error("Database not available");
       const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.contactEmail)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
+
+      // ── Instant FMCSA Verification for broker ──
+      let instantVerif: Awaited<ReturnType<typeof getInstantVerification>> = null;
+      let crossRef: any = null;
+      if (input.usdotNumber) {
+        instantVerif = await getInstantVerification(input.usdotNumber);
+        if (instantVerif) {
+          crossRef = crossReferenceInputs({
+            companyName: input.companyName,
+            dba: input.dba,
+            streetAddress: input.streetAddress,
+            city: input.city,
+            state: input.state,
+            zipCode: input.zipCode,
+            phone: input.contactPhone,
+            email: input.contactEmail,
+            mcNumber: input.mcNumber,
+          }, instantVerif);
+        }
+      }
+
       const passwordHash = await bcrypt.hash(input.password, 12);
       const companyResult = await db.insert(companies).values({
         name: input.companyName,
-        legalName: input.companyName,
-        mcNumber: input.mcNumber,
+        legalName: instantVerif?.legalName || input.companyName,
+        mcNumber: input.mcNumber || instantVerif?.authority?.docketNumber || undefined,
         dotNumber: input.usdotNumber,
         ein: input.einNumber,
         address: input.streetAddress,
@@ -674,8 +771,8 @@ export const registrationRouter = router({
         zipCode: input.zipCode,
         phone: input.contactPhone,
         email: input.contactEmail,
-        description: input.dba ? `DBA: ${input.dba}` : undefined,
-        complianceStatus: "pending",
+        description: input.dba ? `DBA: ${input.dba}` : (instantVerif?.dbaName ? `DBA: ${instantVerif.dbaName}` : undefined),
+        complianceStatus: instantVerif?.outOfService ? "non_compliant" : "pending",
       }).$returningId();
       const companyId = Number(companyResult[0]?.id);
       const openId = uuidv4();
@@ -724,7 +821,36 @@ export const registrationRouter = router({
         indexCarrier({ id: companyId, companyName: input.companyName, dotNumber: input.usdotNumber, mcNumber: input.mcNumber, serviceAreas: input.state, specializations: "freight broker" });
       } catch {}
 
-      return { success: true, userId, companyId, verificationRequired: true };
+      // ── Store ML verification event (fire-and-forget) ──
+      if (instantVerif && crossRef) {
+        try {
+          const mlFeatures = extractMLFeatures(instantVerif, crossRef);
+          storeVerificationEvent(mlFeatures, "registration", userId, companyId).catch(() => {});
+        } catch {}
+      }
+
+      return {
+        success: true,
+        userId,
+        companyId,
+        verificationRequired: true,
+        instantVerification: instantVerif ? {
+          verificationScore: instantVerif.verificationScore,
+          verificationTier: instantVerif.verificationTier,
+          legalName: instantVerif.legalName,
+          authority: instantVerif.authority,
+          insurance: instantVerif.insurance,
+          safety: instantVerif.safety,
+          outOfService: instantVerif.outOfService,
+          flags: instantVerif.flags,
+        } : null,
+        crossReference: crossRef ? {
+          overallMatch: crossRef.overallMatch,
+          discrepancies: crossRef.discrepancies,
+          recommendations: crossRef.recommendations,
+          riskLevel: crossRef.riskLevel,
+        } : null,
+      };
     }),
 
   /**
@@ -1383,8 +1509,8 @@ export const registrationRouter = router({
     }),
 
   /**
-   * FMCSA Pre-fill — Lookup carrier data by DOT/MC to auto-populate registration
-   * Used during registration to pre-fill company info for FMCSA-registered carriers
+   * FMCSA Pre-fill v2 — Full instant verification with equipment/trailer intelligence
+   * Used during registration to auto-populate AND verify carrier identity
    */
   fmcsaPrefill: auditedPublicProcedure
     .input(z.object({
@@ -1397,8 +1523,85 @@ export const registrationRouter = router({
       }
 
       try {
-        let carrier: any = null;
+        // ── Step 1: Try instant verification from bulk data (sub-ms) ──
+        if (input.dotNumber) {
+          const iv = await getInstantVerification(input.dotNumber);
+          if (iv) {
+            return {
+              found: true,
+              source: "bulk_data" as const,
+              prefill: {
+                companyName: iv.legalName,
+                dba: iv.dbaName || "",
+                streetAddress: iv.address.street,
+                city: iv.address.city,
+                state: iv.address.state,
+                zipCode: iv.address.zip,
+                country: iv.address.country,
+                contactPhone: iv.phone || "",
+                contactEmail: iv.email || "",
+                dotNumber: iv.dotNumber,
+                mcNumber: iv.authority?.docketNumber || "",
+                powerUnits: iv.fleet.powerUnits,
+                driverCount: iv.fleet.drivers,
+                hazmatAuthorized: iv.equipment.isHazmat,
+                passengerCarrier: iv.equipment.isPassenger,
+                mcs150Date: iv.fleet.mcs150Date || "",
+                mcs150Mileage: iv.fleet.mcs150Mileage,
+                carrierOperation: iv.fleet.carrierOperation,
+              },
+              // Fleet & equipment intelligence (NEW)
+              fleetIntelligence: {
+                serviceType: iv.fleet.serviceType,
+                operationScope: iv.fleet.operationScope,
+                isInterstate: iv.fleet.isInterstate,
+                isIntrastate: iv.fleet.isIntrastate,
+                classification: iv.classification,
+              },
+              equipmentIntelligence: {
+                cargoTypes: iv.equipment.cargoTypes,
+                equipmentTypes: iv.equipment.equipmentTypes,
+                trailerTypes: iv.equipment.trailerTypes,
+                commodities: iv.equipment.commodities,
+                isRefrigerated: iv.equipment.isRefrigerated,
+                isTanker: iv.equipment.isTanker,
+                isFlatbed: iv.equipment.isFlatbed,
+                isOversize: iv.equipment.isOversize,
+              },
+              // Verification results (full formula: Authority + Insurance + BOC-3 + Inspections)
+              verification: {
+                verificationScore: iv.verificationScore,
+                verificationTier: iv.verificationTier,
+                authorityStatus: iv.authority?.status || "UNKNOWN",
+                commonAuthActive: iv.authority?.commonAuthActive || false,
+                commonAuthGranted: iv.authority?.commonAuthGranted || null,
+                brokerAuthActive: iv.authority?.brokerAuthActive || false,
+                contractAuthActive: iv.authority?.contractAuthActive || false,
+                bipdInsuranceOnFile: iv.insurance?.bipdOnFile || false,
+                activeInsurancePolicies: iv.insurance?.activePolicies || 0,
+                insurancePolicies: iv.insurance?.policies || [],
+                boc3OnFile: iv.boc3OnFile,
+                boc3Agent: iv.boc3Agent,
+                inspectionOosRate: iv.inspectionOosRate,
+                inspectionTotal24mo: iv.inspectionTotal24mo,
+                outOfService: iv.outOfService,
+                oosReason: iv.oosReason,
+                hasRevocation: iv.hasRevocation,
+                isHazmat: iv.equipment.isHazmat,
+                flags: iv.flags,
+                docsRequired: iv.docsRequired,
+              },
+              insurance: iv.insurance,
+              safety: iv.safety,
+              crashes: iv.crashes,
+              docsRequired: iv.docsRequired,
+              dataSource: iv.dataSource,
+            };
+          }
+        }
 
+        // ── Step 2: Fall back to live FMCSA API ──
+        let carrier: any = null;
         if (input.dotNumber) {
           carrier = await fmcsaService.getCatalystByDOT(input.dotNumber);
         } else if (input.mcNumber) {
@@ -1409,9 +1612,9 @@ export const registrationRouter = router({
           return { found: false, error: "Carrier not found in FMCSA database" };
         }
 
-        // Return pre-fill data (excluding compliance docs — user must still upload those)
         return {
           found: true,
+          source: "live_api" as const,
           prefill: {
             companyName: carrier.legalName || "",
             dba: carrier.dbaName || "",
@@ -1430,7 +1633,6 @@ export const registrationRouter = router({
             mcs150Date: carrier.mcs150Date || "",
             mcs150Mileage: carrier.mcs150Mileage || 0,
           },
-          // Note to frontend: Documents still required
           docsRequired: [
             "MC Authority Letter",
             "Certificate of Insurance",
@@ -1443,11 +1645,125 @@ export const registrationRouter = router({
         return { found: false, error: "FMCSA lookup failed" };
       }
     }),
+
+  /**
+   * Admin: Audit platform companies against FMCSA records
+   * Finds gaps, discrepancies, enriches missing data, flags non-compliant carriers
+   */
+  auditCompanies: auditedProtectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(500).default(100) }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user?.role !== "ADMIN" && ctx.user?.role !== "SUPER_ADMIN" && ctx.user?.role !== "COMPLIANCE_OFFICER") {
+        throw new Error("Unauthorized — Admin or Compliance Officer role required");
+      }
+      return auditPlatformCompanies(input.limit);
+    }),
+
+  /**
+   * Login enrichment: When a user logs in, instantly verify their carrier against FMCSA
+   * Returns verification intelligence without modifying any data
+   */
+  getVerificationIntel: auditedProtectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return null;
+
+      const userId = Number(ctx.user?.id || 0);
+      const companyId = ctx.user?.companyId || 0;
+      if (!companyId) return null;
+
+      try {
+        const [co] = await db.select({ dotNumber: companies.dotNumber, name: companies.name })
+          .from(companies).where(eq(companies.id, companyId)).limit(1);
+        if (!co?.dotNumber) return null;
+
+        const iv = await getInstantVerification(co.dotNumber);
+        if (!iv) return null;
+
+        // Cross-reference against stored company data
+        const crossRef = crossReferenceInputs({ companyName: co.name }, iv);
+
+        // Store ML event for login pattern learning
+        try {
+          const mlFeatures = extractMLFeatures(iv, crossRef);
+          storeVerificationEvent(mlFeatures, "login", userId, companyId).catch(() => {});
+        } catch {}
+
+        return {
+          dotNumber: iv.dotNumber,
+          verificationScore: iv.verificationScore,
+          verificationTier: iv.verificationTier,
+          legalName: iv.legalName,
+          fleet: iv.fleet,
+          equipment: iv.equipment,
+          authority: iv.authority,
+          insurance: iv.insurance,
+          safety: iv.safety,
+          crashes: iv.crashes,
+          outOfService: iv.outOfService,
+          flags: iv.flags,
+          crossReference: {
+            overallMatch: crossRef.overallMatch,
+            discrepancies: crossRef.discrepancies,
+            recommendations: crossRef.recommendations,
+            riskLevel: crossRef.riskLevel,
+          },
+          dataSource: iv.dataSource,
+        };
+      } catch { return null; }
+    }),
+
+  /**
+   * Get ML verification stats (Admin) — aggregated verification event data
+   */
+  getVerificationMLStats: auditedProtectedProcedure
+    .query(async ({ ctx }) => {
+      if (ctx.user?.role !== "ADMIN" && ctx.user?.role !== "SUPER_ADMIN") {
+        throw new Error("Unauthorized");
+      }
+      const pool = getPool();
+      if (!pool) return null;
+
+      try {
+        const [tierRows]: any = await pool.query(
+          `SELECT verification_tier, COUNT(*) as cnt, AVG(verification_score) as avg_score,
+                  AVG(cross_ref_score) as avg_cross_ref, AVG(alert_count) as avg_alerts
+           FROM carrier_verification_events GROUP BY verification_tier ORDER BY cnt DESC`
+        );
+        const [eventRows]: any = await pool.query(
+          `SELECT event_type, COUNT(*) as cnt FROM carrier_verification_events GROUP BY event_type`
+        );
+        const [fleetRows]: any = await pool.query(
+          `SELECT fleet_category, COUNT(*) as cnt, AVG(power_units) as avg_units, AVG(drivers) as avg_drivers
+           FROM carrier_verification_events GROUP BY fleet_category ORDER BY cnt DESC`
+        );
+        const [riskRows]: any = await pool.query(
+          `SELECT SUM(is_out_of_service) as oos_count, SUM(is_hazmat) as hazmat_count,
+                  SUM(CASE WHEN total_crashes > 0 THEN 1 ELSE 0 END) as carriers_with_crashes,
+                  AVG(total_crashes) as avg_crashes, COUNT(*) as total
+           FROM carrier_verification_events`
+        );
+        const [recentRows]: any = await pool.query(
+          `SELECT dot_number, verification_tier, verification_score, cross_ref_score, event_type, created_at
+           FROM carrier_verification_events ORDER BY created_at DESC LIMIT 20`
+        );
+
+        return {
+          byTier: tierRows || [],
+          byEventType: eventRows || [],
+          byFleetCategory: fleetRows || [],
+          riskSummary: riskRows?.[0] || {},
+          recentEvents: recentRows || [],
+          totalEvents: riskRows?.[0]?.total || 0,
+        };
+      } catch { return null; }
+    }),
 });
 
 /**
- * FMCSA SAFER System Verification
- * Verifies USDOT number against FMCSA database
+ * FMCSA Instant Verification — checks local bulk data first (sub-millisecond),
+ * then falls back to live FMCSA QCMobile API if carrier not in local DB.
+ * This is the key upgrade: 500K+ carriers verified instantly from our ETL tables.
  */
 async function verifyUSDOT(usdotNumber: string): Promise<{
   verified: boolean;
@@ -1456,11 +1772,87 @@ async function verifyUSDOT(usdotNumber: string): Promise<{
   safetyRating?: string;
   hazmatAuthorized?: boolean;
   outOfService?: boolean;
+  insuranceActive?: boolean;
+  unsafeDrivingScore?: number;
+  unsafeDrivingAlert?: boolean;
+  hosScore?: number;
+  hosAlert?: boolean;
+  vehicleMaintenanceScore?: number;
+  vehicleMaintenanceAlert?: boolean;
+  totalInspections?: number;
+  driverOosRate?: number;
+  vehicleOosRate?: number;
+  source?: "bulk_data" | "live_api";
   error?: string;
 }> {
   try {
-    // FMCSA SAFER Web Services API
-    const webKey = process.env.FMCSA_WEB_KEY;
+    // ── Step 1: Try local FMCSA bulk data (instant) ──
+    const pool = getPool();
+    if (pool) {
+      try {
+        const [censusRows]: any = await pool.query(
+          `SELECT legal_name, carrier_operation, hm_flag, phy_state, nbr_power_unit, driver_total
+           FROM fmcsa_census WHERE dot_number = ? LIMIT 1`,
+          [usdotNumber]
+        );
+        if (censusRows?.length > 0) {
+          const c = censusRows[0];
+
+          // Parallel: authority, OOS, insurance, SMS scores
+          const [authRows]: any = await pool.query(
+            `SELECT authority_status, common_auth_revoked, broker_auth_revoked FROM fmcsa_authority WHERE dot_number = ? LIMIT 1`,
+            [usdotNumber]
+          );
+          const [oosRows]: any = await pool.query(
+            `SELECT oos_date, return_to_service_date FROM fmcsa_oos_orders WHERE dot_number = ? AND return_to_service_date IS NULL ORDER BY oos_date DESC LIMIT 1`,
+            [usdotNumber]
+          );
+          const [insRows]: any = await pool.query(
+            `SELECT COUNT(*) as cnt FROM fmcsa_insurance WHERE dot_number = ? AND is_active = 1 AND (coverage_to IS NULL OR coverage_to >= CURDATE())`,
+            [usdotNumber]
+          );
+          const [smsRows]: any = await pool.query(
+            `SELECT unsafe_driving_score, unsafe_driving_alert, hos_score, hos_alert,
+                    vehicle_maintenance_score, vehicle_maintenance_alert,
+                    inspections_total, driver_oos_rate, vehicle_oos_rate
+             FROM fmcsa_sms_scores WHERE dot_number = ? ORDER BY run_date DESC LIMIT 1`,
+            [usdotNumber]
+          );
+
+          const auth = authRows?.[0];
+          const oos = oosRows?.[0];
+          const insCount = insRows?.[0]?.cnt || 0;
+          const sms = smsRows?.[0];
+
+          const isAuthorized = auth?.authority_status === "ACTIVE" || (!auth?.common_auth_revoked);
+
+          return {
+            verified: true,
+            source: "bulk_data",
+            legalName: c.legal_name,
+            operatingStatus: isAuthorized ? "Authorized" : "Not Authorized",
+            safetyRating: sms ? (sms.unsafe_driving_alert === "Y" ? "Alert" : "Monitored") : "Not Rated",
+            hazmatAuthorized: c.hm_flag === "Y",
+            outOfService: !!oos,
+            insuranceActive: insCount > 0,
+            unsafeDrivingScore: sms?.unsafe_driving_score ?? undefined,
+            unsafeDrivingAlert: sms?.unsafe_driving_alert === "Y",
+            hosScore: sms?.hos_score ?? undefined,
+            hosAlert: sms?.hos_alert === "Y",
+            vehicleMaintenanceScore: sms?.vehicle_maintenance_score ?? undefined,
+            vehicleMaintenanceAlert: sms?.vehicle_maintenance_alert === "Y",
+            totalInspections: sms?.inspections_total ?? undefined,
+            driverOosRate: sms?.driver_oos_rate ?? undefined,
+            vehicleOosRate: sms?.vehicle_oos_rate ?? undefined,
+          };
+        }
+      } catch (bulkErr) {
+        console.warn("[Registration] Bulk data lookup failed, falling back to live API:", (bulkErr as any)?.message?.slice(0, 100));
+      }
+    }
+
+    // ── Step 2: Fall back to live FMCSA QCMobile API ──
+    const webKey = process.env.FMCSA_WEB_KEY || process.env.FMCSA_WEBKEY;
     if (!webKey) {
       console.warn("FMCSA_WEB_KEY not configured, skipping verification");
       return { verified: false, error: "FMCSA verification not configured" };
@@ -1468,7 +1860,7 @@ async function verifyUSDOT(usdotNumber: string): Promise<{
 
     const response = await fetch(
       `https://mobile.fmcsa.dot.gov/qc/services/carriers/${usdotNumber}?webKey=${webKey}`,
-      { headers: { Accept: "application/json" } }
+      { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(10000) }
     );
 
     if (!response.ok) {
@@ -1484,6 +1876,7 @@ async function verifyUSDOT(usdotNumber: string): Promise<{
 
     return {
       verified: true,
+      source: "live_api",
       legalName: catalyst.legalName,
       operatingStatus: catalyst.allowedToOperate === "Y" ? "Authorized" : "Not Authorized",
       safetyRating: catalyst.safetyRating || "Not Rated",

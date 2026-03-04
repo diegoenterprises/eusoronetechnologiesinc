@@ -355,6 +355,15 @@ function MissionCard({
           </div>
         </div>
 
+        {/* Cargo-aware context badges */}
+        {(mission.cargoType || mission.equipmentType || (mission.category && /tanker|hazmat|liquid|bulk/i.test(mission.category))) && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {mission.equipmentType && <Badge className="bg-blue-500/15 text-blue-300 border-0 text-[10px]"><Package className="w-3 h-3 mr-1" />{(mission.equipmentType || "").replace(/_/g, " ")}</Badge>}
+            {mission.cargoType && <Badge className="bg-amber-500/15 text-amber-300 border-0 text-[10px]"><Package className="w-3 h-3 mr-1" />{mission.cargoType}</Badge>}
+            {mission.category && /hazmat/i.test(mission.category) && <Badge className="bg-red-500/15 text-red-300 border-0 text-[10px]">Hazmat</Badge>}
+          </div>
+        )}
+
         {showProgress && (
           <div className="mb-4">
             <div className="flex justify-between text-sm mb-1">

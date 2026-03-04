@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
+import { calcLiquidWeightLbs } from "@/lib/cargoCalculations";
 import DatePicker from "@/components/DatePicker";
 
 const STEPS = [
@@ -61,6 +62,10 @@ export default function CreateLoad() {
     // Step 4: Equipment
     equipmentType: "", trailerLength: "", tempControl: false, tempMin: "", tempMax: "",
     compartments: "1",
+    // Equipment Requirements
+    hoseType: "", hoseLength: "", fittingType: "",
+    pumpRequired: false, compressorRequired: false,
+    bottomLoadRequired: false, vaporRecoveryRequired: false,
     // Step 5: Schedule
     pickupDate: "", deliveryDate: "", scheduleType: "one_time" as "one_time" | "recurring" | "convoy",
     recurringDays: "1", convoySize: "1",
@@ -170,8 +175,8 @@ export default function CreateLoad() {
 
     const actualLoadsPerTruckPerDay = trucksFromCalc > 0 ? Math.ceil(totalLoadsPerDay / trucksFromCalc) : 0;
 
-    // Total weight (approx 7.1 lbs/gal for crude, 6.6 for gasoline - use 7 avg)
-    const totalWeightLbs = demandGal * 7;
+    // Total weight — product-density-aware (e.g. crude 7.2, gasoline 6.1, sulfuric acid 15.3)
+    const { weightLbs: totalWeightLbs } = calcLiquidWeightLbs(demandGal, formData.productName);
 
     // Pricing totals with platform fee (5-15% dynamic, use 8% average)
     const PLATFORM_FEE_PCT = 0.08;
@@ -217,6 +222,14 @@ export default function CreateLoad() {
         formData.tankerEndorsement ? "Tanker" : "",
       ].filter(Boolean).join(", ") || undefined,
       minSafetyScore: formData.minRating || undefined,
+      // Equipment requirements
+      hoseType: formData.hoseType || undefined,
+      hoseLength: formData.hoseLength || undefined,
+      fittingType: formData.fittingType || undefined,
+      pumpRequired: formData.pumpRequired || undefined,
+      compressorRequired: formData.compressorRequired || undefined,
+      bottomLoadRequired: formData.bottomLoadRequired || undefined,
+      vaporRecoveryRequired: formData.vaporRecoveryRequired || undefined,
     } as any);
   };
 
@@ -386,12 +399,69 @@ export default function CreateLoad() {
           {step === 4 && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><Label>Equipment Type</Label><Select value={formData.equipmentType} onValueChange={v => updateField("equipmentType", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="dry_van">Dry Van</SelectItem><SelectItem value="reefer">Reefer</SelectItem><SelectItem value="flatbed">Flatbed</SelectItem><SelectItem value="liquid_tank">Tanker (Hazmat Liquid)</SelectItem><SelectItem value="gas_tank">Tanker (Gas)</SelectItem><SelectItem value="food_grade_tank">Food-Grade Tank</SelectItem><SelectItem value="water_tank">Water Tank</SelectItem><SelectItem value="bulk_hopper">Bulk Hopper</SelectItem><SelectItem value="step_deck">Step Deck</SelectItem><SelectItem value="lowboy">Lowboy</SelectItem></SelectContent></Select></div>
+                <div><Label>Equipment Type</Label><Select value={formData.equipmentType} onValueChange={v => updateField("equipmentType", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="dry_van">Dry Van (53ft)</SelectItem><SelectItem value="reefer">Refrigerated (Reefer)</SelectItem><SelectItem value="flatbed">Standard Flatbed</SelectItem><SelectItem value="step_deck">Step Deck / Drop Deck</SelectItem><SelectItem value="lowboy">Lowboy / RGN</SelectItem><SelectItem value="double_drop">Double Drop / Stretch</SelectItem><SelectItem value="conestoga">Conestoga (Rolling-Tarp)</SelectItem><SelectItem value="liquid_tank">Petroleum Tank (MC-306)</SelectItem><SelectItem value="gas_tank">Pressurized Gas Tank (MC-331)</SelectItem><SelectItem value="cryogenic">Cryogenic Tank (MC-338)</SelectItem><SelectItem value="hazmat_van">Hazmat-Rated Van</SelectItem><SelectItem value="food_grade_tank">Food-Grade Liquid Tank</SelectItem><SelectItem value="water_tank">Water Tank</SelectItem><SelectItem value="auto_carrier">Auto Carrier / Car Hauler</SelectItem><SelectItem value="livestock">Livestock / Cattle Pot</SelectItem><SelectItem value="log_trailer">Log Trailer</SelectItem><SelectItem value="grain_hopper">Grain Hopper</SelectItem><SelectItem value="bulk_hopper">Dry Bulk / Pneumatic Hopper</SelectItem><SelectItem value="pneumatic">Pneumatic Tank</SelectItem><SelectItem value="dump_trailer">End Dump / Bottom Dump</SelectItem><SelectItem value="intermodal">Intermodal Container Chassis</SelectItem><SelectItem value="curtainside">Curtainside / Tautliner</SelectItem></SelectContent></Select></div>
                 <div><Label>Trailer Length</Label><Select value={formData.trailerLength} onValueChange={v => updateField("trailerLength", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="48">48 ft</SelectItem><SelectItem value="53">53 ft</SelectItem></SelectContent></Select></div>
                 <div><Label>Compartments</Label><Input type="number" min="1" max="5" value={formData.compartments} onChange={e => updateField("compartments", e.target.value)} className="bg-slate-700/50" /></div>
               </div>
               <div className="flex items-center gap-2"><Checkbox checked={formData.tempControl} onCheckedChange={v => updateField("tempControl", v)} /><Label>Temperature Controlled</Label></div>
               {formData.tempControl && <div className="grid grid-cols-2 gap-4"><div><Label>Min Temp (F)</Label><Input type="number" value={formData.tempMin} onChange={e => updateField("tempMin", e.target.value)} className="bg-slate-700/50" /></div><div><Label>Max Temp (F)</Label><Input type="number" value={formData.tempMax} onChange={e => updateField("tempMax", e.target.value)} className="bg-slate-700/50" /></div></div>}
+
+              {/* Equipment Requirements — Tanker/Liquid specific */}
+              {(formData.equipmentType.includes("tank") || formData.equipmentType.includes("liquid") || formData.equipmentType.includes("food_grade") || formData.equipmentType.includes("water") || formData.equipmentType.includes("pneumatic")) && (
+                <div className={cn("p-4 rounded-xl border space-y-4", isLight ? "bg-blue-50/50 border-blue-200/50" : "bg-blue-500/5 border-blue-500/15")}>
+                  <h3 className={cn("text-sm font-semibold flex items-center gap-2", isLight ? "text-blue-700" : "text-blue-400")}>
+                    <Scale className="w-4 h-4" /> Loading Equipment Requirements
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label>Hose Type</Label>
+                      <Select value={formData.hoseType} onValueChange={v => updateField("hoseType", v)}>
+                        <SelectTrigger className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")}><SelectValue placeholder="Select hose type" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="petroleum">Petroleum Hose</SelectItem>
+                          <SelectItem value="chemical">Chemical Transfer Hose</SelectItem>
+                          <SelectItem value="food_grade">Food-Grade Hose</SelectItem>
+                          <SelectItem value="steam">Steam Hose</SelectItem>
+                          <SelectItem value="composite">Composite Hose</SelectItem>
+                          <SelectItem value="dry_bulk">Dry Bulk / Pneumatic Hose</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Hose Length (ft)</Label>
+                      <Select value={formData.hoseLength} onValueChange={v => updateField("hoseLength", v)}>
+                        <SelectTrigger className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")}><SelectValue placeholder="Select length" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="25">25 ft</SelectItem>
+                          <SelectItem value="50">50 ft</SelectItem>
+                          <SelectItem value="75">75 ft</SelectItem>
+                          <SelectItem value="100">100 ft</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Fitting / Adapter</Label>
+                      <Select value={formData.fittingType} onValueChange={v => updateField("fittingType", v)}>
+                        <SelectTrigger className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")}><SelectValue placeholder="Select fitting" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cam_lock">Cam Lock</SelectItem>
+                          <SelectItem value="dry_break">Dry Break</SelectItem>
+                          <SelectItem value="hammer_union">Hammer Union</SelectItem>
+                          <SelectItem value="api_coupler">API Bottom Coupler</SelectItem>
+                          <SelectItem value="tri_clamp">Tri-Clamp (Sanitary)</SelectItem>
+                          <SelectItem value="npt">NPT Threaded</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-4">
+                    <div className="flex items-center gap-2"><Checkbox checked={formData.pumpRequired} onCheckedChange={v => updateField("pumpRequired", v)} /><Label className="text-sm">Pump Required</Label></div>
+                    <div className="flex items-center gap-2"><Checkbox checked={formData.compressorRequired} onCheckedChange={v => updateField("compressorRequired", v)} /><Label className="text-sm">Compressor Required</Label></div>
+                    <div className="flex items-center gap-2"><Checkbox checked={formData.bottomLoadRequired} onCheckedChange={v => updateField("bottomLoadRequired", v)} /><Label className="text-sm">Bottom Loading</Label></div>
+                    <div className="flex items-center gap-2"><Checkbox checked={formData.vaporRecoveryRequired} onCheckedChange={v => updateField("vaporRecoveryRequired", v)} /><Label className="text-sm">Vapor Recovery</Label></div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

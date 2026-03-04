@@ -354,6 +354,13 @@ export const SPECIALIZED_ANALYTICS_WIDGETS: WidgetDefinition[] = [
   { id: 'customer_satisfaction', name: 'Customer Satisfaction', description: 'Customer feedback analytics', icon: Star, category: 'analytics', roles: ['SHIPPER', 'CATALYST', 'BROKER'], defaultSize: { w: 10, h: 8 }, premium: true },
 ];
 
+// ELD Intelligence Widgets (Available to all qualifying roles — not FACTORING)
+export const ELD_WIDGETS: WidgetDefinition[] = [
+  { id: 'eld_fleet_pulse', name: 'ELD Fleet Pulse', description: 'Fleet ELD health, device status & HOS compliance at a glance', icon: Activity, category: 'operations', roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'], defaultSize: { w: 12, h: 8 } },
+  { id: 'eld_network_effect', name: 'ELD Network Effect', description: 'Platform-wide ELD network strength & road intelligence coverage', icon: Radio, category: 'analytics', roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'], defaultSize: { w: 10, h: 6 } },
+  { id: 'eld_road_intelligence', name: 'ELD Road Intelligence', description: 'LiDAR-enriched road conditions from fleet ELD GPS data', icon: Navigation, category: 'safety', roles: ['CATALYST', 'DRIVER', 'DISPATCH', 'ESCORT', 'SAFETY_MANAGER'], defaultSize: { w: 12, h: 6 } },
+];
+
 // Combine all widgets
 export const ALL_WIDGETS: WidgetDefinition[] = [
   ...UNIVERSAL_WIDGETS,
@@ -367,6 +374,7 @@ export const ALL_WIDGETS: WidgetDefinition[] = [
   ...COMPLIANCE_OFFICER_WIDGETS,
   ...SAFETY_MANAGER_WIDGETS,
   ...SPECIALIZED_ANALYTICS_WIDGETS,
+  ...ELD_WIDGETS,
 ];
 
 // Get widgets for a specific role

@@ -26,6 +26,11 @@ import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { HazmatDecalPreview } from "@/components/HazmatDecal";
+import {
+  PRODUCT_DENSITY, DRY_BULK_DENSITY, UNIT_WEIGHT_FACTORS, UNIT_MAX_CAPACITY,
+  lookupDensity, lookupBulkDensity, lookupBushelWeight, lookupLivestockWeight,
+  fuzzyMatch, calcWeight,
+} from "@/lib/cargoCalculations";
 import HazmatRouteRestrictions from "@/components/HazmatRouteRestrictions";
 import RegulatoryCompliancePanel from "@/components/RegulatoryCompliancePanel";
 import { MultiTruckVisualization } from "@/components/TruckVisualization";
@@ -35,21 +40,37 @@ import DatePicker from "@/components/DatePicker";
 const ALL_STEPS = ["Trailer Type", "Product Classification", "SPECTRA-MATCH Verification", "Quantity & Weight", "Origin & Destination", "Catalyst Requirements", "Pricing", "Review"];
 
 const TRAILER_TYPES = [
+  // ── Tanker / Liquid / Gas (Hazmat) ──
   { id: "liquid_tank", name: "Liquid Tank Trailer", desc: "MC-306/DOT-406 for petroleum, chemicals, liquid bulk", icon: "droplets", animType: "liquid" as const, hazmat: true, equipment: "tank", maxGal: 9500 },
   { id: "gas_tank", name: "Pressurized Gas Tank", desc: "MC-331 for LPG, ammonia, compressed gases", icon: "wind", animType: "gas" as const, hazmat: true, equipment: "tanker", maxGal: 11600 },
-  { id: "dry_van", name: "Dry Van", desc: "General freight, palletized goods, packaged materials", icon: "box", animType: "solid" as const, hazmat: false, equipment: "dry-van", maxGal: 0 },
-  { id: "reefer", name: "Refrigerated (Reefer)", desc: "Temperature-controlled: food, pharma, chemicals", icon: "thermometer", animType: "refrigerated" as const, hazmat: false, equipment: "reefer", maxGal: 0 },
-  { id: "flatbed", name: "Flatbed", desc: "Oversized loads, heavy equipment, steel, lumber", icon: "truck", animType: "solid" as const, hazmat: false, equipment: "flatbed", maxGal: 0 },
-  { id: "bulk_hopper", name: "Dry Bulk / Hopper", desc: "Pneumatic: cement, lime, flour, plastic pellets", icon: "package", animType: "solid" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
-  { id: "hazmat_van", name: "Hazmat Box / Van", desc: "Packaged hazmat: batteries, chemicals, oxidizers", icon: "alert", animType: "hazmat" as const, hazmat: true, equipment: "dry-van", maxGal: 0 },
   { id: "cryogenic", name: "Cryogenic Tank", desc: "LNG, liquid nitrogen, liquid oxygen, liquid hydrogen", icon: "snowflake", animType: "gas" as const, hazmat: true, equipment: "tanker", maxGal: 10000 },
+  { id: "hazmat_van", name: "Hazmat Box / Van", desc: "Packaged hazmat: batteries, chemicals, oxidizers", icon: "alert", animType: "hazmat" as const, hazmat: true, equipment: "hazmat-van", maxGal: 0 },
+  // ── Enclosed ──
+  { id: "dry_van", name: "Dry Van", desc: "Enclosed trailer for palletized, packaged, and high-value specialty cargo", icon: "box", animType: "solid" as const, hazmat: false, equipment: "dry-van", maxGal: 0 },
+  // ── Refrigerated ──
+  { id: "reefer", name: "Refrigerated (Reefer)", desc: "Temperature-controlled: food, pharma, chemicals", icon: "thermometer", animType: "refrigerated" as const, hazmat: false, equipment: "reefer", maxGal: 0 },
+  // ── Flatbed Family ──
+  { id: "flatbed", name: "Standard Flatbed", desc: "Steel, lumber, equipment, oversized loads", icon: "truck", animType: "solid" as const, hazmat: false, equipment: "flatbed", maxGal: 0 },
+  { id: "step_deck", name: "Step Deck / Drop Deck", desc: "Tall machinery, equipment — lower deck for extra height clearance", icon: "truck", animType: "solid" as const, hazmat: false, equipment: "step_deck", maxGal: 0 },
+  { id: "lowboy", name: "Lowboy / RGN", desc: "Heavy equipment: excavators, dozers, cranes — detachable gooseneck", icon: "truck", animType: "solid" as const, hazmat: false, equipment: "lowboy", maxGal: 0 },
+  { id: "double_drop", name: "Double Drop / Stretch", desc: "Extra-tall cargo: transformers, generators, industrial vessels", icon: "truck", animType: "solid" as const, hazmat: false, equipment: "double_drop", maxGal: 0 },
+  { id: "conestoga", name: "Conestoga (Rolling-Tarp)", desc: "Weather-protected flatbed: coils, machinery, weather-sensitive steel", icon: "blinds", animType: "solid" as const, hazmat: false, equipment: "conestoga", maxGal: 0 },
+  // ── Specialty Haulers ──
+  { id: "auto_carrier", name: "Auto Carrier / Car Hauler", desc: "Vehicle transport: 7-10 cars, dealer-to-dealer, auction, OEM delivery", icon: "car_icon", animType: "solid" as const, hazmat: false, equipment: "auto_carrier", maxGal: 0 },
+  { id: "livestock", name: "Livestock / Cattle Pot", desc: "Live animal transport: cattle, hogs, poultry — USDA/FMCSA regulated", icon: "livestock_icon", animType: "solid" as const, hazmat: false, equipment: "livestock", maxGal: 0 },
+  { id: "log_trailer", name: "Log Trailer", desc: "Timber hauling: sawlogs, pulpwood, tree-length — 49 CFR 393.116", icon: "tree_icon", animType: "solid" as const, hazmat: false, equipment: "log_trailer", maxGal: 0 },
+  // ── Bulk & Hopper ──
+  { id: "bulk_hopper", name: "Dry Bulk / Hopper", desc: "Pneumatic: cement, lime, flour, plastic pellets", icon: "package", animType: "solid" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
+  { id: "hopper", name: "Gravity Hopper", desc: "Gravity-discharge hopper for grain, sand, aggregate", icon: "hopper_icon", animType: "solid" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
+  { id: "grain_hopper", name: "Grain Hopper", desc: "USDA-grade grain transport: corn, wheat, soybeans, rice, barley", icon: "hopper_icon", animType: "solid" as const, hazmat: false, equipment: "grain_trailer", maxGal: 0 },
+  { id: "pneumatic", name: "Pneumatic Tank", desc: "Pressure-unload for cement, flour, powder, pellets", icon: "wind", animType: "solid" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
+  { id: "end_dump", name: "End Dump Trailer", desc: "Hydraulic end-dump for aggregate, sand, demolition debris", icon: "arrowdown", animType: "solid" as const, hazmat: false, equipment: "dump_trailer", maxGal: 0 },
+  // ── Food & Water ──
   { id: "food_grade_tank", name: "Food-Grade Liquid Tank", desc: "Milk, juice, cooking oil, wine, liquid sugar, edible oils", icon: "milkoff", animType: "liquid" as const, hazmat: false, equipment: "tank", maxGal: 6500 },
   { id: "water_tank", name: "Water Tank", desc: "Potable water, non-potable water, industrial water", icon: "glasswater", animType: "liquid" as const, hazmat: false, equipment: "tank", maxGal: 5500 },
-  { id: "hopper", name: "Dry Bulk / Hopper", desc: "Gravity-discharge hopper for grain, sand, aggregate", icon: "hopper_icon", animType: "solid" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
-  { id: "pneumatic", name: "Pneumatic Tank", desc: "Pressure-unload for cement, flour, powder, pellets", icon: "wind", animType: "solid" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
-  { id: "end_dump", name: "End Dump Trailer", desc: "Hydraulic end-dump for aggregate, sand, demolition debris", icon: "arrowdown", animType: "solid" as const, hazmat: false, equipment: "flatbed", maxGal: 0 },
-  { id: "intermodal_chassis", name: "Intermodal Chassis", desc: "ISO container chassis for port drayage and intermodal", icon: "container", animType: "solid" as const, hazmat: false, equipment: "dry-van", maxGal: 0 },
-  { id: "curtain_side", name: "Curtain Side / Tautliner", desc: "Side-access loading for pallets, building materials", icon: "blinds", animType: "solid" as const, hazmat: false, equipment: "dry-van", maxGal: 0 },
+  // ── Intermodal & Curtain Side ──
+  { id: "intermodal_chassis", name: "Intermodal Chassis", desc: "ISO container chassis for port drayage and intermodal", icon: "container", animType: "solid" as const, hazmat: false, equipment: "intermodal", maxGal: 0 },
+  { id: "curtain_side", name: "Curtain Side / Tautliner", desc: "Side-access loading for building materials, machinery", icon: "blinds", animType: "solid" as const, hazmat: false, equipment: "curtain_side", maxGal: 0 },
 ];
 
 const TRAILER_ICON: Record<string, React.ReactNode> = {
@@ -67,6 +88,9 @@ const TRAILER_ICON: Record<string, React.ReactNode> = {
   arrowdown: <ArrowDownToLine className="w-8 h-8" />,
   container: <Container className="w-8 h-8" />,
   blinds: <Blinds className="w-8 h-8" />,
+  car_icon: <Truck className="w-8 h-8" />,
+  livestock_icon: <Users className="w-8 h-8" />,
+  tree_icon: <Package className="w-8 h-8" />,
 };
 
 const HAZMAT_CLASSES = [
@@ -93,218 +117,10 @@ function getClassesForTrailer(id: string) {
   return HAZMAT_CLASSES;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PRODUCT DENSITY TABLE — lbs per gallon for auto-weight calc
-// Sources: NIST, DOT hazmat tables, industry standards
-// ═══════════════════════════════════════════════════════════════
-const PRODUCT_DENSITY: Record<string, { lbsPerGal: number; label: string }> = {
-  // ── Petroleum ──
-  "gasoline": { lbsPerGal: 6.1, label: "Gasoline" },
-  "diesel": { lbsPerGal: 7.1, label: "Diesel #2" },
-  "diesel fuel": { lbsPerGal: 7.1, label: "Diesel #2" },
-  "crude oil": { lbsPerGal: 7.2, label: "Crude Oil" },
-  "jet fuel": { lbsPerGal: 6.7, label: "Jet-A" },
-  "kerosene": { lbsPerGal: 6.7, label: "Kerosene" },
-  "heating oil": { lbsPerGal: 7.1, label: "Heating Oil" },
-  "fuel oil": { lbsPerGal: 7.9, label: "Fuel Oil #6" },
-  "ethanol": { lbsPerGal: 6.6, label: "Ethanol" },
-  "biodiesel": { lbsPerGal: 7.3, label: "Biodiesel B100" },
-  "asphalt": { lbsPerGal: 8.6, label: "Liquid Asphalt" },
-  "naphtha": { lbsPerGal: 5.8, label: "Naphtha" },
-  "toluene": { lbsPerGal: 7.2, label: "Toluene" },
-  "xylene": { lbsPerGal: 7.2, label: "Xylene" },
-  "benzene": { lbsPerGal: 7.3, label: "Benzene" },
-  "methanol": { lbsPerGal: 6.6, label: "Methanol" },
-  "styrene": { lbsPerGal: 7.6, label: "Styrene" },
-  "acetaldehyde": { lbsPerGal: 6.5, label: "Acetaldehyde" },
-  // ── Chemicals ──
-  "sulfuric acid": { lbsPerGal: 15.3, label: "Sulfuric Acid" },
-  "hydrochloric acid": { lbsPerGal: 9.9, label: "Hydrochloric Acid" },
-  "phosphoric acid": { lbsPerGal: 14.1, label: "Phosphoric Acid" },
-  "nitric acid": { lbsPerGal: 12.6, label: "Nitric Acid" },
-  "acetic acid": { lbsPerGal: 8.8, label: "Acetic Acid" },
-  "sodium hydroxide": { lbsPerGal: 13.4, label: "Caustic Soda 50%" },
-  "caustic soda": { lbsPerGal: 13.4, label: "Caustic Soda 50%" },
-  "ammonia": { lbsPerGal: 5.15, label: "Anhydrous Ammonia" },
-  "chlorine": { lbsPerGal: 12.1, label: "Liquid Chlorine" },
-  "hydrogen peroxide": { lbsPerGal: 11.2, label: "H2O2 50%" },
-  "acetone": { lbsPerGal: 6.6, label: "Acetone" },
-  "isopropanol": { lbsPerGal: 6.5, label: "Isopropyl Alcohol" },
-  "isopropyl alcohol": { lbsPerGal: 6.5, label: "Isopropyl Alcohol" },
-  "formaldehyde": { lbsPerGal: 9.3, label: "Formaldehyde 37%" },
-  "sodium hypochlorite": { lbsPerGal: 10.0, label: "Bleach (12.5%)" },
-  "ferric chloride": { lbsPerGal: 12.4, label: "Ferric Chloride" },
-  "calcium chloride": { lbsPerGal: 10.8, label: "Calcium Chloride (Liquid)" },
-  "propylene glycol": { lbsPerGal: 8.6, label: "Propylene Glycol" },
-  "ethylene glycol": { lbsPerGal: 9.3, label: "Ethylene Glycol" },
-  // ── Gases (liquid form / cryogenic) ──
-  "propane": { lbsPerGal: 4.2, label: "Propane (LPG)" },
-  "butane": { lbsPerGal: 4.9, label: "Butane" },
-  "lng": { lbsPerGal: 3.5, label: "LNG" },
-  "natural gas": { lbsPerGal: 3.5, label: "LNG" },
-  "liquid nitrogen": { lbsPerGal: 6.7, label: "Liquid Nitrogen" },
-  "nitrogen": { lbsPerGal: 6.7, label: "Liquid Nitrogen" },
-  "liquid oxygen": { lbsPerGal: 9.5, label: "Liquid Oxygen" },
-  "oxygen": { lbsPerGal: 9.5, label: "Liquid Oxygen" },
-  "liquid hydrogen": { lbsPerGal: 0.6, label: "Liquid Hydrogen" },
-  "hydrogen": { lbsPerGal: 0.6, label: "Liquid Hydrogen" },
-  "liquid co2": { lbsPerGal: 8.5, label: "Liquid CO2" },
-  "carbon dioxide": { lbsPerGal: 8.5, label: "Liquid CO2" },
-  "liquid argon": { lbsPerGal: 11.6, label: "Liquid Argon" },
-  "argon": { lbsPerGal: 11.6, label: "Liquid Argon" },
-  "liquid helium": { lbsPerGal: 1.04, label: "Liquid Helium" },
-  "helium": { lbsPerGal: 1.04, label: "Liquid Helium" },
-  "liquid neon": { lbsPerGal: 10.1, label: "Liquid Neon" },
-  "nitrous oxide": { lbsPerGal: 10.1, label: "Nitrous Oxide" },
-  // ── Food-grade liquids (tank) ──
-  "water": { lbsPerGal: 8.34, label: "Water" },
-  "potable water": { lbsPerGal: 8.34, label: "Potable Water" },
-  "milk": { lbsPerGal: 8.6, label: "Whole Milk" },
-  "whole milk": { lbsPerGal: 8.6, label: "Whole Milk" },
-  "skim milk": { lbsPerGal: 8.6, label: "Skim Milk" },
-  "condensed milk": { lbsPerGal: 10.7, label: "Condensed Milk" },
-  "cream": { lbsPerGal: 8.4, label: "Heavy Cream" },
-  "whey": { lbsPerGal: 8.5, label: "Liquid Whey" },
-  "liquid eggs": { lbsPerGal: 8.5, label: "Liquid Eggs" },
-  "juice": { lbsPerGal: 8.8, label: "Fruit Juice" },
-  "orange juice": { lbsPerGal: 8.8, label: "Orange Juice" },
-  "apple juice": { lbsPerGal: 8.8, label: "Apple Juice" },
-  "grape juice": { lbsPerGal: 9.2, label: "Grape Juice Concentrate" },
-  "tomato paste": { lbsPerGal: 9.5, label: "Tomato Paste" },
-  "wine": { lbsPerGal: 8.4, label: "Wine" },
-  "beer": { lbsPerGal: 8.5, label: "Beer" },
-  "vinegar": { lbsPerGal: 8.4, label: "Vinegar" },
-  "soy sauce": { lbsPerGal: 9.0, label: "Soy Sauce" },
-  "chocolate": { lbsPerGal: 10.5, label: "Liquid Chocolate" },
-  // ── Edible oils ──
-  "cooking oil": { lbsPerGal: 7.7, label: "Cooking Oil" },
-  "vegetable oil": { lbsPerGal: 7.7, label: "Vegetable Oil" },
-  "soybean oil": { lbsPerGal: 7.7, label: "Soybean Oil" },
-  "canola oil": { lbsPerGal: 7.7, label: "Canola Oil" },
-  "palm oil": { lbsPerGal: 7.6, label: "Palm Oil" },
-  "coconut oil": { lbsPerGal: 7.6, label: "Coconut Oil" },
-  "corn oil": { lbsPerGal: 7.7, label: "Corn Oil" },
-  "olive oil": { lbsPerGal: 7.6, label: "Olive Oil" },
-  "sunflower oil": { lbsPerGal: 7.7, label: "Sunflower Oil" },
-  "peanut oil": { lbsPerGal: 7.7, label: "Peanut Oil" },
-  "fish oil": { lbsPerGal: 7.7, label: "Fish Oil" },
-  "mct oil": { lbsPerGal: 7.3, label: "MCT Oil" },
-  "tallow": { lbsPerGal: 7.5, label: "Tallow" },
-  "lard": { lbsPerGal: 7.6, label: "Lard" },
-  "shortening": { lbsPerGal: 7.6, label: "Vegetable Shortening" },
-  // ── Sweeteners / syrups ──
-  "corn syrup": { lbsPerGal: 11.7, label: "Corn Syrup" },
-  "hfcs": { lbsPerGal: 11.5, label: "HFCS" },
-  "liquid sugar": { lbsPerGal: 11.1, label: "Liquid Sugar" },
-  "molasses": { lbsPerGal: 11.7, label: "Molasses" },
-  "honey": { lbsPerGal: 11.9, label: "Honey" },
-  "maple syrup": { lbsPerGal: 11.1, label: "Maple Syrup" },
-  "agave nectar": { lbsPerGal: 11.2, label: "Agave Nectar" },
-  "sorbitol": { lbsPerGal: 10.8, label: "Sorbitol Solution" },
-  "glycerin": { lbsPerGal: 10.5, label: "Glycerin" },
-  // ── Dairy alternatives ──
-  "coconut milk": { lbsPerGal: 8.4, label: "Coconut Milk" },
-  "coconut cream": { lbsPerGal: 8.5, label: "Coconut Cream" },
-  "almond milk": { lbsPerGal: 8.5, label: "Almond Milk" },
-  "oat milk": { lbsPerGal: 8.6, label: "Oat Milk" },
-};
-
-// Dry bulk density table — lbs per cubic foot (for Cubic Yards / Cubic Feet / Cubic Meters)
-// Used when unit is Cubic Yards/Feet/Meters AND a bulk product is selected
-const DRY_BULK_DENSITY: Record<string, { lbsPerCuFt: number; label: string }> = {
-  "portland cement": { lbsPerCuFt: 94, label: "Portland Cement" },
-  "cement": { lbsPerCuFt: 94, label: "Portland Cement" },
-  "fly ash": { lbsPerCuFt: 70, label: "Fly Ash" },
-  "calcium carbonate": { lbsPerCuFt: 88, label: "Calcium Carbonate" },
-  "limestone": { lbsPerCuFt: 88, label: "Limestone" },
-  "sand": { lbsPerCuFt: 100, label: "Sand" },
-  "frac sand": { lbsPerCuFt: 100, label: "Frac Sand" },
-  "silica": { lbsPerCuFt: 95, label: "Silica Sand" },
-  "flour": { lbsPerCuFt: 37, label: "Wheat Flour" },
-  "sugar": { lbsPerCuFt: 55, label: "Granulated Sugar" },
-  "powdered sugar": { lbsPerCuFt: 40, label: "Powdered Sugar" },
-  "salt": { lbsPerCuFt: 75, label: "Salt" },
-  "plastic pellets": { lbsPerCuFt: 35, label: "Plastic Pellets" },
-  "polyethylene": { lbsPerCuFt: 35, label: "PE Pellets" },
-  "polypropylene": { lbsPerCuFt: 33, label: "PP Pellets" },
-  "pvc": { lbsPerCuFt: 45, label: "PVC Compound" },
-  "nylon": { lbsPerCuFt: 42, label: "Nylon Pellets" },
-  "soda ash": { lbsPerCuFt: 55, label: "Soda Ash" },
-  "potash": { lbsPerCuFt: 70, label: "Potash" },
-  "urea": { lbsPerCuFt: 46, label: "Urea" },
-  "ammonium sulfate": { lbsPerCuFt: 60, label: "Ammonium Sulfate" },
-  "corn": { lbsPerCuFt: 45, label: "Corn" },
-  "soybeans": { lbsPerCuFt: 47, label: "Soybeans" },
-  "wheat": { lbsPerCuFt: 48, label: "Wheat" },
-  "rice": { lbsPerCuFt: 47, label: "Rice" },
-  "barley": { lbsPerCuFt: 39, label: "Barley" },
-  "oats": { lbsPerCuFt: 26, label: "Oats" },
-  "animal feed": { lbsPerCuFt: 40, label: "Animal Feed" },
-  "soybean meal": { lbsPerCuFt: 40, label: "Soybean Meal" },
-  "bentonite": { lbsPerCuFt: 60, label: "Bentonite Clay" },
-  "kaolin": { lbsPerCuFt: 38, label: "Kaolin Clay" },
-  "barite": { lbsPerCuFt: 135, label: "Barite" },
-  "sodium bicarbonate": { lbsPerCuFt: 54, label: "Sodium Bicarbonate" },
-  "titanium dioxide": { lbsPerCuFt: 55, label: "Titanium Dioxide" },
-  "carbon black": { lbsPerCuFt: 25, label: "Carbon Black" },
-  "alumina": { lbsPerCuFt: 60, label: "Alumina" },
-  "lime": { lbsPerCuFt: 56, label: "Lime" },
-  "hydrated lime": { lbsPerCuFt: 40, label: "Hydrated Lime" },
-  "gypsum": { lbsPerCuFt: 70, label: "Gypsum" },
-  "diatomaceous earth": { lbsPerCuFt: 14, label: "Diatomaceous Earth" },
-  "wood pellets": { lbsPerCuFt: 42, label: "Wood Pellets" },
-  "wood chips": { lbsPerCuFt: 20, label: "Wood Chips" },
-  "sawdust": { lbsPerCuFt: 15, label: "Sawdust" },
-  "perlite": { lbsPerCuFt: 8, label: "Perlite" },
-  "vermiculite": { lbsPerCuFt: 10, label: "Vermiculite" },
-  "glass cullet": { lbsPerCuFt: 90, label: "Glass Cullet" },
-  "starch": { lbsPerCuFt: 42, label: "Starch" },
-  "maltodextrin": { lbsPerCuFt: 35, label: "Maltodextrin" },
-  "protein powder": { lbsPerCuFt: 30, label: "Protein Powder" },
-};
-
-// Unit conversion factors to lbs
-const UNIT_WEIGHT_FACTORS: Record<string, number> = {
-  "Pallets": 1500,       // avg pallet weight lbs
-  "Units": 50,           // avg unit weight
-  "Cases": 30,           // avg case weight
-  "Boxes": 25,           // avg box weight
-  "Pieces": 2000,        // avg piece weight (flatbed)
-  "Bundles": 3000,       // avg bundle weight (lumber)
-  "Linear Feet": 300,    // avg lbs per linear foot
-  "Tons": 2000,          // 1 ton = 2000 lbs
-  "Drums": 600,          // avg drum weight (55 gal liquid)
-  "Cubic Yards": 2700,   // avg lbs per cubic yard (dry bulk)
-  "Cubic Feet": 80,      // avg lbs per cubic foot
-  "Cubic Meters": 2800,  // avg lbs per cubic meter
-  "Barrels": 300,        // avg barrel weight (42 gal * ~7.1)
-  "PSI Units": 0,        // no direct weight conversion
-};
-
-function fuzzyMatch<T extends { label: string }>(table: Record<string, T>, productName: string): T | null {
-  if (!productName) return null;
-  const key = productName.toLowerCase().trim();
-  if (table[key]) return table[key];
-  for (const [k, v] of Object.entries(table)) {
-    if (key.includes(k) || k.includes(key)) return v;
-  }
-  for (const [k, v] of Object.entries(table)) {
-    const keyWords = k.split(/\s+/);
-    if (keyWords.length >= 1 && keyWords.every(w => key.includes(w))) return v;
-  }
-  for (const [k, v] of Object.entries(table)) {
-    if (k.length >= 3 && key.split(/[\s,()]+/).some(w => w === k)) return v;
-  }
-  return null;
-}
-
-function lookupDensity(productName: string): { lbsPerGal: number; label: string } | null {
-  return fuzzyMatch(PRODUCT_DENSITY, productName);
-}
-
-function lookupBulkDensity(productName: string): { lbsPerCuFt: number; label: string } | null {
-  return fuzzyMatch(DRY_BULK_DENSITY, productName);
-}
+// Density tables (PRODUCT_DENSITY, DRY_BULK_DENSITY), weight factors (UNIT_WEIGHT_FACTORS),
+// max capacities (UNIT_MAX_CAPACITY), fuzzy-match helpers (lookupDensity, lookupBulkDensity,
+// lookupBushelWeight, lookupLivestockWeight), and the unified calcWeight function are all
+// imported from @/lib/cargoCalculations — single source of truth across the app.
 
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 3959;
@@ -490,13 +306,11 @@ export default function LoadCreationWizard() {
 
     const hasRoster = usePerTruckCapacity && truckRoster.length > 0;
 
-    // Max capacity per truck based on unit type
+    // Max capacity per truck based on unit type — from shared UNIT_MAX_CAPACITY
+    // Override Gallons with trailer-specific maxGal when available
     const unitMaxMap: Record<string, number> = {
-      "Gallons": selectedTrailer.maxGal || 9000, "Barrels": 200, "Liters": 36000,
-      "Pallets": 24, "Units": 100, "Cases": 500, "Boxes": 1000,
-      "Pieces": 20, "Bundles": 12, "Linear Feet": 53, "Tons": 25,
-      "Cubic Yards": 35, "Cubic Feet": 1700, "Drums": 80, "PSI Units": 300,
-      "Cubic Meters": 40,
+      ...UNIT_MAX_CAPACITY,
+      "Gallons": selectedTrailer.maxGal || UNIT_MAX_CAPACITY["Gallons"] || 9000,
     };
     const unit = formData.quantityUnit || (isLiquidOrGas ? "Gallons" : "Pallets");
     const defaultMax = unitMaxMap[unit] || 100;
@@ -547,16 +361,24 @@ export default function LoadCreationWizard() {
       case "dry_van": return ["Pallets", "Units", "Cases", "Boxes"];
       case "reefer": return ["Pallets", "Units", "Cases", "Boxes"];
       case "flatbed": return ["Pieces", "Bundles", "Linear Feet", "Tons"];
+      case "step_deck": return ["Pieces", "Bundles", "Linear Feet", "Tons"];
+      case "lowboy": return ["Pieces", "Tons"];
+      case "double_drop": return ["Pieces", "Tons"];
+      case "conestoga": return ["Pieces", "Bundles", "Pallets", "Tons"];
+      case "auto_carrier": return ["Vehicles"];
+      case "livestock": return ["Head"];
+      case "log_trailer": return ["Tons", "Cords", "MBF"];
       case "bulk_hopper": return ["Cubic Yards", "Cubic Feet", "Tons"];
       case "hopper": return ["Cubic Yards", "Cubic Feet", "Tons", "Bushels"];
+      case "grain_hopper": return ["Bushels", "Tons", "Cubic Yards"];
       case "pneumatic": return ["Cubic Yards", "Cubic Feet", "Tons"];
       case "end_dump": return ["Cubic Yards", "Tons"];
       case "intermodal_chassis": return ["Containers", "TEU"];
-      case "curtain_side": return ["Pallets", "Units", "Cases", "Boxes"];
+      case "curtain_side": return ["Pallets", "Pieces", "Bundles"];
       case "hazmat_van": return ["Drums", "Pallets", "Units", "Cases"];
       case "food_grade_tank": return ["Gallons", "Barrels", "Liters"];
       case "water_tank": return ["Gallons", "Barrels", "Liters"];
-      default: return ["Units", "Pallets", "Cases"];
+      default: return ["Units", "Pieces", "Tons"];
     }
   };
   const getDefaultUnit = (trailerId: string) => getQuantityUnits(trailerId)[0];
@@ -568,16 +390,24 @@ export default function LoadCreationWizard() {
       case "dry_van": return "24";
       case "reefer": return "22";
       case "flatbed": return "6";
+      case "step_deck": return "4";
+      case "lowboy": return "1";
+      case "double_drop": return "1";
+      case "conestoga": return "6";
+      case "auto_carrier": return "8";
+      case "livestock": return "40";
+      case "log_trailer": return "25";
       case "bulk_hopper": return "30";
       case "hopper": return "30";
+      case "grain_hopper": return "900";
       case "pneumatic": return "25";
       case "end_dump": return "20";
       case "intermodal_chassis": return "1";
-      case "curtain_side": return "24";
+      case "curtain_side": return "12";
       case "hazmat_van": return "48";
       case "food_grade_tank": return "6000";
       case "water_tank": return "5000";
-      default: return "24";
+      default: return "6";
     }
   };
   const quantityUnits = getQuantityUnits(formData.trailerType || "");
@@ -810,53 +640,10 @@ export default function LoadCreationWizard() {
 
   const updateField = (field: string, value: any) => setFormData((prev: any) => ({ ...prev, [field]: value }));
 
-  // Unified weight calculator — handles ALL trailer/product/unit combos
-  // Returns { weight, source } or null if no calc possible
+  // Unified weight calculator — delegates to shared calcWeight from @/lib/cargoCalculations
+  // Handles ALL trailer/product/unit combos including product-aware Bushels, Head, Drums, etc.
   const calcWeightResult = useCallback((qty: number, unit: string, productName: string): { weight: number; source: string } | null => {
-    if (qty <= 0) return null;
-
-    // 1. Liquid volume units → use PRODUCT_DENSITY (lbs/gal)
-    if (unit === "Gallons" || unit === "Barrels" || unit === "Liters") {
-      const density = lookupDensity(productName);
-      if (density) {
-        let gallons = qty;
-        if (unit === "Barrels") gallons = qty * 42;
-        if (unit === "Liters") gallons = qty * 0.2642;
-        return { weight: Math.round(gallons * density.lbsPerGal), source: `${density.label} @ ${density.lbsPerGal} lbs/gal` };
-      }
-    }
-
-    // 2. Cubic volume units → use DRY_BULK_DENSITY if product matches, else generic factor
-    if (unit === "Cubic Yards" || unit === "Cubic Feet" || unit === "Cubic Meters") {
-      const bulk = lookupBulkDensity(productName);
-      if (bulk) {
-        let cuFt = qty;
-        if (unit === "Cubic Yards") cuFt = qty * 27;
-        if (unit === "Cubic Meters") cuFt = qty * 35.315;
-        return { weight: Math.round(cuFt * bulk.lbsPerCuFt), source: `${bulk.label} @ ${bulk.lbsPerCuFt} lbs/cu ft` };
-      }
-      // Fall through to generic UNIT_WEIGHT_FACTORS
-    }
-
-    // 3. Tons → exact conversion (no estimation needed)
-    if (unit === "Tons") return { weight: qty * 2000, source: "1 ton = 2,000 lbs" };
-
-    // 4. Drums → use product density if available (55 gal drum)
-    if (unit === "Drums") {
-      const density = lookupDensity(productName);
-      if (density) {
-        return { weight: Math.round(qty * 55 * density.lbsPerGal), source: `${density.label} @ ${density.lbsPerGal} lbs/gal × 55 gal/drum` };
-      }
-      return { weight: Math.round(qty * 600), source: "Est. 600 lbs/drum (55 gal avg)" };
-    }
-
-    // 5. Generic unit factors (Pallets, Cases, Boxes, Pieces, Bundles, Linear Feet, etc.)
-    const factor = UNIT_WEIGHT_FACTORS[unit];
-    if (factor && factor > 0) {
-      return { weight: Math.round(qty * factor), source: `Est. ${factor.toLocaleString()} lbs/${unit.toLowerCase().replace(/s$/, "")}` };
-    }
-
-    return null;
+    return calcWeight(qty, unit, productName);
   }, []);
 
   // Recalculate weight when product name changes (density might now match)
@@ -965,6 +752,14 @@ export default function LoadCreationWizard() {
       appearance: formData.appearance,
       originTerminalId: formData.originTerminalId || undefined,
       destinationTerminalId: formData.destinationTerminalId || undefined,
+      // Equipment requirements
+      hoseType: formData.hoseType || undefined,
+      hoseLength: formData.hoseLength || undefined,
+      fittingType: formData.fittingType || undefined,
+      pumpRequired: formData.pumpRequired || undefined,
+      compressorRequired: formData.compressorRequired || undefined,
+      bottomLoadRequired: formData.bottomLoadRequired || undefined,
+      vaporRecoveryRequired: formData.vaporRecoveryRequired || undefined,
     });
   };
 
@@ -1865,6 +1660,71 @@ export default function LoadCreationWizard() {
                       </div>
                     );
                   })()}
+                </div>
+              )}
+
+              {/* Equipment Requirements — shown for tanker/liquid trailers */}
+              {isTanker && (
+                <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Scale className="w-4 h-4 text-blue-400" />
+                    <span className="text-white font-semibold text-sm">Loading Equipment Requirements</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Hose Type</label>
+                      <Select value={formData.hoseType || ""} onValueChange={v => updateField("hoseType", v)}>
+                        <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select hose type" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="petroleum">Petroleum Hose</SelectItem>
+                          <SelectItem value="chemical">Chemical Transfer Hose</SelectItem>
+                          <SelectItem value="food_grade">Food-Grade Hose</SelectItem>
+                          <SelectItem value="steam">Steam Hose</SelectItem>
+                          <SelectItem value="composite">Composite Hose</SelectItem>
+                          <SelectItem value="dry_bulk">Dry Bulk / Pneumatic Hose</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Hose Length (ft)</label>
+                      <Select value={formData.hoseLength || ""} onValueChange={v => updateField("hoseLength", v)}>
+                        <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select length" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="25">25 ft</SelectItem>
+                          <SelectItem value="50">50 ft</SelectItem>
+                          <SelectItem value="75">75 ft</SelectItem>
+                          <SelectItem value="100">100 ft</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Fitting / Adapter</label>
+                      <Select value={formData.fittingType || ""} onValueChange={v => updateField("fittingType", v)}>
+                        <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select fitting" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cam_lock">Cam Lock</SelectItem>
+                          <SelectItem value="dry_break">Dry Break</SelectItem>
+                          <SelectItem value="hammer_union">Hammer Union</SelectItem>
+                          <SelectItem value="api_coupler">API Bottom Coupler</SelectItem>
+                          <SelectItem value="tri_clamp">Tri-Clamp (Sanitary)</SelectItem>
+                          <SelectItem value="npt">NPT Threaded</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-4">
+                    {[
+                      { key: "pumpRequired", label: "Pump Required" },
+                      { key: "compressorRequired", label: "Compressor Required" },
+                      { key: "bottomLoadRequired", label: "Bottom Loading" },
+                      { key: "vaporRecoveryRequired", label: "Vapor Recovery" },
+                    ].map(opt => (
+                      <label key={opt.key} className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={!!formData[opt.key]} onChange={e => updateField(opt.key, e.target.checked)} className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500/30" />
+                        <span className="text-sm text-slate-300">{opt.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

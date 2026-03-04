@@ -13,9 +13,114 @@ import { trpc } from "@/lib/trpc";
 import {
   Navigation, MapPin, Clock, Truck, AlertTriangle,
   Phone, ExternalLink, Fuel, Shield, Flame, Route,
-  AlertOctagon, Ban, CheckCircle, Info
+  AlertOctagon, Ban, CheckCircle, Info, Mountain
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// ── EusoRoads LiDAR Road Intelligence Card ──
+function EusoRoadsNavCard() {
+  const [gps, setGps] = React.useState<{ lat: number; lng: number } | null>(null);
+
+  React.useEffect(() => {
+    if (!navigator.geolocation) return;
+    const id = navigator.geolocation.watchPosition(
+      (pos) => setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 15000 }
+    );
+    return () => navigator.geolocation.clearWatch(id);
+  }, []);
+
+  const { data: lidar } = (trpc as any).eld?.getLiDARAtPoint?.useQuery?.(
+    gps ? { lat: gps.lat, lng: gps.lng } : undefined,
+    { enabled: !!gps, refetchInterval: 30000, staleTime: 15000 }
+  ) || { data: null };
+
+  const seg = lidar?.nearestSegment;
+  const elev = lidar?.elevation?.ft;
+  const risk = seg?.truckRiskScore;
+  const gradient = seg?.gradientPct;
+  const surface = seg?.surfaceQuality;
+  const iri = seg?.iriScore;
+  const gradeAbs = Math.abs(gradient || 0);
+
+  const riskColor = risk != null
+    ? risk > 65 ? "text-red-400" : risk > 40 ? "text-amber-400" : risk > 20 ? "text-yellow-400" : "text-emerald-400"
+    : "text-slate-500";
+  const surfColor = surface === "excellent" ? "text-emerald-400" : surface === "good" ? "text-green-400" : surface === "fair" ? "text-amber-400" : surface === "poor" ? "text-red-400" : "text-slate-500";
+
+  return (
+    <Card className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border-purple-500/30 rounded-xl">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-white text-lg flex items-center gap-2">
+          <Mountain className="w-5 h-5 text-purple-400" />
+          EusoRoads LiDAR Intelligence
+          {seg?.roadName && (
+            <span className="text-sm font-normal text-slate-400 ml-auto">{seg.roadName}</span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {!lidar?.elevation && !seg ? (
+          <p className="text-sm text-slate-500">Acquiring LiDAR road data...</p>
+        ) : (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {elev != null && (
+                <div className="p-3 rounded-lg bg-slate-800/50 text-center">
+                  <Mountain className="w-5 h-5 text-purple-400 mx-auto mb-1" />
+                  <p className="text-lg font-bold text-white">{Math.round(elev)}ft</p>
+                  <p className="text-xs text-slate-400">Elevation</p>
+                </div>
+              )}
+              {gradient != null && (
+                <div className="p-3 rounded-lg bg-slate-800/50 text-center">
+                  <Navigation className="w-5 h-5 text-cyan-400 mx-auto mb-1" />
+                  <p className={cn("text-lg font-bold", gradeAbs > 6 ? "text-red-400" : gradeAbs > 3 ? "text-amber-400" : "text-white")}>
+                    {gradient > 0 ? "+" : ""}{gradient.toFixed(1)}%
+                  </p>
+                  <p className="text-xs text-slate-400">Grade</p>
+                </div>
+              )}
+              {surface && (
+                <div className="p-3 rounded-lg bg-slate-800/50 text-center">
+                  <Shield className="w-5 h-5 text-green-400 mx-auto mb-1" />
+                  <p className={cn("text-lg font-bold capitalize", surfColor)}>{surface}</p>
+                  <p className="text-xs text-slate-400">Surface</p>
+                </div>
+              )}
+              {risk != null && (
+                <div className="p-3 rounded-lg bg-slate-800/50 text-center">
+                  <AlertTriangle className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
+                  <p className={cn("text-lg font-bold", riskColor)}>{risk}/100</p>
+                  <p className="text-xs text-slate-400">Truck Risk</p>
+                </div>
+              )}
+            </div>
+            {gradeAbs > 6 && (
+              <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                <span className="text-sm text-red-300">Steep grade — use low gear, reduce speed</span>
+              </div>
+            )}
+            {iri != null && iri > 170 && (
+              <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                <span className="text-sm text-amber-300">Rough surface (IRI {Math.round(iri)}) — reduce speed</span>
+              </div>
+            )}
+            {seg?.minClearanceFt != null && seg.minClearanceFt < 14.5 && (
+              <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center gap-2">
+                <Ban className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                <span className="text-sm text-orange-300">Low clearance: {seg.minClearanceFt}ft — verify vehicle height</span>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function DriverNavigation() {
   const assignmentQuery = (trpc as any).drivers.getCurrentAssignment.useQuery();
@@ -175,6 +280,9 @@ export default function DriverNavigation() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* EusoRoads LiDAR Road Intelligence */}
+              <EusoRoadsNavCard />
 
               {route.alerts && route.alerts.length > 0 && (
                 <Card className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30 rounded-xl">

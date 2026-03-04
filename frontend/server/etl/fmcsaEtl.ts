@@ -688,7 +688,7 @@ function transformCensusRecord(raw: Record<string, string>): Record<string, any>
     fax: raw.FAX || raw.fax || null,
     email_address: raw.EMAIL_ADDRESS || raw.email_address || null,
     mcs150_date: parseDate(raw.MCS150_DATE || raw.mcs150_date || raw.review_date),
-    mcs150_mileage: parseInt(raw.MCS150_MILEAGE || raw.mcs150_mileage) || null,
+    mcs150_mileage: Math.min(parseInt(raw.MCS150_MILEAGE || raw.mcs150_mileage) || 0, 2147483647),
     mcs150_mileage_year: parseInt(raw.MCS150_MILEAGE_YEAR || raw.mcs150_mileage_year) || null,
     add_date: parseDate(raw.ADD_DATE || raw.add_date),
     oic_state: raw.OIC_STATE || raw.oic_state || null,
@@ -853,15 +853,12 @@ function transformBoc3Record(raw: Record<string, string>): Record<string, any> {
   return {
     dot_number: raw.DOT_NUMBER || raw.USDOT_NUMBER || raw.dot_number,
     docket_number: raw.DOCKET_NUMBER || raw.docket_number || null,
-    prefix: raw.PREFIX || raw.prefix || null,
-    process_agent_name: raw.PROCESS_AGENT_NAME || raw.process_agent_name || raw.PA_NAME || null,
-    process_agent_street: raw.PROCESS_AGENT_STREET || raw.PA_STREET || null,
-    process_agent_city: raw.PROCESS_AGENT_CITY || raw.PA_CITY || null,
-    process_agent_state: raw.PROCESS_AGENT_STATE || raw.PA_STATE || null,
-    process_agent_zip: raw.PROCESS_AGENT_ZIP || raw.PA_ZIP || null,
-    process_agent_phone: raw.PROCESS_AGENT_PHONE || raw.PA_PHONE || null,
-    filing_date: parseDate(raw.FILING_DATE || raw.filing_date),
-    effective_date: parseDate(raw.EFFECTIVE_DATE || raw.effective_date),
+    agent_name: raw.PROCESS_AGENT_NAME || raw.process_agent_name || raw.PA_NAME || null,
+    agent_address: raw.PROCESS_AGENT_STREET || raw.PA_STREET || null,
+    agent_city: raw.PROCESS_AGENT_CITY || raw.PA_CITY || null,
+    agent_state: raw.PROCESS_AGENT_STATE || raw.PA_STATE || null,
+    agent_zip: raw.PROCESS_AGENT_ZIP || raw.PA_ZIP || null,
+    form_date: parseDate(raw.FILING_DATE || raw.filing_date || raw.EFFECTIVE_DATE || raw.effective_date),
   };
 }
 
@@ -869,11 +866,9 @@ function transformRevocationRecord(raw: Record<string, string>): Record<string, 
   return {
     dot_number: raw.DOT_NUMBER || raw.USDOT_NUMBER || raw.dot_number,
     docket_number: raw.DOCKET_NUMBER || raw.docket_number || null,
-    prefix: raw.PREFIX || raw.prefix || raw.type_license || null,
     revocation_date: parseDate(raw.REVOCATION_DATE || raw.revocation_date || raw.EFFECTIVE_DATE || raw.order2_effective_date || raw.order1_serve_date),
     revocation_reason: raw.REVOCATION_REASON || raw.revocation_reason || raw.REASON || raw.order2_type_desc || null,
-    reinstatement_date: parseDate(raw.REINSTATEMENT_DATE || raw.reinstatement_date),
-    legal_name: raw.LEGAL_NAME || raw.legal_name || null,
+    authority_type: raw.PREFIX || raw.prefix || raw.type_license || null,
   };
 }
 

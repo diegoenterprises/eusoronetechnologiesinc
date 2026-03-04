@@ -50,6 +50,13 @@ const COMMODITY_TYPES = [
   { value: "crude_oil", label: "Crude Oil / Petroleum", rate: 0.0022 },
   { value: "machinery", label: "Heavy Machinery", rate: 0.0016 },
   { value: "auto", label: "Automobiles", rate: 0.0020 },
+  { value: "livestock", label: "Live Animals / Livestock", rate: 0.0028 },
+  { value: "lumber", label: "Lumber / Timber", rate: 0.0013 },
+  { value: "grain_bulk", label: "Grain / Bulk Dry Commodities", rate: 0.0011 },
+  { value: "water_liquid", label: "Water / Non-Hazmat Liquid", rate: 0.0010 },
+  { value: "intermodal_container", label: "Intermodal Container (Mixed)", rate: 0.0015 },
+  { value: "aggregate_dump", label: "Aggregate / Construction Material", rate: 0.0009 },
+  { value: "oversized", label: "Oversized / Over-Dimensional", rate: 0.0024 },
 ] as const;
 
 const COVERAGE_TIERS = [

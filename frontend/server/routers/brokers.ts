@@ -10,6 +10,7 @@ import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { brokerProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, users, companies } from "../../drizzle/schema";
+import { getCarrierSafetyIntel, batchSafetyScores, batchOOSStatus, getSafetyScores, getOOSStatus } from "../services/fmcsaBulkLookup";
 
 /** Resolve ctx.user (auth provider string) → numeric DB user id */
 async function resolveBrokerUserId(ctxUser: any): Promise<number> {
@@ -384,7 +385,7 @@ export const brokersRouter = router({
         const { vehicles } = await import('../../drizzle/schema');
         const catalystList = await db.select().from(companies).where(eq(companies.isActive, true)).limit(input.limit || 20);
 
-        return await Promise.all(catalystList.map(async (c) => {
+        const results = await Promise.all(catalystList.map(async (c) => {
           const [availableVehicles] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, c.id), eq(vehicles.status, 'available')));
           return {
             catalystId: `car_${c.id}`,
@@ -400,6 +401,36 @@ export const brokersRouter = router({
             onTimeRate: 0,
           };
         }));
+
+        // ── FMCSA Bulk Data: enrich carrier list with safety intelligence ──
+        const dotNumbers = results.map(r => r.dotNumber).filter(Boolean);
+        if (dotNumbers.length > 0) {
+          const [safetyMap, oosMap] = await Promise.all([
+            batchSafetyScores(dotNumbers),
+            batchOOSStatus(dotNumbers),
+          ]);
+          for (const r of results) {
+            if (!r.dotNumber) continue;
+            const sms = safetyMap.get(r.dotNumber);
+            const oos = oosMap.get(r.dotNumber);
+            (r as any).fmcsa = {
+              outOfService: oos || false,
+              unsafeDrivingAlert: sms?.unsafeDrivingAlert || false,
+              hosAlert: sms?.hosAlert || false,
+              vehicleMaintenanceAlert: sms?.vehicleMaintenanceAlert || false,
+              crashIndicatorAlert: sms?.crashIndicatorAlert || false,
+              alertCount: sms ? [sms.unsafeDrivingAlert, sms.hosAlert, sms.vehicleMaintenanceAlert, sms.crashIndicatorAlert].filter(Boolean).length : 0,
+              inspectionsTotal: sms?.inspectionsTotal || 0,
+              dataSource: 'fmcsa_bulk_9.8M',
+            };
+            if (sms) {
+              const alertPenalty = [sms.unsafeDrivingAlert, sms.hosAlert, sms.vehicleMaintenanceAlert, sms.crashIndicatorAlert].filter(Boolean).length * 15;
+              r.safetyScore = Math.max(0, 100 - alertPenalty - (oos ? 50 : 0));
+            }
+          }
+        }
+
+        return results;
       } catch (error) {
         console.error('[Brokers] getCatalystCapacity error:', error);
         return [];
@@ -444,21 +475,83 @@ export const brokersRouter = router({
   getCatalystVettingChecklist: protectedProcedure
     .input(z.object({ catalystId: z.string() }))
     .query(async ({ input }) => {
+      const db = await getDb();
+      const companyId = parseInt(input.catalystId.replace('car_', ''), 10) || parseInt(input.catalystId, 10);
+      let dotNumber = '';
+      if (db) {
+        try {
+          const [comp] = await db.select({ dotNumber: companies.dotNumber }).from(companies).where(eq(companies.id, companyId)).limit(1);
+          dotNumber = comp?.dotNumber || '';
+        } catch {}
+      }
+
+      // ── FMCSA Bulk Data: real carrier vetting from 9.8M+ records ──
+      const intel = dotNumber ? await getCarrierSafetyIntel(dotNumber) : null;
+
+      const checks = [
+        {
+          item: "Operating Authority",
+          status: intel?.authority?.commonAuthActive ? 'passed' : (intel?.authority ? 'failed' : 'unknown'),
+          verified: !!intel?.authority,
+          note: intel?.authority ? `Status: ${intel.authority.authorityStatus}` : 'No FMCSA data',
+        },
+        {
+          item: "Insurance - Liability",
+          status: intel?.insurance?.hasLiability ? 'passed' : (intel?.insurance ? 'failed' : 'unknown'),
+          verified: !!intel?.insurance,
+          note: intel?.insurance ? `BIPD: $${(intel.insurance.bipdLimit || 0).toLocaleString()}` : 'No FMCSA data',
+        },
+        {
+          item: "Insurance - Cargo",
+          status: intel?.insurance?.hasCargo ? 'passed' : 'warning',
+          verified: !!intel?.insurance,
+          note: intel?.insurance ? `Cargo: $${(intel.insurance.cargoLimit || 0).toLocaleString()}` : 'No FMCSA data',
+        },
+        {
+          item: "Insurance Compliance ($750K min)",
+          status: intel?.insurance?.isCompliant ? 'passed' : (intel?.insurance ? 'failed' : 'unknown'),
+          verified: !!intel?.insurance,
+        },
+        {
+          item: "Out of Service Check",
+          status: intel?.outOfService ? 'failed' : 'passed',
+          verified: true,
+          note: intel?.outOfService ? `OOS: ${intel.oosReason}` : 'Not under OOS order',
+        },
+        {
+          item: "CSA BASIC Scores",
+          status: intel?.alerts && intel.alerts.length > 0 ? 'warning' : 'passed',
+          verified: !!intel?.safety,
+          note: intel?.safety ? `${intel.alerts.length} alert(s)` : 'No SMS data available',
+        },
+        {
+          item: "Crash History",
+          status: (intel?.crashes?.totalFatalities || 0) > 0 ? 'warning' : 'passed',
+          verified: !!intel?.crashes,
+          note: intel?.crashes ? `${intel.crashes.totalCrashes} crashes, ${intel.crashes.totalFatalities} fatalities` : 'No crash data',
+        },
+        {
+          item: "Hazmat Authorization",
+          status: intel?.census?.hmFlag ? 'passed' : 'not_applicable',
+          verified: !!intel?.census,
+          note: intel?.census?.hmFlag ? 'FMCSA Hazmat Flag: Y' : 'Not hazmat authorized',
+        },
+      ];
+
+      const failedCount = checks.filter(c => c.status === 'failed').length;
+      const overallStatus = intel?.outOfService ? 'blocked' : failedCount > 0 ? 'failed' : 'approved';
+
       return {
         catalystId: input.catalystId,
-        overallStatus: "approved",
-        checks: [
-          { item: "Operating Authority", status: "passed", verified: true, verifiedAt: "2025-01-15" },
-          { item: "Insurance - Liability", status: "passed", verified: true, verifiedAt: "2025-01-15" },
-          { item: "Insurance - Cargo", status: "passed", verified: true, verifiedAt: "2025-01-15" },
-          { item: "Safety Rating", status: "passed", verified: true, rating: "Satisfactory" },
-          { item: "CSA Scores", status: "passed", verified: true, note: "All BASICs below threshold" },
-          { item: "Hazmat Certification", status: "passed", verified: true, verifiedAt: "2025-01-15" },
-          { item: "W-9 on File", status: "passed", verified: true },
-          { item: "Contract Signed", status: "passed", verified: true, signedAt: "2024-06-01" },
-        ],
-        lastVetted: "2025-01-15",
-        nextReview: "2025-04-15",
+        dotNumber,
+        overallStatus,
+        riskTier: intel?.riskTier || 'UNKNOWN',
+        riskScore: intel?.riskScore || 0,
+        checks,
+        alerts: intel?.alerts || [],
+        lastVetted: new Date().toISOString(),
+        nextReview: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+        dataSource: intel ? 'fmcsa_bulk_9.8M' : 'none',
       };
     }),
 

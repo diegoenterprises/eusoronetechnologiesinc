@@ -82,6 +82,7 @@ import {
   BidWinRateWidget, RealTimeTrackingWidget, CostBreakdownWidget,
   CustomerSatisfactionWidget
 } from "./widgets/PremiumAnalyticsWidgets";
+import { ELDFleetPulseWidget, ELDNetworkEffectWidget, ELDRoadIntelligenceWidget } from "./widgets/ELDWidgets";
 import StripeConnectWidget from "./widgets/StripeConnectWidget";
 import WidgetStore from "./widgets/WidgetStore";
 import Weather from "./Weather";
@@ -420,6 +421,11 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
     case 'safety_inspections': return <SafetyInspectionsWidget />;
     case 'claims_management': return <ClaimsManagementWidget />;
     case 'safety_roi': return <SafetyROIWidget />;
+
+    // ELD Intelligence widgets
+    case 'eld_fleet_pulse': return <ELDFleetPulseWidget />;
+    case 'eld_network_effect': return <ELDNetworkEffectWidget />;
+    case 'eld_road_intelligence': return <ELDRoadIntelligenceWidget />;
 
     // Premium Analytics widgets
     case 'revenue_forecasting': return <RevenueForecastingWidget />;

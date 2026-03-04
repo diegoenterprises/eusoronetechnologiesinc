@@ -41,6 +41,7 @@ interface SatelliteIntelligenceMapProps {
   isLight: boolean;
   activeLayers: string[];
   intel?: any;
+  fmcsaIntel?: any;
   roadIntel?: {
     segments?: any[];
     livePings?: { driverId: number; lat: number; lng: number; speed?: number; heading?: number; roadName?: string; pingAt?: string }[];

@@ -10,6 +10,7 @@ import { eq, and, desc, sql, gte, count } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { companies, loads, bids, drivers, users, vehicles, incidents, insurancePolicies } from "../../drizzle/schema";
+import { getCarrierSafetyIntel, batchSafetyScores, batchCrashCounts, batchOOSStatus } from "../services/fmcsaBulkLookup";
 
 export const carrierScorecardRouter = router({
   /**
@@ -91,16 +92,32 @@ export const carrierScorecardRouter = router({
         const bidAcceptRate = (bidStats?.total || 0) > 0
           ? Math.round(((bidStats?.accepted || 0) / (bidStats?.total || 1)) * 100) : 0;
 
-        // Calculate overall score (weighted)
-        const safetyScore = Math.max(0, 100 - ((incidentStats?.total || 0) * 10));
-        const complianceScore = activePolicies.length >= 2 ? 100 : activePolicies.length === 1 ? 70 : 30;
-        const hmspScore = company.hazmatLicense ? 100 : 0;
+        // ── FMCSA Bulk Data Enrichment (9.8M+ records) ──
+        const fmcsaIntel = company.dotNumber
+          ? await getCarrierSafetyIntel(company.dotNumber)
+          : null;
+
+        // Calculate overall score (weighted) — now incorporates FMCSA BASIC scores
+        const fmcsaSafetyScore = fmcsaIntel?.safety
+          ? Math.max(0, 100 - (
+              (fmcsaIntel.safety.unsafeDrivingAlert ? 15 : 0) +
+              (fmcsaIntel.safety.hosAlert ? 12 : 0) +
+              (fmcsaIntel.safety.vehicleMaintenanceAlert ? 10 : 0) +
+              (fmcsaIntel.safety.crashIndicatorAlert ? 15 : 0) +
+              (fmcsaIntel.safety.hazmatAlert ? 10 : 0) +
+              (fmcsaIntel.outOfService ? 30 : 0)
+            ))
+          : Math.max(0, 100 - ((incidentStats?.total || 0) * 10));
+
+        const fmcsaInsuranceCompliant = fmcsaIntel?.insurance?.isCompliant ?? (activePolicies.length >= 2);
+        const complianceScore = fmcsaInsuranceCompliant ? 100 : activePolicies.length >= 1 ? 70 : 30;
+        const hmspScore = (fmcsaIntel?.census?.hmFlag || company.hazmatLicense) ? 100 : 0;
         const completionRate = (recentStats?.total || 0) > 0
           ? Math.round(((recentStats?.completed || 0) / (recentStats?.total || 1)) * 100) : 100;
 
         const overallScore = Math.round(
-          onTimeRate * 0.25 +
-          safetyScore * 0.25 +
+          onTimeRate * 0.20 +
+          fmcsaSafetyScore * 0.30 +
           complianceScore * 0.20 +
           completionRate * 0.15 +
           bidAcceptRate * 0.10 +
@@ -110,22 +127,76 @@ export const carrierScorecardRouter = router({
         return {
           carrierId: input.carrierId,
           companyName: company.name,
-          legalName: company.legalName,
+          legalName: fmcsaIntel?.census?.legalName || company.legalName,
           dotNumber: company.dotNumber,
-          mcNumber: company.mcNumber,
+          mcNumber: fmcsaIntel?.authority?.docketNumber || company.mcNumber,
           overallScore,
           grade: overallScore >= 90 ? "A" : overallScore >= 80 ? "B" : overallScore >= 70 ? "C" : overallScore >= 60 ? "D" : "F",
           metrics: {
             onTimeDelivery: { rate: onTimeRate, totalDeliveries: totalDelivered, label: "On-Time Delivery" },
-            safety: { score: safetyScore, totalIncidents: incidentStats?.total || 0, recentIncidents: incidentStats?.recent || 0, label: "Safety Score" },
+            safety: { score: fmcsaSafetyScore, totalIncidents: incidentStats?.total || 0, recentIncidents: incidentStats?.recent || 0, label: "Safety Score" },
             compliance: { score: complianceScore, activePolicies: activePolicies.length, hasExpiringSoon, label: "Insurance Compliance" },
             completionRate: { rate: completionRate, completed: recentStats?.completed || 0, cancelled: recentStats?.cancelled || 0, total: recentStats?.total || 0, period: "90 days", label: "Load Completion" },
             bidAcceptance: { rate: bidAcceptRate, totalBids: bidStats?.total || 0, accepted: bidStats?.accepted || 0, label: "Bid Acceptance" },
-            hazmat: { totalLoads: hazmatStats?.total || 0, delivered: hazmatStats?.delivered || 0, hmspActive: !!company.hazmatLicense, hmspExpiry: company.hazmatExpiry, label: "Hazmat Performance" },
+            hazmat: { totalLoads: hazmatStats?.total || 0, delivered: hazmatStats?.delivered || 0, hmspActive: !!(fmcsaIntel?.census?.hmFlag || company.hazmatLicense), hmspExpiry: company.hazmatExpiry, label: "Hazmat Performance" },
           },
-          fleet: { vehicles: fleetCount?.count || 0, drivers: driverCount?.count || 0 },
+          fleet: {
+            vehicles: fleetCount?.count || 0,
+            drivers: driverCount?.count || 0,
+            fmcsaPowerUnits: fmcsaIntel?.census?.nbrPowerUnit || 0,
+            fmcsaDriverTotal: fmcsaIntel?.census?.driverTotal || 0,
+          },
+          // ── FMCSA Intelligence (from 9.8M+ bulk records) ──
+          fmcsa: fmcsaIntel ? {
+            riskTier: fmcsaIntel.riskTier,
+            riskScore: fmcsaIntel.riskScore,
+            alerts: fmcsaIntel.alerts,
+            outOfService: fmcsaIntel.outOfService,
+            oosReason: fmcsaIntel.oosReason,
+            authorityStatus: fmcsaIntel.authority?.authorityStatus || null,
+            commonAuthActive: fmcsaIntel.authority?.commonAuthActive ?? null,
+            brokerAuthActive: fmcsaIntel.authority?.brokerAuthActive ?? null,
+            basics: fmcsaIntel.safety ? {
+              unsafeDriving: { score: fmcsaIntel.safety.unsafeDrivingScore, alert: fmcsaIntel.safety.unsafeDrivingAlert },
+              hos: { score: fmcsaIntel.safety.hosScore, alert: fmcsaIntel.safety.hosAlert },
+              driverFitness: { score: fmcsaIntel.safety.driverFitnessScore, alert: fmcsaIntel.safety.driverFitnessAlert },
+              vehicleMaintenance: { score: fmcsaIntel.safety.vehicleMaintenanceScore, alert: fmcsaIntel.safety.vehicleMaintenanceAlert },
+              crashIndicator: { score: fmcsaIntel.safety.crashIndicatorScore, alert: fmcsaIntel.safety.crashIndicatorAlert },
+              hazmat: { score: fmcsaIntel.safety.hazmatScore, alert: fmcsaIntel.safety.hazmatAlert },
+            } : null,
+            crashes: fmcsaIntel.crashes ? {
+              total: fmcsaIntel.crashes.totalCrashes,
+              fatalities: fmcsaIntel.crashes.totalFatalities,
+              injuries: fmcsaIntel.crashes.totalInjuries,
+              towAways: fmcsaIntel.crashes.towAways,
+              hazmatReleases: fmcsaIntel.crashes.hazmatReleases,
+            } : null,
+            inspections: fmcsaIntel.inspections ? {
+              total: fmcsaIntel.inspections.totalInspections,
+              violations: fmcsaIntel.inspections.totalViolations,
+              driverOos: fmcsaIntel.inspections.driverOosCount,
+              vehicleOos: fmcsaIntel.inspections.vehicleOosCount,
+            } : null,
+            insurance: fmcsaIntel.insurance ? {
+              activePolicies: fmcsaIntel.insurance.activePolicies,
+              hasLiability: fmcsaIntel.insurance.hasLiability,
+              hasCargo: fmcsaIntel.insurance.hasCargo,
+              bipdLimit: fmcsaIntel.insurance.bipdLimit,
+              isCompliant: fmcsaIntel.insurance.isCompliant,
+              nearestExpiry: fmcsaIntel.insurance.nearestExpiry,
+            } : null,
+            census: fmcsaIntel.census ? {
+              legalName: fmcsaIntel.census.legalName,
+              phyState: fmcsaIntel.census.phyState,
+              powerUnits: fmcsaIntel.census.nbrPowerUnit,
+              driverTotal: fmcsaIntel.census.driverTotal,
+              hazmat: fmcsaIntel.census.hmFlag,
+              carrierOperation: fmcsaIntel.census.carrierOperation,
+              mcs150Mileage: fmcsaIntel.census.mcs150Mileage,
+            } : null,
+          } : null,
           complianceStatus: company.complianceStatus || "unknown",
-          hazmatAuthorized: !!company.hazmatLicense,
+          hazmatAuthorized: !!(fmcsaIntel?.census?.hmFlag || company.hazmatLicense),
           lastUpdated: new Date().toISOString(),
         };
       } catch (e) { console.error("[CarrierScorecard] getScorecard error:", e); return null; }
@@ -181,6 +252,35 @@ export const carrierScorecardRouter = router({
             complianceStatus: company.complianceStatus || "unknown",
           });
         }
+
+        // ── Enrich comparisons with FMCSA bulk data (batch query) ──
+        const dotNumbers = results.map(r => r.dotNumber).filter(Boolean) as string[];
+        if (dotNumbers.length > 0) {
+          const [safetyMap, crashMap, oosMap] = await Promise.all([
+            batchSafetyScores(dotNumbers),
+            batchCrashCounts(dotNumbers),
+            batchOOSStatus(dotNumbers),
+          ]);
+          for (const r of results) {
+            const dot = r.dotNumber;
+            if (!dot) continue;
+            const sms = safetyMap.get(dot);
+            const crash = crashMap.get(dot);
+            const oos = oosMap.get(dot);
+            (r as any).fmcsa = {
+              basics: sms ? {
+                unsafeDriving: { score: sms.unsafeDrivingScore, alert: sms.unsafeDrivingAlert },
+                hos: { score: sms.hosScore, alert: sms.hosAlert },
+                vehicleMaintenance: { score: sms.vehicleMaintenanceScore, alert: sms.vehicleMaintenanceAlert },
+                crashIndicator: { score: sms.crashIndicatorScore, alert: sms.crashIndicatorAlert },
+              } : null,
+              crashes: crash ? { total: crash.total, fatalities: crash.fatalities } : null,
+              outOfService: oos || false,
+              alertCount: (sms ? [sms.unsafeDrivingAlert, sms.hosAlert, sms.vehicleMaintenanceAlert, sms.crashIndicatorAlert].filter(Boolean).length : 0),
+            };
+          }
+        }
+
         return results.sort((a, b) => b.overallScore - a.overallScore);
       } catch (e) { console.error("[CarrierScorecard] compareScorecards error:", e); return []; }
     }),
@@ -268,6 +368,33 @@ export const carrierScorecardRouter = router({
             hazmatAuthorized: !!c.hazmatLicense,
             complianceStatus: c.complianceStatus || "unknown",
           });
+        }
+
+        // ── Enrich top carriers with FMCSA bulk safety data ──
+        const topDots = scored.map(s => s.dotNumber).filter(Boolean) as string[];
+        if (topDots.length > 0) {
+          const [safetyMap, oosMap] = await Promise.all([
+            batchSafetyScores(topDots),
+            batchOOSStatus(topDots),
+          ]);
+          for (const s of scored) {
+            if (!s.dotNumber) continue;
+            const sms = safetyMap.get(s.dotNumber);
+            const oos = oosMap.get(s.dotNumber);
+            (s as any).fmcsa = {
+              unsafeDrivingAlert: sms?.unsafeDrivingAlert || false,
+              hosAlert: sms?.hosAlert || false,
+              vehicleMaintenanceAlert: sms?.vehicleMaintenanceAlert || false,
+              crashIndicatorAlert: sms?.crashIndicatorAlert || false,
+              outOfService: oos || false,
+              inspectionsTotal: sms?.inspectionsTotal || 0,
+            };
+            // Penalize carriers with FMCSA alerts
+            if (oos) s.score = Math.max(0, s.score - 30);
+            if (sms?.unsafeDrivingAlert) s.score = Math.max(0, s.score - 10);
+            if (sms?.crashIndicatorAlert) s.score = Math.max(0, s.score - 10);
+            s.grade = s.score >= 90 ? "A" : s.score >= 80 ? "B" : s.score >= 70 ? "C" : "D";
+          }
         }
 
         return scored.sort((a, b) => b.score - a.score).slice(0, input.limit);
