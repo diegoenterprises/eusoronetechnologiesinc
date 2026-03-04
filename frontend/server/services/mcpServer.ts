@@ -10,6 +10,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
+import fs from "fs";
+import path from "path";
+import { execSync } from "child_process";
 import type { Express, Request, Response } from "express";
 import { getDb } from "../db";
 import {
@@ -19,6 +22,34 @@ import {
 import { eq, and, desc, like, sql, count, gte, lte, or, inArray } from "drizzle-orm";
 
 const MCP_API_KEY = process.env.MCP_API_KEY || "";
+
+// ════════════════════════════════════════════════════════════════════════════
+// CODEBASE ROOT — bundled source snapshot shipped with the deploy
+// In production the source snapshot is at dist/src-snapshot/
+// In development it's the repo root
+// ════════════════════════════════════════════════════════════════════════════
+const REPO_ROOT = (() => {
+  // Production: bundled code is dist/index.js → snapshot is dist/src-snapshot/
+  const snapshotPath = path.resolve(import.meta.dirname, "src-snapshot");
+  if (fs.existsSync(snapshotPath)) return snapshotPath;
+  // Dev fallback: repo root (walk up from server/services/)
+  let devRoot = import.meta.dirname;
+  for (let i = 0; i < 6; i++) {
+    devRoot = path.dirname(devRoot);
+    if (fs.existsSync(path.join(devRoot, "frontend")) && fs.existsSync(path.join(devRoot, "backend"))) return devRoot;
+  }
+  return snapshotPath; // will gracefully fail
+})();
+
+/** Prevent path traversal attacks — resolve and verify the path stays within REPO_ROOT */
+function safePath(relative: string): string | null {
+  const resolved = path.resolve(REPO_ROOT, relative.replace(/^\/+/, ""));
+  if (!resolved.startsWith(REPO_ROOT)) return null;
+  return resolved;
+}
+
+/** Skip binary / heavy / useless dirs */
+const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".next", "__pycache__", "venv", ".DS_Store"]);
 
 // ════════════════════════════════════════════════════════════════════════════
 // MCP SERVER INSTANCE
@@ -443,6 +474,228 @@ All monetary values are in USD. Dates are ISO 8601. User roles include: DRIVER, 
       } catch (e: any) {
         return { content: [{ type: "text" as const, text: `Accessorial stats error: ${e.message}` }] };
       }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: list_directory — browse the codebase
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "list_directory",
+    "List files and subdirectories in the EusoTrip codebase. Use '.' or '' for the repo root. Returns file names, sizes, and types.",
+    {
+      path: z.string().optional().default(".").describe("Relative path from repo root (e.g. 'frontend/server/routers')"),
+    },
+    async ({ path: relPath }) => {
+      const dir = safePath(relPath || ".");
+      if (!dir) return { content: [{ type: "text" as const, text: "Invalid path (outside repo)" }] };
+      if (!fs.existsSync(dir)) return { content: [{ type: "text" as const, text: `Path not found: ${relPath}` }] };
+
+      const stat = fs.statSync(dir);
+      if (!stat.isDirectory()) return { content: [{ type: "text" as const, text: `Not a directory: ${relPath}` }] };
+
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        const items = entries
+          .filter(e => !SKIP_DIRS.has(e.name))
+          .map(e => {
+            const full = path.join(dir, e.name);
+            if (e.isDirectory()) {
+              let count = 0;
+              try { count = fs.readdirSync(full).filter(f => !SKIP_DIRS.has(f)).length; } catch {}
+              return { name: e.name + "/", type: "dir", items: count };
+            }
+            try {
+              const s = fs.statSync(full);
+              return { name: e.name, type: "file", size: s.size };
+            } catch {
+              return { name: e.name, type: "file", size: 0 };
+            }
+          })
+          .sort((a, b) => {
+            if (a.type === "dir" && b.type !== "dir") return -1;
+            if (a.type !== "dir" && b.type === "dir") return 1;
+            return a.name.localeCompare(b.name);
+          });
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({ path: relPath || ".", entries: items }, null, 2),
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Error listing directory: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: read_file — view source code
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "read_file",
+    "Read the contents of a file in the EusoTrip codebase. Returns the full text. For large files, use startLine/endLine to read a portion.",
+    {
+      path: z.string().describe("Relative path from repo root (e.g. 'frontend/server/routers/loads.ts')"),
+      startLine: z.number().optional().describe("Start line number (1-indexed). Omit for full file."),
+      endLine: z.number().optional().describe("End line number (1-indexed). Omit for full file."),
+    },
+    async ({ path: relPath, startLine, endLine }) => {
+      const filePath = safePath(relPath);
+      if (!filePath) return { content: [{ type: "text" as const, text: "Invalid path (outside repo)" }] };
+      if (!fs.existsSync(filePath)) return { content: [{ type: "text" as const, text: `File not found: ${relPath}` }] };
+
+      const stat = fs.statSync(filePath);
+      if (stat.isDirectory()) return { content: [{ type: "text" as const, text: `'${relPath}' is a directory. Use list_directory instead.` }] };
+
+      // Skip large binary files
+      if (stat.size > 2 * 1024 * 1024) {
+        return { content: [{ type: "text" as const, text: `File too large (${(stat.size / 1024 / 1024).toFixed(1)}MB). Max 2MB.` }] };
+      }
+
+      try {
+        const content = fs.readFileSync(filePath, "utf-8");
+        const lines = content.split("\n");
+
+        if (startLine || endLine) {
+          const start = Math.max(1, startLine || 1);
+          const end = Math.min(lines.length, endLine || lines.length);
+          const slice = lines.slice(start - 1, end);
+          return {
+            content: [{
+              type: "text" as const,
+              text: `File: ${relPath} (lines ${start}-${end} of ${lines.length})\n\n${slice.map((l, i) => `${start + i}: ${l}`).join("\n")}`,
+            }],
+          };
+        }
+
+        // Full file — cap at 500 lines to keep response manageable
+        if (lines.length > 500) {
+          return {
+            content: [{
+              type: "text" as const,
+              text: `File: ${relPath} (${lines.length} lines — showing first 500, use startLine/endLine for rest)\n\n${lines.slice(0, 500).map((l, i) => `${i + 1}: ${l}`).join("\n")}`,
+            }],
+          };
+        }
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: `File: ${relPath} (${lines.length} lines)\n\n${content}`,
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Error reading file: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: search_code — grep across the codebase
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "search_code",
+    "Search for a pattern (text or regex) across the EusoTrip codebase. Returns matching files and lines. Like grep.",
+    {
+      query: z.string().describe("Search string or pattern"),
+      path: z.string().optional().default(".").describe("Subdirectory to search within (e.g. 'frontend/server')"),
+      filePattern: z.string().optional().describe("File glob filter (e.g. '*.ts', '*.tsx')"),
+      maxResults: z.number().optional().default(30).describe("Max matching lines to return (default 30)"),
+    },
+    async ({ query, path: relPath, filePattern, maxResults }) => {
+      const searchDir = safePath(relPath || ".");
+      if (!searchDir || !fs.existsSync(searchDir)) {
+        return { content: [{ type: "text" as const, text: `Invalid search path: ${relPath}` }] };
+      }
+
+      try {
+        // Use grep if available, otherwise manual search
+        const limit = Math.min(maxResults || 30, 100);
+        const includeArg = filePattern ? `--include='${filePattern}'` : "";
+        const excludeDirs = "--exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=venv --exclude-dir=__pycache__";
+        const cmd = `grep -rn ${excludeDirs} ${includeArg} -m ${limit} ${JSON.stringify(query)} ${JSON.stringify(searchDir)} 2>/dev/null || true`;
+
+        const output = execSync(cmd, { maxBuffer: 1024 * 1024, timeout: 10000 }).toString();
+        const lines = output.trim().split("\n").filter(Boolean);
+
+        // Make paths relative to REPO_ROOT
+        const results = lines.map(line => {
+          return line.replace(REPO_ROOT + "/", "");
+        });
+
+        if (results.length === 0) {
+          return { content: [{ type: "text" as const, text: `No matches for "${query}" in ${relPath || "."}` }] };
+        }
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: `Found ${results.length} match(es) for "${query}":\n\n${results.join("\n")}`,
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Search error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: get_file_tree — full recursive tree of a directory
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "get_file_tree",
+    "Get a full recursive file tree of a directory in the EusoTrip codebase. Useful for understanding project structure.",
+    {
+      path: z.string().optional().default(".").describe("Relative path (e.g. 'frontend/client/src/pages')"),
+      maxDepth: z.number().optional().default(4).describe("Max directory depth (default 4)"),
+    },
+    async ({ path: relPath, maxDepth }) => {
+      const dir = safePath(relPath || ".");
+      if (!dir || !fs.existsSync(dir)) {
+        return { content: [{ type: "text" as const, text: `Path not found: ${relPath}` }] };
+      }
+
+      const lines: string[] = [];
+      const walk = (d: string, prefix: string, depth: number) => {
+        if (depth > (maxDepth || 4)) return;
+        try {
+          const entries = fs.readdirSync(d, { withFileTypes: true })
+            .filter(e => !SKIP_DIRS.has(e.name))
+            .sort((a, b) => {
+              if (a.isDirectory() && !b.isDirectory()) return -1;
+              if (!a.isDirectory() && b.isDirectory()) return 1;
+              return a.name.localeCompare(b.name);
+            });
+          entries.forEach((e, i) => {
+            const isLast = i === entries.length - 1;
+            const connector = isLast ? "└── " : "├── ";
+            const full = path.join(d, e.name);
+            if (e.isDirectory()) {
+              lines.push(`${prefix}${connector}${e.name}/`);
+              walk(full, prefix + (isLast ? "    " : "│   "), depth + 1);
+            } else {
+              lines.push(`${prefix}${connector}${e.name}`);
+            }
+          });
+        } catch {}
+      };
+
+      lines.push((relPath || ".") + "/");
+      walk(dir, "", 1);
+
+      // Cap output
+      const maxLines = 500;
+      const truncated = lines.length > maxLines;
+      const output = lines.slice(0, maxLines).join("\n") + (truncated ? `\n\n... (truncated, ${lines.length - maxLines} more entries)` : "");
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: output,
+        }],
+      };
     }
   );
 
