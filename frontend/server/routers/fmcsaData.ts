@@ -22,6 +22,14 @@ import {
   CarrierSnapshot,
 } from "../services/carrierMonitor";
 
+// Safe date formatter: MySQL returns DATE columns as JS Date objects which crash React
+const fmtDate = (d: any): string | null => {
+  if (!d) return null;
+  if (d instanceof Date) return d.toISOString().split('T')[0];
+  if (typeof d === 'string') return d;
+  return String(d);
+};
+
 export const fmcsaRouter = router({
   // ========================================================================
   // CARRIER LOOKUP
@@ -53,8 +61,16 @@ export const fmcsaRouter = router({
    */
   getSnapshot: protectedProcedure
     .input(z.object({ dotNumber: z.string() }))
-    .query(async ({ input }): Promise<CarrierSnapshot | null> => {
-      return getCarrierSnapshot(input.dotNumber);
+    .query(async ({ input }) => {
+      const snap = await getCarrierSnapshot(input.dotNumber);
+      if (!snap) return null;
+      // Convert Date fields to strings so React doesn't crash on render
+      return {
+        ...snap,
+        insuranceExpiryDate: fmtDate(snap.insuranceExpiryDate),
+        oosDate: fmtDate(snap.oosDate),
+        snapshotDate: snap.snapshotDate instanceof Date ? snap.snapshotDate.toISOString() : String(snap.snapshotDate || ""),
+      };
     }),
   
   // ========================================================================
@@ -88,7 +104,7 @@ export const fmcsaRouter = router({
         const latest = rows[0];
         return {
           dotNumber: input.dotNumber,
-          runDate: latest.run_date,
+          runDate: fmtDate(latest.run_date) || new Date().toISOString().split('T')[0],
           basics: {
             unsafeDriving: { score: latest.unsafe_driving_score, alert: latest.unsafe_driving_alert === "Y" },
             hos: { score: latest.hos_score, alert: latest.hos_alert === "Y" },
@@ -108,7 +124,7 @@ export const fmcsaRouter = router({
             vehicle: latest.vehicle_oos_rate,
           },
           history: rows.map((r: any) => ({
-            runDate: r.run_date,
+            runDate: fmtDate(r.run_date),
             unsafeDriving: r.unsafe_driving_score,
             hos: r.hos_score,
             vehicleMaintenance: r.vehicle_maintenance_score,
@@ -187,7 +203,7 @@ export const fmcsaRouter = router({
         
         return rows.map((r: any) => ({
           reportNumber: r.report_number,
-          reportDate: r.report_date,
+          reportDate: fmtDate(r.report_date),
           state: r.state,
           city: r.city,
           fatalities: r.fatalities,
@@ -225,7 +241,7 @@ export const fmcsaRouter = router({
         
         return rows.map((r: any) => ({
           inspectionId: r.inspection_id,
-          inspectionDate: r.inspection_date,
+          inspectionDate: fmtDate(r.inspection_date),
           state: r.report_state,
           level: r.insp_level_id,
           driverOos: r.driver_oos === "Y",
@@ -314,10 +330,10 @@ export const fmcsaRouter = router({
         type: r.insurance_type,
         carrier: r.insurance_carrier,
         policyNumber: r.policy_number,
-        coverageFrom: r.coverage_from,
-        coverageTo: r.coverage_to,
+        coverageFrom: fmtDate(r.coverage_from),
+        coverageTo: fmtDate(r.coverage_to),
         bipdLimit: r.bipd_max_limit,
-        cancelDate: r.cancel_date,
+        cancelDate: fmtDate(r.cancel_date),
         cancelMethod: r.cancel_method,
       });
       
@@ -404,21 +420,21 @@ export const fmcsaRouter = router({
           status: r.authority_status,
           common: {
             pending: r.common_auth_pending === "Y",
-            granted: r.common_auth_granted,
-            revoked: r.common_auth_revoked,
-            active: r.common_auth_granted && !r.common_auth_revoked,
+            granted: fmtDate(r.common_auth_granted),
+            revoked: fmtDate(r.common_auth_revoked),
+            active: !!r.common_auth_granted && !r.common_auth_revoked,
           },
           contract: {
             pending: r.contract_auth_pending === "Y",
-            granted: r.contract_auth_granted,
-            revoked: r.contract_auth_revoked,
-            active: r.contract_auth_granted && !r.contract_auth_revoked,
+            granted: fmtDate(r.contract_auth_granted),
+            revoked: fmtDate(r.contract_auth_revoked),
+            active: !!r.contract_auth_granted && !r.contract_auth_revoked,
           },
           broker: {
             pending: r.broker_auth_pending === "Y",
-            granted: r.broker_auth_granted,
-            revoked: r.broker_auth_revoked,
-            active: r.broker_auth_granted && !r.broker_auth_revoked,
+            granted: fmtDate(r.broker_auth_granted),
+            revoked: fmtDate(r.broker_auth_revoked),
+            active: !!r.broker_auth_granted && !r.broker_auth_revoked,
           },
           insurance: {
             bipdRequired: r.bipd_insurance_required,

@@ -632,6 +632,14 @@ export default function FMCSACarrierIntelligence() {
               ← Back to search
             </button>
 
+            {/* Loading state */}
+            {snapshot.isLoading && (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-400 mb-3" />
+                <p className="text-sm text-gray-400">Loading carrier data...</p>
+              </div>
+            )}
+
             {/* Carrier Header Card */}
             {snapshot.data && (
               <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-white/10 rounded-xl p-5 mb-6">
@@ -937,6 +945,9 @@ export default function FMCSACarrierIntelligence() {
               </div>
             )}
 
+            {activeTab === "safety" && smsScores.isLoading && (
+              <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+            )}
             {activeTab === "safety" && smsScores.data && (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
@@ -1000,6 +1011,9 @@ export default function FMCSACarrierIntelligence() {
               </div>
             )}
 
+            {activeTab === "authority" && authority.isLoading && (
+              <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+            )}
             {activeTab === "authority" && authority.data && (
               <div className="space-y-4">
                 <div className="bg-white/5 rounded-lg p-4 border border-white/5">
@@ -1063,6 +1077,9 @@ export default function FMCSACarrierIntelligence() {
               </div>
             )}
 
+            {activeTab === "insurance" && insurance.isLoading && (
+              <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+            )}
             {activeTab === "insurance" && insurance.data && (
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-gray-300">Active Policies ({insurance.data.active.length})</h3>
