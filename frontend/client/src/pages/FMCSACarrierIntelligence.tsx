@@ -6,7 +6,8 @@
  * insurance, crashes, inspections, violations, OOS orders, and monitoring.
  */
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Search, Shield, ShieldAlert, ShieldCheck, ShieldX, AlertTriangle,
   CheckCircle, XCircle, Truck, FileText, Activity, Eye, Bell, BellOff,
@@ -87,12 +88,62 @@ function VerificationBadge({ dotNumber }: { dotNumber: string }) {
 }
 
 // ============================================================================
-// HAZMAT DOCUMENT UPLOAD PANEL
+// CARRIER COMPLIANCE INTELLIGENCE PANEL
+// Role-aware: Shippers see read-only status tracker.
+//             Carriers viewing their own DOT see upload buttons.
 // ============================================================================
 
-function HazMatDocPanel({ dotNumber }: { dotNumber: string }) {
+type ComplianceItemStatus = "verified" | "on_file" | "pending" | "missing" | "expired" | "expiring" | "alert" | "na";
+interface ComplianceItem {
+  label: string;
+  desc: string;
+  status: ComplianceItemStatus;
+  detail: string;
+  source: "fmcsa" | "platform";
+}
+
+function statusBadge(s: ComplianceItemStatus) {
+  switch (s) {
+    case "verified": return { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-500/10", label: "Verified" };
+    case "on_file":  return { icon: CheckCircle, color: "text-blue-400", bg: "bg-blue-500/10", label: "On File" };
+    case "pending":  return { icon: Clock, color: "text-yellow-400", bg: "bg-yellow-500/10", label: "Pending Review" };
+    case "missing":  return { icon: XCircle, color: "text-red-400", bg: "bg-red-500/10", label: "Not on File" };
+    case "expired":  return { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10", label: "Expired" };
+    case "expiring": return { icon: AlertTriangle, color: "text-amber-400", bg: "bg-amber-500/10", label: "Expiring Soon" };
+    case "alert":    return { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10", label: "Alert" };
+    case "na":       return { icon: Clock, color: "text-gray-500", bg: "bg-white/5", label: "N/A" };
+  }
+}
+
+function ComplianceRow({ item }: { item: ComplianceItem }) {
+  const badge = statusBadge(item.status);
+  const Icon = badge.icon;
+  return (
+    <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-black/20 border border-white/5">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <Icon className={`w-4 h-4 shrink-0 ${badge.color}`} />
+        <div className="min-w-0">
+          <p className="text-xs text-gray-200 font-medium truncate">{item.label}</p>
+          <p className="text-[10px] text-gray-500">{item.desc}</p>
+        </div>
+      </div>
+      <div className="shrink-0 ml-3 text-right">
+        <span className={`text-[10px] font-semibold ${badge.color}`}>{item.detail}</span>
+        {item.source === "fmcsa" && (
+          <p className="text-[8px] text-gray-600 mt-0.5">FMCSA Record</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CarrierComplianceIntel({ dotNumber, snapshot }: { dotNumber: string; snapshot: any }) {
+  const { user } = useAuth();
+  const userRole = (user?.role || "").toUpperCase();
+  const isCarrierSelf = (userRole === "CATALYST" || userRole === "CARRIER" || userRole === "DRIVER");
+
   const { data: verification } = trpc.fmcsaData.verifyCarrierForLoad.useQuery(
-    { dotNumber, loadType: "hazmat" },
+    { dotNumber, loadType: "general" },
     { enabled: !!dotNumber }
   );
   const { data: hazmatDocs, refetch } = (trpc as any).fmcsaData.getHazmatDocs.useQuery(
@@ -103,19 +154,8 @@ function HazMatDocPanel({ dotNumber }: { dotNumber: string }) {
     onSuccess: () => refetch(),
   });
 
-  const snap = (verification as any)?.snapshot;
-  if (!snap?.hazmatClassified) return null;
-
-  const requiredDocs = [
-    { type: "HAZMAT_CDL", label: "HazMat CDL Endorsement", desc: "CDL with H or X endorsement" },
-    { type: "TWIC_CARD", label: "TWIC Card", desc: "Transportation Worker ID Credential" },
-    { type: "SECURITY_ASSESSMENT", label: "Security Threat Assessment", desc: "TSA security clearance" },
-  ];
-
-  const getDocStatus = (docType: string) => {
-    if (!hazmatDocs?.docs) return null;
-    return hazmatDocs.docs.find((d: any) => d.docType === docType);
-  };
+  const snap = (verification as any)?.snapshot || snapshot;
+  const checks = (verification as any)?.checks as Record<string, boolean | null> | undefined;
 
   const handleFileSelect = async (docType: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -123,70 +163,325 @@ function HazMatDocPanel({ dotNumber }: { dotNumber: string }) {
     submitDoc.mutate({
       dotNumber,
       docType,
-      fileUrl: `https://storage.eusotrip.com/hazmat-docs/${dotNumber}/${docType}/${file.name}`,
+      fileUrl: `https://storage.eusotrip.com/carrier-docs/${dotNumber}/${docType}/${file.name}`,
       fileName: file.name,
     });
   };
 
+  const getDocStatus = (docType: string) => {
+    if (!hazmatDocs?.docs) return null;
+    return hazmatDocs.docs.find((d: any) => d.docType === docType);
+  };
+
+  // ── FMCSA-sourced compliance items (auto-verified from federal records) ──
+  const fmcsaItems: ComplianceItem[] = useMemo(() => {
+    if (!snap && !snapshot) return [];
+    const s = snap || snapshot;
+    const items: ComplianceItem[] = [];
+
+    // Operating Authority
+    const authStatus = s?.authorityStatus;
+    items.push({
+      label: "Operating Authority",
+      desc: "FMCSA motor carrier authority status",
+      status: authStatus === "ACTIVE" ? "verified" : authStatus ? "alert" : "missing",
+      detail: authStatus || "Unknown",
+      source: "fmcsa",
+    });
+
+    // Common Authority
+    items.push({
+      label: "Common Authority (Property)",
+      desc: "Authorization to transport property for hire",
+      status: s?.commonAuthActive ? "verified" : "missing",
+      detail: s?.commonAuthActive ? "Active" : "Not Granted",
+      source: "fmcsa",
+    });
+
+    // Contract Authority
+    items.push({
+      label: "Contract Authority",
+      desc: "Authorization under contract with specific shippers",
+      status: s?.contractAuthActive ? "verified" : "na",
+      detail: s?.contractAuthActive ? "Active" : "Not Granted",
+      source: "fmcsa",
+    });
+
+    // Broker Authority
+    items.push({
+      label: "Broker Authority",
+      desc: "Authorization to arrange transportation",
+      status: s?.brokerAuthActive ? "verified" : "na",
+      detail: s?.brokerAuthActive ? "Active" : "Not Granted",
+      source: "fmcsa",
+    });
+
+    // BIPD Insurance
+    const insStatus = s?.insuranceStatus;
+    const bipd = s?.bipdInsuranceOnFile;
+    items.push({
+      label: "BIPD Insurance (≥$750K)",
+      desc: "Bodily injury & property damage liability insurance",
+      status: insStatus === "VALID" ? "verified" : insStatus === "EXPIRING" ? "expiring" : insStatus === "EXPIRED" ? "expired" : bipd ? "alert" : "missing",
+      detail: bipd ? `$${(Number(bipd) / 1000).toFixed(0)}K — ${insStatus}` : insStatus || "Not on file",
+      source: "fmcsa",
+    });
+
+    // Cargo Insurance
+    items.push({
+      label: "Cargo Insurance",
+      desc: "Insurance covering freight in transit",
+      status: s?.cargoInsuranceOnFile ? "on_file" : "missing",
+      detail: s?.cargoInsuranceOnFile ? `$${(Number(s.cargoInsuranceOnFile) / 1000).toFixed(0)}K on file` : "Not on file",
+      source: "fmcsa",
+    });
+
+    // BOC-3
+    const hasBoc3 = checks?.boc3 === true || snap?.hasBoc3;
+    items.push({
+      label: "BOC-3 Process Agent",
+      desc: "Blanket of coverage — agent for service of process",
+      status: hasBoc3 ? "verified" : "missing",
+      detail: hasBoc3 ? "On File" : "Not Found",
+      source: "fmcsa",
+    });
+
+    // MCS-150
+    items.push({
+      label: "MCS-150 Biennial Update",
+      desc: "Carrier registration update filed every 2 years",
+      status: snap?.mcs150Stale === false ? "verified" : snap?.mcs150Stale ? "alert" : "na",
+      detail: snap?.mcs150Stale ? "Outdated (>24 months)" : snap?.mcs150Stale === false ? "Current" : "Unknown",
+      source: "fmcsa",
+    });
+
+    // OOS Orders
+    items.push({
+      label: "Out-of-Service Orders",
+      desc: "Federal order to cease operations",
+      status: s?.oosOrderActive ? "alert" : "verified",
+      detail: s?.oosOrderActive ? "ACTIVE OOS ORDER" : "Clear — no active orders",
+      source: "fmcsa",
+    });
+
+    // SMS BASIC Scores
+    const breaches = snap?.smsBasicBreaches || [];
+    items.push({
+      label: "SMS BASIC Scores",
+      desc: "Safety Measurement System behavioral analysis",
+      status: breaches.length > 0 ? "alert" : "verified",
+      detail: breaches.length > 0 ? `Threshold exceeded: ${breaches.join(", ")}` : "All below intervention threshold",
+      source: "fmcsa",
+    });
+
+    return items;
+  }, [snap, snapshot, checks]);
+
+  // ── Platform documents (carrier must upload to EusoTrip) ──
+  const platformItems: ComplianceItem[] = useMemo(() => [
+    {
+      label: "Certificate of Insurance (COI)",
+      desc: "Current insurance certificate with EusoTrip as certificate holder",
+      status: "missing" as ComplianceItemStatus,
+      detail: "Carrier must upload",
+      source: "platform" as const,
+    },
+    {
+      label: "W-9 / Tax Information",
+      desc: "IRS Form W-9 for 1099 reporting",
+      status: "missing" as ComplianceItemStatus,
+      detail: "Carrier must upload",
+      source: "platform" as const,
+    },
+    {
+      label: "Carrier-Shipper Agreement",
+      desc: "Master transportation agreement or broker-carrier contract",
+      status: "missing" as ComplianceItemStatus,
+      detail: "Not executed",
+      source: "platform" as const,
+    },
+    {
+      label: "Driver Qualification Files",
+      desc: "CDL, medical certificate, MVR, employment application",
+      status: "missing" as ComplianceItemStatus,
+      detail: "Carrier must upload",
+      source: "platform" as const,
+    },
+    {
+      label: "Drug & Alcohol Testing Program",
+      desc: "DOT-compliant D&A program documentation (49 CFR Part 40)",
+      status: "missing" as ComplianceItemStatus,
+      detail: "Carrier must upload",
+      source: "platform" as const,
+    },
+    {
+      label: "Vehicle Inspection Records",
+      desc: "Annual DOT inspection reports for all registered power units",
+      status: "missing" as ComplianceItemStatus,
+      detail: "Carrier must upload",
+      source: "platform" as const,
+    },
+  ], []);
+
+  // ── HazMat endorsement documents ──
+  const isHazmat = snap?.hazmatClassified || snap?.hmFlag === "Y" || snapshot?.hmFlag === "Y";
+  const hazmatItems: ComplianceItem[] = useMemo(() => {
+    if (!isHazmat) return [];
+    const docs = [
+      { type: "HAZMAT_CDL", label: "HazMat CDL Endorsement", desc: "CDL with H or X endorsement (49 CFR 383.93)" },
+      { type: "TWIC_CARD", label: "TWIC Card", desc: "Transportation Worker Identification Credential (46 CFR 10.203)" },
+      { type: "SECURITY_ASSESSMENT", label: "Security Threat Assessment", desc: "TSA security clearance (49 CFR 1572)" },
+    ];
+    return docs.map((doc) => {
+      const existing = getDocStatus(doc.type);
+      const s = existing?.status;
+      return {
+        label: doc.label,
+        desc: doc.desc,
+        status: (s === "VERIFIED" ? "verified" : s === "PENDING" ? "pending" : s === "EXPIRED" ? "expired" : "missing") as ComplianceItemStatus,
+        detail: s === "VERIFIED" ? "Verified" : s === "PENDING" ? "Under AI review" : s === "REJECTED" ? "Rejected — resubmit" : "Carrier must upload",
+        source: "platform" as const,
+      };
+    });
+  }, [isHazmat, hazmatDocs]);
+
+  // Count stats
+  const allItems = [...fmcsaItems, ...platformItems, ...hazmatItems];
+  const verifiedCount = allItems.filter(i => i.status === "verified" || i.status === "on_file").length;
+  const alertCount = allItems.filter(i => i.status === "alert" || i.status === "expired").length;
+  const missingCount = allItems.filter(i => i.status === "missing").length;
+  const pendingCount = allItems.filter(i => i.status === "pending").length;
+
   return (
-    <div className="bg-gradient-to-b from-amber-500/10 to-amber-500/5 border border-amber-500/30 rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Fuel className="w-5 h-5 text-amber-400" />
-        <h3 className="text-sm font-bold text-amber-400">HazMat Document Verification</h3>
-        {hazmatDocs?.allVerified && (
-          <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-medium">
-            <CheckCircle className="w-3 h-3" /> All Verified
-          </span>
-        )}
+    <div className="bg-gradient-to-b from-slate-800/50 to-slate-900/50 border border-white/10 rounded-xl p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <Shield className="w-5 h-5 text-blue-400" />
+          <h3 className="text-sm font-bold text-gray-100">Carrier Compliance File</h3>
+        </div>
+        <div className="flex gap-2 text-[10px]">
+          {verifiedCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-medium">{verifiedCount} verified</span>
+          )}
+          {pendingCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 font-medium">{pendingCount} pending</span>
+          )}
+          {alertCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-400 font-medium">{alertCount} alerts</span>
+          )}
+          {missingCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-gray-500/15 text-gray-400 font-medium">{missingCount} missing</span>
+          )}
+        </div>
       </div>
-      <p className="text-[10px] text-amber-300/60 mb-3">
-        HazMat carriers must upload endorsement documents for AI-powered verification before accessing hazmat loads.
+      <p className="text-[10px] text-gray-500 mb-4">
+        {isCarrierSelf
+          ? "Upload required documents below to improve your compliance score and unlock more loads."
+          : "Real-time compliance intelligence for this carrier. FMCSA items update automatically. Platform documents update when the carrier submits them."
+        }
       </p>
-      <div className="space-y-2">
-        {requiredDocs.map((doc) => {
-          const existing = getDocStatus(doc.type);
-          const status = existing?.status;
-          return (
-            <div key={doc.type} className="flex items-center justify-between p-2.5 rounded-lg bg-black/20 border border-white/5">
-              <div className="flex items-center gap-2 min-w-0">
-                {status === "VERIFIED" ? (
-                  <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                ) : status === "PENDING" ? (
-                  <Clock className="w-4 h-4 text-yellow-400 shrink-0 animate-pulse" />
-                ) : status === "REJECTED" ? (
-                  <XCircle className="w-4 h-4 text-red-400 shrink-0" />
-                ) : (
-                  <FileText className="w-4 h-4 text-gray-500 shrink-0" />
-                )}
-                <div className="min-w-0">
-                  <p className="text-xs text-gray-200 font-medium truncate">{doc.label}</p>
-                  <p className="text-[10px] text-gray-500">{doc.desc}</p>
+
+      {/* ── FMCSA-Verified Records ── */}
+      <div className="mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Database className="w-3.5 h-3.5 text-blue-400" />
+          <p className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">FMCSA Record — Auto-Verified</p>
+        </div>
+        <div className="space-y-1.5">
+          {fmcsaItems.map((item, i) => (
+            <ComplianceRow key={i} item={item} />
+          ))}
+        </div>
+      </div>
+
+      {/* ── Platform Documents ── */}
+      <div className="mb-4 pt-3 border-t border-white/5">
+        <div className="flex items-center gap-2 mb-2">
+          <FileText className="w-3.5 h-3.5 text-purple-400" />
+          <p className="text-[10px] text-purple-400 font-semibold uppercase tracking-wider">Platform Compliance Documents</p>
+        </div>
+        <p className="text-[9px] text-gray-600 mb-2">
+          {isCarrierSelf
+            ? "Upload these documents to complete your compliance file and access more loads."
+            : "Documents the carrier must submit to the platform. Status updates automatically upon carrier upload."
+          }
+        </p>
+        <div className="space-y-1.5">
+          {platformItems.map((item, i) => {
+            if (isCarrierSelf) {
+              // Carrier view: show upload button for missing items
+              const badge = statusBadge(item.status);
+              const Icon = badge.icon;
+              return (
+                <div key={i} className="flex items-center justify-between py-2 px-3 rounded-lg bg-black/20 border border-white/5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Icon className={`w-4 h-4 shrink-0 ${badge.color}`} />
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-200 font-medium truncate">{item.label}</p>
+                      <p className="text-[10px] text-gray-500">{item.desc}</p>
+                    </div>
+                  </div>
+                  <label className="shrink-0 ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded bg-purple-500/20 text-purple-300 text-[10px] font-medium cursor-pointer hover:bg-purple-500/30 transition-colors">
+                    Upload
+                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileSelect("OTHER", e)} />
+                  </label>
                 </div>
-              </div>
-              <div className="shrink-0 ml-2">
-                {status === "VERIFIED" ? (
-                  <span className="text-[10px] text-emerald-400 font-medium">Verified</span>
-                ) : status === "PENDING" ? (
-                  <span className="text-[10px] text-yellow-400 font-medium">Reviewing...</span>
-                ) : status === "REJECTED" ? (
-                  <div className="text-right">
-                    <span className="text-[10px] text-red-400 font-medium block">Rejected</span>
-                    <label className="text-[10px] text-blue-400 cursor-pointer hover:underline">
-                      Re-upload
-                      <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileSelect(doc.type, e)} />
+              );
+            }
+            // Shipper view: read-only status
+            return <ComplianceRow key={i} item={item} />;
+          })}
+        </div>
+      </div>
+
+      {/* ── HazMat Endorsements (only if HM carrier) ── */}
+      {isHazmat && (
+        <div className="pt-3 border-t border-white/5">
+          <div className="flex items-center gap-2 mb-2">
+            <Fuel className="w-3.5 h-3.5 text-amber-400" />
+            <p className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">HazMat Endorsements Required</p>
+            {hazmatDocs?.allVerified && (
+              <span className="ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-medium">
+                <CheckCircle className="w-2.5 h-2.5" /> All Verified
+              </span>
+            )}
+          </div>
+          <p className="text-[9px] text-gray-600 mb-2">
+            {isCarrierSelf
+              ? "Upload hazmat endorsement documents for AI-powered verification to access hazmat loads."
+              : "Federal hazmat compliance documents. Required before this carrier can transport hazardous materials on the platform."
+            }
+          </p>
+          <div className="space-y-1.5">
+            {hazmatItems.map((item, i) => {
+              const docTypes = ["HAZMAT_CDL", "TWIC_CARD", "SECURITY_ASSESSMENT"];
+              if (isCarrierSelf && (item.status === "missing" || item.status === "expired")) {
+                // Carrier: show upload for missing/expired HazMat docs
+                const badge = statusBadge(item.status);
+                const Icon = badge.icon;
+                return (
+                  <div key={i} className="flex items-center justify-between py-2 px-3 rounded-lg bg-black/20 border border-amber-500/10">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Icon className={`w-4 h-4 shrink-0 ${badge.color}`} />
+                      <div className="min-w-0">
+                        <p className="text-xs text-gray-200 font-medium truncate">{item.label}</p>
+                        <p className="text-[10px] text-gray-500">{item.desc}</p>
+                      </div>
+                    </div>
+                    <label className="shrink-0 ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 text-[10px] font-medium cursor-pointer hover:bg-amber-500/30 transition-colors">
+                      Upload
+                      <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileSelect(docTypes[i], e)} />
                     </label>
                   </div>
-                ) : (
-                  <label className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-500/20 text-amber-300 text-[10px] font-medium cursor-pointer hover:bg-amber-500/30 transition-colors">
-                    Upload
-                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileSelect(doc.type, e)} />
-                  </label>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                );
+              }
+              // Shipper or already verified/pending: read-only
+              return <ComplianceRow key={i} item={item} />;
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -748,9 +1043,9 @@ export default function FMCSACarrierIntelligence() {
                   <VerificationChecklist dotNumber={selectedDot} />
                 </div>
 
-                {/* HazMat Document Upload (only shows for HazMat carriers) */}
+                {/* Carrier Compliance Intelligence — role-aware */}
                 <div className="mt-4">
-                  <HazMatDocPanel dotNumber={selectedDot} />
+                  <CarrierComplianceIntel dotNumber={selectedDot} snapshot={snapshot.data} />
                 </div>
               </div>
             )}
