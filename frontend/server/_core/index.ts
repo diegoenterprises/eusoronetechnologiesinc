@@ -559,6 +559,20 @@ async function startServer() {
                       description: `Refund — Payment #${originalPayment.id}`, stripePaymentId: chargeId, completedAt: new Date(),
                     });
                     console.log(`[Stripe Webhook] Wallet ${payeeWallet.id} debited $${refundAmt} (refund)`);
+
+                    // Emit real-time refund notification
+                    try {
+                      const { emitNotification } = await import("./websocket");
+                      emitNotification(String(originalPayment.payeeId), {
+                        id: `notif_refund_${Date.now()}`,
+                        type: "payment_received",
+                        title: "Refund Processed",
+                        message: `A refund of $${refundAmt} has been applied to your wallet`,
+                        priority: "high",
+                        data: { chargeId, amount: refundAmt, type: "refund" },
+                        timestamp: new Date().toISOString(),
+                      });
+                    } catch { /* non-critical */ }
                   }
                 }
 

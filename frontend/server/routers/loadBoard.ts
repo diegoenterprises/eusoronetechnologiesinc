@@ -794,6 +794,11 @@ export const loadBoardRouter = router({
         packingGroup: input.packingGroup || null,
         properShippingName: input.properShippingName || null,
       });
+      // WS-P0-014R: Validate delivery date is not before pickup date
+      if (new Date(input.deliveryDate) < new Date(input.pickupDate)) {
+        throw new Error('Delivery date cannot be before pickup date');
+      }
+
       const loadNumber = `LB-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
       const [result] = await db.insert(loads).values({
         shipperId: profile.userId,
@@ -1077,6 +1082,10 @@ export const loadBoardRouter = router({
       if (input.rate !== undefined) updates.rate = String(input.rate);
       if (input.pickupDate) updates.pickupDate = new Date(input.pickupDate);
       if (input.deliveryDate) updates.deliveryDate = new Date(input.deliveryDate);
+      // WS-P0-014R: Validate delivery date is not before pickup date on update
+      if (updates.deliveryDate && updates.pickupDate && updates.deliveryDate < updates.pickupDate) {
+        throw new Error('Delivery date cannot be before pickup date');
+      }
       if (Object.keys(updates).length > 0) {
         await db.update(loads).set(updates).where(eq(loads.id, loadId));
       }

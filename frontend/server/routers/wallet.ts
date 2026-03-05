@@ -544,13 +544,14 @@ export const walletRouter = router({
         if (account && !account.payouts_enabled) {
           throw new Error("Payouts are not yet enabled on your Stripe account. Please complete onboarding in your Wallet settings.");
         }
+        const idempotencyKey = `payout_${wallet.id}_${Math.round(netAmount * 100)}_${Date.now()}`;
         const payout = await safeStripeCall(() => stripe.payouts.create({
           amount: Math.round(netAmount * 100),
           currency: "usd",
           description: input.instant ? "EusoWallet instant payout" : "EusoWallet standard payout",
           method: input.instant ? "instant" : "standard",
-          metadata: { userId: String(userId), walletId: String(wallet.id) },
-        }, { stripeAccount: userRow.stripeConnectId! }));
+          metadata: { userId: String(userId), walletId: String(wallet.id), idempotencyKey },
+        }, { stripeAccount: userRow.stripeConnectId!, idempotencyKey }));
         if (payout) {
           stripePayoutId = payout.id;
           console.log(`[Wallet] Stripe payout ${payout.id}: $${netAmount} → ${userRow.stripeConnectId} (${input.instant ? 'instant' : 'standard'})`);
