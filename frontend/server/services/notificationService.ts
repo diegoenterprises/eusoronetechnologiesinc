@@ -469,7 +469,7 @@ export class NotificationService {
     const db = await getDb();
     if (!db) return false;
 
-    // Get user's push tokens
+    // Get user's active push tokens
     const tokens = await db.select()
       .from(pushTokens)
       .where(and(
@@ -479,18 +479,98 @@ export class NotificationService {
 
     if (tokens.length === 0) return false;
 
-    // In production, this would integrate with FCM, APNS, etc.
-    // For now, we'll just simulate success
-    console.log(`[Push] Sending to ${tokens.length} devices for user ${payload.userId}: ${payload.title}`);
+    // WS-P1-018: FCM/APNS push notification integration via firebase-admin
+    let firebaseApp: any = null;
+    try {
+      const admin = await import("firebase-admin");
 
-    // Update last used timestamp
-    for (const token of tokens) {
-      await db.update(pushTokens)
-        .set({ lastUsedAt: new Date() })
-        .where(eq(pushTokens.id, token.id));
+      // Initialize Firebase Admin SDK (singleton)
+      if (admin.default.apps.length === 0) {
+        const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+        if (!serviceAccountJson) {
+          console.warn("[Push] FIREBASE_SERVICE_ACCOUNT env var not set — skipping FCM");
+          return false;
+        }
+        const serviceAccount = JSON.parse(serviceAccountJson);
+        admin.default.initializeApp({
+          credential: admin.default.credential.cert(serviceAccount),
+        });
+      }
+      firebaseApp = admin.default;
+    } catch (initErr) {
+      console.warn("[Push] Firebase init failed:", (initErr as any)?.message);
+      return false;
     }
 
-    return true;
+    const messaging = firebaseApp.messaging();
+    let sentCount = 0;
+    const invalidTokenIds: number[] = [];
+
+    for (const tokenRecord of tokens) {
+      try {
+        const fcmMessage: any = {
+          token: tokenRecord.token,
+          notification: {
+            title: payload.title,
+            body: payload.message,
+          },
+          data: {
+            type: payload.type,
+            priority: payload.priority || "normal",
+            ...(payload.data ? Object.fromEntries(Object.entries(payload.data).map(([k, v]) => [k, String(v)])) : {}),
+          },
+        };
+
+        // Platform-specific config
+        if (tokenRecord.platform === "ios") {
+          fcmMessage.apns = {
+            payload: {
+              aps: {
+                sound: payload.priority === "urgent" ? "critical" : "default",
+                badge: 1,
+                "content-available": 1,
+              },
+            },
+          };
+        } else if (tokenRecord.platform === "android") {
+          fcmMessage.android = {
+            priority: payload.priority === "urgent" ? "high" : "normal",
+            notification: {
+              channelId: payload.type === "message" ? "messages" : "general",
+              sound: "default",
+            },
+          };
+        }
+
+        await messaging.send(fcmMessage);
+        sentCount++;
+
+        // Update last used timestamp
+        await db.update(pushTokens)
+          .set({ lastUsedAt: new Date() })
+          .where(eq(pushTokens.id, tokenRecord.id));
+
+      } catch (sendErr: any) {
+        const errorCode = sendErr?.code || sendErr?.errorInfo?.code || "";
+        // Deactivate invalid/unregistered tokens
+        if (errorCode.includes("not-registered") || errorCode.includes("invalid-argument") || errorCode.includes("invalid-registration-token")) {
+          invalidTokenIds.push(tokenRecord.id);
+          console.warn(`[Push] Token ${tokenRecord.id} invalid — deactivating`);
+        } else {
+          console.warn(`[Push] Send failed for token ${tokenRecord.id}:`, sendErr?.message);
+        }
+      }
+    }
+
+    // Deactivate invalid tokens
+    if (invalidTokenIds.length > 0) {
+      for (const id of invalidTokenIds) {
+        await db.update(pushTokens).set({ isActive: false }).where(eq(pushTokens.id, id));
+      }
+    }
+
+    console.log(`[Push] Sent ${sentCount}/${tokens.length} for user ${payload.userId}: ${payload.title}`);
+    return sentCount > 0;
   }
 
   private async sendEmailNotification(payload: NotificationPayload): Promise<boolean> {
