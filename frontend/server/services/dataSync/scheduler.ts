@@ -3,6 +3,10 @@
  * Uses node-cron to schedule periodic data fetching from 22+ government APIs
  */
 import cron from "node-cron";
+import { getDb } from "../../db";
+import { emitDispatchEvent } from "../../_core/websocket";
+import { loads, drivers, companies } from "../../../drizzle/schema";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { fetchWeatherAlerts } from "../../integrations/nws/weatherAlerts";
 import { fetchRecentEarthquakes } from "../../integrations/usgs/earthquakes";
 import { fetchEIAFuelPrices } from "../../integrations/eia/fuelPrices";
@@ -234,7 +238,75 @@ export function initializeDataSyncScheduler(): void {
     await runSync("INSURANCE_FMCSA_DEEP_SCAN", deepFMCSAComplianceScan);
   });
 
-  console.log("[DataSync] Scheduler v3.4 initialized — 29 data sources, 26+ cron jobs (incl. insurance compliance engine)");
+  // Dispatch Check Call Monitor - Every 30 minutes (WS-DISPATCH-OVERHAUL)
+  cron.schedule("*/30 * * * *", async () => {
+    await runSync("DISPATCH_CHECK_CALL_DUE", scanCheckCallsDue);
+  });
+
+  console.log("[DataSync] Scheduler v3.5 initialized — 30 data sources, 27+ cron jobs (incl. dispatch check calls)");
+}
+
+/**
+ * Scan for in-transit loads that are due for a check call.
+ * A check call is due every 4 hours for active in-transit loads.
+ * Emits DISPATCH_CHECK_CALL_DUE WebSocket events per company.
+ */
+async function scanCheckCallsDue(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  try {
+    const inTransitStatuses = ['en_route_pickup', 'en_route_delivery', 'at_pickup', 'at_delivery', 'loading', 'unloading'];
+
+    const activeLoads = await db
+      .select({
+        id: loads.id,
+        loadNumber: loads.loadNumber,
+        status: loads.status,
+        driverId: loads.driverId,
+        catalystId: loads.catalystId,
+        pickupLocation: loads.pickupLocation,
+        deliveryLocation: loads.deliveryLocation,
+        updatedAt: loads.updatedAt,
+      })
+      .from(loads)
+      .where(
+        sql`${loads.status} IN (${sql.raw(inTransitStatuses.map(s => `'${s}'`).join(','))})`
+      )
+      .limit(500);
+
+    // Group by company (catalystId) and find loads not updated in 4+ hours
+    const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+    const companyCalls: Record<string, typeof activeLoads> = {};
+
+    for (const load of activeLoads) {
+      const lastUpdate = load.updatedAt ? new Date(load.updatedAt) : new Date(0);
+      if (lastUpdate < fourHoursAgo) {
+        const companyId = String(load.catalystId || 0);
+        if (!companyCalls[companyId]) companyCalls[companyId] = [];
+        companyCalls[companyId].push(load);
+      }
+    }
+
+    let totalEmitted = 0;
+    for (const [companyId, dueLoads] of Object.entries(companyCalls)) {
+      for (const load of dueLoads) {
+        emitDispatchEvent(companyId, {
+          loadId: String(load.id),
+          loadNumber: load.loadNumber || `LOAD-${load.id}`,
+          eventType: 'DISPATCH_CHECK_CALL_DUE',
+          priority: 'urgent',
+          message: `Check call due for ${load.loadNumber || `LOAD-${load.id}`} (${load.status}) — no update in 4+ hours`,
+          timestamp: new Date().toISOString(),
+        });
+        totalEmitted++;
+      }
+    }
+
+    console.log(`[Dispatch] Check call scan: ${activeLoads.length} in-transit loads, ${totalEmitted} check calls due`);
+  } catch (err: any) {
+    console.error('[Dispatch] Check call scan error:', err?.message?.slice(0, 200));
+  }
 }
 
 /**

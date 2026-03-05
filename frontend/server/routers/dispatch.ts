@@ -851,12 +851,133 @@ export const dispatchRouter = router({
     return [];
   }),
 
-  // Exceptions
-  getExceptions: protectedProcedure.input(z.object({ status: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => {
-    // Dispatch exceptions require a dedicated exceptions table
-    return [];
+  // Exceptions — detect operational anomalies from loads data
+  getExceptions: protectedProcedure.input(z.object({ status: z.string().optional(), filter: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+
+    try {
+      const companyId = (ctx.user as any)?.companyId || 0;
+      const exceptions: { id: string; type: string; severity: string; loadNumber: string; message: string; status: string; createdAt: string }[] = [];
+
+      // 1. Stale in-transit loads — no update in 6+ hours
+      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      const staleLoads = await db.select({
+        id: loads.id, loadNumber: loads.loadNumber, status: loads.status,
+        pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation, updatedAt: loads.updatedAt,
+      }).from(loads).where(
+        and(
+          sql`${loads.status} IN ('en_route_pickup','en_route_delivery','at_pickup','at_delivery','loading','unloading')`,
+          sql`${loads.updatedAt} < ${sixHoursAgo}`,
+          companyId > 0 ? eq(loads.catalystId, companyId) : undefined,
+        )
+      ).limit(50);
+
+      for (const l of staleLoads) {
+        const hoursSince = l.updatedAt ? Math.round((Date.now() - new Date(l.updatedAt).getTime()) / 3600000) : 0;
+        exceptions.push({
+          id: `stale-${l.id}`,
+          type: 'check_call_overdue',
+          severity: hoursSince > 12 ? 'critical' : 'warning',
+          loadNumber: l.loadNumber || `LOAD-${l.id}`,
+          message: `No update in ${hoursSince}h — ${l.status?.replace(/_/g, ' ')}`,
+          status: 'open',
+          createdAt: l.updatedAt ? new Date(l.updatedAt).toISOString() : new Date().toISOString(),
+        });
+      }
+
+      // 2. Unassigned loads older than 2 hours
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+      const unassignedLoads = await db.select({
+        id: loads.id, loadNumber: loads.loadNumber, createdAt: loads.createdAt,
+        pickupLocation: loads.pickupLocation,
+      }).from(loads).where(
+        and(
+          eq(loads.status, 'posted'),
+          sql`${loads.driverId} IS NULL`,
+          sql`${loads.createdAt} < ${twoHoursAgo}`,
+          companyId > 0 ? eq(loads.catalystId, companyId) : undefined,
+        )
+      ).limit(30);
+
+      for (const l of unassignedLoads) {
+        const hoursSince = l.createdAt ? Math.round((Date.now() - new Date(l.createdAt).getTime()) / 3600000) : 0;
+        exceptions.push({
+          id: `unassigned-${l.id}`,
+          type: 'unassigned_aging',
+          severity: hoursSince > 8 ? 'critical' : 'warning',
+          loadNumber: l.loadNumber || `LOAD-${l.id}`,
+          message: `Unassigned for ${hoursSince}h — needs driver`,
+          status: 'open',
+          createdAt: l.createdAt ? new Date(l.createdAt).toISOString() : new Date().toISOString(),
+        });
+      }
+
+      // Apply filter if provided
+      const statusFilter = input?.status;
+      const filtered = statusFilter && statusFilter !== 'all'
+        ? exceptions.filter(e => e.severity === statusFilter || e.type === statusFilter)
+        : exceptions;
+
+      return filtered.sort((a, b) => {
+        const sev = { critical: 0, warning: 1, info: 2 };
+        return (sev[a.severity as keyof typeof sev] ?? 2) - (sev[b.severity as keyof typeof sev] ?? 2);
+      });
+    } catch (err: any) {
+      console.error('[Dispatch] getExceptions error:', err?.message?.slice(0, 200));
+      return [];
+    }
   }),
-  getExceptionStats: protectedProcedure.query(async () => ({ open: 0, investigating: 0, resolved: 0, critical: 0, inProgress: 0, resolvedToday: 0 })),
+  getExceptionStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { open: 0, investigating: 0, resolved: 0, critical: 0, inProgress: 0, resolvedToday: 0 };
+
+    try {
+      const companyId = (ctx.user as any)?.companyId || 0;
+      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+      const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+
+      // Stale in-transit count
+      const [staleResult] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(
+        and(
+          sql`${loads.status} IN ('en_route_pickup','en_route_delivery','at_pickup','at_delivery','loading','unloading')`,
+          sql`${loads.updatedAt} < ${sixHoursAgo}`,
+          companyId > 0 ? eq(loads.catalystId, companyId) : undefined,
+        )
+      );
+      // Critical stale (12+ hours)
+      const [criticalResult] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(
+        and(
+          sql`${loads.status} IN ('en_route_pickup','en_route_delivery','at_pickup','at_delivery','loading','unloading')`,
+          sql`${loads.updatedAt} < ${twelveHoursAgo}`,
+          companyId > 0 ? eq(loads.catalystId, companyId) : undefined,
+        )
+      );
+      // Unassigned aging count
+      const [unassignedResult] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(
+        and(
+          eq(loads.status, 'posted'),
+          sql`${loads.driverId} IS NULL`,
+          sql`${loads.createdAt} < ${twoHoursAgo}`,
+          companyId > 0 ? eq(loads.catalystId, companyId) : undefined,
+        )
+      );
+
+      const open = (staleResult?.count || 0) + (unassignedResult?.count || 0);
+      return {
+        open,
+        investigating: 0,
+        resolved: 0,
+        critical: criticalResult?.count || 0,
+        inProgress: staleResult?.count || 0,
+        resolvedToday: 0,
+      };
+    } catch (err: any) {
+      console.error('[Dispatch] getExceptionStats error:', err?.message?.slice(0, 200));
+      return { open: 0, investigating: 0, resolved: 0, critical: 0, inProgress: 0, resolvedToday: 0 };
+    }
+  }),
   resolveException: protectedProcedure.input(z.object({ exceptionId: z.string().optional(), id: z.string().optional(), resolution: z.string().optional() })).mutation(async ({ input }) => ({ success: true, exceptionId: input.exceptionId || input.id })),
 
   // AI Recommendations — Smart driver scoring for load assignment
