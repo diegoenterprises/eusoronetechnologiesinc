@@ -519,7 +519,13 @@ class ESANGAIService {
     }
 
     try {
-      const response = await this.callGeminiAPI(message, history, contextPrompt);
+      let response: ESANGResponse;
+      try {
+        response = await this.callGeminiAPI(message, history, contextPrompt);
+      } catch (geminiErr) {
+        console.warn("[ESANG AI] Gemini failed, trying secondary LLM fallback:", (geminiErr as any)?.message);
+        response = await this.callFallbackLLM(message, history, contextPrompt);
+      }
 
       // Parse any action blocks from the AI response
       const { cleanText, actions: parsedActions } = parseActionBlocks(response.message);
@@ -676,6 +682,62 @@ class ESANGAIService {
       message: text,
       suggestions,
       actions,
+    };
+  }
+
+  /**
+   * WS-P1-014: Secondary LLM fallback when Gemini is unavailable
+   * Tries OpenAI-compatible API, then falls back to offline response
+   */
+  private async callFallbackLLM(
+    message: string,
+    history: ChatMessage[],
+    contextPrompt: string
+  ): Promise<ESANGResponse> {
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (openaiKey) {
+      try {
+        const systemMsg = SYSTEM_PROMPT + contextPrompt;
+        const msgs: Array<{ role: string; content: string }> = [
+          { role: "system", content: systemMsg },
+          ...history.slice(-10).map((m) => ({
+            role: m.role === "assistant" ? "assistant" : "user",
+            content: m.content,
+          })),
+          { role: "user", content: message },
+        ];
+
+        const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
+          body: JSON.stringify({ model: "gpt-4o-mini", messages: msgs, temperature: 0.7, max_tokens: 4096 }),
+          signal: AbortSignal.timeout(30000),
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          const text = data.choices?.[0]?.message?.content || "";
+          if (text) {
+            console.log("[ESANG AI] Fallback LLM (OpenAI) responded successfully");
+            return { message: text, suggestions: this.extractSuggestions(text), actions: this.extractActions(text) };
+          }
+        }
+        console.warn("[ESANG AI] OpenAI fallback failed:", resp.status);
+      } catch (oaiErr) {
+        console.warn("[ESANG AI] OpenAI fallback error:", (oaiErr as any)?.message);
+      }
+    }
+
+    // Final fallback: offline response
+    console.warn("[ESANG AI] All LLMs unavailable — returning offline response");
+    return {
+      message: "I'm currently experiencing connectivity issues with my AI services. Here's what I can still help with:\n\n" +
+        "• **Navigation** — Use the sidebar to access any platform feature\n" +
+        "• **Load Management** — Create, track, and manage loads from the dashboard\n" +
+        "• **Documents** — Upload and manage compliance documents\n" +
+        "• **Support** — Contact support@eusotrip.com for urgent assistance\n\n" +
+        "I'll be back online shortly. Please try again in a few moments.",
+      suggestions: ["Try again", "Go to Dashboard", "Contact Support"],
     };
   }
 
