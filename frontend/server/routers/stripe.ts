@@ -772,6 +772,41 @@ export const stripeRouter = router({
       }
     }),
 
+  /**
+   * WS-P1-005: Sync Connect account status after onboarding return
+   * Called when user returns from Stripe Connect onboarding to update local records
+   */
+  syncConnectStatus: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user.id) || 0;
+
+      const [user] = await db.select({ stripeConnectId: users.stripeConnectId })
+        .from(users).where(eq(users.id, userId)).limit(1);
+      const connectId = (user as any)?.stripeConnectId;
+      if (!connectId) throw new Error("No Connect account found. Create one first.");
+
+      const account = await stripe.accounts.retrieve(connectId);
+      const newStatus = account.charges_enabled && account.payouts_enabled
+        ? "active"
+        : "pending";
+
+      // Update wallet record
+      await db.update(wallets)
+        .set({ stripeConnectId: connectId, stripeAccountStatus: newStatus })
+        .where(eq(wallets.userId, userId));
+
+      console.log(`[Stripe Connect] Synced status for user ${userId}: ${newStatus}`);
+      return {
+        accountId: connectId,
+        status: newStatus,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        detailsSubmitted: account.details_submitted,
+      };
+    }),
+
   // ═══════════════════════════════════════════════════════════════
   // PAYMENT INTENTS (for in-app payments)
   // ═══════════════════════════════════════════════════════════════
