@@ -1737,4 +1737,67 @@ export const adminRouter = router({
       console.log(`[Admin] Seeded test accounts: ${created.length} created, ${skipped.length} skipped`);
       return { created, skipped, total: testAccounts.length };
     }),
+
+  // ── WS-P0-012: Register carrier company with DOT/MC ──
+  seedCarrierCompany: auditedAdminProcedure
+    .mutation(async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      // Check if carrier company already exists
+      const [existing] = await db.select({ id: companies.id }).from(companies).where(eq(companies.dotNumber, "2233825")).limit(1);
+      if (existing) {
+        // Still assign users to this company
+        const carrierEmails = ["catalyst@eusotrip.com", "driver@eusotrip.com", "compliance@eusotrip.com", "safety@eusotrip.com", "dispatch@eusotrip.com"];
+        let assigned = 0;
+        for (const email of carrierEmails) {
+          const [u] = await db.select({ id: users.id, companyId: users.companyId }).from(users).where(eq(users.email, email)).limit(1);
+          if (u && !u.companyId) {
+            await db.update(users).set({ companyId: existing.id }).where(eq(users.id, u.id));
+            assigned++;
+          }
+        }
+        return { companyId: existing.id, created: false, message: "Carrier company already exists", usersAssigned: assigned };
+      }
+
+      // Create carrier company
+      const [result] = await db.insert(companies).values({
+        name: "Test Carrier Services LLC",
+        legalName: "Test Carrier Services LLC",
+        dotNumber: "2233825",
+        mcNumber: "MC-789012",
+        address: "1234 Industrial Blvd",
+        city: "Houston",
+        state: "TX",
+        zipCode: "77001",
+        phone: "713-555-0100",
+        email: "dispatch@testcarrier.com",
+        complianceStatus: "compliant",
+        supplyChainRole: "TRANSPORTER",
+        isActive: true,
+      }).$returningId();
+
+      const carrierCompanyId = result.id;
+
+      // Assign carrier-side test users
+      const carrierEmails = ["catalyst@eusotrip.com", "driver@eusotrip.com", "compliance@eusotrip.com", "safety@eusotrip.com", "dispatch@eusotrip.com"];
+      let assigned = 0;
+      for (const email of carrierEmails) {
+        const [u] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+        if (u) {
+          await db.update(users).set({ companyId: carrierCompanyId }).where(eq(users.id, u.id));
+          assigned++;
+        }
+      }
+
+      // Assign broker to company 1 (Eusorone Technologies) if not set
+      const [broker] = await db.select({ id: users.id, companyId: users.companyId }).from(users).where(eq(users.email, "broker@eusotrip.com")).limit(1);
+      if (broker && !broker.companyId) {
+        const [co1] = await db.select({ id: companies.id }).from(companies).where(eq(companies.id, 1)).limit(1);
+        if (co1) await db.update(users).set({ companyId: 1 }).where(eq(users.id, broker.id));
+      }
+
+      console.log(`[Admin] Created carrier company (id=${carrierCompanyId}, DOT=2233825), assigned ${assigned} users`);
+      return { companyId: carrierCompanyId, created: true, usersAssigned: assigned };
+    }),
 });
