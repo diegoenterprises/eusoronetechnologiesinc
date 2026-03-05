@@ -710,105 +710,189 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
   ],
 
-  // DISPATCH: Fleet operations nerve center — redesigned for dispatchers (WS-DISPATCH-OVERHAUL)
+  // DISPATCH: Fleet operations nerve center — consolidated sidebar v2
+  // Pattern: Operations cluster → Business cluster → Platform footer
+  // Aligned with CATALYST (24 items), BROKER (24 items), SHIPPER (23 items)
   DISPATCH: [
-    { 
-      icon: "LayoutDashboard", 
-      label: "Command Center", 
-      path: "/dispatch", 
+    // ─── OPERATIONS CLUSTER (core dispatcher workflow) ───
+    {
+      icon: "LayoutDashboard",
+      label: "Command Center",
+      path: "/dispatch",
       badge: 0,
       description: "Dispatch command center — drivers, Kanban board, activity feed"
     },
-    { 
-      icon: "Columns", 
-      label: "Dispatch Board", 
-      path: "/dispatch/board", 
+    {
+      icon: "Search",
+      label: "Find Loads",
+      path: "/marketplace",
       badge: 0,
-      description: "Kanban-style dispatch board with drag-and-drop assignment"
+      description: "Available loads & AI-matched opportunities"
     },
-    { 
-      icon: "Map", 
-      label: "Fleet Map", 
-      path: "/dispatch/fleet-map", 
-      badge: 0,
-      description: "Real-time fleet positions and route tracking"
-    },
-    { 
-      icon: "Users", 
-      label: "Driver Roster", 
-      path: "/dispatch/drivers", 
-      badge: 0,
-      description: "All drivers — status, HOS, endorsements, availability"
-    },
-    { 
-      icon: "Search", 
-      label: "Load Board", 
-      path: "/marketplace", 
-      badge: 0,
-      description: "Search available loads & AI-matched opportunities"
-    },
-    { 
-      icon: "Plus", 
-      label: "Create Load", 
-      path: "/dispatch/create", 
+    {
+      icon: "Plus",
+      label: "Create Load",
+      path: "/dispatch/create",
       badge: 0,
       description: "Quick 3-field load creation for dispatchers"
     },
-    { 
-      icon: "DollarSign", 
-      label: "Settlements", 
-      path: "/settlements", 
+    {
+      icon: "CheckCircle",
+      label: "Assigned Loads",
+      path: "/loads",
       badge: 0,
-      description: "Fleet settlement status, driver earnings & payouts"
+      description: "All active loads — status, tracking & POD"
     },
-    { 
-      icon: "BarChart3", 
-      label: "Performance", 
-      path: "/performance", 
+    {
+      icon: "Truck",
+      label: "Fleet",
+      path: "/fleet",
+      badge: 0,
+      description: "Manage vehicles, trailers & equipment",
+      children: [
+        {
+          icon: "ShieldCheck",
+          label: "Insurance Verification",
+          path: "/insurance/verification",
+          badge: 0,
+          description: "AI document scanning, FMCSA cross-verification & compliance"
+        },
+      ],
+    },
+    {
+      icon: "MapPin",
+      label: "Fleet Tracking",
+      path: "/fleet-tracking",
+      badge: 0,
+      description: "Real-time fleet GPS tracking & geofencing"
+    },
+    {
+      icon: "Siren",
+      label: "Active Trip",
+      path: "/active-trip",
+      badge: 0,
+      description: "Real-time trip dashboard, SOS, state compliance & ZEUN"
+    },
+    {
+      icon: "AlertTriangle",
+      label: "Exceptions",
+      path: "/dispatch/exceptions",
+      badge: 0,
+      description: "Active exceptions, delays, stale loads & compliance issues"
+    },
+    // ─── BUSINESS CLUSTER (partnerships, money, documents) ───
+    {
+      icon: "Handshake",
+      label: "My Partners",
+      path: "/partners",
+      badge: 0,
+      description: "Partners, agreements & network connections"
+    },
+    {
+      icon: "Database",
+      label: "Facility Intelligence",
+      path: "/facility-search",
+      badge: 0,
+      description: "Search 1,400+ petroleum facilities nationwide"
+    },
+    {
+      icon: "Shield",
+      label: "Operating Authority",
+      path: "/authority",
+      badge: 0,
+      description: "Verify carrier authority, MC/DOT & lease status"
+    },
+    {
+      icon: "FileText",
+      label: "Documents",
+      path: "/documents",
+      badge: 0,
+      description: "Run tickets, BOLs, compliance docs & certifications"
+    },
+    {
+      icon: "Scale",
+      label: "Rate Sheet",
+      path: "/rate-sheet",
+      badge: 0,
+      description: "Per-barrel rates, surcharges & reconciliation statements"
+    },
+    {
+      icon: "Receipt",
+      label: "Accessorials",
+      path: "/accessorials",
+      badge: 0,
+      description: "Detention, lumper, TONU & accessorial fee management"
+    },
+    {
+      icon: "BarChart3",
+      label: "Performance",
+      path: "/performance",
       badge: 0,
       description: "Team performance — utilization, on-time rate, revenue/mile"
     },
-    { 
-      icon: "AlertTriangle", 
-      label: "Exceptions", 
-      path: "/dispatch/exceptions", 
-      badge: 0,
-      description: "Active exceptions, delays, compliance issues"
-    },
-    { 
-      icon: "MessageSquare", 
-      label: "Messages", 
-      path: "/messages", 
+    // ─── PLATFORM FOOTER (shared across all roles) ───
+    {
+      icon: "MessageSquare",
+      label: "Messages",
+      path: "/messages",
       badge: 0,
       description: "Driver messaging & broadcast"
     },
-    { 
-      icon: "Brain", 
-      label: "ESANG AI", 
-      path: "/ai-assistant", 
+    {
+      icon: "Wallet",
+      label: "EusoWallet",
+      path: "/wallet",
       badge: 0,
-      description: "AI assistant for dispatch operations"
+      description: "Account balance, earnings & payments"
     },
-    { 
-      icon: "Wallet", 
-      label: "EusoWallet", 
-      path: "/wallet", 
+    {
+      icon: "Radio",
+      label: "Company Channels",
+      path: "/company-channels",
       badge: 0,
-      description: "Account balance & payments"
+      description: "Team communication channels"
     },
-    { 
-      icon: "Truck", 
-      label: "The Haul", 
-      path: "/the-haul", 
+    {
+      icon: "TrendingUp",
+      label: "Market Intelligence",
+      path: "/market-pricing",
+      badge: 0,
+      description: "Rates, commodities, hot zones & 2026 freight intelligence"
+    },
+    {
+      icon: "Truck",
+      label: "The Haul",
+      path: "/the-haul",
       badge: 0,
       description: "Digital truck stop — lobby, missions, rewards"
     },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/settings", 
+    {
+      icon: "Settings",
+      label: "Settings",
+      path: "/settings",
       badge: 0,
       description: "Profile, preferences & security"
+    },
+    {
+      icon: "Newspaper",
+      label: "News",
+      path: "/news",
+      badge: 0,
+      description: "Platform news and updates"
+    },
+    {
+      icon: "AlertTriangle",
+      label: "Report Incident",
+      path: "/hazmat/incident-report",
+      badge: 0,
+      description: "Report a safety, cargo, or roadside incident"
+    },
+    {
+      icon: "HelpCircle",
+      label: "Support",
+      path: "/support",
+      badge: 0,
+      description: "Help and documentation"
     },
   ],
 
