@@ -859,8 +859,262 @@ export const dispatchRouter = router({
   getExceptionStats: protectedProcedure.query(async () => ({ open: 0, investigating: 0, resolved: 0, critical: 0, inProgress: 0, resolvedToday: 0 })),
   resolveException: protectedProcedure.input(z.object({ exceptionId: z.string().optional(), id: z.string().optional(), resolution: z.string().optional() })).mutation(async ({ input }) => ({ success: true, exceptionId: input.exceptionId || input.id })),
 
-  // AI Recommendations
-  getRecommendations: protectedProcedure.input(z.object({ loadId: z.string() })).query(async ({ input }) => []),
+  // AI Recommendations — Smart driver scoring for load assignment
+  getRecommendations: protectedProcedure
+    .input(z.object({ loadId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const loadIdNum = parseInt(input.loadId.replace(/\D/g, '')) || 0;
+        const [load] = await db.select().from(loads).where(eq(loads.id, loadIdNum)).limit(1);
+        if (!load) return [];
+
+        const companyId = ctx.user?.companyId || 0;
+
+        // Get available drivers
+        const driverRows = await db.select({
+          id: drivers.id, userId: drivers.userId, status: drivers.status,
+          hazmatEndorsement: drivers.hazmatEndorsement, safetyScore: drivers.safetyScore,
+          totalLoads: drivers.totalLoads, userName: users.name,
+        }).from(drivers).leftJoin(users, eq(drivers.userId, users.id))
+          .where(companyId > 0 ? eq(drivers.companyId, companyId) : undefined)
+          .limit(50);
+
+        // Busy drivers
+        const busyDrivers = await db.select({ driverId: loads.driverId }).from(loads)
+          .where(sql`${loads.status} IN ('in_transit', 'assigned', 'loading')`);
+        const busyIds = new Set(busyDrivers.map(l => l.driverId));
+
+        // Per-driver completed load stats
+        const driverStatsRows = await db.select({
+          driverId: loads.driverId,
+          total: sql<number>`count(*)`,
+          onTime: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' AND (${loads.actualDeliveryDate} IS NULL OR ${loads.actualDeliveryDate} <= ${loads.deliveryDate}) THEN 1 ELSE 0 END)`,
+        }).from(loads).where(eq(loads.status, 'delivered')).groupBy(loads.driverId);
+        const statsMap = new Map(driverStatsRows.map(r => [r.driverId, { total: r.total || 0, onTime: r.onTime || 0 }]));
+
+        const available = driverRows.filter(d => !busyIds.has(d.userId));
+
+        // Score each driver (40% distance placeholder, 25% experience, 20% safety, 15% on-time)
+        const scored = available.map(d => {
+          const stats = statsMap.get(d.userId) || { total: 0, onTime: 0 };
+          const onTimeRate = stats.total > 0 ? (stats.onTime / stats.total) : 0.5;
+          const safetyNorm = (d.safetyScore || 80) / 100;
+          const expNorm = Math.min((stats.total || 0) / 50, 1);
+          const hazmatMatch = load.hazmatClass ? (d.hazmatEndorsement ? 1 : 0) : 1;
+
+          const score = Math.round(
+            (0.25 * expNorm + 0.20 * safetyNorm + 0.15 * onTimeRate + 0.40 * hazmatMatch) * 100
+          );
+
+          const reasons: string[] = [];
+          if (hazmatMatch === 1 && load.hazmatClass) reasons.push('HazMat endorsed');
+          if (stats.total > 20) reasons.push(`${stats.total} completed loads`);
+          if (onTimeRate > 0.9 && stats.total > 0) reasons.push(`${Math.round(onTimeRate * 100)}% on-time`);
+          if (safetyNorm > 0.9) reasons.push('Excellent safety score');
+
+          const warnings: string[] = [];
+          if (load.hazmatClass && !d.hazmatEndorsement) warnings.push('Missing HazMat endorsement');
+
+          return {
+            id: String(d.id),
+            userId: d.userId,
+            name: d.userName || 'Unknown',
+            matchScore: score,
+            matchReasons: reasons,
+            warnings,
+            safetyScore: d.safetyScore || null,
+            completedLoads: stats.total,
+            onTimeRate: stats.total > 0 ? Math.round(onTimeRate * 100) : null,
+          };
+        });
+
+        return scored.sort((a, b) => b.matchScore - a.matchScore).slice(0, 5);
+      } catch (error) {
+        console.error('[Dispatch] getRecommendations error:', error);
+        return [];
+      }
+    }),
+
+  /**
+   * Quick Create Load — 3-field load creation for dispatchers (NOT the 8-step wizard)
+   */
+  quickCreateLoad: protectedProcedure
+    .input(z.object({
+      originCity: z.string().min(1),
+      originState: z.string().length(2),
+      destinationCity: z.string().min(1),
+      destinationState: z.string().length(2),
+      cargoType: z.string().min(1),
+      rate: z.number().positive(),
+      trailerType: z.string().optional(),
+      pickupDate: z.string().optional(),
+      specialInstructions: z.string().optional(),
+      hazmatClass: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DISPATCH', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'LOAD' }, (ctx as any).req);
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+
+      const companyId = ctx.user?.companyId || 0;
+      const userId = ctx.user?.id || 0;
+
+      // Generate load number
+      const [lastLoad] = await db.select({ id: loads.id }).from(loads).orderBy(desc(loads.id)).limit(1);
+      const nextNum = (lastLoad?.id || 0) + 1;
+      const loadNumber = `LD-${String(nextNum).padStart(5, '0')}`;
+
+      // Build locations
+      const pickupLocation = { city: input.originCity, state: input.originState, address: '', zip: '' };
+      const deliveryLocation = { city: input.destinationCity, state: input.destinationState, address: '', zip: '' };
+
+      // Determine pickup date
+      const pickupDate = input.pickupDate ? new Date(input.pickupDate) : new Date();
+
+      // Build special instructions JSON
+      const siObj: any = {};
+      if (input.trailerType) siObj.equipmentType = input.trailerType;
+      if (input.specialInstructions) siObj.notes = input.specialInstructions;
+      const specialInstructions = Object.keys(siObj).length > 0 ? JSON.stringify(siObj) : null;
+
+      // Auto-detect hazmat properties
+      const hazmatClass = input.hazmatClass || null;
+      const requiresEscort = hazmatClass ? ['1.1', '1.2', '1.3', '2.3'].includes(hazmatClass) : false;
+
+      // Insert load
+      const insertResult = await db.insert(loads).values({
+        loadNumber,
+        shipperId: userId,
+        catalystId: companyId > 0 ? companyId : null,
+        status: 'posted',
+        cargoType: input.cargoType,
+        commodityName: input.cargoType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+        rate: String(input.rate),
+        pickupLocation,
+        deliveryLocation,
+        pickupDate,
+        hazmatClass,
+        requiresEscort,
+        specialInstructions,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any).$returningId();
+      const newLoadId = insertResult?.[0]?.id;
+
+      // Emit WebSocket event
+      emitDispatchEvent(String(companyId), {
+        loadId: String(newLoadId),
+        loadNumber,
+        eventType: 'DISPATCH_BOARD_UPDATE',
+        priority: 'normal',
+        message: `New load ${loadNumber} created: ${input.originCity}, ${input.originState} → ${input.destinationCity}, ${input.destinationState}`,
+        timestamp: new Date().toISOString(),
+      });
+
+      return {
+        success: true,
+        loadId: String(newLoadId),
+        loadNumber,
+        status: 'posted',
+        createdAt: new Date().toISOString(),
+      };
+    }),
+
+  /**
+   * Bulk Assign — assign up to 50 drivers to loads in one call
+   */
+  bulkAssign: protectedProcedure
+    .input(z.object({
+      assignments: z.array(z.object({
+        loadId: z.string(),
+        driverId: z.string(),
+      })).min(1).max(50),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DISPATCH', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'LOAD' }, (ctx as any).req);
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+
+      const results: { loadId: string; success: boolean; error?: string; loadNumber?: string }[] = [];
+
+      for (const a of input.assignments) {
+        try {
+          const loadIdNum = parseInt(a.loadId.replace(/\D/g, '')) || 0;
+          const driverIdNum = parseInt(a.driverId.replace(/\D/g, '')) || 0;
+
+          const [driverRow] = await db.select({ userId: drivers.userId }).from(drivers).where(eq(drivers.id, driverIdNum)).limit(1);
+          const driverUserId = driverRow?.userId || driverIdNum;
+
+          await db.update(loads).set({ driverId: driverUserId, status: 'assigned', updatedAt: new Date() }).where(eq(loads.id, loadIdNum));
+          await db.update(drivers).set({ status: 'on_load' }).where(eq(drivers.id, driverIdNum));
+
+          const [loadRow] = await db.select({ loadNumber: loads.loadNumber }).from(loads).where(eq(loads.id, loadIdNum)).limit(1);
+
+          results.push({ loadId: a.loadId, success: true, loadNumber: loadRow?.loadNumber });
+        } catch (err: any) {
+          results.push({ loadId: a.loadId, success: false, error: err?.message || 'Unknown error' });
+        }
+      }
+
+      // Emit single board update for the whole batch
+      const companyId = String(ctx.user?.companyId || 0);
+      emitDispatchEvent(companyId, {
+        loadId: 'bulk',
+        loadNumber: `${results.filter(r => r.success).length} loads`,
+        eventType: 'DISPATCH_BOARD_UPDATE',
+        priority: 'normal',
+        message: `Bulk assignment: ${results.filter(r => r.success).length}/${results.length} successful`,
+        timestamp: new Date().toISOString(),
+      });
+
+      return {
+        total: results.length,
+        succeeded: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length,
+        results,
+      };
+    }),
+
+  /**
+   * Get Command Center Data — single aggregated query for the Command Center page
+   */
+  getCommandCenterData: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { stats: null, recentLoads: [], drivers: [], events: [] };
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(ctx.user?.role || '');
+
+        // Stats
+        const [active] = await db.select({ count: sql<number>`count(*)` }).from(loads)
+          .where(sql`${loads.status} IN ('assigned','in_transit','loading')`);
+        const [unassigned] = await db.select({ count: sql<number>`count(*)` }).from(loads)
+          .where(sql`${loads.status} IN ('posted','bidding') AND ${loads.driverId} IS NULL`);
+        const [inTransit] = await db.select({ count: sql<number>`count(*)` }).from(loads)
+          .where(eq(loads.status, 'in_transit'));
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const [delivered] = await db.select({ count: sql<number>`count(*)` }).from(loads)
+          .where(and(eq(loads.status, 'delivered'), gte(loads.updatedAt, today)));
+        const [totalDrivers] = await db.select({ count: sql<number>`count(*)` }).from(drivers)
+          .where(companyId > 0 ? eq(drivers.companyId, companyId) : undefined);
+
+        return {
+          stats: {
+            active: active?.count || 0,
+            unassigned: unassigned?.count || 0,
+            inTransit: inTransit?.count || 0,
+            deliveredToday: delivered?.count || 0,
+            totalDrivers: totalDrivers?.count || 0,
+          },
+        };
+      } catch (error) {
+        console.error('[Dispatch] getCommandCenterData error:', error);
+        return { stats: null };
+      }
+    }),
 
   // ═══════════════════════════════════════════════════════════════════════════
   // ESCORT MANAGEMENT — dispatch assigns/views/manages escort assignments

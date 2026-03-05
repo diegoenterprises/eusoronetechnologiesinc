@@ -145,13 +145,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Wallet, invoices, payments, cards & escrow"
     },
     { 
-      icon: "Receipt", 
-      label: "Accessorials", 
-      path: "/accessorials", 
-      badge: 0,
-      description: "Detention, lumper, TONU & accessorial fee management"
-    },
-    { 
       icon: "Building2", 
       label: "Company", 
       path: "/company", 
@@ -717,92 +710,84 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
   ],
 
-  // DISPATCH: Specialization matching, load optimization
-  // Consolidated: hazmat drivers/equipment/routes → Fleet Tracking | emergency → Messages | regulatory → News
+  // DISPATCH: Fleet operations nerve center — redesigned for dispatchers (WS-DISPATCH-OVERHAUL)
   DISPATCH: [
     { 
       icon: "LayoutDashboard", 
-      label: "Dashboard", 
-      path: "/", 
+      label: "Command Center", 
+      path: "/dispatch", 
       badge: 0,
-      description: "Dispatch dashboard"
+      description: "Dispatch command center — drivers, Kanban board, activity feed"
     },
     { 
-      icon: "Zap", 
-      label: "Specializations", 
-      path: "/specializations", 
+      icon: "Columns", 
+      label: "Dispatch Board", 
+      path: "/dispatch/board", 
       badge: 0,
-      description: "Your expertise areas"
+      description: "Kanban-style dispatch board with drag-and-drop assignment"
+    },
+    { 
+      icon: "Map", 
+      label: "Fleet Map", 
+      path: "/dispatch/fleet-map", 
+      badge: 0,
+      description: "Real-time fleet positions and route tracking"
+    },
+    { 
+      icon: "Users", 
+      label: "Driver Roster", 
+      path: "/dispatch/drivers", 
+      badge: 0,
+      description: "All drivers — status, HOS, endorsements, availability"
     },
     { 
       icon: "Search", 
-      label: "Find Loads", 
+      label: "Load Board", 
       path: "/marketplace", 
       badge: 0,
       description: "Search available loads & AI-matched opportunities"
     },
     { 
-      icon: "Scale", 
-      label: "My Bids", 
-      path: "/bids", 
+      icon: "Plus", 
+      label: "Create Load", 
+      path: "/dispatch/create", 
       badge: 0,
-      description: "Active and pending bids"
+      description: "Quick 3-field load creation for dispatchers"
+    },
+    { 
+      icon: "DollarSign", 
+      label: "Settlements", 
+      path: "/settlements", 
+      badge: 0,
+      description: "Fleet settlement status, driver earnings & payouts"
     },
     { 
       icon: "BarChart3", 
       label: "Performance", 
       path: "/performance", 
       badge: 0,
-      description: "Success metrics"
+      description: "Team performance — utilization, on-time rate, revenue/mile"
     },
     { 
-      icon: "MapPin", 
-      label: "Fleet Tracking", 
-      path: "/fleet-tracking", 
+      icon: "AlertTriangle", 
+      label: "Exceptions", 
+      path: "/dispatch/exceptions", 
       badge: 0,
-      description: "Fleet positions, hazmat drivers, equipment & route compliance"
-    },
-    { 
-      icon: "Handshake", 
-      label: "My Partners", 
-      path: "/partners", 
-      badge: 0,
-      description: "Partners, agreements & dispatch coordination"
-    },
-    { 
-      icon: "Shield", 
-      label: "Operating Authority", 
-      path: "/authority", 
-      badge: 0,
-      description: "Carrier authority & lease verification"
-    },
-    { 
-      icon: "TrendingUp", 
-      label: "Market Intelligence", 
-      path: "/market-pricing", 
-      badge: 0,
-      description: "Freight rates, demand heatmaps & surge pricing"
-    },
-    { 
-      icon: "Brain", 
-      label: "AI Assistant", 
-      path: "/ai-assistant", 
-      badge: 0,
-      description: "ESANG AI chat"
-    },
-    { 
-      icon: "FileText", 
-      label: "Documents", 
-      path: "/documents", 
-      badge: 0,
-      description: "Compliance documents & certifications"
+      description: "Active exceptions, delays, compliance issues"
     },
     { 
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
       badge: 0,
-      description: "Communication & emergency broadcasts"
+      description: "Driver messaging & broadcast"
+    },
+    { 
+      icon: "Brain", 
+      label: "ESANG AI", 
+      path: "/ai-assistant", 
+      badge: 0,
+      description: "AI assistant for dispatch operations"
     },
     { 
       icon: "Wallet", 
@@ -810,13 +795,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/wallet", 
       badge: 0,
       description: "Account balance & payments"
-    },
-    { 
-      icon: "Radio", 
-      label: "Company Channels", 
-      path: "/company-channels", 
-      badge: 0,
-      description: "Team communication channels"
     },
     { 
       icon: "Truck", 
@@ -831,27 +809,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/settings", 
       badge: 0,
       description: "Profile, preferences & security"
-    },
-    { 
-      icon: "Newspaper", 
-      label: "News", 
-      path: "/news", 
-      badge: 0,
-      description: "Platform news & regulatory updates"
-    },
-    { 
-      icon: "AlertTriangle", 
-      label: "Report Incident", 
-      path: "/hazmat/incident-report", 
-      badge: 0,
-      description: "Report a safety, fleet, or operational incident"
-    },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0,
-      description: "Help"
     },
   ],
 
@@ -1165,13 +1122,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/wallet", 
       badge: 0,
       description: "Billing, detention fees, invoices & payments"
-    },
-    { 
-      icon: "Receipt", 
-      label: "Accessorials", 
-      path: "/accessorials", 
-      badge: 0,
-      description: "Detention, lumper, TONU & accessorial fee management"
     },
     { 
       icon: "Settings", 

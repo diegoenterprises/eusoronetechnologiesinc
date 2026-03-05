@@ -466,6 +466,39 @@ export type Settlement = typeof settlements.$inferSelect;
 export type InsertSettlement = typeof settlements.$inferInsert;
 
 // ============================================================================
+// SETTLEMENT DOCUMENTS — Persisted settlement PDFs and calculations (WS-E2E-003)
+// ============================================================================
+
+export const settlementDocuments = mysqlTable(
+  "settlement_documents",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    settlementId: int("settlementId"),
+    loadId: int("loadId").notNull(),
+    driverId: int("driverId").notNull(),
+    carrierId: int("carrierId"),
+    documentType: varchar("documentType", { length: 50 }).notNull().default("SETTLEMENT"),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    deductions: json("deductions").$type<Record<string, number>>().notNull(),
+    netPay: decimal("netPay", { precision: 12, scale: 2 }).notNull(),
+    s3Url: varchar("s3Url", { length: 1024 }),
+    status: mysqlEnum("sd_status", ["DRAFT", "FINALIZED", "PAID"]).default("DRAFT").notNull(),
+    generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+    finalizedAt: timestamp("finalizedAt"),
+    paidAt: timestamp("paidAt"),
+  },
+  (table) => ({
+    loadIdx: index("sd_load_idx").on(table.loadId),
+    driverIdx: index("sd_driver_idx").on(table.driverId, table.generatedAt),
+    statusIdx: index("sd_status_idx").on(table.status),
+    settlementIdx: index("sd_settlement_idx").on(table.settlementId),
+  })
+);
+
+export type SettlementDocument = typeof settlementDocuments.$inferSelect;
+export type InsertSettlementDocument = typeof settlementDocuments.$inferInsert;
+
+// ============================================================================
 // MESSAGES & CONVERSATIONS
 // ============================================================================
 
@@ -6649,6 +6682,54 @@ export type FacilityRating = typeof facilityRatings.$inferSelect;
 export type InsertFacilityRating = typeof facilityRatings.$inferInsert;
 
 // ============================================================================
+// USER RATINGS — Cross-role ratings after load completion (WS-E2E-002)
+// ============================================================================
+
+export const ratings = mysqlTable(
+  "ratings",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    fromUserId: int("fromUserId").notNull(),
+    toUserId: int("toUserId").notNull(),
+    loadId: int("loadId"),
+    score: int("score").notNull(),
+    category: varchar("category", { length: 50 }).notNull().default("overall"),
+    comment: varchar("comment", { length: 500 }),
+    anonymous: boolean("anonymous").default(false),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    toUserIdx: index("ratings_to_user_idx").on(table.toUserId, table.createdAt),
+    fromUserIdx: index("ratings_from_user_idx").on(table.fromUserId, table.createdAt),
+    loadIdx: index("ratings_load_idx").on(table.loadId),
+    uniqueBid: uniqueIndex("ratings_unique_from_to_load").on(table.fromUserId, table.toUserId, table.loadId),
+  })
+);
+
+export type Rating = typeof ratings.$inferSelect;
+export type InsertRating = typeof ratings.$inferInsert;
+
+export const reviewResponses = mysqlTable(
+  "review_responses",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    ratingId: int("ratingId").notNull(),
+    respondentId: int("respondentId").notNull(),
+    response: varchar("response", { length: 500 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    ratingIdx: index("review_resp_rating_idx").on(table.ratingId),
+    respondentIdx: index("review_resp_respondent_idx").on(table.respondentId),
+  })
+);
+
+export type ReviewResponse = typeof reviewResponses.$inferSelect;
+export type InsertReviewResponse = typeof reviewResponses.$inferInsert;
+
+// ============================================================================
 // FACILITY REQUIREMENTS — TWIC, PPE, orientation, carrier approval, etc.
 // ============================================================================
 
@@ -7045,4 +7126,285 @@ export const esangMemories = mysqlTable(
 
 export type EsangMemory = typeof esangMemories.$inferSelect;
 export type InsertEsangMemory = typeof esangMemories.$inferInsert;
+
+// ============================================================================
+// ADMIN VERIFICATION CODES — Secure admin registration (WS-E2E-012)
+// ============================================================================
+
+export const adminVerificationCodes = mysqlTable(
+  "admin_verification_codes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    code: varchar("code", { length: 20 }).notNull(),
+    generatedBy: int("generatedBy").notNull(),
+    usedBy: int("usedBy"),
+    usedAt: timestamp("usedAt"),
+    expiresAt: timestamp("expiresAt").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    codeIdx: uniqueIndex("avc_code_idx").on(table.code),
+    expiresIdx: index("avc_expires_idx").on(table.expiresAt),
+  })
+);
+
+export type AdminVerificationCode = typeof adminVerificationCodes.$inferSelect;
+export type InsertAdminVerificationCode = typeof adminVerificationCodes.$inferInsert;
+
+// ============================================================================
+// SUBSCRIPTIONS — Subscription billing system (WS-E2E-019)
+// ============================================================================
+
+export const subscriptions = mysqlTable(
+  "subscriptions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    tier: mysqlEnum("tier", ["FREE", "PRO", "ENTERPRISE"]).default("FREE").notNull(),
+    status: mysqlEnum("status", ["ACTIVE", "CANCELLED", "SUSPENDED", "EXPIRED", "PAST_DUE"]).default("ACTIVE").notNull(),
+    currentPeriodStart: timestamp("currentPeriodStart"),
+    currentPeriodEnd: timestamp("currentPeriodEnd"),
+    stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
+    stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
+    stripePriceId: varchar("stripePriceId", { length: 255 }),
+    billingCycle: mysqlEnum("billingCycle", ["MONTHLY", "YEARLY"]).default("MONTHLY"),
+    autoRenew: boolean("autoRenew").default(true).notNull(),
+    cancelledAt: timestamp("cancelledAt"),
+    cancelReason: text("cancelReason"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("sub_user_idx").on(table.userId),
+    statusIdx: index("sub_status_idx").on(table.status),
+    stripeSubIdx: uniqueIndex("sub_stripe_sub_idx").on(table.stripeSubscriptionId),
+    stripeCustIdx: index("sub_stripe_cust_idx").on(table.stripeCustomerId),
+  })
+);
+
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = typeof subscriptions.$inferInsert;
+
+export const subscriptionUsage = mysqlTable(
+  "subscription_usage",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    subscriptionId: int("subscriptionId").notNull(),
+    userId: int("userId").notNull(),
+    loadsCreated: int("loadsCreated").default(0).notNull(),
+    loadsLimit: int("loadsLimit").default(5).notNull(),
+    apiCallsUsed: int("apiCallsUsed").default(0).notNull(),
+    apiCallsLimit: int("apiCallsLimit").default(100).notNull(),
+    activeShipments: int("activeShipments").default(0).notNull(),
+    activeShipmentsLimit: int("activeShipmentsLimit").default(1).notNull(),
+    monthStart: timestamp("monthStart"),
+    monthEnd: timestamp("monthEnd"),
+    resetAt: timestamp("resetAt"),
+  },
+  (table) => ({
+    subIdx: index("su_sub_idx").on(table.subscriptionId),
+    userIdx: index("su_user_idx").on(table.userId),
+  })
+);
+
+export type SubscriptionUsage = typeof subscriptionUsage.$inferSelect;
+export type InsertSubscriptionUsage = typeof subscriptionUsage.$inferInsert;
+
+export const subscriptionFeatures = mysqlTable(
+  "subscription_features",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    tier: mysqlEnum("tier", ["FREE", "PRO", "ENTERPRISE"]).notNull(),
+    featureName: varchar("featureName", { length: 100 }).notNull(),
+    featureKey: varchar("featureKey", { length: 100 }).notNull(),
+    enabled: boolean("enabled").default(true).notNull(),
+    limitValue: int("limitValue"),
+  },
+  (table) => ({
+    tierIdx: index("sf_tier_idx").on(table.tier),
+    keyIdx: index("sf_key_idx").on(table.featureKey),
+  })
+);
+
+export type SubscriptionFeature = typeof subscriptionFeatures.$inferSelect;
+export type InsertSubscriptionFeature = typeof subscriptionFeatures.$inferInsert;
+
+// ============================================================================
+// DISPATCH COMMAND CENTER — WS-DISPATCH-OVERHAUL
+// 6 new tables for dispatcher preferences, queue, templates, availability,
+// performance metrics, and action history
+// ============================================================================
+
+export const dispatcherPreferences = mysqlTable(
+  "dispatcher_preferences",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull().unique(),
+    companyId: int("companyId").notNull(),
+    defaultView: mysqlEnum("defaultView", ["kanban", "list", "map"]).default("kanban"),
+    autoRefreshSeconds: int("autoRefreshSeconds").default(15),
+    soundAlerts: boolean("soundAlerts").default(true),
+    hosWarningThresholdMinutes: int("hosWarningThresholdMinutes").default(60),
+    preferredCargoTypes: json("preferredCargoTypes").$type<string[]>(),
+    preferredLanes: json("preferredLanes").$type<{ origin: string; destination: string }[]>(),
+    kanbanColumnOrder: json("kanbanColumnOrder").$type<string[]>(),
+    leftPanelCollapsed: boolean("leftPanelCollapsed").default(false),
+    rightPanelCollapsed: boolean("rightPanelCollapsed").default(false),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("dp_user_idx").on(table.userId),
+    companyIdx: index("dp_company_idx").on(table.companyId),
+  })
+);
+
+export type DispatcherPreference = typeof dispatcherPreferences.$inferSelect;
+export type InsertDispatcherPreference = typeof dispatcherPreferences.$inferInsert;
+
+export const dispatchQueue = mysqlTable(
+  "dispatch_queue",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    companyId: int("companyId").notNull(),
+    priority: mysqlEnum("priority", ["critical", "high", "normal", "low"]).default("normal"),
+    status: mysqlEnum("status", ["pending", "assigned", "in_progress", "completed", "cancelled"]).default("pending"),
+    assignedDispatcherId: int("assignedDispatcherId"),
+    notes: text("notes"),
+    dueBy: timestamp("dueBy"),
+    completedAt: timestamp("completedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("dq_load_idx").on(table.loadId),
+    companyIdx: index("dq_company_idx").on(table.companyId),
+    statusIdx: index("dq_status_idx").on(table.status),
+    priorityIdx: index("dq_priority_idx").on(table.priority),
+  })
+);
+
+export type DispatchQueueItem = typeof dispatchQueue.$inferSelect;
+export type InsertDispatchQueueItem = typeof dispatchQueue.$inferInsert;
+
+export const dispatchTemplates = mysqlTable(
+  "dispatch_templates",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    createdBy: int("createdBy").notNull(),
+    name: varchar("name", { length: 100 }).notNull(),
+    description: varchar("description", { length: 255 }),
+    originCity: varchar("originCity", { length: 100 }),
+    originState: varchar("originState", { length: 2 }),
+    destinationCity: varchar("destinationCity", { length: 100 }),
+    destinationState: varchar("destinationState", { length: 2 }),
+    cargoType: varchar("cargoType", { length: 50 }),
+    trailerType: varchar("trailerType", { length: 50 }),
+    rate: decimal("rate", { precision: 10, scale: 2 }),
+    hazmatClass: varchar("hazmatClass", { length: 10 }),
+    specialInstructions: text("specialInstructions"),
+    usageCount: int("usageCount").default(0),
+    isActive: boolean("isActive").default(true),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("dt_company_idx").on(table.companyId),
+    createdByIdx: index("dt_createdby_idx").on(table.createdBy),
+  })
+);
+
+export type DispatchTemplate = typeof dispatchTemplates.$inferSelect;
+export type InsertDispatchTemplate = typeof dispatchTemplates.$inferInsert;
+
+export const driverAvailability = mysqlTable(
+  "driver_availability",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    driverId: int("driverId").notNull(),
+    companyId: int("companyId").notNull(),
+    status: mysqlEnum("status", ["available", "on_load", "off_duty", "sleeper", "break", "personal", "yard"]).default("available"),
+    hosDrivingRemaining: int("hosDrivingRemaining"),
+    hosOnDutyRemaining: int("hosOnDutyRemaining"),
+    hosCycleRemaining: int("hosCycleRemaining"),
+    currentLat: decimal("currentLat", { precision: 10, scale: 6 }),
+    currentLng: decimal("currentLng", { precision: 10, scale: 6 }),
+    currentCity: varchar("currentCity", { length: 100 }),
+    currentState: varchar("currentState", { length: 2 }),
+    availableFrom: timestamp("availableFrom"),
+    availableUntil: timestamp("availableUntil"),
+    preferredLanes: json("preferredLanes").$type<string[]>(),
+    notes: text("notes"),
+    lastUpdated: timestamp("lastUpdated").defaultNow().onUpdateNow().notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    driverIdx: index("da_driver_idx").on(table.driverId),
+    companyIdx: index("da_company_idx").on(table.companyId),
+    statusIdx: index("da_status_idx").on(table.status),
+  })
+);
+
+export type DriverAvailability = typeof driverAvailability.$inferSelect;
+export type InsertDriverAvailability = typeof driverAvailability.$inferInsert;
+
+export const dispatchPerformanceMetrics = mysqlTable(
+  "dispatch_performance_metrics",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    dispatcherId: int("dispatcherId"),
+    periodStart: timestamp("periodStart").notNull(),
+    periodEnd: timestamp("periodEnd").notNull(),
+    totalLoadsDispatched: int("totalLoadsDispatched").default(0),
+    totalLoadsDelivered: int("totalLoadsDelivered").default(0),
+    onTimeDeliveryRate: decimal("onTimeDeliveryRate", { precision: 5, scale: 2 }),
+    averageAssignmentTimeMinutes: int("averageAssignmentTimeMinutes"),
+    totalRevenue: decimal("totalRevenue", { precision: 12, scale: 2 }),
+    revenuePerMile: decimal("revenuePerMile", { precision: 6, scale: 2 }),
+    fleetUtilizationRate: decimal("fleetUtilizationRate", { precision: 5, scale: 2 }),
+    deadheadMiles: decimal("deadheadMiles", { precision: 10, scale: 2 }),
+    driverSatisfactionScore: int("driverSatisfactionScore"),
+    exceptionsCount: int("exceptionsCount").default(0),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("dpm_company_idx").on(table.companyId),
+    dispatcherIdx: index("dpm_dispatcher_idx").on(table.dispatcherId),
+    periodIdx: index("dpm_period_idx").on(table.periodStart, table.periodEnd),
+  })
+);
+
+export type DispatchPerformanceMetric = typeof dispatchPerformanceMetrics.$inferSelect;
+export type InsertDispatchPerformanceMetric = typeof dispatchPerformanceMetrics.$inferInsert;
+
+export const dispatchActionHistory = mysqlTable(
+  "dispatch_action_history",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    dispatcherId: int("dispatcherId").notNull(),
+    actionType: mysqlEnum("actionType", [
+      "load_created", "load_assigned", "load_unassigned", "driver_messaged",
+      "broadcast_sent", "exception_resolved", "bulk_assign", "template_used",
+      "status_changed", "rate_adjusted",
+    ]).notNull(),
+    loadId: int("loadId"),
+    driverId: int("driverId"),
+    details: json("details").$type<Record<string, unknown>>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("dah_company_idx").on(table.companyId),
+    dispatcherIdx: index("dah_dispatcher_idx").on(table.dispatcherId),
+    actionIdx: index("dah_action_idx").on(table.actionType),
+    loadIdx: index("dah_load_idx").on(table.loadId),
+    createdIdx: index("dah_created_idx").on(table.createdAt),
+  })
+);
+
+export type DispatchActionHistoryItem = typeof dispatchActionHistory.$inferSelect;
+export type InsertDispatchActionHistoryItem = typeof dispatchActionHistory.$inferInsert;
 

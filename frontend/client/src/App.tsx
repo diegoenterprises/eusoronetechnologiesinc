@@ -118,7 +118,9 @@ const RegisterDispatch = lazy(() => import("./pages/RegisterDispatch"));
 const RegisterTerminal = lazy(() => import("./pages/RegisterTerminal"));
 const RegisterCompliance = lazy(() => import("./pages/RegisterCompliance"));
 const RegisterSafety = lazy(() => import("./pages/RegisterSafety"));
+const RegisterAdmin = lazy(() => import("./pages/RegisterAdmin"));
 const DispatchDashboard = lazy(() => import("./pages/DispatchDashboard"));
+const DispatchCommandCenter = lazy(() => import("./pages/DispatchCommandCenter"));
 const LoadBoard = lazy(() => import("./pages/LoadBoard"));
 const SafetyDashboard = lazy(() => import("./pages/SafetyDashboard"));
 const ComplianceDashboard = lazy(() => import("./pages/ComplianceDashboard"));
@@ -398,6 +400,7 @@ function Router() {
       <Route path={"/register/terminal"} component={RegisterTerminal} />
       <Route path={"/register/compliance"} component={RegisterCompliance} />
       <Route path={"/register/safety"} component={RegisterSafety} />
+      <Route path={"/register/admin"} component={RegisterAdmin} />
       <Route path={"/terms-of-service"} component={TermsOfService} />
       <Route path={"/privacy-policy"} component={PrivacyPolicy} />
       <Route path={"/validate/:token"} component={AccessValidation} />
@@ -610,7 +613,7 @@ function Router() {
       {/* ============================================ */}
       {/* DISPATCH (DISPATCHER) ROUTES */}
       {/* ============================================ */}
-      <Route path={"/dispatch"} component={guard(DISP, <DispatchDashboard />)} />
+      <Route path={"/dispatch"} component={guard(DISP, <DispatchCommandCenter />)} />
       <Route path={"/dispatch/board"} component={guard(DISP, <DispatchBoard />)} />
       <Route path={"/specializations"} component={guard(DISP, <Specializations />)} />
       <Route path={"/matched-loads"} component={guard(DISP, <MatchedLoads />)} />
@@ -618,6 +621,8 @@ function Router() {
       <Route path={"/performance"} component={guard(DISP, <DispatchPerformance />)} />
       <Route path={"/dispatch/fleet-map"} component={guard(DISP, <DispatchFleetMap />)} />
       <Route path={"/dispatch/exceptions"} component={guard(DISP, <DispatchExceptions />)} />
+      <Route path={"/dispatch/drivers"} component={guard(DISP, <DispatchCommandCenter />)} />
+      <Route path={"/dispatch/create"} component={guard(DISP, <DispatchCommandCenter />)} />
       <Route path={"/load-board"} component={guard([...DISP, "BROKER"], <LoadBoard />)} />
 
       {/* ============================================ */}
