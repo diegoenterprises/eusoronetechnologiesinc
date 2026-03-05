@@ -31,6 +31,7 @@ export const dispatchRouter = router({
   getDashboardStats: protectedProcedure
     .input(z.object({ filters: z.any().optional() }).optional())
     .query(async ({ ctx }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DISPATCH', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'LOAD' }, (ctx as any).req);
       const db = await getDb();
       if (!db) {
         return { active: 0, activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0, inTransit: 0, issues: 0, completedToday: 0, totalDrivers: 0, availableDrivers: 0, fmcsaSafety: null };
@@ -38,32 +39,33 @@ export const dispatchRouter = router({
 
       try {
         const companyId = ctx.user?.companyId || 0;
+        const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'PLATFORM_ADMIN'].includes(ctx.user?.role || '');
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Get active loads
+        // Get active loads — filtered by company (catalyst = carrier company)
         const [activeLoads] = await db
           .select({ count: sql<number>`count(*)` })
           .from(loads)
-          .where(sql`${loads.status} IN ('assigned', 'in_transit')`);
+          .where(isAdmin ? sql`${loads.status} IN ('assigned', 'in_transit')` : and(sql`${loads.status} IN ('assigned', 'in_transit')`, eq(loads.catalystId, companyId)));
 
         // Get unassigned loads
         const [unassigned] = await db
           .select({ count: sql<number>`count(*)` })
           .from(loads)
-          .where(sql`${loads.status} IN ('posted', 'bidding') AND ${loads.driverId} IS NULL`);
+          .where(isAdmin ? sql`${loads.status} IN ('posted', 'bidding') AND ${loads.driverId} IS NULL` : and(sql`${loads.status} IN ('posted', 'bidding') AND ${loads.driverId} IS NULL`, eq(loads.catalystId, companyId)));
 
         // Get in transit loads
         const [inTransit] = await db
           .select({ count: sql<number>`count(*)` })
           .from(loads)
-          .where(eq(loads.status, 'in_transit'));
+          .where(isAdmin ? eq(loads.status, 'in_transit') : and(eq(loads.status, 'in_transit'), eq(loads.catalystId, companyId)));
 
         // Get completed today
         const [completedToday] = await db
           .select({ count: sql<number>`count(*)` })
           .from(loads)
-          .where(and(eq(loads.status, 'delivered'), gte(loads.updatedAt, today)));
+          .where(isAdmin ? and(eq(loads.status, 'delivered'), gte(loads.updatedAt, today)) : and(eq(loads.status, 'delivered'), gte(loads.updatedAt, today), eq(loads.catalystId, companyId)));
 
         // Get total drivers
         const [totalDrivers] = await db
