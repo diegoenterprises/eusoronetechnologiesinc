@@ -327,6 +327,9 @@ export const loads = mysqlTable(
     previousState: varchar("previous_state", { length: 30 }),
     requiresEscort: boolean("requiresEscort").default(false).notNull(),
     escortCount: int("escortCount").default(0).notNull(),
+    // WS-P0-020R: Double-brokering prevention
+    originalShipperId: int("originalShipperId"),
+    brokerChainDepth: int("brokerChainDepth").default(0).notNull(),
   },
   (table) => ({
     shipperIdx: index("load_shipper_idx").on(table.shipperId),

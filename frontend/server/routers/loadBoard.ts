@@ -770,6 +770,30 @@ export const loadBoardRouter = router({
         if (!classReqs) console.warn(`[LoadBoard] Unknown hazmat class: ${input.hazmatClass}`);
       }
 
+      // WS-P0-020R: Double-brokering prevention
+      // Block brokers from re-posting loads that are already brokered (chain depth > 0)
+      if (profile.role === 'BROKER') {
+        try {
+          // Detect suspicious same-lane repost within 48 hours
+          const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+          const [suspiciousMatch] = await db.select({ id: loads.id, loadNumber: loads.loadNumber, brokerChainDepth: loads.brokerChainDepth })
+            .from(loads)
+            .where(and(
+              eq(loads.status, 'posted'),
+              gte(loads.createdAt, twoDaysAgo),
+              sql`JSON_EXTRACT(pickupLocation, '$.state') = ${input.origin.state}`,
+              sql`JSON_EXTRACT(deliveryLocation, '$.state') = ${input.destination.state}`,
+            ))
+            .limit(1);
+          if (suspiciousMatch && (suspiciousMatch.brokerChainDepth || 0) > 0) {
+            throw new Error(`Double-brokering detected: similar load ${suspiciousMatch.loadNumber} already brokered on this lane. Re-posting brokered loads is prohibited.`);
+          }
+        } catch (dbErr: any) {
+          if (dbErr?.message?.includes('Double-brokering')) throw dbErr;
+          console.warn('[LoadBoard] Double-broker check warning:', dbErr?.message);
+        }
+      }
+
       // ── Derive cargoType from equipment type (never lose trailer info) ──
       const EQUIP_TO_CARGO: Record<string, string> = {
         tanker: "petroleum", gas_tank: "gas", cryogenic: "gas",
@@ -800,6 +824,8 @@ export const loadBoardRouter = router({
       }
 
       const loadNumber = `LB-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
+      // WS-P0-020R: Track broker chain depth — brokers start at depth 1
+      const isBroker = profile.role === 'BROKER';
       const [result] = await db.insert(loads).values({
         shipperId: profile.userId,
         loadNumber,
@@ -814,7 +840,9 @@ export const loadBoardRouter = router({
         deliveryLocation: { address: input.destination.address, city: input.destination.city, state: input.destination.state, zipCode: input.destination.zip, lat: 0, lng: 0 },
         pickupDate: new Date(input.pickupDate),
         deliveryDate: new Date(input.deliveryDate),
-      }).$returningId();
+        originalShipperId: isBroker ? null : profile.userId,
+        brokerChainDepth: isBroker ? 1 : 0,
+      } as any).$returningId();
       return {
         id: String(result.id),
         loadNumber,
