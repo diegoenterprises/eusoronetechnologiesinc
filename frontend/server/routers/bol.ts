@@ -525,6 +525,12 @@ export const bolRouter = router({
         }
       }
       
+      // WS-P0-019R: Hash BOL content for immutable integrity chain
+      try {
+        const { addDocumentHash } = await import("../services/security/audit/documentHash");
+        await addDocumentHash({ documentType: "bol", documentId: Number(input.loadId) || 0, content: bolDoc, userId: Number(ctx.user?.id) || 0, metadata: { bolNumber } });
+      } catch {}
+
       // Auto-index BOL for AI semantic search (fire-and-forget)
       try {
         const { indexDocument } = await import("../services/embeddings/aiTurbocharge");
@@ -1146,6 +1152,12 @@ export const bolRouter = router({
       } catch (e) {
         console.error("[BOL] auto-generate from load error:", e);
       }
+
+      // WS-P0-019R: Hash auto-generated BOL content
+      try {
+        const { addDocumentHash } = await import("../services/security/audit/documentHash");
+        await addDocumentHash({ documentType: "bol", documentId: load.id, content: bolDoc, userId: Number(ctx.user?.id) || 0, metadata: { bolNumber, loadNumber: load.loadNumber } });
+      } catch {}
 
       // Auto-index auto-generated BOL for AI semantic search (fire-and-forget)
       try {

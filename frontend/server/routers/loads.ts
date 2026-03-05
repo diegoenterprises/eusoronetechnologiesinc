@@ -1229,6 +1229,18 @@ export const loadsRouter = router({
         status: 'active',
       } as any).$returningId();
 
+      // WS-P0-019R: Hash document content for integrity chain
+      try {
+        const { addDocumentHash } = await import("../services/security/audit/documentHash");
+        await addDocumentHash({
+          documentType: input.type,
+          documentId: result[0]?.id || 0,
+          content: { loadId, type: input.type, name: input.name, fileUrl: input.fileUrl },
+          userId,
+          metadata: { loadId, name: input.name },
+        });
+      } catch { /* non-critical */ }
+
       return { success: true, documentId: String(result[0]?.id) };
     }),
 

@@ -674,8 +674,31 @@ export const auditLogs = mysqlTable(
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = typeof auditLogs.$inferInsert;
 
+// ============================================================================
+// DOCUMENT HASH CHAIN — Immutable content integrity (WS-P0-019R)
+// ============================================================================
 
+export const documentHashes = mysqlTable(
+  "document_hashes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    documentType: varchar("documentType", { length: 50 }).notNull(), // 'bol', 'pod', 'agreement', 'run_ticket', 'rate_sheet'
+    documentId: int("documentId").notNull(),
+    version: int("version").default(1).notNull(),
+    contentHash: varchar("contentHash", { length: 64 }).notNull(), // SHA-256 hex
+    previousVersionHash: varchar("previousVersionHash", { length: 64 }), // chain link
+    userId: int("userId"),
+    metadata: json("metadata"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    docIdx: index("dochash_doc_idx").on(table.documentType, table.documentId),
+    hashIdx: index("dochash_hash_idx").on(table.contentHash),
+  })
+);
 
+export type DocumentHash = typeof documentHashes.$inferSelect;
+export type InsertDocumentHash = typeof documentHashes.$inferInsert;
 
 // ============================================================================
 // EUSOTRACK - ADDITIONAL TRACKING TABLES

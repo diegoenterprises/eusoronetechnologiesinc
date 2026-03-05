@@ -1151,6 +1151,18 @@ export const agreementsRouter = router({
         // Auto-file to Documents Center for both parties
         await fileAgreementToDocuments(input.agreementId, "active");
 
+        // WS-P0-019R: Hash fully executed agreement for immutable integrity chain
+        try {
+          const { addDocumentHash } = await import("../services/security/audit/documentHash");
+          await addDocumentHash({
+            documentType: "agreement",
+            documentId: input.agreementId,
+            content: { agreementId: input.agreementId, agreementNumber: agrNum, signaturesCount: sigs.length, executedAt: new Date().toISOString() },
+            userId: sigUserId,
+            metadata: { agreementNumber: agrNum, status: "active" },
+          });
+        } catch { /* non-critical */ }
+
         // Email + SMS: notify BOTH parties of fully executed agreement
         if (agr?.partyAUserId) lookupAndNotify(agr.partyAUserId, { type: "agreement_executed", agreementNumber: agrNum });
         if (agr?.partyBUserId) lookupAndNotify(agr.partyBUserId, { type: "agreement_executed", agreementNumber: agrNum });
