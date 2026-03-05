@@ -44,742 +44,147 @@ export type UserRole =
 
 // Menu configuration for all 12 user roles
 export const menuConfigs: Record<string, MenuItem[]> = {
-  // SHIPPER: Load posting, tracking, payments
+  // SHIPPER: Load posting, terminal management, catalyst oversight
+  // Consolidated: 23 → 13 top-level
   SHIPPER: [
-    { 
-      icon: "LayoutDashboard", 
-      label: "Dashboard", 
-      path: "/", 
+    {
+      icon: "LayoutDashboard",
+      label: "Dashboard",
+      path: "/",
       badge: 0,
       description: "Shipper dashboard with load overview"
     },
-    { 
-      icon: "Plus", 
-      label: "Create Load", 
-      path: "/loads/create", 
+    {
+      icon: "Package",
+      label: "Loads",
+      path: "/loads/create",
       badge: 0,
-      description: "Post new shipment"
+      description: "Create, track & manage all shipments",
+      children: [
+        { icon: "Plus", label: "Create Load", path: "/loads/create", badge: 0, description: "Post new shipment" },
+        { icon: "Package", label: "My Loads", path: "/loads", badge: 0, description: "All loads, tracking & status" },
+        { icon: "Repeat", label: "Recurring Loads", path: "/loads/recurring", badge: 0, description: "Schedule recurring shipments & dedicated lanes" },
+        { icon: "Navigation", label: "Dispatch Control", path: "/shipper/dispatch", badge: 0, description: "Routes, tracking & catalyst coordination" },
+      ],
     },
-    { 
-      icon: "Package", 
-      label: "My Loads", 
-      path: "/loads", 
+    {
+      icon: "Building2",
+      label: "Terminals & Facilities",
+      path: "/my-terminals",
       badge: 0,
-      description: "All loads, tracking & status"
+      description: "Terminal rack access & facility search",
+      children: [
+        { icon: "Building2", label: "My Terminals", path: "/my-terminals", badge: 0, description: "Terminal rack access, partnerships & supply chain" },
+        { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities" },
+      ],
     },
-    { 
-      icon: "Navigation", 
-      label: "Dispatch Control", 
-      path: "/shipper/dispatch", 
+    {
+      icon: "Users",
+      label: "Network",
+      path: "/partners",
       badge: 0,
-      description: "Routes, tracking & catalyst coordination"
-    },
-    { 
-      icon: "Building2", 
-      label: "My Terminals", 
-      path: "/my-terminals", 
-      badge: 0,
-      description: "Terminal rack access, partnerships & supply chain"
-    },
-    { 
-      icon: "Handshake", 
-      label: "My Partners", 
-      path: "/partners", 
-      badge: 0,
-      description: "Partners, agreements & supply chain connections"
-    },
-    { 
-      icon: "Database", 
-      label: "Facility Intelligence", 
-      path: "/facility-search", 
-      badge: 0,
-      description: "Search 1,400+ petroleum facilities nationwide"
-    },
-    { 
-      icon: "Shield", 
-      label: "Staff", 
-      path: "/staff", 
-      badge: 0,
-      description: "Pickup location access controllers"
-    },
-    { 
-      icon: "Users", 
-      label: "Catalysts", 
-      path: "/catalysts", 
-      badge: 0,
-      description: "Bid management"
-    },
-    { 
-      icon: "MessageSquare", 
-      label: "Messages", 
-      path: "/messages", 
-      badge: 0,
-      description: "Communication with catalysts"
-    },
-    { 
-      icon: "Repeat", 
-      label: "Recurring Loads", 
-      path: "/loads/recurring", 
-      badge: 0,
-      description: "Schedule recurring shipments & dedicated lanes"
-    },
-    { 
-      icon: "FileText", 
-      label: "Documents", 
-      path: "/documents", 
-      badge: 0,
-      description: "Issue BOLs for drivers, invoices, contracts & signatures"
+      description: "Partners, catalysts & staff",
+      children: [
+        { icon: "Handshake", label: "My Partners", path: "/partners", badge: 0, description: "Partners, agreements & supply chain connections" },
+        { icon: "Users", label: "Catalysts", path: "/catalysts", badge: 0, description: "Bid management" },
+        { icon: "Shield", label: "Staff", path: "/staff", badge: 0, description: "Pickup location access controllers" },
+      ],
     },
     {
       icon: "Scale",
-      label: "Rate Sheet",
+      label: "Billing",
       path: "/rate-sheet",
       badge: 0,
-      description: "Per-barrel rates, surcharges & reconciliation statements"
+      description: "Rates & documentation",
+      children: [
+        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
+        { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "BOLs, invoices, contracts & signatures" },
+      ],
     },
-    { 
-      icon: "Wallet", 
-      label: "EusoWallet", 
-      path: "/wallet", 
-      badge: 0,
-      description: "Wallet, invoices, payments, cards & escrow"
-    },
-    { 
-      icon: "Building2", 
-      label: "Company", 
-      path: "/company", 
+    {
+      icon: "Building2",
+      label: "Company",
+      path: "/company",
       badge: 0,
       description: "Company details"
     },
-    { 
-      icon: "Radio", 
-      label: "Company Channels", 
-      path: "/company-channels", 
+    // ─── PLATFORM FOOTER ───
+    {
+      icon: "MessageSquare",
+      label: "Messages",
+      path: "/messages",
       badge: 0,
-      description: "Team communication channels"
+      description: "Communication with catalysts",
+      children: [
+        { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+      ],
     },
-    { 
-      icon: "TrendingUp", 
-      label: "Market Intelligence", 
-      path: "/market-pricing", 
+    {
+      icon: "Wallet",
+      label: "EusoWallet",
+      path: "/wallet",
       badge: 0,
-      description: "Rates, commodities, hot zones & 2026 freight intelligence"
+      description: "Wallet, invoices, payments, cards & escrow"
     },
-    { 
-      icon: "Truck", 
-      label: "The Haul", 
-      path: "/the-haul", 
+    {
+      icon: "TrendingUp",
+      label: "Market Intelligence",
+      path: "/market-pricing",
+      badge: 0,
+      description: "Rates, commodities, hot zones & freight intelligence"
+    },
+    {
+      icon: "Truck",
+      label: "The Haul",
+      path: "/the-haul",
       badge: 0,
       description: "Digital truck stop — lobby, missions, rewards"
     },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/settings", 
+    {
+      icon: "Settings",
+      label: "Settings",
+      path: "/settings",
       badge: 0,
       description: "Profile, preferences & security"
     },
-    { 
-      icon: "Newspaper", 
-      label: "News", 
-      path: "/news", 
-      badge: 0,
-      description: "Platform news and updates"
-    },
-    { 
-      icon: "AlertTriangle", 
-      label: "Report Incident", 
-      path: "/hazmat/incident-report", 
-      badge: 0,
-      description: "Report a safety, cargo, or roadside incident"
-    },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0,
-      description: "Help and documentation"
-    },
+    { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
+    { icon: "AlertTriangle", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
+    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help and documentation" },
   ],
 
   // CATALYST: Load bidding, fleet management, earnings
+  // Consolidated: 24 → 14 top-level
   CATALYST: [
-    { 
-      icon: "LayoutDashboard", 
-      label: "Dashboard", 
-      path: "/", 
+    {
+      icon: "LayoutDashboard",
+      label: "Dashboard",
+      path: "/",
       badge: 0,
       description: "Catalyst dashboard with metrics"
     },
-    { 
-      icon: "Search", 
-      label: "Find Loads", 
-      path: "/marketplace", 
-      badge: 0,
-      description: "Available loads to bid on"
-    },
-    { 
-      icon: "Briefcase", 
-      label: "My Bids", 
-      path: "/bids", 
-      badge: 0,
-      description: "Active and pending bids"
-    },
-    { 
-      icon: "CheckCircle", 
-      label: "Assigned Loads", 
-      path: "/loads", 
-      badge: 0,
-      description: "Accepted loads"
-    },
-    { 
-      icon: "Truck", 
-      label: "Fleet", 
-      path: "/fleet", 
-      badge: 0,
-      description: "Manage vehicles",
-      children: [
-        {
-          icon: "ShieldCheck",
-          label: "Insurance Verification",
-          path: "/insurance/verification",
-          badge: 0,
-          description: "AI document scanning, FMCSA cross-verification & compliance"
-        },
-      ],
-    },
-    { 
-      icon: "MapPin", 
-      label: "Fleet Tracking", 
-      path: "/fleet-tracking", 
-      badge: 0,
-      description: "Real-time fleet GPS tracking"
-    },
-    { 
-      icon: "Handshake", 
-      label: "My Partners", 
-      path: "/partners", 
-      badge: 0,
-      description: "Partners, agreements & network connections"
-    },
-    { 
-      icon: "Database", 
-      label: "Facility Intelligence", 
-      path: "/facility-search", 
-      badge: 0,
-      description: "Search 1,400+ petroleum facilities nationwide"
-    },
-    { 
-      icon: "Siren", 
-      label: "Active Trip", 
-      path: "/active-trip", 
-      badge: 0,
-      description: "Real-time trip dashboard, SOS, state compliance & ZEUN"
-    },
-    { 
-      icon: "Shield", 
-      label: "Operating Authority", 
-      path: "/authority", 
-      badge: 0,
-      description: "MC/DOT authority, lease-ons & trip leases"
-    },
-    { 
-      icon: "FileText", 
-      label: "Documents", 
-      path: "/documents", 
-      badge: 0,
-      description: "Run tickets, BOLs received, compliance docs & certifications"
-    },
     {
-      icon: "Scale",
-      label: "Rate Sheet",
-      path: "/rate-sheet",
-      badge: 0,
-      description: "Per-barrel rates, surcharges & reconciliation statements"
-    },
-    { 
-      icon: "BarChart3", 
-      label: "Analytics", 
-      path: "/analytics", 
-      badge: 0,
-      description: "Performance metrics"
-    },
-    { 
-      icon: "MessageSquare", 
-      label: "Messages", 
-      path: "/messages", 
-      badge: 0,
-      description: "Communication"
-    },
-    { 
-      icon: "Wallet", 
-      label: "EusoWallet", 
-      path: "/wallet", 
-      badge: 0,
-      description: "Wallet, earnings & payments"
-    },
-    { 
-      icon: "Receipt", 
-      label: "Accessorials", 
-      path: "/accessorials", 
-      badge: 0,
-      description: "Detention, lumper, TONU & accessorial fee management"
-    },
-    { 
-      icon: "Radio", 
-      label: "Company Channels", 
-      path: "/company-channels", 
-      badge: 0,
-      description: "Team communication channels"
-    },
-    { 
-      icon: "TrendingUp", 
-      label: "Market Intelligence", 
-      path: "/market-pricing", 
-      badge: 0,
-      description: "Rates, commodities, hot zones & 2026 freight intelligence"
-    },
-    { 
-      icon: "Truck", 
-      label: "The Haul", 
-      path: "/the-haul", 
-      badge: 0,
-      description: "Digital truck stop — lobby, missions, rewards"
-    },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/settings", 
-      badge: 0,
-      description: "Profile, preferences & security"
-    },
-    { 
-      icon: "Newspaper", 
-      label: "News", 
-      path: "/news", 
-      badge: 0,
-      description: "Platform news and updates"
-    },
-    { 
-      icon: "AlertTriangle", 
-      label: "Report Incident", 
-      path: "/hazmat/incident-report", 
-      badge: 0,
-      description: "Report a safety, cargo, or roadside incident"
-    },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0,
-      description: "Help"
-    },
-  ],
-
-  // BROKER: Marketplace management, load distribution
-  BROKER: [
-    { 
-      icon: "LayoutDashboard", 
-      label: "Dashboard", 
-      path: "/", 
-      badge: 0,
-      description: "Broker marketplace overview"
-    },
-    { 
-      icon: "Plus", 
-      label: "Post Load", 
-      path: "/loads/create", 
-      badge: 0,
-      description: "Create new load posting"
-    },
-    { 
-      icon: "Package", 
-      label: "Marketplace", 
-      path: "/marketplace", 
-      badge: 0,
-      description: "All available loads"
-    },
-    { 
-      icon: "Scale", 
-      label: "My Bids", 
-      path: "/bids", 
-      badge: 0,
-      description: "Active and pending bids"
-    },
-    { 
-      icon: "CheckCircle", 
-      label: "My Loads", 
-      path: "/loads", 
-      badge: 0,
-      description: "Track posted and assigned loads"
-    },
-    { 
-      icon: "MapPin", 
-      label: "Track Loads", 
-      path: "/fleet-tracking", 
-      badge: 0,
-      description: "Real-time load tracking"
-    },
-    { 
-      icon: "Users", 
-      label: "Catalysts", 
-      path: "/catalysts", 
-      badge: 0,
-      description: "Catalyst network"
-    },
-    { 
-      icon: "Building2", 
-      label: "Shippers", 
-      path: "/shippers", 
-      badge: 0,
-      description: "Shipper accounts"
-    },
-    { 
-      icon: "Handshake", 
-      label: "My Partners", 
-      path: "/partners", 
-      badge: 0,
-      description: "Partners, agreements & brokered connections"
-    },
-    { 
-      icon: "Shield", 
-      label: "Authority Verify", 
-      path: "/authority", 
-      badge: 0,
-      description: "Verify carrier authority & lease status"
-    },
-    { 
-      icon: "FileText", 
-      label: "Documents", 
-      path: "/documents", 
-      badge: 0,
-      description: "Authority docs, surety bond & compliance"
-    },
-    {
-      icon: "Scale",
-      label: "Rate Sheet",
-      path: "/rate-sheet",
-      badge: 0,
-      description: "Per-barrel rates, surcharges & reconciliation statements"
-    },
-    { 
-      icon: "BarChart3", 
-      label: "Analytics", 
-      path: "/analytics", 
-      badge: 0,
-      description: "Market analytics"
-    },
-    { 
-      icon: "MessageSquare", 
-      label: "Messages", 
-      path: "/messages", 
-      badge: 0,
-      description: "Communication"
-    },
-    { 
-      icon: "Wallet", 
-      label: "EusoWallet", 
-      path: "/wallet", 
-      badge: 0,
-      description: "Balance, commission, payments & revenue"
-    },
-    { 
-      icon: "Radio", 
-      label: "Company Channels", 
-      path: "/company-channels", 
-      badge: 0,
-      description: "Team communication channels"
-    },
-    { 
-      icon: "TrendingUp", 
-      label: "Market Intelligence", 
-      path: "/market-pricing", 
-      badge: 0,
-      description: "Rates, commodities, hot zones & 2026 freight intelligence"
-    },
-    { 
-      icon: "Truck", 
-      label: "The Haul", 
-      path: "/the-haul", 
-      badge: 0,
-      description: "Digital truck stop — lobby, missions, rewards"
-    },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/settings", 
-      badge: 0,
-      description: "Profile, preferences & security"
-    },
-    { 
-      icon: "Newspaper", 
-      label: "News", 
-      path: "/news", 
-      badge: 0,
-      description: "Platform news and updates"
-    },
-    { 
-      icon: "AlertTriangle", 
-      label: "Report Incident", 
-      path: "/hazmat/incident-report", 
-      badge: 0,
-      description: "Report a safety, cargo, or roadside incident"
-    },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0,
-      description: "Help"
-    },
-  ],
-
-  // DRIVER: Job assignments, tracking, earnings
-  // Consolidated: monetary items → EusoWallet | hazmat safety → Vehicle | job-ops → Current Job
-  // gamification → The Haul | profile/availability → Settings | schedule → Dashboard
-  DRIVER: [
-    { 
-      icon: "LayoutDashboard", 
-      label: "Dashboard", 
-      path: "/", 
-      badge: 0,
-      description: "Daily overview, schedule & availability"
-    },
-    { 
-      icon: "Clock", 
-      label: "Hours of Service", 
-      path: "/hos", 
-      badge: 0,
-      description: "HOS compliance, driving & on-duty clocks, violations"
-    },
-    { 
-      icon: "Search", 
-      label: "Find Loads", 
-      path: "/marketplace", 
-      badge: 0,
-      description: "Browse available loads to bid on"
-    },
-    { 
-      icon: "Scale", 
-      label: "My Bids", 
-      path: "/bids", 
-      badge: 0,
-      description: "Active and pending bids"
-    },
-    { 
-      icon: "Briefcase", 
-      label: "My Jobs", 
-      path: "/jobs", 
-      badge: 0,
-      description: "Assigned & completed jobs"
-    },
-    { 
-      icon: "CheckCircle", 
-      label: "Current Job", 
-      path: "/jobs/current", 
-      badge: 0,
-      description: "Active job, check-in, dock & loading status"
-    },
-    { 
-      icon: "Truck", 
-      label: "Vehicle", 
-      path: "/vehicle", 
-      badge: 0,
-      description: "Vehicle info, hazmat safety, spill & fire response",
-      children: [
-        {
-          icon: "Wrench",
-          label: "ZEUN Mechanics",
-          path: "/zeun-breakdown",
-          badge: 0,
-          description: "Breakdown reporting and diagnostics"
-        },
-        {
-          icon: "ShieldCheck",
-          label: "Insurance Verification",
-          path: "/insurance/verification",
-          badge: 0,
-          description: "AI document scanning, FMCSA cross-verification & compliance"
-        },
-      ],
-    },
-    { 
-      icon: "FileText", 
-      label: "Documents", 
-      path: "/documents", 
-      badge: 0,
-      description: "Run tickets, BOLs received, license, permits & compliance docs"
-    },
-    {
-      icon: "Scale",
-      label: "Rate Sheet",
-      path: "/rate-sheet",
-      badge: 0,
-      description: "Per-barrel rates, surcharges & reconciliation statements"
-    },
-    { 
-      icon: "Shield", 
-      label: "Operating Authority", 
-      path: "/authority", 
-      badge: 0,
-      description: "Authority you operate under & lease status"
-    },
-    { 
-      icon: "Handshake", 
-      label: "My Partners", 
-      path: "/partners", 
-      badge: 0,
-      description: "Partners, agreements & carrier contacts"
-    },
-    { 
-      icon: "Navigation", 
-      label: "Live Tracking", 
-      path: "/live-tracking", 
-      badge: 0,
-      description: "GPS navigation, route compliance & tracking"
-    },
-    { 
-      icon: "Siren", 
-      label: "Active Trip", 
-      path: "/active-trip", 
-      badge: 0,
-      description: "Real-time trip dashboard, SOS, state compliance & ZEUN"
-    },
-    { 
-      icon: "Wallet", 
-      label: "EusoWallet", 
-      path: "/wallet", 
-      badge: 0,
-      description: "Earnings, trip pay, settlements, bonuses & direct deposit"
-    },
-    { 
-      icon: "MessageSquare", 
-      label: "Messages", 
-      path: "/messages", 
-      badge: 0,
-      description: "Communication & emergency alerts"
-    },
-    { 
-      icon: "Radio", 
-      label: "Company Channels", 
-      path: "/company-channels", 
-      badge: 0,
-      description: "Team communication channels"
-    },
-    { 
-      icon: "TrendingUp", 
-      label: "Market Intelligence", 
-      path: "/market-pricing", 
-      badge: 0,
-      description: "Rates, commodities, hot zones & 2026 freight intelligence"
-    },
-    { 
-      icon: "Truck", 
-      label: "The Haul", 
-      path: "/the-haul", 
-      badge: 0,
-      description: "Digital truck stop — missions, leaderboard, rewards"
-    },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/settings", 
-      badge: 0,
-      description: "Profile setup, CDL, availability & preferences"
-    },
-    { 
-      icon: "Newspaper", 
-      label: "News", 
-      path: "/news", 
-      badge: 0,
-      description: "Platform news and updates"
-    },
-    { 
-      icon: "AlertTriangle", 
-      label: "Report Incident", 
-      path: "/hazmat/incident-report", 
-      badge: 0,
-      description: "Report a safety, vehicle, or roadside incident"
-    },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0,
-      description: "Help"
-    },
-  ],
-
-  // DISPATCH: Fleet operations nerve center — consolidated sidebar v2
-  // Pattern: Operations cluster → Business cluster → Platform footer
-  // Aligned with CATALYST (24 items), BROKER (24 items), SHIPPER (23 items)
-  DISPATCH: [
-    // ─── OPERATIONS CLUSTER (core dispatcher workflow) ───
-    {
-      icon: "LayoutDashboard",
-      label: "Command Center",
-      path: "/dispatch",
-      badge: 0,
-      description: "Dispatch command center — drivers, Kanban board, activity feed"
-    },
-    {
-      icon: "Search",
-      label: "Find Loads",
+      icon: "Package",
+      label: "Loads",
       path: "/marketplace",
       badge: 0,
-      description: "Available loads & AI-matched opportunities"
-    },
-    {
-      icon: "Plus",
-      label: "Create Load",
-      path: "/dispatch/create",
-      badge: 0,
-      description: "Quick 3-field load creation for dispatchers"
-    },
-    {
-      icon: "CheckCircle",
-      label: "Assigned Loads",
-      path: "/loads",
-      badge: 0,
-      description: "All active loads — status, tracking & POD"
+      description: "Find loads, bid & track assignments",
+      children: [
+        { icon: "Search", label: "Find Loads", path: "/marketplace", badge: 0, description: "Available loads to bid on" },
+        { icon: "Scale", label: "My Bids", path: "/bids", badge: 0, description: "Active and pending bids" },
+        { icon: "CheckCircle", label: "Assigned Loads", path: "/loads", badge: 0, description: "Accepted loads" },
+      ],
     },
     {
       icon: "Truck",
       label: "Fleet",
       path: "/fleet",
       badge: 0,
-      description: "Manage vehicles, trailers & equipment",
+      description: "Vehicles, tracking & live trips",
       children: [
-        {
-          icon: "ShieldCheck",
-          label: "Insurance Verification",
-          path: "/insurance/verification",
-          badge: 0,
-          description: "AI document scanning, FMCSA cross-verification & compliance"
-        },
+        { icon: "ShieldCheck", label: "Insurance Verification", path: "/insurance/verification", badge: 0, description: "AI document scanning & FMCSA cross-verification" },
+        { icon: "MapPin", label: "Fleet Tracking", path: "/fleet-tracking", badge: 0, description: "Real-time fleet GPS tracking" },
+        { icon: "Siren", label: "Active Trip", path: "/active-trip", badge: 0, description: "Real-time trip dashboard, SOS & ZEUN" },
       ],
-    },
-    {
-      icon: "MapPin",
-      label: "Fleet Tracking",
-      path: "/fleet-tracking",
-      badge: 0,
-      description: "Real-time fleet GPS tracking & geofencing"
-    },
-    {
-      icon: "AlertTriangle",
-      label: "Exceptions",
-      path: "/dispatch/exceptions",
-      badge: 0,
-      description: "Active exceptions, delays, stale loads & compliance issues"
-    },
-    // ─── BUSINESS CLUSTER (partnerships, money, documents) ───
-    {
-      icon: "DollarSign",
-      label: "Settlements",
-      path: "/settlements",
-      badge: 0,
-      description: "Fleet settlement status, driver earnings & payouts"
     },
     {
       icon: "Handshake",
@@ -789,39 +194,376 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Partners, agreements & network connections"
     },
     {
-      icon: "Database",
-      label: "Facility Intelligence",
-      path: "/facility-search",
+      icon: "Shield",
+      label: "Compliance",
+      path: "/authority",
       badge: 0,
-      description: "Search 1,400+ petroleum facilities nationwide"
+      description: "Authority, facilities & documentation",
+      children: [
+        { icon: "Shield", label: "Operating Authority", path: "/authority", badge: 0, description: "MC/DOT authority, lease-ons & trip leases" },
+        { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities" },
+        { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Run tickets, BOLs & compliance docs" },
+      ],
+    },
+    {
+      icon: "Scale",
+      label: "Billing",
+      path: "/rate-sheet",
+      badge: 0,
+      description: "Rates, accessorials & fee management",
+      children: [
+        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
+        { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
+      ],
+    },
+    {
+      icon: "BarChart3",
+      label: "Analytics",
+      path: "/analytics",
+      badge: 0,
+      description: "Performance metrics"
+    },
+    // ─── PLATFORM FOOTER ───
+    {
+      icon: "MessageSquare",
+      label: "Messages",
+      path: "/messages",
+      badge: 0,
+      description: "Communication & team channels",
+      children: [
+        { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+      ],
+    },
+    {
+      icon: "Wallet",
+      label: "EusoWallet",
+      path: "/wallet",
+      badge: 0,
+      description: "Wallet, earnings & payments"
+    },
+    {
+      icon: "TrendingUp",
+      label: "Market Intelligence",
+      path: "/market-pricing",
+      badge: 0,
+      description: "Rates, commodities, hot zones & freight intelligence"
+    },
+    {
+      icon: "Truck",
+      label: "The Haul",
+      path: "/the-haul",
+      badge: 0,
+      description: "Digital truck stop — lobby, missions, rewards"
+    },
+    {
+      icon: "Settings",
+      label: "Settings",
+      path: "/settings",
+      badge: 0,
+      description: "Profile, preferences & security"
+    },
+    { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
+    { icon: "AlertTriangle", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
+    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+  ],
+
+  // BROKER: Marketplace management, load distribution
+  // Consolidated: 24 → 13 top-level
+  BROKER: [
+    {
+      icon: "LayoutDashboard",
+      label: "Dashboard",
+      path: "/",
+      badge: 0,
+      description: "Broker marketplace overview"
+    },
+    {
+      icon: "Package",
+      label: "Loads",
+      path: "/marketplace",
+      badge: 0,
+      description: "Post, find, bid & track loads",
+      children: [
+        { icon: "Plus", label: "Post Load", path: "/loads/create", badge: 0, description: "Create new load posting" },
+        { icon: "Package", label: "Marketplace", path: "/marketplace", badge: 0, description: "All available loads" },
+        { icon: "Scale", label: "My Bids", path: "/bids", badge: 0, description: "Active and pending bids" },
+        { icon: "CheckCircle", label: "My Loads", path: "/loads", badge: 0, description: "Track posted and assigned loads" },
+        { icon: "MapPin", label: "Track Loads", path: "/fleet-tracking", badge: 0, description: "Real-time load tracking" },
+      ],
+    },
+    {
+      icon: "Users",
+      label: "Network",
+      path: "/catalysts",
+      badge: 0,
+      description: "Catalysts, shippers & partner connections",
+      children: [
+        { icon: "Users", label: "Catalysts", path: "/catalysts", badge: 0, description: "Catalyst network" },
+        { icon: "Building2", label: "Shippers", path: "/shippers", badge: 0, description: "Shipper accounts" },
+        { icon: "Handshake", label: "My Partners", path: "/partners", badge: 0, description: "Partners & agreements" },
+      ],
     },
     {
       icon: "Shield",
-      label: "Operating Authority",
+      label: "Compliance",
       path: "/authority",
       badge: 0,
-      description: "Verify carrier authority, MC/DOT & lease status"
-    },
-    {
-      icon: "FileText",
-      label: "Documents",
-      path: "/documents",
-      badge: 0,
-      description: "Run tickets, BOLs, compliance docs & certifications"
+      description: "Authority verification & documentation",
+      children: [
+        { icon: "Shield", label: "Authority Verify", path: "/authority", badge: 0, description: "Verify carrier authority & lease status" },
+        { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Authority docs, surety bond & compliance" },
+      ],
     },
     {
       icon: "Scale",
       label: "Rate Sheet",
       path: "/rate-sheet",
       badge: 0,
-      description: "Per-barrel rates, surcharges & reconciliation statements"
+      description: "Per-barrel rates, surcharges & reconciliation"
     },
     {
-      icon: "Receipt",
-      label: "Accessorials",
-      path: "/accessorials",
+      icon: "BarChart3",
+      label: "Analytics",
+      path: "/analytics",
       badge: 0,
-      description: "Detention, lumper, TONU & accessorial fee management"
+      description: "Market analytics"
+    },
+    // ─── PLATFORM FOOTER ───
+    {
+      icon: "MessageSquare",
+      label: "Messages",
+      path: "/messages",
+      badge: 0,
+      description: "Communication & team channels",
+      children: [
+        { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+      ],
+    },
+    {
+      icon: "Wallet",
+      label: "EusoWallet",
+      path: "/wallet",
+      badge: 0,
+      description: "Balance, commission, payments & revenue"
+    },
+    {
+      icon: "TrendingUp",
+      label: "Market Intelligence",
+      path: "/market-pricing",
+      badge: 0,
+      description: "Rates, commodities, hot zones & freight intelligence"
+    },
+    {
+      icon: "Truck",
+      label: "The Haul",
+      path: "/the-haul",
+      badge: 0,
+      description: "Digital truck stop — lobby, missions, rewards"
+    },
+    {
+      icon: "Settings",
+      label: "Settings",
+      path: "/settings",
+      badge: 0,
+      description: "Profile, preferences & security"
+    },
+    { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
+    { icon: "AlertTriangle", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
+    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+  ],
+
+  // DRIVER: Job assignments, tracking, earnings
+  // Consolidated: 24 → 14 top-level. Phone-first simplicity.
+  DRIVER: [
+    {
+      icon: "LayoutDashboard",
+      label: "Dashboard",
+      path: "/",
+      badge: 0,
+      description: "Daily overview, schedule & availability"
+    },
+    {
+      icon: "Siren",
+      label: "Active Trip",
+      path: "/active-trip",
+      badge: 0,
+      description: "Real-time trip dashboard, SOS, state compliance & ZEUN"
+    },
+    {
+      icon: "Clock",
+      label: "Hours of Service",
+      path: "/hos",
+      badge: 0,
+      description: "HOS compliance, driving & on-duty clocks, violations"
+    },
+    {
+      icon: "Package",
+      label: "Loads",
+      path: "/marketplace",
+      badge: 0,
+      description: "Find loads, bid & track jobs",
+      children: [
+        { icon: "Search", label: "Find Loads", path: "/marketplace", badge: 0, description: "Browse available loads to bid on" },
+        { icon: "Scale", label: "My Bids", path: "/bids", badge: 0, description: "Active and pending bids" },
+        { icon: "Briefcase", label: "My Jobs", path: "/jobs", badge: 0, description: "Assigned & completed jobs" },
+        { icon: "CheckCircle", label: "Current Job", path: "/jobs/current", badge: 0, description: "Active job, check-in, dock & loading status" },
+      ],
+    },
+    {
+      icon: "Truck",
+      label: "Vehicle",
+      path: "/vehicle",
+      badge: 0,
+      description: "Vehicle info, hazmat safety, spill & fire response",
+      children: [
+        { icon: "Wrench", label: "ZEUN Mechanics", path: "/zeun-breakdown", badge: 0, description: "Breakdown reporting and diagnostics" },
+        { icon: "ShieldCheck", label: "Insurance Verification", path: "/insurance/verification", badge: 0, description: "AI document scanning & FMCSA cross-verification" },
+        { icon: "Navigation", label: "Live Tracking", path: "/live-tracking", badge: 0, description: "GPS navigation, route compliance & tracking" },
+      ],
+    },
+    {
+      icon: "Shield",
+      label: "Compliance",
+      path: "/authority",
+      badge: 0,
+      description: "Authority, documents & rates",
+      children: [
+        { icon: "Shield", label: "Operating Authority", path: "/authority", badge: 0, description: "Authority & lease status" },
+        { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Run tickets, BOLs, license & permits" },
+        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
+      ],
+    },
+    {
+      icon: "Handshake",
+      label: "My Partners",
+      path: "/partners",
+      badge: 0,
+      description: "Partners, agreements & carrier contacts"
+    },
+    // ─── PLATFORM FOOTER ───
+    {
+      icon: "Wallet",
+      label: "EusoWallet",
+      path: "/wallet",
+      badge: 0,
+      description: "Earnings, trip pay, settlements, bonuses & direct deposit"
+    },
+    {
+      icon: "MessageSquare",
+      label: "Messages",
+      path: "/messages",
+      badge: 0,
+      description: "Communication & emergency alerts",
+      children: [
+        { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+      ],
+    },
+    {
+      icon: "TrendingUp",
+      label: "Market Intelligence",
+      path: "/market-pricing",
+      badge: 0,
+      description: "Rates, commodities, hot zones & freight intelligence"
+    },
+    {
+      icon: "Truck",
+      label: "The Haul",
+      path: "/the-haul",
+      badge: 0,
+      description: "Digital truck stop — missions, leaderboard, rewards"
+    },
+    {
+      icon: "Settings",
+      label: "Settings",
+      path: "/settings",
+      badge: 0,
+      description: "Profile setup, CDL, availability & preferences"
+    },
+    { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
+    { icon: "AlertTriangle", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, vehicle, or roadside incident" },
+    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+  ],
+
+  // DISPATCH: Fleet operations nerve center
+  // Consolidated: 24 → 15 top-level using children pattern
+  // Pattern: Operations hub → Business hub → Platform footer
+  DISPATCH: [
+    // ─── OPERATIONS ───
+    {
+      icon: "LayoutDashboard",
+      label: "Command Center",
+      path: "/dispatch",
+      badge: 0,
+      description: "Dispatch command center — drivers, Kanban board, activity feed"
+    },
+    {
+      icon: "Package",
+      label: "Loads",
+      path: "/marketplace",
+      badge: 0,
+      description: "Find, create & manage all loads",
+      children: [
+        { icon: "Search", label: "Find Loads", path: "/marketplace", badge: 0, description: "Available loads & AI-matched opportunities" },
+        { icon: "Plus", label: "Create Load", path: "/dispatch/create", badge: 0, description: "Quick 3-field load creation" },
+        { icon: "CheckCircle", label: "Assigned Loads", path: "/loads", badge: 0, description: "All active loads — status, tracking & POD" },
+      ],
+    },
+    {
+      icon: "Truck",
+      label: "Fleet",
+      path: "/fleet",
+      badge: 0,
+      description: "Vehicles, tracking & live trips",
+      children: [
+        { icon: "ShieldCheck", label: "Insurance Verification", path: "/insurance/verification", badge: 0, description: "AI document scanning & FMCSA cross-verification" },
+        { icon: "MapPin", label: "Fleet Tracking", path: "/fleet-tracking", badge: 0, description: "Real-time fleet GPS tracking & geofencing" },
+        { icon: "Siren", label: "Active Trip", path: "/active-trip", badge: 0, description: "Live trip dashboard, SOS & state compliance" },
+      ],
+    },
+    {
+      icon: "AlertTriangle",
+      label: "Exceptions",
+      path: "/dispatch/exceptions",
+      badge: 0,
+      description: "Active exceptions, delays, stale loads & compliance issues"
+    },
+    {
+      icon: "DollarSign",
+      label: "Settlements",
+      path: "/settlements",
+      badge: 0,
+      description: "Fleet settlement status, driver earnings & payouts"
+    },
+    // ─── BUSINESS ───
+    {
+      icon: "Handshake",
+      label: "My Partners",
+      path: "/partners",
+      badge: 0,
+      description: "Partners, agreements & network connections"
+    },
+    {
+      icon: "Shield",
+      label: "Compliance",
+      path: "/authority",
+      badge: 0,
+      description: "Authority, facilities & documentation",
+      children: [
+        { icon: "Shield", label: "Operating Authority", path: "/authority", badge: 0, description: "Verify carrier authority, MC/DOT & lease status" },
+        { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities nationwide" },
+        { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Run tickets, BOLs, compliance docs & certifications" },
+      ],
+    },
+    {
+      icon: "Scale",
+      label: "Billing",
+      path: "/rate-sheet",
+      badge: 0,
+      description: "Rates, accessorials & fee management",
+      children: [
+        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates, surcharges & reconciliation" },
+        { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU & accessorial fees" },
+      ],
     },
     {
       icon: "BarChart3",
@@ -830,13 +572,16 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Team performance — utilization, on-time rate, revenue/mile"
     },
-    // ─── PLATFORM FOOTER (shared across all roles) ───
+    // ─── PLATFORM FOOTER ───
     {
       icon: "MessageSquare",
       label: "Messages",
       path: "/messages",
       badge: 0,
-      description: "Driver messaging & broadcast"
+      description: "Driver messaging, broadcast & team channels",
+      children: [
+        { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+      ],
     },
     {
       icon: "Wallet",
@@ -844,13 +589,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/wallet",
       badge: 0,
       description: "Account balance, earnings & payments"
-    },
-    {
-      icon: "Radio",
-      label: "Company Channels",
-      path: "/company-channels",
-      badge: 0,
-      description: "Team communication channels"
     },
     {
       icon: "TrendingUp",
@@ -873,6 +611,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Profile, preferences & security"
     },
+    // ─── UTILITY (visually de-emphasized) ───
     {
       icon: "Newspaper",
       label: "News",
@@ -897,791 +636,640 @@ export const menuConfigs: Record<string, MenuItem[]> = {
   ],
 
   // ESCORT: Convoy management, security coordination
-  // Consolidated from 26 → 13 items. Removed items are absorbed into:
-  //   Profile → Certifications, Permits, Insurance, Company Profile, Vehicle/Equipment
-  //   EusoWallet → Earnings, Invoices, Agreements
-  //   Active Trip → Live Tracking (proximity panel), Active Convoys
-  //   Messages → Company Channels
-  //   Safety & Reports → Incidents + Reports merged
-  //   Dashboard → Team, My Partners
+  // Consolidated: 21 → 13 top-level
   ESCORT: [
-    { 
-      icon: "LayoutDashboard", 
-      label: "Dashboard", 
-      path: "/", 
+    {
+      icon: "LayoutDashboard",
+      label: "Dashboard",
+      path: "/",
       badge: 0,
       description: "Escort dashboard"
     },
-    { 
-      icon: "Car", 
-      label: "Active Trip", 
-      path: "/escort/active-trip", 
+    {
+      icon: "Car",
+      label: "Active Trip",
+      path: "/escort/active-trip",
       badge: 0,
       description: "Live convoy status, proximity geofence, route restrictions, SOS & HOS"
     },
-    { 
-      icon: "User", 
-      label: "My Profile", 
-      path: "/escort/profile", 
+    {
+      icon: "User",
+      label: "My Profile",
+      path: "/escort/profile",
       badge: 0,
       description: "Identity, certifications, permits, vehicle, equipment, insurance, stats & ratings"
     },
-    { 
-      icon: "Search", 
-      label: "Find Jobs", 
-      path: "/escort/marketplace", 
+    {
+      icon: "Briefcase",
+      label: "Jobs",
+      path: "/escort/marketplace",
       badge: 0,
-      description: "Browse available escort jobs & apply"
+      description: "Find jobs, bid & manage convoys",
+      children: [
+        { icon: "Search", label: "Find Jobs", path: "/escort/marketplace", badge: 0, description: "Browse available escort jobs & apply" },
+        { icon: "Scale", label: "My Bids", path: "/bids", badge: 0, description: "Active and pending bids" },
+        { icon: "Shield", label: "Active Convoys", path: "/convoys", badge: 0, description: "Current escort convoy assignments" },
+        { icon: "Calendar", label: "Schedule", path: "/escort/schedule", badge: 0, description: "Manage availability & upcoming assignments" },
+      ],
     },
-    { 
-      icon: "Scale", 
-      label: "My Bids", 
-      path: "/bids", 
-      badge: 0,
-      description: "Active and pending bids"
-    },
-    { 
-      icon: "Shield", 
-      label: "Active Convoys", 
-      path: "/convoys", 
-      badge: 0,
-      description: "Current escort convoy assignments"
-    },
-    { 
-      icon: "Calendar", 
-      label: "Schedule", 
-      path: "/escort/schedule", 
-      badge: 0,
-      description: "Manage availability & upcoming escort assignments"
-    },
-    { 
-      icon: "Users", 
-      label: "Team", 
-      path: "/team", 
+    {
+      icon: "Users",
+      label: "Team",
+      path: "/team",
       badge: 0,
       description: "Escort personnel"
     },
-    { 
-      icon: "Handshake", 
-      label: "My Partners", 
-      path: "/partners", 
+    {
+      icon: "Handshake",
+      label: "My Partners",
+      path: "/partners",
       badge: 0,
       description: "Partners, agreements & escort service clients"
     },
-    { 
-      icon: "Navigation", 
-      label: "Live Tracking", 
-      path: "/live-tracking", 
+    {
+      icon: "Shield",
+      label: "Compliance",
+      path: "/authority",
       badge: 0,
-      description: "Real-time convoy tracking & GPS position"
+      description: "Authority, tracking, safety & documents",
+      children: [
+        { icon: "Shield", label: "Operating Authority", path: "/authority", badge: 0, description: "Verify carrier authority for oversized loads" },
+        { icon: "Navigation", label: "Live Tracking", path: "/live-tracking", badge: 0, description: "Real-time convoy tracking & GPS position" },
+        { icon: "ShieldAlert", label: "Safety & Reports", path: "/escort/incidents", badge: 0, description: "Incidents, safety reports & convoy documentation" },
+        { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "License, certifications & insurance docs" },
+      ],
     },
-    { 
-      icon: "Shield", 
-      label: "Operating Authority", 
-      path: "/authority", 
+    // ─── PLATFORM FOOTER ───
+    {
+      icon: "MessageSquare",
+      label: "Messages",
+      path: "/messages",
       badge: 0,
-      description: "Verify carrier authority for oversized loads"
+      description: "Communication",
+      children: [
+        { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+      ],
     },
-    { 
-      icon: "ShieldAlert", 
-      label: "Safety & Reports", 
-      path: "/escort/incidents", 
-      badge: 0,
-      description: "Incidents, safety reports, ZEUN Mechanics & convoy documentation"
-    },
-    { 
-      icon: "MessageSquare", 
-      label: "Messages", 
-      path: "/messages", 
-      badge: 0,
-      description: "Communication"
-    },
-    { 
-      icon: "FileText", 
-      label: "Documents", 
-      path: "/documents", 
-      badge: 0,
-      description: "License, certifications & insurance docs"
-    },
-    { 
-      icon: "Wallet", 
-      label: "EusoWallet", 
-      path: "/wallet", 
+    {
+      icon: "Wallet",
+      label: "EusoWallet",
+      path: "/wallet",
       badge: 0,
       description: "Earnings, invoices, payouts & account balance"
     },
-    { 
-      icon: "Radio", 
-      label: "Company Channels", 
-      path: "/company-channels", 
+    {
+      icon: "TrendingUp",
+      label: "Market Intelligence",
+      path: "/market-pricing",
       badge: 0,
-      description: "Team communication channels"
+      description: "Rates, commodities, hot zones & freight intelligence"
     },
-    { 
-      icon: "TrendingUp", 
-      label: "Market Intelligence", 
-      path: "/market-pricing", 
-      badge: 0,
-      description: "Rates, commodities, hot zones & 2026 freight intelligence"
-    },
-    { 
-      icon: "Truck", 
-      label: "The Haul", 
-      path: "/the-haul", 
+    {
+      icon: "Truck",
+      label: "The Haul",
+      path: "/the-haul",
       badge: 0,
       description: "Digital truck stop — lobby, missions, rewards"
     },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/settings", 
+    {
+      icon: "Settings",
+      label: "Settings",
+      path: "/settings",
       badge: 0,
       description: "Profile, preferences & security"
     },
-    { 
-      icon: "Newspaper", 
-      label: "News", 
-      path: "/news", 
-      badge: 0,
-      description: "Platform news and updates"
-    },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0,
-      description: "Help"
-    },
+    { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
+    { icon: "AlertTriangle", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety or roadside incident" },
+    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
   ],
 
   // FACTORING: Invoice factoring, funding, risk
+  // Consolidated: 17 → 11 top-level
   FACTORING: [
     { icon: "LayoutDashboard", label: "Dashboard", path: "/factoring", badge: 0, description: "Factoring overview" },
-    { icon: "FileText", label: "Invoices", path: "/factoring/invoices", badge: 0, description: "Pending and funded invoices" },
-    { icon: "Users", label: "Catalysts", path: "/factoring/catalysts", badge: 0, description: "Catalyst portfolio" },
-    { icon: "DollarSign", label: "Funding", path: "/factoring/funding", badge: 0, description: "Daily funding queue" },
-    { icon: "Banknote", label: "Collections", path: "/factoring/collections", badge: 0, description: "Outstanding collections" },
-    { icon: "ShieldCheck", label: "Risk", path: "/factoring/risk", badge: 0, description: "Credit risk assessment" },
-    { icon: "BarChart3", label: "Aging", path: "/factoring/aging", badge: 0, description: "Invoice aging report" },
-    { icon: "AlertTriangle", label: "Chargebacks", path: "/factoring/chargebacks", badge: 0, description: "Chargeback management" },
-    { icon: "Users", label: "Debtors", path: "/factoring/debtors", badge: 0, description: "Debtor accounts" },
+    {
+      icon: "FileText",
+      label: "Invoices & Funding",
+      path: "/factoring/invoices",
+      badge: 0,
+      description: "Invoices, funding queue, collections & chargebacks",
+      children: [
+        { icon: "FileText", label: "Invoices", path: "/factoring/invoices", badge: 0, description: "Pending and funded invoices" },
+        { icon: "DollarSign", label: "Funding", path: "/factoring/funding", badge: 0, description: "Daily funding queue" },
+        { icon: "Banknote", label: "Collections", path: "/factoring/collections", badge: 0, description: "Outstanding collections" },
+        { icon: "AlertTriangle", label: "Chargebacks", path: "/factoring/chargebacks", badge: 0, description: "Chargeback management" },
+      ],
+    },
+    {
+      icon: "Users",
+      label: "Portfolio",
+      path: "/factoring/catalysts",
+      badge: 0,
+      description: "Catalysts, debtors, risk & aging",
+      children: [
+        { icon: "Users", label: "Catalysts", path: "/factoring/catalysts", badge: 0, description: "Catalyst portfolio" },
+        { icon: "Users", label: "Debtors", path: "/factoring/debtors", badge: 0, description: "Debtor accounts" },
+        { icon: "ShieldCheck", label: "Risk", path: "/factoring/risk", badge: 0, description: "Credit risk assessment" },
+        { icon: "BarChart3", label: "Aging", path: "/factoring/aging", badge: 0, description: "Invoice aging report" },
+      ],
+    },
+    { icon: "Handshake", label: "My Partners", path: "/partners", badge: 0, description: "Partners & factoring clients" },
+    { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "EIN, W-9, NDA & compliance docs" },
     { icon: "TrendingUp", label: "Reports", path: "/factoring/reports", badge: 0, description: "Factoring reports" },
-    { 
-      icon: "Handshake", 
-      label: "My Partners", 
-      path: "/partners", 
-      badge: 0,
-      description: "Partners, agreements & factoring clients"
-    },
-    { 
-      icon: "FileText", 
-      label: "Documents", 
-      path: "/documents", 
-      badge: 0,
-      description: "EIN, W-9, NDA & compliance docs"
-    },
-    { 
-      icon: "TrendingUp", 
-      label: "Market Intelligence", 
-      path: "/market-pricing", 
-      badge: 0,
-      description: "Freight rates, demand heatmaps & surge pricing"
-    },
-    { 
-      icon: "MessageSquare", 
-      label: "Messages", 
-      path: "/messages", 
-      badge: 0,
-      description: "Messaging"
-    },
-    { 
-      icon: "Wallet", 
-      label: "EusoWallet", 
-      path: "/wallet", 
-      badge: 0,
-      description: "Funding disbursements, collections & payments"
-    },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/factoring/settings", 
-      badge: 0,
-      description: "Account settings"
-    },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0,
-      description: "Help & support"
-    },
-  ],
-
-  // TERMINAL_MANAGER: Full terminal operations sidebar per journey doc
-  TERMINAL_MANAGER: [
-    { icon: "LayoutDashboard", label: "Dashboard", path: "/", badge: 0, description: "Terminal operations overview" },
-    { icon: "CalendarDays", label: "Appointments", path: "/appointments", badge: 0, description: "Schedule & manage facility appointments" },
-    { icon: "Shield", label: "Gate Operations", path: "/gate", badge: 0, description: "Check-in, verify & route trucks" },
-    { icon: "Container", label: "Dock Management", path: "/docks", badge: 0, description: "Bay status, assignment & loading operations" },
-    { icon: "Eye", label: "Inbound Visibility", path: "/inbound", badge: 0, description: "Real-time approaching trucks & demand forecast" },
-    { icon: "Plug2", label: "Integrations", path: "/integrations", badge: 0, description: "Connect DTN, Enverus, OPIS & third-party systems" },
-    
-    { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities" },
-    { icon: "Building2", label: "Terminal Profile", path: "/facility", badge: 0, description: "Identity, compliance, operations & SpectraMatch" },
-    { icon: "Fuel", label: "Dispatch Load", path: "/terminal/create-load", badge: 0, description: "Create load from TAS inventory, generate BOL & EusoTicket run tickets" },
-    { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates, surcharges & reconciliation statements" },
-    { 
-      icon: "Handshake", 
-      label: "My Partners", 
-      path: "/partners", 
-      badge: 0,
-      description: "Partners, agreements & supply chain management"
-    },
-    { 
-      icon: "Users", 
-      label: "Supply Chain", 
-      path: "/supply-chain", 
-      badge: 0,
-      description: "Shipper, marketer & transporter partnerships"
-    },
-    { 
-      icon: "Truck", 
-      label: "Incoming", 
-      path: "/incoming", 
-      badge: 0,
-      description: "Arriving shipments"
-    },
-    { 
-      icon: "MapPin", 
-      label: "Tracking", 
-      path: "/fleet-tracking", 
-      badge: 0,
-      description: "Track incoming vehicles"
-    },
-    { 
-      icon: "Package", 
-      label: "Outgoing", 
-      path: "/outgoing", 
-      badge: 0,
-      description: "Departing shipments"
-    },
-    { 
-      icon: "Users", 
-      label: "Staff", 
-      path: "/staff", 
-      badge: 0,
-      description: "Access controllers & validation links"
-    },
-    { 
-      icon: "FileText", 
-      label: "Documents", 
-      path: "/documents", 
-      badge: 0,
-      description: "Permits, compliance docs & certifications"
-    },
-    { 
-      icon: "BarChart3", 
-      label: "Reports", 
-      path: "/terminal/reports", 
-      badge: 0,
-      description: "Operations reports & analytics"
-    },
-    { 
-      icon: "TrendingUp", 
-      label: "Market Intelligence", 
-      path: "/market-pricing", 
+    // ─── PLATFORM FOOTER ───
+    { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Messaging" },
+    { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Funding disbursements & payments" },
+    {
+      icon: "TrendingUp",
+      label: "Market Intelligence",
+      path: "/market-pricing",
       badge: 0,
       description: "Freight rates & demand heatmaps"
     },
-    { 
-      icon: "MessageSquare", 
-      label: "Messages", 
-      path: "/messages", 
+    { icon: "Settings", label: "Settings", path: "/factoring/settings", badge: 0, description: "Account settings" },
+    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
+  ],
+
+  // TERMINAL_MANAGER: Full terminal operations
+  // Consolidated: 26 → 14 top-level
+  TERMINAL_MANAGER: [
+    {
+      icon: "LayoutDashboard",
+      label: "Dashboard",
+      path: "/",
       badge: 0,
-      description: "Communication"
+      description: "Terminal operations overview"
     },
-    { 
-      icon: "Wallet", 
-      label: "EusoWallet", 
-      path: "/wallet", 
+    {
+      icon: "Shield",
+      label: "Operations",
+      path: "/appointments",
+      badge: 0,
+      description: "Appointments, gate & dock management",
+      children: [
+        { icon: "CalendarDays", label: "Appointments", path: "/appointments", badge: 0, description: "Schedule & manage facility appointments" },
+        { icon: "Shield", label: "Gate Operations", path: "/gate", badge: 0, description: "Check-in, verify & route trucks" },
+        { icon: "Container", label: "Dock Management", path: "/docks", badge: 0, description: "Bay status, assignment & loading operations" },
+      ],
+    },
+    {
+      icon: "Eye",
+      label: "Traffic",
+      path: "/inbound",
+      badge: 0,
+      description: "Inbound, outbound & live tracking",
+      children: [
+        { icon: "Eye", label: "Inbound Visibility", path: "/inbound", badge: 0, description: "Real-time approaching trucks & demand forecast" },
+        { icon: "Truck", label: "Incoming", path: "/incoming", badge: 0, description: "Arriving shipments" },
+        { icon: "Package", label: "Outgoing", path: "/outgoing", badge: 0, description: "Departing shipments" },
+        { icon: "MapPin", label: "Tracking", path: "/fleet-tracking", badge: 0, description: "Track incoming vehicles" },
+      ],
+    },
+    {
+      icon: "Building2",
+      label: "Terminal Profile",
+      path: "/facility",
+      badge: 0,
+      description: "Identity, compliance, operations & SpectraMatch"
+    },
+    {
+      icon: "Fuel",
+      label: "Dispatch Load",
+      path: "/terminal/create-load",
+      badge: 0,
+      description: "Create load from TAS inventory, generate BOL & EusoTicket"
+    },
+    {
+      icon: "Users",
+      label: "Network",
+      path: "/partners",
+      badge: 0,
+      description: "Partners, supply chain & staff",
+      children: [
+        { icon: "Handshake", label: "My Partners", path: "/partners", badge: 0, description: "Partners & supply chain management" },
+        { icon: "Users", label: "Supply Chain", path: "/supply-chain", badge: 0, description: "Shipper, marketer & transporter partnerships" },
+        { icon: "Users", label: "Staff", path: "/staff", badge: 0, description: "Access controllers & validation links" },
+      ],
+    },
+    {
+      icon: "FileText",
+      label: "Compliance",
+      path: "/facility-search",
+      badge: 0,
+      description: "Facilities, documents & integrations",
+      children: [
+        { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities" },
+        { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Permits, compliance docs & certifications" },
+        { icon: "Plug2", label: "Integrations", path: "/integrations", badge: 0, description: "Connect DTN, Enverus, OPIS & third-party systems" },
+      ],
+    },
+    {
+      icon: "Scale",
+      label: "Billing",
+      path: "/rate-sheet",
+      badge: 0,
+      description: "Rates & operations reports",
+      children: [
+        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
+        { icon: "BarChart3", label: "Reports", path: "/terminal/reports", badge: 0, description: "Operations reports & analytics" },
+      ],
+    },
+    // ─── PLATFORM FOOTER ───
+    {
+      icon: "MessageSquare",
+      label: "Messages",
+      path: "/messages",
+      badge: 0,
+      description: "Communication",
+      children: [
+        { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+      ],
+    },
+    {
+      icon: "Wallet",
+      label: "EusoWallet",
+      path: "/wallet",
       badge: 0,
       description: "Billing, detention fees, invoices & payments"
     },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/settings", 
+    {
+      icon: "TrendingUp",
+      label: "Market Intelligence",
+      path: "/market-pricing",
+      badge: 0,
+      description: "Freight rates & demand heatmaps"
+    },
+    {
+      icon: "Truck",
+      label: "The Haul",
+      path: "/the-haul",
+      badge: 0,
+      description: "Digital truck stop — lobby, missions, rewards"
+    },
+    {
+      icon: "Settings",
+      label: "Settings",
+      path: "/settings",
       badge: 0,
       description: "Profile, preferences & security"
     },
-    { 
-      icon: "Radio", 
-      label: "Company Channels", 
-      path: "/company-channels", 
-      badge: 0,
-      description: "Team communication channels"
-    },
-    { 
-      icon: "Newspaper", 
-      label: "News", 
-      path: "/news", 
-      badge: 0,
-      description: "Platform news and updates"
-    },
-    { 
-      icon: "AlertTriangle", 
-      label: "Report Incident", 
-      path: "/hazmat/incident-report", 
-      badge: 0,
-      description: "Report a safety, environmental, or facility incident"
-    },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0,
-      description: "Help"
-    },
+    { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
+    { icon: "AlertTriangle", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, environmental, or facility incident" },
+    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
   ],
 
   // COMPLIANCE_OFFICER: Regulatory compliance and safety oversight
+  // Consolidated: 23 → 12 top-level
   COMPLIANCE_OFFICER: [
-    { 
-      icon: "LayoutDashboard", 
-      label: "Dashboard", 
-      path: "/", 
+    {
+      icon: "LayoutDashboard",
+      label: "Dashboard",
+      path: "/",
       badge: 0,
       description: "Compliance dashboard"
     },
-    { 
-      icon: "Shield", 
-      label: "Compliance", 
-      path: "/compliance", 
+    {
+      icon: "Shield",
+      label: "Compliance Hub",
+      path: "/compliance",
       badge: 0,
-      description: "Regulatory compliance monitoring"
+      description: "Monitoring, violations, audits & calendar",
+      children: [
+        { icon: "Shield", label: "Compliance", path: "/compliance", badge: 0, description: "Regulatory compliance monitoring" },
+        { icon: "AlertTriangle", label: "Violations", path: "/violations", badge: 0, description: "Compliance violations" },
+        { icon: "CheckCircle", label: "Audits", path: "/audits", badge: 0, description: "Compliance audits" },
+        { icon: "CalendarDays", label: "Compliance Calendar", path: "/compliance/calendar", badge: 0, description: "Expiration tracking & renewal deadlines" },
+      ],
     },
-    { 
-      icon: "FileText", 
-      label: "Documents", 
-      path: "/documents", 
+    {
+      icon: "Truck",
+      label: "Fleet & Drivers",
+      path: "/fleet-compliance",
       badge: 0,
-      description: "Compliance documents"
+      description: "Vehicle & driver compliance, DQ files & ELD",
+      children: [
+        { icon: "Truck", label: "Fleet Compliance", path: "/fleet-compliance", badge: 0, description: "Vehicle compliance status" },
+        { icon: "Users", label: "Driver Compliance", path: "/driver-compliance", badge: 0, description: "Driver certifications" },
+        { icon: "FolderOpen", label: "DQ Files", path: "/compliance/dq-files", badge: 0, description: "Driver qualification file management" },
+        { icon: "Activity", label: "ELD Logs", path: "/compliance/eld", badge: 0, description: "Electronic logging device compliance" },
+      ],
     },
-    { 
-      icon: "AlertTriangle", 
-      label: "Violations", 
-      path: "/violations", 
-      badge: 0,
-      description: "Compliance violations"
-    },
-    { 
-      icon: "CheckCircle", 
-      label: "Audits", 
-      path: "/audits", 
-      badge: 0,
-      description: "Compliance audits"
-    },
-    { 
-      icon: "Truck", 
-      label: "Fleet Compliance", 
-      path: "/fleet-compliance", 
-      badge: 0,
-      description: "Vehicle compliance status"
-    },
-    { 
-      icon: "Users", 
-      label: "Driver Compliance", 
-      path: "/driver-compliance", 
-      badge: 0,
-      description: "Driver certifications"
-    },
-    { 
-      icon: "FolderOpen", 
-      label: "DQ Files", 
-      path: "/compliance/dq-files", 
-      badge: 0,
-      description: "Driver qualification file management"
-    },
-    { 
-      icon: "CalendarDays", 
-      label: "Compliance Calendar", 
-      path: "/compliance/calendar", 
-      badge: 0,
-      description: "Expiration tracking & renewal deadlines"
-    },
-    { 
-      icon: "Database", 
-      label: "Clearinghouse", 
-      path: "/compliance/clearinghouse", 
+    {
+      icon: "Database",
+      label: "Clearinghouse",
+      path: "/compliance/clearinghouse",
       badge: 0,
       description: "FMCSA Drug & Alcohol Clearinghouse"
     },
-    { 
-      icon: "Activity", 
-      label: "ELD Logs", 
-      path: "/compliance/eld", 
-      badge: 0,
-      description: "Electronic logging device compliance"
-    },
-    { 
-      icon: "Handshake", 
-      label: "My Partners", 
-      path: "/partners", 
+    {
+      icon: "Handshake",
+      label: "My Partners",
+      path: "/partners",
       badge: 0,
       description: "Partners, agreements & compliance network"
     },
-    { 
-      icon: "BarChart3", 
-      label: "Reports", 
-      path: "/compliance/reports", 
+    {
+      icon: "FileText",
+      label: "Documents",
+      path: "/documents",
+      badge: 0,
+      description: "Compliance documents"
+    },
+    {
+      icon: "BarChart3",
+      label: "Reports",
+      path: "/compliance/reports",
       badge: 0,
       description: "Compliance reports & audit summaries"
     },
-    { 
-      icon: "TrendingUp", 
-      label: "Market Intelligence", 
-      path: "/market-pricing", 
+    // ─── PLATFORM FOOTER ───
+    {
+      icon: "MessageSquare",
+      label: "Messages",
+      path: "/messages",
       badge: 0,
-      description: "Freight rates, demand heatmaps & surge pricing"
+      description: "Communication",
+      children: [
+        { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+      ],
     },
-    { 
-      icon: "MessageSquare", 
-      label: "Messages", 
-      path: "/messages", 
-      badge: 0,
-      description: "Communication"
-    },
-    { 
-      icon: "Wallet", 
-      label: "EusoWallet", 
-      path: "/wallet", 
+    {
+      icon: "Wallet",
+      label: "EusoWallet",
+      path: "/wallet",
       badge: 0,
       description: "Account balance & payments"
     },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/settings", 
+    {
+      icon: "TrendingUp",
+      label: "Market Intelligence",
+      path: "/market-pricing",
+      badge: 0,
+      description: "Freight rates, demand heatmaps & surge pricing"
+    },
+    {
+      icon: "Settings",
+      label: "Settings",
+      path: "/settings",
       badge: 0,
       description: "Preferences"
     },
-    { 
-      icon: "Radio", 
-      label: "Company Channels", 
-      path: "/company-channels", 
-      badge: 0,
-      description: "Team communication channels"
-    },
-    { 
-      icon: "Newspaper", 
-      label: "News", 
-      path: "/news", 
-      badge: 0,
-      description: "Platform news and updates"
-    },
-    { 
-      icon: "AlertTriangle", 
-      label: "Report Incident", 
-      path: "/hazmat/incident-report", 
-      badge: 0,
-      description: "Report a safety, compliance, or regulatory incident"
-    },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0,
-      description: "Help"
-    },
+    { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
+    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
   ],
 
-  // SAFETY_MANAGER: Safety monitoring and incident management
+  // SAFETY_MANAGER: Safety programs, incidents, inspections
+  // Consolidated: 21 → 12 top-level
   SAFETY_MANAGER: [
-    { 
-      icon: "LayoutDashboard", 
-      label: "Dashboard", 
-      path: "/", 
+    {
+      icon: "LayoutDashboard",
+      label: "Dashboard",
+      path: "/",
       badge: 0,
       description: "Safety dashboard"
     },
-    { 
-      icon: "ShieldCheck", 
-      label: "Safety Metrics", 
-      path: "/safety-metrics", 
+    {
+      icon: "Shield",
+      label: "Safety Programs",
+      path: "/safety/programs",
       badge: 0,
-      description: "Safety performance metrics"
+      description: "Training, meetings, inspections & incidents",
+      children: [
+        { icon: "GraduationCap", label: "Training", path: "/safety/training", badge: 0, description: "Safety training programs" },
+        { icon: "Users", label: "Safety Meetings", path: "/safety/meetings", badge: 0, description: "Schedule & document safety meetings" },
+        { icon: "ClipboardCheck", label: "Inspections", path: "/safety/inspections", badge: 0, description: "Vehicle & facility inspections" },
+        { icon: "AlertTriangle", label: "Incidents", path: "/safety/incidents", badge: 0, description: "Incident reports & investigations" },
+      ],
     },
-    { 
-      icon: "AlertTriangle", 
-      label: "Incidents", 
-      path: "/incidents", 
+    {
+      icon: "Activity",
+      label: "Monitoring",
+      path: "/safety/scores",
       badge: 0,
-      description: "Safety incidents"
+      description: "Safety scores & drug/alcohol testing",
+      children: [
+        { icon: "BarChart3", label: "Safety Scores", path: "/safety/scores", badge: 0, description: "CSA scores & safety metrics" },
+        { icon: "TestTube", label: "Drug & Alcohol", path: "/safety/drug-testing", badge: 0, description: "Testing programs & results" },
+      ],
     },
-    { 
-      icon: "Heart", 
-      label: "Driver Health", 
-      path: "/driver-health", 
-      badge: 0,
-      description: "Driver health monitoring"
-    },
-    { 
-      icon: "Truck", 
-      label: "Vehicle Safety", 
-      path: "/vehicle-safety", 
-      badge: 0,
-      description: "Vehicle safety inspections"
-    },
-    { 
-      icon: "FileText", 
-      label: "Training", 
-      path: "/training", 
-      badge: 0,
-      description: "Safety training programs"
-    },
-    { 
-      icon: "BarChart3", 
-      label: "CSA Scores", 
-      path: "/safety/csa-scores", 
-      badge: 0,
-      description: "CSA BASIC scores & SMS monitoring"
-    },
-    { 
-      icon: "Activity", 
-      label: "Driver Performance", 
-      path: "/safety/driver-performance", 
-      badge: 0,
-      description: "Driver safety performance tracking"
-    },
-    { 
-      icon: "FileWarning", 
-      label: "Accident Report", 
-      path: "/accident-report", 
-      badge: 0,
-      description: "File and track accident reports"
-    },
-    { 
-      icon: "Users", 
-      label: "Safety Meetings", 
-      path: "/safety/meetings", 
-      badge: 0,
-      description: "Schedule & document safety meetings"
-    },
-    { 
-      icon: "Handshake", 
-      label: "My Partners", 
-      path: "/partners", 
-      badge: 0,
-      description: "Partners, agreements & safety program"
-    },
-    { 
-      icon: "AlertCircle", 
-      label: "HazMat", 
-      path: "/hazmat", 
+    {
+      icon: "AlertCircle",
+      label: "HazMat",
+      path: "/hazmat",
       badge: 0,
       description: "Hazardous materials safety"
     },
-    { 
-      icon: "FileText", 
-      label: "Documents", 
-      path: "/documents", 
+    {
+      icon: "Handshake",
+      label: "My Partners",
+      path: "/partners",
+      badge: 0,
+      description: "Partners, agreements & safety program"
+    },
+    {
+      icon: "FileText",
+      label: "Documents",
+      path: "/documents",
       badge: 0,
       description: "Safety certifications & compliance docs"
     },
-    { 
-      icon: "TrendingUp", 
-      label: "Market Intelligence", 
-      path: "/market-pricing", 
+    {
+      icon: "BarChart3",
+      label: "Reports",
+      path: "/safety/reports",
       badge: 0,
-      description: "Freight rates, demand heatmaps & surge pricing"
+      description: "Safety reports & analytics"
     },
-    { 
-      icon: "MessageSquare", 
-      label: "Messages", 
-      path: "/messages", 
+    // ─── PLATFORM FOOTER ───
+    {
+      icon: "MessageSquare",
+      label: "Messages",
+      path: "/messages",
       badge: 0,
-      description: "Communication"
+      description: "Communication",
+      children: [
+        { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+      ],
     },
-    { 
-      icon: "Wallet", 
-      label: "EusoWallet", 
-      path: "/wallet", 
+    {
+      icon: "Wallet",
+      label: "EusoWallet",
+      path: "/wallet",
       badge: 0,
       description: "Account balance & payments"
     },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/settings", 
-      badge: 0,
-      description: "Preferences"
-    },
-    { 
-      icon: "Radio", 
-      label: "Company Channels", 
-      path: "/company-channels", 
-      badge: 0,
-      description: "Team communication channels"
-    },
-    { 
-      icon: "Newspaper", 
-      label: "News", 
-      path: "/news", 
-      badge: 0,
-      description: "Platform news and updates"
-    },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0,
-      description: "Help"
-    },
-  ],
-
-  // ADMIN: Platform management, user administration
-  ADMIN: [
-    { 
-      icon: "LayoutDashboard", 
-      label: "Dashboard", 
-      path: "/admin", 
-      badge: 0,
-      description: "Admin dashboard"
-    },
-    { 
-      icon: "Users", 
-      label: "Users", 
-      path: "/admin/users", 
-      badge: 0,
-      description: "User management"
-    },
-    { 
-      icon: "UserCheck", 
-      label: "Approvals", 
-      path: "/admin/approvals", 
-      badge: 0,
-      description: "Review and approve new registrations"
-    },
-    { 
-      icon: "Building2", 
-      label: "Companies", 
-      path: "/admin/companies", 
-      badge: 0,
-      description: "Company management"
-    },
-    { 
-      icon: "Package", 
-      label: "Loads", 
-      path: "/admin/loads", 
-      badge: 0,
-      description: "Load management"
-    },
-    { 
-      icon: "Activity", 
-      label: "Telemetry", 
-      path: "/admin/telemetry", 
-      badge: 0,
-      description: "GPS tracking and telemetry dashboard"
-    },
-    { 
-      icon: "Wrench", 
-      label: "ZEUN Mechanics", 
-      path: "/admin/zeun", 
-      badge: 0,
-      description: "Breakdown and repair management"
-    },
-    { 
-      icon: "DollarSign", 
-      label: "Payments & Fees", 
-      path: "/admin/payments", 
-      badge: 0,
-      description: "Payment processing, platform fees & revenue"
-    },
-    { 
-      icon: "Wallet", 
-      label: "EusoWallet", 
-      path: "/wallet", 
-      badge: 0,
-      description: "Platform wallet, escrow oversight & payments"
-    },
-    { 
-      icon: "AlertTriangle", 
-      label: "Disputes", 
-      path: "/admin/disputes", 
-      badge: 0,
-      description: "Dispute resolution"
-    },
-    { 
-      icon: "FileText", 
-      label: "Documents", 
-      path: "/admin/documents", 
-      badge: 0,
-      description: "Document verification"
-    },
-    { 
-      icon: "BarChart3", 
-      label: "Analytics", 
-      path: "/admin/analytics", 
-      badge: 0,
-      description: "Platform analytics"
-    },
-    { 
-      icon: "TrendingUp", 
-      label: "Market Intelligence", 
-      path: "/market-pricing", 
+    {
+      icon: "TrendingUp",
+      label: "Market Intelligence",
+      path: "/market-pricing",
       badge: 0,
       description: "Freight rates, demand heatmaps & surge pricing"
     },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/admin/settings", 
+    {
+      icon: "Settings",
+      label: "Settings",
+      path: "/settings",
+      badge: 0,
+      description: "Preferences"
+    },
+    { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
+    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+  ],
+
+  // ADMIN: Platform management
+  // Consolidated: 18 → 10 top-level
+  ADMIN: [
+    {
+      icon: "LayoutDashboard",
+      label: "Dashboard",
+      path: "/admin",
+      badge: 0,
+      description: "Admin dashboard"
+    },
+    {
+      icon: "Users",
+      label: "Users",
+      path: "/admin/users",
+      badge: 0,
+      description: "User management, approvals & companies",
+      children: [
+        { icon: "Users", label: "Users", path: "/admin/users", badge: 0, description: "User management" },
+        { icon: "UserCheck", label: "Approvals", path: "/admin/approvals", badge: 0, description: "Review and approve new registrations" },
+        { icon: "Building2", label: "Companies", path: "/admin/companies", badge: 0, description: "Company management" },
+      ],
+    },
+    {
+      icon: "Package",
+      label: "Operations",
+      path: "/admin/loads",
+      badge: 0,
+      description: "Loads, telemetry & mechanics",
+      children: [
+        { icon: "Package", label: "Loads", path: "/admin/loads", badge: 0, description: "Load management" },
+        { icon: "Activity", label: "Telemetry", path: "/admin/telemetry", badge: 0, description: "GPS tracking and telemetry" },
+        { icon: "Wrench", label: "ZEUN Mechanics", path: "/admin/zeun", badge: 0, description: "Breakdown and repair management" },
+      ],
+    },
+    {
+      icon: "DollarSign",
+      label: "Finance",
+      path: "/admin/payments",
+      badge: 0,
+      description: "Payments, wallet & disputes",
+      children: [
+        { icon: "DollarSign", label: "Payments & Fees", path: "/admin/payments", badge: 0, description: "Payment processing & platform fees" },
+        { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Platform wallet & escrow oversight" },
+        { icon: "AlertTriangle", label: "Disputes", path: "/admin/disputes", badge: 0, description: "Dispute resolution" },
+      ],
+    },
+    {
+      icon: "FileText",
+      label: "Documents",
+      path: "/admin/documents",
+      badge: 0,
+      description: "Document verification"
+    },
+    {
+      icon: "BarChart3",
+      label: "Analytics",
+      path: "/admin/analytics",
+      badge: 0,
+      description: "Platform analytics"
+    },
+    {
+      icon: "TrendingUp",
+      label: "Market Intelligence",
+      path: "/market-pricing",
+      badge: 0,
+      description: "Freight rates & demand heatmaps"
+    },
+    {
+      icon: "MessageSquare",
+      label: "Messages",
+      path: "/messages",
+      badge: 0,
+      description: "Platform messaging",
+      children: [
+        { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+      ],
+    },
+    {
+      icon: "Settings",
+      label: "Settings",
+      path: "/admin/settings",
       badge: 0,
       description: "Platform settings"
     },
-    { 
-      icon: "Radio", 
-      label: "Company Channels", 
-      path: "/company-channels", 
-      badge: 0,
-      description: "Team communication channels"
-    },
-    { 
-      icon: "Newspaper", 
-      label: "News", 
-      path: "/news", 
-      badge: 0,
-      description: "Platform news and updates"
-    },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0,
-      description: "Help"
-    },
+    { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
+    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
   ],
 
-  // SUPER_ADMIN: Platform-wide oversight — the one person who sees everything
+  // SUPER_ADMIN: Platform-wide oversight
+  // Consolidated: 21 → 9 top-level — executive view
   SUPER_ADMIN: [
     { icon: "LayoutDashboard", label: "Command Center", path: "/super-admin", badge: 0, description: "Platform-wide oversight dashboard" },
-    { icon: "Users", label: "User Oversight", path: "/super-admin/users", badge: 0, description: "All platform users, roles & statuses" },
-    { icon: "UserCheck", label: "Approvals", path: "/admin/approvals", badge: 0, description: "Registration approval queue" },
-    { icon: "Building2", label: "Companies", path: "/super-admin/companies", badge: 0, description: "All registered companies" },
-    { icon: "Package", label: "Loads", path: "/super-admin/loads", badge: 0, description: "All platform loads — status, disputes, lifecycle" },
-    { icon: "AlertTriangle", label: "Claims & Disputes", path: "/super-admin/claims", badge: 0, description: "Active claims, disputes & resolutions" },
-    { icon: "HelpCircle", label: "Support Tickets", path: "/super-admin/support", badge: 0, description: "User support requests & issue resolution" },
-    { icon: "Wrench", label: "ZEUN Mechanics", path: "/admin/zeun", badge: 0, description: "Breakdown reports, diagnostics & repairs" },
-    { icon: "DollarSign", label: "Platform Fees", path: "/admin/platform-fees", badge: 0, description: "Fee configuration, commissions & revenue" },
-    { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Platform wallet, escrow oversight & all payments" },
-    { icon: "Activity", label: "Telemetry", path: "/admin/telemetry", badge: 0, description: "GPS tracking & system telemetry" },
-    { icon: "MapPin", label: "Fleet Map", path: "/fleet-tracking", badge: 0, description: "System-wide fleet tracking" },
-    { icon: "BarChart3", label: "Analytics", path: "/super-admin/monitoring", badge: 0, description: "Platform analytics & performance metrics" },
-    { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, demand heatmaps & surge pricing" },
-    { icon: "FileText", label: "Audit Logs", path: "/super-admin/logs", badge: 0, description: "System-wide audit trail" },
-    { icon: "Database", label: "Database", path: "/super-admin/database", badge: 0, description: "Database health & management" },
-    { icon: "Shield", label: "Security", path: "/super-admin/security", badge: 0, description: "Security settings, 2FA enforcement & threat monitoring" },
-    { icon: "Settings", label: "Platform Config", path: "/super-admin/settings", badge: 0, description: "System settings & configuration" },
+    {
+      icon: "Users",
+      label: "Users & Companies",
+      path: "/super-admin/users",
+      badge: 0,
+      description: "All users, approvals & companies",
+      children: [
+        { icon: "Users", label: "User Oversight", path: "/super-admin/users", badge: 0, description: "All platform users, roles & statuses" },
+        { icon: "UserCheck", label: "Approvals", path: "/admin/approvals", badge: 0, description: "Registration approval queue" },
+        { icon: "Building2", label: "Companies", path: "/super-admin/companies", badge: 0, description: "All registered companies" },
+      ],
+    },
+    {
+      icon: "Package",
+      label: "Operations",
+      path: "/super-admin/loads",
+      badge: 0,
+      description: "Loads, claims, support & mechanics",
+      children: [
+        { icon: "Package", label: "Loads", path: "/super-admin/loads", badge: 0, description: "All platform loads — status, disputes, lifecycle" },
+        { icon: "AlertTriangle", label: "Claims & Disputes", path: "/super-admin/claims", badge: 0, description: "Active claims, disputes & resolutions" },
+        { icon: "HelpCircle", label: "Support Tickets", path: "/super-admin/support", badge: 0, description: "User support requests & issue resolution" },
+        { icon: "Wrench", label: "ZEUN Mechanics", path: "/admin/zeun", badge: 0, description: "Breakdown reports, diagnostics & repairs" },
+      ],
+    },
+    {
+      icon: "DollarSign",
+      label: "Finance",
+      path: "/admin/platform-fees",
+      badge: 0,
+      description: "Platform fees, wallet & revenue",
+      children: [
+        { icon: "DollarSign", label: "Platform Fees", path: "/admin/platform-fees", badge: 0, description: "Fee configuration & commissions" },
+        { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Platform wallet & all payments" },
+      ],
+    },
+    {
+      icon: "Activity",
+      label: "Monitoring",
+      path: "/admin/telemetry",
+      badge: 0,
+      description: "Telemetry, fleet, analytics & intelligence",
+      children: [
+        { icon: "Activity", label: "Telemetry", path: "/admin/telemetry", badge: 0, description: "GPS tracking & system telemetry" },
+        { icon: "MapPin", label: "Fleet Map", path: "/fleet-tracking", badge: 0, description: "System-wide fleet tracking" },
+        { icon: "BarChart3", label: "Analytics", path: "/super-admin/monitoring", badge: 0, description: "Platform analytics & performance" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates & demand heatmaps" },
+        { icon: "FileText", label: "Audit Logs", path: "/super-admin/logs", badge: 0, description: "System-wide audit trail" },
+      ],
+    },
+    {
+      icon: "Shield",
+      label: "System",
+      path: "/super-admin/security",
+      badge: 0,
+      description: "Security, database & configuration",
+      children: [
+        { icon: "Shield", label: "Security", path: "/super-admin/security", badge: 0, description: "Security settings & threat monitoring" },
+        { icon: "Database", label: "Database", path: "/super-admin/database", badge: 0, description: "Database health & management" },
+        { icon: "Settings", label: "Platform Config", path: "/super-admin/settings", badge: 0, description: "System settings & configuration" },
+      ],
+    },
     { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Platform-wide messaging" },
     { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
     { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & documentation" },

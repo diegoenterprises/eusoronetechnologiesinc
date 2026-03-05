@@ -1,4 +1,5 @@
 import React from "react";
+import AccessibleAnnouncer from "@/components/AccessibleAnnouncer";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useDisplayUser } from "@/hooks/useDisplayUser";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -93,6 +94,8 @@ import {
   FileCheck,
   Receipt,
   Landmark,
+  TestTube2,
+  FolderOpen,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -174,6 +177,8 @@ const iconMap: Record<string, React.ReactNode> = {
   FileCheck: <FileCheck size={20} />,
   Receipt: <Receipt size={20} />,
   ShieldAlert: <ShieldAlert size={20} />,
+  TestTube: <TestTube2 size={20} />,
+  FolderOpen: <FolderOpen size={20} />,
 };
 
 // --- Notification Bell Component ---
@@ -194,6 +199,7 @@ function NotificationBell({ onNavigate }: { onNavigate: (path: string) => void }
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           className="relative p-2 hover:bg-gray-800/50 rounded-xl transition-colors"
+          aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ''}`}
         >
           <Bell size={18} className="text-gray-400" />
           {unread > 0 && (
@@ -318,8 +324,8 @@ function StripeConnectBanner() {
             <><Landmark className="w-3.5 h-3.5" />{needsAction ? "Continue Setup" : "Set Up Now"}</>
           )}
         </button>
-        <button onClick={handleDismiss} className={`p-1 rounded-md hover:bg-slate-500/10 ${isLight ? "text-slate-400" : "text-slate-500"}`}>
-          <X className="w-4 h-4" />
+        <button onClick={handleDismiss} aria-label="Dismiss bank setup banner" className={`p-1 rounded-md hover:bg-slate-500/10 ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+          <X className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -519,14 +525,24 @@ export default function DashboardLayout({
 
   return (
     <div className={`flex h-screen relative overflow-hidden ${theme === "light" ? "bg-[#f8f9fb] text-slate-900" : "bg-gray-950 text-white"}`}>
+      {/* WS-E2E-015: Skip-to-content link for keyboard/screen reader users */}
+      <a href="#main-content" className="skip-to-content">Skip to content</a>
+
+      {/* WS-E2E-015: ARIA live region for dynamic announcements */}
+      <AccessibleAnnouncer />
+
       {/* Ambient background glow */}
       <AmbientGlow />
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close sidebar"
           className="fixed inset-0 bg-black/60 z-20 md:hidden"
           onClick={() => setSidebarOpen(false)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSidebarOpen(false); } }}
         />
       )}
 
@@ -564,7 +580,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Menu Items */}
-        <nav className="flex-1 overflow-y-auto smooth-scroll p-3 space-y-1">
+        <nav aria-label="Main navigation" className="flex-1 overflow-y-auto smooth-scroll p-3 space-y-1">
           {menuItems.map((item, index) => {
             const hasChildren = item.children && item.children.length > 0;
             const isParentExpanded = expandedParents.has(item.path);
@@ -694,6 +710,7 @@ export default function DashboardLayout({
             onClick={() => setSidebarOpen(!sidebarOpen)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             className={`w-full flex items-center justify-center p-2 rounded-lg transition-colors ${theme === "light" ? "text-slate-400 hover:text-slate-800 hover:bg-slate-100" : "text-gray-500 hover:text-white hover:bg-gray-800/50"}`}
           >
             <motion.div
@@ -716,7 +733,7 @@ export default function DashboardLayout({
                 <motion.div whileHover={{ scale: 1.08 }} transition={{ duration: 0.2 }}>
                   <Avatar className="w-9 h-9">
                     {displayAvatar ? (
-                      <img src={displayAvatar} alt="" className="w-9 h-9 rounded-full object-cover" />
+                      <img src={displayAvatar} alt={`${displayName} avatar`} className="w-9 h-9 rounded-full object-cover" />
                     ) : (
                       <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold text-sm">
                         {displayInitials}
@@ -762,6 +779,7 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col overflow-hidden relative z-10 min-w-0">
         {/* Top Navigation */}
         <motion.header
+          role="banner"
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
@@ -773,6 +791,7 @@ export default function DashboardLayout({
               onClick={() => setSidebarOpen(!sidebarOpen)}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
+              aria-label="Toggle sidebar menu"
               className={`p-1.5 rounded-lg ${theme === "light" ? "text-slate-500 hover:text-slate-800 hover:bg-slate-100" : "text-gray-400 hover:text-white hover:bg-gray-800/50"}`}
             >
               <Menu size={20} />
@@ -818,6 +837,7 @@ export default function DashboardLayout({
                   ref={searchInputRef}
                   type="text"
                   placeholder="Search..."
+                  aria-label="Search loads, drivers, catalysts, and more"
                   value={searchQuery}
                   onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
                   onFocus={() => { setSearchFocused(true); if (searchQuery.length >= 2) setSearchOpen(true); }}
@@ -826,8 +846,8 @@ export default function DashboardLayout({
                   className={`bg-transparent text-sm outline-none flex-1 min-w-0 truncate ${theme === "light" ? "text-slate-800 placeholder-slate-400" : "text-white placeholder-gray-500"}`}
                 />
                 {searchQuery && (
-                  <button onClick={() => { setSearchQuery(""); setSearchOpen(false); }} className="text-gray-500 hover:text-white p-0.5">
-                    <X size={14} />
+                  <button onClick={() => { setSearchQuery(""); setSearchOpen(false); }} aria-label="Clear search" className="text-gray-500 hover:text-white p-0.5">
+                    <X size={14} aria-hidden="true" />
                   </button>
                 )}
                 {!searchFocused && (
@@ -967,7 +987,7 @@ export default function DashboardLayout({
                 >
                   <Avatar className="w-8 h-8">
                     {displayAvatar ? (
-                      <img src={displayAvatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                      <img src={displayAvatar} alt={`${displayName} avatar`} className="w-8 h-8 rounded-full object-cover" />
                     ) : (
                       <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white text-sm font-bold">
                         {displayInitials}
@@ -996,7 +1016,7 @@ export default function DashboardLayout({
         </motion.header>
 
         {/* Main Content Area — Domino Cascade Page Transition */}
-        <main className={`flex-1 flex flex-col overflow-y-auto overflow-x-hidden smooth-scroll ${theme === "light" ? "bg-[#f8f9fb]" : "bg-gray-950/50"}`}>
+        <main id="main-content" role="main" aria-label="Main content" className={`flex-1 flex flex-col overflow-y-auto overflow-x-hidden smooth-scroll ${theme === "light" ? "bg-[#f8f9fb]" : "bg-gray-950/50"}`}>
           {/* Approval status banner for pending/suspended users */}
           <ApprovalBanner />
           {/* EusoConnect bank onboarding prompt for newly registered users */}
@@ -1016,7 +1036,7 @@ export default function DashboardLayout({
           <EsangFloatingButton />
 
           {/* Security Compliance Footer */}
-          <footer className={`border-t backdrop-blur-sm px-4 py-4 mt-auto ${theme === "light" ? "border-slate-200/60 bg-white/80" : "border-gray-800/50 bg-gray-900/40"}`}>
+          <footer role="contentinfo" className={`border-t backdrop-blur-sm px-4 py-4 mt-auto ${theme === "light" ? "border-slate-200/60 bg-white/80" : "border-gray-800/50 bg-gray-900/40"}`}>
             <div className="max-w-7xl mx-auto">
               <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-3">
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-500/10 border border-green-500/20">
