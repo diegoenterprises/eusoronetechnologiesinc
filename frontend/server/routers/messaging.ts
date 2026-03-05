@@ -304,6 +304,113 @@ export const messagingRouter = router({
   getGroupCreate: protectedProcedure.query(async () => ({})),
   getGroupManagement: protectedProcedure.query(async () => ({ items: [] })),
   getGroupSettings: protectedProcedure.query(async () => ({ settings: {} })),
+
+  // WS-P1-013: The Lobby — company-wide group chat
+  getLobby: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { conversation: null, messages: [] };
+      const userId = await resolveUserId(ctx.user);
+      if (!userId) return { conversation: null, messages: [] };
+
+      try {
+        // Get user's company
+        const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
+        const companyId = (user as any)?.companyId;
+        if (!companyId) return { conversation: null, messages: [] };
+
+        // Find or create lobby conversation for this company
+        let [lobby] = await db.select().from(conversations)
+          .where(and(eq(conversations.companyId, companyId), eq(conversations.type, 'company'), sql`${conversations.name} = 'The Lobby'`))
+          .limit(1);
+
+        if (!lobby) {
+          // Auto-create The Lobby for this company
+          const [created] = await db.insert(conversations).values({
+            type: 'company',
+            name: 'The Lobby',
+            companyId,
+            participants: [],
+          }).$returningId();
+          [lobby] = await db.select().from(conversations).where(eq(conversations.id, created.id)).limit(1);
+        }
+
+        if (!lobby) return { conversation: null, messages: [] };
+
+        // Get recent messages with sender info
+        const recentMessages = await db
+          .select({
+            id: messages.id,
+            text: messages.text,
+            senderId: messages.senderId,
+            senderName: users.name,
+            messageType: messages.messageType,
+            createdAt: messages.createdAt,
+          })
+          .from(messages)
+          .leftJoin(users, eq(messages.senderId, users.id))
+          .where(eq(messages.conversationId, lobby.id))
+          .orderBy(desc(messages.createdAt))
+          .limit(50);
+
+        return { conversation: lobby, messages: recentMessages.reverse() };
+      } catch (error) {
+        console.error('[Messaging] getLobby error:', error);
+        return { conversation: null, messages: [] };
+      }
+    }),
+
+  sendLobbyMessage: protectedProcedure
+    .input(z.object({ text: z.string().min(1).max(5000) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = await resolveUserId(ctx.user);
+      if (!userId) throw new Error("Could not resolve user");
+
+      // Get user's company
+      const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
+      const companyId = (user as any)?.companyId;
+      if (!companyId) throw new Error("No company assigned");
+
+      // Find lobby
+      const [lobby] = await db.select({ id: conversations.id }).from(conversations)
+        .where(and(eq(conversations.companyId, companyId), eq(conversations.type, 'company'), sql`${conversations.name} = 'The Lobby'`))
+        .limit(1);
+      if (!lobby) throw new Error("Lobby not found. Navigate to The Lobby first.");
+
+      // Insert message
+      const [result] = await db.insert(messages).values({
+        conversationId: lobby.id,
+        senderId: userId,
+        messageType: 'text',
+        text: input.text,
+      }).$returningId();
+
+      // Update conversation lastMessageAt
+      await db.update(conversations).set({ lastMessageAt: new Date() }).where(eq(conversations.id, lobby.id));
+
+      // Broadcast via WebSocket to company room
+      try {
+        const { emitNotification } = await import("../_core/websocket");
+        // Get all company users for broadcast
+        const companyUsers = await db.select({ id: users.id }).from(users).where(eq(users.companyId, companyId));
+        for (const cu of companyUsers) {
+          if (cu.id !== userId) {
+            emitNotification(String(cu.id), {
+              id: `lobby_${result.id}`,
+              type: 'message',
+              title: 'The Lobby',
+              message: `${ctx.user?.name || 'Team member'}: ${input.text.substring(0, 100)}`,
+              priority: 'low',
+              data: { conversationId: String(lobby.id) },
+            });
+          }
+        }
+      } catch {}
+
+      return { messageId: result.id, conversationId: lobby.id };
+    }),
   getMessageSearch: protectedProcedure.query(async () => ({ items: [] })),
   getMessageTemplates: protectedProcedure.query(async () => ({ items: [] })),
   getMuted: protectedProcedure.query(async () => ({ items: [] })),
