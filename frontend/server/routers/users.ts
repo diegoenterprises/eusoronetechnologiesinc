@@ -991,7 +991,30 @@ export const usersRouter = router({
   }),
 
   // Password
-  changePassword: protectedProcedure.input(z.object({ currentPassword: z.string(), newPassword: z.string() })).mutation(async () => ({ success: true })),
+  changePassword: protectedProcedure.input(z.object({ currentPassword: z.string(), newPassword: z.string().min(8) })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database unavailable");
+    const userId = Number(ctx.user?.id) || 0;
+    if (!userId) throw new Error("User not found");
+    const [user] = await db.select({ id: users.id, passwordHash: users.passwordHash, email: users.email, phone: users.phone, name: users.name })
+      .from(users).where(eq(users.id, userId)).limit(1);
+    if (!user) throw new Error("User not found");
+    if (user.passwordHash) {
+      const bcryptMod = await import("bcryptjs");
+      const valid = await bcryptMod.default.compare(input.currentPassword, user.passwordHash);
+      if (!valid) throw new Error("Current password is incorrect");
+    }
+    const bcryptMod = await import("bcryptjs");
+    const newHash = await bcryptMod.default.hash(input.newPassword, 12);
+    await db.update(users).set({ passwordHash: newHash }).where(eq(users.id, userId));
+    try {
+      if (user.email) {
+        const { notifyPasswordChanged } = await import("../services/notifications");
+        notifyPasswordChanged({ email: user.email, phone: user.phone || undefined, name: user.name || "" });
+      }
+    } catch {}
+    return { success: true };
+  }),
   getPasswordSecurity: protectedProcedure.query(async () => ({ lastChanged: "2025-01-01", strength: "strong", requiresChange: false, expiresIn: 60 })),
 
   // User management stats
