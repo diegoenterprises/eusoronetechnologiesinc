@@ -115,6 +115,62 @@ export async function retrieveContext(
   }
 }
 
+// ─── WS-T1-006: Enhanced Retrieval with Contextual Embeddings ────────────────
+
+/**
+ * Enhanced context retrieval that tries contextual embeddings first,
+ * then falls back to standard RAG. Contextual embeddings retain parent
+ * document awareness for better FMCSA/ERG regulation retrieval.
+ */
+export async function retrieveContextEnhanced(
+  query: string,
+  options: {
+    entityTypes?: string[];
+    topK?: number;
+    threshold?: number;
+  } = {},
+): Promise<RAGContext> {
+  const start = Date.now();
+  const topK = options.topK ?? 5;
+  const threshold = options.threshold ?? 0.25;
+
+  try {
+    const { enhancedRetrieve, formatContextualResults } = await import("../ai/contextualEmbeddings");
+    const contextualResult = await enhancedRetrieve(query, {
+      topK,
+      threshold,
+      categories: options.entityTypes,
+      includeStandardRAG: false, // We'll fall back ourselves
+    });
+
+    if (contextualResult.results.length > 0) {
+      // Convert contextual results to standard RAGContext format
+      const chunks: RetrievedChunk[] = contextualResult.results.map(r => ({
+        text: r.chunk.text,
+        score: r.score,
+        entityType: r.chunk.category,
+        entityId: r.chunk.documentId,
+        metadata: {
+          ...r.chunk.metadata,
+          documentTitle: r.chunk.documentTitle,
+          chunkIndex: r.chunk.chunkIndex,
+          totalChunks: r.chunk.totalChunks,
+          contextEnhanced: true,
+        },
+      }));
+
+      return {
+        chunks,
+        totalCandidates: contextualResult.totalIndexed,
+        retrievalTimeMs: Date.now() - start,
+      };
+    }
+  } catch { /* Contextual index not available — fall through to standard */ }
+
+  // Fall back to standard RAG retrieval
+  return retrieveContext(query, options);
+}
+
 /**
  * Format retrieved chunks into a context string for injection into a Gemini prompt.
  */

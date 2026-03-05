@@ -89,8 +89,8 @@ export default function Login() {
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${theme === 'dark' ? 'bg-red-500/20 border border-red-500/30 text-red-300' : 'bg-red-50 border border-red-200 text-red-600'}`}>
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <div role="alert" className={`flex items-center gap-2 p-3 rounded-lg text-sm ${theme === 'dark' ? 'bg-red-500/20 border border-red-500/30 text-red-300' : 'bg-red-50 border border-red-200 text-red-600'}`}>
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                   {error}
                 </div>
               )}
@@ -100,6 +100,8 @@ export default function Login() {
                   <Input
                     type="email"
                     placeholder="Email address"
+                    aria-label="Email address"
+                    autoComplete="email"
                     value={email}
                     onChange={(e: any) => setEmail(e.target.value)}
                     className={`pl-10 h-12 ${theme === 'dark' ? 'bg-slate-800/10 border-white/20 text-white placeholder:text-slate-400' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
@@ -111,6 +113,8 @@ export default function Login() {
                   <Input
                     type="password"
                     placeholder="Password"
+                    aria-label="Password"
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e: any) => setPassword(e.target.value)}
                     className={`pl-10 h-12 ${theme === 'dark' ? 'bg-slate-800/10 border-white/20 text-white placeholder:text-slate-400' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400'}`}

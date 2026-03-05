@@ -157,12 +157,12 @@ export default function AccessorialManagement() {
             Accessorial & Lumper Management
           </h1>
           <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
-            Revenue Stream 12 — Detention, lumper, TONU, layover & specialized fees · 3.5% platform facilitation
+            Detention, lumper, TONU, layover & specialized fees
           </p>
         </div>
         <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-xs px-3 py-1">
           <TrendingUp className="w-3 h-3 mr-1" />
-          Platform Fee: 3.5%
+          Platform Fee: {feeScheduleQuery.data?.platformFeePercent ?? "--"}%
         </Badge>
       </div>
 
@@ -586,12 +586,12 @@ export default function AccessorialManagement() {
                       <p className={cn("font-bold", isLight ? "text-blue-800" : "text-white")}>${parseFloat(claimForm.amount || "0").toFixed(2)}</p>
                     </div>
                     <div>
-                      <span className={isLight ? "text-blue-500" : "text-blue-300"}>Platform Fee (3.5%)</span>
-                      <p className="font-bold text-purple-400">${(parseFloat(claimForm.amount || "0") * 0.035).toFixed(2)}</p>
+                      <span className={isLight ? "text-blue-500" : "text-blue-300"}>Platform Fee ({feeScheduleQuery.data?.platformFeePercent ?? "--"}%)</span>
+                      <p className="font-bold text-purple-400">${(parseFloat(claimForm.amount || "0") * (feeScheduleQuery.data?.platformFeePercent || 3.5) / 100).toFixed(2)}</p>
                     </div>
                     <div>
                       <span className={isLight ? "text-blue-500" : "text-blue-300"}>Net to Carrier</span>
-                      <p className="font-bold text-emerald-400">${(parseFloat(claimForm.amount || "0") * 0.965).toFixed(2)}</p>
+                      <p className="font-bold text-emerald-400">${(parseFloat(claimForm.amount || "0") * (1 - (feeScheduleQuery.data?.platformFeePercent || 3.5) / 100)).toFixed(2)}</p>
                     </div>
                   </div>
                 </div>

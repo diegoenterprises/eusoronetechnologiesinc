@@ -138,6 +138,55 @@
 }
 
 /* ========================================
+   WCAG AA Accessibility (WS-E2E-015)
+   ======================================== */
+
+/* Focus-visible ring for all interactive elements */
+:focus-visible {
+  outline: 3px solid #1e40af;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Skip-to-content link (visible only on focus) */
+.skip-to-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateY(-100%);
+  background: #1e40af;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  z-index: 9999;
+  transition: transform 0.2s ease;
+  text-decoration: none;
+}
+.skip-to-content:focus {
+  transform: translateY(0);
+}
+
+/* Screen-reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ARIA live region for dynamic status announcements */
+[aria-live="polite"],
+[aria-live="assertive"] {
+  position: relative;
+}
+
+/* ========================================
    SEAL Team 6 Design System Integration
    ======================================== */
 

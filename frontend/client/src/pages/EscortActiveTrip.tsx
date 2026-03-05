@@ -97,7 +97,7 @@ function SOSButton({ loadId, onAlert }: { loadId: number; onAlert?: () => void }
     <div className="rounded-2xl bg-zinc-900/90 border border-red-500/40 p-4 space-y-3">
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2"><Siren className="w-5 h-5 text-red-400" /><span className="text-red-300 font-semibold">Select Emergency Type</span></div>
-        <button onClick={() => { setExpanded(false); setConfirming(null); }} className="p-1 rounded-lg hover:bg-zinc-800"><X className="w-5 h-5 text-zinc-500" /></button>
+        <button onClick={() => { setExpanded(false); setConfirming(null); }} aria-label="Close emergency panel" className="p-1 rounded-lg hover:bg-zinc-800"><X className="w-5 h-5 text-zinc-500" aria-hidden="true" /></button>
       </div>
       <div className="grid grid-cols-2 gap-2">
         {SOS_TYPES.map((s) => {

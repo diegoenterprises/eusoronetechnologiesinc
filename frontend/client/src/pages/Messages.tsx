@@ -311,7 +311,7 @@ export default function Messages() {
                     {/* Avatar */}
                     <div className="relative flex-shrink-0">
                       {conv.avatar ? (
-                        <img src={conv.avatar} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-700/50" />
+                        <img src={conv.avatar} alt={`${conv.name || 'Contact'} avatar`} className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-700/50" />
                       ) : (
                         <div className="w-11 h-11 rounded-full bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center ring-2 ring-slate-700/50">
                           <span className="text-base font-bold text-slate-400">{(conv.name || "?")[0]?.toUpperCase()}</span>
@@ -380,7 +380,7 @@ export default function Messages() {
                       <ArrowLeft className="w-5 h-5 text-slate-400" />
                     </Button>
                     {selectedConv?.avatar ? (
-                      <img src={selectedConv.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      <img src={selectedConv.avatar} alt={`${selectedConv?.name || 'Contact'} avatar`} className="w-10 h-10 rounded-full object-cover" />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center">
                         <span className="text-sm font-bold text-slate-400">{(selectedConv?.name || "?")[0]?.toUpperCase()}</span>
@@ -440,7 +440,7 @@ export default function Messages() {
                         {!message.isOwn && showName && (
                           <div className="flex-shrink-0 mt-5">
                             {message.senderAvatar ? (
-                              <img src={message.senderAvatar} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10" />
+                              <img src={message.senderAvatar} alt={`${message.senderName || 'Sender'} avatar`} className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10" />
                             ) : (
                               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center ring-1 ring-white/10">
                                 <span className="text-[11px] font-semibold text-slate-300">{(message.senderName || "?")[0]?.toUpperCase()}</span>
@@ -698,7 +698,7 @@ export default function Messages() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto z-[9999]" style={{ animation: "eusoDialogFadeIn 0.2s ease-out" }} onClick={() => setShowPaymentModal(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div className="p-[1.5px] rounded-2xl w-full max-w-md" style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)", animation: "eusoDialogScaleIn 0.2s ease-out" }} onClick={(e) => e.stopPropagation()}>
-          <div className="bg-[#0f1629]/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-[0_8px_32px_rgba(20,115,255,0.15)]">
+          <div role="dialog" aria-modal="true" aria-label="Send payment" className="bg-[#0f1629]/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-[0_8px_32px_rgba(20,115,255,0.15)]">
             <div className="flex items-center justify-between p-5 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
@@ -706,8 +706,8 @@ export default function Messages() {
                 </div>
                 <h2 className="text-lg font-bold text-white">Send / Request</h2>
               </div>
-              <button className="text-slate-500 hover:text-white transition-colors" onClick={() => setShowPaymentModal(false)}>
-                <X className="w-4 h-4" />
+              <button aria-label="Close payment dialog" className="text-slate-500 hover:text-white transition-colors" onClick={() => setShowPaymentModal(false)}>
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
             <div className="p-5 space-y-4">
@@ -802,12 +802,12 @@ export default function Messages() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto z-[9999]" style={{ animation: "eusoDialogFadeIn 0.2s ease-out" }} onClick={() => setShowNewConversation(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div className="p-[1.5px] rounded-2xl w-full max-w-lg" style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)", animation: "eusoDialogScaleIn 0.2s ease-out" }} onClick={(e) => e.stopPropagation()}>
-          <div className="bg-[#0f1629]/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-[0_8px_32px_rgba(20,115,255,0.15)]">
+          <div role="dialog" aria-modal="true" aria-label="New conversation" className="bg-[#0f1629]/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-[0_8px_32px_rgba(20,115,255,0.15)]">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-5 border-b border-white/10">
               <h2 className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">New Conversation</h2>
-              <button className="text-slate-500 hover:text-white transition-colors" onClick={() => setShowNewConversation(false)}>
-                <X className="w-4 h-4" />
+              <button aria-label="Close new conversation dialog" className="text-slate-500 hover:text-white transition-colors" onClick={() => setShowNewConversation(false)}>
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
 
@@ -819,6 +819,7 @@ export default function Messages() {
                   value={userSearchTerm}
                   onChange={(e: any) => setUserSearchTerm(e.target.value)}
                   placeholder="Search by name or email..."
+                  aria-label="Search users by name or email"
                   className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-xl text-sm focus:border-purple-500/50"
                   autoFocus
                 />
@@ -842,7 +843,7 @@ export default function Messages() {
                       disabled={createConversationMutation.isPending}
                     >
                       {user.avatar ? (
-                        <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                        <img src={user.avatar} alt={`${user.name || 'User'} avatar`} className="w-10 h-10 rounded-full object-cover" />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center">
                           <span className="text-sm font-bold text-slate-400">{(user.name || "?")[0]?.toUpperCase()}</span>

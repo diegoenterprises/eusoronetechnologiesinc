@@ -127,7 +127,7 @@ export function DriverAssignment({ load, availableDrivers, onAssign, onCancel }:
     <Portal>
     <div className="fixed inset-0 bg-black/50 overflow-y-auto z-[9999]" onClick={onCancel}>
       <div className="flex min-h-full items-center justify-center p-4">
-      <Card className="bg-slate-800 border-slate-700 w-full max-w-4xl flex flex-col" onClick={(e: any) => e.stopPropagation()}>
+      <Card role="dialog" aria-modal="true" aria-label="Assign driver" className="bg-slate-800 border-slate-700 w-full max-w-4xl flex flex-col" onClick={(e: any) => e.stopPropagation()}>
         <CardHeader className="border-b border-slate-700 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>

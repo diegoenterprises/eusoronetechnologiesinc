@@ -295,7 +295,7 @@ function ArticleCard({ article }: { article: NewsArticle }) {
             <div className="w-full h-32 rounded-lg overflow-hidden mb-3 bg-slate-700">
               <img 
                 src={article.imageUrl} 
-                alt="" 
+                alt={article.title || 'News article image'} 
                 className="w-full h-full object-cover"
                 onError={(e: any) => {
                   (e.target as HTMLImageElement).style.display = 'none';

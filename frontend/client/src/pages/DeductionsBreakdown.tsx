@@ -24,7 +24,7 @@ import {
 type DeductionCategory = "all" | "recurring" | "one_time" | "advance";
 
 const DEDUCTION_TYPES = [
-  { id: "platform_fee", label: "Platform Fee", description: "EusoTrip transaction fee (3.5%)", category: "recurring", icon: <Settings className="w-4 h-4" />, color: "text-blue-400", bg: "bg-blue-500/15" },
+  { id: "platform_fee", label: "Platform Fee", description: "EusoTrip transaction fee", category: "recurring", icon: <Settings className="w-4 h-4" />, color: "text-blue-400", bg: "bg-blue-500/15" },
   { id: "insurance", label: "Insurance Deduction", description: "Cargo & liability coverage premium", category: "recurring", icon: <Shield className="w-4 h-4" />, color: "text-green-400", bg: "bg-green-500/15" },
   { id: "fuel_advance", label: "Fuel Advance", description: "Pre-trip fuel card advance repayment", category: "advance", icon: <Fuel className="w-4 h-4" />, color: "text-orange-400", bg: "bg-orange-500/15" },
   { id: "equipment_lease", label: "Equipment Lease", description: "Vehicle/trailer lease payment", category: "recurring", icon: <Truck className="w-4 h-4" />, color: "text-purple-400", bg: "bg-purple-500/15" },

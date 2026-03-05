@@ -346,6 +346,13 @@ async function startServer() {
         case "invoice.paid": {
           const invoice = event.data.object;
           console.log(`[Stripe Webhook] Invoice paid: ${invoice.id}, amount: ${invoice.amount_paid}`);
+          // WS-E2E-005: Fire invoice_paid gamification event
+          try {
+            const { fireGamificationEvent } = await import("../services/gamificationDispatcher");
+            const custMeta = (invoice as any).metadata || {};
+            const invoiceUserId = parseInt(custMeta.userId || custMeta.carrierId || "0", 10);
+            if (invoiceUserId) fireGamificationEvent({ userId: invoiceUserId, type: "invoice_paid", value: (invoice.amount_paid || 0) / 100 });
+          } catch {}
           break;
         }
         case "invoice.payment_failed": {
@@ -1171,6 +1178,74 @@ async function startServer() {
         }
       } catch (e: any) { console.warn("[TestAccounts] Auto-seed error:", e?.message); }
     }, 14000);
+
+    // Auto-seed carrier company + assign users + test vehicles (WS-P0-012/013)
+    setTimeout(async () => {
+      try {
+        const { getDb: _seedGetDb } = await import("../db");
+        const _seedDb = await _seedGetDb();
+        if (!_seedDb) return;
+        const { companies: _co, users: _u, vehicles: _v } = await import("../../drizzle/schema");
+        const { eq: _eq, sql } = await import("drizzle-orm");
+
+        // P0-012: Ensure carrier company exists
+        let [carrierCo] = await _seedDb.select({ id: _co.id }).from(_co).where(_eq(_co.dotNumber, "2233825")).limit(1);
+        if (!carrierCo) {
+          const res = await _seedDb.insert(_co).values({
+            name: "Test Carrier Services LLC", legalName: "Test Carrier Services LLC",
+            dotNumber: "2233825", mcNumber: "MC-789012",
+            address: "1234 Industrial Blvd", city: "Houston", state: "TX", zipCode: "77001",
+            phone: "713-555-0100", email: "dispatch@testcarrier.com",
+            complianceStatus: "compliant", supplyChainRole: "TRANSPORTER", isActive: true,
+          });
+          const coId = (res as any)?.[0]?.insertId;
+          if (coId) {
+            carrierCo = { id: coId };
+            console.log(`[P0-012] Auto-seeded carrier company id=${coId}, DOT=2233825`);
+          }
+        }
+        if (carrierCo) {
+          // Assign carrier-side users
+          for (const email of ["catalyst@eusotrip.com", "driver@eusotrip.com", "compliance@eusotrip.com", "safety@eusotrip.com", "dispatch@eusotrip.com"]) {
+            await _seedDb.update(_u).set({ companyId: carrierCo.id }).where(_eq(_u.email, email));
+          }
+          // Assign broker to company 1 (Eusorone Technologies)
+          await _seedDb.update(_u).set({ companyId: 1 }).where(_eq(_u.email, "broker@eusotrip.com"));
+
+          // P0-013: Ensure test vehicles exist
+          const [vCount] = await _seedDb.select({ count: sql<number>`count(*)` }).from(_v).where(_eq(_v.companyId, carrierCo.id));
+          if ((vCount?.count || 0) === 0) {
+            const testVehicles = [
+              { companyId: carrierCo.id, vin: "1XPWD49X5PD123456", make: "Peterbilt", model: "389", year: 2023, licensePlate: "TX-HZM-001", vehicleType: "tractor" as const, status: "available" as const, isActive: true, nextInspectionDate: new Date("2026-09-15") },
+              { companyId: carrierCo.id, vin: "2TK04072XNS789012", make: "Tremcar", model: "MC-407 DOT Tanker", year: 2022, licensePlate: "TX-TNK-001", vehicleType: "tanker" as const, capacity: "9000.00", status: "available" as const, isActive: true, nextInspectionDate: new Date("2026-10-01") },
+              { companyId: carrierCo.id, vin: "1GRAA0622RB345678", make: "Great Dane", model: "Champion CL", year: 2024, licensePlate: "TX-DRY-001", vehicleType: "dry_van" as const, capacity: "45000.00", status: "available" as const, isActive: true, nextInspectionDate: new Date("2026-11-01") },
+            ];
+            let vc = 0;
+            for (const v of testVehicles) {
+              try { await _seedDb.insert(_v).values(v); vc++; } catch {}
+            }
+            if (vc > 0) console.log(`[P0-013] Auto-seeded ${vc} test vehicles for carrier company ${carrierCo.id}`);
+          }
+        }
+      } catch (e: any) { console.warn("[P0-012/013] Auto-seed error:", e?.message); }
+    }, 16000);
+
+    // Auto-fix load data integrity (WS-P0-014)
+    setTimeout(async () => {
+      try {
+        const { getDb: _seedGetDb } = await import("../db");
+        const { sql: _sql014 } = await import("drizzle-orm");
+        const _seedDb = await _seedGetDb();
+        if (!_seedDb) return;
+
+        // Fix loads where deliveryDate < pickupDate
+        const fixed = await _seedDb.execute(
+          _sql014`UPDATE loads SET deliveryDate = DATE_ADD(pickupDate, INTERVAL 1 DAY) WHERE deliveryDate IS NOT NULL AND pickupDate IS NOT NULL AND deliveryDate < pickupDate`
+        );
+        const affectedRows = (fixed as any)?.[0]?.affectedRows || 0;
+        if (affectedRows > 0) console.log(`[P0-014] Fixed ${affectedRows} load(s) with deliveryDate < pickupDate`);
+      } catch (e: any) { console.warn("[P0-014] Data integrity fix error:", e?.message); }
+    }, 18000);
 
     // Run pending DB migrations (audit hash chain columns)
     setTimeout(async () => {

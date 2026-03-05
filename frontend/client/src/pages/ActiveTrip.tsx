@@ -124,8 +124,8 @@ function SOSButton({ loadId, onAlert }: { loadId: number; onAlert?: () => void }
           <Siren className="w-5 h-5 text-red-400" />
           <span className="text-red-300 font-semibold">Select Emergency Type</span>
         </div>
-        <button onClick={() => { setExpanded(false); setConfirming(null); }} className="p-1 rounded-lg hover:bg-zinc-800">
-          <X className="w-5 h-5 text-zinc-500" />
+        <button onClick={() => { setExpanded(false); setConfirming(null); }} aria-label="Close emergency panel" className="p-1 rounded-lg hover:bg-zinc-800">
+          <X className="w-5 h-5 text-zinc-500" aria-hidden="true" />
         </button>
       </div>
 
@@ -1225,8 +1225,8 @@ export default function ActiveTrip() {
               <span className="text-xs text-amber-300">HAZMAT {activeLoad.hazmatClass}</span>
             </div>
           )}
-          <button onClick={() => refetchTrip()} className="ml-auto p-1 rounded-lg hover:bg-zinc-800 transition-colors">
-            <RefreshCw className="w-3.5 h-3.5 text-zinc-600" />
+          <button onClick={() => refetchTrip()} aria-label="Refresh trip data" className="ml-auto p-1 rounded-lg hover:bg-zinc-800 transition-colors">
+            <RefreshCw className="w-3.5 h-3.5 text-zinc-600" aria-hidden="true" />
           </button>
         </div>
       </div>

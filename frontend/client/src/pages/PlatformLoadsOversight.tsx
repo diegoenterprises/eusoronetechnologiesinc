@@ -132,7 +132,7 @@ export default function PlatformLoadsOversight() {
                     </div>
                     <div className="col-span-2">
                       <div className="flex items-center gap-2">
-                        {(l.shipperProfilePicture || l.companyLogo) && <img src={l.shipperProfilePicture || l.companyLogo} className="w-6 h-6 rounded-full object-cover" alt="" />}
+                        {(l.shipperProfilePicture || l.companyLogo) && <img src={l.shipperProfilePicture || l.companyLogo} className="w-6 h-6 rounded-full object-cover" alt={`${l.shipperName || l.companyName || 'Shipper'} photo`} />}
                         <div>
                           <p className="text-white text-xs truncate">{l.shipperName || "—"}</p>
                           <p className="text-[10px] text-slate-500 truncate">{l.companyName || ""}</p>

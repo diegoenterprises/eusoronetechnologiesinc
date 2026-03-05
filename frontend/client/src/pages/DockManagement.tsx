@@ -533,7 +533,7 @@ export default function DockManagement() {
         <Portal>
         <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowConfig(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
-          <div className={cn("w-full max-w-xl rounded-2xl border p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-label="Configure dock" className={cn("w-full max-w-xl rounded-2xl border p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-slate-800 dark:text-white">Dock Configuration</h2>
               <button onClick={() => setShowConfig(false)} className="text-slate-500 hover:text-slate-800 dark:hover:text-white"><XCircle className="w-5 h-5" /></button>
@@ -578,7 +578,7 @@ export default function DockManagement() {
         <Portal>
         <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowBOL(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
-          <div className={cn("w-full max-w-2xl rounded-2xl border p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-label="Generate bill of lading" className={cn("w-full max-w-2xl rounded-2xl border p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-800 dark:text-white">Generate Bill of Lading</h2>
@@ -709,7 +709,7 @@ export default function DockManagement() {
         <Portal>
         <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowRunTicket(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
-          <div className={cn("w-full max-w-4xl rounded-2xl border p-6 space-y-4", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-label="Run ticket" className={cn("w-full max-w-4xl rounded-2xl border p-6 space-y-4", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-800 dark:text-white">EusoTicket -- Run Ticket</h2>

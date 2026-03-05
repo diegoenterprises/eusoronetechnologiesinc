@@ -437,7 +437,7 @@ export default function TerminalPartners() {
         <Portal>
         <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}>
           <div className="flex min-h-full items-center justify-center p-4">
-          <div className={cn("w-full max-w-2xl rounded-2xl border shadow-2xl overflow-hidden", isLight ? "bg-white border-slate-200" : "bg-[#12121a] border-white/[0.08]")}>
+          <div role="dialog" aria-modal="true" aria-label="Add supply chain partner" className={cn("w-full max-w-2xl rounded-2xl border shadow-2xl overflow-hidden", isLight ? "bg-white border-slate-200" : "bg-[#12121a] border-white/[0.08]")}>
             {/* Modal Header */}
             <div className="px-6 py-4 border-b" style={{ borderColor: isLight ? "#e2e8f0" : "rgba(255,255,255,0.04)" }}>
               <div className="flex items-center justify-between">
@@ -445,8 +445,8 @@ export default function TerminalPartners() {
                   <h2 className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>Add Supply Chain Partner</h2>
                   <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>Link a shipper, marketer, broker, or transporter to your terminal</p>
                 </div>
-                <button onClick={() => { setShowAddModal(false); resetAddForm(); }} className={cn("p-1.5 rounded-lg", isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]")}>
-                  <XCircle className={cn("w-5 h-5", isLight ? "text-slate-400" : "text-slate-500")} />
+                <button onClick={() => { setShowAddModal(false); resetAddForm(); }} aria-label="Close add partner dialog" className={cn("p-1.5 rounded-lg", isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]")}>
+                  <XCircle className={cn("w-5 h-5", isLight ? "text-slate-400" : "text-slate-500")} aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -482,8 +482,8 @@ export default function TerminalPartners() {
                         </p>
                       </div>
                     </div>
-                    <button onClick={() => { setApSelectedCompany(null); setApCompanySearch(""); setShowInviteForm(false); }} className={cn("p-1 rounded-lg", apSelectedCompany.onPlatform ? (isLight ? "hover:bg-emerald-100" : "hover:bg-emerald-500/20") : (isLight ? "hover:bg-blue-100" : "hover:bg-blue-500/20"))}>
-                      <XCircle className={cn("w-4 h-4", apSelectedCompany.onPlatform ? "text-emerald-500" : "text-blue-500")} />
+                    <button onClick={() => { setApSelectedCompany(null); setApCompanySearch(""); setShowInviteForm(false); }} aria-label="Clear selected company" className={cn("p-1 rounded-lg", apSelectedCompany.onPlatform ? (isLight ? "hover:bg-emerald-100" : "hover:bg-emerald-500/20") : (isLight ? "hover:bg-blue-100" : "hover:bg-blue-500/20"))}>
+                      <XCircle className={cn("w-4 h-4", apSelectedCompany.onPlatform ? "text-emerald-500" : "text-blue-500")} aria-hidden="true" />
                     </button>
                   </div>
                 ) : (

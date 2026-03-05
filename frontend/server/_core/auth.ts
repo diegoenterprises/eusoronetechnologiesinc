@@ -155,7 +155,7 @@ export const authService = {
     }
 
     // Master password for all test users
-    const MASTER_PASSWORD = "Vision2026!";
+    const MASTER_PASSWORD = "Esang2027!";
     
     if (password === MASTER_PASSWORD) {
       // Resolve test user to a real DB record so ctx.user.id is a real integer

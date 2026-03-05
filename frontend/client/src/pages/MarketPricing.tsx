@@ -187,8 +187,8 @@ export default function MarketPricing() {
                   }`}
                 />
                 {search && (
-                  <button onClick={() => { setSearch(""); setShowSearchResults(false); setSelectedQuoteSymbol(null); }} className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                    <X className={`w-3 h-3 ${isLight ? "text-slate-400 hover:text-slate-600" : "text-white/30 hover:text-white/60"}`} />
+                  <button onClick={() => { setSearch(""); setShowSearchResults(false); setSelectedQuoteSymbol(null); }} aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                    <X className={`w-3 h-3 ${isLight ? "text-slate-400 hover:text-slate-600" : "text-white/30 hover:text-white/60"}`} aria-hidden="true" />
                   </button>
                 )}
 
@@ -314,8 +314,8 @@ export default function MarketPricing() {
         <div className="max-w-[1600px] mx-auto px-6 pt-4">
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
             className={`rounded-2xl border p-5 relative ${isLight ? "bg-white border-[#1473FF]/20 shadow-lg shadow-[#1473FF]/5" : "bg-white/[0.04] border-[#1473FF]/30 shadow-lg shadow-[#1473FF]/5"}`}>
-            <button onClick={() => setSelectedQuoteSymbol(null)} className={`absolute top-4 right-4 p-1.5 rounded-lg transition-colors ${isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]"}`}>
-              <X className={`w-4 h-4 ${isLight ? "text-slate-400" : "text-white/30"}`} />
+            <button onClick={() => setSelectedQuoteSymbol(null)} aria-label="Close quote details" className={`absolute top-4 right-4 p-1.5 rounded-lg transition-colors ${isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]"}`}>
+              <X className={`w-4 h-4 ${isLight ? "text-slate-400" : "text-white/30"}`} aria-hidden="true" />
             </button>
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center shadow-lg shadow-[#1473FF]/20">

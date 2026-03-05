@@ -129,15 +129,16 @@ export default function EditProfileModal({
     <Portal>
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto z-[9999]" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center p-4">
-      <Card className="bg-slate-800 border-slate-700 w-full max-w-2xl" onClick={(e: any) => e.stopPropagation()}>
+      <Card role="dialog" aria-modal="true" aria-label="Edit profile" className="bg-slate-800 border-slate-700 w-full max-w-2xl" onClick={(e: any) => e.stopPropagation()}>
         {/* Header */}
         <div className="sticky top-0 bg-slate-800 border-b border-slate-700 p-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white">Edit Profile</h2>
           <button
             onClick={onClose}
+            aria-label="Close edit profile dialog"
             className="p-2 hover:bg-slate-700 rounded-lg transition-all"
           >
-            <X size={24} className="text-gray-400" />
+            <X size={24} className="text-gray-400" aria-hidden="true" />
           </button>
         </div>
 

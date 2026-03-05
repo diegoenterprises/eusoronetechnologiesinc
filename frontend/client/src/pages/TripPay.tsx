@@ -184,7 +184,7 @@ export default function TripPay() {
                           Deductions
                         </p>
                         {[
-                          { label: "Platform Fee (3.5%)", amount: -pay.platformFee },
+                          { label: "Platform Fee", amount: -pay.platformFee },
                           { label: "Insurance (2%)", amount: -pay.insuranceDeduction },
                         ].map((item) => (
                           <div key={item.label} className="flex items-center justify-between py-1">

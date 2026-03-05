@@ -360,7 +360,7 @@ export default function MessagingCenter() {
                       {!message.isOwn && showSenderName && (
                         <div className="flex-shrink-0 mt-5">
                           {message.senderAvatar ? (
-                            <img src={message.senderAvatar} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10" />
+                            <img src={message.senderAvatar} alt={`${message.senderName || 'Sender'} avatar`} className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10" />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center ring-1 ring-white/10">
                               <span className="text-[11px] font-semibold text-slate-300">{(message.senderName || "?")[0]?.toUpperCase()}</span>
@@ -563,7 +563,7 @@ export default function MessagingCenter() {
                       disabled={createConversationMutation.isPending}
                     >
                       {user.avatar ? (
-                        <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                        <img src={user.avatar} alt={`${user.name || 'User'} avatar`} className="w-10 h-10 rounded-full object-cover" />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center">
                           <span className="text-sm font-bold text-slate-400">{(user.name || "?")[0]?.toUpperCase()}</span>

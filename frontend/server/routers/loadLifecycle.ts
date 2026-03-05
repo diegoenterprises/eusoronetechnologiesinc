@@ -25,8 +25,9 @@ import { z } from "zod";
 import { router, isolatedApprovedProcedure as protectedProcedure } from "../_core/trpc";
 import { feeCalculator } from "../services/feeCalculator";
 import { getDb } from "../db";
-import { loads, vehicles, escortAssignments, settlements, wallets, walletTransactions } from "../../drizzle/schema";
+import { loads, vehicles, escortAssignments, settlements, settlementDocuments, wallets, walletTransactions } from "../../drizzle/schema";
 import { eq, and, ne, sql } from "drizzle-orm";
+import { fireGamificationEvent } from "../services/gamificationDispatcher";
 
 import {
   LOAD_STATES,
@@ -200,6 +201,123 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
       // If load is hazmat, require explicit endorsement in production
       if (IS_PROD && (ctx.load?.hazmatClass || ctx.load?.cargoType === "hazmat")) return guard.errorMessage;
       return null;
+
+    // ── Carrier hazmat authorization guard (FMCSA check at AWARDED→ACCEPTED) ──
+    case "carrier_hazmat_authorized": {
+      // Only enforce if load involves hazmat
+      if (!ctx.load?.hazmatClass && ctx.load?.cargoType !== "hazmat") return null;
+      const carrierId = ctx.load?.catalystId || (ctx.data?.carrierId as number | undefined);
+      if (!carrierId) return IS_PROD ? guard.errorMessage : null;
+      try {
+        const db = await getDb();
+        if (!db) return IS_PROD ? guard.errorMessage : null;
+        // Check user record for hazmat authorization
+        const [carrier] = await db.execute(sql`
+          SELECT hazmatLicense, hazmatExpiry FROM users WHERE id = ${carrierId} LIMIT 1
+        `);
+        const row = ((carrier as unknown as any[][])?.[0] || [])[0];
+        if (!row) return IS_PROD ? guard.errorMessage : null;
+        if (!row.hazmatLicense) return guard.errorMessage;
+        // Check expiry
+        if (row.hazmatExpiry && new Date(row.hazmatExpiry) < new Date()) {
+          return `Carrier hazmat authorization expired on ${new Date(row.hazmatExpiry).toLocaleDateString()}`;
+        }
+        return null;
+      } catch {
+        return IS_PROD ? guard.errorMessage : null;
+      }
+    }
+
+    // ── Carrier insurance minimum guard (at AWARDED→ACCEPTED) ──
+    case "carrier_insurance_minimum": {
+      const insCarrierId = ctx.load?.catalystId || (ctx.data?.carrierId as number | undefined);
+      if (!insCarrierId) return IS_PROD ? guard.errorMessage : null;
+      try {
+        const db = await getDb();
+        if (!db) return IS_PROD ? guard.errorMessage : null;
+        // Check for active liability + cargo insurance
+        const isHazmat = !!ctx.load?.hazmatClass || ctx.load?.cargoType === "hazmat";
+        const minLiability = isHazmat ? 5000000 : 750000;
+        const minCargo = isHazmat ? 1000000 : 100000;
+        const [policies] = await db.execute(sql`
+          SELECT policyType, coverageAmount, expirationDate
+          FROM insurance_policies
+          WHERE companyId IN (SELECT companyId FROM users WHERE id = ${insCarrierId})
+            AND status = 'active'
+            AND expirationDate > NOW()
+        `) as unknown as any[][];
+        const rows = policies || [];
+        const liabilityOk = rows.some((p: any) =>
+          (p.policyType === 'auto_liability' || p.policyType === 'general_liability')
+          && parseFloat(p.coverageAmount || "0") >= minLiability
+        );
+        const cargoOk = rows.some((p: any) =>
+          p.policyType === 'cargo'
+          && parseFloat(p.coverageAmount || "0") >= minCargo
+        );
+        if (!liabilityOk) return `Carrier liability insurance below $${minLiability.toLocaleString()} minimum for this load type`;
+        if (!cargoOk) return `Carrier cargo insurance below $${minCargo.toLocaleString()} minimum for this load type`;
+        return null;
+      } catch {
+        // Don't block on DB errors in non-prod
+        return IS_PROD ? guard.errorMessage : null;
+      }
+    }
+
+    // ── Driver HazMat endorsement guard (CDL H or X at ASSIGNED→CONFIRMED) ──
+    case "driver_hazmat_endorsed": {
+      // Only enforce if load involves hazmat
+      if (!ctx.load?.hazmatClass && ctx.load?.cargoType !== "hazmat") return null;
+      const hazDriverId = ctx.load?.driverId || (ctx.data?.driverId as number | undefined);
+      if (!hazDriverId) return IS_PROD ? guard.errorMessage : null;
+      try {
+        const db = await getDb();
+        if (!db) return IS_PROD ? guard.errorMessage : null;
+        const [result] = await db.execute(sql`
+          SELECT hazmatEndorsement, hazmatExpiry, cdlEndorsements
+          FROM driver_profiles WHERE userId = ${hazDriverId} LIMIT 1
+        `) as unknown as any[][];
+        const driver = (result || [])[0];
+        if (!driver) return IS_PROD ? guard.errorMessage : null;
+        // Check H or X endorsement
+        const endorsements: string = driver.cdlEndorsements || "";
+        const hasH = endorsements.includes("H") || endorsements.includes("X");
+        if (!hasH && !driver.hazmatEndorsement) return guard.errorMessage;
+        // Check expiry
+        if (driver.hazmatExpiry && new Date(driver.hazmatExpiry) < new Date()) {
+          return `Driver HazMat endorsement expired on ${new Date(driver.hazmatExpiry).toLocaleDateString()}`;
+        }
+        return null;
+      } catch {
+        return IS_PROD ? guard.errorMessage : null;
+      }
+    }
+
+    // ── Driver Tanker endorsement guard (CDL N or X at ASSIGNED→CONFIRMED) ──
+    case "driver_tanker_endorsed": {
+      // Only enforce if load uses a tanker trailer
+      const trailerType = ctx.load?.trailerType || ctx.load?.equipmentType || "";
+      const isTanker = typeof trailerType === "string" &&
+        (trailerType.toLowerCase().includes("tanker") || trailerType.toLowerCase().includes("mc-") || trailerType.toLowerCase().includes("mc_"));
+      if (!isTanker) return null;
+      const tankDriverId = ctx.load?.driverId || (ctx.data?.driverId as number | undefined);
+      if (!tankDriverId) return IS_PROD ? guard.errorMessage : null;
+      try {
+        const db = await getDb();
+        if (!db) return IS_PROD ? guard.errorMessage : null;
+        const [result] = await db.execute(sql`
+          SELECT cdlEndorsements FROM driver_profiles WHERE userId = ${tankDriverId} LIMIT 1
+        `) as unknown as any[][];
+        const driver = (result || [])[0];
+        if (!driver) return IS_PROD ? guard.errorMessage : null;
+        const endorsements: string = driver.cdlEndorsements || "";
+        const hasN = endorsements.includes("N") || endorsements.includes("X");
+        if (!hasN) return guard.errorMessage;
+        return null;
+      } catch {
+        return IS_PROD ? guard.errorMessage : null;
+      }
+    }
 
     // ── Approval guards (handled by approval gate system) ──
     case "rate_within_limit":
@@ -1029,12 +1147,68 @@ export const loadLifecycleRouter = router({
                 await feeCalculator.recordFeeCollection(numericLoadId, "load_completion", load.shipperId, loadRate, feeResult);
               } catch {}
 
+              // WS-E2E-003: Persist settlement document for audit trail
+              try {
+                await _sDb.insert(settlementDocuments).values({
+                  loadId: numericLoadId,
+                  driverId: load.driverId || 0,
+                  carrierId,
+                  documentType: "SETTLEMENT",
+                  amount: loadRate.toFixed(2),
+                  deductions: { platformFee: parseFloat(platformFee.toFixed(2)), accessorials: 0 },
+                  netPay: carrierPay.toFixed(2),
+                  status: "FINALIZED",
+                  finalizedAt: new Date(),
+                });
+              } catch (docErr: any) { console.warn('[SettlementDoc] Persist error:', docErr?.message); }
+
               console.log(`[Settlement] Load ${numericLoadId} settled: rate=$${loadRate}, fee=$${platformFee.toFixed(2)}, carrier=$${carrierPay.toFixed(2)}`);
             }
           }
         } catch (settleErr: any) {
           console.warn(`[Settlement] Auto-settle error for load ${numericLoadId}:`, settleErr?.message);
         }
+
+        // WS-E2E-005: Fire gamification events on DELIVERED
+        try {
+          const driverId = load?.driverId || 0;
+          const carrierId = load?.catalystId || load?.driverId || 0;
+          if (driverId) {
+            fireGamificationEvent({ userId: driverId, type: "load_completed", value: 1 });
+            fireGamificationEvent({ userId: driverId, type: "route_completed", value: 1 });
+            // delivery_on_time: compare delivery vs ETA
+            const loadEta = (load as any)?.eta || (load as any)?.estimatedDelivery;
+            if (loadEta) {
+              const etaDate = new Date(String(loadEta));
+              if (new Date() <= etaDate) {
+                fireGamificationEvent({ userId: driverId, type: "delivery_on_time", value: 1 });
+              }
+            }
+            // first_load_completed: check if this is driver's first delivered load
+            const _gDb = await getDb();
+            if (_gDb) {
+              const [cnt] = await _gDb.select({ count: sql<number>`COUNT(*)` }).from(loads)
+                .where(and(eq(loads.driverId, driverId), eq(loads.status, 'delivered' as any)));
+              if ((cnt?.count || 0) <= 1) {
+                fireGamificationEvent({ userId: driverId, type: "first_load_completed", value: 1 });
+              }
+            }
+          }
+          // escort_completed
+          if (load && (load as any).requiresEscort) {
+            const _eDb = await getDb();
+            if (_eDb) {
+              const escorts = await _eDb.select({ escortUserId: escortAssignments.escortUserId })
+                .from(escortAssignments).where(eq(escortAssignments.loadId, numericLoadId));
+              for (const e of escorts) {
+                if (e.escortUserId) fireGamificationEvent({ userId: e.escortUserId, type: "escort_completed", value: 1 });
+              }
+            }
+          }
+          if (carrierId && carrierId !== driverId) {
+            fireGamificationEvent({ userId: carrierId, type: "load_completed", value: 1 });
+          }
+        } catch (gamErr: any) { console.warn('[Gamification] DELIVERED event error:', gamErr?.message); }
       }
 
       // Convoy sync — check if this state change satisfies a sync point

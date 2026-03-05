@@ -14,7 +14,7 @@ except ImportError:
 
 JWT_SECRET = "eusotrip-dev-secret-key"
 COOKIE_NAME = "eusotrip_session"
-MASTER_PASSWORD = "Vision2026!"
+MASTER_PASSWORD = "Esang2027!"
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist", "public")
 
 TEST_USERS = {
@@ -132,6 +132,6 @@ if __name__ == "__main__":
     server = HTTPServer(("", port), CombinedHandler)
     print("=" * 50)
     print(f"Server running on http://localhost:{port}/")
-    print("Login: Diego / Vision2026!")
+    print("Login: Diego / Esang2027!")
     print("=" * 50)
     server.serve_forever()

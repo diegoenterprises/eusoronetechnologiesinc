@@ -264,6 +264,7 @@ function UploadModal({
     <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center p-4">
       <div
+        role="dialog" aria-modal="true" aria-label="Upload documents"
         className={cn("w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col", isLight ? "bg-white border border-slate-200" : "bg-slate-900 border border-slate-700")}
         style={{ maxHeight: "85vh" }}
         onClick={e => e.stopPropagation()}
@@ -274,8 +275,8 @@ function UploadModal({
             <h2 className={cn("text-lg font-semibold", isLight ? "text-slate-900" : "text-white")}>Upload Documents</h2>
             <p className={cn("text-sm mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>Drag files or browse. Use Smart Digitize for AI-powered classification.</p>
           </div>
-          <button onClick={onClose} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100 text-slate-500" : "hover:bg-slate-800 text-slate-400 hover:text-white")}>
-            <X className="w-5 h-5" />
+          <button onClick={onClose} aria-label="Close upload dialog" className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100 text-slate-500" : "hover:bg-slate-800 text-slate-400 hover:text-white")}>
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -346,8 +347,8 @@ function UploadModal({
                           <DatePicker value={entry.expiresAt} onChange={(v) => updateFile(idx, { expiresAt: v })} />
                         </div>
                       </div>
-                      <button onClick={() => removeFile(idx)} className="p-1 text-slate-500 hover:text-red-400 shrink-0">
-                        <X className="w-4 h-4" />
+                      <button onClick={() => removeFile(idx)} aria-label="Remove file" className="p-1 text-slate-500 hover:text-red-400 shrink-0">
+                        <X className="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
 
@@ -995,7 +996,7 @@ export default function DocumentCenter() {
         <Portal>
         <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-sm" onClick={() => { if (previewDoc?.blobUrl) URL.revokeObjectURL(previewDoc.blobUrl); setPreviewDoc(null); }}>
           <div className="flex min-h-full items-center justify-center p-4">
-          <div className={cn("rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col border", isLight ? "bg-white border-slate-200" : "bg-slate-900 border-slate-700")} style={{ height: '85vh' }} onClick={e => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-label="Document preview" className={cn("rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col border", isLight ? "bg-white border-slate-200" : "bg-slate-900 border-slate-700")} style={{ height: '85vh' }} onClick={e => e.stopPropagation()}>
             <div className={cn("flex items-center justify-between p-4 border-b shrink-0", isLight ? "border-slate-200" : "border-slate-800")}>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="p-2 rounded-lg bg-blue-500/15">
@@ -1006,8 +1007,8 @@ export default function DocumentCenter() {
                   <p className="text-xs text-slate-500">{previewDoc.mime || 'Document'}</p>
                 </div>
               </div>
-              <button onClick={() => { if (previewDoc?.blobUrl) URL.revokeObjectURL(previewDoc.blobUrl); setPreviewDoc(null); }} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100 text-slate-500" : "hover:bg-slate-800 text-slate-400 hover:text-white")}>
-                <X className="w-5 h-5" />
+              <button onClick={() => { if (previewDoc?.blobUrl) URL.revokeObjectURL(previewDoc.blobUrl); setPreviewDoc(null); }} aria-label="Close document preview" className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100 text-slate-500" : "hover:bg-slate-800 text-slate-400 hover:text-white")}>
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
             <div className={cn("flex-1 overflow-auto rounded-b-2xl", isLight ? "bg-slate-50" : "bg-slate-950")}>

@@ -79,6 +79,10 @@ function DialogCard({ dialog, onClose }: { dialog: DialogState; onClose: (result
       <div className="flex min-h-full items-center justify-center p-4 relative">
       {/* Card — dark solid card, no border, subtle top glow */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={dialog.title ? `euso-dialog-title-${dialog.id}` : undefined}
+        aria-describedby={`euso-dialog-msg-${dialog.id}`}
         className="relative rounded-2xl overflow-hidden min-w-[420px] max-w-[540px] outline-none"
         tabIndex={-1}
         style={{
@@ -96,11 +100,11 @@ function DialogCard({ dialog, onClose }: { dialog: DialogState; onClose: (result
         <div className="px-12 py-12 select-none">
           {/* Title */}
           {dialog.title && (
-            <h3 className="text-center text-white font-semibold text-xl mb-4">{dialog.title}</h3>
+            <h3 id={`euso-dialog-title-${dialog.id}`} className="text-center text-white font-semibold text-xl mb-4">{dialog.title}</h3>
           )}
 
           {/* Message */}
-          <p className="text-center text-white text-lg leading-relaxed mb-10">
+          <p id={`euso-dialog-msg-${dialog.id}`} className="text-center text-white text-lg leading-relaxed mb-10">
             {dialog.message}
           </p>
 

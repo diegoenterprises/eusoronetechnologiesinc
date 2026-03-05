@@ -41,7 +41,16 @@ export type GamificationEventType =
   | "erg_lookup"
   | "spectra_match"
   | "profile_updated"
-  | "platform_action";   // generic catch-all for "do X actions on the platform"
+  | "platform_action"   // generic catch-all for "do X actions on the platform"
+  | "route_completed"
+  | "first_load_completed"
+  | "escort_completed"
+  | "safety_inspection_passed"
+  | "hazmat_certified"
+  | "invoice_paid"
+  | "dispute_resolved"
+  | "milestone_reached"
+  | "referral_success";
 
 interface GamificationEvent {
   userId: number;
@@ -74,6 +83,15 @@ const EVENT_TO_CATEGORIES: Record<GamificationEventType, string[]> = {
   spectra_match:     ["safety", "special"],
   profile_updated:   ["onboarding", "social"],
   platform_action:   ["social", "onboarding", "special", "efficiency"],
+  route_completed:   ["deliveries", "efficiency"],
+  first_load_completed: ["deliveries", "special", "onboarding"],
+  escort_completed:  ["deliveries", "special", "safety"],
+  safety_inspection_passed: ["safety"],
+  hazmat_certified:  ["safety", "special"],
+  invoice_paid:      ["earnings"],
+  dispute_resolved:  ["social"],
+  milestone_reached: ["special"],
+  referral_success:  ["social", "special"],
 };
 
 // Maps event types to which mission target types they can advance
@@ -97,6 +115,15 @@ const EVENT_TO_TARGET_TYPES: Record<GamificationEventType, string[]> = {
   erg_lookup:        ["count"],
   spectra_match:     ["count"],
   profile_updated:   ["count"],
+  route_completed:   ["count", "distance"],
+  first_load_completed: ["count"],
+  escort_completed:  ["count"],
+  safety_inspection_passed: ["count", "streak"],
+  hazmat_certified:  ["count"],
+  invoice_paid:      ["count", "amount"],
+  dispute_resolved:  ["count"],
+  milestone_reached: ["count"],
+  referral_success:  ["count"],
   platform_action:   ["count"],
 };
 

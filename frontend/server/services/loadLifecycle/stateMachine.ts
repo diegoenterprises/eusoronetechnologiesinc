@@ -501,7 +501,10 @@ export const TRANSITIONS: Transition[] = [
     from: "AWARDED", to: "ACCEPTED",
     trigger: "USER_ACTION", triggerEvent: "carrier_accept",
     actor: ["CATALYST", "DISPATCH", "BROKER"],
-    guards: [],
+    guards: [
+      { type: "data", check: "carrier_hazmat_authorized", errorMessage: "Carrier is not authorized for hazmat transport per FMCSA records" },
+      { type: "data", check: "carrier_insurance_minimum", errorMessage: "Carrier insurance does not meet minimum requirements for this load type" },
+    ],
     effects: [
       { type: "notification", action: "carrier_accepted", recipients: ["SHIPPER", "BROKER"] },
       { type: "websocket", action: "load_accepted" },
@@ -567,7 +570,10 @@ export const TRANSITIONS: Transition[] = [
     from: "ASSIGNED", to: "CONFIRMED",
     trigger: "USER_ACTION", triggerEvent: "driver_confirm",
     actor: ["DRIVER"],
-    guards: [],
+    guards: [
+      { type: "data", check: "driver_hazmat_endorsed", errorMessage: "Driver does not have HazMat endorsement (H or X) on CDL" },
+      { type: "data", check: "driver_tanker_endorsed", errorMessage: "Driver does not have Tanker endorsement (N or X) on CDL for tanker trailer" },
+    ],
     effects: [
       { type: "notification", action: "driver_confirmed", recipients: ["CATALYST", "DISPATCH", "SHIPPER"] },
       { type: "websocket", action: "driver_confirmed" },

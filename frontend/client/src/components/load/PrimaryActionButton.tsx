@@ -153,6 +153,9 @@ export default function PrimaryActionButton({
             onClick={() => setShowConfirm(false)}
           >
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Confirm action"
               className="bg-gray-900 border border-gray-700 rounded-2xl p-5 mx-4 max-w-md w-full shadow-2xl"
               initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}

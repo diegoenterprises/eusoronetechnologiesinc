@@ -238,10 +238,10 @@ export default function TerminalAppointments() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button onClick={() => setDateOffset(d => d - 1)} className={`p-1.5 rounded-lg transition-colors ${isLight ? "bg-slate-100 hover:bg-slate-200" : "bg-white/[0.04] hover:bg-white/[0.08]"}`}><ChevronLeft className="w-4 h-4 text-slate-400" /></button>
+          <button onClick={() => setDateOffset(d => d - 1)} aria-label="Previous day" className={`p-1.5 rounded-lg transition-colors ${isLight ? "bg-slate-100 hover:bg-slate-200" : "bg-white/[0.04] hover:bg-white/[0.08]"}`}><ChevronLeft className="w-4 h-4 text-slate-400" aria-hidden="true" /></button>
           <button onClick={() => setDateOffset(0)} className={`text-xs font-medium px-3 py-1.5 rounded-lg ${isLight ? "text-slate-600 bg-slate-100 hover:bg-slate-200" : "text-slate-300 bg-white/[0.04] hover:bg-white/[0.08]"}`}>Today</button>
           <span className={`text-sm font-medium min-w-[200px] text-center ${isLight ? "text-slate-900" : "text-white"}`}>{dateLabel}</span>
-          <button onClick={() => setDateOffset(d => d + 1)} className={`p-1.5 rounded-lg transition-colors ${isLight ? "bg-slate-100 hover:bg-slate-200" : "bg-white/[0.04] hover:bg-white/[0.08]"}`}><ChevronRight className="w-4 h-4 text-slate-400" /></button>
+          <button onClick={() => setDateOffset(d => d + 1)} aria-label="Next day" className={`p-1.5 rounded-lg transition-colors ${isLight ? "bg-slate-100 hover:bg-slate-200" : "bg-white/[0.04] hover:bg-white/[0.08]"}`}><ChevronRight className="w-4 h-4 text-slate-400" aria-hidden="true" /></button>
         </div>
 
         <div className="relative">
@@ -391,7 +391,7 @@ export default function TerminalAppointments() {
         <Portal>
         <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => { setShowCreate(false); resetForm(); }}>
           <div className="flex min-h-full items-center justify-center p-4">
-          <div className={cn("w-full max-w-2xl p-6 space-y-4", cell, isLight ? "bg-white border-slate-200" : "bg-[#0B1120] border-white/[0.08]")} onClick={e => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-label="Schedule appointment" className={cn("w-full max-w-2xl p-6 space-y-4", cell, isLight ? "bg-white border-slate-200" : "bg-[#0B1120] border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             {/* Modal Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">

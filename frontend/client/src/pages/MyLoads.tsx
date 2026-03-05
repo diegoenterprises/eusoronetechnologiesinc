@@ -244,8 +244,8 @@ export default function MyLoads() {
       )}>
         {/* Month/Year Header */}
         <div className="flex items-center justify-between mb-4">
-          <button onClick={() => shiftWeek(-1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
-            <ChevronLeft className="w-5 h-5 text-slate-400" />
+          <button onClick={() => shiftWeek(-1)} aria-label="Previous week" className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
+            <ChevronLeft className="w-5 h-5 text-slate-400" aria-hidden="true" />
           </button>
           <div className="flex items-center gap-2">
             <p className={cn("text-sm font-semibold", isLight ? "text-slate-700" : "text-white")}>
@@ -261,8 +261,8 @@ export default function MyLoads() {
               </button>
             )}
           </div>
-          <button onClick={() => shiftWeek(1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
-            <ChevronRight className="w-5 h-5 text-slate-400" />
+          <button onClick={() => shiftWeek(1)} aria-label="Next week" className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
+            <ChevronRight className="w-5 h-5 text-slate-400" aria-hidden="true" />
           </button>
         </div>
         {/* Day Pills */}

@@ -242,7 +242,7 @@ export function ChatWindow({
                               </div>
                             )}
                             {att.type === "image" && (
-                              <img src={att.url} alt="" className="rounded max-w-full max-h-48" />
+                              <img src={att.url} alt={att.name || 'Attached image'} className="rounded max-w-full max-h-48" />
                             )}
                             {att.type === "document" && (
                               <div className="flex items-center gap-2 p-2 bg-black/20 rounded">

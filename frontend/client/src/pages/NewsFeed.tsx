@@ -340,7 +340,7 @@ export default function NewsFeed() {
                       <div className="flex gap-4">
                         {article.imageUrl && (
                           <div className="w-28 h-20 rounded-lg bg-slate-700 flex-shrink-0 overflow-hidden">
-                            <img src={article.imageUrl} alt="" className="w-full h-full object-cover" onError={(e: any) => (e.currentTarget.style.display = "none")} />
+                            <img src={article.imageUrl} alt={article.title || 'News article image'} className="w-full h-full object-cover" onError={(e: any) => (e.currentTarget.style.display = "none")} />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">

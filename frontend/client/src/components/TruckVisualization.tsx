@@ -7,8 +7,10 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 
+type MaterialType = "liquid" | "gas" | "refrigerated" | "solid" | "hazmat" | "livestock" | "bulk" | "vehicles" | "grain";
+
 interface TruckVisualizationProps {
-  materialType: "liquid" | "gas" | "refrigerated" | "solid" | "hazmat";
+  materialType: MaterialType;
   fillPercentage: number;
   volume: number;
   unit: string;
@@ -18,7 +20,7 @@ interface TruckVisualizationProps {
 }
 
 interface MultiTruckVisualizationProps {
-  materialType: "liquid" | "gas" | "refrigerated" | "solid" | "hazmat";
+  materialType: MaterialType;
   totalVolume: number;
   unit: string;
   maxCapacityPerTruck?: number;
@@ -78,8 +80,15 @@ const TruckVisualization: React.FC<TruckVisualizationProps> = ({
       case "gas":
         return "text-yellow-400";
       case "refrigerated":
-      case "solid":
         return "text-cyan-400";
+      case "livestock":
+        return "text-green-400";
+      case "bulk":
+      case "grain":
+        return "text-amber-400";
+      case "vehicles":
+        return "text-blue-400";
+      case "solid":
       default:
         return "text-cyan-400";
     }
@@ -94,6 +103,14 @@ const TruckVisualization: React.FC<TruckVisualizationProps> = ({
         return "Gas";
       case "refrigerated":
         return "Refrigerated";
+      case "livestock":
+        return "Livestock";
+      case "bulk":
+        return "Dry Bulk";
+      case "grain":
+        return "Grain";
+      case "vehicles":
+        return "Vehicles";
       case "solid":
         return "Solid";
       default:
@@ -190,6 +207,10 @@ const TruckVisualization: React.FC<TruckVisualizationProps> = ({
   };
 
   const renderBoxContent = () => {
+    if (materialType === "livestock") return renderLivestockContent();
+    if (materialType === "vehicles") return renderVehiclesContent();
+    if (materialType === "bulk" || materialType === "grain") return renderBulkContent();
+
     const rows = 3;
     const cols = 4;
     const totalBlocks = rows * cols;
@@ -198,7 +219,6 @@ const TruckVisualization: React.FC<TruckVisualizationProps> = ({
     return (
       <div className="absolute inset-2 grid grid-cols-4 grid-rows-3 gap-1">
         {Array.from({ length: totalBlocks }).map((_, i) => {
-          const row = Math.floor(i / cols);
           const isFilled = i < filledBlocks;
           const isPartial = i === filledBlocks - 1 && clampedFill % (100 / totalBlocks) !== 0;
           
@@ -222,7 +242,88 @@ const TruckVisualization: React.FC<TruckVisualizationProps> = ({
     );
   };
 
+  const renderLivestockContent = () => {
+    const totalSlots = 10;
+    const filledSlots = Math.ceil((clampedFill / 100) * totalSlots);
+    return (
+      <svg viewBox="0 0 144 112" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id={`lvGrad-${trailerNumber}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#22c55e" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#16a34a" stopOpacity="0.7" />
+          </linearGradient>
+        </defs>
+        {Array.from({ length: totalSlots }).map((_, i) => {
+          const col = i % 5;
+          const row = Math.floor(i / 5);
+          const cx = 18 + col * 24;
+          const cy = 28 + row * 40;
+          const filled = i < filledSlots;
+          return (
+            <g key={i} opacity={filled ? 1 : 0.2}>
+              <ellipse cx={cx} cy={cy + 8} rx={8} ry={5} fill={filled ? `url(#lvGrad-${trailerNumber})` : "#334155"} />
+              <rect x={cx - 5} y={cy - 4} width={10} height={12} rx={3} fill={filled ? `url(#lvGrad-${trailerNumber})` : "#334155"} />
+              <circle cx={cx} cy={cy - 8} r={4} fill={filled ? `url(#lvGrad-${trailerNumber})` : "#334155"} />
+              {filled && <>
+                <line x1={cx - 4} y1={cy - 12} x2={cx - 6} y2={cy - 16} stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1={cx + 4} y1={cy - 12} x2={cx + 6} y2={cy - 16} stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
+              </>}
+            </g>
+          );
+        })}
+      </svg>
+    );
+  };
+
+  const renderVehiclesContent = () => {
+    const totalSlots = 8;
+    const filledSlots = Math.ceil((clampedFill / 100) * totalSlots);
+    return (
+      <div className="absolute inset-2 grid grid-cols-4 grid-rows-2 gap-1">
+        {Array.from({ length: totalSlots }).map((_, i) => {
+          const filled = i < filledSlots;
+          return (
+            <div key={i} className={cn("rounded-sm flex items-center justify-center transition-all duration-500",
+              filled ? "bg-gradient-to-br from-blue-400/80 to-sky-500/80" : "bg-slate-700/30 border border-slate-600/30")}
+              style={{ opacity: filled ? 1 : 0.25 }}>
+              <svg viewBox="0 0 24 14" className="w-[70%] h-[70%]" fill="none">
+                <rect x="1" y="4" width="22" height="7" rx="2" fill={filled ? "#60a5fa" : "#475569"} opacity="0.6" />
+                <rect x="3" y="2" width="8" height="5" rx="1" fill={filled ? "#93c5fd" : "#475569"} opacity="0.8" />
+                <circle cx="6" cy="12" r="2" fill={filled ? "#3b82f6" : "#475569"} />
+                <circle cx="18" cy="12" r="2" fill={filled ? "#3b82f6" : "#475569"} />
+              </svg>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderBulkContent = () => {
+    const fillY = 100 - clampedFill;
+    const isGrain = materialType === "grain";
+    return (
+      <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id={`bulkGrad-${trailerNumber}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={isGrain ? "#fbbf24" : "#f59e0b"} stopOpacity="0.9" />
+            <stop offset="100%" stopColor={isGrain ? "#d97706" : "#b45309"} stopOpacity="0.8" />
+          </linearGradient>
+        </defs>
+        <path d={`M 0 ${fillY + 4} Q 20 ${fillY - 2}, 35 ${fillY + 3} Q 55 ${fillY + 8}, 70 ${fillY + 1} Q 85 ${fillY - 3}, 100 ${fillY + 2} L 100 100 L 0 100 Z`}
+          fill={`url(#bulkGrad-${trailerNumber})`} />
+        {clampedFill > 10 && Array.from({ length: 12 }).map((_, i) => (
+          <circle key={i} cx={8 + (i % 6) * 16 + (Math.floor(i / 6) * 8)} cy={fillY + 10 + Math.floor(i / 6) * 18}
+            r={isGrain ? 2.5 : 3.5} fill={isGrain ? "#fde68a" : "#fcd34d"} opacity="0.5" />
+        ))}
+      </svg>
+    );
+  };
+
   const isTank = materialType === "liquid" || materialType === "hazmat" || materialType === "gas";
+  const isLivestock = materialType === "livestock";
+  const isVehicles = materialType === "vehicles";
+  const isBulk = materialType === "bulk" || materialType === "grain";
 
   return (
     <div className="flex flex-col items-center">
@@ -264,7 +365,8 @@ const TruckVisualization: React.FC<TruckVisualizationProps> = ({
             className={cn(
               "relative w-36 h-28 rounded-lg overflow-hidden",
               "bg-gradient-to-br from-slate-800 to-slate-900",
-              "border-4 border-cyan-500/50"
+              "border-4",
+              isLivestock ? "border-green-500/50" : isBulk ? "border-amber-500/50" : isVehicles ? "border-blue-500/50" : "border-cyan-500/50"
             )}
           >
             {renderBoxContent()}
@@ -283,10 +385,16 @@ const TruckVisualization: React.FC<TruckVisualizationProps> = ({
           "mt-2 px-4 py-1 rounded-lg text-sm font-bold",
           "bg-gradient-to-r",
           materialType === "hazmat" || materialType === "liquid"
-            ? "from-red-500/20 to-orange-500/20 border border-red-500/30"
-            : materialType === "gas"
-            ? "from-yellow-500/20 to-amber-500/20 border border-yellow-500/30"
-            : "from-cyan-500/20 to-blue-500/20 border border-cyan-500/30",
+                  ? "from-red-500/20 to-orange-500/20 border border-red-500/30"
+                  : materialType === "gas"
+                  ? "from-yellow-500/20 to-amber-500/20 border border-yellow-500/30"
+                  : materialType === "livestock"
+                  ? "from-green-500/20 to-emerald-500/20 border border-green-500/30"
+                  : materialType === "bulk" || materialType === "grain"
+                  ? "from-amber-500/20 to-yellow-500/20 border border-amber-500/30"
+                  : materialType === "vehicles"
+                  ? "from-blue-500/20 to-sky-500/20 border border-blue-500/30"
+                  : "from-cyan-500/20 to-blue-500/20 border border-cyan-500/30",
           getLabelColor()
         )}
       >

@@ -241,7 +241,7 @@ export default function AdminApprovalQueue() {
                 onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
               >
                 {user.profilePicture ? (
-                  <img src={user.profilePicture} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  <img src={user.profilePicture} alt={`${user.name || 'User'} profile photo`} className="w-10 h-10 rounded-full object-cover" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-sm font-bold text-gray-400">
                     {(user.name || "?")[0]?.toUpperCase()}

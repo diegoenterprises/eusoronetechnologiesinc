@@ -631,11 +631,11 @@ export default function CompanyChannels() {
     {/* Channel Settings Modal (portaled to body) */}
     {showSettings && activeChannel && createPortal(
       <div style={{ position: 'fixed', inset: 0, zIndex: 99990 }} className="bg-black/50 flex items-center justify-center">
-        <Card className="bg-slate-800 border-slate-700 p-6 w-[420px]">
+        <Card role="dialog" aria-modal="true" aria-label="Channel settings" className="bg-slate-800 border-slate-700 p-6 w-[420px]">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-white">Channel Settings</h2>
-            <button onClick={() => setShowSettings(false)} className="p-1 hover:bg-slate-700 rounded">
-              <X size={20} className="text-slate-400" />
+            <button onClick={() => setShowSettings(false)} aria-label="Close channel settings" className="p-1 hover:bg-slate-700 rounded">
+              <X size={20} className="text-slate-400" aria-hidden="true" />
             </button>
           </div>
 
@@ -709,13 +709,13 @@ export default function CompanyChannels() {
     {/* Members Modal (portaled to body) */}
     {showMembers && activeChannel && createPortal(
       <div style={{ position: 'fixed', inset: 0, zIndex: 99990 }} className="bg-black/50 flex items-center justify-center">
-        <Card className="bg-slate-800 border-slate-700 p-6 w-[420px] max-h-[80vh] flex flex-col">
+        <Card role="dialog" aria-modal="true" aria-label="Channel members" className="bg-slate-800 border-slate-700 p-6 w-[420px] max-h-[80vh] flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-white">
               Members ({activeChannel.memberCount})
             </h2>
-            <button onClick={() => setShowMembers(false)} className="p-1 hover:bg-slate-700 rounded">
-              <X size={20} className="text-slate-400" />
+            <button onClick={() => setShowMembers(false)} aria-label="Close members panel" className="p-1 hover:bg-slate-700 rounded">
+              <X size={20} className="text-slate-400" aria-hidden="true" />
             </button>
           </div>
 

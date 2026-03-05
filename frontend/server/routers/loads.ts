@@ -136,6 +136,25 @@ export const loadsRouter = router({
       appearance: z.string().optional(),
       originTerminalId: z.number().optional(),
       destinationTerminalId: z.number().optional(),
+      // DOT hazmat fields (49 CFR 172.200-204)
+      properShippingName: z.string().optional(),
+      packingGroup: z.enum(["I", "II", "III"]).optional(),
+      technicalName: z.string().optional(),
+      emergencyResponseNumber: z.string().optional(),
+      emergencyPhone: z.string().optional(),
+      hazardClassNumber: z.string().optional(),
+      subsidiaryHazards: z.array(z.string()).optional(),
+      specialPermit: z.string().optional(),
+      // Equipment requirements (from wizard)
+      hoseType: z.string().optional(),
+      hoseLength: z.string().optional(),
+      fittingType: z.string().optional(),
+      pumpRequired: z.boolean().optional(),
+      compressorRequired: z.boolean().optional(),
+      bottomLoadRequired: z.boolean().optional(),
+      vaporRecoveryRequired: z.boolean().optional(),
+      assignedBrokerId: z.number().optional(),
+      assignedDriverId: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'LOAD' }, (ctx as any).req);
@@ -235,6 +254,15 @@ export const loadsRouter = router({
             specialInstructions: siPayload,
             originTerminalId: input?.originTerminalId || null,
             destinationTerminalId: input?.destinationTerminalId || null,
+            // DOT hazmat fields (49 CFR 172.200-204)
+            properShippingName: input?.properShippingName || null,
+            packingGroup: input?.packingGroup || null,
+            technicalName: input?.technicalName || null,
+            emergencyResponseNumber: input?.emergencyResponseNumber || null,
+            emergencyPhone: input?.emergencyPhone || null,
+            hazardClassNumber: input?.hazardClassNumber || null,
+            subsidiaryHazards: input?.subsidiaryHazards || null,
+            specialPermit: input?.specialPermit || null,
           } as any);
           insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
           break; // success
@@ -346,6 +374,13 @@ export const loadsRouter = router({
       const loadId = parseInt(input.id, 10);
       const userId = await resolveUserId(ctx.user);
       if (input.data && typeof input.data === 'object') {
+        // Validate delivery date is not before pickup date (P0-014)
+        const effectivePickup = input.data.pickupDate ? new Date(input.data.pickupDate) : null;
+        const effectiveDelivery = input.data.deliveryDate ? new Date(input.data.deliveryDate) : null;
+        if (effectiveDelivery && effectivePickup && effectiveDelivery < effectivePickup) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Delivery date cannot be before pickup date.' });
+        }
+
         const updateSet: Record<string, any> = { updatedAt: new Date() };
         if (input.data.status) updateSet.status = input.data.status;
         if (input.data.rate) updateSet.rate = String(input.data.rate);
@@ -1748,6 +1783,14 @@ export const bidsRouter = router({
 
       const catalystId = await resolveUserId(ctx.user);
       if (!catalystId) throw new Error("Could not resolve user");
+
+      // WS-P1-004: Prevent duplicate bids on same load
+      const [existingBid] = await db.select({ id: bids.id }).from(bids)
+        .where(and(eq(bids.loadId, input.loadId), eq(bids.catalystId, catalystId), sql`${bids.status} NOT IN ('withdrawn', 'rejected')`))
+        .limit(1);
+      if (existingBid) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'You have already submitted a bid on this load. Withdraw your existing bid first.' });
+      }
 
       const result = await db.insert(bids).values({
         loadId: input.loadId,

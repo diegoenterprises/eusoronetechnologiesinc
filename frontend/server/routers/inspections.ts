@@ -10,6 +10,7 @@ import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { inspections, vehicles, users } from "../../drizzle/schema";
+import { fireGamificationEvent } from "../services/gamificationDispatcher";
 
 const inspectionItemSchema = z.object({
   id: z.string(),
@@ -160,6 +161,12 @@ export const inspectionsRouter = router({
         location: input.notes || null,
       } as any);
       const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+
+      // WS-E2E-005: Fire safety_inspection_passed gamification event
+      if (input.safeToOperate) {
+        const uid = typeof userId === 'number' ? userId : parseInt(String(userId), 10) || 0;
+        if (uid) fireGamificationEvent({ userId: uid, type: "safety_inspection_passed", value: 1 });
+      }
 
       // Auto-index inspection for AI semantic search (fire-and-forget)
       try {

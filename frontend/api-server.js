@@ -7,7 +7,7 @@ const PORT = 3001;
 
 const JWT_SECRET = "eusotrip-dev-secret-key";
 const COOKIE_NAME = "eusotrip_session";
-const MASTER_PASSWORD = "Vision2026!";
+const MASTER_PASSWORD = "Esang2027!";
 
 const TEST_USERS = {
   "diego": { id: "admin-diego", email: "diego@eusotrip.com", role: "SUPER_ADMIN", name: "Diego" },
@@ -111,6 +111,6 @@ app.all('/api/trpc/*', (req, res) => {
 app.listen(PORT, () => {
   console.log('='.repeat(50));
   console.log(`API Server running on http://localhost:${PORT}`);
-  console.log('Login: Diego / Vision2026!');
+  console.log('Login: Diego / Esang2027!');
   console.log('='.repeat(50));
 });

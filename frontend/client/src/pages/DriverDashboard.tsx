@@ -85,7 +85,7 @@ export default function DriverDashboard() {
           <div className="flex items-center gap-4">
             <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0", isLight ? "bg-gradient-to-br from-blue-50 to-purple-50" : "bg-gradient-to-br from-blue-500/10 to-purple-500/10")}>
               {d.carrier.logo ? (
-                <img src={d.carrier.logo} alt="" className="w-8 h-8 rounded-lg object-contain" />
+                <img src={d.carrier.logo} alt={`${d.carrier.name || 'Carrier'} logo`} className="w-8 h-8 rounded-lg object-contain" />
               ) : (
                 <Building2 className={cn("w-6 h-6", isLight ? "text-blue-600" : "text-blue-400")} />
               )}

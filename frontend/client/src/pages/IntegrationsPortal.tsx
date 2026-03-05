@@ -482,6 +482,9 @@ export default function IntegrationsPortal() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Integration catalog"
               className={cn(
                 "w-full max-w-2xl flex flex-col overflow-hidden rounded-3xl border shadow-2xl",
                 isLight ? "bg-white border-slate-200" : "bg-[#0f0f17] border-white/[0.08]"
@@ -657,6 +660,9 @@ export default function IntegrationsPortal() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Integration details"
               className={cn(
                 "w-full max-w-xl rounded-3xl border shadow-2xl overflow-hidden",
                 isLight ? "bg-white border-slate-200" : "bg-[#0f0f17] border-white/[0.08]"

@@ -253,12 +253,16 @@ export default function EsangFloatingButton() {
     <>
       {/* Floating button — transformed motion.div (creates containing block) */}
       <motion.div
+        role="button"
+        tabIndex={0}
+        aria-label={chatOpen ? "Close ESANG AI assistant" : "Open ESANG AI assistant"}
         className="fixed bottom-6 right-6 z-[60] flex items-center gap-0 cursor-pointer"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.5 }}
         onMouseEnter={() => { setHovered(true); if (!chatOpen) setExpanded(true); }}
         onMouseLeave={() => { setHovered(false); if (!chatOpen) setExpanded(false); }}
+        onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }}
         onClick={() => {
           if (isOnEsang) {
             window.dispatchEvent(new Event('esang-dissolve'));

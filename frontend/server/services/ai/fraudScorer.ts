@@ -511,3 +511,56 @@ export function scoreEntity(
       : `${entity}: No fraud signals detected`,
   };
 }
+
+// ─── WS-T1-005: Enhanced Scoring with Embedding Fraud Detector ──────────────
+
+/**
+ * Enhanced fraud scoring that combines statistical signals with embedding-based
+ * semantic anomaly detection. Uses contrastive learning to detect fraudulent
+ * patterns in load postings, bids, and registrations.
+ */
+export async function enhancedFraudScore(
+  entity: string,
+  entityText: string,
+  statisticalScore: FraudRiskScore,
+): Promise<FraudRiskScore & { embeddingAnomalyScore?: number }> {
+  try {
+    const { screenLoad, screenBid, screenRegistration, combinedFraudScore } =
+      await import("./embeddingFraudDetector");
+
+    let embeddingResult;
+    if (entity === "bid") {
+      embeddingResult = await screenBid(entityText);
+    } else if (entity === "registration") {
+      embeddingResult = await screenRegistration(entityText);
+    } else {
+      embeddingResult = await screenLoad(entityText);
+    }
+
+    if (embeddingResult.anomalyScore > 0) {
+      const combined = combinedFraudScore(statisticalScore.overallScore, embeddingResult.anomalyScore);
+
+      // Merge embedding signals into the existing signal list
+      const mergedSignals = [...statisticalScore.signals];
+      for (const sig of embeddingResult.signals) {
+        mergedSignals.push({
+          type: sig.type,
+          score: sig.score,
+          severity: sig.score > 70 ? "HIGH" : sig.score > 40 ? "MEDIUM" : "LOW",
+          detail: sig.detail,
+        });
+      }
+
+      return {
+        ...statisticalScore,
+        overallScore: combined.combinedScore,
+        riskLevel: combined.riskLevel,
+        signals: mergedSignals,
+        explanation: `${statisticalScore.explanation} | Embedding anomaly: ${(embeddingResult.anomalyScore * 100).toFixed(0)}%`,
+        embeddingAnomalyScore: embeddingResult.anomalyScore,
+      };
+    }
+  } catch { /* Embedding service unavailable — fall back to statistical only */ }
+
+  return statisticalScore;
+}

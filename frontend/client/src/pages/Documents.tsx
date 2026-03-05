@@ -191,15 +191,15 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
     <Portal>
     <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" aria-label="Upload documents" className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Modal header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-800 shrink-0">
           <div>
             <h2 className="text-lg font-semibold text-white">Upload Documents</h2>
             <p className="text-sm text-slate-400 mt-0.5">Drag files or browse. Use Smart Digitize for AI-powered classification.</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} aria-label="Close upload dialog" className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -270,8 +270,8 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
                           )}
                         </p>
                       </div>
-                      <button onClick={() => removeFile(idx)} className="p-1 text-slate-500 hover:text-red-400 shrink-0">
-                        <X className="w-4 h-4" />
+                      <button onClick={() => removeFile(idx)} aria-label="Remove file" className="p-1 text-slate-500 hover:text-red-400 shrink-0">
+                        <X className="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
 
@@ -825,7 +825,7 @@ export default function Documents() {
         <Portal>
         <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-sm" onClick={() => { if (previewDoc?.blobUrl) URL.revokeObjectURL(previewDoc.blobUrl); setPreviewDoc(null); }}>
           <div className="flex min-h-full items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col" style={{ height: '85vh' }} onClick={e => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-label="Document preview" className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col" style={{ height: '85vh' }} onClick={e => e.stopPropagation()}>
             {/* Preview Header */}
             <div className="flex items-center justify-between p-4 border-b border-slate-800 shrink-0">
               <div className="flex items-center gap-3 min-w-0">

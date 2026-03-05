@@ -1069,3 +1069,58 @@ export function getAvailableActionsForRole(role: string): string {
     });
   return entries.join("\n");
 }
+
+// ─── WS-T1-003: Embedding-Based Tool Selection ──────────────────────────────
+
+/**
+ * Select the most relevant actions for a user query using embedding similarity.
+ * Falls back to keyword matching when embedding service is unavailable.
+ */
+export async function selectActionsForQuery(
+  query: string,
+  options?: { topK?: number; userRole?: string },
+): Promise<Array<{ name: string; description: string; similarity: number }>> {
+  try {
+    const { selectActions } = await import("./ai/esangToolSelector");
+    return selectActions(query, options);
+  } catch {
+    return [];
+  }
+}
+
+// ─── WS-T1-004: VIGA Evolving Memory Integration ───────────────────────────
+
+/**
+ * Record an action execution to ESANG's evolving memory.
+ * Call this after executeAction for memory-enhanced future interactions.
+ */
+export async function recordActionToMemory(
+  userId: number,
+  actionName: string,
+  params: Record<string, unknown>,
+  result: ActionResult,
+): Promise<void> {
+  try {
+    const { recordAction } = await import("./ai/esangMemory");
+    await recordAction(userId, actionName, params, result as any, {
+      success: result.success,
+      feedback: result.message,
+      corrections: result.success ? undefined : [result.error || "Action failed"],
+    });
+  } catch { /* non-critical */ }
+}
+
+/**
+ * Get ESANG memory context string for injection into AI system prompt.
+ */
+export async function getMemoryContextForUser(
+  userId: number,
+  currentAction?: string,
+): Promise<string> {
+  try {
+    const { getContextPrompt } = await import("./ai/esangMemory");
+    return getContextPrompt(userId, currentAction);
+  } catch {
+    return "";
+  }
+}

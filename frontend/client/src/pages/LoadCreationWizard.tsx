@@ -851,13 +851,22 @@ export default function LoadCreationWizard() {
       compressorRequired: formData.compressorRequired || undefined,
       bottomLoadRequired: formData.bottomLoadRequired || undefined,
       vaporRecoveryRequired: formData.vaporRecoveryRequired || undefined,
+      // DOT hazmat fields (49 CFR 172.200-204)
+      properShippingName: formData.properShippingName || undefined,
+      packingGroup: formData.packingGroup || undefined,
+      technicalName: formData.technicalName || undefined,
+      emergencyResponseNumber: formData.emergencyResponseNumber || undefined,
+      emergencyPhone: formData.emergencyPhone || undefined,
+      hazardClassNumber: formData.hazardClassNumber || undefined,
+      subsidiaryHazards: formData.subsidiaryHazards || undefined,
+      specialPermit: formData.specialPermit || undefined,
     });
   };
 
   const canProceed = () => {
     switch (rs) {
       case 0: return !!formData.trailerType;
-      case 1: return formData.productName && (isHazmat ? formData.hazmatClass : true);
+      case 1: return formData.productName && (isHazmat ? (formData.hazmatClass && formData.properShippingName && formData.emergencyPhone) : true);
       case 2: return true; // SPECTRA-MATCH params are optional
       case 3: return formData.weight && formData.quantity;
       case 4: return formData.origin && formData.destination;
@@ -990,6 +999,63 @@ export default function LoadCreationWizard() {
                     </div>
                   )}
                 </div>
+                {/* ── DOT Hazmat Fields (49 CFR 172.200-204) ── */}
+                {formData.hazmatClass && (
+                  <div className="mt-4 p-4 rounded-xl bg-orange-500/5 border border-orange-500/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertTriangle className="w-4 h-4 text-orange-400" />
+                      <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider">DOT Required Fields — 49 CFR 172.200</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1 block">Proper Shipping Name *</label>
+                        <Input value={formData.properShippingName || ""} onChange={(e: any) => updateField("properShippingName", e.target.value)}
+                          placeholder="e.g., Petroleum crude oil" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1 block">Packing Group</label>
+                        <Select value={formData.packingGroup || ""} onValueChange={(v: any) => updateField("packingGroup", v)}>
+                          <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm"><SelectValue placeholder="Select packing group" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="I">PG I — Great Danger</SelectItem>
+                            <SelectItem value="II">PG II — Medium Danger</SelectItem>
+                            <SelectItem value="III">PG III — Minor Danger</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1 block">Technical Name (if N.O.S.)</label>
+                        <Input value={formData.technicalName || ""} onChange={(e: any) => updateField("technicalName", e.target.value)}
+                          placeholder="e.g., Contains ethanol, methanol" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1 block">Hazard Class Number</label>
+                        <Input value={formData.hazardClassNumber || ""} onChange={(e: any) => updateField("hazardClassNumber", e.target.value)}
+                          placeholder="e.g., 3" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1 block">Emergency Response # (ERG Guide)</label>
+                        <Input value={formData.emergencyResponseNumber || formData.ergGuide || ""} onChange={(e: any) => updateField("emergencyResponseNumber", e.target.value)}
+                          placeholder="e.g., 128" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1 block">24-Hr Emergency Phone *</label>
+                        <Input value={formData.emergencyPhone || ""} onChange={(e: any) => updateField("emergencyPhone", e.target.value)}
+                          placeholder="e.g., 800-424-9300 (CHEMTREC)" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1 block">Subsidiary Hazards</label>
+                        <Input value={(formData.subsidiaryHazards || []).join(", ")} onChange={(e: any) => updateField("subsidiaryHazards", e.target.value.split(",").map((s: string) => s.trim()).filter(Boolean))}
+                          placeholder="e.g., 6.1, 8" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1 block">DOT Special Permit #</label>
+                        <Input value={formData.specialPermit || ""} onChange={(e: any) => updateField("specialPermit", e.target.value)}
+                          placeholder="e.g., DOT-SP 12345" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {formData.hazmatClass && <HazmatDecalPreview hazmatClass={formData.hazmatClass} unNumber={formData.unNumber} productName={formData.productName} />}
               </>) : (
                 <div className="space-y-4">

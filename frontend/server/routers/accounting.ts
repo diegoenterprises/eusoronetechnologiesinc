@@ -8,7 +8,7 @@ import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { payments, loads, users, companies } from "../../drizzle/schema";
+import { payments, loads, users, companies, settlementDocuments } from "../../drizzle/schema";
 
 const invoiceStatusSchema = z.enum([
   "draft", "sent", "viewed", "partial", "paid", "overdue", "void", "disputed"
@@ -372,5 +372,40 @@ export const accountingRouter = router({
         downloadUrl: `/api/accounting/export/${Date.now()}.${input.format}`,
         expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       };
+    }),
+
+  // WS-E2E-003: Settlement document retrieval endpoints
+  getSettlementDoc: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return null;
+      const userId = Number(ctx.user?.id) || 0;
+      const [doc] = await db.select().from(settlementDocuments).where(eq(settlementDocuments.id, input.id)).limit(1);
+      if (!doc) return null;
+      // Permission: only driver, carrier, or admin
+      const role = (ctx.user as any)?.role || '';
+      if (doc.driverId !== userId && doc.carrierId !== userId && !['ADMIN', 'SUPER_ADMIN'].includes(role)) return null;
+      return doc;
+    }),
+
+  getSettlementForLoad: protectedProcedure
+    .input(z.object({ loadId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) return null;
+      const [doc] = await db.select().from(settlementDocuments).where(eq(settlementDocuments.loadId, input.loadId)).orderBy(desc(settlementDocuments.generatedAt)).limit(1);
+      return doc || null;
+    }),
+
+  getDriverSettlements: protectedProcedure
+    .input(z.object({ driverId: z.number().optional(), limit: z.number().default(20), offset: z.number().default(0) }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { docs: [], total: 0 };
+      const driverId = input.driverId || Number(ctx.user?.id) || 0;
+      const rows = await db.select().from(settlementDocuments)
+        .where(eq(settlementDocuments.driverId, driverId))
+        .orderBy(desc(settlementDocuments.generatedAt))
+        .offset(input.offset).limit(input.limit);
+      const [countRow] = await db.select({ count: sql<number>`COUNT(*)` }).from(settlementDocuments).where(eq(settlementDocuments.driverId, driverId));
+      return { docs: rows, total: countRow?.count || 0 };
     }),
 });

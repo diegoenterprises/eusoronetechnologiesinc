@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { calcLiquidWeightLbs, toGallons } from "@/lib/cargoCalculations";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
+import { InviteModal } from "@/components/InviteModal";
 import type { ParsedAddress } from "@/components/AddressAutocomplete";
 
 type OrderStatus = "draft" | "scheduled" | "loading" | "complete";
@@ -95,8 +96,7 @@ export default function TerminalCreateLoad() {
   const [carrierSearching, setCarrierSearching] = useState(false);
   const [showCarrierResults, setShowCarrierResults] = useState(false);
   const [carrierNotFound, setCarrierNotFound] = useState(false);
-  const [inviteMode, setInviteMode] = useState(false);
-  const [inviteContact, setInviteContact] = useState({ email: "", phone: "" });
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [scheduledDateObj, setScheduledDateObj] = useState<Date>(new Date());
   const [schedTimeHour, setSchedTimeHour] = useState(new Date().getHours().toString().padStart(2, "0"));
   const [schedTimeMin, setSchedTimeMin] = useState(new Date().getMinutes().toString().padStart(2, "0"));
@@ -153,20 +153,9 @@ export default function TerminalCreateLoad() {
     update("carrierId", String(c.id || c.dotNumber || ""));
     setShowCarrierResults(false);
     setCarrierSearch("");
-    setInviteMode(false);
     setCarrierNotFound(false);
   };
 
-  const handleInviteCarrier = () => {
-    if (!inviteContact.email && !inviteContact.phone) {
-      toast.error("Enter an email or phone number to invite");
-      return;
-    }
-    toast.success(`Invitation sent to ${inviteContact.email || inviteContact.phone}`, {
-      description: "They'll receive a link to join EusoTrip and accept this dispatch",
-    });
-    setInviteMode(false);
-  };
 
   // ─── Mutations ───
   const createLoadMut = (trpc as any).loads?.create?.useMutation?.({
@@ -513,11 +502,11 @@ export default function TerminalCreateLoad() {
                     )}
 
                     {/* Not Found → Invite */}
-                    {carrierNotFound && !inviteMode && (
+                    {carrierNotFound && !showInviteModal && (
                       <div className={cn("mt-2 p-3 rounded-xl border text-center", isLight ? "bg-amber-50 border-amber-200" : "bg-amber-500/5 border-amber-500/20")}>
                         <p className="text-[10px] text-amber-500 font-medium mb-1.5">Carrier not found in FMCSA SAFER database</p>
                         <div className="flex gap-2 justify-center">
-                          <Button size="sm" onClick={() => setInviteMode(true)}
+                          <Button size="sm" onClick={() => setShowInviteModal(true)}
                             className="h-7 px-3 text-[10px] rounded-lg bg-[#1473FF]/10 text-[#1473FF] hover:bg-[#1473FF]/20 border-0">
                             <UserPlus className="w-3 h-3 mr-1" />Invite Carrier
                           </Button>
@@ -529,32 +518,16 @@ export default function TerminalCreateLoad() {
                       </div>
                     )}
 
-                    {/* Invite Mode — Email / Phone */}
-                    {inviteMode && (
-                      <div className={cn("mt-2 p-3 rounded-xl border space-y-2", isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/[0.06]")}>
-                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Invite carrier to EusoTrip</p>
-                        <div className="relative">
-                          <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                          <Input value={inviteContact.email} onChange={e => setInviteContact(p => ({ ...p, email: e.target.value }))}
-                            placeholder="carrier@email.com" className="pl-9 rounded-xl text-sm bg-white/[0.04] border-white/[0.08]" />
-                        </div>
-                        <div className="relative">
-                          <Phone className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                          <Input value={inviteContact.phone} onChange={e => setInviteContact(p => ({ ...p, phone: e.target.value }))}
-                            placeholder="(555) 555-1234" className="pl-9 rounded-xl text-sm bg-white/[0.04] border-white/[0.08]" />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={handleInviteCarrier}
-                            className="h-8 px-3 text-[10px] rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0">
-                            <Mail className="w-3 h-3 mr-1" />Send Invitation
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setInviteMode(false)}
-                            className="h-8 px-3 text-[10px] rounded-xl text-slate-400">Cancel</Button>
-                        </div>
-                      </div>
-                    )}
+                    {/* Invite Modal — platform standard */}
+                    <InviteModal
+                      open={showInviteModal}
+                      onClose={() => setShowInviteModal(false)}
+                      context="LOAD_ASSIGN"
+                      target={{ name: carrierSearch || form.carrierName || "" }}
+                      contextData={{ terminalName: terminal?.name }}
+                    />
 
-                    {!showCarrierResults && !carrierNotFound && !inviteMode && (
+                    {!showCarrierResults && !carrierNotFound && !showInviteModal && (
                       <p className="text-[9px] text-slate-400 mt-1.5 flex items-center gap-1">
                         <Shield className="w-2.5 h-2.5" />FMCSA SAFER lookup — type carrier name or DOT#
                       </p>

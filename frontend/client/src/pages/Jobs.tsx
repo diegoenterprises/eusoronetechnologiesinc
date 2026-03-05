@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { Portal } from "@/components/ui/portal";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getLoadTitle, getEquipmentLabel } from "@/lib/loadUtils";
@@ -58,6 +59,7 @@ interface Load {
 
 export default function JobsPage() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const userRole = (user?.role || "user") as string;
 
   const [activeTab, setActiveTab] = useState<"available" | "my-bids" | "assigned" | "completed">("available");
@@ -93,6 +95,26 @@ export default function JobsPage() {
       toast.error(`Failed to submit bid: ${error.message}`);
     },
   });
+
+  const withdrawBidMutation = (trpc as any).loadBidding?.withdraw?.useMutation?.({
+    onSuccess: () => { toast.success("Bid withdrawn"); },
+    onError: (err: any) => toast.error("Failed to withdraw", { description: err?.message }),
+  }) || { mutate: () => toast.info("Withdraw not available"), isPending: false };
+
+  const acceptBidMutation = (trpc as any).loadBidding?.accept?.useMutation?.({
+    onSuccess: () => { toast.success("Counter offer accepted!"); setShowNegotiationModal(false); setSelectedLoad(null); },
+    onError: (err: any) => toast.error("Failed to accept", { description: err?.message }),
+  }) || { mutate: () => toast.info("Accept not available"), isPending: false };
+
+  const rejectBidMutation = (trpc as any).loadBidding?.reject?.useMutation?.({
+    onSuccess: () => { toast.success("Counter offer rejected"); setShowNegotiationModal(false); setSelectedLoad(null); },
+    onError: (err: any) => toast.error("Failed to reject", { description: err?.message }),
+  }) || { mutate: () => toast.info("Reject not available"), isPending: false };
+
+  const sendCounterMutation = (trpc as any).loadBidding?.counter?.useMutation?.({
+    onSuccess: () => { toast.success("Counter offer sent!"); setShowNegotiationModal(false); setSelectedLoad(null); setNegotiationMessage(""); },
+    onError: (err: any) => toast.error("Failed to send counter", { description: err?.message }),
+  }) || { mutate: () => toast.info("Counter not available"), isPending: false };
 
   if (loadsLoading) {
     return (
@@ -247,30 +269,24 @@ export default function JobsPage() {
 
   const handleAcceptCounterOffer = () => {
     if (!selectedLoad) return;
-    
-    // TODO: Call tRPC mutation to accept counter offer
-    toast.success(`Counter offer of $${counterOfferAmount.toLocaleString()} accepted`);
-    setShowNegotiationModal(false);
-    setSelectedLoad(null);
+    const bidId = parseInt(selectedLoad.id, 10);
+    acceptBidMutation.mutate({ bidId });
   };
 
   const handleRejectCounterOffer = () => {
     if (!selectedLoad) return;
-    
-    // TODO: Call tRPC mutation to reject counter offer
-    toast.info("Counter offer rejected");
-    setShowNegotiationModal(false);
-    setSelectedLoad(null);
+    const bidId = parseInt(selectedLoad.id, 10);
+    rejectBidMutation.mutate({ bidId, reason: "Rejected by carrier" });
   };
 
   const handleSendCounterOffer = () => {
     if (!selectedLoad) return;
-    
-    // TODO: Call tRPC mutation to send counter offer
-    toast.success(`Counter offer of $${counterOfferAmount.toLocaleString()} sent with message`);
-    setShowNegotiationModal(false);
-    setSelectedLoad(null);
-    setNegotiationMessage("");
+    sendCounterMutation.mutate({
+      parentBidId: parseInt(selectedLoad.id, 10),
+      loadId: parseInt(selectedLoad.id, 10),
+      counterAmount: counterOfferAmount,
+      conditions: negotiationMessage || undefined,
+    });
   };
 
   const filteredLoads = loads.filter((load: any) => {
@@ -618,7 +634,7 @@ export default function JobsPage() {
                 <Button
                   variant="outline"
                   className="flex-1 border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white"
-                  onClick={() => toast.info("Load details modal would open")}
+                  onClick={() => navigate(`/loads/${load.id}`)}
                 >
                   <Eye size={16} className="mr-2" />
                   View Details
@@ -638,7 +654,8 @@ export default function JobsPage() {
                   <Button
                     variant="outline"
                     className="flex-1 border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                    onClick={() => toast.info("Bid withdrawn")}
+                    onClick={() => withdrawBidMutation.mutate({ bidId: parseInt(load.id, 10) })}
+                    disabled={withdrawBidMutation.isPending}
                   >
                     <X size={16} className="mr-2" />
                     Withdraw Bid
@@ -657,7 +674,8 @@ export default function JobsPage() {
                     <Button
                       variant="outline"
                       className="flex-1 border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                      onClick={() => toast.info("Counter offer rejected")}
+                      onClick={() => rejectBidMutation.mutate({ bidId: parseInt(load.id, 10), reason: "Rejected by carrier" })}
+                      disabled={rejectBidMutation.isPending}
                     >
                       <ThumbsDown size={16} className="mr-2" />
                       Reject
@@ -668,7 +686,7 @@ export default function JobsPage() {
                 <Button
                   variant="outline"
                   className="border-gray-600 text-slate-400 hover:bg-gray-800"
-                  onClick={() => toast.info("Chat opened")}
+                  onClick={() => navigate(`/messages?loadId=${load.id}`)}
                 >
                   <MessageSquare size={16} />
                 </Button>
@@ -683,14 +701,15 @@ export default function JobsPage() {
         <Portal>
         <div className="fixed inset-0 bg-black/80 overflow-y-auto z-[9999]" onClick={() => setShowBidModal(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
-          <Card className="bg-slate-800 border-slate-700 p-6 max-w-lg w-full" onClick={(e: any) => e.stopPropagation()}>
+          <Card role="dialog" aria-modal="true" aria-label="Place bid" className="bg-slate-800 border-slate-700 p-6 max-w-lg w-full" onClick={(e: any) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">Place Bid</h2>
               <button
                 onClick={() => setShowBidModal(false)}
+                aria-label="Close bid dialog"
                 className="text-slate-400 hover:text-white"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
 
@@ -781,14 +800,15 @@ export default function JobsPage() {
         <Portal>
         <div className="fixed inset-0 bg-black/80 overflow-y-auto z-[9999]" onClick={() => setShowNegotiationModal(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
-          <Card className="bg-slate-800 border-slate-700 p-6 max-w-lg w-full" onClick={(e: any) => e.stopPropagation()}>
+          <Card role="dialog" aria-modal="true" aria-label="Counter offer negotiation" className="bg-slate-800 border-slate-700 p-6 max-w-lg w-full" onClick={(e: any) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">Counter Offer Received</h2>
               <button
                 onClick={() => setShowNegotiationModal(false)}
+                aria-label="Close negotiation dialog"
                 className="text-slate-400 hover:text-white"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
 

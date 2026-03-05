@@ -221,6 +221,7 @@ export default function Register() {
             </Button>
             <button
               onClick={toggleTheme}
+              aria-label={`Switch to ${isLight ? 'dark' : 'light'} mode`}
               className={`p-2.5 rounded-full border transition-all duration-300 hover:scale-110 ${isLight ? 'bg-white/80 border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm' : 'bg-slate-800/80 border-slate-600 text-slate-300 hover:bg-slate-700'}`}
               title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
             >
@@ -273,13 +274,17 @@ export default function Register() {
         </div>
 
         {/* Role Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div role="list" aria-label="Registration role options" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {REGISTRATION_ROLES.map((roleData: any, index: number) => {
             const Icon = roleData.icon;
             const staggerDelay = 0.5 + index * 0.09;
             return (
               <Card
                 key={roleData.role}
+                role="listitem"
+                tabIndex={roleData.inviteOnly ? -1 : 0}
+                aria-label={`Register as ${roleData.name}${roleData.inviteOnly ? ' (invite only)' : ''}`}
+                onKeyDown={(e: React.KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && !roleData.inviteOnly) { e.preventDefault(); setLocation(roleData.path); } }}
                 className={`domino-card ${mounted ? "animate" : ""} cursor-pointer group hover:scale-[1.02] transition-all duration-300 ${isLight ? 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-xl hover:shadow-blue-500/5' : 'bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:shadow-xl hover:shadow-blue-500/10'} ${
                   roleData.inviteOnly ? "opacity-70" : ""
                 }`}

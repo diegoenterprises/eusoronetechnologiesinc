@@ -39,6 +39,14 @@ export const complianceRouter = router({
         documentUrl: input.documentUrl,
         status: "active",
       }).$returningId();
+      // WS-E2E-005: Fire compliance_check gamification event
+      try {
+        const { fireGamificationEvent } = await import("../services/gamificationDispatcher");
+        fireGamificationEvent({ userId: input.userId, type: "compliance_check", value: 1 });
+        if (input.type?.toLowerCase().includes('hazmat')) {
+          fireGamificationEvent({ userId: input.userId, type: "hazmat_certified", value: 1 });
+        }
+      } catch {}
       return { success: true, id: result.id };
     }),
 

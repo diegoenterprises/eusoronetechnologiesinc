@@ -146,7 +146,7 @@ export default function UserManagement() {
                 <div key={user.id} className="p-4 flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1 min-w-0">
                     {user.profilePicture ? (
-                      <img src={user.profilePicture} alt="" className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
+                      <img src={user.profilePicture} alt={`${user.name || 'User'} profile photo`} className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
                     ) : (
                       <div className="w-14 h-14 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white text-lg flex-shrink-0">{user.name?.charAt(0)}</div>
                     )}
@@ -172,7 +172,7 @@ export default function UserManagement() {
                         {user.phone && <span className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-slate-500 flex-shrink-0" />{user.phone}</span>}
                         {user.companyName && (
                           <span className="flex items-center gap-1.5 truncate">
-                            {user.companyLogo ? <img src={user.companyLogo} className="w-3.5 h-3.5 rounded-full flex-shrink-0" alt="" /> : <Building2 className="w-3 h-3 text-slate-500 flex-shrink-0" />}
+                            {user.companyLogo ? <img src={user.companyLogo} className="w-3.5 h-3.5 rounded-full flex-shrink-0" alt={`${user.companyName} logo`} /> : <Building2 className="w-3 h-3 text-slate-500 flex-shrink-0" />}
                             {user.companyName}
                           </span>
                         )}

@@ -14,7 +14,7 @@ import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { users, companies, wallets, walletTransactions, payments } from "../../drizzle/schema";
+import { users, companies, wallets, walletTransactions, payments, subscriptions as subscriptionsTable, subscriptionUsage } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
 import { SUBSCRIPTION_PRODUCTS, PLATFORM_FEE_PERCENTAGE, MINIMUM_PLATFORM_FEE, calculatePlatformFee } from "../stripe/products";
 import { requireAccess } from "../services/security/rbac/access-check";
@@ -516,6 +516,127 @@ export const stripeRouter = router({
         interval: p.interval,
         features: getFeaturesByPlan(p.id),
       }));
+    }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // DB-BACKED SUBSCRIPTION MANAGEMENT (WS-E2E-019)
+  // ═══════════════════════════════════════════════════════════════
+
+  /** Get current user's DB-tracked subscription + usage */
+  getMySubscription: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { tier: "FREE", status: "ACTIVE", usage: null };
+      const userId = Number(ctx.user?.id) || 0;
+      const [sub] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.userId, userId)).limit(1);
+      if (!sub) return { tier: "FREE", status: "ACTIVE", usage: null };
+      const [usage] = await db.select().from(subscriptionUsage).where(eq(subscriptionUsage.userId, userId)).limit(1);
+      return { ...sub, usage: usage || null };
+    }),
+
+  /** Check if user can create a load (enforces free tier limits) */
+  checkLoadAllowed: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { allowed: true, reason: null };
+      const userId = Number(ctx.user?.id) || 0;
+      const [sub] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.userId, userId)).limit(1);
+      if (!sub || sub.tier === "FREE") {
+        const [usage] = await db.select().from(subscriptionUsage).where(eq(subscriptionUsage.userId, userId)).limit(1);
+        if (usage && usage.loadsCreated >= usage.loadsLimit) {
+          return { allowed: false, reason: `Free tier limit reached (${usage.loadsLimit} loads/month). Upgrade to Pro for unlimited loads.` };
+        }
+      }
+      return { allowed: true, reason: null };
+    }),
+
+  /** Increment usage counter (called after load creation, API call, etc.) */
+  incrementUsage: protectedProcedure
+    .input(z.object({ metric: z.enum(["loadsCreated", "apiCallsUsed", "activeShipments"]), amount: z.number().default(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: false };
+      const userId = Number(ctx.user?.id) || 0;
+      const [usage] = await db.select().from(subscriptionUsage).where(eq(subscriptionUsage.userId, userId)).limit(1);
+      if (!usage) return { success: false };
+      await db.update(subscriptionUsage)
+        .set({ [input.metric]: sql`${subscriptionUsage[input.metric]} + ${input.amount}` } as any)
+        .where(eq(subscriptionUsage.id, usage.id));
+      return { success: true };
+    }),
+
+  /** Sync a Stripe subscription event to our DB (called from webhook handler) */
+  syncSubscriptionFromStripe: protectedProcedure
+    .input(z.object({
+      stripeSubscriptionId: z.string(),
+      stripeCustomerId: z.string(),
+      tier: z.enum(["FREE", "PRO", "ENTERPRISE"]),
+      status: z.enum(["ACTIVE", "CANCELLED", "SUSPENDED", "EXPIRED", "PAST_DUE"]),
+      currentPeriodStart: z.string().optional(),
+      currentPeriodEnd: z.string().optional(),
+      stripePriceId: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: false };
+      const userId = Number(ctx.user?.id) || 0;
+
+      // Upsert subscription
+      const [existing] = await db.select().from(subscriptionsTable)
+        .where(eq(subscriptionsTable.userId, userId)).limit(1);
+
+      const tierLimits = { FREE: { loads: 5, api: 100, shipments: 1 }, PRO: { loads: 999999, api: 1000, shipments: 10 }, ENTERPRISE: { loads: 999999, api: 999999, shipments: 999999 } };
+      const limits = tierLimits[input.tier];
+
+      if (existing) {
+        await db.update(subscriptionsTable).set({
+          tier: input.tier,
+          status: input.status,
+          stripeSubscriptionId: input.stripeSubscriptionId,
+          stripeCustomerId: input.stripeCustomerId,
+          stripePriceId: input.stripePriceId || null,
+          currentPeriodStart: input.currentPeriodStart ? new Date(input.currentPeriodStart) : undefined,
+          currentPeriodEnd: input.currentPeriodEnd ? new Date(input.currentPeriodEnd) : undefined,
+          updatedAt: new Date(),
+        }).where(eq(subscriptionsTable.id, existing.id));
+        // Update usage limits
+        await db.update(subscriptionUsage).set({
+          loadsLimit: limits.loads, apiCallsLimit: limits.api, activeShipmentsLimit: limits.shipments,
+        }).where(eq(subscriptionUsage.userId, userId));
+      } else {
+        const [newSub] = await db.insert(subscriptionsTable).values({
+          userId, tier: input.tier, status: input.status,
+          stripeSubscriptionId: input.stripeSubscriptionId,
+          stripeCustomerId: input.stripeCustomerId,
+          stripePriceId: input.stripePriceId || null,
+          currentPeriodStart: input.currentPeriodStart ? new Date(input.currentPeriodStart) : undefined,
+          currentPeriodEnd: input.currentPeriodEnd ? new Date(input.currentPeriodEnd) : undefined,
+        }).$returningId();
+        // Create usage tracking row
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        await db.insert(subscriptionUsage).values({
+          subscriptionId: newSub.id, userId,
+          loadsLimit: limits.loads, apiCallsLimit: limits.api, activeShipmentsLimit: limits.shipments,
+          monthStart, monthEnd,
+        });
+      }
+      return { success: true };
+    }),
+
+  /** Create Stripe billing portal session for self-service */
+  createPortalSession: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const customerId = await getOrCreateStripeCustomer(
+        ctx.user.id, ctx.user.email || "",
+        ctx.user.name || undefined
+      );
+      const session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${process.env.APP_URL || "https://eusotrip.com"}/settings/billing`,
+      });
+      return { url: session.url };
     }),
 
   // ═══════════════════════════════════════════════════════════════

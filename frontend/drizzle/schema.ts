@@ -272,6 +272,15 @@ export const loads = mysqlTable(
     ]).notNull(),
     hazmatClass: varchar("hazmatClass", { length: 10 }),
     unNumber: varchar("unNumber", { length: 10 }),
+    // DOT hazmat fields — 49 CFR 172.200-204
+    properShippingName: varchar("properShippingName", { length: 255 }),
+    packingGroup: mysqlEnum("packingGroup", ["I", "II", "III"]),
+    technicalName: varchar("technicalName", { length: 255 }),
+    emergencyResponseNumber: varchar("emergencyResponseNumber", { length: 10 }),
+    emergencyPhone: varchar("emergencyPhone", { length: 20 }),
+    hazardClassNumber: varchar("hazardClassNumber", { length: 10 }),
+    subsidiaryHazards: json("subsidiaryHazards").$type<string[]>(),
+    specialPermit: varchar("specialPermit", { length: 50 }),
     weight: decimal("weight", { precision: 10, scale: 2 }),
     weightUnit: varchar("weightUnit", { length: 10 }).default("lbs"),
     volume: decimal("volume", { precision: 10, scale: 2 }),
@@ -7407,4 +7416,32 @@ export const dispatchActionHistory = mysqlTable(
 
 export type DispatchActionHistoryItem = typeof dispatchActionHistory.$inferSelect;
 export type InsertDispatchActionHistoryItem = typeof dispatchActionHistory.$inferInsert;
+
+// ============================================================================
+// PLATFORM FEES — Phase 4 financial chain
+// ============================================================================
+
+export const platformFees = mysqlTable(
+  "platform_fees",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    feeType: mysqlEnum("feeType", [
+      "COMMISSION", "PROCESSING", "GATEWAY", "INSURANCE", "PREMIUM", "HAZMAT_SURCHARGE",
+    ]).notNull(),
+    percentage: decimal("percentage", { precision: 5, scale: 3 }),
+    flatAmount: decimal("flatAmount", { precision: 10, scale: 2 }),
+    applicableRoles: json("applicableRoles").$type<string[]>(),
+    applicableCargoTypes: json("applicableCargoTypes").$type<string[]>(),
+    minAmount: decimal("minAmount", { precision: 10, scale: 2 }),
+    maxAmount: decimal("maxAmount", { precision: 10, scale: 2 }),
+    active: boolean("active").default(true),
+    effectiveFrom: timestamp("effectiveFrom"),
+    effectiveTo: timestamp("effectiveTo"),
+    createdAt: timestamp("createdAt").defaultNow(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+  }
+);
+
+export type PlatformFee = typeof platformFees.$inferSelect;
+export type InsertPlatformFee = typeof platformFees.$inferInsert;
 
