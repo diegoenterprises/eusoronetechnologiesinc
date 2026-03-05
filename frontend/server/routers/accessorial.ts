@@ -23,6 +23,9 @@ import {
   loads,
   users,
   platformRevenue,
+  platformFeeConfigs,
+  wallets,
+  walletTransactions,
 } from "../../drizzle/schema";
 
 // ============================================================================
@@ -85,7 +88,24 @@ const CARGO_DEMURRAGE_RATES: Record<string, { freeTimeMinutes: number; ratePerHo
   petroleum:    { freeTimeMinutes: 120, ratePerHour: 85,  maxHours: 48 },
 };
 
-const PLATFORM_FEE_PERCENT = 0.035; // 3.5% facilitation fee
+const DEFAULT_PLATFORM_FEE = 0.035; // fallback if no DB config exists
+
+/** Pull active platform fee rate from platformFeeConfigs (Super Admin configurable). */
+async function getPlatformFeePercent(): Promise<number> {
+  try {
+    const db = await getDb();
+    if (!db) return DEFAULT_PLATFORM_FEE;
+    const [cfg] = await db.select({ baseRate: platformFeeConfigs.baseRate })
+      .from(platformFeeConfigs)
+      .where(and(
+        eq(platformFeeConfigs.transactionType, "load_completion"),
+        eq(platformFeeConfigs.isActive, true),
+      ))
+      .limit(1);
+    if (cfg?.baseRate) return parseFloat(cfg.baseRate) / 100; // stored as %, return decimal
+    return DEFAULT_PLATFORM_FEE;
+  } catch { return DEFAULT_PLATFORM_FEE; }
+}
 
 const accessorialTypeSchema = z.enum([
   // Core
@@ -172,7 +192,7 @@ export const accessorialRouter = router({
           type: "detention",
           amount: totalAmount,
           billableMinutes,
-          platformFee: totalAmount * PLATFORM_FEE_PERCENT,
+          platformFee: totalAmount * (await getPlatformFeePercent()),
           status: "pending_review",
         };
       }
@@ -195,7 +215,7 @@ export const accessorialRouter = router({
         claimId: claim.id,
         type: input.type,
         amount: input.amount,
-        platformFee: input.amount * PLATFORM_FEE_PERCENT,
+        platformFee: input.amount * (await getPlatformFeePercent()),
         status: "pending_review",
       };
     }),
@@ -250,12 +270,13 @@ export const accessorialRouter = router({
           .from(detentionClaims)
           .where(conditions.length > 0 ? and(...conditions) : undefined);
 
+        const feeRate = await getPlatformFeePercent();
         return {
           claims: claims.map(c => ({
             ...c,
             totalAmount: c.totalAmount ? parseFloat(c.totalAmount) : 0,
             hourlyRate: c.hourlyRate ? parseFloat(c.hourlyRate) : 75,
-            platformFee: c.totalAmount ? parseFloat(c.totalAmount) * PLATFORM_FEE_PERCENT : 0,
+            platformFee: c.totalAmount ? parseFloat(c.totalAmount) * feeRate : 0,
             accessorialType: c.notes?.startsWith("[") ? c.notes.split("]")[0].replace("[", "").toLowerCase() : "detention",
           })),
           total: totalRow?.count || 0,
@@ -318,7 +339,9 @@ export const accessorialRouter = router({
         const [claim] = await db.select().from(detentionClaims).where(eq(detentionClaims.id, input.claimId)).limit(1);
         if (claim?.totalAmount) {
           const gross = parseFloat(claim.totalAmount);
-          const platShare = gross * PLATFORM_FEE_PERCENT;
+          const feeRate = await getPlatformFeePercent();
+          const platShare = gross * feeRate;
+          const netToCarrier = gross - platShare;
           try {
             await db.insert(platformRevenue).values({
               transactionId: input.claimId,
@@ -326,7 +349,7 @@ export const accessorialRouter = router({
               userId,
               grossAmount: claim.totalAmount,
               feeAmount: String(platShare.toFixed(2)),
-              netAmount: String((gross - platShare).toFixed(2)),
+              netAmount: String(netToCarrier.toFixed(2)),
               platformShare: String(platShare.toFixed(2)),
               processorShare: "0.00",
               discountApplied: "0.00",
@@ -334,6 +357,43 @@ export const accessorialRouter = router({
             });
           } catch (e) {
             console.error("[Accessorial] Revenue recording error:", e);
+          }
+
+          // WS-P1-015: Credit carrier wallet on payment
+          if (input.action === "pay" && claim.claimedByUserId) {
+            try {
+              const [wallet] = await db.select({ id: wallets.id, availableBalance: wallets.availableBalance })
+                .from(wallets).where(eq(wallets.userId, claim.claimedByUserId)).limit(1);
+
+              if (wallet) {
+                const currentBalance = parseFloat(wallet.availableBalance || "0");
+                const newBalance = currentBalance + netToCarrier;
+                await db.update(wallets)
+                  .set({ availableBalance: String(newBalance.toFixed(2)) })
+                  .where(eq(wallets.id, wallet.id));
+
+                // Record wallet transaction
+                const [load] = await db.select({ loadNumber: loads.loadNumber }).from(loads).where(eq(loads.id, claim.loadId)).limit(1);
+                await db.insert(walletTransactions).values({
+                  walletId: wallet.id,
+                  type: "earnings",
+                  amount: String(gross.toFixed(2)),
+                  fee: String(platShare.toFixed(2)),
+                  netAmount: String(netToCarrier.toFixed(2)),
+                  status: "completed",
+                  description: `Accessorial claim #${claim.id} paid — ${claim.notes?.startsWith("[") ? claim.notes.split("]")[0].replace("[", "") : "detention"}`,
+                  loadId: claim.loadId,
+                  loadNumber: load?.loadNumber || null,
+                  completedAt: new Date(),
+                  metadata: { claimId: claim.id, type: "accessorial_payment" },
+                });
+                console.log(`[Accessorial] Credited $${netToCarrier.toFixed(2)} to wallet ${wallet.id} for claim ${claim.id}`);
+              } else {
+                console.warn(`[Accessorial] No wallet found for user ${claim.claimedByUserId} — cannot credit`);
+              }
+            } catch (walletErr) {
+              console.error("[Accessorial] Wallet credit error:", walletErr);
+            }
           }
         }
       }
@@ -345,11 +405,14 @@ export const accessorialRouter = router({
   // 4. GET FEE SCHEDULE — Current accessorial rate card
   // ============================================================================
   getFeeSchedule: protectedProcedure
-    .query(() => ({
-      schedule: DEFAULT_FEE_SCHEDULE,
-      platformFeePercent: PLATFORM_FEE_PERCENT * 100,
-      note: "Platform charges a 3.5% facilitation fee on all processed accessorial charges",
-    })),
+    .query(async () => {
+      const feeRate = await getPlatformFeePercent();
+      return {
+        schedule: DEFAULT_FEE_SCHEDULE,
+        platformFeePercent: feeRate * 100,
+        note: `Platform charges a ${(feeRate * 100).toFixed(1)}% facilitation fee on all processed accessorial charges`,
+      };
+    }),
 
   // ============================================================================
   // 5. DASHBOARD STATS — Accessorial revenue overview
@@ -407,7 +470,7 @@ export const accessorialRouter = router({
           paidClaims,
           disputedClaims,
           totalAmount: Math.round(totalAmount * 100) / 100,
-          platformRevenue: Math.round(totalAmount * PLATFORM_FEE_PERCENT * 100) / 100,
+          platformRevenue: Math.round(totalAmount * (await getPlatformFeePercent()) * 100) / 100,
           avgClaimAmount: claims.length > 0 ? Math.round((totalAmount / claims.length) * 100) / 100 : 0,
           avgResolutionHours: 0,
           byType: Object.entries(typeMap).map(([type, data]) => ({
@@ -466,7 +529,7 @@ export const accessorialRouter = router({
           ...claim,
           totalAmount: claim.totalAmount ? parseFloat(claim.totalAmount) : 0,
           hourlyRate: claim.hourlyRate ? parseFloat(claim.hourlyRate) : 75,
-          platformFee: claim.totalAmount ? parseFloat(claim.totalAmount) * PLATFORM_FEE_PERCENT : 0,
+          platformFee: claim.totalAmount ? parseFloat(claim.totalAmount) * (await getPlatformFeePercent()) : 0,
           accessorialType: claim.notes?.startsWith("[") ? claim.notes.split("]")[0].replace("[", "").toLowerCase() : "detention",
         };
       } catch (error) {
@@ -485,14 +548,14 @@ export const accessorialRouter = router({
       freeTimeMinutes: z.number().optional().default(120),
       ratePerHour: z.number().optional().default(75),
     }))
-    .query(({ input }) => {
+    .query(async ({ input }) => {
       const arrival = new Date(input.arrivalTime);
       const departure = input.departureTime ? new Date(input.departureTime) : new Date();
       const totalMinutes = Math.floor((departure.getTime() - arrival.getTime()) / 60000);
       const billableMinutes = Math.max(0, totalMinutes - input.freeTimeMinutes);
       const billableHours = billableMinutes / 60;
       const charge = billableHours * input.ratePerHour;
-      const platformFee = charge * PLATFORM_FEE_PERCENT;
+      const platformFee = charge * (await getPlatformFeePercent());
 
       return {
         arrivalTime: arrival.toISOString(),
