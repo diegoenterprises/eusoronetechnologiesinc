@@ -10,6 +10,7 @@ import { eq, and, desc, sql, or, gte, lte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
+import { getInsuranceStatus } from "../services/fmcsaBulkLookup";
 import {
   loadBids,
   bidAutoAcceptRules,
@@ -325,6 +326,35 @@ export const loadBiddingRouter = router({
 
       const [bid] = await db.select().from(loadBids).where(eq(loadBids.id, input.bidId));
       if (!bid) throw new Error("Bid not found");
+
+      // === INSURANCE VERIFICATION GATE (49 CFR 387.9) ===
+      try {
+        const [load] = await db.select().from(loads).where(eq(loads.id, bid.loadId)).limit(1);
+        if (load?.hazmatClass) {
+          const [bidder] = await db.select().from(users).where(eq(users.id, bid.bidderUserId)).limit(1);
+          const bidderCompanyId = (bidder as any)?.companyId;
+          if (bidderCompanyId) {
+            const [company] = await db.select().from(companies).where(eq(companies.id, bidderCompanyId)).limit(1);
+            if (company?.dotNumber) {
+              const HAZMAT_INS_MIN: Record<string, number> = {
+                '1': 5000000, '2': 5000000, '3': 5000000, '4': 5000000,
+                '5': 5000000, '6': 5000000, '7': 5000000, '8': 5000000, '9': 1000000,
+              };
+              const requiredMin = HAZMAT_INS_MIN[load.hazmatClass] || 1000000;
+              const insStatus = await getInsuranceStatus(company.dotNumber);
+              const insAmount = insStatus?.bipdLimit || 0;
+              if (insAmount < requiredMin) {
+                throw new Error(`Cannot accept bid: carrier insurance ($${(insAmount / 1000000).toFixed(1)}M) below required minimum ($${(requiredMin / 1000000).toFixed(0)}M) for Hazmat Class ${load.hazmatClass} cargo.`);
+              }
+              console.log(`[Bidding] Insurance gate PASSED: carrier BIPD $${(insAmount/1000000).toFixed(1)}M >= $${(requiredMin/1000000).toFixed(0)}M required`);
+            }
+          }
+        }
+      } catch (insErr: any) {
+        if (insErr?.message?.includes('Cannot accept bid')) throw insErr;
+        console.warn('[Bidding] Insurance check warning:', insErr?.message);
+      }
+      // === END INSURANCE GATE ===
 
       // Accept this bid
       await db.update(loadBids)
