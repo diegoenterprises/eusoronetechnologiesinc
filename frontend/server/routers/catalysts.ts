@@ -12,6 +12,7 @@ import { getDb } from "../db";
 import { companies, users, vehicles, loads, bids, documents } from "../../drizzle/schema";
 import { eq, and, desc, sql, count, gte, or } from "drizzle-orm";
 import { getCarrierSafetyIntel, getSafetyScores } from "../services/fmcsaBulkLookup";
+import { requireAccess } from "../services/security/rbac/access-check";
 
 import {
   emitBidReceived,
@@ -59,6 +60,7 @@ export const catalystsRouter = router({
       vehicleType: z.enum(["tractor", "trailer", "tanker", "flatbed", "refrigerated", "dry_van", "lowboy", "step_deck"]),
     }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'VEHICLE' }, (ctx as any).req);
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const companyId = await resolveCompanyId(Number(ctx.user?.id) || 0);
       const [result] = await db.insert(vehicles).values({
@@ -84,6 +86,7 @@ export const catalystsRouter = router({
       email: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'COMPANY' }, (ctx as any).req);
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const companyId = await resolveCompanyId(Number(ctx.user?.id) || 0);
       const updates: Record<string, any> = {};
@@ -100,7 +103,8 @@ export const catalystsRouter = router({
 
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'DELETE', resource: 'VEHICLE' }, (ctx as any).req);
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       await db.update(vehicles).set({ status: "out_of_service", isActive: false }).where(eq(vehicles.id, input.id));
       return { success: true, id: input.id };
@@ -237,6 +241,7 @@ export const catalystsRouter = router({
    */
   getDashboardStats: protectedProcedure
     .query(async ({ ctx }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'COMPANY' }, (ctx as any).req);
       const db = await getDb();
       if (!db) {
         return { activeLoads: 0, availableCapacity: 0, weeklyRevenue: 0, fleetUtilization: 0, safetyScore: 0, onTimeRate: 0 };
