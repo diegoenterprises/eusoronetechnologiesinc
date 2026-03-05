@@ -490,7 +490,30 @@ export const dispatchRouter = router({
         }
 
         console.log(`[Dispatch] Compliance gate PASSED: load=${loadIdNum}, driver=${driverUserId}`);
+
+        // WS-P1-012: Record compliance decision in hash-chain for audit immutability
+        try {
+          const { getChainTip, computeEntryHash } = await import("../services/security/audit/hash-chain");
+          const prevHash = await getChainTip();
+          const ts = new Date().toISOString();
+          const metadata = JSON.stringify({ loadId: loadIdNum, driverId: driverUserId, vehicleId: input.vehicleId || null, result: 'PASSED' });
+          const entryHash = computeEntryHash(prevHash, ts, String(ctx.user?.id || 0), 'compliance_gate', 'LOAD_ASSIGNMENT', String(loadIdNum), metadata);
+          await db.execute(sql`INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata, previous_hash, entry_hash, created_at)
+            VALUES (${ctx.user?.id || 0}, 'compliance_gate', 'LOAD_ASSIGNMENT', ${String(loadIdNum)}, ${metadata}, ${prevHash}, ${entryHash}, NOW())`);
+        } catch (chainErr) { console.warn('[HashChain] Could not record compliance decision:', (chainErr as any)?.message); }
+
       } catch (complianceErr: any) {
+        // WS-P1-012: Record FAILED compliance decision in hash-chain
+        try {
+          const { getChainTip, computeEntryHash } = await import("../services/security/audit/hash-chain");
+          const prevHash = await getChainTip();
+          const ts = new Date().toISOString();
+          const metadata = JSON.stringify({ loadId: loadIdNum, driverId: driverUserId, vehicleId: input.vehicleId || null, result: 'FAILED', reason: complianceErr?.message });
+          const entryHash = computeEntryHash(prevHash, ts, String(ctx.user?.id || 0), 'compliance_gate_failed', 'LOAD_ASSIGNMENT', String(loadIdNum), metadata);
+          await db.execute(sql`INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata, previous_hash, entry_hash, created_at)
+            VALUES (${ctx.user?.id || 0}, 'compliance_gate_failed', 'LOAD_ASSIGNMENT', ${String(loadIdNum)}, ${metadata}, ${prevHash}, ${entryHash}, NOW())`);
+        } catch (chainErr) { console.warn('[HashChain] Could not record failed compliance decision:', (chainErr as any)?.message); }
+
         console.warn(`[Dispatch] Compliance gate FAILED: ${complianceErr?.message}`);
         throw new Error(`Compliance: ${complianceErr?.message}`);
       }
