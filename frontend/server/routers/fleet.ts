@@ -10,6 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { vehicles, geofences, users, loads, fuelTransactions, inspections, drivers } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
+import { requireAccess } from "../services/security/rbac/access-check";
 
 const vehicleStatusSchema = z.enum(["active", "maintenance", "out_of_service", "retired"]);
 const vehicleTypeSchema = z.enum(["truck", "trailer", "tanker", "flatbed", "reefer"]);
@@ -21,6 +22,7 @@ export const fleetRouter = router({
   getGeofences: protectedProcedure
     .input(z.object({ search: z.string().optional() }))
     .query(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'GEOFENCE' }, (ctx as any).req);
       const db = await getDb();
       if (!db) return [];
 
@@ -59,6 +61,7 @@ export const fleetRouter = router({
    */
   getGeofenceStats: protectedProcedure
     .query(async ({ ctx }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'GEOFENCE' }, (ctx as any).req);
       const db = await getDb();
       if (!db) {
         return { total: 0, terminals: 0, yards: 0, hubs: 0, alertsEnabled: 0, active: 0, alertsToday: 0, vehiclesInside: 0 };
@@ -92,6 +95,7 @@ export const fleetRouter = router({
   deleteGeofence: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'DELETE', resource: 'GEOFENCE' }, (ctx as any).req);
       const db = await getDb();
       if (!db) return { success: false, deletedId: input.id };
       try {
@@ -111,6 +115,7 @@ export const fleetRouter = router({
       status: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'VEHICLE' }, (ctx as any).req);
       const db = await getDb();
       if (!db) return [];
 
@@ -179,6 +184,7 @@ export const fleetRouter = router({
   getFleetStats: protectedProcedure
     .input(z.object({ filters: z.any().optional() }).optional())
     .query(async ({ ctx }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'VEHICLE' }, (ctx as any).req);
       const db = await getDb();
       if (!db) {
         return { totalVehicles: 0, total: 0, active: 0, inMaintenance: 0, maintenance: 0, outOfService: 0, utilization: 0, inTransit: 0, loading: 0, available: 0, atShipper: 0, atConsignee: 0, offDuty: 0, issues: 0, avgMpg: 0 };
@@ -223,6 +229,7 @@ export const fleetRouter = router({
    */
   getSummary: protectedProcedure
     .query(async ({ ctx }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'VEHICLE' }, (ctx as any).req);
       const db = await getDb();
       if (!db) {
         return { totalVehicles: 0, active: 0, inMaintenance: 0, outOfService: 0, utilization: 0, avgAge: 0, maintenanceDueThisWeek: 0, inspectionsDueThisWeek: 0 };
@@ -267,6 +274,7 @@ export const fleetRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'VEHICLE' }, (ctx as any).req);
       const db = await getDb();
       if (!db) return { vehicles: [], total: 0 };
 
@@ -336,16 +344,20 @@ export const fleetRouter = router({
    */
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'VEHICLE' }, (ctx as any).req);
       const db = await getDb();
       if (!db) return null;
 
       try {
         const vehicleId = parseInt(input.id);
+        const companyId = ctx.user?.companyId || 0;
+        const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'PLATFORM_ADMIN'].includes(ctx.user?.role || '');
+        const conds = isAdmin ? [eq(vehicles.id, vehicleId)] : [eq(vehicles.id, vehicleId), eq(vehicles.companyId, companyId)];
         const [vehicle] = await db
           .select()
           .from(vehicles)
-          .where(eq(vehicles.id, vehicleId))
+          .where(and(...conds))
           .limit(1);
 
         if (!vehicle) return null;
@@ -403,6 +415,7 @@ export const fleetRouter = router({
       licensePlate: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'VEHICLE' }, (ctx as any).req);
       const db = await getDb();
       if (!db) return { id: '', success: false };
       try {
@@ -433,6 +446,7 @@ export const fleetRouter = router({
       licensePlate: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'VEHICLE' }, (ctx as any).req);
       const db = await getDb();
       if (!db) return { success: false, id: input.id };
       try {
@@ -458,6 +472,7 @@ export const fleetRouter = router({
    */
   getLocations: protectedProcedure
     .query(async ({ ctx }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'VEHICLE' }, (ctx as any).req);
       const db = await getDb();
       if (!db) return [];
 
@@ -823,7 +838,10 @@ export const fleetRouter = router({
     const empty = { id: vid, unitNumber: '', make: '', model: '', year: 0, vin: '', licensePlate: '', odometer: 0, status: '', lastInspection: '' };
     if (!db || !vid) return empty;
     try {
-      const [v] = await db.select().from(vehicles).where(eq(vehicles.id, parseInt(vid, 10))).limit(1);
+      const companyId = ctx.user?.companyId || 0;
+      const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'PLATFORM_ADMIN'].includes(ctx.user?.role || '');
+      const vConds = isAdmin ? [eq(vehicles.id, parseInt(vid, 10))] : [eq(vehicles.id, parseInt(vid, 10)), eq(vehicles.companyId, companyId)];
+      const [v] = await db.select().from(vehicles).where(and(...vConds)).limit(1);
       if (!v) return empty;
       return { id: String(v.id), unitNumber: v.licensePlate || v.vin, make: v.make || '', model: v.model || '', year: v.year || 0, vin: v.vin, licensePlate: v.licensePlate || '', odometer: 0, status: v.status, lastInspection: v.nextInspectionDate?.toISOString().split('T')[0] || '' };
     } catch { return empty; }
