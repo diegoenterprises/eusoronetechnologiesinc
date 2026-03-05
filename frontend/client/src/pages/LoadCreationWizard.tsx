@@ -130,15 +130,76 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
-/** Detect and parse coordinate input: "lat, lng" or "lat lng" format */
+/** Detect and parse coordinate input in multiple formats:
+ *  - Decimal:         30.283152, -97.776379
+ *  - Degree + NSEW:   38.8893° N, 77.0502° W
+ *  - Plain NSEW:      38.8893 N, 77.0502 W
+ *  - DMS:             38°53'21.5"N, 77°3'0.7"W
+ *  - Mixed sign/dir:  N 38.8893, W 77.0502
+ */
 function parseCoordinates(value: string): { lat: number; lng: number } | null {
   const trimmed = value.trim();
-  // Match: 30.283152, -97.776379  OR  30.283152 -97.776379
-  const match = trimmed.match(/^(-?\d{1,3}(?:\.\d+)?)\s*[,\s]\s*(-?\d{1,3}(?:\.\d+)?)$/);
-  if (!match) return null;
-  const lat = parseFloat(match[1]);
-  const lng = parseFloat(match[2]);
-  if (isNaN(lat) || isNaN(lng)) return null;
+  if (!trimmed) return null;
+
+  // Helper: parse a single coordinate token with optional degree symbol & cardinal direction
+  const parseToken = (s: string): { value: number; dir: string | null } | null => {
+    const cleaned = s.trim();
+    // DMS: 38°53'21.5"N  or  77°3'0.7"W
+    const dms = cleaned.match(/^([NSEW])?\s*(\d{1,3})[°]\s*(\d{1,2})[′']\s*([\d.]+)[″"]?\s*([NSEW])?$/i);
+    if (dms) {
+      const dir = (dms[1] || dms[5] || "").toUpperCase() || null;
+      const deg = parseFloat(dms[2]) + parseFloat(dms[3]) / 60 + parseFloat(dms[4]) / 3600;
+      return { value: deg, dir };
+    }
+    // Decimal with optional degree symbol and optional cardinal: "38.8893° N" or "N 38.8893" or "-97.77"
+    const dec = cleaned.match(/^([NSEW])?\s*(-?\d{1,3}(?:\.\d+)?)\s*°?\s*([NSEW])?$/i);
+    if (dec) {
+      const dir = (dec[1] || dec[3] || "").toUpperCase() || null;
+      return { value: parseFloat(dec[2]), dir };
+    }
+    return null;
+  };
+
+  // Split on comma, semicolon, or whitespace that separates two coordinate groups
+  // Try comma/semicolon first
+  let parts: string[] = [];
+  if (trimmed.includes(",")) {
+    parts = trimmed.split(",").map(s => s.trim()).filter(Boolean);
+  } else if (trimmed.includes(";")) {
+    parts = trimmed.split(";").map(s => s.trim()).filter(Boolean);
+  } else {
+    // Space-separated: split into two groups by detecting NSEW boundaries or sign changes
+    const spaceMatch = trimmed.match(/^(.+?[NSEW°])\s+(.+)$/i) ||
+                       trimmed.match(/^(-?\d{1,3}(?:\.\d+)?)\s+(-?\d{1,3}(?:\.\d+)?)$/);
+    if (spaceMatch) parts = [spaceMatch[1].trim(), spaceMatch[2].trim()];
+  }
+
+  if (parts.length !== 2) return null;
+
+  const a = parseToken(parts[0]);
+  const b = parseToken(parts[1]);
+  if (!a || !b) return null;
+  if (isNaN(a.value) || isNaN(b.value)) return null;
+
+  // Determine lat/lng from cardinal directions
+  let lat: number, lng: number;
+  const aIsLat = a.dir === "N" || a.dir === "S";
+  const aIsLng = a.dir === "E" || a.dir === "W";
+  const bIsLat = b.dir === "N" || b.dir === "S";
+  const bIsLng = b.dir === "E" || b.dir === "W";
+
+  if (aIsLat && bIsLng) {
+    lat = a.dir === "S" ? -Math.abs(a.value) : Math.abs(a.value);
+    lng = b.dir === "W" ? -Math.abs(b.value) : Math.abs(b.value);
+  } else if (aIsLng && bIsLat) {
+    lng = a.dir === "W" ? -Math.abs(a.value) : Math.abs(a.value);
+    lat = b.dir === "S" ? -Math.abs(b.value) : Math.abs(b.value);
+  } else {
+    // No cardinal directions or ambiguous — assume lat, lng order (standard convention)
+    lat = a.value;
+    lng = b.value;
+  }
+
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
   return { lat, lng };
 }
