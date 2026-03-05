@@ -1323,6 +1323,26 @@ async function startServer() {
       } catch (err) { console.warn("[AITurbo] Knowledge seeding deferred:", (err as any)?.message?.slice(0, 80)); }
     }, 25000);
 
+    // WS-P1-011: Validate FMCSA API key on startup
+    setTimeout(async () => {
+      const fmcsaKey = process.env.FMCSA_API_KEY;
+      if (!fmcsaKey) {
+        console.warn("[STARTUP] ⚠️  FMCSA_API_KEY not set — carrier safety lookups will fail");
+      } else {
+        try {
+          const testUrl = `https://mobile.fmcsa.dot.gov/qc/services/carriers/2233825?webKey=${fmcsaKey}`;
+          const resp = await fetch(testUrl);
+          if (resp.ok) {
+            console.log("[STARTUP] ✅ FMCSA API key validated successfully");
+          } else {
+            console.warn(`[STARTUP] ⚠️  FMCSA API key validation failed — HTTP ${resp.status}`);
+          }
+        } catch (err: any) {
+          console.warn("[STARTUP] ⚠️  FMCSA API key validation failed:", err.message);
+        }
+      }
+    }, 5000);
+
     // Start FMCSA ETL Cron — daily 12PM CT scrape of ALL FMCSA datasets for instant verification
     setTimeout(async () => {
       try {
