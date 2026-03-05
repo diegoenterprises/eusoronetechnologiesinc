@@ -767,13 +767,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Real-time fleet GPS tracking & geofencing"
     },
     {
-      icon: "Siren",
-      label: "Active Trip",
-      path: "/active-trip",
-      badge: 0,
-      description: "Real-time trip dashboard, SOS, state compliance & ZEUN"
-    },
-    {
       icon: "AlertTriangle",
       label: "Exceptions",
       path: "/dispatch/exceptions",
@@ -781,6 +774,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Active exceptions, delays, stale loads & compliance issues"
     },
     // ─── BUSINESS CLUSTER (partnerships, money, documents) ───
+    {
+      icon: "DollarSign",
+      label: "Settlements",
+      path: "/settlements",
+      badge: 0,
+      description: "Fleet settlement status, driver earnings & payouts"
+    },
     {
       icon: "Handshake",
       label: "My Partners",
