@@ -9,7 +9,7 @@ import { z } from "zod";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
-import { drivers, loads, users, escortAssignments, convoys, companies } from "../../drizzle/schema";
+import { drivers, loads, users, escortAssignments, convoys, companies, vehicles, documents } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, isNull, ne } from "drizzle-orm";
 import { emitDispatchEvent, emitDriverStatusChange, emitLoadStatusChange, emitNotification, emitEscortJobAssigned, emitEscortJobAvailable } from "../_core/websocket";
 import { WS_EVENTS } from "@shared/websocket-events";
@@ -421,6 +421,78 @@ export const dispatchRouter = router({
       // Get the driver's userId
       const [driverRow] = await db.select({ userId: drivers.userId }).from(drivers).where(eq(drivers.id, driverIdNum)).limit(1);
       const driverUserId = driverRow?.userId || driverIdNum;
+
+      // === COMPLIANCE GATE — BLOCKS NON-COMPLIANT ASSIGNMENTS ===
+      try {
+        const [load] = await db.select().from(loads).where(eq(loads.id, loadIdNum)).limit(1);
+        if (!load) throw new Error('Load not found');
+
+        const [driver] = await db.select().from(users).where(eq(users.id, driverUserId)).limit(1);
+        const companyId = (driver as any)?.companyId;
+
+        // FMCSA Authority & OOS checks (if driver has a company with DOT#)
+        if (companyId) {
+          const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+          if (company?.dotNumber) {
+            try {
+              const oosStatus = await getOOSStatus(company.dotNumber);
+              if (oosStatus?.outOfService) {
+                throw new Error('Carrier has active Out-of-Service order. Cannot assign load.');
+              }
+            } catch (oosErr: any) {
+              if (oosErr?.message?.includes('Out-of-Service')) throw oosErr;
+              console.warn('[Dispatch] OOS check warning:', oosErr?.message);
+            }
+
+            // Insurance check for hazmat loads
+            if (load.hazmatClass) {
+              const HAZMAT_INSURANCE_MIN: Record<string, number> = {
+                '1': 5000000, '2': 5000000, '3': 5000000, '4': 5000000,
+                '5': 5000000, '6': 5000000, '7': 5000000, '8': 5000000, '9': 1000000,
+              };
+              const requiredIns = HAZMAT_INSURANCE_MIN[load.hazmatClass] || 1000000;
+              try {
+                const insStatus = await getInsuranceStatus(company.dotNumber);
+                const insAmount = insStatus?.bipdLimit || 0;
+                if (insAmount < requiredIns) {
+                  throw new Error(`Insufficient insurance. Hazmat Class ${load.hazmatClass} requires $${(requiredIns/1000000).toFixed(0)}M coverage. Carrier has $${(insAmount/1000000).toFixed(1)}M.`);
+                }
+              } catch (insErr: any) {
+                if (insErr?.message?.includes('Insufficient')) throw insErr;
+                console.warn('[Dispatch] Insurance check warning:', insErr?.message);
+              }
+            }
+          }
+        }
+
+        // CDL check for hazmat loads
+        if (load.hazmatClass) {
+          const cdlDocs = await db.select().from(documents)
+            .where(and(eq(documents.userId, driverUserId), eq(documents.type, 'cdl'))).limit(1);
+          const cdl = cdlDocs[0];
+          if (!cdl) {
+            throw new Error('Driver has no CDL on file. Upload CDL before hazmat assignment.');
+          }
+          if (cdl.expiryDate && new Date(cdl.expiryDate) < new Date()) {
+            throw new Error('Driver CDL is expired. Cannot assign hazmat load.');
+          }
+        }
+
+        // Vehicle inspection check
+        if (input.vehicleId) {
+          const vIdNum = parseInt(input.vehicleId.replace(/\D/g, '')) || 0;
+          const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, vIdNum)).limit(1);
+          if (vehicle?.nextInspectionDate && new Date(vehicle.nextInspectionDate) < new Date()) {
+            throw new Error('Vehicle inspection has expired. Schedule inspection before assignment.');
+          }
+        }
+
+        console.log(`[Dispatch] Compliance gate PASSED: load=${loadIdNum}, driver=${driverUserId}`);
+      } catch (complianceErr: any) {
+        console.warn(`[Dispatch] Compliance gate FAILED: ${complianceErr?.message}`);
+        throw new Error(`Compliance: ${complianceErr?.message}`);
+      }
+      // === END COMPLIANCE GATE ===
 
       // Update the load in the database
       await db.update(loads).set({
