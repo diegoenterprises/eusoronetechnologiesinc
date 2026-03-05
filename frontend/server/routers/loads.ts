@@ -5,6 +5,7 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, bids, users, companies, terminals } from "../../drizzle/schema";
@@ -808,6 +809,16 @@ export const loadsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Validate delivery date is not before pickup date
+      if (input.deliveryDate && input.pickupDate) {
+        if (new Date(input.deliveryDate) < new Date(input.pickupDate)) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Delivery date cannot be before pickup date.',
+          });
+        }
+      }
+
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 

@@ -1844,4 +1844,105 @@ export const adminRouter = router({
       console.log(`[Admin] Seeded vehicles: ${created.length} created, ${skipped.length} skipped`);
       return { created, skipped, companyId: cid };
     }),
+
+  // ── WS-P0-014: Fix load data integrity ──
+  fixLoadDataIntegrity: auditedAdminProcedure
+    .mutation(async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const { loads } = await import("../../drizzle/schema");
+      const fixes: string[] = [];
+
+      // Fix 1: Load 11 delivery date before pickup date
+      const [load11] = await db.select({ id: loads.id, pickupDate: loads.pickupDate, deliveryDate: loads.deliveryDate })
+        .from(loads).where(eq(loads.loadNumber, "LD-260301-MAIY7HZB")).limit(1);
+      if (load11 && load11.deliveryDate && load11.pickupDate && new Date(load11.deliveryDate) < new Date(load11.pickupDate)) {
+        const fixedDate = new Date(new Date(load11.pickupDate).getTime() + 86400000); // +1 day after pickup
+        await db.update(loads).set({ deliveryDate: fixedDate }).where(eq(loads.id, load11.id));
+        fixes.push(`Load 11: fixed deliveryDate to ${fixedDate.toISOString().split('T')[0]}`);
+      }
+
+      // Fix 2: Fix any remaining loads with delivery < pickup
+      const badDates = await db.execute(
+        sql`SELECT id, loadNumber, pickupDate, deliveryDate FROM loads WHERE deliveryDate IS NOT NULL AND pickupDate IS NOT NULL AND deliveryDate < pickupDate`
+      );
+      const badRows = (badDates as any)?.[0] || badDates;
+      if (Array.isArray(badRows)) {
+        for (const row of badRows) {
+          const fixedDate = new Date(new Date(row.pickupDate).getTime() + 86400000);
+          await db.update(loads).set({ deliveryDate: fixedDate }).where(eq(loads.id, row.id));
+          fixes.push(`Load ${row.loadNumber}: fixed deliveryDate (was before pickupDate)`);
+        }
+      }
+
+      // Fix 3: Backfill 0,0 coordinates with realistic TX city coords
+      const cityCoords: Record<string, { lat: number; lng: number }> = {
+        "houston": { lat: 29.7604, lng: -95.3698 },
+        "austin": { lat: 30.2672, lng: -97.7431 },
+        "dallas": { lat: 32.7767, lng: -96.7970 },
+        "san antonio": { lat: 29.4241, lng: -98.4936 },
+        "fort worth": { lat: 32.7555, lng: -97.3308 },
+        "el paso": { lat: 31.7619, lng: -106.4850 },
+        "midland": { lat: 31.9973, lng: -102.0779 },
+        "odessa": { lat: 31.8457, lng: -102.3676 },
+        "corpus christi": { lat: 27.8006, lng: -97.3964 },
+        "beaumont": { lat: 30.0802, lng: -94.1266 },
+        "port arthur": { lat: 29.8850, lng: -93.9399 },
+        "galveston": { lat: 29.3013, lng: -94.7977 },
+        "laredo": { lat: 27.5036, lng: -99.5076 },
+      };
+      const zeroCoordLoads = await db.execute(
+        sql`SELECT id, pickupLocation, deliveryLocation FROM loads WHERE JSON_EXTRACT(pickupLocation, '$.lat') = 0 OR JSON_EXTRACT(deliveryLocation, '$.lat') = 0`
+      );
+      const zeroRows = (zeroCoordLoads as any)?.[0] || zeroCoordLoads;
+      if (Array.isArray(zeroRows)) {
+        for (const row of zeroRows) {
+          const pickup = typeof row.pickupLocation === 'string' ? JSON.parse(row.pickupLocation) : row.pickupLocation;
+          const delivery = typeof row.deliveryLocation === 'string' ? JSON.parse(row.deliveryLocation) : row.deliveryLocation;
+          let updated = false;
+          if (pickup && (pickup.lat === 0 || pickup.lng === 0)) {
+            const city = (pickup.city || '').toLowerCase().trim();
+            const coords = cityCoords[city] || { lat: 29.7604, lng: -95.3698 }; // default Houston
+            pickup.lat = coords.lat; pickup.lng = coords.lng;
+            updated = true;
+          }
+          if (delivery && (delivery.lat === 0 || delivery.lng === 0)) {
+            const city = (delivery.city || '').toLowerCase().trim();
+            const coords = cityCoords[city] || { lat: 30.2672, lng: -97.7431 }; // default Austin
+            delivery.lat = coords.lat; delivery.lng = coords.lng;
+            updated = true;
+          }
+          if (updated) {
+            await db.update(loads).set({ pickupLocation: pickup, deliveryLocation: delivery }).where(eq(loads.id, row.id));
+            fixes.push(`Load ${row.id}: backfilled coordinates`);
+          }
+        }
+      }
+
+      // Fix 4: Calculate missing distances using haversine
+      const nullDistLoads = await db.execute(
+        sql`SELECT id, pickupLocation, deliveryLocation FROM loads WHERE distance IS NULL AND pickupLocation IS NOT NULL AND deliveryLocation IS NOT NULL`
+      );
+      const nullDistRows = (nullDistLoads as any)?.[0] || nullDistLoads;
+      if (Array.isArray(nullDistRows)) {
+        for (const row of nullDistRows) {
+          const p = typeof row.pickupLocation === 'string' ? JSON.parse(row.pickupLocation) : row.pickupLocation;
+          const d = typeof row.deliveryLocation === 'string' ? JSON.parse(row.deliveryLocation) : row.deliveryLocation;
+          if (p?.lat && p?.lng && d?.lat && d?.lng && p.lat !== 0 && d.lat !== 0) {
+            // Haversine formula
+            const R = 3958.8; // Earth radius in miles
+            const dLat = (d.lat - p.lat) * Math.PI / 180;
+            const dLng = (d.lng - p.lng) * Math.PI / 180;
+            const a = Math.sin(dLat/2)**2 + Math.cos(p.lat * Math.PI/180) * Math.cos(d.lat * Math.PI/180) * Math.sin(dLng/2)**2;
+            const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const roadDist = Math.round(dist * 1.3 * 100) / 100; // ~1.3x road factor
+            await db.update(loads).set({ distance: String(roadDist) } as any).where(eq(loads.id, row.id));
+            fixes.push(`Load ${row.id}: calculated distance ${roadDist} mi`);
+          }
+        }
+      }
+
+      console.log(`[Admin] Load data integrity: ${fixes.length} fixes applied`);
+      return { fixes, count: fixes.length };
+    }),
 });
