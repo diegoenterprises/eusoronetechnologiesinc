@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { eq, and, desc, sql, or, gte, lte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
@@ -220,6 +221,14 @@ export const loadBiddingRouter = router({
       await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'BID' }, (ctx as any).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
+
+      // WS-P1-004: Prevent duplicate bids from same user on same load
+      const [existingBid] = await db.select({ id: loadBids.id }).from(loadBids)
+        .where(and(eq(loadBids.loadId, input.loadId), eq(loadBids.bidderUserId, ctx.user!.id), sql`${loadBids.status} NOT IN ('withdrawn', 'expired')`))
+        .limit(1);
+      if (existingBid) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'You have already submitted a bid on this load. Withdraw your existing bid first.' });
+      }
 
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + input.expiresInHours);

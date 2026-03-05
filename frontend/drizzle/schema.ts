@@ -4222,6 +4222,7 @@ export const loadBids = mysqlTable(
     parentBidIdx: index("load_bid_parent_idx").on(table.parentBidId),
     agreementIdx: index("load_bid_agreement_idx").on(table.agreementId),
     expiresIdx: index("load_bid_expires_idx").on(table.expiresAt),
+    uniqueBidPerUser: uniqueIndex("idx_unique_bid_per_user").on(table.loadId, table.bidderUserId),
   })
 );
 

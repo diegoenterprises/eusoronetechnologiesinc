@@ -824,12 +824,21 @@ export const catalystsRouter = router({
   submitBid: protectedProcedure
     .input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'BID' }, (ctx as any).req);
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       const catalystId = await resolveCatalystUserId(ctx.user);
       if (!catalystId) throw new Error("Could not resolve user");
       const loadIdNum = parseInt(input.loadId, 10);
       if (!loadIdNum) throw new Error("Invalid load ID");
+
+      // WS-P1-004: Prevent duplicate bids from same user on same load
+      const [existingBid] = await db.select({ id: bids.id }).from(bids)
+        .where(and(eq(bids.loadId, loadIdNum), eq(bids.catalystId, catalystId), sql`${bids.status} NOT IN ('withdrawn', 'expired', 'rejected')`))
+        .limit(1);
+      if (existingBid) {
+        throw new Error("You have already submitted a bid on this load. Withdraw your existing bid first.");
+      }
 
       const result = await db.insert(bids).values({
         loadId: loadIdNum,
