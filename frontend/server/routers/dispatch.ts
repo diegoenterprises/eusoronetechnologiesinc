@@ -467,16 +467,43 @@ export const dispatchRouter = router({
           }
         }
 
-        // CDL check for hazmat loads
+        // WS-P1-017: Document expiration gate — check ALL required documents before assignment
+        const now = new Date();
+        const driverDocs = await db.select({ type: documents.type, expiryDate: documents.expiryDate, status: documents.status })
+          .from(documents).where(eq(documents.userId, driverUserId));
+
+        // CDL is required for ALL loads
+        const cdl = driverDocs.find(d => d.type === 'cdl');
+        if (!cdl) {
+          throw new Error('Driver has no CDL on file. Upload CDL before assignment.');
+        }
+        if (cdl.expiryDate && new Date(cdl.expiryDate) < now) {
+          throw new Error('Driver CDL is expired. Cannot assign load.');
+        }
+
+        // Medical certificate required for all loads
+        const medCert = driverDocs.find(d => d.type === 'medical_certificate' || d.type === 'medical_cert' || d.type === 'dot_medical');
+        if (medCert?.expiryDate && new Date(medCert.expiryDate) < now) {
+          throw new Error('Driver medical certificate is expired. Renew before assignment.');
+        }
+
+        // Hazmat endorsement required for hazmat loads
         if (load.hazmatClass) {
-          const cdlDocs = await db.select().from(documents)
-            .where(and(eq(documents.userId, driverUserId), eq(documents.type, 'cdl'))).limit(1);
-          const cdl = cdlDocs[0];
-          if (!cdl) {
-            throw new Error('Driver has no CDL on file. Upload CDL before hazmat assignment.');
+          const hazmatEndorsement = driverDocs.find(d => d.type === 'hazmat_endorsement' || d.type === 'hazmat_cert');
+          if (!hazmatEndorsement) {
+            throw new Error(`Hazmat Class ${load.hazmatClass} load requires hazmat endorsement. Upload before assignment.`);
           }
-          if (cdl.expiryDate && new Date(cdl.expiryDate) < new Date()) {
-            throw new Error('Driver CDL is expired. Cannot assign hazmat load.');
+          if (hazmatEndorsement.expiryDate && new Date(hazmatEndorsement.expiryDate) < now) {
+            throw new Error('Driver hazmat endorsement is expired. Cannot assign hazmat load.');
+          }
+        }
+
+        // TWIC card required for port/terminal loads
+        const specialInstructions = typeof load.specialInstructions === 'string' ? load.specialInstructions.toLowerCase() : '';
+        if (specialInstructions.includes('port') || specialInstructions.includes('terminal') || specialInstructions.includes('twic')) {
+          const twic = driverDocs.find(d => d.type === 'twic' || d.type === 'twic_card');
+          if (twic?.expiryDate && new Date(twic.expiryDate) < now) {
+            throw new Error('Driver TWIC card is expired. Cannot assign port/terminal load.');
           }
         }
 
