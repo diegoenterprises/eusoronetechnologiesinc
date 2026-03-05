@@ -18,7 +18,10 @@ import {
   loads,
   users,
   companies,
+  auditLogs,
+  insurancePolicies,
 } from "../../drizzle/schema";
+import { fmcsaService } from "../services/fmcsa";
 
 // Map platform roles to valid load_bids.bidderRole enum values
 function roleToBidderRole(role?: string): "catalyst" | "broker" | "driver" | "escort" {
@@ -379,31 +382,110 @@ export const loadBiddingRouter = router({
       const [bid] = await db.select().from(loadBids).where(eq(loadBids.id, input.bidId));
       if (!bid) throw new Error("Bid not found");
 
-      // === INSURANCE VERIFICATION GATE (49 CFR 387.9) ===
+      // === WS-P0-005R: COMPLIANCE GATE — FMCSA Safety + Operating Authority ===
+      const [bidderUser] = await db.select().from(users).where(eq(users.id, bid.bidderUserId)).limit(1);
+      const bidderCompanyId = (bidderUser as any)?.companyId;
+      let bidderCompany: any = null;
+
+      if (bidderCompanyId) {
+        const [co] = await db.select().from(companies).where(eq(companies.id, bidderCompanyId)).limit(1);
+        bidderCompany = co;
+      }
+
+      if (!bidderCompany || !bidderCompany.dotNumber) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Carrier must have a registered DOT number' });
+      }
+
+      // FMCSA safety rating + operating authority check
       try {
-        const [load] = await db.select().from(loads).where(eq(loads.id, bid.loadId)).limit(1);
-        if (load?.hazmatClass) {
-          const [bidder] = await db.select().from(users).where(eq(users.id, bid.bidderUserId)).limit(1);
-          const bidderCompanyId = (bidder as any)?.companyId;
-          if (bidderCompanyId) {
-            const [company] = await db.select().from(companies).where(eq(companies.id, bidderCompanyId)).limit(1);
-            if (company?.dotNumber) {
-              const HAZMAT_INS_MIN: Record<string, number> = {
-                '1': 5000000, '2': 5000000, '3': 5000000, '4': 5000000,
-                '5': 5000000, '6': 5000000, '7': 5000000, '8': 5000000, '9': 1000000,
-              };
-              const requiredMin = HAZMAT_INS_MIN[load.hazmatClass] || 1000000;
-              const insStatus = await getInsuranceStatus(company.dotNumber);
-              const insAmount = insStatus?.bipdLimit || 0;
-              if (insAmount < requiredMin) {
-                throw new Error(`Cannot accept bid: carrier insurance ($${(insAmount / 1000000).toFixed(1)}M) below required minimum ($${(requiredMin / 1000000).toFixed(0)}M) for Hazmat Class ${load.hazmatClass} cargo.`);
-              }
-              console.log(`[Bidding] Insurance gate PASSED: carrier BIPD $${(insAmount/1000000).toFixed(1)}M >= $${(requiredMin/1000000).toFixed(0)}M required`);
-            }
+        const verification = await fmcsaService.verifyCatalyst(bidderCompany.dotNumber);
+        if (verification.safetyRating?.rating === 'Unsatisfactory') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Carrier has Unsatisfactory FMCSA safety rating' });
+        }
+        const activeAuth = verification.authorities?.some(a => a.authorityStatus === 'ACTIVE');
+        if (verification.authorities?.length > 0 && !activeAuth) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Carrier operating authority is not active' });
+        }
+        console.log(`[Bidding] Compliance gate PASSED: DOT#${bidderCompany.dotNumber}, safety=${verification.safetyRating?.rating || 'N/A'}`);
+      } catch (fmcsaErr: any) {
+        if (fmcsaErr?.code === 'FORBIDDEN') throw fmcsaErr;
+        console.warn('[Bidding] FMCSA check warning (non-blocking):', fmcsaErr?.message);
+      }
+
+      // Log compliance decision
+      try {
+        await db.insert(auditLogs).values({
+          action: 'compliance_gate_passed',
+          entityType: 'load_bid',
+          entityId: input.bidId,
+          userId: ctx.user?.id,
+          changes: JSON.stringify({ dotNumber: bidderCompany.dotNumber, bidderUserId: bid.bidderUserId }),
+          severity: 'LOW',
+        });
+      } catch { /* non-critical */ }
+      // === END COMPLIANCE GATE ===
+
+      // === WS-P0-006R: INSURANCE ENFORCEMENT GATE ===
+      const [load] = await db.select().from(loads).where(eq(loads.id, bid.loadId)).limit(1);
+      try {
+        // Check platform insurance policies (insurancePolicies table)
+        const activePolicies = await db.select().from(insurancePolicies)
+          .where(and(
+            eq(insurancePolicies.companyId, bidderCompany.id),
+            eq(insurancePolicies.status, 'active'),
+            gte(insurancePolicies.expirationDate, new Date()),
+          ));
+
+        if (!activePolicies.length) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Carrier has no valid insurance certificates' });
+        }
+
+        // Require auto_liability + cargo for all loads
+        const hasAutoLiability = activePolicies.some(p => p.policyType === 'auto_liability');
+        const hasCargo = activePolicies.some(p => p.policyType === 'cargo' || p.policyType === 'motor_truck_cargo');
+        if (!hasAutoLiability || !hasCargo) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Carrier missing required insurance coverage (auto liability + cargo)' });
+        }
+
+        // For hazmat loads, require hazmat endorsement
+        const isHazmat = load?.[0 as any]?.hazmatClass || load?.hazmatClass;
+        const cargoType = (load as any)?.cargoType?.toLowerCase?.() || '';
+        if (isHazmat || cargoType.includes('crude') || cargoType.includes('hazmat')) {
+          const hasHazmatIns = activePolicies.some(p =>
+            p.policyType === 'hazmat_endorsement' || p.hazmatCoverage ||
+            (p.endorsements as string[] || []).some?.((e: string) => e.toLowerCase().includes('hazmat'))
+          );
+          if (!hasHazmatIns) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Hazmat load requires hazmat insurance endorsement' });
           }
         }
+
+        // Check minimum $1M coverage (combinedSingleLimit or perOccurrenceLimit)
+        const maxCoverage = Math.max(...activePolicies.map(p =>
+          parseFloat(p.combinedSingleLimit || '0') || parseFloat(p.perOccurrenceLimit || '0') || 0
+        ));
+        if (maxCoverage > 0 && maxCoverage < 1_000_000) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: `Insurance coverage ($${maxCoverage.toLocaleString()}) below minimum ($1,000,000)` });
+        }
+
+        // Also check FMCSA BIPD for hazmat loads
+        if (isHazmat && bidderCompany.dotNumber) {
+          const HAZMAT_INS_MIN: Record<string, number> = {
+            '1': 5000000, '2': 5000000, '3': 5000000, '4': 5000000,
+            '5': 5000000, '6': 5000000, '7': 5000000, '8': 5000000, '9': 1000000,
+          };
+          const hzClass = typeof isHazmat === 'string' ? isHazmat : '';
+          const requiredMin = HAZMAT_INS_MIN[hzClass] || 1000000;
+          const insStatus = await getInsuranceStatus(bidderCompany.dotNumber);
+          const insAmount = insStatus?.bipdLimit || 0;
+          if (insAmount > 0 && insAmount < requiredMin) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: `FMCSA BIPD ($${(insAmount / 1000000).toFixed(1)}M) below required ($${(requiredMin / 1000000).toFixed(0)}M) for Hazmat Class ${hzClass}` });
+          }
+        }
+
+        console.log(`[Bidding] Insurance gate PASSED: ${activePolicies.length} active policies, maxCoverage=$${maxCoverage.toLocaleString()}`);
       } catch (insErr: any) {
-        if (insErr?.message?.includes('Cannot accept bid')) throw insErr;
+        if (insErr?.code === 'FORBIDDEN') throw insErr;
         console.warn('[Bidding] Insurance check warning:', insErr?.message);
       }
       // === END INSURANCE GATE ===
