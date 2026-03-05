@@ -270,6 +270,33 @@ export const loadBiddingRouter = router({
         aiFraudCheck = scoreBid(input.bidAmount, historicalAmounts, marketAvg);
       } catch {}
 
+      // ── WebSocket: notify shipper of new bid ──
+      try {
+        const { emitBidReceived, emitNotification } = await import("../_core/websocket");
+        const [bidLoad] = await db.select({ loadNumber: loads.loadNumber, shipperId: loads.shipperId }).from(loads).where(eq(loads.id, input.loadId)).limit(1);
+        emitBidReceived({
+          bidId: String(result[0]?.id),
+          loadId: String(input.loadId),
+          loadNumber: bidLoad?.loadNumber || `LOAD-${input.loadId}`,
+          catalystId: String(ctx.user!.id),
+          catalystName: ctx.user?.name || "Carrier",
+          amount: input.bidAmount,
+          status: "pending",
+          timestamp: new Date().toISOString(),
+        });
+        if (bidLoad?.shipperId) {
+          emitNotification(String(bidLoad.shipperId), {
+            id: `notif_bid_${Date.now()}`,
+            type: "bid_received",
+            title: "New Bid Received",
+            message: `${ctx.user?.name || "A carrier"} bid $${input.bidAmount.toLocaleString()} on load ${bidLoad.loadNumber}`,
+            priority: "high",
+            data: { loadId: String(input.loadId), bidId: String(result[0]?.id), amount: input.bidAmount },
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch { /* non-critical */ }
+
       return { id: result[0]?.id, status: "pending", aiFraudCheck };
     }),
 
@@ -312,6 +339,22 @@ export const loadBiddingRouter = router({
         status: "pending",
         expiresAt,
       }).$returningId();
+
+      // ── WebSocket: notify of counter-offer ──
+      try {
+        const { emitBidReceived } = await import("../_core/websocket");
+        const [counterLoad] = await db.select({ loadNumber: loads.loadNumber }).from(loads).where(eq(loads.id, input.loadId)).limit(1);
+        emitBidReceived({
+          bidId: String(result[0]?.id),
+          loadId: String(input.loadId),
+          loadNumber: counterLoad?.loadNumber || `LOAD-${input.loadId}`,
+          catalystId: String(ctx.user!.id),
+          catalystName: ctx.user?.name || "User",
+          amount: input.counterAmount,
+          status: "countered",
+          timestamp: new Date().toISOString(),
+        });
+      } catch { /* non-critical */ }
 
       return { id: result[0]?.id, round: newRound, status: "pending" };
     }),
@@ -375,6 +418,31 @@ export const loadBiddingRouter = router({
         .set({ status: "assigned", catalystId: bid.bidderUserId, rate: bid.bidAmount })
         .where(eq(loads.id, bid.loadId));
 
+      // ── WebSocket: notify bidder of acceptance ──
+      try {
+        const { emitBidAwarded, emitNotification: emitNotif } = await import("../_core/websocket");
+        const [accLoad] = await db.select({ loadNumber: loads.loadNumber }).from(loads).where(eq(loads.id, bid.loadId)).limit(1);
+        emitBidAwarded({
+          bidId: String(bid.id),
+          loadId: String(bid.loadId),
+          loadNumber: accLoad?.loadNumber || `LOAD-${bid.loadId}`,
+          catalystId: String(bid.bidderUserId),
+          catalystName: "",
+          amount: parseFloat(String(bid.bidAmount)),
+          status: "accepted",
+          timestamp: new Date().toISOString(),
+        });
+        emitNotif(String(bid.bidderUserId), {
+          id: `notif_acc_${Date.now()}`,
+          type: "bid_accepted",
+          title: "Bid Accepted!",
+          message: `Your bid of $${bid.bidAmount} on load ${accLoad?.loadNumber || bid.loadId} was accepted`,
+          priority: "high",
+          data: { loadId: String(bid.loadId), bidId: String(bid.id) },
+          timestamp: new Date().toISOString(),
+        });
+      } catch { /* non-critical */ }
+
       return { success: true, status: "accepted", loadId: bid.loadId };
     }),
 
@@ -387,9 +455,28 @@ export const loadBiddingRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
+      const [rejBid] = await db.select().from(loadBids).where(eq(loadBids.id, input.bidId)).limit(1);
       await db.update(loadBids)
         .set({ status: "rejected", rejectionReason: input.reason, respondedAt: new Date(), respondedBy: ctx.user!.id })
         .where(eq(loadBids.id, input.bidId));
+
+      // ── WebSocket: notify bidder of rejection ──
+      if (rejBid) {
+        try {
+          const { emitNotification: emitRejNotif } = await import("../_core/websocket");
+          const [rejLoad] = await db.select({ loadNumber: loads.loadNumber }).from(loads).where(eq(loads.id, rejBid.loadId)).limit(1);
+          emitRejNotif(String(rejBid.bidderUserId), {
+            id: `notif_rej_${Date.now()}`,
+            type: "bid_rejected",
+            title: "Bid Not Selected",
+            message: `Your bid on load ${rejLoad?.loadNumber || rejBid.loadId} was not selected`,
+            priority: "medium",
+            data: { loadId: String(rejBid.loadId), bidId: String(rejBid.id) },
+            timestamp: new Date().toISOString(),
+          });
+        } catch { /* non-critical */ }
+      }
+
       return { success: true, status: "rejected" };
     }),
 
