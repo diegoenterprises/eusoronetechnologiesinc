@@ -224,6 +224,7 @@ export default function LoadCreationWizard() {
   const [productDropdownSearch, setProductDropdownSearch] = useState("");
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [isOtherProduct, setIsOtherProduct] = useState(false);
+  const [endorsementCount, setEndorsementCount] = useState(0);
   const suggestRef = useRef<HTMLDivElement>(null);
   const unSuggestRef = useRef<HTMLDivElement>(null);
   const productDropdownRef = useRef<HTMLDivElement>(null);
@@ -1614,26 +1615,24 @@ export default function LoadCreationWizard() {
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-slate-500">How many endorsements required?</span>
                   <div className="flex gap-1.5">
-                    {[0, 1, 2, 3, 4, 5, 6].map(n => {
-                      const currentEndorsements = (formData.endorsements || "").split(",").map((s: string) => s.trim()).filter(Boolean);
-                      const activeCount = currentEndorsements.length;
-                      return (
-                        <button key={n} onClick={() => {
-                          if (n === 0) { updateField("endorsements", ""); return; }
-                          const existing = currentEndorsements.slice(0, n);
-                          while (existing.length < n) existing.push("");
-                          updateField("endorsements", existing.join(", "));
-                        }}
-                          className={cn(
-                            "w-8 h-8 rounded-lg text-xs font-bold transition-all border",
-                            activeCount === n
-                              ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-lg"
-                              : "bg-slate-700/50 border-slate-600/50 text-slate-400 hover:bg-slate-700"
-                          )}>
-                          {n}
-                        </button>
-                      );
-                    })}
+                    {[0, 1, 2, 3, 4, 5, 6].map(n => (
+                      <button key={n} onClick={() => {
+                        setEndorsementCount(n);
+                        if (n === 0) { updateField("endorsements", ""); }
+                        else {
+                          const existing = (formData.endorsements || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+                          if (existing.length > n) updateField("endorsements", existing.slice(0, n).join(", "));
+                        }
+                      }}
+                        className={cn(
+                          "w-8 h-8 rounded-lg text-xs font-bold transition-all border",
+                          endorsementCount === n
+                            ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-lg"
+                            : "bg-slate-100 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        )}>
+                        {n}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 {(() => {
@@ -1645,38 +1644,40 @@ export default function LoadCreationWizard() {
                     { code: "P", name: "P — Passenger", desc: "Required to operate vehicles carrying 16+ passengers" },
                     { code: "S", name: "S — School Bus", desc: "Required to operate a school bus" },
                   ];
-                  const currentEndorsements = (formData.endorsements || "").split(",").map((s: string) => s.trim()).filter(Boolean);
-                  if (currentEndorsements.length === 0) return null;
+                  if (endorsementCount === 0) return null;
+                  const selectedCodes = (formData.endorsements || "").split(",").map((s: string) => s.trim()).filter(Boolean);
                   return (
                     <div className="space-y-2">
-                      {currentEndorsements.map((endorsement: string, idx: number) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">{idx + 1}</div>
-                          <Select value={endorsement} onValueChange={(val: string) => {
-                            const arr = [...currentEndorsements];
-                            arr[idx] = val;
-                            updateField("endorsements", arr.join(", "));
-                          }}>
-                            <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg text-sm flex-1">
-                              <SelectValue placeholder="Select endorsement..." />
-                            </SelectTrigger>
-                            <SelectContent className="bg-slate-800 border-slate-600/50">
-                              {CDL_ENDORSEMENTS
-                                .filter(e => e.code === endorsement || !currentEndorsements.includes(e.code))
-                                .map(e => (
-                                  <SelectItem key={e.code} value={e.code} className="text-white hover:bg-slate-700/50">
-                                    <div className="flex items-center gap-2">
+                      {Array.from({ length: endorsementCount }).map((_, idx) => {
+                        const currentValue = selectedCodes[idx] || "";
+                        return (
+                          <div key={idx} className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">{idx + 1}</div>
+                            <Select value={currentValue} onValueChange={(val: string) => {
+                              const arr = [...selectedCodes];
+                              while (arr.length <= idx) arr.push("");
+                              arr[idx] = val;
+                              updateField("endorsements", arr.filter(Boolean).join(", "));
+                            }}>
+                              <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm flex-1">
+                                <SelectValue placeholder="Select endorsement..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {CDL_ENDORSEMENTS
+                                  .filter(e => e.code === currentValue || !selectedCodes.includes(e.code))
+                                  .map(e => (
+                                    <SelectItem key={e.code} value={e.code}>
                                       <span className="font-semibold text-sm">{e.name}</span>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ))}
-                      {currentEndorsements.filter(Boolean).length > 0 && (
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        );
+                      })}
+                      {selectedCodes.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
-                          {currentEndorsements.filter(Boolean).map((code: string) => {
+                          {selectedCodes.map((code: string) => {
                             const e = [
                               { code: "H", name: "Hazmat" }, { code: "N", name: "Tank" }, { code: "T", name: "Doubles/Triples" },
                               { code: "X", name: "Hazmat+Tank" }, { code: "P", name: "Passenger" }, { code: "S", name: "School Bus" },
@@ -1692,7 +1693,7 @@ export default function LoadCreationWizard() {
                     </div>
                   );
                 })()}
-                {(formData.endorsements || "").split(",").filter(Boolean).length === 0 && (
+                {endorsementCount === 0 && (
                   <p className="text-[10px] text-slate-500">No endorsements required — select a count above to add CDL endorsement requirements.</p>
                 )}
               </div>

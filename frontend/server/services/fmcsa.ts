@@ -381,7 +381,12 @@ class FMCSAService {
       }
 
       const data = await response.json();
-      return data.content?.catalysts || [];
+      // FMCSA QCMobile returns content as array of {carrier: {...}} objects
+      const content = data.content;
+      if (Array.isArray(content)) {
+        return content.map((item: any) => item.carrier || item.catalyst || item).filter(Boolean);
+      }
+      return content?.carriers || content?.catalysts || [];
     } catch (error) {
       console.error("[FMCSA] searchCatalysts error:", error);
       return [];
