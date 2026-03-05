@@ -1073,6 +1073,57 @@ export const loadLifecycleRouter = router({
         });
       } catch { /* non-critical — page still works via polling */ }
 
+      // ── Native WebSocket broadcast — emitLoadStatusChange + role notifications ──
+      try {
+        const { emitLoadStatusChange, emitNotification } = await import("../_core/websocket");
+        emitLoadStatusChange({
+          loadId: String(numericLoadId),
+          loadNumber: load?.loadNumber || `LOAD-${numericLoadId}`,
+          previousStatus: currentState,
+          newStatus: transition.to,
+          updatedBy: String(ctx.user?.id || 0),
+          timestamp: new Date().toISOString(),
+          location: input.location ? { lat: input.location.lat, lng: input.location.lng } : undefined,
+        });
+
+        const statusLabel = transition.to.replace(/_/g, " ").toLowerCase();
+        const loadNum = load?.loadNumber || `#${numericLoadId}`;
+
+        if (load?.shipperId) {
+          emitNotification(String(load.shipperId), {
+            id: `notif_${Date.now()}_sh`,
+            type: "load_update",
+            title: `Load ${loadNum}: ${statusLabel}`,
+            message: `Your load transitioned from ${currentState} to ${transition.to}`,
+            priority: "medium",
+            data: { loadId: String(numericLoadId), newState: transition.to },
+            timestamp: new Date().toISOString(),
+          });
+        }
+        if (load?.catalystId && load.catalystId !== (ctx.user?.id || 0)) {
+          emitNotification(String(load.catalystId), {
+            id: `notif_${Date.now()}_cat`,
+            type: "load_update",
+            title: `Load ${loadNum}: ${statusLabel}`,
+            message: `Load transitioned to ${transition.to}`,
+            priority: "medium",
+            data: { loadId: String(numericLoadId), newState: transition.to },
+            timestamp: new Date().toISOString(),
+          });
+        }
+        if (load?.driverId && load.driverId !== (ctx.user?.id || 0)) {
+          emitNotification(String(load.driverId), {
+            id: `notif_${Date.now()}_drv`,
+            type: "load_update",
+            title: `Load ${loadNum}: ${statusLabel}`,
+            message: `Load transitioned to ${transition.to}`,
+            priority: "high",
+            data: { loadId: String(numericLoadId), newState: transition.to },
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch { /* non-critical */ }
+
       // ── Cargo exception notifications — urgent email + SMS ──
       const CARGO_EXCEPTION_STATES = ["TEMP_EXCURSION", "REEFER_BREAKDOWN", "CONTAMINATION_REJECT", "SEAL_BREACH", "WEIGHT_VIOLATION"];
       if (CARGO_EXCEPTION_STATES.includes(transition.to)) {
