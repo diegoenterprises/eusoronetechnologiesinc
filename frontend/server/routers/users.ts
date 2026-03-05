@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, like } from "drizzle-orm";
-import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import crypto from "crypto";
 import { getDb } from "../db";
 import { users, auditLogs, notificationPreferences, companies } from "../../drizzle/schema";
 
@@ -380,7 +381,66 @@ export const usersRouter = router({
     };
   }),
 
-  // Request account deletion
+  // Close account (GDPR Article 17 / CCPA compliant)
+  closeAccount: protectedProcedure
+    .input(z.object({ reason: z.string().optional(), confirmPassword: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = await ensureUserExists(ctx.user);
+      if (!userId) throw new Error("Could not resolve user");
+
+      // 1. Verify password
+      const [user] = await db.select({ id: users.id, passwordHash: users.passwordHash, email: users.email, name: users.name })
+        .from(users).where(eq(users.id, userId)).limit(1);
+      if (!user) throw new Error("User not found");
+      if (user.passwordHash) {
+        const bcryptMod = await import("bcryptjs");
+        const valid = await bcryptMod.default.compare(input.confirmPassword, user.passwordHash);
+        if (!valid) throw new Error("Password verification failed");
+      }
+
+      // 2. Check no active loads
+      try {
+        const { loads } = await import("../../drizzle/schema");
+        const [activeLoad] = await db.select({ id: loads.id }).from(loads)
+          .where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('en_route_pickup','en_route_delivery','at_pickup','at_delivery','loading','unloading','assigned')`))
+          .limit(1);
+        if (activeLoad) throw new Error("Cannot close account with active loads in transit. Complete or cancel all active loads first.");
+      } catch (e: any) {
+        if (e.message?.includes("Cannot close")) throw e;
+      }
+
+      // 3. Soft-delete: anonymize PII
+      const closedAt = new Date();
+      const emailHash = require("crypto").createHash("sha256").update(user.email || "").digest("hex").slice(0, 12);
+      await db.update(users).set({
+        name: "Deleted User",
+        email: `closed_${emailHash}@deleted.eusotrip.com`,
+        phone: null,
+        profilePicture: null,
+        isActive: false,
+        deletedAt: closedAt,
+        metadata: JSON.stringify({ closedAt: closedAt.toISOString(), closedReason: input.reason || "user_requested", originalEmail: user.email }),
+      } as any).where(eq(users.id, userId));
+
+      // 4. Set status columns
+      try {
+        await db.execute(sql`UPDATE users SET status = 'closed', closedAt = NOW(), closedReason = ${input.reason || 'user_requested'} WHERE id = ${userId}`);
+      } catch {}
+
+      // 5. Log to audit
+      try {
+        await db.insert(auditLogs).values({
+          userId, action: 'ACCOUNT_CLOSED', entityType: 'user', entityId: userId,
+          changes: { reason: input.reason || 'user_requested' },
+        } as any);
+      } catch {}
+
+      return { success: true, closedAt: closedAt.toISOString() };
+    }),
+
+  // Request account deletion (alias for frontend compatibility)
   requestAccountDeletion: protectedProcedure
     .input(z.object({ reason: z.string().optional() }))
     .mutation(async () => {
@@ -391,6 +451,62 @@ export const usersRouter = router({
   cancelAccountDeletion: protectedProcedure.input(z.object({}).optional()).mutation(async () => {
     return { success: true };
   }),
+
+  // Admin: Deactivate user account
+  deactivateAccount: protectedProcedure
+    .input(z.object({ userId: z.number(), reason: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const adminUser = ctx.user as any;
+      if (!adminUser?.role || !['ADMIN', 'SUPER_ADMIN'].includes(adminUser.role)) {
+        throw new Error("Admin privileges required");
+      }
+
+      // 1. Set user inactive
+      await db.update(users).set({ isActive: false, deletedAt: new Date() } as any).where(eq(users.id, input.userId));
+
+      // 2. Set deactivation columns
+      try {
+        await db.execute(sql`UPDATE users SET status = 'deactivated', deactivatedAt = NOW(), deactivatedBy = ${Number(adminUser.id)} WHERE id = ${input.userId}`);
+      } catch {}
+
+      // 3. Log to audit
+      try {
+        await db.insert(auditLogs).values({
+          userId: Number(adminUser.id), action: 'ACCOUNT_DEACTIVATED', entityType: 'user', entityId: input.userId,
+          changes: { targetUserId: input.userId, reason: input.reason },
+        } as any);
+      } catch {}
+
+      return { success: true, userId: input.userId, deactivatedAt: new Date().toISOString() };
+    }),
+
+  // Admin: Reactivate user account
+  reactivateAccount: protectedProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const adminUser = ctx.user as any;
+      if (!adminUser?.role || !['ADMIN', 'SUPER_ADMIN'].includes(adminUser.role)) {
+        throw new Error("Admin privileges required");
+      }
+
+      await db.update(users).set({ isActive: true, deletedAt: null } as any).where(eq(users.id, input.userId));
+      try {
+        await db.execute(sql`UPDATE users SET status = 'active', deactivatedAt = NULL, deactivatedBy = NULL WHERE id = ${input.userId}`);
+      } catch {}
+
+      try {
+        await db.insert(auditLogs).values({
+          userId: Number(adminUser.id), action: 'ACCOUNT_REACTIVATED', entityType: 'user', entityId: input.userId,
+          changes: { targetUserId: input.userId },
+        } as any);
+      } catch {}
+
+      return { success: true, userId: input.userId, reactivatedAt: new Date().toISOString() };
+    }),
 
   // Get connected apps
   getConnectedApps: protectedProcedure.query(async () => {
@@ -765,8 +881,16 @@ export const usersRouter = router({
    * Get 2FA status for TwoFactorSetup page
    */
   get2FAStatus: protectedProcedure
-    .query(async () => {
-      return { enabled: false, method: null, lastUpdated: null, backupCodes: ["123456", "234567", "345678"], usedBackupCodes: [] as string[], remainingBackupCodes: 3 };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { enabled: false, method: null, lastUpdated: null, backupCodes: [] as string[], usedBackupCodes: [] as string[], remainingBackupCodes: 0 };
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        const [row] = await db.execute(sql`SELECT enabled, lastVerified, backupCodes FROM mfa_secrets WHERE userId = ${userId} LIMIT 1`) as any[];
+        if (!row) return { enabled: false, method: null, lastUpdated: null, backupCodes: [] as string[], usedBackupCodes: [] as string[], remainingBackupCodes: 0 };
+        const codes = row.backupCodes ? JSON.parse(row.backupCodes) : [];
+        return { enabled: !!row.enabled, method: row.enabled ? 'authenticator' : null, lastUpdated: row.lastVerified?.toISOString() || null, backupCodes: codes, usedBackupCodes: [] as string[], remainingBackupCodes: codes.length };
+      } catch { return { enabled: false, method: null, lastUpdated: null, backupCodes: [] as string[], usedBackupCodes: [] as string[], remainingBackupCodes: 0 }; }
     }),
 
   /**
@@ -795,11 +919,23 @@ export const usersRouter = router({
   enable2FA: protectedProcedure
     .input(z.object({ code: z.string(), secret: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
-      const { verifyTOTP, auditMFAEvent } = await import("../services/security/auth/mfa");
+      const { verifyTOTP, auditMFAEvent, hashBackupCodes, generateTOTPSecret } = await import("../services/security/auth/mfa");
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
       
       if (input.secret) {
         const valid = verifyTOTP(input.secret, input.code);
-        await auditMFAEvent(ctx.user?.id || 0, valid ? "enabled" : "failed");
+        await auditMFAEvent(userId, valid ? "enabled" : "failed");
+        
+        if (valid && db && userId) {
+          // Persist secret + backup codes to mfa_secrets table
+          const { backupCodes } = generateTOTPSecret(ctx.user?.email || '');
+          const hashedCodes = hashBackupCodes(backupCodes);
+          try {
+            await db.execute(sql`INSERT INTO mfa_secrets (userId, secret, enabled, backupCodes, lastVerified) VALUES (${userId}, ${input.secret}, TRUE, ${JSON.stringify(hashedCodes)}, NOW()) ON DUPLICATE KEY UPDATE secret = ${input.secret}, enabled = TRUE, backupCodes = ${JSON.stringify(hashedCodes)}, lastVerified = NOW()`);
+          } catch (e: any) { console.error('[MFA] DB persist error:', e?.message?.slice(0, 100)); }
+          return { success: true, enabledAt: new Date().toISOString(), backupCodes };
+        }
         return { success: valid, enabledAt: valid ? new Date().toISOString() : null };
       }
       
@@ -813,7 +949,13 @@ export const usersRouter = router({
     .input(z.object({ code: z.string().optional(), password: z.string().optional() }))
     .mutation(async ({ ctx }) => {
       const { auditMFAEvent } = await import("../services/security/auth/mfa");
-      await auditMFAEvent(ctx.user?.id || 0, "disabled");
+      const userId = Number(ctx.user?.id) || 0;
+      await auditMFAEvent(userId, "disabled");
+      // Remove from mfa_secrets DB table
+      const db = await getDb();
+      if (db && userId) {
+        try { await db.execute(sql`DELETE FROM mfa_secrets WHERE userId = ${userId}`); } catch {}
+      }
       return { success: true, disabledAt: new Date().toISOString() };
     }),
 
@@ -1304,5 +1446,113 @@ export const usersRouter = router({
         },
         originalAdminId: String(currentUser.id),
       };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // PASSWORD RESET (P0 Blocker 2 — public, no auth required)
+  // ═══════════════════════════════════════════════════════════════
+
+  requestPasswordReset: publicProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: true }; // Always return success to prevent email enumeration
+
+      try {
+        // 1. Find user by email
+        const [user] = await db.select({ id: users.id, email: users.email, name: users.name })
+          .from(users).where(eq(users.email, input.email)).limit(1);
+        if (!user) return { success: true }; // Silent — don't reveal existence
+
+        // 2. Rate limit: max 3 tokens per email per hour
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        const [recentCount] = await db.execute(
+          sql`SELECT COUNT(*) as cnt FROM password_reset_tokens WHERE userId = ${user.id} AND createdAt > ${oneHourAgo}`
+        ) as any[];
+        if ((recentCount?.cnt || 0) >= 3) return { success: true }; // Silent rate limit
+
+        // 3. Generate secure token
+        const token = crypto.randomBytes(32).toString("hex");
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        // 4. Store token
+        await db.execute(
+          sql`INSERT INTO password_reset_tokens (userId, token, expiresAt) VALUES (${user.id}, ${token}, ${expiresAt})`
+        );
+
+        // 5. Send email with reset link
+        try {
+          const { emailService } = await import("../_core/email");
+          const resetUrl = `${process.env.VITE_APP_URL || 'https://eusotrip.com'}/reset-password?token=${token}`;
+          await emailService.send({
+            to: input.email,
+            subject: "EusoTrip — Password Reset Request",
+            html: `<p>Hi ${user.name || 'there'},</p><p>You requested a password reset. Click below to reset your password:</p><p><a href="${resetUrl}" style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">Reset Password</a></p><p>This link expires in 1 hour. If you didn't request this, ignore this email.</p><p>— EusoTrip Security</p>`,
+          });
+        } catch (emailErr) {
+          console.error("[PasswordReset] Email send failed:", emailErr);
+        }
+
+        // 6. Log to audit
+        try {
+          await db.insert(auditLogs).values({
+            userId: user.id, action: 'PASSWORD_RESET_REQUESTED', entityType: 'user', entityId: user.id,
+            changes: { email: input.email },
+          } as any);
+        } catch {}
+      } catch (err: any) {
+        console.error("[PasswordReset] Request error:", err?.message?.slice(0, 200));
+      }
+
+      return { success: true };
+    }),
+
+  resetPassword: publicProcedure
+    .input(z.object({ token: z.string(), newPassword: z.string().min(8) }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      // 1. Lookup token
+      const [tokenRow] = await db.execute(
+        sql`SELECT id, userId, expiresAt, usedAt FROM password_reset_tokens WHERE token = ${input.token} LIMIT 1`
+      ) as any[];
+      if (!tokenRow) throw new Error("Invalid or expired reset token");
+      if (tokenRow.usedAt) throw new Error("This reset token has already been used");
+
+      // 2. Check not expired
+      if (new Date(tokenRow.expiresAt) < new Date()) {
+        throw new Error("Reset token has expired. Please request a new one.");
+      }
+
+      // 3. Hash new password
+      const bcryptMod = await import("bcryptjs");
+      const newHash = await bcryptMod.default.hash(input.newPassword, 12);
+
+      // 4. Update user password
+      await db.update(users).set({ passwordHash: newHash, updatedAt: new Date() }).where(eq(users.id, tokenRow.userId));
+
+      // 5. Mark token as used & delete all tokens for this user
+      await db.execute(sql`UPDATE password_reset_tokens SET usedAt = NOW() WHERE id = ${tokenRow.id}`);
+      await db.execute(sql`DELETE FROM password_reset_tokens WHERE userId = ${tokenRow.userId} AND id != ${tokenRow.id}`);
+
+      // 6. Log to audit
+      try {
+        await db.insert(auditLogs).values({
+          userId: tokenRow.userId, action: 'PASSWORD_RESET', entityType: 'user', entityId: tokenRow.userId,
+          changes: { method: 'token_reset' },
+        } as any);
+      } catch {}
+
+      // 7. Send confirmation email
+      try {
+        const [user] = await db.select({ email: users.email, name: users.name }).from(users).where(eq(users.id, tokenRow.userId)).limit(1);
+        if (user?.email) {
+          const { notifyPasswordChanged } = await import("../services/notifications");
+          notifyPasswordChanged({ email: user.email, name: user.name || "" });
+        }
+      } catch {}
+
+      return { success: true };
     }),
 });

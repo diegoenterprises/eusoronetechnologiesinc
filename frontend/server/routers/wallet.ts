@@ -80,6 +80,30 @@ async function ensureStripeCustomer(db: NonNullable<Awaited<ReturnType<typeof ge
   return { stripeCustomerId, stripeConnectId: userRow.stripeConnectId || null, email: userRow.email, name: userRow.name };
 }
 
+// P0 Blocker 4: Idempotency guard for financial mutations
+async function checkIdempotency(db: any, key: string, endpoint: string, userId: number): Promise<{ cached: boolean; response?: any }> {
+  try {
+    const [existing] = await db.execute(
+      sql`SELECT response, expiresAt FROM idempotency_keys WHERE idempotencyKey = ${key} LIMIT 1`
+    ) as any[];
+    if (existing && new Date(existing.expiresAt) > new Date()) {
+      return { cached: true, response: JSON.parse(existing.response) };
+    }
+    // Clean expired keys opportunistically
+    if (existing) {
+      await db.execute(sql`DELETE FROM idempotency_keys WHERE idempotencyKey = ${key}`);
+    }
+  } catch {}
+  return { cached: false };
+}
+async function storeIdempotency(db: any, key: string, endpoint: string, userId: number, response: any): Promise<void> {
+  try {
+    await db.execute(
+      sql`INSERT INTO idempotency_keys (idempotencyKey, endpoint, userId, response, expiresAt) VALUES (${key}, ${endpoint}, ${userId}, ${JSON.stringify(response)}, ${new Date(Date.now() + 24 * 60 * 60 * 1000)}) ON DUPLICATE KEY UPDATE response = ${JSON.stringify(response)}, expiresAt = ${new Date(Date.now() + 24 * 60 * 60 * 1000)}`
+    );
+  } catch (e: any) { console.error('[Idempotency] Store error:', e?.message?.slice(0, 100)); }
+}
+
 const transactionTypeSchema = z.enum([
   "earnings", "payout", "fee", "refund", "bonus", "adjustment", "transfer", "deposit"
 ]);
@@ -910,12 +934,19 @@ export const walletRouter = router({
     .input(z.object({
       amount: z.number().positive(),
       loadId: z.number().optional(),
+      idempotencyKey: z.string().uuid().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       const userId = Number(ctx.user?.id) || 0;
 
       if (!db) throw new Error("Database not available");
+
+      // Idempotency check (P0 Blocker 4)
+      if (input.idempotencyKey) {
+        const idem = await checkIdempotency(db, input.idempotencyKey, 'requestCashAdvance', userId);
+        if (idem.cached) return idem.response;
+      }
 
       const wallet = await ensureWallet(db, userId);
 
@@ -969,7 +1000,7 @@ export const walletRouter = router({
         await feeCalculator.recordFeeCollection(result.insertId, "cash_advance", userId, input.amount, feeResult);
       } catch {}
 
-      return {
+      const advanceResult = {
         id: result.insertId,
         amount: input.amount,
         fee,
@@ -978,6 +1009,13 @@ export const walletRouter = router({
         status: "pending",
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       };
+
+      // Store idempotency result (P0 Blocker 4)
+      if (input.idempotencyKey) {
+        await storeIdempotency(db, input.idempotencyKey, 'requestCashAdvance', userId, advanceResult);
+      }
+
+      return advanceResult;
     }),
 
   /**
@@ -1950,11 +1988,18 @@ export const walletRouter = router({
   releaseEscrow: auditedProtectedProcedure
     .input(z.object({
       escrowId: z.string(),
+      idempotencyKey: z.string().uuid().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       const userId = Number(ctx.user?.id) || 0;
       if (!db) throw new Error("Database not available");
+
+      // Idempotency check (P0 Blocker 4)
+      if (input.idempotencyKey) {
+        const idem = await checkIdempotency(db, input.idempotencyKey, 'releaseEscrow', userId);
+        if (idem.cached) return idem.response;
+      }
 
       // Parse the transaction ID from escrow ID
       const txnId = parseInt(input.escrowId.replace('escrow_', ''));
@@ -2034,7 +2079,7 @@ export const walletRouter = router({
         } as any)
         .where(eq(walletTransactions.id, txnId));
 
-      return {
+      const result = {
         success: true,
         escrowId: input.escrowId,
         stripeTransferId,
@@ -2046,6 +2091,13 @@ export const walletRouter = router({
             : "Escrow funds released to driver via Stripe Connect."
           : "Escrow released. Driver will receive funds on next payout cycle.",
       };
+
+      // Store idempotency result (P0 Blocker 4)
+      if (input.idempotencyKey) {
+        await storeIdempotency(db, input.idempotencyKey, 'releaseEscrow', userId, result);
+      }
+
+      return result;
     }),
 
   // ========================================================================

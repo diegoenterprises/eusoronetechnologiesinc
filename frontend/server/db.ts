@@ -1352,6 +1352,96 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX ins_alert_status_idx (status)
     )`);
 
+    // --- P0 Gold Standard: User account lifecycle columns ---
+    await addColIfMissing("users", "status", "VARCHAR(20) DEFAULT 'active'");
+    await addColIfMissing("users", "closedAt", "TIMESTAMP NULL");
+    await addColIfMissing("users", "closedReason", "TEXT NULL");
+    await addColIfMissing("users", "deactivatedAt", "TIMESTAMP NULL");
+    await addColIfMissing("users", "deactivatedBy", "INT NULL");
+
+    // --- P0 Gold Standard: Password Reset Tokens (Blocker 2) ---
+    await ensureTable("password_reset_tokens", `CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT NOT NULL,
+      token VARCHAR(64) NOT NULL UNIQUE,
+      expiresAt TIMESTAMP NOT NULL,
+      usedAt TIMESTAMP NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX prt_user_idx (userId),
+      INDEX prt_token_idx (token),
+      INDEX prt_expires_idx (expiresAt)
+    )`);
+
+    // --- P0 Gold Standard: MFA Secrets (Blocker 3) ---
+    await ensureTable("mfa_secrets", `CREATE TABLE IF NOT EXISTS mfa_secrets (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT NOT NULL UNIQUE,
+      secret VARCHAR(255) NOT NULL,
+      enabled BOOLEAN DEFAULT FALSE,
+      backupCodes TEXT,
+      lastVerified TIMESTAMP NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX mfa_user_idx (userId)
+    )`);
+
+    // --- P0 Gold Standard: Idempotency Keys (Blocker 4) ---
+    await ensureTable("idempotency_keys", `CREATE TABLE IF NOT EXISTS idempotency_keys (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      idempotencyKey VARCHAR(64) NOT NULL UNIQUE,
+      endpoint VARCHAR(100) NOT NULL,
+      userId INT NOT NULL,
+      response TEXT NOT NULL,
+      expiresAt TIMESTAMP NOT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX ik_key_idx (idempotencyKey),
+      INDEX ik_user_idx (userId),
+      INDEX ik_expires_idx (expiresAt)
+    )`);
+
+    // --- P0 Gold Standard: Disputes (Blocker 6) ---
+    await ensureTable("disputes", `CREATE TABLE IF NOT EXISTS disputes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      settlementId INT NOT NULL,
+      disputerId INT NOT NULL,
+      respondentId INT NOT NULL,
+      reason TEXT NOT NULL,
+      evidence TEXT,
+      status VARCHAR(20) DEFAULT 'open',
+      resolution VARCHAR(20),
+      resolvedBy INT,
+      resolvedAt TIMESTAMP NULL,
+      notes TEXT,
+      heldAmount DECIMAL(12,2),
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX disp_settlement_idx (settlementId),
+      INDEX disp_status_idx (status),
+      INDEX disp_disputer_idx (disputerId)
+    )`);
+
+    // --- P0 Gold Standard: CDL Records (Blocker 7) ---
+    await ensureTable("cdl_records", `CREATE TABLE IF NOT EXISTS cdl_records (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      driverId INT NOT NULL,
+      cdlNumber VARCHAR(30) NOT NULL,
+      stateOfIssuance VARCHAR(2) NOT NULL,
+      expirationDate DATE NOT NULL,
+      endorsements JSON,
+      restrictions JSON,
+      verified BOOLEAN DEFAULT FALSE,
+      verifiedAt TIMESTAMP NULL,
+      verifiedBy INT,
+      nextVerificationDue DATE,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX cdl_driver_idx (driverId),
+      INDEX cdl_number_idx (cdlNumber),
+      INDEX cdl_expiration_idx (expirationDate)
+    )`);
+
+    // --- P0 Gold Standard: Settlement Documents (Blocker 5) ---
+    await addColIfMissing("payments", "documentUrl", "TEXT NULL");
+
     // --- Dispatch Command Center tables (WS-DISPATCH-OVERHAUL) ---
     await ensureTable("dispatcher_preferences", `CREATE TABLE IF NOT EXISTS dispatcher_preferences (
       id INT AUTO_INCREMENT PRIMARY KEY,

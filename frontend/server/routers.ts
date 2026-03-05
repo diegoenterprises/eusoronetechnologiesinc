@@ -174,6 +174,8 @@ import { accessorialRouter } from "./routers/accessorial";
 import { embeddingsRouter } from "./routers/embeddings";
 import { visualIntelligenceRouter } from "./routers/visualIntelligence";
 import { aiHealthRouter } from "./routers/aiHealth";
+import { documentVerificationRouter } from "./routers/documentVerification";
+import { cdlVerificationRouter } from "./routers/cdlVerification";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -1259,6 +1261,12 @@ export const appRouter = router({
 
   // AI Turbocharge Health — 9 AI service diagnostics + integration map
   aiHealth: aiHealthRouter,
+
+  // WS-T1-001..006: VIGA Document Verification + Semantic Matching + Contextual RAG
+  documentVerification: documentVerificationRouter,
+
+  // P0 Blocker 7: CDL Verification & endorsement checks
+  cdlVerification: cdlVerificationRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,

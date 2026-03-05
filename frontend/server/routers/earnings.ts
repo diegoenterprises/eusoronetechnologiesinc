@@ -267,8 +267,70 @@ export const earningsRouter = router({
     if (!db) return empty;
     try { const [p] = await db.select().from(payments).where(eq(payments.id, parseInt(sid, 10))).limit(1); if (!p) return empty; return { ...empty, id: String(p.id), grossPay: Number(p.amount), netPay: Number(p.amount), status: p.status || "pending", paymentMethod: p.paymentMethod || "" }; } catch { return empty; }
   }),
-  approveSettlement: protectedProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ input }) => ({ success: true, settlementId: input.settlementId })),
-  processPayment: protectedProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ input }) => ({ success: true, paymentId: `pay_${Date.now()}` })),
+  approveSettlement: protectedProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database unavailable");
+    const sid = parseInt(input.settlementId, 10);
+    if (!sid) throw new Error("Invalid settlement ID");
+    // Update payment status to approved
+    await db.update(payments).set({ status: 'approved' } as any).where(eq(payments.id, sid));
+    // Generate settlement PDF (P0 Blocker 5)
+    try {
+      const { generateAndStoreSettlementPDF } = await import("../services/settlementPDF");
+      await generateAndStoreSettlementPDF(sid);
+    } catch (e: any) { console.error('[Earnings] PDF generation failed:', e?.message?.slice(0, 100)); }
+    // Audit log
+    try {
+      const { auditLogs } = await import("../../drizzle/schema");
+      await db.insert(auditLogs).values({ userId: ctx.user?.id || 0, action: 'SETTLEMENT_APPROVED', entityType: 'payment', entityId: sid, changes: {} } as any);
+    } catch {}
+    return { success: true, settlementId: input.settlementId, approvedAt: new Date().toISOString() };
+  }),
+  processPayment: protectedProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database unavailable");
+    const sid = parseInt(input.settlementId, 10);
+    if (sid) {
+      await db.update(payments).set({ status: 'completed', completedAt: new Date() } as any).where(eq(payments.id, sid));
+    }
+    return { success: true, paymentId: `pay_${sid || Date.now()}` };
+  }),
+
+  // P0 Blocker 6: Dispute a settlement
+  disputeSettlement: protectedProcedure
+    .input(z.object({
+      settlementId: z.string(),
+      reason: z.string().min(5),
+      evidence: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const sid = parseInt(input.settlementId, 10);
+      if (!sid) throw new Error("Invalid settlement ID");
+      const userId = ctx.user?.id || 0;
+
+      // 1. Set payment status to disputed
+      await db.update(payments).set({ status: 'disputed' } as any).where(eq(payments.id, sid));
+
+      // 2. Create dispute record
+      const [payment] = await db.select({ payerId: payments.payerId, payeeId: payments.payeeId, amount: payments.amount })
+        .from(payments).where(eq(payments.id, sid)).limit(1);
+      const respondentId = (payment?.payerId === userId) ? payment?.payeeId : payment?.payerId;
+      const heldAmount = payment?.amount ? Number(payment.amount) : 0;
+
+      await db.execute(
+        sql`INSERT INTO disputes (settlementId, disputerId, respondentId, reason, evidence, status, heldAmount) VALUES (${sid}, ${userId}, ${respondentId || 0}, ${input.reason}, ${input.evidence || null}, 'open', ${heldAmount})`
+      );
+
+      // 3. Audit log
+      try {
+        const { auditLogs } = await import("../../drizzle/schema");
+        await db.insert(auditLogs).values({ userId, action: 'SETTLEMENT_DISPUTED', entityType: 'payment', entityId: sid, changes: { reason: input.reason } } as any);
+      } catch {}
+
+      return { success: true, settlementId: input.settlementId, status: 'disputed', disputeCreated: true };
+    }),
   getEarningsSummary: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb(); if (!db) return { total: 0, pending: 0, paid: 0, avgPerLoad: 0, breakdown: { lineHaul: 0, fuelSurcharge: 0, accessorials: 0 } };
     try {

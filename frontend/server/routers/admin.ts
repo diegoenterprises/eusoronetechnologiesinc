@@ -9,8 +9,9 @@ import { z } from "zod";
 import { eq, and, desc, sql, like, or, gte } from "drizzle-orm";
 import { router, auditedAdminProcedure, auditedSuperAdminProcedure, sensitiveData } from "../_core/trpc";
 import { getDb } from "../db";
-import { users, companies, auditLogs } from "../../drizzle/schema";
+import { users, companies, auditLogs, adminVerificationCodes } from "../../drizzle/schema";
 import { cleanupDeletedUser } from "../services/gamificationDispatcher";
+import { randomBytes } from "crypto";
 
 const userStatusSchema = z.enum(["active", "pending", "suspended", "inactive"]);
 const verificationStatusSchema = z.enum(["pending", "approved", "rejected", "needs_info"]);
@@ -1131,10 +1132,67 @@ export const adminRouter = router({
   rejectCompany: auditedAdminProcedure.input(z.object({ companyId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
   getCompanyVerificationSummary: auditedAdminProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, avgProcessingTime: "", total: 0, verified: 0 })),
 
-  // Disputes
-  getDisputes: auditedAdminProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
-  getDisputeSummary: auditedAdminProcedure.query(async () => ({ open: 0, investigating: 0, resolved: 0, totalAmount: 0, inReview: 0, resolvedThisMonth: 0 })),
-  resolveDispute: auditedAdminProcedure.input(z.object({ disputeId: z.string(), resolution: z.string().optional(), refundAmount: z.number().optional() })).mutation(async ({ input }) => ({ success: true, disputeId: input.disputeId })),
+  // Disputes (P0 Blocker 6 — real DB queries)
+  getDisputes: auditedAdminProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const statusFilter = input?.status && input.status !== 'all' ? sql`AND status = ${input.status}` : sql``;
+      const rows = await db.execute(sql`SELECT id, settlementId, disputerId, respondentId, reason, status, resolution, heldAmount, createdAt, resolvedAt FROM disputes WHERE 1=1 ${statusFilter} ORDER BY createdAt DESC LIMIT ${input?.limit || 50}`) as any[];
+      return (rows || []).map((r: any) => ({ id: String(r.id), settlementId: String(r.settlementId), disputerId: r.disputerId, respondentId: r.respondentId, reason: r.reason, status: r.status, resolution: r.resolution, heldAmount: Number(r.heldAmount || 0), createdAt: r.createdAt?.toISOString?.() || '', resolvedAt: r.resolvedAt?.toISOString?.() || null }));
+    } catch { return []; }
+  }),
+  getDisputeSummary: auditedAdminProcedure.query(async () => {
+    const db = await getDb(); if (!db) return { open: 0, investigating: 0, resolved: 0, totalAmount: 0, inReview: 0, resolvedThisMonth: 0 };
+    try {
+      const [open] = await db.execute(sql`SELECT COUNT(*) as cnt FROM disputes WHERE status = 'open'`) as any[];
+      const [review] = await db.execute(sql`SELECT COUNT(*) as cnt FROM disputes WHERE status = 'under_review'`) as any[];
+      const [resolved] = await db.execute(sql`SELECT COUNT(*) as cnt FROM disputes WHERE status = 'resolved'`) as any[];
+      const [total] = await db.execute(sql`SELECT COALESCE(SUM(heldAmount),0) as amt FROM disputes WHERE status IN ('open','under_review')`) as any[];
+      const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
+      const [thisMonth] = await db.execute(sql`SELECT COUNT(*) as cnt FROM disputes WHERE status = 'resolved' AND resolvedAt >= ${monthAgo}`) as any[];
+      return { open: open?.cnt || 0, investigating: review?.cnt || 0, resolved: resolved?.cnt || 0, totalAmount: Number(total?.amt || 0), inReview: review?.cnt || 0, resolvedThisMonth: thisMonth?.cnt || 0 };
+    } catch { return { open: 0, investigating: 0, resolved: 0, totalAmount: 0, inReview: 0, resolvedThisMonth: 0 }; }
+  }),
+  resolveDispute: auditedAdminProcedure.input(z.object({
+    disputeId: z.string(),
+    resolution: z.enum(['carrier_wins', 'shipper_wins', 'split']).optional(),
+    splitAmount: z.number().optional(),
+    notes: z.string().optional(),
+    refundAmount: z.number().optional(),
+    userId: z.number().optional(),
+  })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database unavailable");
+    const disputeId = parseInt(input.disputeId, 10);
+    if (!disputeId) throw new Error("Invalid dispute ID");
+    const adminId = ctx.user?.id || 0;
+
+    // 1. Update dispute record
+    const resolution = input.resolution || 'split';
+    await db.execute(sql`UPDATE disputes SET status = 'resolved', resolution = ${resolution}, resolvedBy = ${adminId}, resolvedAt = NOW(), notes = ${input.notes || ''} WHERE id = ${disputeId}`);
+
+    // 2. Get dispute details for fund distribution
+    const [dispute] = await db.execute(sql`SELECT settlementId, disputerId, respondentId, heldAmount FROM disputes WHERE id = ${disputeId}`) as any[];
+
+    // 3. Update settlement status back to appropriate state
+    if (dispute?.settlementId) {
+      const { payments } = await import("../../drizzle/schema");
+      const newStatus = resolution === 'carrier_wins' ? 'approved' : resolution === 'shipper_wins' ? 'refunded' : 'approved';
+      await db.update(payments).set({ status: newStatus } as any).where(eq(payments.id, dispute.settlementId));
+    }
+
+    // 4. Audit log
+    try {
+      await db.insert(auditLogs).values({ userId: Number(adminId), action: 'DISPUTE_RESOLVED', entityType: 'dispute', entityId: disputeId, changes: { resolution, notes: input.notes } } as any);
+    } catch {}
+
+    // 5. Gamification event
+    if (input.userId) {
+      try { const { fireGamificationEvent } = await import("../services/gamificationDispatcher"); fireGamificationEvent({ userId: input.userId, type: "dispute_resolved", value: 1 }); } catch {}
+    }
+
+    return { success: true, disputeId: input.disputeId, resolution, resolvedAt: new Date().toISOString() };
+  }),
 
   // Email logs
   getEmailLogs: auditedAdminProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() })).query(async () => []),
@@ -2013,5 +2071,79 @@ export const adminRouter = router({
       const status = failed === 0 ? "ALL CHECKS PASSED ✓" : `${failed} CHECKS FAILED`;
       console.log(`[SmokeTest] ${status}: ${passed}/${checks.length} passed`);
       return { status, passed, failed, total: checks.length, checks };
+    }),
+
+  // WS-E2E-012: Admin verification code generation (existing admin only)
+  generateVerificationCode: auditedAdminProcedure
+    .mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const adminId = Number(ctx.user?.id) || 0;
+      const code = randomBytes(4).toString("hex").toUpperCase(); // 8-char alphanumeric
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      await db.insert(adminVerificationCodes).values({ code, generatedBy: adminId, expiresAt });
+      console.log(`[AdminReg] Verification code generated by admin ${adminId}`);
+      return { code, expiresAt: expiresAt.toISOString() };
+    }),
+
+  // WS-E2E-012: Register new admin with verification code
+  registerAdmin: auditedAdminProcedure
+    .input(z.object({
+      email: z.string().email(),
+      password: z.string().min(12, "Admin password must be at least 12 characters"),
+      name: z.string().min(1),
+      phone: z.string().optional(),
+      verificationCode: z.string().min(1, "Verification code is required"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      // Validate verification code
+      const [validCode] = await db.select().from(adminVerificationCodes)
+        .where(and(
+          eq(adminVerificationCodes.code, input.verificationCode),
+          gte(adminVerificationCodes.expiresAt, new Date()),
+          sql`${adminVerificationCodes.usedAt} IS NULL`
+        )).limit(1);
+
+      if (!validCode) {
+        throw new Error("Invalid or expired verification code");
+      }
+
+      // Check admin limit (max 10)
+      const [adminCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(users)
+        .where(or(eq(users.role, 'ADMIN'), eq(users.role, 'SUPER_ADMIN')));
+      if ((adminCount?.count || 0) >= 10) {
+        throw new Error("Maximum admin account limit (10) reached");
+      }
+
+      // Check email not taken
+      const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, input.email)).limit(1);
+      if (existing) {
+        throw new Error("Email already registered");
+      }
+
+      // Hash password
+      const bcrypt = await import("bcryptjs");
+      const hashedPassword = await bcrypt.hash(input.password, 12);
+
+      // Create admin user
+      const [result] = await db.insert(users).values({
+        email: input.email,
+        password: hashedPassword,
+        name: input.name,
+        phone: input.phone || null,
+        role: "ADMIN",
+        status: "active",
+      } as any).$returningId();
+
+      // Mark verification code as used
+      await db.update(adminVerificationCodes)
+        .set({ usedBy: result.id, usedAt: new Date() })
+        .where(eq(adminVerificationCodes.id, validCode.id));
+
+      console.log(`[AdminReg] New admin created: ${input.email} (id=${result.id}) by admin ${ctx.user?.id}`);
+      return { success: true, adminId: result.id, email: input.email };
     }),
 });

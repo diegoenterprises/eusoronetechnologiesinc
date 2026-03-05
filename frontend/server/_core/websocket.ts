@@ -1100,6 +1100,80 @@ export function emitMobilizationResponse(payload: EmergencyPayload): void {
 }
 
 /**
+ * P0 Blocker 8: Emit real-time tracking event for GPS batch updates.
+ * Called from location.ts after storing GPS breadcrumbs.
+ * Broadcasts to fleet, load tracking, and driver channels.
+ */
+export function emitTrackingEvent(data: {
+  driverId: number;
+  companyId?: number;
+  vehicleId?: number;
+  loadId?: number;
+  positions: Array<{ lat: number; lng: number; speed?: number; heading?: number; timestamp: string }>;
+}): void {
+  const companyStr = String(data.companyId || 'global');
+  const latestPos = data.positions[data.positions.length - 1];
+
+  // 1. Broadcast to fleet channel
+  wsService.broadcastToChannel(
+    WS_CHANNELS.FLEET(companyStr),
+    {
+      type: WS_EVENTS.GPS_POSITION,
+      data: {
+        driverId: data.driverId,
+        vehicleId: data.vehicleId,
+        loadId: data.loadId,
+        lat: latestPos?.lat,
+        lng: latestPos?.lng,
+        speed: latestPos?.speed || 0,
+        heading: latestPos?.heading || 0,
+        positionCount: data.positions.length,
+        updatedAt: latestPos?.timestamp || new Date().toISOString(),
+      },
+      timestamp: new Date().toISOString(),
+    }
+  );
+
+  // 2. Broadcast to load tracking channel if applicable
+  if (data.loadId) {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.LOAD_TRACKING(String(data.loadId)),
+      {
+        type: WS_EVENTS.GPS_POSITION,
+        data: {
+          driverId: data.driverId,
+          vehicleId: data.vehicleId,
+          loadId: data.loadId,
+          lat: latestPos?.lat,
+          lng: latestPos?.lng,
+          speed: latestPos?.speed || 0,
+          heading: latestPos?.heading || 0,
+          positions: data.positions,
+          updatedAt: latestPos?.timestamp || new Date().toISOString(),
+        },
+        timestamp: new Date().toISOString(),
+      }
+    );
+  }
+
+  // 3. Broadcast to driver-specific channel
+  wsService.broadcastToChannel(
+    WS_CHANNELS.DRIVER(String(data.driverId)),
+    {
+      type: WS_EVENTS.GPS_POSITION,
+      data: {
+        lat: latestPos?.lat,
+        lng: latestPos?.lng,
+        speed: latestPos?.speed || 0,
+        heading: latestPos?.heading || 0,
+        updatedAt: latestPos?.timestamp || new Date().toISOString(),
+      },
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
  * Emit supply impact alert
  */
 export function emitSupplyImpactAlert(payload: EmergencyPayload): void {

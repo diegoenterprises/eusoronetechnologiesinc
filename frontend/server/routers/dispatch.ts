@@ -498,6 +498,18 @@ export const dispatchRouter = router({
           }
         }
 
+        // P0 Blocker 7: CDL Records verification gate (cdl_records table)
+        try {
+          const { checkCDLForLoadInternal } = await import("./cdlVerification");
+          const cdlCheck = await checkCDLForLoadInternal(driverUserId, loadIdNum);
+          if (!cdlCheck.eligible) {
+            throw new Error(`Driver CDL check failed: ${cdlCheck.reasons.join(', ')}`);
+          }
+        } catch (cdlErr: any) {
+          if (cdlErr?.message?.includes('CDL check failed')) throw cdlErr;
+          console.warn('[Dispatch] CDL records check warning:', cdlErr?.message);
+        }
+
         // TWIC card required for port/terminal loads
         const specialInstructions = typeof load.specialInstructions === 'string' ? load.specialInstructions.toLowerCase() : '';
         if (specialInstructions.includes('port') || specialInstructions.includes('terminal') || specialInstructions.includes('twic')) {

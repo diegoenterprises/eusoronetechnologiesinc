@@ -75,6 +75,26 @@ const telemetrySubRouter = router({
         Number(driverId), input.locations,
         input.loadId, input.vehicleId, input.loadState,
       );
+
+      // P0 Blocker 8: Emit real-time GPS tracking event after storing
+      try {
+        const { emitTrackingEvent } = await import("../_core/websocket");
+        const companyId = (ctx.user as any)?.companyId ? Number((ctx.user as any).companyId) : undefined;
+        emitTrackingEvent({
+          driverId: Number(driverId),
+          companyId,
+          vehicleId: input.vehicleId,
+          loadId: input.loadId,
+          positions: input.locations.map(loc => ({
+            lat: loc.lat, lng: loc.lng,
+            speed: loc.speed, heading: loc.heading,
+            timestamp: loc.timestamp,
+          })),
+        });
+      } catch (wsErr) {
+        console.warn("[Location] GPS tracking event emit failed:", (wsErr as any)?.message);
+      }
+
       return result;
     }),
 
