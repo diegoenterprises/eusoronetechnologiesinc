@@ -1113,6 +1113,14 @@ async function startServer() {
       } catch (e: any) { console.warn("[PlatformFees] Auto-seed error:", e?.message); }
     }, 10000);
 
+    // Clean orphaned wallet records (WS-P0-010)
+    setTimeout(async () => {
+      try {
+        const { cleanOrphanedWalletsOnStartup } = await import("../routers/wallet");
+        await cleanOrphanedWalletsOnStartup();
+      } catch (e: any) { console.warn("[Wallet] Orphan cleanup error:", e?.message); }
+    }, 12000);
+
     // Run pending DB migrations (audit hash chain columns)
     setTimeout(async () => {
       try {

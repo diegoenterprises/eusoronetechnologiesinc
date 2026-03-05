@@ -2207,4 +2207,50 @@ export const walletRouter = router({
 
       return { available: true, transactions };
     }),
+
+  // ── ADMIN: Clean orphaned wallet records (WS-P0-010) ──
+  cleanOrphanedWallets: auditedAdminProcedure
+    .mutation(async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const orphaned = await db.execute(
+        sql`SELECT w.id, w.userId FROM wallets w LEFT JOIN users u ON w.userId = u.id WHERE u.id IS NULL`
+      );
+      const rows = (orphaned as any)?.[0] || orphaned;
+      const orphanIds = Array.isArray(rows) ? rows.map((r: any) => r.id) : [];
+      if (orphanIds.length === 0) return { cleaned: 0, message: "No orphaned wallets found" };
+
+      // Delete related transactions first, then orphaned wallets
+      for (const wId of orphanIds) {
+        await db.delete(walletTransactions).where(eq(walletTransactions.walletId, wId));
+      }
+      const deleted = await db.execute(
+        sql`DELETE FROM wallets WHERE id IN (${sql.raw(orphanIds.join(','))})`
+      );
+      const count = (deleted as any)?.[0]?.affectedRows || orphanIds.length;
+      console.log(`[Wallet] Cleaned ${count} orphaned wallet records`);
+      return { cleaned: count, orphanIds };
+    }),
 });
+
+/** Server-startup cleanup — call from index.ts */
+export async function cleanOrphanedWalletsOnStartup() {
+  try {
+    const { getDb: gdb } = await import("../db");
+    const db = await gdb();
+    if (!db) return;
+    const orphaned = await db.execute(
+      sql`SELECT w.id, w.userId FROM wallets w LEFT JOIN users u ON w.userId = u.id WHERE u.id IS NULL`
+    );
+    const rows = (orphaned as any)?.[0] || orphaned;
+    const orphanIds = Array.isArray(rows) ? rows.map((r: any) => r.id) : [];
+    if (orphanIds.length === 0) { console.log("[Wallet] No orphaned wallets found"); return; }
+    for (const wId of orphanIds) {
+      await db.delete(walletTransactions).where(eq(walletTransactions.walletId, wId));
+    }
+    await db.execute(sql`DELETE FROM wallets WHERE id IN (${sql.raw(orphanIds.join(','))})`);
+    console.log(`[Wallet] Startup cleanup: removed ${orphanIds.length} orphaned wallet(s) with userId(s): ${rows.map((r: any) => r.userId).join(', ')}`);
+  } catch (e: any) {
+    console.warn("[Wallet] Orphan cleanup warning:", e?.message);
+  }
+}
