@@ -56,15 +56,15 @@ const TRAILER_TYPES = [
   { id: "double_drop", name: "Double Drop / Stretch", desc: "Extra-tall cargo: transformers, generators, industrial vessels", icon: "truck", animType: "solid" as const, hazmat: false, equipment: "double_drop", maxGal: 0 },
   { id: "conestoga", name: "Conestoga (Rolling-Tarp)", desc: "Weather-protected flatbed: coils, machinery, weather-sensitive steel", icon: "blinds", animType: "solid" as const, hazmat: false, equipment: "conestoga", maxGal: 0 },
   // ── Specialty Haulers ──
-  { id: "auto_carrier", name: "Auto Carrier / Car Hauler", desc: "Vehicle transport: 7-10 cars, dealer-to-dealer, auction, OEM delivery", icon: "car_icon", animType: "solid" as const, hazmat: false, equipment: "auto_carrier", maxGal: 0 },
-  { id: "livestock", name: "Livestock / Cattle Pot", desc: "Live animal transport: cattle, hogs, poultry — USDA/FMCSA regulated", icon: "livestock_icon", animType: "solid" as const, hazmat: false, equipment: "livestock", maxGal: 0 },
+  { id: "auto_carrier", name: "Auto Carrier / Car Hauler", desc: "Vehicle transport: 7-10 cars, dealer-to-dealer, auction, OEM delivery", icon: "car_icon", animType: "vehicles" as const, hazmat: false, equipment: "auto_carrier", maxGal: 0 },
+  { id: "livestock", name: "Livestock / Cattle Pot", desc: "Live animal transport: cattle, hogs, poultry — USDA/FMCSA regulated", icon: "livestock_icon", animType: "livestock" as const, hazmat: false, equipment: "livestock", maxGal: 0 },
   { id: "log_trailer", name: "Log Trailer", desc: "Timber hauling: sawlogs, pulpwood, tree-length — 49 CFR 393.116", icon: "tree_icon", animType: "solid" as const, hazmat: false, equipment: "log_trailer", maxGal: 0 },
   // ── Bulk & Hopper ──
-  { id: "bulk_hopper", name: "Dry Bulk / Hopper", desc: "Pneumatic: cement, lime, flour, plastic pellets", icon: "package", animType: "solid" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
-  { id: "hopper", name: "Gravity Hopper", desc: "Gravity-discharge hopper for grain, sand, aggregate", icon: "hopper_icon", animType: "solid" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
-  { id: "grain_hopper", name: "Grain Hopper", desc: "USDA-grade grain transport: corn, wheat, soybeans, rice, barley", icon: "hopper_icon", animType: "solid" as const, hazmat: false, equipment: "grain_trailer", maxGal: 0 },
-  { id: "pneumatic", name: "Pneumatic Tank", desc: "Pressure-unload for cement, flour, powder, pellets", icon: "wind", animType: "solid" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
-  { id: "end_dump", name: "End Dump Trailer", desc: "Hydraulic end-dump for aggregate, sand, demolition debris", icon: "arrowdown", animType: "solid" as const, hazmat: false, equipment: "dump_trailer", maxGal: 0 },
+  { id: "bulk_hopper", name: "Dry Bulk / Hopper", desc: "Pneumatic: cement, lime, flour, plastic pellets", icon: "package", animType: "bulk" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
+  { id: "hopper", name: "Gravity Hopper", desc: "Gravity-discharge hopper for grain, sand, aggregate", icon: "hopper_icon", animType: "bulk" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
+  { id: "grain_hopper", name: "Grain Hopper", desc: "USDA-grade grain transport: corn, wheat, soybeans, rice, barley", icon: "hopper_icon", animType: "grain" as const, hazmat: false, equipment: "grain_trailer", maxGal: 0 },
+  { id: "pneumatic", name: "Pneumatic Tank", desc: "Pressure-unload for cement, flour, powder, pellets", icon: "wind", animType: "bulk" as const, hazmat: false, equipment: "hopper", maxGal: 0 },
+  { id: "end_dump", name: "End Dump Trailer", desc: "Hydraulic end-dump for aggregate, sand, demolition debris", icon: "arrowdown", animType: "bulk" as const, hazmat: false, equipment: "dump_trailer", maxGal: 0 },
   // ── Food & Water ──
   { id: "food_grade_tank", name: "Food-Grade Liquid Tank", desc: "Milk, juice, cooking oil, wine, liquid sugar, edible oils", icon: "milkoff", animType: "liquid" as const, hazmat: false, equipment: "tank", maxGal: 6500 },
   { id: "water_tank", name: "Water Tank", desc: "Potable water, non-potable water, industrial water", icon: "glasswater", animType: "liquid" as const, hazmat: false, equipment: "tank", maxGal: 5500 },
@@ -128,6 +128,35 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   const dLng = (lng2 - lng1) * Math.PI / 180;
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
   return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+/** Detect and parse coordinate input: "lat, lng" or "lat lng" format */
+function parseCoordinates(value: string): { lat: number; lng: number } | null {
+  const trimmed = value.trim();
+  // Match: 30.283152, -97.776379  OR  30.283152 -97.776379
+  const match = trimmed.match(/^(-?\d{1,3}(?:\.\d+)?)\s*[,\s]\s*(-?\d{1,3}(?:\.\d+)?)$/);
+  if (!match) return null;
+  const lat = parseFloat(match[1]);
+  const lng = parseFloat(match[2]);
+  if (isNaN(lat) || isNaN(lng)) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  return { lat, lng };
+}
+
+/** Reverse-geocode coordinates to address using Google Geocoder */
+function reverseGeocode(lat: number, lng: number): Promise<string> {
+  return new Promise((resolve) => {
+    const g = (window as any).google?.maps;
+    if (!g) { resolve(`${lat.toFixed(6)}, ${lng.toFixed(6)}`); return; }
+    const geocoder = new g.Geocoder();
+    geocoder.geocode({ location: { lat, lng } }, (results: any[], status: string) => {
+      if (status === "OK" && results?.[0]?.formatted_address) {
+        resolve(results[0].formatted_address);
+      } else {
+        resolve(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      }
+    });
+  });
 }
 
 export default function LoadCreationWizard() {
@@ -788,29 +817,29 @@ export default function LoadCreationWizard() {
       <div className="flex items-center gap-2 overflow-x-auto pb-2">
         {STEPS.map((s: any, i: number) => (
           <div key={i} className="flex items-center gap-2">
-            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold", i < step ? "bg-green-500 text-white" : i === step ? "bg-gradient-to-r from-cyan-500 to-emerald-500 text-white" : "bg-slate-700 text-slate-400")}>
+            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold", i < step ? "bg-green-500 text-white" : i === step ? "bg-gradient-to-r from-cyan-500 to-emerald-500 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400")}>
               {i < step ? <CheckCircle className="w-4 h-4" /> : i + 1}
             </div>
-            {i < STEPS.length - 1 && <div className={cn("w-8 h-0.5", i < step ? "bg-green-500" : "bg-slate-700")} />}
+            {i < STEPS.length - 1 && <div className={cn("w-8 h-0.5", i < step ? "bg-green-500" : "bg-slate-200 dark:bg-slate-700")} />}
           </div>
         ))}
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className="bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 rounded-xl">
         <CardContent className="p-6">
           {/* STEP 0: Trailer Type Selection */}
           {rs === 0 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-              <p className="text-white font-bold text-lg">Select Your Trailer Type</p>
+              <p className="text-slate-900 dark:text-white font-bold text-lg">Select Your Trailer Type</p>
               <p className="text-slate-400 text-sm">This determines product options, hazmat classification, and load visualization.</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {TRAILER_TYPES.map((t) => (
                   <button key={t.id} onClick={() => { updateField("trailerType", t.id); updateField("equipment", t.equipment); updateField("quantityUnit", getDefaultUnit(t.id)); updateField("compartments", 1); updateField("compartmentProducts", undefined); }}
                     className={cn("p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02]",
-                      formData.trailerType === t.id ? "bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border-cyan-500/50 ring-2 ring-cyan-500/30" : "bg-slate-700/30 border-slate-600/30 hover:border-slate-500/50"
+                      formData.trailerType === t.id ? "bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border-cyan-500/50 ring-2 ring-cyan-500/30" : "bg-slate-50 dark:bg-slate-700/30 border-slate-200 dark:border-slate-600/30 hover:border-slate-400 dark:hover:border-slate-500/50"
                     )}>
                     <div className={cn("mb-2", formData.trailerType === t.id ? "text-cyan-400" : "text-slate-400")}>{TRAILER_ICON[t.icon]}</div>
-                    <p className="text-white text-sm font-bold">{t.name}</p>
+                    <p className="text-slate-900 dark:text-white text-sm font-bold">{t.name}</p>
                     <p className="text-slate-500 text-[10px] mt-1 leading-tight">{t.desc}</p>
                     {t.hazmat && <Badge variant="outline" className="text-[8px] mt-2 border-orange-500/30 text-orange-400">HAZMAT</Badge>}
                   </button>
@@ -839,19 +868,19 @@ export default function LoadCreationWizard() {
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                       <Input value={formData.productName || ""} onChange={(e: any) => handleProductNameChange(e.target.value)} onFocus={() => { if (searchQuery.length >= 2) setShowSuggestions(true); }}
                         placeholder={selectedTrailer?.id === "liquid_tank" ? "e.g., Gasoline, Diesel, Sulfuric Acid..." : selectedTrailer?.id === "gas_tank" ? "e.g., Propane, Ammonia, Chlorine..." : "Search ERG 2020 materials..."}
-                        className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10" />
+                        className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg pl-10" />
                     </div>
                     <Button variant="outline" className="bg-purple-500/20 border-purple-500/30 text-purple-400 hover:bg-purple-500/30 rounded-lg" onClick={handleSuggest}>
                       <EsangIcon className="w-4 h-4 mr-2" />ESANG AI
                     </Button>
                   </div>
                   {showSuggestions && ergSearch.data?.results?.length > 0 && (
-                    <div className="absolute z-50 left-0 right-16 mt-1 bg-[#1e293b] border border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
-                      <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2020 -- {ergSearch.data.count} results from 1,980 materials</div>
+                    <div className="absolute z-50 left-0 right-16 mt-1 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                      <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50">ERG 2020 -- {ergSearch.data.count} results from 1,980 materials</div>
                       {ergSearch.data.results.map((m: any, i: number) => (
-                        <button key={`${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-[#334155] flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
+                        <button key={`${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-[#334155] flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
                           <div className="flex-1 min-w-0">
-                            <p className="text-white text-sm font-medium truncate">{m.name}</p>
+                            <p className="text-slate-900 dark:text-white text-sm font-medium truncate">{m.name}</p>
                             {m.alternateNames?.length > 0 && <p className="text-slate-500 text-[10px] truncate">Also: {m.alternateNames.slice(0, 2).join(", ")}</p>}
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -865,7 +894,7 @@ export default function LoadCreationWizard() {
                     </div>
                   )}
                   {showSuggestions && searchQuery.length >= 2 && ergSearch.isLoading && (
-                    <div className="absolute z-50 left-0 right-16 mt-1 bg-[#1e293b] border border-slate-600/50 rounded-lg shadow-xl p-3">
+                    <div className="absolute z-50 left-0 right-16 mt-1 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-600/50 rounded-lg shadow-xl p-3">
                       <div className="flex items-center gap-2 text-slate-400 text-sm"><EsangIcon className="w-4 h-4 animate-spin" />Searching ERG 2020 database...</div>
                     </div>
                   )}
@@ -873,7 +902,7 @@ export default function LoadCreationWizard() {
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Hazmat Classification</label>
                   <Select value={formData.hazmatClass || ""} onValueChange={(v: any) => updateField("hazmatClass", v)}>
-                    <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select class" /></SelectTrigger>
+                    <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg"><SelectValue placeholder="Select class" /></SelectTrigger>
                     <SelectContent>{getClassesForTrailer(formData.trailerType).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
@@ -882,14 +911,14 @@ export default function LoadCreationWizard() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <Input value={formData.unNumber || ""} onChange={(e: any) => handleUNChange(e.target.value)} onFocus={() => { if (unSearchQuery.length >= 2) setShowUNSuggestions(true); }}
-                      placeholder="e.g., 1203, UN1223" className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10" />
+                      placeholder="e.g., 1203, UN1223" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg pl-10" />
                   </div>
                   {showUNSuggestions && ergUNSearch.data?.results?.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 mt-1 bg-[#1e293b] border border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
-                      <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2020 -- UN Number Matches</div>
+                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                      <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50">ERG 2020 -- UN Number Matches</div>
                       {ergUNSearch.data.results.map((m: any, i: number) => (
-                        <button key={`un-${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-[#334155] flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
-                          <div className="flex-1 min-w-0"><p className="text-white text-sm font-medium truncate">{m.name}</p></div>
+                        <button key={`un-${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-[#334155] flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
+                          <div className="flex-1 min-w-0"><p className="text-slate-900 dark:text-white text-sm font-medium truncate">{m.name}</p></div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
                             <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
@@ -910,9 +939,9 @@ export default function LoadCreationWizard() {
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                           <Input value={formData.productName || ""} onChange={(e: any) => updateField("productName", e.target.value)}
                             placeholder="Type your product name..."
-                            className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10" />
+                            className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg pl-10" />
                         </div>
-                        <Button variant="outline" size="sm" className="text-slate-400 border-slate-600/50 hover:bg-slate-700/50 rounded-lg"
+                        <Button variant="outline" size="sm" className="text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg"
                           onClick={() => { setIsOtherProduct(false); updateField("productName", ""); updateField("productId", ""); }}>
                           Back to list
                         </Button>
@@ -929,10 +958,10 @@ export default function LoadCreationWizard() {
                           }}
                           onFocus={() => setShowProductDropdown(true)}
                           placeholder={`Search ${productList.length || 50} products for ${selectedTrailer?.name || "this trailer"}...`}
-                          className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10" />
+                          className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg pl-10" />
                         {showProductDropdown && (
-                          <div className="absolute z-50 left-0 right-0 mt-1 border border-slate-600/50 rounded-lg shadow-xl max-h-72 overflow-y-auto" style={{ backgroundColor: '#0c0e18' }}>
-                            <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50 sticky top-0" style={{ backgroundColor: '#0c0e18' }}>
+                          <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#0c0e18] border border-slate-200 dark:border-slate-600/50 rounded-lg shadow-xl max-h-72 overflow-y-auto">
+                            <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50 sticky top-0 bg-white dark:bg-[#0c0e18]">
                               {selectedTrailer?.name} -- {productList.length} products {productDropdownSearch ? `matching "${productDropdownSearch}"` : ""}
                             </div>
                             {productListQuery.isLoading ? (
@@ -943,7 +972,7 @@ export default function LoadCreationWizard() {
                               <div className="p-3 text-slate-500 text-sm">No products match "{productDropdownSearch}"</div>
                             ) : null}
                             {productList.map((p: any) => (
-                              <button key={p.id} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors"
+                              <button key={p.id} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/20 last:border-0 transition-colors"
                                 onClick={() => {
                                   updateField("productName", p.name);
                                   updateField("productId", p.id);
@@ -955,7 +984,7 @@ export default function LoadCreationWizard() {
                                   if (p.notes) toast.info(p.name, { description: p.notes });
                                 }}>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-white text-sm font-medium truncate">{p.name}</p>
+                                  <p className="text-slate-900 dark:text-white text-sm font-medium truncate">{p.name}</p>
                                   {p.notes && <p className="text-slate-500 text-[10px] truncate">{p.notes}</p>}
                                 </div>
                                 <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -992,10 +1021,10 @@ export default function LoadCreationWizard() {
                     <div>
                       <label className="text-sm text-slate-400 mb-1 block">Required Temperature Range</label>
                       <div className="flex gap-2">
-                        <Input type="number" value={formData.tempMin || ""} onChange={(e: any) => updateField("tempMin", e.target.value)} placeholder="Min" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
-                        <Input type="number" value={formData.tempMax || ""} onChange={(e: any) => updateField("tempMax", e.target.value)} placeholder="Max" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                        <Input type="number" value={formData.tempMin || ""} onChange={(e: any) => updateField("tempMin", e.target.value)} placeholder="Min" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
+                        <Input type="number" value={formData.tempMax || ""} onChange={(e: any) => updateField("tempMax", e.target.value)} placeholder="Max" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
                         <Select value={formData.tempUnit || "F"} onValueChange={(v: any) => updateField("tempUnit", v)}>
-                          <SelectTrigger className="w-16 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="w-16 bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                           <SelectContent><SelectItem value="F">F</SelectItem><SelectItem value="C">C</SelectItem></SelectContent>
                         </Select>
                       </div>
@@ -1005,16 +1034,16 @@ export default function LoadCreationWizard() {
                     <div>
                       <label className="text-sm text-slate-400 mb-1 block">Required Temperature Range (optional)</label>
                       <div className="flex gap-2">
-                        <Input type="number" value={formData.tempMin || ""} onChange={(e: any) => updateField("tempMin", e.target.value)} placeholder="Min" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
-                        <Input type="number" value={formData.tempMax || ""} onChange={(e: any) => updateField("tempMax", e.target.value)} placeholder="Max" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                        <Input type="number" value={formData.tempMin || ""} onChange={(e: any) => updateField("tempMin", e.target.value)} placeholder="Min" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
+                        <Input type="number" value={formData.tempMax || ""} onChange={(e: any) => updateField("tempMax", e.target.value)} placeholder="Max" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
                         <Select value={formData.tempUnit || "F"} onValueChange={(v: any) => updateField("tempUnit", v)}>
-                          <SelectTrigger className="w-16 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="w-16 bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                           <SelectContent><SelectItem value="F">F</SelectItem><SelectItem value="C">C</SelectItem></SelectContent>
                         </Select>
                       </div>
                     </div>
                   )}
-                  <div className="p-3 rounded-xl bg-slate-700/20 border border-slate-700/30">
+                  <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-700/20 border border-slate-200 dark:border-slate-700/30">
                     <div className="flex items-center gap-2"><Info className="w-4 h-4 text-slate-500" /><span className="text-slate-500 text-xs">{selectedTrailer?.id === "food_grade_tank" ? "Food-grade liquid load -- requires food safety certification & tanker endorsement. No hazmat classification needed." : selectedTrailer?.id === "water_tank" ? "Water tanker load -- requires tanker endorsement. No hazmat classification needed." : `Non-hazmat load -- no ERG classification required for ${selectedTrailer?.name}.`}</span></div>
                   </div>
                 </div>
@@ -1027,43 +1056,43 @@ export default function LoadCreationWizard() {
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="flex items-center gap-2 mb-2">
                 <EsangIcon className="w-5 h-5 text-cyan-400" />
-                <p className="text-white font-bold text-lg">SPECTRA-MATCH Parameters</p>
+                <p className="text-slate-900 dark:text-white font-bold text-lg">SPECTRA-MATCH Parameters</p>
                 <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400 ml-auto">Product Verification</Badge>
               </div>
               <p className="text-slate-400 text-sm">Enter physical properties so SPECTRA-MATCH can verify product identity. All fields are optional but improve verification accuracy.</p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">API Gravity (degrees)</label>
-                  <Input type="number" step="0.1" value={formData.apiGravity || ""} onChange={(e: any) => updateField("apiGravity", e.target.value)} placeholder="e.g., 35.5" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                  <Input type="number" step="0.1" value={formData.apiGravity || ""} onChange={(e: any) => updateField("apiGravity", e.target.value)} placeholder="e.g., 35.5" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">BS&W (Basic Sediment & Water %)</label>
-                  <Input type="number" step="0.01" value={formData.bsw || ""} onChange={(e: any) => updateField("bsw", e.target.value)} placeholder="e.g., 0.5" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                  <Input type="number" step="0.01" value={formData.bsw || ""} onChange={(e: any) => updateField("bsw", e.target.value)} placeholder="e.g., 0.5" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Sulfur Content (%)</label>
-                  <Input type="number" step="0.01" value={formData.sulfurContent || ""} onChange={(e: any) => updateField("sulfurContent", e.target.value)} placeholder="e.g., 1.2" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                  <Input type="number" step="0.01" value={formData.sulfurContent || ""} onChange={(e: any) => updateField("sulfurContent", e.target.value)} placeholder="e.g., 1.2" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Flash Point (F)</label>
-                  <Input type="number" value={formData.flashPoint || ""} onChange={(e: any) => updateField("flashPoint", e.target.value)} placeholder="e.g., -45" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                  <Input type="number" value={formData.flashPoint || ""} onChange={(e: any) => updateField("flashPoint", e.target.value)} placeholder="e.g., -45" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Viscosity (cSt @ 40C)</label>
-                  <Input type="number" step="0.1" value={formData.viscosity || ""} onChange={(e: any) => updateField("viscosity", e.target.value)} placeholder="e.g., 5.8" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                  <Input type="number" step="0.1" value={formData.viscosity || ""} onChange={(e: any) => updateField("viscosity", e.target.value)} placeholder="e.g., 5.8" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Pour Point (F)</label>
-                  <Input type="number" value={formData.pourPoint || ""} onChange={(e: any) => updateField("pourPoint", e.target.value)} placeholder="e.g., -20" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                  <Input type="number" value={formData.pourPoint || ""} onChange={(e: any) => updateField("pourPoint", e.target.value)} placeholder="e.g., -20" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Reid Vapor Pressure (psi)</label>
-                  <Input type="number" step="0.1" value={formData.reidVaporPressure || ""} onChange={(e: any) => updateField("reidVaporPressure", e.target.value)} placeholder="e.g., 8.5" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                  <Input type="number" step="0.1" value={formData.reidVaporPressure || ""} onChange={(e: any) => updateField("reidVaporPressure", e.target.value)} placeholder="e.g., 8.5" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Color / Appearance</label>
                   <Select value={formData.appearance || ""} onValueChange={(v: any) => updateField("appearance", v)}>
-                    <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg"><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Clear">Clear / Colorless</SelectItem>
                       <SelectItem value="Light">Light / Straw</SelectItem>
@@ -1084,7 +1113,7 @@ export default function LoadCreationWizard() {
                   </div>
                 </div>
               )}
-              <div className="p-3 rounded-xl bg-slate-700/20 border border-slate-700/30">
+              <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-700/20 border border-slate-200 dark:border-slate-700/30">
                 <div className="flex items-center gap-2"><Info className="w-4 h-4 text-slate-500" /><span className="text-slate-500 text-xs">These parameters feed into the SPECTRA-MATCH multi-parameter identification system to cross-verify the declared product against physical properties.</span></div>
               </div>
             </div>
@@ -1154,12 +1183,20 @@ export default function LoadCreationWizard() {
                   </div>
                 </div>
               )}
-              {formData.weight && Number(formData.weight) > 44000 && Number(formData.weight) <= 80000 && !isLiquidOrGas && (
+              {formData.weight && Number(formData.weight) > (
+                isLiquidOrGas ? 48000 :
+                ["flatbed", "step_deck", "conestoga", "double_drop"].includes(formData.trailerType || "") ? 48000 :
+                formData.trailerType === "livestock" ? 52000 :
+                formData.trailerType === "lowboy" ? 60000 :
+                ["bulk_hopper", "hopper", "grain_hopper", "pneumatic", "end_dump"].includes(formData.trailerType || "") ? 48000 :
+                formData.trailerType === "log_trailer" ? 55000 :
+                44000
+              ) && Number(formData.weight) <= 80000 && (
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
                   <Scale className="w-4 h-4 text-amber-400 flex-shrink-0" />
                   <div>
                     <p className="text-amber-400 text-xs font-medium">Heavy load — verify axle weights</p>
-                    <p className="text-slate-400 text-[10px]">{Number(formData.weight).toLocaleString()} lbs cargo + ~35,000 lbs tractor/trailer = ~{(Number(formData.weight) + 35000).toLocaleString()} lbs GVWR. Check state-specific bridge and axle limits.</p>
+                    <p className="text-slate-400 text-[10px]">{Number(formData.weight).toLocaleString()} lbs cargo + ~{isLiquidOrGas ? "32,000" : "35,000"} lbs tractor/trailer = ~{(Number(formData.weight) + (isLiquidOrGas ? 32000 : 35000)).toLocaleString()} lbs GVWR. Check state-specific bridge and axle limits.</p>
                   </div>
                 </div>
               )}
@@ -1187,7 +1224,7 @@ export default function LoadCreationWizard() {
                           "flex-1 py-3 rounded-xl text-sm font-bold transition-all border",
                           (formData.compartments || 1) === n
                             ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-lg"
-                            : "bg-slate-700/50 border-slate-600/50 text-slate-400 hover:bg-slate-700"
+                            : "bg-slate-100 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
                         )}
                       >
                         {n}
@@ -1207,7 +1244,7 @@ export default function LoadCreationWizard() {
                     {Array.from({ length: formData.compartments || 1 }).map((_, i) => {
                       const cp = formData.compartmentProducts?.[i] || { product: "", volume: "" };
                       return (
-                        <div key={i} className="relative flex items-center gap-2 p-3 rounded-xl bg-slate-700/20 border border-slate-700/30">
+                        <div key={i} className="relative flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/20 border border-slate-200 dark:border-slate-700/30">
                           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{i + 1}</div>
                           <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
@@ -1227,14 +1264,14 @@ export default function LoadCreationWizard() {
                               }}
                               onFocus={() => { setActiveCompIdx(i); if (compSearchQuery.length >= 2) setShowCompSuggestions(true); }}
                               placeholder={`Search product for comp ${i + 1}...`}
-                              className="bg-slate-700/50 border-slate-600/50 rounded-lg text-sm pl-9"
+                              className="bg-white dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm pl-9"
                             />
                             {/* ERG Suggestions Dropdown for this compartment */}
                             {showCompSuggestions && activeCompIdx === i && ergCompSearch.data?.results?.length > 0 && (
-                              <div className="absolute z-[100] left-0 right-0 bottom-full mb-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-52 overflow-y-auto">
-                                <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2020 — Compartment {i + 1}</div>
+                              <div className="absolute z-[100] left-0 right-0 bottom-full mb-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600/50 rounded-lg shadow-xl max-h-52 overflow-y-auto">
+                                <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50">ERG 2020 — Compartment {i + 1}</div>
                                 {ergCompSearch.data.results.map((m: any, mi: number) => (
-                                  <button key={`comp-${i}-${m.unNumber}-${mi}`} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors"
+                                  <button key={`comp-${i}-${m.unNumber}-${mi}`} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/20 last:border-0 transition-colors"
                                     onClick={() => {
                                       const arr = [...(formData.compartmentProducts || [])];
                                       arr[i] = { ...arr[i], product: m.name, unNumber: `UN${m.unNumber}`, hazardClass: m.hazardClass, guide: m.guide };
@@ -1243,7 +1280,7 @@ export default function LoadCreationWizard() {
                                       toast.success(`Comp ${i + 1}: ${m.name}`, { description: `UN${m.unNumber} — Class ${m.hazardClass} — Guide ${m.guide}` });
                                     }}>
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-white text-xs font-medium truncate">{m.name}</p>
+                                      <p className="text-slate-900 dark:text-white text-xs font-medium truncate">{m.name}</p>
                                     </div>
                                     <div className="flex items-center gap-1.5 flex-shrink-0">
                                       <Badge variant="outline" className="text-[9px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
@@ -1254,7 +1291,7 @@ export default function LoadCreationWizard() {
                               </div>
                             )}
                             {showCompSuggestions && activeCompIdx === i && compSearchQuery.length >= 2 && ergCompSearch.isLoading && (
-                              <div className="absolute z-[100] left-0 right-0 bottom-full mb-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-2">
+                              <div className="absolute z-[100] left-0 right-0 bottom-full mb-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600/50 rounded-lg shadow-xl p-2">
                                 <div className="flex items-center gap-2 text-slate-400 text-xs"><EsangIcon className="w-3 h-3 animate-spin" />Searching ERG 2020...</div>
                               </div>
                             )}
@@ -1283,28 +1320,76 @@ export default function LoadCreationWizard() {
                 <div className="grid grid-cols-2 gap-4 text-xs text-slate-500">
                   {selectedTrailer?.id === "liquid_tank" ? (<>
                     <div><p>Standard Tank: 7,000-9,500 gal</p><p>MC-306/DOT-406: 9,000-9,500 gal</p></div>
-                    <div><p>Max Legal Weight: 80,000 lbs</p><p>Typical Fuel Load: 8,000-8,500 gal</p></div>
+                    <div><p>Max Legal Weight: 80,000 lbs GVWR</p><p>Typical Fuel Load: 8,000-8,500 gal</p></div>
                   </>) : selectedTrailer?.id === "gas_tank" ? (<>
                     <div><p>MC-331 Capacity: 9,000-11,600 gal</p><p>Working Pressure: 100-300 PSI</p></div>
-                    <div><p>Max Legal Weight: 80,000 lbs</p><p>Typical LPG Load: 9,000-10,000 gal</p></div>
+                    <div><p>Max Legal Weight: 80,000 lbs GVWR</p><p>Typical LPG Load: 9,000-10,000 gal</p></div>
                   </>) : selectedTrailer?.id === "cryogenic" ? (<>
                     <div><p>MC-338 Capacity: 8,000-12,000 gal</p><p>Operating Temp: -260°F to -320°F</p></div>
-                    <div><p>Max Legal Weight: 80,000 lbs</p><p>Vacuum insulated double-wall</p></div>
-                  </>) : selectedTrailer?.id === "reefer" ? (<>
-                    <div><p>Standard Reefer: 40-53 ft</p><p>Floor Space: ~2,500 sq ft</p></div>
-                    <div><p>Max Legal Weight: 44,000 lbs</p><p>Typical: 20-24 pallets</p></div>
-                  </>) : selectedTrailer?.id === "flatbed" ? (<>
-                    <div><p>Standard: 48-53 ft</p><p>Max Width: 8.5 ft (102 in)</p></div>
-                    <div><p>Max Legal Weight: 48,000 lbs</p><p>Max Height: 8.5 ft from deck</p></div>
-                  </>) : selectedTrailer?.id === "bulk_hopper" ? (<>
-                    <div><p>Pneumatic Trailer: 1,000-1,700 cu ft</p><p>Bottom/side discharge</p></div>
-                    <div><p>Max Legal Weight: 44,000 lbs</p><p>Typical: 25-30 tons dry bulk</p></div>
+                    <div><p>Max Legal Weight: 80,000 lbs GVWR</p><p>Vacuum insulated double-wall</p></div>
                   </>) : selectedTrailer?.id === "hazmat_van" ? (<>
                     <div><p>Standard Hazmat Van: 53 ft</p><p>Interior: 2,390 cu ft</p></div>
-                    <div><p>Max Legal Weight: 44,000 lbs</p><p>Requires placarding per DOT</p></div>
-                  </>) : (<>
+                    <div><p>Max Legal Weight: 44,000 lbs cargo</p><p>Requires placarding per 49 CFR</p></div>
+                  </>) : selectedTrailer?.id === "dry_van" ? (<>
                     <div><p>Standard Dry Van: 53 ft</p><p>Interior: 2,390 cu ft</p></div>
                     <div><p>Max Legal Weight: 44,000-45,000 lbs</p><p>Typical: 22-26 pallets</p></div>
+                  </>) : selectedTrailer?.id === "reefer" ? (<>
+                    <div><p>Standard Reefer: 40-53 ft</p><p>Interior: ~2,500 cu ft</p></div>
+                    <div><p>Max Legal Weight: 42,000-44,000 lbs</p><p>Typical: 20-22 pallets</p></div>
+                  </>) : selectedTrailer?.id === "flatbed" ? (<>
+                    <div><p>Standard: 48-53 ft</p><p>Deck Width: 8.5 ft (102 in)</p></div>
+                    <div><p>Max Legal Weight: 48,000 lbs cargo</p><p>Max Height: 8.5 ft from deck</p></div>
+                  </>) : selectedTrailer?.id === "step_deck" ? (<>
+                    <div><p>Upper: 11 ft / Lower: 37-41 ft</p><p>Lower Deck Height: 3.5 ft</p></div>
+                    <div><p>Max Legal Weight: 48,000 lbs cargo</p><p>Max Cargo Height: 10 ft (lower)</p></div>
+                  </>) : selectedTrailer?.id === "lowboy" ? (<>
+                    <div><p>Well Length: 24-29 ft</p><p>Deck Height: 18-24 in</p></div>
+                    <div><p>Max Legal Weight: 40,000-80,000 lbs</p><p>Permits for overweight/oversize</p></div>
+                  </>) : selectedTrailer?.id === "double_drop" ? (<>
+                    <div><p>Well Length: 25-29 ft</p><p>Deck Height: 22-28 in</p></div>
+                    <div><p>Max Legal Weight: 45,000-48,000 lbs</p><p>Max Cargo Height: 11.5 ft (well)</p></div>
+                  </>) : selectedTrailer?.id === "conestoga" ? (<>
+                    <div><p>Standard: 48-53 ft</p><p>Rolling tarp system</p></div>
+                    <div><p>Max Legal Weight: 46,000-48,000 lbs</p><p>Weather-protected flatbed</p></div>
+                  </>) : selectedTrailer?.id === "auto_carrier" ? (<>
+                    <div><p>Capacity: 7-10 vehicles</p><p>Length: 75-80 ft overall</p></div>
+                    <div><p>Max Legal Weight: 80,000 lbs GVWR</p><p>Avg 3,500-4,000 lbs/vehicle</p></div>
+                  </>) : selectedTrailer?.id === "livestock" ? (<>
+                    <div><p>Cattle Pot: 48-53 ft</p><p>2-3 decks, nose/belly/doghouse</p></div>
+                    <div><p>Max Legal Weight: 48,000-52,000 lbs cargo</p><p>Typical: 40-50 head finished cattle</p></div>
+                  </>) : selectedTrailer?.id === "log_trailer" ? (<>
+                    <div><p>Bunk Length: 20-40 ft</p><p>49 CFR 393.116 securement</p></div>
+                    <div><p>Max Legal Weight: 48,000-55,000 lbs</p><p>Varies by state timber regs</p></div>
+                  </>) : selectedTrailer?.id === "bulk_hopper" ? (<>
+                    <div><p>Pneumatic Trailer: 1,000-1,700 cu ft</p><p>Pressure discharge (15-20 PSI)</p></div>
+                    <div><p>Max Legal Weight: 44,000-48,000 lbs</p><p>Typical: 25-30 tons dry bulk</p></div>
+                  </>) : selectedTrailer?.id === "hopper" ? (<>
+                    <div><p>Gravity Hopper: 800-1,200 cu ft</p><p>Bottom gates, gravity discharge</p></div>
+                    <div><p>Max Legal Weight: 44,000-48,000 lbs</p><p>Typical: 22-26 tons aggregate</p></div>
+                  </>) : selectedTrailer?.id === "grain_hopper" ? (<>
+                    <div><p>Grain Trailer: 1,000-1,300 cu ft</p><p>USDA-grade, covered top</p></div>
+                    <div><p>Max Legal Weight: 44,000-48,000 lbs</p><p>Typical: 900-1,000 bushels</p></div>
+                  </>) : selectedTrailer?.id === "pneumatic" ? (<>
+                    <div><p>Pneumatic Tank: 1,500-1,900 cu ft</p><p>Compressed air discharge (15 PSI)</p></div>
+                    <div><p>Max Legal Weight: 44,000-48,000 lbs</p><p>Typical: 25-28 tons powder/pellets</p></div>
+                  </>) : selectedTrailer?.id === "end_dump" ? (<>
+                    <div><p>Capacity: 18-24 cu yd</p><p>Hydraulic end-dump</p></div>
+                    <div><p>Max Legal Weight: 44,000-52,000 lbs</p><p>Typical: 20-24 tons aggregate</p></div>
+                  </>) : selectedTrailer?.id === "food_grade_tank" ? (<>
+                    <div><p>Food-Grade Tank: 5,500-6,500 gal</p><p>Sanitary 304 SS, CIP fittings</p></div>
+                    <div><p>Max Legal Weight: 80,000 lbs GVWR</p><p>FDA / 3-A sanitary standards</p></div>
+                  </>) : selectedTrailer?.id === "water_tank" ? (<>
+                    <div><p>Water Tank: 4,000-5,500 gal</p><p>DOT-407 or non-code</p></div>
+                    <div><p>Max Legal Weight: 80,000 lbs GVWR</p><p>Potable vs non-potable specs</p></div>
+                  </>) : selectedTrailer?.id === "intermodal_chassis" ? (<>
+                    <div><p>20/40/45/53 ft ISO chassis</p><p>Twist-lock container mounting</p></div>
+                    <div><p>Max Legal Weight: 44,000 lbs cargo</p><p>Typical: 1-2 TEU containers</p></div>
+                  </>) : selectedTrailer?.id === "curtain_side" ? (<>
+                    <div><p>Curtain Side: 48-53 ft</p><p>Side-access loading, sliding tarps</p></div>
+                    <div><p>Max Legal Weight: 44,000-45,000 lbs</p><p>Typical: 20-24 pallets</p></div>
+                  </>) : (<>
+                    <div><p>Standard: 53 ft</p><p>Consult DOT/state specs</p></div>
+                    <div><p>Max Legal Weight: 44,000-48,000 lbs</p><p>Verify with carrier</p></div>
                   </>)}
                 </div>
               </div>
@@ -1314,12 +1399,14 @@ export default function LoadCreationWizard() {
                   <MultiTruckVisualization
                     materialType={getMaterialType()}
                     totalVolume={Number(formData.quantity) || 0}
-                    unit={currentUnit === "Gallons" ? "gal" : currentUnit === "Barrels" ? "bbl" : currentUnit === "Cubic Feet" ? "cf" : currentUnit === "Cubic Yards" ? "cy" : currentUnit.toLowerCase().slice(0, 3)}
+                    unit={currentUnit === "Gallons" ? "gal" : currentUnit === "Barrels" ? "bbl" : currentUnit === "Cubic Feet" ? "cu ft" : currentUnit === "Cubic Yards" ? "cu yd" : currentUnit === "Head" ? "head" : currentUnit === "Vehicles" ? "veh" : currentUnit === "Bushels" ? "bu" : currentUnit === "Linear Feet" ? "ft" : currentUnit === "Containers" ? "ctr" : currentUnit === "TEU" ? "TEU" : currentUnit.toLowerCase().slice(0, 3)}
                     maxCapacityPerTruck={
                       currentUnit === "Barrels" ? 200 : currentUnit === "Pallets" ? 24 : currentUnit === "Units" ? 100 :
                       currentUnit === "Tons" ? 25 : currentUnit === "Pieces" ? 20 : currentUnit === "Drums" ? 80 :
                       currentUnit === "Cubic Yards" ? 35 : currentUnit === "Cubic Feet" ? 1700 : currentUnit === "Bundles" ? 12 :
                       currentUnit === "Linear Feet" ? 53 : currentUnit === "Boxes" ? 1000 : currentUnit === "Cases" ? 500 :
+                      currentUnit === "Head" ? 50 : currentUnit === "Vehicles" ? 10 : currentUnit === "Bushels" ? 1000 :
+                      currentUnit === "Cords" ? 10 : currentUnit === "MBF" ? 8 : currentUnit === "Containers" ? 2 : currentUnit === "TEU" ? 2 :
                       selectedTrailer?.maxGal || 8500
                     }
                   />
@@ -1401,7 +1488,7 @@ export default function LoadCreationWizard() {
                 <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500/5 to-purple-500/5 border border-blue-500/20">
                   <div className="flex items-center gap-2 mb-3">
                     <Building2 className="w-4 h-4 text-[#1473FF]" />
-                    <span className="text-white font-semibold text-sm">Select Origin Terminal</span>
+                    <span className="text-slate-900 dark:text-white font-semibold text-sm">Select Origin Terminal</span>
                     <Badge variant="outline" className="text-[10px] border-[#1473FF]/30 text-[#1473FF]">Supply Chain</Badge>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -1437,13 +1524,52 @@ export default function LoadCreationWizard() {
 
               <div>
                 <label className="text-sm text-slate-400 mb-1 block flex items-center gap-2"><MapPin className="w-4 h-4 text-green-400" />Origin / Pickup</label>
-                <Input ref={originRef} value={formData.origin || ""} onChange={(e: any) => { updateField("origin", e.target.value); if (formData.originTerminalId) updateField("originTerminalId", undefined); }}
-                  placeholder={mapsLoaded ? "Start typing an address..." : "City, State or full address"} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input ref={originRef} value={formData.origin || ""} onChange={(e: any) => {
+                  const val = e.target.value;
+                  updateField("origin", val);
+                  if (formData.originTerminalId) updateField("originTerminalId", undefined);
+                  const coords = parseCoordinates(val);
+                  if (coords) {
+                    setFormData((prev: any) => {
+                      const next = { ...prev, origin: val, originLat: coords.lat, originLng: coords.lng };
+                      if (prev.destLat && prev.destLng) next.distance = haversineDistance(coords.lat, coords.lng, prev.destLat, prev.destLng);
+                      return next;
+                    });
+                    reverseGeocode(coords.lat, coords.lng).then((addr) => {
+                      setFormData((prev: any) => ({ ...prev, origin: addr }));
+                      if (originRef.current) originRef.current.value = addr;
+                    });
+                    toast.success("Coordinates detected", { description: `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)} — resolving address...` });
+                  }
+                }}
+                  placeholder={mapsLoaded ? "Address or coordinates (lat, lng)..." : "Address or coordinates (e.g. 30.283, -97.776)"} className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
+                {formData.originLat && formData.originLng && (
+                  <p className="text-[10px] text-slate-500 mt-1">📍 {Number(formData.originLat).toFixed(6)}, {Number(formData.originLng).toFixed(6)}</p>
+                )}
               </div>
               <div>
                 <label className="text-sm text-slate-400 mb-1 block flex items-center gap-2"><MapPin className="w-4 h-4 text-red-400" />Destination / Drop-off</label>
-                <Input ref={destRef} value={formData.destination || ""} onChange={(e: any) => updateField("destination", e.target.value)}
-                  placeholder={mapsLoaded ? "Start typing an address..." : "City, State or full address"} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input ref={destRef} value={formData.destination || ""} onChange={(e: any) => {
+                  const val = e.target.value;
+                  updateField("destination", val);
+                  const coords = parseCoordinates(val);
+                  if (coords) {
+                    setFormData((prev: any) => {
+                      const next = { ...prev, destination: val, destLat: coords.lat, destLng: coords.lng };
+                      if (prev.originLat && prev.originLng) next.distance = haversineDistance(prev.originLat, prev.originLng, coords.lat, coords.lng);
+                      return next;
+                    });
+                    reverseGeocode(coords.lat, coords.lng).then((addr) => {
+                      setFormData((prev: any) => ({ ...prev, destination: addr }));
+                      if (destRef.current) destRef.current.value = addr;
+                    });
+                    toast.success("Coordinates detected", { description: `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)} — resolving address...` });
+                  }
+                }}
+                  placeholder={mapsLoaded ? "Address or coordinates (lat, lng)..." : "Address or coordinates (e.g. 30.283, -97.776)"} className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
+                {formData.destLat && formData.destLng && (
+                  <p className="text-[10px] text-slate-500 mt-1">📍 {Number(formData.destLat).toFixed(6)}, {Number(formData.destLng).toFixed(6)}</p>
+                )}
               </div>
               {/* Route Map Preview */}
               {mapsLoaded && (
@@ -1481,8 +1607,95 @@ export default function LoadCreationWizard() {
           {/* STEP 5: Catalyst Requirements */}
           {rs === 5 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div><label className="text-sm text-slate-400 mb-1 block">Minimum Safety Score</label><Input type="number" value={formData.minSafetyScore || ""} onChange={(e: any) => updateField("minSafetyScore", e.target.value)} placeholder="e.g., 80" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
-              <div><label className="text-sm text-slate-400 mb-1 block">Required Endorsements</label><Input value={formData.endorsements || ""} onChange={(e: any) => updateField("endorsements", e.target.value)} placeholder={isHazmat ? "Hazmat, Tanker" : "e.g., Tanker, Doubles/Triples"} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block">Minimum Safety Score</label><Input type="number" value={formData.minSafetyScore || ""} onChange={(e: any) => updateField("minSafetyScore", e.target.value)} placeholder="e.g., 80" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" /></div>
+              {/* Required Endorsements — dropdown-based, no free text */}
+              <div>
+                <label className="text-sm text-slate-400 mb-2 block">Required Endorsements</label>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs text-slate-500">How many endorsements required?</span>
+                  <div className="flex gap-1.5">
+                    {[0, 1, 2, 3, 4, 5, 6].map(n => {
+                      const currentEndorsements = (formData.endorsements || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+                      const activeCount = currentEndorsements.length;
+                      return (
+                        <button key={n} onClick={() => {
+                          if (n === 0) { updateField("endorsements", ""); return; }
+                          const existing = currentEndorsements.slice(0, n);
+                          while (existing.length < n) existing.push("");
+                          updateField("endorsements", existing.join(", "));
+                        }}
+                          className={cn(
+                            "w-8 h-8 rounded-lg text-xs font-bold transition-all border",
+                            activeCount === n
+                              ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-lg"
+                              : "bg-slate-700/50 border-slate-600/50 text-slate-400 hover:bg-slate-700"
+                          )}>
+                          {n}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                {(() => {
+                  const CDL_ENDORSEMENTS = [
+                    { code: "H", name: "H — Hazardous Materials (HME)", desc: "Required to haul any placardable hazmat" },
+                    { code: "N", name: "N — Tank Vehicle", desc: "Required for liquid bulk in cargo tanks (DOT 406/407/412, MC-306/307/312/331/338)" },
+                    { code: "T", name: "T — Doubles/Triples", desc: "Required to pull double or triple trailers" },
+                    { code: "X", name: "X — Hazmat + Tank Combo", desc: "Combination of H and N endorsements" },
+                    { code: "P", name: "P — Passenger", desc: "Required to operate vehicles carrying 16+ passengers" },
+                    { code: "S", name: "S — School Bus", desc: "Required to operate a school bus" },
+                  ];
+                  const currentEndorsements = (formData.endorsements || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+                  if (currentEndorsements.length === 0) return null;
+                  return (
+                    <div className="space-y-2">
+                      {currentEndorsements.map((endorsement: string, idx: number) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">{idx + 1}</div>
+                          <Select value={endorsement} onValueChange={(val: string) => {
+                            const arr = [...currentEndorsements];
+                            arr[idx] = val;
+                            updateField("endorsements", arr.join(", "));
+                          }}>
+                            <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg text-sm flex-1">
+                              <SelectValue placeholder="Select endorsement..." />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-800 border-slate-600/50">
+                              {CDL_ENDORSEMENTS
+                                .filter(e => e.code === endorsement || !currentEndorsements.includes(e.code))
+                                .map(e => (
+                                  <SelectItem key={e.code} value={e.code} className="text-white hover:bg-slate-700/50">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-sm">{e.name}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                      {currentEndorsements.filter(Boolean).length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {currentEndorsements.filter(Boolean).map((code: string) => {
+                            const e = [
+                              { code: "H", name: "Hazmat" }, { code: "N", name: "Tank" }, { code: "T", name: "Doubles/Triples" },
+                              { code: "X", name: "Hazmat+Tank" }, { code: "P", name: "Passenger" }, { code: "S", name: "School Bus" },
+                            ].find(x => x.code === code);
+                            return e ? (
+                              <Badge key={code} variant="outline" className="text-[10px] border-[#1473FF]/30 text-[#1473FF] px-2 py-0.5">
+                                {e.code} — {e.name}
+                              </Badge>
+                            ) : null;
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+                {(formData.endorsements || "").split(",").filter(Boolean).length === 0 && (
+                  <p className="text-[10px] text-slate-500">No endorsements required — select a count above to add CDL endorsement requirements.</p>
+                )}
+              </div>
               {isHazmat && (
                 <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
                   <div className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-orange-400" /><span className="text-orange-400 text-sm font-medium">Hazmat load requires HM endorsement on CDL</span></div>
@@ -1514,7 +1727,7 @@ export default function LoadCreationWizard() {
                 <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/20 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <Truck className="w-4 h-4 text-orange-400" />
-                    <span className="text-white font-semibold text-sm">Select Carrier / Catalyst</span>
+                    <span className="text-slate-900 dark:text-white font-semibold text-sm">Select Carrier / Catalyst</span>
                     {!formData.assignedCatalystId && <Badge variant="outline" className="text-[10px] border-orange-500/30 text-orange-400">Required</Badge>}
                   </div>
                   {catalystPartners.length > 0 ? (
@@ -1551,7 +1764,7 @@ export default function LoadCreationWizard() {
                 <div className="p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <Building2 className="w-4 h-4 text-cyan-400" />
-                    <span className="text-white font-semibold text-sm">Select Broker</span>
+                    <span className="text-slate-900 dark:text-white font-semibold text-sm">Select Broker</span>
                     {!formData.assignedBrokerId && <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">Required</Badge>}
                   </div>
                   {brokerPartners.length > 0 ? (
@@ -1588,7 +1801,7 @@ export default function LoadCreationWizard() {
                 <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <Users className="w-4 h-4 text-emerald-400" />
-                    <span className="text-white font-semibold text-sm">Assign Driver</span>
+                    <span className="text-slate-900 dark:text-white font-semibold text-sm">Assign Driver</span>
                     <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400">Optional — assign later</Badge>
                   </div>
                   {myDrivers.length > 0 ? (
@@ -1627,7 +1840,7 @@ export default function LoadCreationWizard() {
                 <div className="p-4 rounded-xl bg-[#1473FF]/5 border border-[#1473FF]/20">
                   <div className="flex items-center gap-2 mb-2">
                     <Link2 className="w-4 h-4 text-[#1473FF]" />
-                    <span className="text-white font-semibold text-sm">Link to Agreement</span>
+                    <span className="text-slate-900 dark:text-white font-semibold text-sm">Link to Agreement</span>
                     <Badge variant="outline" className="text-[10px] border-[#1473FF]/30 text-[#1473FF]">Contract Integration</Badge>
                   </div>
                   <p className="text-slate-400 text-[10px] mb-2">Link this load to an existing agreement to auto-populate rate and payment terms.</p>
@@ -1637,7 +1850,7 @@ export default function LoadCreationWizard() {
                     if (ag?.baseRate) updateField("rate", String(parseFloat(ag.baseRate)));
                     if (ag?.ratePerMile) updateField("ratePerMile", String(parseFloat(ag.ratePerMile)));
                   }}>
-                    <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select an active agreement (optional)" /></SelectTrigger>
+                    <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg"><SelectValue placeholder="Select an active agreement (optional)" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No Agreement</SelectItem>
                       {agreementsList.map((ag: any) => (
@@ -1668,13 +1881,13 @@ export default function LoadCreationWizard() {
                 <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 space-y-4">
                   <div className="flex items-center gap-2">
                     <Scale className="w-4 h-4 text-blue-400" />
-                    <span className="text-white font-semibold text-sm">Loading Equipment Requirements</span>
+                    <span className="text-slate-900 dark:text-white font-semibold text-sm">Loading Equipment Requirements</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="text-sm text-slate-400 mb-1 block">Hose Type</label>
                       <Select value={formData.hoseType || ""} onValueChange={v => updateField("hoseType", v)}>
-                        <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select hose type" /></SelectTrigger>
+                        <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg"><SelectValue placeholder="Select hose type" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="petroleum">Petroleum Hose</SelectItem>
                           <SelectItem value="chemical">Chemical Transfer Hose</SelectItem>
@@ -1688,7 +1901,7 @@ export default function LoadCreationWizard() {
                     <div>
                       <label className="text-sm text-slate-400 mb-1 block">Hose Length (ft)</label>
                       <Select value={formData.hoseLength || ""} onValueChange={v => updateField("hoseLength", v)}>
-                        <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select length" /></SelectTrigger>
+                        <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg"><SelectValue placeholder="Select length" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="25">25 ft</SelectItem>
                           <SelectItem value="50">50 ft</SelectItem>
@@ -1700,7 +1913,7 @@ export default function LoadCreationWizard() {
                     <div>
                       <label className="text-sm text-slate-400 mb-1 block">Fitting / Adapter</label>
                       <Select value={formData.fittingType || ""} onValueChange={v => updateField("fittingType", v)}>
-                        <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select fitting" /></SelectTrigger>
+                        <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg"><SelectValue placeholder="Select fitting" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="cam_lock">Cam Lock</SelectItem>
                           <SelectItem value="dry_break">Dry Break</SelectItem>
