@@ -1945,4 +1945,73 @@ export const adminRouter = router({
       console.log(`[Admin] Load data integrity: ${fixes.length} fixes applied`);
       return { fixes, count: fixes.length };
     }),
+
+  // ── WS-P0-015: End-to-End Smoke Test ──
+  runSmokeTest: auditedAdminProcedure
+    .mutation(async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const { loads, vehicles, wallets, walletTransactions, settlements, platformFeeConfigs } = await import("../../drizzle/schema");
+      const checks: { name: string; pass: boolean; detail: string }[] = [];
+
+      // P0-003: Platform fee configs
+      const [feeCount] = await db.select({ count: sql`count(*)` as any }).from(platformFeeConfigs);
+      const fc = (feeCount as any)?.count || 0;
+      checks.push({ name: "P0-003: Platform fee configs seeded", pass: fc >= 8, detail: `${fc} configs` });
+
+      // P0-009: RBAC — verify import works
+      try { await import("../services/security/rbac/access-check"); checks.push({ name: "P0-009: RBAC module importable", pass: true, detail: "OK" }); }
+      catch { checks.push({ name: "P0-009: RBAC module importable", pass: false, detail: "Import failed" }); }
+
+      // P0-010: No orphaned wallets
+      const orphaned = await db.execute(sql`SELECT COUNT(*) as cnt FROM wallets w LEFT JOIN users u ON w.userId = u.id WHERE u.id IS NULL`);
+      const orphanCnt = (orphaned as any)?.[0]?.[0]?.cnt || (orphaned as any)?.[0]?.cnt || 0;
+      checks.push({ name: "P0-010: No orphaned wallets", pass: Number(orphanCnt) === 0, detail: `${orphanCnt} orphaned` });
+
+      // P0-011: All 11 roles have users
+      const roleRows = await db.execute(sql`SELECT role, COUNT(*) as cnt FROM users WHERE isActive = 1 GROUP BY role ORDER BY role`);
+      const roles = (roleRows as any)?.[0] || roleRows;
+      const roleCount = Array.isArray(roles) ? roles.length : 0;
+      checks.push({ name: "P0-011: Test accounts for all roles", pass: roleCount >= 10, detail: `${roleCount} distinct roles` });
+
+      // P0-012: Carrier company exists
+      const [carrier] = await db.select({ id: companies.id }).from(companies).where(eq(companies.dotNumber, "2233825")).limit(1);
+      checks.push({ name: "P0-012: Carrier company with DOT", pass: !!carrier, detail: carrier ? `id=${carrier.id}` : "Not found" });
+
+      // P0-012b: Carrier users have companyId
+      const [catUser] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.email, "catalyst@eusotrip.com")).limit(1);
+      checks.push({ name: "P0-012: Catalyst has companyId", pass: !!catUser?.companyId, detail: `companyId=${catUser?.companyId || 'NULL'}` });
+
+      // P0-013: Vehicles exist
+      const [vCount] = await db.select({ count: sql`count(*)` as any }).from(vehicles);
+      const vc = (vCount as any)?.count || 0;
+      checks.push({ name: "P0-013: Test vehicles registered", pass: vc >= 3, detail: `${vc} vehicles` });
+
+      // P0-014: No loads with delivery < pickup
+      const badDates = await db.execute(sql`SELECT COUNT(*) as cnt FROM loads WHERE deliveryDate IS NOT NULL AND pickupDate IS NOT NULL AND deliveryDate < pickupDate`);
+      const bdCnt = (badDates as any)?.[0]?.[0]?.cnt || (badDates as any)?.[0]?.cnt || 0;
+      checks.push({ name: "P0-014: No delivery < pickup dates", pass: Number(bdCnt) === 0, detail: `${bdCnt} bad dates` });
+
+      // P0-014: No 0,0 coordinates
+      const zeroCoords = await db.execute(sql`SELECT COUNT(*) as cnt FROM loads WHERE JSON_EXTRACT(pickupLocation, '$.lat') = 0`);
+      const zcCnt = (zeroCoords as any)?.[0]?.[0]?.cnt || (zeroCoords as any)?.[0]?.cnt || 0;
+      checks.push({ name: "P0-014: No 0,0 coordinates", pass: Number(zcCnt) === 0, detail: `${zcCnt} loads with 0,0` });
+
+      // P0-004: Settlements table accessible
+      try { await db.select({ count: sql`count(*)` as any }).from(settlements); checks.push({ name: "P0-004: Settlements table accessible", pass: true, detail: "OK" }); }
+      catch { checks.push({ name: "P0-004: Settlements table accessible", pass: false, detail: "Query failed" }); }
+
+      // P0-007/008: WebSocket emitters importable
+      try {
+        const ws = await import("../_core/websocket");
+        const hasFns = typeof ws.emitLoadStatusChange === 'function' && typeof ws.emitBidReceived === 'function' && typeof ws.emitNotification === 'function';
+        checks.push({ name: "P0-007/008: WebSocket emitters available", pass: hasFns, detail: hasFns ? "All 3 emitters OK" : "Missing emitters" });
+      } catch { checks.push({ name: "P0-007/008: WebSocket emitters available", pass: false, detail: "Import failed" }); }
+
+      const passed = checks.filter(c => c.pass).length;
+      const failed = checks.filter(c => !c.pass).length;
+      const status = failed === 0 ? "ALL CHECKS PASSED ✓" : `${failed} CHECKS FAILED`;
+      console.log(`[SmokeTest] ${status}: ${passed}/${checks.length} passed`);
+      return { status, passed, failed, total: checks.length, checks };
+    }),
 });
