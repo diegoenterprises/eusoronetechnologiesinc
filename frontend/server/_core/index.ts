@@ -1121,6 +1121,43 @@ async function startServer() {
       } catch (e: any) { console.warn("[Wallet] Orphan cleanup error:", e?.message); }
     }, 12000);
 
+    // Auto-seed test accounts for all 11 roles (WS-P0-011)
+    setTimeout(async () => {
+      try {
+        const { getDb: _seedGetDb } = await import("../db");
+        const _seedDb = await _seedGetDb();
+        if (_seedDb) {
+          const { users: _u } = await import("../../drizzle/schema");
+          const { eq: _eq, sql: _sql } = await import("drizzle-orm");
+          const [roleCount] = await _seedDb.select({ count: _sql<number>`COUNT(DISTINCT role)` }).from(_u).where(_eq(_u.isActive, true));
+          if ((roleCount?.count || 0) < 10) {
+            const testAccounts = [
+              { email: "shipper@eusotrip.com", name: "Test Shipper", role: "SHIPPER" },
+              { email: "catalyst@eusotrip.com", name: "Test Catalyst", role: "CATALYST" },
+              { email: "broker@eusotrip.com", name: "Test Broker", role: "BROKER" },
+              { email: "driver@eusotrip.com", name: "Test Driver", role: "DRIVER" },
+              { email: "dispatch@eusotrip.com", name: "Test Dispatcher", role: "DISPATCH" },
+              { email: "escort@eusotrip.com", name: "Test Escort", role: "ESCORT" },
+              { email: "terminal@eusotrip.com", name: "Test Terminal Manager", role: "TERMINAL_MANAGER" },
+              { email: "compliance@eusotrip.com", name: "Test Compliance Officer", role: "COMPLIANCE_OFFICER" },
+              { email: "safety@eusotrip.com", name: "Test Safety Manager", role: "SAFETY_MANAGER" },
+              { email: "admin@eusotrip.com", name: "Test Admin", role: "ADMIN" },
+              { email: "superadmin@eusotrip.com", name: "Test Super Admin", role: "SUPER_ADMIN" },
+            ];
+            let created = 0;
+            for (const acct of testAccounts) {
+              const [existing] = await _seedDb.select({ id: _u.id }).from(_u).where(_eq(_u.email, acct.email)).limit(1);
+              if (existing) continue;
+              const openId = `test_${acct.role.toLowerCase()}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+              await _seedDb.insert(_u).values({ openId, name: acct.name, email: acct.email, role: acct.role as any, isActive: true, isVerified: true });
+              created++;
+            }
+            if (created > 0) console.log(`[TestAccounts] Auto-seeded ${created} missing test accounts`);
+          }
+        }
+      } catch (e: any) { console.warn("[TestAccounts] Auto-seed error:", e?.message); }
+    }, 14000);
+
     // Run pending DB migrations (audit hash chain columns)
     setTimeout(async () => {
       try {

@@ -1692,4 +1692,49 @@ export const adminRouter = router({
         return { activities: [], stats: {} };
       }
     }),
+
+  // ── WS-P0-011: Seed all 12 user type test accounts ──
+  seedTestAccounts: auditedAdminProcedure
+    .mutation(async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const testAccounts = [
+        { email: "shipper@eusotrip.com", name: "Test Shipper", role: "SHIPPER" },
+        { email: "catalyst@eusotrip.com", name: "Test Catalyst", role: "CATALYST" },
+        { email: "broker@eusotrip.com", name: "Test Broker", role: "BROKER" },
+        { email: "driver@eusotrip.com", name: "Test Driver", role: "DRIVER" },
+        { email: "dispatch@eusotrip.com", name: "Test Dispatcher", role: "DISPATCH" },
+        { email: "escort@eusotrip.com", name: "Test Escort", role: "ESCORT" },
+        { email: "terminal@eusotrip.com", name: "Test Terminal Manager", role: "TERMINAL_MANAGER" },
+        { email: "compliance@eusotrip.com", name: "Test Compliance Officer", role: "COMPLIANCE_OFFICER" },
+        { email: "safety@eusotrip.com", name: "Test Safety Manager", role: "SAFETY_MANAGER" },
+        { email: "admin@eusotrip.com", name: "Test Admin", role: "ADMIN" },
+        { email: "superadmin@eusotrip.com", name: "Test Super Admin", role: "SUPER_ADMIN" },
+      ];
+
+      const created: string[] = [];
+      const skipped: string[] = [];
+
+      for (const acct of testAccounts) {
+        const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, acct.email)).limit(1);
+        if (existing) {
+          skipped.push(acct.email);
+          continue;
+        }
+        const openId = `test_${acct.role.toLowerCase()}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+        await db.insert(users).values({
+          openId,
+          name: acct.name,
+          email: acct.email,
+          role: acct.role as any,
+          isActive: true,
+          isVerified: true,
+        });
+        created.push(acct.email);
+      }
+
+      console.log(`[Admin] Seeded test accounts: ${created.length} created, ${skipped.length} skipped`);
+      return { created, skipped, total: testAccounts.length };
+    }),
 });
