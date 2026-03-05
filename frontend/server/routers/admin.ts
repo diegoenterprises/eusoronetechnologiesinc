@@ -1800,4 +1800,48 @@ export const adminRouter = router({
       console.log(`[Admin] Created carrier company (id=${carrierCompanyId}, DOT=2233825), assigned ${assigned} users`);
       return { companyId: carrierCompanyId, created: true, usersAssigned: assigned };
     }),
+
+  // ── WS-P0-013: Register test vehicles ──
+  seedTestVehicles: auditedAdminProcedure
+    .mutation(async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const { vehicles } = await import("../../drizzle/schema");
+
+      // Find carrier company
+      const [carrier] = await db.select({ id: companies.id }).from(companies).where(eq(companies.dotNumber, "2233825")).limit(1);
+      if (!carrier) throw new Error("Carrier company not found — run seedCarrierCompany first");
+      const cid = carrier.id;
+
+      const testVehicles = [
+        { vin: "1XPWD49X5PD123456", make: "Peterbilt", model: "389", year: 2023, licensePlate: "TX-HZM-001", vehicleType: "tractor" as const, status: "available" as const, capacity: null, nextInspectionDate: new Date("2026-09-15") },
+        { vin: "2TK04072XNS789012", make: "Tremcar", model: "MC-407 DOT", year: 2022, licensePlate: "TX-TNK-001", vehicleType: "tanker" as const, status: "available" as const, capacity: "9000.00", nextInspectionDate: new Date("2026-10-01") },
+        { vin: "1GRAA0622RB345678", make: "Great Dane", model: "Champion CL", year: 2024, licensePlate: "TX-DRY-001", vehicleType: "dry_van" as const, status: "available" as const, capacity: "45000.00", nextInspectionDate: new Date("2026-11-01") },
+      ];
+
+      const created: string[] = [];
+      const skipped: string[] = [];
+
+      for (const v of testVehicles) {
+        const [existing] = await db.select({ id: vehicles.id }).from(vehicles).where(eq(vehicles.vin, v.vin)).limit(1);
+        if (existing) { skipped.push(v.vin); continue; }
+        await db.insert(vehicles).values({
+          companyId: cid,
+          vin: v.vin,
+          make: v.make,
+          model: v.model,
+          year: v.year,
+          licensePlate: v.licensePlate,
+          vehicleType: v.vehicleType,
+          status: v.status,
+          capacity: v.capacity,
+          nextInspectionDate: v.nextInspectionDate,
+          isActive: true,
+        });
+        created.push(v.vin);
+      }
+
+      console.log(`[Admin] Seeded vehicles: ${created.length} created, ${skipped.length} skipped`);
+      return { created, skipped, companyId: cid };
+    }),
 });
