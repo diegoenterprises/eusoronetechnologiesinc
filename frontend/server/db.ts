@@ -238,14 +238,24 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       entityType VARCHAR(50) NOT NULL,
       entityId INT DEFAULT NULL,
       changes JSON DEFAULT NULL,
+      metadata JSON DEFAULT NULL,
+      severity VARCHAR(20) DEFAULT 'info',
       ipAddress VARCHAR(45) DEFAULT NULL,
       userAgent TEXT DEFAULT NULL,
+      previous_hash VARCHAR(128) DEFAULT NULL,
+      entry_hash VARCHAR(128) DEFAULT NULL,
       createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       INDEX audit_user_idx (userId),
       INDEX audit_action_idx (action),
       INDEX audit_entity_idx (entityType, entityId),
       INDEX audit_created_at_idx (createdAt)
     )`);
+
+    // Migration: add columns to audit_logs if table existed before this fix
+    await addColIfMissing("audit_logs", "metadata", "JSON DEFAULT NULL");
+    await addColIfMissing("audit_logs", "severity", "VARCHAR(20) DEFAULT 'info'");
+    await addColIfMissing("audit_logs", "previous_hash", "VARCHAR(128) DEFAULT NULL");
+    await addColIfMissing("audit_logs", "entry_hash", "VARCHAR(128) DEFAULT NULL");
 
     // --- wallets table columns ---
     await addColIfMissing("wallets", "currency", "VARCHAR(3) DEFAULT 'USD'");
