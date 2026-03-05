@@ -13,6 +13,7 @@ import { drivers, documents, certifications, drugTests, trainingRecords, inspect
 import { eq, and, desc, asc, sql, gte, lte, or, isNotNull, count } from "drizzle-orm";
 import { fmcsaService } from "../services/fmcsa";
 import { clearinghouseService } from "../services/clearinghouse";
+import { requireAccess } from "../services/security/rbac/access-check";
 
 const documentStatusSchema = z.enum(["valid", "expiring_soon", "expired", "missing"]);
 const complianceCategorySchema = z.enum(["dq_file", "hos", "drug_alcohol", "vehicle", "hazmat", "documentation"]);
@@ -26,7 +27,8 @@ export const complianceRouter = router({
       expiryDate: z.string().optional(),
       documentUrl: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'COMPLIANCE_RECORD' }, (ctx as any).req);
       const { certifications } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const [result] = await db.insert(certifications).values({
@@ -47,7 +49,8 @@ export const complianceRouter = router({
       expiryDate: z.string().optional(),
       documentUrl: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'COMPLIANCE_RECORD' }, (ctx as any).req);
       const { certifications } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const updates: Record<string, any> = {};
@@ -62,7 +65,8 @@ export const complianceRouter = router({
 
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'DELETE', resource: 'COMPLIANCE_RECORD' }, (ctx as any).req);
       const { certifications } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       await db.update(certifications).set({ status: "expired" }).where(eq(certifications.id, input.id));
@@ -74,6 +78,7 @@ export const complianceRouter = router({
    */
   getDashboardStats: protectedProcedure
     .query(async ({ ctx }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'COMPLIANCE_RECORD' }, (ctx as any).req);
       const db = await getDb();
       if (!db) {
         return { complianceScore: 0, overallScore: 0, expiringDocs: 0, overdueItems: 0, pendingAudits: 0, violations: 0, trend: "stable", expiring: 0, compliant: 0, nonCompliant: 0 };
@@ -136,14 +141,24 @@ export const complianceRouter = router({
   getExpiringItems: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
     .query(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'COMPLIANCE_RECORD' }, (ctx as any).req);
       const db = await getDb();
       if (!db) return [];
 
       try {
+        const companyId = ctx.user?.companyId || 0;
+        const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'PLATFORM_ADMIN'].includes(ctx.user?.role || '');
         const now = new Date();
         const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-        // Get expiring documents with user info
+        // Get expiring documents with user info — filtered by company
+        const conditions = [
+          sql`${documents.expiryDate} IS NOT NULL`,
+          gte(documents.expiryDate, now),
+          lte(documents.expiryDate, thirtyDaysFromNow),
+        ];
+        if (!isAdmin) conditions.push(eq(users.companyId, companyId));
+
         const expiringDocs = await db
           .select({
             id: documents.id,
@@ -153,11 +168,7 @@ export const complianceRouter = router({
           })
           .from(documents)
           .leftJoin(users, eq(documents.userId, users.id))
-          .where(and(
-            sql`${documents.expiryDate} IS NOT NULL`,
-            gte(documents.expiryDate, now),
-            lte(documents.expiryDate, thirtyDaysFromNow)
-          ))
+          .where(and(...conditions))
           .orderBy(documents.expiryDate)
           .limit(input.limit);
 
