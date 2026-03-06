@@ -1389,13 +1389,13 @@ export const loadLifecycleRouter = router({
                 }
               } catch { /* accessorial_charges table may not exist yet */ }
 
-              // 2. Calculate hazmat surcharge from platformFees table
+              // 2. Calculate hazmat surcharge from platform_fee_configs table
               let hazmatSurcharge = 0;
               if (load.hazmatClass) {
                 try {
                   const [feeRows] = await _sDb.execute(sql`
-                    SELECT flatAmount, percentage FROM platform_fees
-                    WHERE feeType = 'HAZMAT_SURCHARGE' AND active = true
+                    SELECT flatAmount, baseRate FROM platform_fee_configs
+                    WHERE feeCode = 'HAZMAT_SURCHARGE' AND isActive = true
                       AND (effectiveFrom IS NULL OR effectiveFrom <= NOW())
                       AND (effectiveTo IS NULL OR effectiveTo >= NOW())
                     LIMIT 1
@@ -1403,11 +1403,11 @@ export const loadLifecycleRouter = router({
                   const hazFee = (feeRows || [])[0];
                   if (hazFee) {
                     hazmatSurcharge = parseFloat(hazFee.flatAmount || "0");
-                    if (hazFee.percentage && parseFloat(hazFee.percentage) > 0) {
-                      hazmatSurcharge += loadRate * (parseFloat(hazFee.percentage) / 100);
+                    if (hazFee.baseRate && parseFloat(hazFee.baseRate) > 0) {
+                      hazmatSurcharge += loadRate * (parseFloat(hazFee.baseRate) / 100);
                     }
                   }
-                } catch { /* platformFees table may not exist yet */ }
+                } catch { /* platform_fee_configs table may not exist yet */ }
               }
 
               // 3. Calculate platform commission fee
