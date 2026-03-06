@@ -114,6 +114,7 @@ import { bookmarksRouter } from "./routers/bookmarks";
 import { catalystPacketsRouter } from "./routers/catalystPackets";
 import { hazmatRouter } from "./routers/hazmat";
 import { platformFeesRouter } from "./routers/platformFees";
+import { productProfilesRouter } from "./routers/productProfiles";
 import { podRouter } from "./routers/pod";
 import { mileageRouter } from "./routers/mileage";
 import { preferencesRouter } from "./routers/preferences";
@@ -1114,6 +1115,9 @@ export const appRouter = router({
 
   // Platform Fees & Revenue
   platformFees: platformFeesRouter,
+
+  // Product Profiles (My Products)
+  productProfiles: productProfilesRouter,
 
   // Telemetry & GPS Tracking
   telemetry: telemetryRouter,

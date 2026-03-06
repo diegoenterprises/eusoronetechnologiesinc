@@ -226,13 +226,48 @@ const PRODUCT_CATALOG_SERVER: Record<string, { label: string; category: string; 
   grain: { label: "Grain / Feed", category: "Dry Bulk", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
   sand_aggregate: { label: "Sand / Gravel / Aggregate", category: "Dry Bulk", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
   cement: { label: "Cement / Powder", category: "Dry Bulk", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
-  plastic_pellets: { label: "Plastic Pellets / Resin", category: "Dry Bulk", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
-  flour_sugar: { label: "Flour / Sugar / Food Powders", category: "Dry Bulk", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
 };
+
+// Maps PRODUCT_CATALOG category → cargoType for product_profiles
+function mapCategoryToCargoType(category: string): string {
+  const map: Record<string, string> = {
+    'Petroleum': 'petroleum',
+    'Gas': 'gas',
+    'Chemicals': 'chemicals',
+    'Cryogenic': 'cryogenic',
+    'Food Liquid': 'food_grade',
+    'Water': 'water',
+    'Dry Freight': 'general',
+    'Refrigerated': 'refrigerated',
+    'Flatbed': 'general',
+    'Heavy Haul': 'oversized',
+    'Dry Bulk': 'dry_bulk',
+  };
+  return map[category] || 'general';
+}
+
+// Maps category → default trailer type for product_profiles
+function mapCategoryToTrailer(category: string): string {
+  const map: Record<string, string> = {
+    'Petroleum': 'liquid_tank',
+    'Gas': 'gas_tank',
+    'Chemicals': 'liquid_tank',
+    'Cryogenic': 'cryogenic',
+    'Food Liquid': 'food_grade_tank',
+    'Water': 'water_tank',
+    'Dry Freight': 'dry_van',
+    'Refrigerated': 'reefer',
+    'Flatbed': 'flatbed',
+    'Heavy Haul': 'lowboy',
+    'Dry Bulk': 'bulk_hopper',
+  };
+  return map[category] || 'dry_van';
+}
 
 /**
  * Auto-create product_profiles rows from registration product selections.
  * Uses INSERT IGNORE to handle re-runs idempotently via UNIQUE(userId, productId).
+ * Populates extended columns: nickname, productName, trailerType, equipment, cargoType, tags.
  */
 async function autoCreateProductProfiles(userId: number, companyId: number | null, products: string[]) {
   if (!products || products.length === 0) return;
@@ -242,10 +277,20 @@ async function autoCreateProductProfiles(userId: number, companyId: number | nul
     for (const pid of products) {
       const info = PRODUCT_CATALOG_SERVER[pid];
       if (!info) continue;
+      const trailerType = mapCategoryToTrailer(info.category);
+      const cargoType = mapCategoryToCargoType(info.category);
+      const tags = JSON.stringify(info.requiresHazmat ? ['hazmat', info.category.toLowerCase()] : [info.category.toLowerCase()]);
       await pool.execute(
-        `INSERT IGNORE INTO product_profiles (userId, companyId, productId, productLabel, category, hazmatClass, requiresHazmat, requiresTanker, temperatureControlled, source)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'registration')`,
-        [userId, companyId, pid, info.label, info.category, info.hazmatClass || null, info.requiresHazmat ? 1 : 0, info.requiresTanker ? 1 : 0, info.temperatureControlled ? 1 : 0]
+        `INSERT IGNORE INTO product_profiles
+         (userId, companyId, productId, productLabel, category, hazmatClass, requiresHazmat, requiresTanker, temperatureControlled, source,
+          nickname, productName, trailerType, equipment, cargoType, isCompanyShared, tags)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'registration', ?, ?, ?, ?, ?, TRUE, ?)`,
+        [
+          userId, companyId, pid, info.label, info.category,
+          info.hazmatClass || null, info.requiresHazmat ? 1 : 0,
+          info.requiresTanker ? 1 : 0, info.temperatureControlled ? 1 : 0,
+          info.label, info.label, trailerType, trailerType, cargoType, tags,
+        ]
       );
     }
     console.log(`[Registration] Auto-created ${products.length} product profiles for user ${userId}`);

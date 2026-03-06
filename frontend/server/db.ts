@@ -1688,6 +1688,63 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       UNIQUE KEY pp_user_product_uniq (userId, productId)
     )`);
 
+    // Phase 1-5 Product Profiles: Extended schema columns
+    await addColIfMissing('product_profiles', 'nickname', "VARCHAR(100) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'description', "TEXT DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'isCompanyShared', "BOOLEAN DEFAULT FALSE");
+    await addColIfMissing('product_profiles', 'trailerType', "VARCHAR(50) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'equipment', "VARCHAR(50) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'productName', "VARCHAR(255) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'cargoType', "VARCHAR(30) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'unNumber', "VARCHAR(10) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'ergGuide', "INT DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'isTIH', "BOOLEAN DEFAULT FALSE");
+    await addColIfMissing('product_profiles', 'isWR', "BOOLEAN DEFAULT FALSE");
+    await addColIfMissing('product_profiles', 'placardName', "VARCHAR(100) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'properShippingName', "VARCHAR(255) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'packingGroup', "VARCHAR(5) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'technicalName', "VARCHAR(255) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'emergencyResponseNumber', "VARCHAR(50) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'emergencyPhone', "VARCHAR(20) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'hazardClassNumber', "VARCHAR(10) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'subsidiaryHazards', "JSON DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'specialPermit', "VARCHAR(100) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'defaultQuantity', "DECIMAL(12,2) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'quantityUnit', "VARCHAR(30) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'weightUnit', "VARCHAR(30) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'volumeUnit', "VARCHAR(30) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'hoseType', "VARCHAR(50) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'hoseLength', "VARCHAR(50) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'fittingType', "VARCHAR(50) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'pumpRequired', "BOOLEAN DEFAULT FALSE");
+    await addColIfMissing('product_profiles', 'compressorRequired', "BOOLEAN DEFAULT FALSE");
+    await addColIfMissing('product_profiles', 'bottomLoadRequired', "BOOLEAN DEFAULT FALSE");
+    await addColIfMissing('product_profiles', 'vaporRecoveryRequired', "BOOLEAN DEFAULT FALSE");
+    await addColIfMissing('product_profiles', 'apiGravity', "DECIMAL(5,2) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'bsw', "DECIMAL(5,2) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'sulfurContent', "DECIMAL(5,2) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'flashPoint', "INT DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'viscosity', "DECIMAL(8,2) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'pourPoint', "INT DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'reidVaporPressure', "DECIMAL(8,2) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'appearance', "VARCHAR(100) DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'usageCount', "INT DEFAULT 0");
+    await addColIfMissing('product_profiles', 'lastUsedAt', "TIMESTAMP NULL DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'tags', "JSON DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'customNotes', "TEXT DEFAULT NULL");
+    await addColIfMissing('product_profiles', 'updatedAt', "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+    await addColIfMissing('product_profiles', 'deletedAt', "TIMESTAMP NULL DEFAULT NULL");
+
+    // Product Profiles: Performance indexes
+    try {
+      const idxPool = _pool?.promise();
+      if (idxPool) {
+        await idxPool.query("CREATE INDEX pp_user_company_idx ON product_profiles (userId, companyId)").catch(() => {});
+        await idxPool.query("CREATE INDEX pp_hazmat_idx ON product_profiles (hazmatClass)").catch(() => {});
+        await idxPool.query("CREATE INDEX pp_usage_idx ON product_profiles (usageCount)").catch(() => {});
+      }
+    } catch {}
+
     console.log("[SchemaSync] Done.");
   } catch (err: any) {
     console.warn("[SchemaSync] Non-fatal error:", err?.message?.slice(0, 200));
