@@ -171,9 +171,11 @@ export default function MyLoads() {
   };
 
   const { user: authUser } = useAuth();
-  const isCatalyst = (authUser?.role || "").toUpperCase() === "CATALYST";
-  const isDriver = (authUser?.role || "").toUpperCase() === "DRIVER";
-  const canCreateLoads = !isCatalyst && !isDriver;
+  const userRole = (authUser?.role || "").toUpperCase();
+  const isCatalyst = userRole === "CATALYST";
+  const isDriver = userRole === "DRIVER";
+  const canCreateLoads = ["SHIPPER", "BROKER", "DISPATCH", "TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"].includes(userRole);
+  const createLoadPath = userRole === "DISPATCH" ? "/dispatch/create" : userRole === "TERMINAL_MANAGER" ? "/terminal/create-load" : "/loads/create";
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto">
@@ -187,7 +189,7 @@ export default function MyLoads() {
           {canCreateLoads && (
             <Button
               className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl px-5"
-              onClick={() => setLocation("/loads/create")}
+              onClick={() => setLocation(createLoadPath)}
             >
               <Plus className="w-4 h-4 mr-2" /> Create New Load
             </Button>
@@ -329,7 +331,7 @@ export default function MyLoads() {
           {canCreateLoads ? (
             <Button
               className="mt-4 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl"
-              onClick={() => setLocation("/loads/create")}
+              onClick={() => setLocation(createLoadPath)}
             >
               <Plus className="w-4 h-4 mr-2" /> Create New Load
             </Button>

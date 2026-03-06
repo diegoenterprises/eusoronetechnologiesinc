@@ -365,7 +365,7 @@ export default function DispatchCommandCenter() {
               onQuickLoad={() => setShowQuickLoad(true)}
               onBroadcast={() => setShowBroadcast(true)}
               onViewSettlements={() => navigate("/settlements")}
-              onViewCheckCalls={() => toast.info("Check calls coming in Phase 3")}
+              onViewCheckCalls={() => navigate("/dispatch/drivers")}
               onViewExceptions={() => navigate("/dispatch/exceptions")}
             />
           )}

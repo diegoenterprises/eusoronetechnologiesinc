@@ -591,13 +591,15 @@ export default function DashboardLayout({
               <div key={item.path}>
               <motion.button
                 onClick={() => {
-                  if (hasChildren && sidebarOpen) {
+                  if (hasChildren) {
+                    if (!sidebarOpen) {
+                      setSidebarOpen(true);
+                    }
                     setExpandedParents(prev => {
                       const n = new Set(prev);
                       if (n.has(item.path)) n.delete(item.path); else n.add(item.path);
                       return n;
                     });
-                    handleMobileNavigate(item.path);
                   } else {
                     handleMobileNavigate(item.path);
                   }

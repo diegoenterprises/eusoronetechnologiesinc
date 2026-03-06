@@ -91,15 +91,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       ],
     },
     {
-      icon: "Scale",
-      label: "Billing",
-      path: "/rate-sheet",
+      icon: "FileText",
+      label: "Documents",
+      path: "/documents",
       badge: 0,
-      description: "Rates & documentation",
-      children: [
-        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
-        { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "BOLs, invoices, contracts & signatures" },
-      ],
+      description: "BOLs, invoices, contracts & signatures"
     },
     {
       icon: "Building2",
@@ -124,7 +120,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
-      description: "Wallet, invoices, payments, cards & escrow"
+      description: "Wallet, payments, rates, invoices & escrow",
+      children: [
+        { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, payments & escrow" },
+        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
+      ],
     },
     {
       icon: "TrendingUp",
@@ -206,17 +206,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       ],
     },
     {
-      icon: "Scale",
-      label: "Billing",
-      path: "/rate-sheet",
-      badge: 0,
-      description: "Rates, accessorials & fee management",
-      children: [
-        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
-        { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
-      ],
-    },
-    {
       icon: "BarChart3",
       label: "Analytics",
       path: "/analytics",
@@ -239,7 +228,12 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
-      description: "Wallet, earnings & payments"
+      description: "Wallet, earnings, rates & payments",
+      children: [
+        { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, earnings & payments" },
+        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
+        { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
+      ],
     },
     {
       icon: "TrendingUp",
@@ -315,13 +309,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       ],
     },
     {
-      icon: "Scale",
-      label: "Rate Sheet",
-      path: "/rate-sheet",
-      badge: 0,
-      description: "Per-barrel rates, surcharges & reconciliation"
-    },
-    {
       icon: "BarChart3",
       label: "Analytics",
       path: "/analytics",
@@ -344,7 +331,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
-      description: "Balance, commission, payments & revenue"
+      description: "Balance, commission, rates & revenue",
+      children: [
+        { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, commission & payments" },
+        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates, surcharges & reconciliation" },
+      ],
     },
     {
       icon: "TrendingUp",
@@ -527,13 +518,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Active exceptions, delays, stale loads & compliance issues"
     },
-    {
-      icon: "DollarSign",
-      label: "Settlements",
-      path: "/settlements",
-      badge: 0,
-      description: "Fleet settlement status, driver earnings & payouts"
-    },
     // ─── BUSINESS ───
     {
       icon: "Handshake",
@@ -552,17 +536,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Shield", label: "Operating Authority", path: "/authority", badge: 0, description: "Verify carrier authority, MC/DOT & lease status" },
         { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities nationwide" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Run tickets, BOLs, compliance docs & certifications" },
-      ],
-    },
-    {
-      icon: "Scale",
-      label: "Billing",
-      path: "/rate-sheet",
-      badge: 0,
-      description: "Rates, accessorials & fee management",
-      children: [
-        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates, surcharges & reconciliation" },
-        { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU & accessorial fees" },
       ],
     },
     {
@@ -588,7 +561,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
-      description: "Account balance, earnings & payments"
+      description: "Wallet, settlements, rates & payments",
+      children: [
+        { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, earnings & payments" },
+        { icon: "DollarSign", label: "Settlements", path: "/settlements", badge: 0, description: "Fleet settlement status, driver earnings & payouts" },
+        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates, surcharges & reconciliation" },
+        { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU & accessorial fees" },
+      ],
     },
     {
       icon: "TrendingUp",
@@ -864,15 +843,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       ],
     },
     {
-      icon: "Scale",
-      label: "Billing",
-      path: "/rate-sheet",
+      icon: "BarChart3",
+      label: "Reports",
+      path: "/terminal/reports",
       badge: 0,
-      description: "Rates & operations reports",
-      children: [
-        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
-        { icon: "BarChart3", label: "Reports", path: "/terminal/reports", badge: 0, description: "Operations reports & analytics" },
-      ],
+      description: "Operations reports & analytics"
     },
     // ─── PLATFORM FOOTER ───
     {
@@ -890,7 +865,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
-      description: "Billing, detention fees, invoices & payments"
+      description: "Wallet, rates, detention fees & payments",
+      children: [
+        { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, invoices & payments" },
+        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
+      ],
     },
     {
       icon: "TrendingUp",
