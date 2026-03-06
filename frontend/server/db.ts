@@ -1643,6 +1643,13 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX pf_active_idx (active)
     )`);
 
+    // --- Seed: HAZMAT_SURCHARGE fee in platform_fees ---
+    try {
+      await pool.execute(`INSERT IGNORE INTO platform_fees (feeType, name, description, percentage, flatAmount, applicableCargoTypes, active)
+        VALUES ('HAZMAT_SURCHARGE', 'Hazmat Surcharge', 'Surcharge applied to all hazmat loads per 49 CFR compliance', 2.50, 75.00, '["hazmat","chemicals","gas"]', 1)`);
+      console.log("[SchemaSync] platform_fees HAZMAT_SURCHARGE seed ensured.");
+    } catch (seedErr: any) { console.warn("[SchemaSync] HAZMAT_SURCHARGE seed skip:", seedErr?.message?.slice(0, 120)); }
+
     // --- Phase 4: Accessorial Charges table ---
     await ensureTable("accessorial_charges", `CREATE TABLE IF NOT EXISTS accessorial_charges (
       id INT AUTO_INCREMENT PRIMARY KEY,

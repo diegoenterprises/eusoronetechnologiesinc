@@ -201,6 +201,14 @@ export const documentsRouter = router({
           console.log(`[Documents] upload SUCCESS: insertId=${(result as any).insertId} stored ${input.fileData.length} chars`);
           const uid = typeof userId === "number" ? userId : parseInt(String(userId), 10) || 0;
           if (uid) { fireGamificationEvent({ userId: uid, type: "document_uploaded", value: 1 }); fireGamificationEvent({ userId: uid, type: "platform_action", value: 1 }); }
+          // Standard load:document_uploaded event
+          try {
+            const { wsService, WS_EVENTS, WS_CHANNELS } = await import("../_core/websocket");
+            if (input.relatedToType === "load" && input.relatedToId) {
+              const ch = WS_CHANNELS.LOAD(input.relatedToId);
+              wsService.broadcastToChannel(ch, { type: WS_EVENTS.LOAD_DOCUMENT_UPLOADED, data: { loadId: input.relatedToId, documentId: String((result as any).insertId), name: input.name, category: input.category, uploadedBy: String(uid), timestamp: new Date().toISOString() }, timestamp: new Date().toISOString() });
+            }
+          } catch { /* non-critical */ }
           // Auto-index document for AI semantic search (fire-and-forget)
           try {
             const { indexDocument } = await import("../services/embeddings/aiTurbocharge");

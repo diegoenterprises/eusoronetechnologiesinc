@@ -1616,6 +1616,57 @@ export const loadLifecycleRouter = router({
         }
       } catch { /* non-critical */ }
 
+      // ── Standard load:* event catalog (15 events from websocket-events.ts) ──
+      try {
+        const { wsService, WS_EVENTS, WS_CHANNELS } = await import("../_core/websocket");
+        const loadChannel = WS_CHANNELS.LOAD(String(numericLoadId));
+        const stdPayload = {
+          loadId: String(numericLoadId),
+          loadNumber: load?.loadNumber || `LOAD-${numericLoadId}`,
+          previousState: currentState,
+          newState: transition.to,
+          timestamp: new Date().toISOString(),
+          actorId: String(ctx.user?.id || 0),
+        };
+
+        // load:status_changed — every transition
+        wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_STATUS_CHANGED, data: stdPayload, timestamp: stdPayload.timestamp });
+
+        // load:posted
+        if (transition.to === "POSTED") {
+          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_POSTED, data: stdPayload, timestamp: stdPayload.timestamp });
+        }
+        // load:assigned
+        if (transition.to === "ASSIGNED") {
+          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_ASSIGNED, data: { ...stdPayload, driverId: load?.driverId ? String(load.driverId) : undefined, vehicleId: load?.vehicleId ? String(load.vehicleId) : undefined }, timestamp: stdPayload.timestamp });
+        }
+        // load:cancelled
+        if (transition.to === "CANCELLED") {
+          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_CANCELLED, data: { ...stdPayload, reason: (input.metadata as any)?.cancellationReason || "unspecified" }, timestamp: stdPayload.timestamp });
+        }
+        // load:completed
+        if (transition.to === "DELIVERED") {
+          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_COMPLETED, data: { ...stdPayload, summary: { rate: (load as any).rate, distance: (load as any).distance } }, timestamp: stdPayload.timestamp });
+        }
+        // load:location_updated — when location data is present
+        if (input.location) {
+          wsService.broadcastToChannel(WS_CHANNELS.LOAD_TRACKING(String(numericLoadId)), { type: WS_EVENTS.LOAD_LOCATION_UPDATED, data: { loadId: String(numericLoadId), lat: input.location.lat, lng: input.location.lng, timestamp: stdPayload.timestamp }, timestamp: stdPayload.timestamp });
+        }
+        // load:bol_signed — when BOL document metadata is present
+        if ((input.metadata as any)?.bolDocumentId) {
+          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_BOL_SIGNED, data: { loadId: String(numericLoadId), bolDocumentId: (input.metadata as any).bolDocumentId, timestamp: stdPayload.timestamp }, timestamp: stdPayload.timestamp });
+        }
+        // load:pod_submitted — when POD signature metadata is present
+        if ((input.metadata as any)?.podSignatureUrl) {
+          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_POD_SUBMITTED, data: { loadId: String(numericLoadId), podUrl: (input.metadata as any).podSignatureUrl, timestamp: stdPayload.timestamp }, timestamp: stdPayload.timestamp });
+        }
+        // load:exception_raised — cargo exception states
+        const EXCEPTION_STATES = ["TEMP_EXCURSION", "REEFER_BREAKDOWN", "CONTAMINATION_REJECT", "SEAL_BREACH", "WEIGHT_VIOLATION"];
+        if (EXCEPTION_STATES.includes(transition.to)) {
+          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_EXCEPTION_RAISED, data: { loadId: String(numericLoadId), exceptionType: transition.to, severity: "critical", timestamp: stdPayload.timestamp }, timestamp: stdPayload.timestamp });
+        }
+      } catch { /* non-critical — standard events are supplementary */ }
+
       // ── Financial event emissions — settlement, cancellation, escrow ──
       const FINANCIAL_STATES = ["DELIVERED", "CANCELLED", "DISPUTE"];
       if (FINANCIAL_STATES.includes(transition.to)) {

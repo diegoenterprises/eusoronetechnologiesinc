@@ -297,6 +297,15 @@ export const loadsRouter = router({
         updatedBy: String(ctx.user?.id || 0),
       });
 
+      // Standard load:created + load:posted events
+      try {
+        const { wsService, WS_EVENTS, WS_CHANNELS } = await import("../_core/websocket");
+        const ch = WS_CHANNELS.LOAD(String(insertedId));
+        const ts = new Date().toISOString();
+        wsService.broadcastToChannel(ch, { type: WS_EVENTS.LOAD_CREATED, data: { loadId: String(insertedId), loadNumber, shipperId: String(dbUserId), cargoType, timestamp: ts }, timestamp: ts });
+        wsService.broadcastToChannel(ch, { type: WS_EVENTS.LOAD_POSTED, data: { loadId: String(insertedId), loadNumber, timestamp: ts }, timestamp: ts });
+      } catch { /* non-critical */ }
+
       // Send branded email + SMS to shipper (non-blocking)
       lookupAndNotify(dbUserId, { type: "load_posted", loadNumber, loadId: String(insertedId), origin: input?.origin, destination: input?.destination, product: input?.productName });
 

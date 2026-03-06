@@ -130,6 +130,16 @@ const telemetrySubRouter = router({
         toState: input.toState,
       });
 
+      // Standard load:geofence_enter / load:geofence_exit events
+      if (input.loadId && (input.action === "ENTER" || input.action === "EXIT")) {
+        try {
+          const { wsService, WS_EVENTS, WS_CHANNELS } = await import("../_core/websocket");
+          const ch = WS_CHANNELS.LOAD(String(input.loadId));
+          const evtType = input.action === "ENTER" ? WS_EVENTS.LOAD_GEOFENCE_ENTER : WS_EVENTS.LOAD_GEOFENCE_EXIT;
+          wsService.broadcastToChannel(ch, { type: evtType, data: { loadId: String(input.loadId), geofenceId: input.geofenceId, geofenceType: input.geofenceType || "CUSTOM", facilityName: input.facilityName, lat: input.location.lat, lng: input.location.lng, timestamp: input.timestamp }, timestamp: input.timestamp });
+        } catch { /* non-critical */ }
+      }
+
       return { success: true, triggersCount: triggers.length, triggers };
     }),
 
@@ -474,11 +484,18 @@ const navigationSubRouter = router({
       destLng: z.number(),
     }))
     .query(async ({ input }) => {
-      return calculateETA(
+      const etaResult = await calculateETA(
         input.loadId,
         { lat: input.currentLat, lng: input.currentLng },
         { lat: input.destLat, lng: input.destLng },
       );
+      // Standard load:eta_updated event
+      try {
+        const { wsService, WS_EVENTS, WS_CHANNELS } = await import("../_core/websocket");
+        const ch = WS_CHANNELS.LOAD(String(input.loadId));
+        wsService.broadcastToChannel(ch, { type: WS_EVENTS.LOAD_ETA_UPDATED, data: { loadId: String(input.loadId), newEta: (etaResult as any)?.eta || (etaResult as any)?.estimatedArrival, confidence: (etaResult as any)?.confidence, timestamp: new Date().toISOString() }, timestamp: new Date().toISOString() });
+      } catch { /* non-critical */ }
+      return etaResult;
     }),
 
   // Get active route for a load
@@ -519,7 +536,16 @@ const navigationSubRouter = router({
   checkRouteDeviation: protectedProcedure
     .input(z.object({ loadId: z.number(), lat: z.number(), lng: z.number() }))
     .query(async ({ input }) => {
-      return checkRouteDeviation(input.loadId, { lat: input.lat, lng: input.lng });
+      const devResult = await checkRouteDeviation(input.loadId, { lat: input.lat, lng: input.lng });
+      // Standard load:route_deviation event when deviation detected
+      if ((devResult as any)?.isDeviated || (devResult as any)?.deviated) {
+        try {
+          const { wsService, WS_EVENTS, WS_CHANNELS } = await import("../_core/websocket");
+          const ch = WS_CHANNELS.LOAD(String(input.loadId));
+          wsService.broadcastToChannel(ch, { type: WS_EVENTS.LOAD_ROUTE_DEVIATION, data: { loadId: String(input.loadId), deviation_miles: (devResult as any)?.deviationMiles || (devResult as any)?.distanceFromRoute, location: { lat: input.lat, lng: input.lng }, timestamp: new Date().toISOString() }, timestamp: new Date().toISOString() });
+        } catch { /* non-critical */ }
+      }
+      return devResult;
     }),
 
   // Get ETA history for a load
