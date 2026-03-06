@@ -287,6 +287,51 @@ const STATE_RULES: Record<string, { carb?: boolean; weightLimit?: number; hazmat
   NM: { weightLimit: 86400 },
   ND: { weightLimit: 105500 },
   SD: { weightLimit: 129000 },
+  WA: { weightLimit: 105500 },
+  OR: { weightLimit: 105500 },
+  NV: { weightLimit: 80000 },
+  AZ: { weightLimit: 80000, hazmatNote: "Phoenix metro hazmat curfew" },
+  CO: { weightLimit: 85000 },
+  UT: { weightLimit: 80000 },
+  ID: { weightLimit: 105500 },
+  WY: { weightLimit: 117000 },
+  NE: { weightLimit: 95000 },
+  KS: { weightLimit: 85500 },
+  MO: { weightLimit: 80000 },
+  AR: { weightLimit: 80000 },
+  MS: { weightLimit: 80000 },
+  AL: { weightLimit: 80000 },
+  GA: { weightLimit: 80000 },
+  SC: { weightLimit: 80000 },
+  NC: { weightLimit: 80000 },
+  VA: { weightLimit: 80000, hazmatNote: "Hampton Roads tunnel restrictions" },
+  WV: { weightLimit: 80000 },
+  KY: { weightLimit: 80000 },
+  TN: { weightLimit: 80000 },
+  WI: { weightLimit: 80000 },
+  MN: { weightLimit: 80000 },
+  IA: { weightLimit: 80000 },
+  CT: { weightLimit: 80000, hazmatNote: "I-95 corridor hazmat route" },
+  NJ: { weightLimit: 80000, hazmatNote: "Turnpike hazmat restrictions" },
+  MA: { weightLimit: 80000, hazmatNote: "Ted Williams Tunnel ban" },
+  MD: { weightLimit: 80000, hazmatNote: "Baltimore tunnel restrictions" },
+  DE: { weightLimit: 80000 },
+  RI: { weightLimit: 80000 },
+  NH: { weightLimit: 80000 },
+  VT: { weightLimit: 80000 },
+  ME: { weightLimit: 100000 },
+  HI: { weightLimit: 80000 },
+  AK: { weightLimit: 105500 },
+};
+
+// ── Trailer → commodity type mapping for COMMODITY_UNITS auto-set ──
+const TRAILER_COMMODITY_MAP: Record<string, string> = {
+  liquid_tank: 'petroleum', gas_tank: 'gas', cryogenic: 'cryogenic', hazmat_van: 'hazmat',
+  dry_van: 'general', reefer: 'refrigerated', food_grade_tank: 'food_grade', water_tank: 'water',
+  flatbed: 'oversized', step_deck: 'oversized', lowboy: 'oversized', double_drop: 'oversized', conestoga: 'general',
+  auto_carrier: 'vehicles', livestock: 'livestock', log_trailer: 'timber',
+  bulk_hopper: 'dry_bulk', hopper: 'dry_bulk', grain_hopper: 'grain', pneumatic: 'dry_bulk', end_dump: 'dry_bulk',
+  intermodal: 'intermodal',
 };
 
 export default function LoadCreationWizard({ quickMode: quickModeProp }: { quickMode?: boolean } = {}) {
@@ -577,13 +622,15 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
   const quantityUnits = getQuantityUnits(formData.trailerType || "");
   const currentUnit = formData.quantityUnit || getDefaultUnit(formData.trailerType || "");
 
-  // Skip SPECTRA-MATCH step (index 2) for non-hazmat loads
-  const STEPS = isHazmat ? ALL_STEPS : ALL_STEPS.filter((_, i) => i !== 2);
-  const realStep = (logicalStep: number) => {
-    if (isHazmat) return logicalStep;
-    return logicalStep >= 2 ? logicalStep + 1 : logicalStep;
-  };
-  const rs = realStep(step);
+  // Build active step indices: filter SPECTRA-MATCH for non-hazmat, filter by quickMode
+  const activeStepIndices = useMemo(() => {
+    let indices = ALL_STEPS.map((_, i) => i);
+    if (!isHazmat) indices = indices.filter(i => i !== 2); // Skip SPECTRA-MATCH
+    if (isQuickMode && wizConfig.quickSteps) indices = indices.filter(i => wizConfig.quickSteps!.includes(i));
+    return indices;
+  }, [isHazmat, isQuickMode, wizConfig.quickSteps]);
+  const STEPS = activeStepIndices.map(i => ALL_STEPS[i]);
+  const rs = activeStepIndices[step] ?? 0; // Map logical step → real content index
 
   const ergSearch = (trpc as any).erg.search.useQuery(
     { query: searchQuery, limit: 10 },
@@ -978,7 +1025,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
               <p className="text-slate-400 text-sm">This determines product options, hazmat classification, and load visualization.</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {TRAILER_TYPES.map((t) => (
-                  <button key={t.id} onClick={() => { updateField("trailerType", t.id); updateField("equipment", t.equipment); updateField("quantityUnit", getDefaultUnit(t.id)); updateField("compartments", 1); updateField("compartmentProducts", undefined); }}
+                  <button key={t.id} onClick={() => { updateField("trailerType", t.id); updateField("equipment", t.equipment); updateField("quantityUnit", getDefaultUnit(t.id)); updateField("compartments", 1); updateField("compartmentProducts", undefined); const cType = TRAILER_COMMODITY_MAP[t.id] || 'general'; const cUnits = COMMODITY_UNITS[cType]; if (cUnits) { updateField("volumeUnit", cUnits.volumeUnit); updateField("weightUnit", cUnits.weightUnit); } }}
                     className={cn("p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02]",
                       formData.trailerType === t.id ? "bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border-cyan-500/50 ring-2 ring-cyan-500/30" : "bg-slate-50 dark:bg-slate-700/30 border-slate-200 dark:border-slate-600/30 hover:border-slate-400 dark:hover:border-slate-500/50"
                     )}>
@@ -1049,6 +1096,12 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg"><SelectValue placeholder="Select class" /></SelectTrigger>
                     <SelectContent>{getClassesForTrailer(formData.trailerType).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                   </Select>
+                  {formData.hazmatClass && SEGREGATION_TABLE[formData.hazmatClass] && (
+                    <div className="mt-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                      <div className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-red-400" /><span className="text-red-400 text-sm font-medium">49 CFR 177.848 — Segregation Warning</span></div>
+                      <p className="text-slate-400 text-xs mt-1">This class <strong>cannot</strong> be co-loaded with: {SEGREGATION_TABLE[formData.hazmatClass].map(c => `Class ${c}`).join(', ')}</p>
+                    </div>
+                  )}
                 </div>
                 <div ref={unSuggestRef} className="relative z-40">
                   <label className="text-sm text-slate-400 mb-1 block">UN Number (auto-detects product as you type)</label>
@@ -1910,7 +1963,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
           {rs === 4 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               {/* Terminal Picker — Origin */}
-              {myTerminals.length > 0 && (
+              {(wizConfig.showTerminalFields || userRole === 'TERMINAL_MANAGER' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && myTerminals.length > 0 && (
                 <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500/5 to-purple-500/5 border border-blue-500/20">
                   <div className="flex items-center gap-2 mb-3">
                     <Building2 className="w-4 h-4 text-[#1473FF]" />
@@ -2027,6 +2080,29 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                 <div><label className="text-sm text-slate-400 dark:text-slate-400 mb-1 block">Delivery Date</label><DatePicker value={formData.deliveryDate || ""} onChange={(val) => updateField("deliveryDate", val)} placeholder="Select delivery date" /></div>
               </div>
               {!mapsLoaded && <div className="p-2 rounded-lg bg-slate-700/20 border border-slate-700/30"><p className="text-slate-500 text-[10px] flex items-center gap-1"><Info className="w-3 h-3" />Google Maps autocomplete &amp; route preview available when VITE_GOOGLE_MAPS_KEY is configured.</p></div>}
+              {/* STATE_RULES compliance warnings */}
+              {(() => {
+                const extractState = (addr: string) => { const m = addr?.match(/\b([A-Z]{2})\b/); return m ? m[1] : null; };
+                const originState = extractState(formData.origin || '');
+                const destState = extractState(formData.destination || '');
+                const states = [originState, destState].filter(Boolean) as string[];
+                const warnings = states.map(s => ({ state: s, ...STATE_RULES[s] })).filter(r => r.weightLimit || r.carb || r.hazmatNote);
+                if (warnings.length === 0) return null;
+                return (
+                  <div className="space-y-2">
+                    {warnings.map((w, i) => (
+                      <div key={i} className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <div className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-400" /><span className="text-amber-400 text-sm font-medium">{w.state} Compliance</span></div>
+                        <div className="text-slate-400 text-xs mt-1 space-y-0.5">
+                          {w.weightLimit && <p>Max weight: <strong>{w.weightLimit.toLocaleString()} lbs</strong></p>}
+                          {w.carb && <p className="text-orange-400">CARB compliant vehicle required</p>}
+                          {w.hazmatNote && <p>{w.hazmatNote}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
 

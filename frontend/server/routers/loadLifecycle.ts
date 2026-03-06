@@ -423,10 +423,47 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
         PA: { weightLimit: 80000 },
         OH: { weightLimit: 80000 },
         IL: { weightLimit: 80000 },
+        IN: { weightLimit: 80000 },
+        LA: { weightLimit: 80000 },
         OK: { weightLimit: 90000 },
         NM: { weightLimit: 86400 },
         ND: { weightLimit: 105500 },
         SD: { weightLimit: 129000 },
+        WA: { weightLimit: 105500 },
+        OR: { weightLimit: 105500 },
+        NV: { weightLimit: 80000 },
+        AZ: { weightLimit: 80000, hazmatNote: "Phoenix metro hazmat curfew" },
+        CO: { weightLimit: 85000 },
+        UT: { weightLimit: 80000 },
+        ID: { weightLimit: 105500 },
+        WY: { weightLimit: 117000 },
+        NE: { weightLimit: 95000 },
+        KS: { weightLimit: 85500 },
+        MO: { weightLimit: 80000 },
+        AR: { weightLimit: 80000 },
+        MS: { weightLimit: 80000 },
+        AL: { weightLimit: 80000 },
+        GA: { weightLimit: 80000 },
+        SC: { weightLimit: 80000 },
+        NC: { weightLimit: 80000 },
+        VA: { weightLimit: 80000, hazmatNote: "Hampton Roads tunnel restrictions" },
+        WV: { weightLimit: 80000 },
+        KY: { weightLimit: 80000 },
+        TN: { weightLimit: 80000 },
+        WI: { weightLimit: 80000 },
+        MN: { weightLimit: 80000 },
+        IA: { weightLimit: 80000 },
+        CT: { weightLimit: 80000, hazmatNote: "I-95 corridor hazmat route" },
+        NJ: { weightLimit: 80000, hazmatNote: "Turnpike hazmat restrictions" },
+        MA: { weightLimit: 80000, hazmatNote: "Ted Williams Tunnel ban" },
+        MD: { weightLimit: 80000, hazmatNote: "Baltimore tunnel restrictions" },
+        DE: { weightLimit: 80000 },
+        RI: { weightLimit: 80000 },
+        NH: { weightLimit: 80000 },
+        VT: { weightLimit: 80000 },
+        ME: { weightLimit: 100000 },
+        HI: { weightLimit: 80000 },
+        AK: { weightLimit: 105500 },
       };
       const warnings: string[] = [];
       for (const state of Array.from(states)) {
@@ -439,9 +476,9 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
           warnings.push(`${state}: CARB compliance required for tanker vehicles`);
         }
       }
-      // Warn but don't hard-block in dev; block in prod only for weight violations
+      // Enforce in all environments — no bypass
       if (warnings.length > 0) {
-        return IS_PROD ? warnings[0] : null;
+        return warnings[0];
       }
       return null;
     }
@@ -1578,6 +1615,102 @@ export const loadLifecycleRouter = router({
           });
         }
       } catch { /* non-critical */ }
+
+      // ── Financial event emissions — settlement, cancellation, escrow ──
+      const FINANCIAL_STATES = ["DELIVERED", "CANCELLED", "DISPUTE"];
+      if (FINANCIAL_STATES.includes(transition.to)) {
+        try {
+          const { emitFinancialEvent } = await import("../_core/websocket");
+          const finType = transition.to === "DELIVERED" ? "settlement_created" : transition.to === "CANCELLED" ? "cancellation_processed" : "dispute_opened";
+          const finAmount = parseFloat(String((load as any).rate || "0"));
+          if (load?.shipperId) {
+            emitFinancialEvent(String(load.shipperId), {
+              transactionId: `fin_${numericLoadId}_${Date.now()}`,
+              type: finType,
+              amount: finAmount,
+              currency: "USD",
+              loadId: String(numericLoadId),
+              status: "pending",
+              timestamp: new Date().toISOString(),
+            });
+          }
+          if (load?.catalystId) {
+            emitFinancialEvent(String(load.catalystId), {
+              transactionId: `fin_${numericLoadId}_${Date.now()}_c`,
+              type: transition.to === "DELIVERED" ? "payment_pending" : "cancellation_processed",
+              amount: finAmount,
+              currency: "USD",
+              loadId: String(numericLoadId),
+              status: "pending",
+              timestamp: new Date().toISOString(),
+            });
+          }
+        } catch { /* non-critical */ }
+      }
+
+      // ── Dispatch event emissions — assignment, unassignment, status changes ──
+      const DISPATCH_STATES = ["ASSIGNED", "CONFIRMED", "EN_ROUTE_PICKUP", "AT_PICKUP", "LOADING", "IN_TRANSIT", "AT_DELIVERY", "UNLOADING"];
+      if (DISPATCH_STATES.includes(transition.to)) {
+        try {
+          const { emitDispatchEvent } = await import("../_core/websocket");
+          const dispatchCompanyId = (load as any).companyId || load?.shipperId || 0;
+          if (dispatchCompanyId) {
+            emitDispatchEvent(String(dispatchCompanyId), {
+              loadId: String(numericLoadId),
+              loadNumber: load?.loadNumber || `LOAD-${numericLoadId}`,
+              driverId: load?.driverId ? String(load.driverId) : undefined,
+              eventType: transition.to === "ASSIGNED" ? "load_assigned" : "status_changed",
+              priority: "normal",
+              message: `Load ${load?.loadNumber || numericLoadId} transitioned to ${transition.to}`,
+              timestamp: new Date().toISOString(),
+            });
+          }
+        } catch { /* non-critical */ }
+      }
+
+      // ── Compliance alert emissions — weight violations ──
+      if (transition.to === "WEIGHT_VIOLATION") {
+        try {
+          const { emitComplianceAlert } = await import("../_core/websocket");
+          const complianceCompanyId = (load as any).companyId || load?.shipperId || 0;
+          if (complianceCompanyId) {
+            emitComplianceAlert(String(complianceCompanyId), {
+              entityType: "vehicle",
+              entityId: String(load?.vehicleId || 0),
+              entityName: load?.loadNumber || `LOAD-${numericLoadId}`,
+              alertType: "weight_violation",
+              severity: "critical",
+              message: `Load ${load?.loadNumber || numericLoadId} flagged for weight violation`,
+              timestamp: new Date().toISOString(),
+            });
+          }
+        } catch { /* non-critical */ }
+      }
+
+      // ── Gamification event on delivery ──
+      if (transition.to === "DELIVERED") {
+        try {
+          const { emitGamificationEvent } = await import("../_core/websocket");
+          const { WS_EVENTS } = await import("@shared/websocket-events");
+          const xpEvent = WS_EVENTS.XP_EARNED;
+          if (load?.driverId) {
+            emitGamificationEvent(String(load.driverId), xpEvent, {
+              userId: String(load.driverId),
+              eventType: "load_delivered",
+              data: { name: "Load Delivered", description: `Delivered load ${load?.loadNumber || numericLoadId}`, xpEarned: 100 },
+              timestamp: new Date().toISOString(),
+            });
+          }
+          if (load?.catalystId) {
+            emitGamificationEvent(String(load.catalystId), xpEvent, {
+              userId: String(load.catalystId),
+              eventType: "load_completed",
+              data: { name: "Load Completed", description: `Completed load ${load?.loadNumber || numericLoadId}`, xpEarned: 50 },
+              timestamp: new Date().toISOString(),
+            });
+          }
+        } catch { /* non-critical */ }
+      }
 
       // ── Cargo exception notifications — urgent email + SMS ──
       const CARGO_EXCEPTION_STATES = ["TEMP_EXCURSION", "REEFER_BREAKDOWN", "CONTAMINATION_REJECT", "SEAL_BREACH", "WEIGHT_VIOLATION"];

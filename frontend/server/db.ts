@@ -1565,6 +1565,101 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX dah_created_idx (createdAt)
     )`);
 
+    // --- Phase 1: DOT Hazmat fields on loads table (49 CFR 172.200-204) ---
+    await addColIfMissing("loads", "properShippingName", "VARCHAR(255) DEFAULT NULL");
+    await addColIfMissing("loads", "packingGroup", "ENUM('I','II','III') DEFAULT NULL");
+    await addColIfMissing("loads", "technicalName", "VARCHAR(255) DEFAULT NULL");
+    await addColIfMissing("loads", "emergencyResponseNumber", "VARCHAR(10) DEFAULT NULL");
+    await addColIfMissing("loads", "emergencyPhone", "VARCHAR(20) DEFAULT NULL");
+    await addColIfMissing("loads", "hazardClassNumber", "VARCHAR(10) DEFAULT NULL");
+    await addColIfMissing("loads", "subsidiaryHazards", "JSON DEFAULT NULL");
+    await addColIfMissing("loads", "specialPermit", "VARCHAR(50) DEFAULT NULL");
+
+    // --- Phase 4: Settlements table ---
+    await ensureTable("settlements", `CREATE TABLE IF NOT EXISTS settlements (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      loadId INT NOT NULL,
+      shipperId INT NOT NULL,
+      carrierId INT DEFAULT NULL,
+      driverId INT DEFAULT NULL,
+      loadRate DECIMAL(12,2) NOT NULL,
+      platformFeePercent DECIMAL(5,2) DEFAULT 5.00,
+      platformFeeAmount DECIMAL(12,2) NOT NULL,
+      carrierPayment DECIMAL(12,2) NOT NULL,
+      totalShipperCharge DECIMAL(12,2) NOT NULL,
+      accessorialTotal DECIMAL(12,2) DEFAULT 0.00,
+      hazmatSurcharge DECIMAL(12,2) DEFAULT 0.00,
+      status VARCHAR(30) DEFAULT 'pending',
+      disputeId INT DEFAULT NULL,
+      paidAt TIMESTAMP NULL DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX settlement_load_idx (loadId),
+      INDEX settlement_shipper_idx (shipperId),
+      INDEX settlement_carrier_idx (carrierId),
+      INDEX settlement_status_idx (status)
+    )`);
+    await addColIfMissing("settlements", "accessorialTotal", "DECIMAL(12,2) DEFAULT 0.00");
+    await addColIfMissing("settlements", "hazmatSurcharge", "DECIMAL(12,2) DEFAULT 0.00");
+
+    // --- Phase 4: Settlement Documents table ---
+    await ensureTable("settlement_documents", `CREATE TABLE IF NOT EXISTS settlement_documents (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      loadId INT NOT NULL,
+      driverId INT DEFAULT NULL,
+      carrierId INT DEFAULT NULL,
+      documentType VARCHAR(50) DEFAULT 'SETTLEMENT',
+      amount DECIMAL(12,2) NOT NULL,
+      deductions JSON DEFAULT NULL,
+      netPay DECIMAL(12,2) NOT NULL,
+      status VARCHAR(30) DEFAULT 'DRAFT',
+      finalizedAt TIMESTAMP NULL DEFAULT NULL,
+      documentUrl TEXT DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX sd_load_idx (loadId),
+      INDEX sd_carrier_idx (carrierId),
+      INDEX sd_status_idx (status)
+    )`);
+
+    // --- Phase 4: Platform Fees table ---
+    await ensureTable("platform_fees", `CREATE TABLE IF NOT EXISTS platform_fees (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      feeType ENUM('COMMISSION','PROCESSING','GATEWAY','INSURANCE','PREMIUM','HAZMAT_SURCHARGE') NOT NULL,
+      name VARCHAR(100) NOT NULL,
+      description TEXT DEFAULT NULL,
+      percentage DECIMAL(5,2) DEFAULT NULL,
+      flatAmount DECIMAL(12,2) DEFAULT NULL,
+      minAmount DECIMAL(12,2) DEFAULT NULL,
+      maxAmount DECIMAL(12,2) DEFAULT NULL,
+      applicableRoles JSON DEFAULT NULL,
+      applicableCargoTypes JSON DEFAULT NULL,
+      active BOOLEAN DEFAULT TRUE,
+      effectiveFrom TIMESTAMP NULL DEFAULT NULL,
+      effectiveTo TIMESTAMP NULL DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX pf_type_idx (feeType),
+      INDEX pf_active_idx (active)
+    )`);
+
+    // --- Phase 4: Accessorial Charges table ---
+    await ensureTable("accessorial_charges", `CREATE TABLE IF NOT EXISTS accessorial_charges (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      loadId INT NOT NULL,
+      type VARCHAR(50) NOT NULL,
+      amount DECIMAL(12,2) NOT NULL,
+      status VARCHAR(30) DEFAULT 'pending',
+      description TEXT DEFAULT NULL,
+      approvedBy INT DEFAULT NULL,
+      approvedAt TIMESTAMP NULL DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX ac_load_idx (loadId),
+      INDEX ac_type_idx (type),
+      INDEX ac_status_idx (status)
+    )`);
+
     console.log("[SchemaSync] Done.");
   } catch (err: any) {
     console.warn("[SchemaSync] Non-fatal error:", err?.message?.slice(0, 200));
