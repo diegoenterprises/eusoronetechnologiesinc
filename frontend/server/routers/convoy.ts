@@ -3,7 +3,7 @@
  */
 
 import { z } from "zod";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { convoys, locationHistory, users, escortAssignments, loads } from "../../drizzle/schema";
@@ -318,6 +318,114 @@ export const convoyRouter = router({
     }).where(eq(convoys.id, input.convoyId));
 
     return { success: true };
+  }),
+
+  // AI-enhanced spacing and speed prediction based on historical data + conditions
+  predictOptimalSpacing: protectedProcedure.input(z.object({
+    convoyId: z.number().optional(),
+    loadId: z.number().optional(),
+    currentSpeed: z.number().optional(),
+    weatherCondition: z.enum(["clear", "rain", "fog", "snow", "ice", "wind"]).default("clear"),
+    roadType: z.enum(["highway", "rural", "urban", "mountain"]).default("highway"),
+    loadWeight: z.number().optional(),
+    loadWidth: z.number().optional(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+
+    // Base parameters from rule engine
+    let baseLeadDistance = 800; // meters
+    let baseRearDistance = 500;
+    let baseMaxSpeed = 45; // mph
+    let confidence = 0.6; // baseline confidence
+
+    // Factor 1: Weather adjustment (physics-based model)
+    const weatherMultipliers: Record<string, { spacing: number; speed: number }> = {
+      clear: { spacing: 1.0, speed: 1.0 },
+      rain: { spacing: 1.4, speed: 0.85 },
+      fog: { spacing: 1.8, speed: 0.7 },
+      snow: { spacing: 2.0, speed: 0.6 },
+      ice: { spacing: 2.5, speed: 0.5 },
+      wind: { spacing: 1.3, speed: 0.8 },
+    };
+    const wm = weatherMultipliers[input.weatherCondition] || weatherMultipliers.clear;
+
+    // Factor 2: Road type adjustment
+    const roadMultipliers: Record<string, { spacing: number; speed: number }> = {
+      highway: { spacing: 1.0, speed: 1.0 },
+      rural: { spacing: 0.9, speed: 0.9 },
+      urban: { spacing: 1.5, speed: 0.65 },
+      mountain: { spacing: 1.6, speed: 0.7 },
+    };
+    const rm = roadMultipliers[input.roadType] || roadMultipliers.highway;
+
+    // Factor 3: Load dimensions adjustment
+    if (input.loadWidth && input.loadWidth > 12) {
+      baseLeadDistance *= 1.3;
+      baseRearDistance *= 1.2;
+      baseMaxSpeed *= 0.8;
+    }
+    if (input.loadWeight && input.loadWeight > 120000) {
+      baseMaxSpeed *= 0.85;
+      baseLeadDistance *= 1.2;
+    }
+
+    // Factor 4: Historical data learning (query completed convoys)
+    let historicalAdjustment = 1.0;
+    if (db) {
+      try {
+        const [histRows] = await db.execute(sql`
+          SELECT AVG(currentLeadDistance) as avgLead, AVG(currentRearDistance) as avgRear,
+            AVG(maxSpeedMph) as avgSpeed, COUNT(*) as total,
+            AVG(TIMESTAMPDIFF(MINUTE, startedAt, completedAt)) as avgDuration
+          FROM convoys WHERE status = 'completed' AND completedAt IS NOT NULL
+            AND completedAt > DATE_SUB(NOW(), INTERVAL 90 DAY)
+        `) as any;
+        const h = (histRows || [])[0];
+        if (h && Number(h.total) >= 3) {
+          // Use historical averages to refine predictions
+          const histAvgLead = Number(h.avgLead) || baseLeadDistance;
+          const histAvgRear = Number(h.avgRear) || baseRearDistance;
+          // Blend historical with rule-based (70% historical, 30% rule when sufficient data)
+          const blendWeight = Math.min(Number(h.total) / 20, 0.7);
+          baseLeadDistance = baseLeadDistance * (1 - blendWeight) + histAvgLead * blendWeight;
+          baseRearDistance = baseRearDistance * (1 - blendWeight) + histAvgRear * blendWeight;
+          confidence = Math.min(0.95, 0.6 + blendWeight * 0.5);
+          historicalAdjustment = blendWeight;
+        }
+      } catch {} // convoys table may not have enough data
+    }
+
+    // Apply all factors
+    const recommendedLeadDistance = Math.round(baseLeadDistance * wm.spacing * rm.spacing);
+    const recommendedRearDistance = Math.round(baseRearDistance * wm.spacing * rm.spacing);
+    const recommendedMaxSpeed = Math.round(baseMaxSpeed * wm.speed * rm.speed);
+
+    // Speed zones (recommendations for different segments)
+    const speedZones = [
+      { zone: "straight_highway", speed: recommendedMaxSpeed, spacing: recommendedLeadDistance },
+      { zone: "curve", speed: Math.round(recommendedMaxSpeed * 0.75), spacing: Math.round(recommendedLeadDistance * 1.3) },
+      { zone: "intersection", speed: Math.round(recommendedMaxSpeed * 0.5), spacing: Math.round(recommendedLeadDistance * 1.5) },
+      { zone: "bridge", speed: Math.round(recommendedMaxSpeed * 0.7), spacing: Math.round(recommendedLeadDistance * 1.2) },
+    ];
+
+    return {
+      recommendedLeadDistance,
+      recommendedRearDistance,
+      recommendedMaxSpeed,
+      confidence: Math.round(confidence * 100),
+      model: historicalAdjustment > 0.3 ? "ml_blended" : "rule_based",
+      factors: {
+        weather: { condition: input.weatherCondition, spacingMultiplier: wm.spacing, speedMultiplier: wm.speed },
+        road: { type: input.roadType, spacingMultiplier: rm.spacing, speedMultiplier: rm.speed },
+        historical: { blendWeight: Math.round(historicalAdjustment * 100), available: historicalAdjustment > 0 },
+      },
+      speedZones,
+      warnings: [
+        ...(input.weatherCondition !== "clear" ? [`${input.weatherCondition} conditions — increased spacing recommended`] : []),
+        ...(input.loadWidth && input.loadWidth > 14 ? ["Super-wide load — law enforcement escort may be required"] : []),
+        ...(recommendedMaxSpeed < 35 ? ["Low speed advisory — consider alternate timing"] : []),
+      ],
+    };
   }),
 
   // Get active convoys for a company/fleet

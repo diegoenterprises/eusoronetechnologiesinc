@@ -226,13 +226,52 @@ export const routesRouter = router({
       currentPosition: z.object({ lat: z.number(), lng: z.number() }),
     }))
     .query(async ({ input }) => {
+      const db = await getDb();
+      let remainingDistance = 0;
+      let remainingDuration = 0;
+      let trafficCondition: "clear" | "light" | "moderate" | "heavy" | "severe" = "clear";
+      let delayMinutes = 0;
+
+      if (db) {
+        try {
+          const numId = parseInt(input.routeId.replace('route_', ''), 10);
+          const [route] = await db.select().from(routesTable).where(eq(routesTable.id, numId)).limit(1);
+          if (route) {
+            const totalDist = parseFloat(String(route.distanceMiles)) || 0;
+            const totalDur = (route.durationMinutes || 0) / 60;
+            // Estimate progress based on position — simplified linear interpolation
+            const progress = route.status === 'completed' ? 1 : (route.status as string) === 'active' ? 0.5 : 0;
+            remainingDistance = Math.round(totalDist * (1 - progress) * 10) / 10;
+            remainingDuration = Math.round(totalDur * (1 - progress) * 10) / 10;
+          }
+
+          // Check active weather alerts near current position for traffic impact
+          const [alerts] = await db.execute(sql`
+            SELECT COUNT(*) as cnt, MAX(severity) as maxSev FROM hz_weather_alerts
+            WHERE status = 'active'
+              AND ABS(CAST(latitude AS DECIMAL(10,6)) - ${input.currentPosition.lat}) < 1.0
+              AND ABS(CAST(longitude AS DECIMAL(10,6)) - ${input.currentPosition.lng}) < 1.0
+              AND expires > NOW()
+          `) as any;
+          const alertData = (alerts || [])[0];
+          if (alertData && Number(alertData.cnt) > 0) {
+            const sev = String(alertData.maxSev || '').toLowerCase();
+            if (sev.includes('extreme') || sev.includes('severe')) { trafficCondition = 'severe'; delayMinutes = 45; }
+            else if (sev.includes('moderate')) { trafficCondition = 'moderate'; delayMinutes = 15; }
+            else { trafficCondition = 'light'; delayMinutes = 5; }
+            remainingDuration += delayMinutes / 60;
+          }
+        } catch { /* hz_weather_alerts may not exist */ }
+      }
+
+      const eta = new Date(Date.now() + remainingDuration * 3600000).toISOString();
       return {
         routeId: input.routeId,
-        eta: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-        remainingDistance: 120.5,
-        remainingDuration: 2.0,
-        trafficCondition: "moderate",
-        delayMinutes: 15,
+        eta,
+        remainingDistance: remainingDistance || 0,
+        remainingDuration: remainingDuration || 0,
+        trafficCondition,
+        delayMinutes,
         updatedAt: new Date().toISOString(),
       };
     }),
@@ -268,8 +307,35 @@ export const routesRouter = router({
         west: z.number(),
       }),
     }))
-    .query(async () => {
-      // Road conditions require external traffic API integration
-      return [];
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        // Pull active weather alerts within bounds from hz_weather_alerts
+        const [rows] = await db.execute(sql`
+          SELECT id, event, headline, severity, description,
+                 latitude, longitude, areaDesc, expires
+          FROM hz_weather_alerts
+          WHERE status = 'active' AND expires > NOW()
+            AND CAST(latitude AS DECIMAL(10,6)) BETWEEN ${input.bounds.south} AND ${input.bounds.north}
+            AND CAST(longitude AS DECIMAL(10,6)) BETWEEN ${input.bounds.west} AND ${input.bounds.east}
+          ORDER BY severity DESC, expires ASC
+          LIMIT 50
+        `) as any;
+        return (rows || []).map((r: any) => ({
+          id: String(r.id),
+          type: r.event || 'weather',
+          headline: r.headline || r.event || 'Road Condition Alert',
+          severity: r.severity || 'moderate',
+          description: r.description?.slice(0, 300) || '',
+          location: { lat: parseFloat(r.latitude || '0'), lng: parseFloat(r.longitude || '0') },
+          area: r.areaDesc || '',
+          expires: r.expires?.toISOString?.() || '',
+          source: 'NWS',
+        }));
+      } catch {
+        // hz_weather_alerts table may not exist yet
+        return [];
+      }
     }),
 });

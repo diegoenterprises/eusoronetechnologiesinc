@@ -12,6 +12,71 @@ import { payments, users } from "../../drizzle/schema";
 import path from "path";
 import fs from "fs";
 
+/**
+ * Archive a settlement file to Azure Blob Storage for long-term persistence.
+ * Returns the blob URL (with SAS) if successful, null otherwise.
+ */
+async function archiveToBlobStorage(localFilePath: string, blobName: string): Promise<string | null> {
+  const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "";
+  const containerName = process.env.SETTLEMENT_BLOB_CONTAINER || "settlements";
+
+  if (!connectionString) {
+    console.warn("[SettlementPDF] Azure Blob Storage not configured — file stays local only");
+    return null;
+  }
+
+  try {
+    const { BlobServiceClient, generateBlobSASQueryParameters, BlobSASPermissions, StorageSharedKeyCredential } = await import("@azure/storage-blob");
+    const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+
+    // Create container if not exists
+    await containerClient.createIfNotExists({ access: undefined });
+
+    // Upload file
+    const blockBlobClient = containerClient.getBlockBlobClient(`archive/${new Date().getFullYear()}/${blobName}`);
+    const fileBuffer = fs.readFileSync(localFilePath);
+    await blockBlobClient.uploadData(fileBuffer, {
+      blobHTTPHeaders: {
+        blobContentType: blobName.endsWith(".pdf") ? "application/pdf" : "text/plain",
+        blobContentDisposition: `inline; filename="${blobName}"`,
+      },
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        source: "eusotrip-settlement",
+      },
+    });
+
+    // Generate SAS URL valid for 7 years (long-term archival)
+    const sasExpiry = new Date();
+    sasExpiry.setFullYear(sasExpiry.getFullYear() + 7);
+
+    // Extract account name and key from connection string for SAS generation
+    const accountMatch = connectionString.match(/AccountName=([^;]+)/);
+    const keyMatch = connectionString.match(/AccountKey=([^;]+)/);
+    if (accountMatch && keyMatch) {
+      const sharedKeyCredential = new StorageSharedKeyCredential(accountMatch[1], keyMatch[1]);
+      const sasToken = generateBlobSASQueryParameters({
+        containerName,
+        blobName: blockBlobClient.name,
+        permissions: BlobSASPermissions.parse("r"),
+        startsOn: new Date(),
+        expiresOn: sasExpiry,
+      }, sharedKeyCredential).toString();
+      const sasUrl = `${blockBlobClient.url}?${sasToken}`;
+      console.log(`[SettlementPDF] Archived to Azure Blob: ${blockBlobClient.name}`);
+      return sasUrl;
+    }
+
+    // Fallback: return blob URL without SAS (requires public access or managed identity)
+    console.log(`[SettlementPDF] Archived to Azure Blob (no SAS): ${blockBlobClient.name}`);
+    return blockBlobClient.url;
+  } catch (err: any) {
+    console.warn("[SettlementPDF] Azure Blob upload failed (file stays local):", err?.message?.slice(0, 120));
+    return null;
+  }
+}
+
 interface SettlementData {
   settlementId: number;
   loadId?: number;
@@ -161,7 +226,12 @@ export async function generateSettlementPDF(data: SettlementData): Promise<strin
       stream.on("error", reject);
     });
 
-    console.log(`[SettlementPDF] Generated: ${filePath}`);
+    console.log(`[SettlementPDF] Generated locally: ${filePath}`);
+
+    // Archive to Azure Blob Storage for long-term persistence
+    const blobUrl = await archiveToBlobStorage(filePath, filename);
+    if (blobUrl) return blobUrl;
+
     return `/settlements/${filename}`;
 
   } catch (err: any) {

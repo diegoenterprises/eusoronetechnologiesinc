@@ -258,6 +258,78 @@ export const reeferTempRouter = router({
     }),
 
   /**
+   * Ingest telemetry reading from ELD/Samsara/IoT sensor (automated)
+   * Called by webhook or polling service — not manual entry
+   */
+  ingestTelemetry: protectedProcedure
+    .input(z.object({
+      readings: z.array(z.object({
+        tempF: z.number(),
+        zone: z.enum(["front", "center", "rear"]),
+        loadId: z.number().optional(),
+        vehicleId: z.number().optional(),
+        driverId: z.number().optional(),
+        companyId: z.number().optional(),
+        sensorId: z.string().optional(),
+        timestamp: z.string().optional(),
+      })),
+      source: z.enum(["eld", "samsara", "carrier_transicold", "thermo_king", "manual", "iot"]).default("eld"),
+      targetMin: z.number().default(33),
+      targetMax: z.number().default(40),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      const companyId = Number(ctx.user?.companyId) || 0;
+      let inserted = 0, alertsCreated = 0;
+
+      for (const r of input.readings) {
+        const tempC = Math.round(((r.tempF - 32) * 5 / 9) * 100) / 100;
+        const status = r.tempF > input.targetMax ? "critical" : r.tempF > (input.targetMax - 2) ? "warning" : "normal";
+        const driverId = r.driverId || userId;
+        const cId = r.companyId || companyId;
+
+        try {
+          // Map extended source types to schema-compatible values
+          const dbSource: "sensor" | "manual" = input.source === "manual" ? "manual" : "sensor";
+          await db.insert(reeferReadings).values({
+            driverId,
+            companyId: cId,
+            loadId: r.loadId || null,
+            vehicleId: r.vehicleId || null,
+            zone: r.zone,
+            tempF: String(r.tempF),
+            tempC: String(tempC),
+            targetMinF: String(input.targetMin),
+            targetMaxF: String(input.targetMax),
+            status,
+            source: dbSource,
+            notes: r.sensorId ? `Sensor: ${r.sensorId} (${input.source})` : `Source: ${input.source}`,
+          });
+          inserted++;
+
+          // Auto-create alert if critical
+          if (status === "critical") {
+            await db.insert(reeferAlerts).values({
+              driverId,
+              companyId: cId,
+              loadId: r.loadId || null,
+              vehicleId: r.vehicleId || null,
+              severity: "critical",
+              message: `[AUTO] ${r.zone} zone at ${r.tempF}°F — exceeds ${input.targetMax}°F limit (source: ${input.source})`,
+              zone: r.zone,
+              tempF: String(r.tempF),
+            });
+            alertsCreated++;
+          }
+        } catch (e) { console.warn("[ReeferTemp] ingestTelemetry insert error:", e); }
+      }
+
+      return { success: true, inserted, alertsCreated, source: input.source };
+    }),
+
+  /**
    * Acknowledge an alert
    */
   acknowledgeAlert: protectedProcedure

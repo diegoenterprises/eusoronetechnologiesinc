@@ -1745,6 +1745,166 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       }
     } catch {}
 
+    // --- P0: 1099 Tax Reporting table ---
+    await ensureTable("tax_1099_records", `CREATE TABLE IF NOT EXISTS tax_1099_records (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      recordId VARCHAR(100) NOT NULL UNIQUE,
+      taxYear INT NOT NULL,
+      formType VARCHAR(20) NOT NULL DEFAULT '1099-NEC',
+      payeeId INT NOT NULL,
+      payeeName VARCHAR(255) NOT NULL,
+      payeeEmail VARCHAR(255) DEFAULT NULL,
+      payeeTIN VARCHAR(11) DEFAULT NULL,
+      payerName VARCHAR(255) DEFAULT 'Eusorone Technologies Inc',
+      payerTIN VARCHAR(11) DEFAULT NULL,
+      payerAddress VARCHAR(500) DEFAULT NULL,
+      nonemployeeCompensation DECIMAL(12,2) NOT NULL DEFAULT 0,
+      otherIncome DECIMAL(12,2) DEFAULT 0,
+      federalTaxWithheld DECIMAL(12,2) DEFAULT 0,
+      stateTaxWithheld DECIMAL(12,2) DEFAULT 0,
+      status ENUM('generated','reviewed','filed','corrected','voided') DEFAULT 'generated',
+      notes TEXT DEFAULT NULL,
+      generatedBy INT DEFAULT NULL,
+      generatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      filedAt TIMESTAMP NULL DEFAULT NULL,
+      correctedAt TIMESTAMP NULL DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX t1099_year_idx (taxYear),
+      INDEX t1099_payee_idx (payeeId),
+      INDEX t1099_status_idx (status),
+      UNIQUE KEY t1099_year_payee_uniq (taxYear, payeeId)
+    )`);
+
+    // --- P2: Permits table ---
+    await ensureTable("permits_records", `CREATE TABLE IF NOT EXISTS permits_records (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      permitNumber VARCHAR(100) NOT NULL,
+      type ENUM('oversize','overweight','superload','hazmat_route','temporary') NOT NULL,
+      status ENUM('draft','pending','approved','expired','revoked') DEFAULT 'draft',
+      companyId INT DEFAULT NULL,
+      userId INT NOT NULL,
+      vehicleId VARCHAR(100) DEFAULT NULL,
+      trailerId VARCHAR(100) DEFAULT NULL,
+      states JSON DEFAULT NULL,
+      origin VARCHAR(255) DEFAULT NULL,
+      destination VARCHAR(255) DEFAULT NULL,
+      commodity VARCHAR(255) DEFAULT NULL,
+      loadDescription TEXT DEFAULT NULL,
+      dimensions JSON DEFAULT NULL,
+      weight DECIMAL(12,2) DEFAULT NULL,
+      requestedStartDate DATE DEFAULT NULL,
+      requestedEndDate DATE DEFAULT NULL,
+      approvedDate DATE DEFAULT NULL,
+      expirationDate DATE DEFAULT NULL,
+      fees DECIMAL(12,2) DEFAULT 0,
+      issuingAgency VARCHAR(255) DEFAULT NULL,
+      documentUrl VARCHAR(500) DEFAULT NULL,
+      notes TEXT DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX pr_company_idx (companyId),
+      INDEX pr_user_idx (userId),
+      INDEX pr_status_idx (status),
+      INDEX pr_type_idx (type),
+      INDEX pr_expiry_idx (expirationDate)
+    )`);
+
+    // --- P2: Fuel Cards table ---
+    await ensureTable("fuel_cards", `CREATE TABLE IF NOT EXISTS fuel_cards (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      cardNumber VARCHAR(50) NOT NULL,
+      cardType ENUM('comdata','efs','tcheck','wex','fuelman','other') DEFAULT 'comdata',
+      status ENUM('active','suspended','cancelled','lost','expired') DEFAULT 'active',
+      driverId INT DEFAULT NULL,
+      companyId INT DEFAULT NULL,
+      nameOnCard VARCHAR(255) DEFAULT NULL,
+      monthlyLimit DECIMAL(12,2) DEFAULT 5000,
+      dailyLimit DECIMAL(12,2) DEFAULT 500,
+      perTransactionLimit DECIMAL(12,2) DEFAULT 300,
+      totalSpent DECIMAL(12,2) DEFAULT 0,
+      monthlySpent DECIMAL(12,2) DEFAULT 0,
+      fuelOnly BOOLEAN DEFAULT TRUE,
+      expirationDate DATE DEFAULT NULL,
+      lastUsedAt TIMESTAMP NULL DEFAULT NULL,
+      notes TEXT DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX fc_driver_idx (driverId),
+      INDEX fc_company_idx (companyId),
+      INDEX fc_status_idx (status),
+      UNIQUE KEY fc_card_uniq (cardNumber)
+    )`);
+
+    // --- P2: Fuel Transactions table ---
+    await ensureTable("fuel_transactions", `CREATE TABLE IF NOT EXISTS fuel_transactions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      cardId INT NOT NULL,
+      driverId INT DEFAULT NULL,
+      companyId INT DEFAULT NULL,
+      transactionDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      stationName VARCHAR(255) DEFAULT NULL,
+      stationCity VARCHAR(100) DEFAULT NULL,
+      stationState VARCHAR(10) DEFAULT NULL,
+      gallons DECIMAL(10,3) DEFAULT 0,
+      pricePerGallon DECIMAL(8,4) DEFAULT 0,
+      totalAmount DECIMAL(12,2) NOT NULL,
+      fuelType ENUM('diesel','unleaded','premium','def') DEFAULT 'diesel',
+      odometer INT DEFAULT NULL,
+      vehicleId VARCHAR(100) DEFAULT NULL,
+      receiptUrl VARCHAR(500) DEFAULT NULL,
+      flagged BOOLEAN DEFAULT FALSE,
+      flagReason VARCHAR(255) DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX ft_card_idx (cardId),
+      INDEX ft_driver_idx (driverId),
+      INDEX ft_date_idx (transactionDate)
+    )`);
+
+    // --- P1: SCADA Transactions table ---
+    await ensureTable("scada_transactions", `CREATE TABLE IF NOT EXISTS scada_transactions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      transactionId VARCHAR(100) NOT NULL,
+      terminalId INT NOT NULL,
+      rackId VARCHAR(50) NOT NULL,
+      loadId VARCHAR(50) DEFAULT NULL,
+      product VARCHAR(50) NOT NULL,
+      targetGallons DECIMAL(12,2) DEFAULT 0,
+      actualGallons DECIMAL(12,2) DEFAULT 0,
+      netGallons DECIMAL(12,2) DEFAULT 0,
+      temperature DECIMAL(6,2) DEFAULT NULL,
+      apiGravity DECIMAL(6,2) DEFAULT NULL,
+      status ENUM('pending','loading','completed','stopped','error') DEFAULT 'pending',
+      startTime TIMESTAMP NULL DEFAULT NULL,
+      endTime TIMESTAMP NULL DEFAULT NULL,
+      authorizedBy INT DEFAULT NULL,
+      meterStart DECIMAL(12,2) DEFAULT NULL,
+      meterEnd DECIMAL(12,2) DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX st_terminal_idx (terminalId),
+      INDEX st_status_idx (status),
+      UNIQUE KEY st_txn_uniq (transactionId)
+    )`);
+
+    // --- P1: SCADA Alarms table ---
+    await ensureTable("scada_alarms", `CREATE TABLE IF NOT EXISTS scada_alarms (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      terminalId INT NOT NULL,
+      rackId VARCHAR(50) DEFAULT NULL,
+      tankId VARCHAR(50) DEFAULT NULL,
+      severity ENUM('info','warning','critical') DEFAULT 'warning',
+      type VARCHAR(100) NOT NULL,
+      message TEXT NOT NULL,
+      acknowledged BOOLEAN DEFAULT FALSE,
+      acknowledgedBy INT DEFAULT NULL,
+      acknowledgedAt TIMESTAMP NULL DEFAULT NULL,
+      resolvedAt TIMESTAMP NULL DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX sa_terminal_idx (terminalId),
+      INDEX sa_severity_idx (severity),
+      INDEX sa_ack_idx (acknowledged)
+    )`);
+
     console.log("[SchemaSync] Done.");
   } catch (err: any) {
     console.warn("[SchemaSync] Non-fatal error:", err?.message?.slice(0, 200));

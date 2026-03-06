@@ -14,7 +14,7 @@
 
 import { getDb } from "../db";
 import { smsMessages, smsOptOuts } from "../../drizzle/schema";
-import { eq, and, desc, gte, lte } from "drizzle-orm";
+import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
 
 const ACS_CONNECTION_STRING = process.env.AZURE_EMAIL_CONNECTION_STRING || "";
 const ACS_SMS_FROM = process.env.ACS_SMS_FROM_NUMBER || "";
@@ -124,11 +124,103 @@ export async function sendSms(params: SendSmsParams): Promise<{ id: number; stat
       return { id: result.id, status: "FAILED" };
     }
   } else {
-    // Not configured — log but do NOT mark as sent
-    console.warn("[EusoSMS] SMS not configured. Would send to:", cleanNumber, "Message:", params.message.slice(0, 80) + "...");
-    await db.update(smsMessages).set({ status: "FAILED", errorMessage: "SMS gateway not configured" }).where(eq(smsMessages.id, result.id));
-    return { id: result.id, status: "NOT_CONFIGURED" };
+    // Not configured — queue for retry when gateway becomes available
+    console.warn("[EusoSMS] SMS not configured. Queued for retry to:", cleanNumber);
+    await db.update(smsMessages).set({ status: "QUEUED", errorMessage: "SMS gateway not configured — queued for retry" }).where(eq(smsMessages.id, result.id));
+    return { id: result.id, status: "QUEUED" };
   }
+}
+
+/**
+ * Retry queue — process failed and queued SMS messages
+ * Called periodically (e.g., every 5 minutes) or when gateway config changes
+ */
+export async function processRetryQueue(maxRetries: number = 3, batchSize: number = 50): Promise<{ retried: number; succeeded: number; failed: number }> {
+  if (smsInitPromise) await smsInitPromise;
+  const db = await getDb();
+  if (!db) return { retried: 0, succeeded: 0, failed: 0 };
+
+  let retried = 0, succeeded = 0, failed = 0;
+
+  try {
+    // Get queued/failed messages that haven't exceeded retry limit
+    const [rows] = await db.execute(
+      sql`SELECT id, \`to\`, message, userId, COALESCE(retryCount, 0) as retryCount
+          FROM sms_messages
+          WHERE status IN ('QUEUED', 'FAILED')
+            AND direction = 'OUTBOUND'
+            AND COALESCE(retryCount, 0) < ${maxRetries}
+            AND createdAt > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+          ORDER BY createdAt ASC LIMIT ${batchSize}`
+    ) as any;
+
+    const messages = rows || [];
+    if (messages.length === 0) return { retried: 0, succeeded: 0, failed: 0 };
+
+    console.log(`[EusoSMS] Processing retry queue: ${messages.length} messages`);
+
+    for (const msg of messages) {
+      retried++;
+      // Increment retry count
+      await db.execute(
+        sql`UPDATE sms_messages SET retryCount = COALESCE(retryCount, 0) + 1 WHERE id = ${msg.id}`
+      );
+
+      if (smsConfigured && smsClient) {
+        try {
+          const sendResults = await smsClient.send({
+            from: ACS_SMS_FROM,
+            to: [msg.to],
+            message: msg.message,
+          });
+          const sr = sendResults[0];
+          if (sr?.successful) {
+            await db.update(smsMessages).set({ status: "SENT", sentAt: new Date(), errorMessage: null }).where(eq(smsMessages.id, msg.id));
+            succeeded++;
+          } else {
+            await db.update(smsMessages).set({ status: "FAILED", errorMessage: sr?.errorMessage || "Retry failed" }).where(eq(smsMessages.id, msg.id));
+            failed++;
+          }
+        } catch (err: any) {
+          await db.update(smsMessages).set({ status: "FAILED", errorMessage: `Retry error: ${err?.message?.slice(0, 100)}` }).where(eq(smsMessages.id, msg.id));
+          failed++;
+        }
+      } else {
+        // Still not configured, leave as queued
+        failed++;
+      }
+    }
+
+    console.log(`[EusoSMS] Retry queue processed: ${succeeded} sent, ${failed} failed of ${retried} total`);
+  } catch (e) {
+    console.error("[EusoSMS] Retry queue error:", e);
+  }
+
+  return { retried, succeeded, failed };
+}
+
+/**
+ * Handle delivery status webhook from Azure Communication Services
+ */
+export async function handleDeliveryWebhook(events: Array<{ messageId?: string; smsId?: number; status: string; errorCode?: string; errorMessage?: string }>) {
+  const db = await getDb();
+  if (!db) return { processed: 0 };
+
+  let processed = 0;
+  for (const event of events) {
+    try {
+      const status = event.status?.toUpperCase();
+      if (status === 'DELIVERED' && event.smsId) {
+        await markSmsDelivered(event.smsId);
+        processed++;
+      } else if ((status === 'FAILED' || status === 'UNDELIVERABLE') && event.smsId) {
+        await markSmsFailed(event.smsId, event.errorCode || '', event.errorMessage || 'Delivery failed');
+        processed++;
+      }
+    } catch {}
+  }
+
+  return { processed };
 }
 
 /**

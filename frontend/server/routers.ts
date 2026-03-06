@@ -177,6 +177,7 @@ import { visualIntelligenceRouter } from "./routers/visualIntelligence";
 import { aiHealthRouter } from "./routers/aiHealth";
 import { documentVerificationRouter } from "./routers/documentVerification";
 import { cdlVerificationRouter } from "./routers/cdlVerification";
+import { taxReportingRouter } from "./routers/taxReporting";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -1271,6 +1272,9 @@ export const appRouter = router({
 
   // P0 Blocker 7: CDL Verification & endorsement checks
   cdlVerification: cdlVerificationRouter,
+
+  // P0: 1099 Tax Reporting — IRS 1099-NEC generation for contractors
+  taxReporting: taxReportingRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,

@@ -14,40 +14,111 @@ const permitTypeSchema = z.enum(["oversize", "overweight", "superload", "hazmat_
 
 export const permitsRouter = router({
   /**
-   * List permits — empty for new users (no permits table yet)
+   * List permits from permits_records table
    */
   list: protectedProcedure
     .input(z.object({ status: permitStatusSchema.optional(), type: permitTypeSchema.optional(), state: z.string().optional(), limit: z.number().default(20), offset: z.number().default(0) }))
-    .query(async () => {
-      const result: any[] = [];
-      return Object.assign(result, { permits: result, total: 0, filter: result.filter.bind(result) });
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) { const r: any[] = []; return Object.assign(r, { permits: r, total: 0, filter: r.filter.bind(r) }); }
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        let where = `userId = ${userId}`;
+        if (input.status) where += ` AND status = '${input.status}'`;
+        if (input.type) where += ` AND type = '${input.type}'`;
+        const [countRes] = await db.execute(sql.raw(`SELECT COUNT(*) as cnt FROM permits_records WHERE ${where}`)) as any;
+        const total = Number((countRes || [])[0]?.cnt) || 0;
+        const [rows] = await db.execute(sql.raw(`SELECT * FROM permits_records WHERE ${where} ORDER BY createdAt DESC LIMIT ${input.limit} OFFSET ${input.offset}`)) as any;
+        const permits = (rows || []).map((r: any) => ({
+          id: String(r.id), permitNumber: r.permitNumber, type: r.type, status: r.status,
+          states: r.states ? JSON.parse(r.states) : [], origin: r.origin, destination: r.destination,
+          commodity: r.commodity, weight: Number(r.weight) || 0,
+          expirationDate: r.expirationDate, fees: Number(r.fees) || 0,
+          createdAt: r.createdAt?.toISOString?.() || '',
+        }));
+        return Object.assign(permits, { permits, total, filter: permits.filter.bind(permits) });
+      } catch (e) { console.error('[Permits] list error:', e); const r: any[] = []; return Object.assign(r, { permits: r, total: 0, filter: r.filter.bind(r) }); }
     }),
 
   /**
-   * Get permit by ID — empty for new users
+   * Get permit by ID from permits_records table
    */
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => null),
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      try {
+        const [rows] = await db.execute(sql`SELECT * FROM permits_records WHERE id = ${parseInt(input.id, 10)} LIMIT 1`) as any;
+        const r = (rows || [])[0];
+        if (!r) return null;
+        return {
+          id: String(r.id), permitNumber: r.permitNumber, type: r.type, status: r.status,
+          states: r.states ? JSON.parse(r.states) : [], origin: r.origin, destination: r.destination,
+          commodity: r.commodity, loadDescription: r.loadDescription,
+          dimensions: r.dimensions ? JSON.parse(r.dimensions) : null,
+          weight: Number(r.weight) || 0, fees: Number(r.fees) || 0,
+          requestedStartDate: r.requestedStartDate, requestedEndDate: r.requestedEndDate,
+          approvedDate: r.approvedDate, expirationDate: r.expirationDate,
+          issuingAgency: r.issuingAgency, documentUrl: r.documentUrl, notes: r.notes,
+          createdAt: r.createdAt?.toISOString?.() || '',
+        };
+      } catch { return null; }
+    }),
 
   /**
    * Apply for permit
    */
   submitApplication: protectedProcedure
     .input(z.object({ type: permitTypeSchema, states: z.array(z.string()), catalystId: z.string(), vehicleId: z.string(), trailerId: z.string().optional(), loadDescription: z.string(), commodity: z.string(), dimensions: z.object({ length: z.number(), width: z.number(), height: z.number(), overhangFront: z.number().optional(), overhangRear: z.number().optional() }), weight: z.number(), origin: z.string(), destination: z.string(), requestedStartDate: z.string(), requestedEndDate: z.string(), notes: z.string().optional() }))
-    .mutation(async ({ ctx, input }) => ({
-      id: `perm_${Date.now()}`, applicationNumber: `APP-${Date.now().toString().slice(-6)}`,
-      status: "pending", submittedBy: ctx.user?.id, submittedAt: new Date().toISOString(), estimatedProcessingDays: 3,
-    })),
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const permitNumber = `PRM-${input.type.toUpperCase().slice(0, 2)}-${Date.now().toString().slice(-6)}`;
+      const userId = Number(ctx.user?.id) || 0;
+      const companyId = Number(ctx.user?.companyId) || 0;
+      if (db) {
+        try {
+          await db.execute(sql`
+            INSERT INTO permits_records (permitNumber, type, status, companyId, userId, vehicleId, trailerId,
+              states, origin, destination, commodity, loadDescription, dimensions, weight,
+              requestedStartDate, requestedEndDate, notes)
+            VALUES (${permitNumber}, ${input.type}, 'pending', ${companyId}, ${userId},
+              ${input.vehicleId}, ${input.trailerId || null},
+              ${JSON.stringify(input.states)}, ${input.origin}, ${input.destination},
+              ${input.commodity}, ${input.loadDescription}, ${JSON.stringify(input.dimensions)},
+              ${input.weight}, ${input.requestedStartDate}, ${input.requestedEndDate}, ${input.notes || null})
+          `);
+        } catch (e) { console.warn('[Permits] submitApplication error:', e); }
+      }
+      return {
+        id: permitNumber, applicationNumber: permitNumber,
+        status: "pending", submittedBy: ctx.user?.id, submittedAt: new Date().toISOString(), estimatedProcessingDays: 3,
+      };
+    }),
 
   /**
    * Get expiring permits — empty for new users
    */
   getExpiring: protectedProcedure
     .input(z.object({ days: z.number().default(30) }))
-    .query(async () => {
-      // Expiring permits require a dedicated permits table
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        const [rows] = await db.execute(sql`
+          SELECT * FROM permits_records
+          WHERE userId = ${userId} AND status = 'approved'
+            AND expirationDate IS NOT NULL
+            AND expirationDate BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ${input.days} DAY)
+          ORDER BY expirationDate ASC
+        `) as any;
+        return (rows || []).map((r: any) => ({
+          id: String(r.id), permitNumber: r.permitNumber, type: r.type,
+          expirationDate: r.expirationDate, daysRemaining: r.expirationDate ? Math.ceil((new Date(r.expirationDate).getTime() - Date.now()) / 86400000) : 0,
+          states: r.states ? JSON.parse(r.states) : [],
+        }));
+      } catch { return []; }
     }),
 
   /**
@@ -55,9 +126,21 @@ export const permitsRouter = router({
    */
   renew: protectedProcedure
     .input(z.object({ permitId: z.string(), requestedEndDate: z.string(), notes: z.string().optional() }))
-    .mutation(async ({ ctx, input }) => ({
-      success: true, renewalId: `ren_${Date.now()}`, originalPermitId: input.permitId, status: "pending", submittedAt: new Date().toISOString(),
-    })),
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (db) {
+        try {
+          await db.execute(sql`
+            UPDATE permits_records SET requestedEndDate = ${input.requestedEndDate},
+              status = 'pending', notes = CONCAT(COALESCE(notes, ''), '\nRenewal requested: ', ${input.notes || ''})
+            WHERE id = ${parseInt(input.permitId, 10)}
+          `);
+        } catch {}
+      }
+      return {
+        success: true, renewalId: `ren_${Date.now()}`, originalPermitId: input.permitId, status: "pending", submittedAt: new Date().toISOString(),
+      };
+    }),
 
   /**
    * Get state permit requirements — static reference data (OK to keep)
@@ -101,11 +184,39 @@ export const permitsRouter = router({
     })),
 
   // Additional permit procedures — empty for new users
-  getActive: protectedProcedure.query(async () => {
-    const permits: any[] = [];
-    return Object.assign(permits, { total: 0, valid: 0, expiringSoon: 0, expired: 0 });
+  getActive: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) { const p: any[] = []; return Object.assign(p, { total: 0, valid: 0, expiringSoon: 0, expired: 0 }); }
+    try {
+      const userId = Number(ctx.user?.id) || 0;
+      const [rows] = await db.execute(sql`SELECT * FROM permits_records WHERE userId = ${userId} AND status = 'approved' ORDER BY expirationDate ASC`) as any;
+      const permits = (rows || []).map((r: any) => ({
+        id: String(r.id), permitNumber: r.permitNumber, type: r.type, status: r.status,
+        expirationDate: r.expirationDate, states: r.states ? JSON.parse(r.states) : [],
+      }));
+      const now = Date.now();
+      const valid = permits.filter((p: any) => !p.expirationDate || new Date(p.expirationDate).getTime() > now).length;
+      const expiringSoon = permits.filter((p: any) => p.expirationDate && new Date(p.expirationDate).getTime() - now < 30 * 86400000 && new Date(p.expirationDate).getTime() > now).length;
+      return Object.assign(permits, { total: permits.length, valid, expiringSoon, expired: permits.length - valid });
+    } catch { const p: any[] = []; return Object.assign(p, { total: 0, valid: 0, expiringSoon: 0, expired: 0 }); }
   }),
-  getSummary: protectedProcedure.query(async () => ({ total: 0, active: 0, expiring: 0, expired: 0 })),
+  getSummary: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { total: 0, active: 0, expiring: 0, expired: 0 };
+    try {
+      const userId = Number(ctx.user?.id) || 0;
+      const [rows] = await db.execute(sql`
+        SELECT
+          COUNT(*) as total,
+          SUM(CASE WHEN status='approved' AND (expirationDate IS NULL OR expirationDate > CURDATE()) THEN 1 ELSE 0 END) as active,
+          SUM(CASE WHEN status='approved' AND expirationDate BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as expiring,
+          SUM(CASE WHEN status='expired' OR (status='approved' AND expirationDate < CURDATE()) THEN 1 ELSE 0 END) as expired
+        FROM permits_records WHERE userId = ${userId}
+      `) as any;
+      const s = (rows || [])[0] || {};
+      return { total: Number(s.total) || 0, active: Number(s.active) || 0, expiring: Number(s.expiring) || 0, expired: Number(s.expired) || 0 };
+    } catch { return { total: 0, active: 0, expiring: 0, expired: 0 }; }
+  }),
   getStates: protectedProcedure.query(async () => [
     { code: "TX", name: "Texas", permitsRequired: true }, { code: "OK", name: "Oklahoma", permitsRequired: true },
     { code: "LA", name: "Louisiana", permitsRequired: true }, { code: "NM", name: "New Mexico", permitsRequired: true },
