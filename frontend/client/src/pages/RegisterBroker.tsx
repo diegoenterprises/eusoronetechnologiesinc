@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
 import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import { ProductPicker, CompliancePreview } from "@/components/registration/CompliancePreview";
 import { FMCSALookup } from "@/components/registration/FMCSALookup";
 import type { FMCSAData } from "@/components/registration/FMCSALookup";
 import StripeConnectStep from "@/components/registration/StripeConnectStep";
@@ -18,7 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Users, Building2, FileText, Shield, CreditCard, 
-  Upload, CheckCircle, AlertCircle, User, Mail, Phone, MapPin, Lock, ShieldCheck, Landmark
+  Upload, CheckCircle, AlertCircle, User, Mail, Phone, MapPin, Lock, ShieldCheck, Landmark, Truck, Package
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -68,10 +69,14 @@ interface BrokerFormData {
   // Step 7: Compliance Integrations
   complianceIds: ComplianceIds;
   
-  // Step 8: Payment Setup
+  // Step 8: Products You Broker
+  equipmentTypes: string[];
+  products: string[];
+  
+  // Step 9: Payment Setup
   businessType: "individual" | "company" | "";
   
-  // Step 9: Terms
+  // Step 10: Terms
   acceptTerms: boolean;
   acceptPrivacy: boolean;
   acceptCompliance: boolean;
@@ -105,6 +110,8 @@ const initialFormData: BrokerFormData = {
   password: "",
   confirmPassword: "",
   complianceIds: emptyComplianceIds,
+  equipmentTypes: [],
+  products: [],
   businessType: "",
   acceptTerms: false,
   acceptPrivacy: false,
@@ -117,6 +124,21 @@ const US_STATES = [
   "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
   "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
   "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+];
+
+const EQUIPMENT_TYPES = [
+  { value: "dry_van", label: "Dry Van (53ft)" },
+  { value: "reefer", label: "Refrigerated (Reefer)" },
+  { value: "flatbed", label: "Standard Flatbed" },
+  { value: "step_deck", label: "Step Deck" },
+  { value: "lowboy", label: "Lowboy / RGN" },
+  { value: "liquid_tank", label: "Liquid Tanker" },
+  { value: "gas_tank", label: "Gas / Pressure Tanker" },
+  { value: "cryogenic", label: "Cryogenic Tanker" },
+  { value: "food_grade_tank", label: "Food-Grade Tanker" },
+  { value: "water_tank", label: "Water Tanker" },
+  { value: "bulk_hopper", label: "Dry Bulk / Pneumatic" },
+  { value: "hazmat_van", label: "Hazmat Van" },
 ];
 
 export default function RegisterBroker() {
@@ -191,6 +213,8 @@ export default function RegisterBroker() {
       suretyBondNumber: formData.bondNumber || undefined,
       bondExpiration: formData.bondExpiration || undefined,
       brokersHazmat: formData.brokersHazmat,
+      equipmentTypes: formData.equipmentTypes.length > 0 ? formData.equipmentTypes : undefined,
+      products: formData.products.length > 0 ? formData.products : undefined,
       insuranceCarrier: formData.insuranceCatalyst || undefined,
       insurancePolicy: formData.policyNumber || undefined,
       insuranceCoverage: formData.coverageAmount || undefined,
@@ -512,6 +536,65 @@ export default function RegisterBroker() {
         }
         return true;
       },
+    },
+    {
+      id: "products",
+      title: "Products You Broker",
+      description: "Select commodity types you commonly broker",
+      icon: <Truck className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
+            <div className="flex items-start gap-3">
+              <Package className="w-5 h-5 text-purple-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-purple-300 font-medium">Pre-Configure Your Brokerage</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Select equipment types and products you commonly broker. This accelerates load posting
+                  and helps match you with the right carriers.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-slate-300">Equipment Types You Broker</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {EQUIPMENT_TYPES.map((equip) => (
+                <div key={equip.value} className="flex items-center space-x-2 p-2 rounded bg-slate-700/30">
+                  <Checkbox
+                    id={`eq-${equip.value}`}
+                    checked={formData.equipmentTypes.includes(equip.value)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        updateFormData({ equipmentTypes: [...formData.equipmentTypes, equip.value] });
+                      } else {
+                        updateFormData({ equipmentTypes: formData.equipmentTypes.filter((t: string) => t !== equip.value) });
+                      }
+                    }}
+                  />
+                  <Label htmlFor={`eq-${equip.value}`} className="text-sm text-slate-300 cursor-pointer">
+                    {equip.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <ProductPicker
+            trailerTypes={formData.equipmentTypes}
+            selectedProducts={formData.products}
+            onProductsChange={(products) => updateFormData({ products })}
+          />
+
+          <CompliancePreview
+            trailerTypes={formData.equipmentTypes}
+            products={formData.products}
+            operatingStates={formData.state ? [formData.state] : []}
+            hasHazmat={formData.brokersHazmat}
+          />
+        </div>
+      ),
     },
     {
       id: "insurance",

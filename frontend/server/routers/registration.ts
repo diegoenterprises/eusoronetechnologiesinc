@@ -179,6 +179,81 @@ async function sendPostRegistrationNotifications(db: any, params: {
   }
 }
 
+// ─── Product catalog (server-side mirror of CompliancePreview.tsx PRODUCT_CATALOG) ───
+const PRODUCT_CATALOG_SERVER: Record<string, { label: string; category: string; hazmatClass?: string; requiresHazmat: boolean; requiresTanker: boolean; temperatureControlled: boolean }> = {
+  crude_oil: { label: "Crude Oil", category: "Petroleum", hazmatClass: "3", requiresHazmat: true, requiresTanker: true, temperatureControlled: false },
+  refined_fuel: { label: "Refined Fuel (Gasoline/Diesel)", category: "Petroleum", hazmatClass: "3", requiresHazmat: true, requiresTanker: true, temperatureControlled: false },
+  jet_fuel: { label: "Jet Fuel / Aviation Fuel", category: "Petroleum", hazmatClass: "3", requiresHazmat: true, requiresTanker: true, temperatureControlled: false },
+  ethanol: { label: "Ethanol / E85", category: "Petroleum", hazmatClass: "3", requiresHazmat: true, requiresTanker: true, temperatureControlled: false },
+  biodiesel: { label: "Biodiesel / Renewable Diesel", category: "Petroleum", hazmatClass: "3", requiresHazmat: true, requiresTanker: true, temperatureControlled: false },
+  asphalt: { label: "Asphalt / Bitumen", category: "Petroleum", hazmatClass: "3", requiresHazmat: true, requiresTanker: true, temperatureControlled: true },
+  condensate: { label: "Condensate", category: "Petroleum", hazmatClass: "3", requiresHazmat: true, requiresTanker: true, temperatureControlled: false },
+  produced_water: { label: "Produced Water / Brine", category: "Petroleum", requiresHazmat: false, requiresTanker: true, temperatureControlled: false },
+  natural_gas_liquids: { label: "Natural Gas Liquids (NGL)", category: "Petroleum", hazmatClass: "2", requiresHazmat: true, requiresTanker: true, temperatureControlled: false },
+  lpg: { label: "LPG / Propane", category: "Gas", hazmatClass: "2.1", requiresHazmat: true, requiresTanker: true, temperatureControlled: false },
+  ammonia: { label: "Anhydrous Ammonia", category: "Gas", hazmatClass: "2.2", requiresHazmat: true, requiresTanker: true, temperatureControlled: false },
+  chemicals: { label: "Industrial Chemicals", category: "Chemicals", hazmatClass: "8", requiresHazmat: true, requiresTanker: true, temperatureControlled: false },
+  lng: { label: "LNG (Liquefied Natural Gas)", category: "Cryogenic", hazmatClass: "2.1", requiresHazmat: true, requiresTanker: true, temperatureControlled: true },
+  lox: { label: "Liquid Oxygen (LOX)", category: "Cryogenic", hazmatClass: "2.2", requiresHazmat: true, requiresTanker: true, temperatureControlled: true },
+  liquid_nitrogen: { label: "Liquid Nitrogen (LN2)", category: "Cryogenic", hazmatClass: "2.2", requiresHazmat: true, requiresTanker: true, temperatureControlled: true },
+  milk: { label: "Milk / Dairy Liquids", category: "Food Liquid", requiresHazmat: false, requiresTanker: true, temperatureControlled: true },
+  edible_oil: { label: "Edible Oils", category: "Food Liquid", requiresHazmat: false, requiresTanker: true, temperatureControlled: false },
+  juice: { label: "Juice / Liquid Beverages", category: "Food Liquid", requiresHazmat: false, requiresTanker: true, temperatureControlled: true },
+  wine_spirits: { label: "Wine / Spirits (Bulk)", category: "Food Liquid", requiresHazmat: false, requiresTanker: true, temperatureControlled: true },
+  potable_water: { label: "Potable Water", category: "Water", requiresHazmat: false, requiresTanker: true, temperatureControlled: false },
+  non_potable_water: { label: "Non-Potable / Industrial Water", category: "Water", requiresHazmat: false, requiresTanker: true, temperatureControlled: false },
+  general_freight: { label: "General Freight", category: "Dry Freight", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  electronics: { label: "Electronics / High-Value", category: "Dry Freight", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  automotive_parts: { label: "Automotive Parts", category: "Dry Freight", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  retail_goods: { label: "Retail / Consumer Goods", category: "Dry Freight", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  paper_packaging: { label: "Paper & Packaging", category: "Dry Freight", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  furniture: { label: "Furniture / Household Goods", category: "Dry Freight", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  hazmat_dry: { label: "Hazmat (Dry / Packaged)", category: "Dry Freight", hazmatClass: "9", requiresHazmat: true, requiresTanker: false, temperatureControlled: false },
+  produce: { label: "Fresh Produce", category: "Refrigerated", requiresHazmat: false, requiresTanker: false, temperatureControlled: true },
+  frozen_food: { label: "Frozen Food", category: "Refrigerated", requiresHazmat: false, requiresTanker: false, temperatureControlled: true },
+  dairy: { label: "Dairy Products", category: "Refrigerated", requiresHazmat: false, requiresTanker: false, temperatureControlled: true },
+  meat_seafood: { label: "Meat & Seafood", category: "Refrigerated", requiresHazmat: false, requiresTanker: false, temperatureControlled: true },
+  pharmaceuticals: { label: "Pharmaceuticals", category: "Refrigerated", requiresHazmat: false, requiresTanker: false, temperatureControlled: true },
+  floral: { label: "Floral / Live Plants", category: "Refrigerated", requiresHazmat: false, requiresTanker: false, temperatureControlled: true },
+  steel_coils: { label: "Steel Coils / Metal", category: "Flatbed", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  lumber: { label: "Lumber / Timber", category: "Flatbed", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  pipe_tubing: { label: "Pipe & Tubing", category: "Flatbed", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  building_materials: { label: "Building Materials", category: "Flatbed", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  machinery: { label: "Machinery / Industrial Equipment", category: "Heavy Haul", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  construction_equipment: { label: "Construction Equipment", category: "Heavy Haul", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  oilfield_equipment: { label: "Oilfield Equipment", category: "Heavy Haul", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  solar_panels: { label: "Solar Panels / Wind Components", category: "Flatbed", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  grain: { label: "Grain / Feed", category: "Dry Bulk", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  sand_aggregate: { label: "Sand / Gravel / Aggregate", category: "Dry Bulk", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  cement: { label: "Cement / Powder", category: "Dry Bulk", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  plastic_pellets: { label: "Plastic Pellets / Resin", category: "Dry Bulk", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+  flour_sugar: { label: "Flour / Sugar / Food Powders", category: "Dry Bulk", requiresHazmat: false, requiresTanker: false, temperatureControlled: false },
+};
+
+/**
+ * Auto-create product_profiles rows from registration product selections.
+ * Uses INSERT IGNORE to handle re-runs idempotently via UNIQUE(userId, productId).
+ */
+async function autoCreateProductProfiles(userId: number, companyId: number | null, products: string[]) {
+  if (!products || products.length === 0) return;
+  try {
+    const pool = (await import("../db")).getPool();
+    if (!pool) return;
+    for (const pid of products) {
+      const info = PRODUCT_CATALOG_SERVER[pid];
+      if (!info) continue;
+      await pool.execute(
+        `INSERT IGNORE INTO product_profiles (userId, companyId, productId, productLabel, category, hazmatClass, requiresHazmat, requiresTanker, temperatureControlled, source)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'registration')`,
+        [userId, companyId, pid, info.label, info.category, info.hazmatClass || null, info.requiresHazmat ? 1 : 0, info.requiresTanker ? 1 : 0, info.temperatureControlled ? 1 : 0]
+      );
+    }
+    console.log(`[Registration] Auto-created ${products.length} product profiles for user ${userId}`);
+  } catch (e: any) {
+    console.warn("[Registration] product_profiles auto-create skip:", e?.message?.slice(0, 120));
+  }
+}
+
 export const registrationRouter = router({
   /**
    * Register a new Shipper
@@ -218,6 +293,8 @@ export const registrationRouter = router({
       pollutionLiabilityCoverage: z.string().optional(),
       pollutionLiabilityExpiration: z.string().optional(),
       hasSecurityPlan: z.boolean().default(false),
+      equipmentTypes: z.array(z.string()).optional(),
+      products: z.array(z.string()).optional(),
       complianceIds: complianceIdsSchema,
       documents: z.record(z.string(), z.string()).optional(),
     }))
@@ -288,6 +365,8 @@ export const registrationRouter = router({
           emergencyContactName: input.emergencyContactName,
           emergencyContactPhone: input.emergencyContactPhone,
           hasSecurityPlan: input.hasSecurityPlan,
+          equipmentTypes: input.equipmentTypes,
+          products: input.products,
           generalLiability: { carrier: input.generalLiabilityCarrier, policy: input.generalLiabilityPolicy, coverage: input.generalLiabilityCoverage, expiration: input.generalLiabilityExpiration },
           pollutionLiability: { carrier: input.pollutionLiabilityCarrier, policy: input.pollutionLiabilityPolicy, coverage: input.pollutionLiabilityCoverage, expiration: input.pollutionLiabilityExpiration },
         },
@@ -300,6 +379,7 @@ export const registrationRouter = router({
       seedUserOperatingStates(db, userId, input.state, []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.contactEmail, phone: input.contactPhone, name: input.contactName, role: "SHIPPER" }).catch(() => {});
+      autoCreateProductProfiles(userId, companyId, input.products || []).catch(() => {});
 
       // Auto-index company for AI semantic search (fire-and-forget)
       try {
@@ -507,6 +587,7 @@ export const registrationRouter = router({
       seedUserOperatingStates(db, userId, input.state, input.processAgentStates || []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.contactEmail, phone: input.contactPhone, name: input.contactName, role: "CATALYST" }).catch(() => {});
+      autoCreateProductProfiles(userId, companyId, input.products || []).catch(() => {});
 
       // Auto-index carrier for AI semantic search (fire-and-forget)
       try {
@@ -726,6 +807,8 @@ export const registrationRouter = router({
       suretyBondNumber: z.string().optional(),
       bondExpiration: z.string().optional(),
       brokersHazmat: z.boolean().default(false),
+      equipmentTypes: z.array(z.string()).optional(),
+      products: z.array(z.string()).optional(),
       insuranceCarrier: z.string().optional(),
       insurancePolicy: z.string().optional(),
       insuranceCoverage: z.string().optional(),
@@ -804,6 +887,8 @@ export const registrationRouter = router({
           hazmatEndorsed: input.brokersHazmat,
           suretyBond: { amount: input.suretyBondAmount, carrier: input.suretyBondCarrier, number: input.suretyBondNumber, expiration: input.bondExpiration },
           brokersHazmat: input.brokersHazmat,
+          equipmentTypes: input.equipmentTypes,
+          products: input.products,
           insurance: { carrier: input.insuranceCarrier, policy: input.insurancePolicy, coverage: input.insuranceCoverage, expiration: input.insuranceExpiration },
         },
         insurance: {
@@ -814,6 +899,7 @@ export const registrationRouter = router({
       seedUserOperatingStates(db, userId, input.state, []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.contactEmail, phone: input.contactPhone, name: input.contactName, role: "BROKER" }).catch(() => {});
+      autoCreateProductProfiles(userId, companyId, input.products || []).catch(() => {});
 
       // Auto-index broker for AI semantic search (fire-and-forget)
       try {
@@ -875,6 +961,7 @@ export const registrationRouter = router({
       hazmatTrainingProvider: z.string().optional(),
       certifications: z.array(z.string()).optional(),
       otherCertifications: z.string().optional(),
+      commodityExperience: z.array(z.string()).optional(),
       companyId: z.number().optional(),
       complianceIds: complianceIdsSchema,
     }))
@@ -935,11 +1022,13 @@ export const registrationRouter = router({
           hazmatTrainingProvider: input.hazmatTrainingProvider,
           certifications: input.certifications,
           otherCertifications: input.otherCertifications,
+          commodityExperience: input.commodityExperience,
         },
       });
       if (companyState) seedUserOperatingStates(db, userId, companyState, []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: `${input.firstName} ${input.lastName}`, role: "DISPATCH" }).catch(() => {});
+      autoCreateProductProfiles(userId, companyId, input.commodityExperience || []).catch(() => {});
       return { success: true, userId, verificationRequired: true };
     }),
 
@@ -1121,6 +1210,7 @@ export const registrationRouter = router({
       seedUserOperatingStates(db, userId, input.state, []).catch(() => {});
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: input.managerName, role: "TERMINAL_MANAGER" }).catch(() => {});
+      autoCreateProductProfiles(userId, companyId, input.productsHandled || []).catch(() => {});
 
       // Auto-index terminal for AI semantic search (fire-and-forget)
       try {

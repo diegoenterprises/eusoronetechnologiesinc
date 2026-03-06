@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
 import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import { ProductPicker, CompliancePreview } from "@/components/registration/CompliancePreview";
 import StripeConnectStep from "@/components/registration/StripeConnectStep";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { 
   Package, Building2, FileText, Shield, CreditCard, 
   Upload, CheckCircle, AlertCircle, User, Mail, Phone,
-  MapPin, Globe, Hash, Lock, ShieldCheck, Landmark
+  MapPin, Globe, Hash, Lock, ShieldCheck, Landmark, Truck
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -71,10 +72,14 @@ interface ShipperFormData {
   // Step 7: Compliance Integrations
   complianceIds: ComplianceIds;
   
-  // Step 8: Payment Setup
+  // Step 8: Products You Ship
+  equipmentTypes: string[];
+  products: string[];
+  
+  // Step 9: Payment Setup
   businessType: "individual" | "company" | "";
   
-  // Step 9: Terms
+  // Step 10: Terms
   acceptTerms: boolean;
   acceptPrivacy: boolean;
   acceptCompliance: boolean;
@@ -109,6 +114,8 @@ const initialFormData: ShipperFormData = {
   password: "",
   confirmPassword: "",
   complianceIds: emptyComplianceIds,
+  equipmentTypes: [],
+  products: [],
   businessType: "",
   acceptTerms: false,
   acceptPrivacy: false,
@@ -132,6 +139,21 @@ const US_STATES = [
   "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
   "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
   "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+];
+
+const EQUIPMENT_TYPES = [
+  { value: "dry_van", label: "Dry Van (53ft)" },
+  { value: "reefer", label: "Refrigerated (Reefer)" },
+  { value: "flatbed", label: "Standard Flatbed" },
+  { value: "step_deck", label: "Step Deck" },
+  { value: "lowboy", label: "Lowboy / RGN" },
+  { value: "liquid_tank", label: "Liquid Tanker" },
+  { value: "gas_tank", label: "Gas / Pressure Tanker" },
+  { value: "cryogenic", label: "Cryogenic Tanker" },
+  { value: "food_grade_tank", label: "Food-Grade Tanker" },
+  { value: "water_tank", label: "Water Tanker" },
+  { value: "bulk_hopper", label: "Dry Bulk / Pneumatic" },
+  { value: "hazmat_van", label: "Hazmat Van" },
 ];
 
 export default function RegisterShipper() {
@@ -193,6 +215,8 @@ export default function RegisterShipper() {
       generalLiabilityCoverage: formData.coverageAmount || undefined,
       generalLiabilityExpiration: formData.expirationDate || undefined,
       complianceIds: Object.keys(complianceIds).length > 0 ? complianceIds : undefined,
+      equipmentTypes: formData.equipmentTypes.length > 0 ? formData.equipmentTypes : undefined,
+      products: formData.products.length > 0 ? formData.products : undefined,
     });
 
     if (formData.businessType) {
@@ -535,6 +559,66 @@ export default function RegisterShipper() {
               ))}
             </div>
           </div>
+        </div>
+      ),
+    },
+    {
+      id: "products",
+      title: "Products You Ship",
+      description: "Select products to pre-configure your load creation experience",
+      icon: <Truck className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+            <div className="flex items-start gap-3">
+              <Package className="w-5 h-5 text-blue-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-blue-300 font-medium">Accelerate Your Load Creation</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Select the equipment types your shipments require and the products you commonly ship.
+                  This pre-configures your load creation wizard — saving minutes per load.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-slate-300">Equipment Types Required</Label>
+            <p className="text-xs text-slate-500">What trailer types do your shipments typically need?</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {EQUIPMENT_TYPES.map((equip) => (
+                <div key={equip.value} className="flex items-center space-x-2 p-2 rounded bg-slate-700/30">
+                  <Checkbox
+                    id={`eq-${equip.value}`}
+                    checked={formData.equipmentTypes.includes(equip.value)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        updateFormData({ equipmentTypes: [...formData.equipmentTypes, equip.value] });
+                      } else {
+                        updateFormData({ equipmentTypes: formData.equipmentTypes.filter((t: string) => t !== equip.value) });
+                      }
+                    }}
+                  />
+                  <Label htmlFor={`eq-${equip.value}`} className="text-sm text-slate-300 cursor-pointer">
+                    {equip.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <ProductPicker
+            trailerTypes={formData.equipmentTypes}
+            selectedProducts={formData.products}
+            onProductsChange={(products) => updateFormData({ products })}
+          />
+
+          <CompliancePreview
+            trailerTypes={formData.equipmentTypes}
+            products={formData.products}
+            operatingStates={formData.state ? [formData.state] : []}
+            hasHazmat={formData.hazmatTypes.length > 0}
+          />
         </div>
       ),
     },

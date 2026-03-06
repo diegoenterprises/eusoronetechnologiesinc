@@ -1667,6 +1667,27 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX ac_status_idx (status)
     )`);
 
+    // --- Phase 5: Product Profiles table (onboarding → load wizard integration) ---
+    await ensureTable("product_profiles", `CREATE TABLE IF NOT EXISTS product_profiles (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT NOT NULL,
+      companyId INT DEFAULT NULL,
+      productId VARCHAR(50) NOT NULL,
+      productLabel VARCHAR(255) DEFAULT NULL,
+      category VARCHAR(100) DEFAULT NULL,
+      hazmatClass VARCHAR(10) DEFAULT NULL,
+      requiresHazmat BOOLEAN DEFAULT FALSE,
+      requiresTanker BOOLEAN DEFAULT FALSE,
+      temperatureControlled BOOLEAN DEFAULT FALSE,
+      isActive BOOLEAN DEFAULT TRUE,
+      source VARCHAR(30) DEFAULT 'registration',
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX pp_user_idx (userId),
+      INDEX pp_company_idx (companyId),
+      INDEX pp_product_idx (productId),
+      UNIQUE KEY pp_user_product_uniq (userId, productId)
+    )`);
+
     console.log("[SchemaSync] Done.");
   } catch (err: any) {
     console.warn("[SchemaSync] Non-fatal error:", err?.message?.slice(0, 200));

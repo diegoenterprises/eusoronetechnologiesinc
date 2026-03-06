@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
 import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import { ProductPicker } from "@/components/registration/CompliancePreview";
 import StripeConnectStep from "@/components/registration/StripeConnectStep";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { 
   Flame, User, FileText, Building2, 
-  CheckCircle, AlertCircle, Mail, Phone, MapPin, Award, Lock, ShieldCheck, Landmark
+  CheckCircle, AlertCircle, Mail, Phone, MapPin, Award, Lock, ShieldCheck, Landmark, Truck, Package
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -47,7 +48,10 @@ interface DispatchFormData {
   certifications: string[];
   otherCertifications: string;
   
-  // Step 5: Account Security
+  // Step 5: Commodity Experience
+  commodityExperience: string[];
+  
+  // Step 6: Account Security
   password: string;
   confirmPassword: string;
   
@@ -79,6 +83,7 @@ const initialFormData: DispatchFormData = {
   hazmatTrainingProvider: "",
   certifications: [],
   otherCertifications: "",
+  commodityExperience: [],
   password: "",
   confirmPassword: "",
   complianceIds: emptyComplianceIds,
@@ -151,6 +156,7 @@ export default function RegisterDispatch() {
       hazmatTrainingProvider: formData.hazmatTrainingProvider || undefined,
       certifications: formData.certifications?.length ? formData.certifications : undefined,
       otherCertifications: formData.otherCertifications || undefined,
+      commodityExperience: formData.commodityExperience?.length ? formData.commodityExperience : undefined,
       complianceIds: Object.fromEntries(
         Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
       ) || undefined,
@@ -464,6 +470,42 @@ export default function RegisterDispatch() {
                   </Badge>
                 ))}
               </div>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "commodities",
+      title: "Commodity Experience",
+      description: "What commodities do you have experience dispatching?",
+      icon: <Truck className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/20">
+            <div className="flex items-start gap-3">
+              <Package className="w-5 h-5 text-orange-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-orange-300 font-medium">Personalize Your Quick-Create</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Select the commodities you commonly dispatch. This pre-fills your Quick-Create wizard
+                  so you can post loads faster.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <ProductPicker
+            trailerTypes={[]}
+            selectedProducts={formData.commodityExperience}
+            onProductsChange={(products) => updateFormData({ commodityExperience: products })}
+          />
+
+          {formData.commodityExperience.length > 0 && (
+            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+              <p className="text-xs text-green-400">
+                {formData.commodityExperience.length} commodit{formData.commodityExperience.length === 1 ? 'y' : 'ies'} selected — your Quick-Create wizard will be pre-configured.
+              </p>
             </div>
           )}
         </div>

@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
 import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import { ProductPicker, CompliancePreview } from "@/components/registration/CompliancePreview";
 import StripeConnectStep from "@/components/registration/StripeConnectStep";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { 
   Building2, User, FileText, Shield, MapPin,
-  CheckCircle, AlertCircle, Mail, Phone, Fuel, Database, Lock, ShieldCheck, Landmark
+  CheckCircle, AlertCircle, Mail, Phone, Fuel, Database, Lock, ShieldCheck, Landmark, Package
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -118,21 +119,15 @@ const US_STATES = [
   "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
 ];
 
-const PRODUCTS = [
-  "Gasoline",
-  "Diesel",
-  "Jet Fuel",
-  "Crude Oil",
-  "Ethanol",
-  "Biodiesel",
-  "Propane/LPG",
-  "Natural Gas Liquids",
-  "Asphalt",
-  "Lubricants",
-  "Chemicals",
-  "Acids",
-  "Solvents",
-  "Other Petroleum",
+const TERMINAL_EQUIPMENT = [
+  { value: "liquid_tank", label: "Liquid Tanker" },
+  { value: "gas_tank", label: "Gas / Pressure Tanker" },
+  { value: "cryogenic", label: "Cryogenic Tanker" },
+  { value: "food_grade_tank", label: "Food-Grade Tanker" },
+  { value: "water_tank", label: "Water Tanker" },
+  { value: "bulk_hopper", label: "Dry Bulk / Pneumatic" },
+  { value: "dry_van", label: "Dry Van (53ft)" },
+  { value: "flatbed", label: "Standard Flatbed" },
 ];
 
 export default function RegisterTerminal() {
@@ -481,27 +476,19 @@ export default function RegisterTerminal() {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-slate-300">Products Handled</Label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {PRODUCTS.map((product: any) => (
-                <div key={product} className="flex items-center space-x-2 p-2 rounded bg-slate-700/30">
-                  <Checkbox
-                    id={product}
-                    checked={formData.productsHandled.includes(product)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        updateFormData({ productsHandled: [...formData.productsHandled, product] });
-                      } else {
-                        updateFormData({ productsHandled: formData.productsHandled.filter(p => p !== product) });
-                      }
-                    }}
-                  />
-                  <Label htmlFor={product} className="text-xs text-slate-300 cursor-pointer">
-                    {product}
-                  </Label>
-                </div>
-              ))}
-            </div>
+            <Label className="text-slate-300">Products Handled at This Facility</Label>
+            <p className="text-xs text-slate-500">Select from the full 45-product catalog. This determines compliance requirements and carrier matching.</p>
+            <ProductPicker
+              trailerTypes={TERMINAL_EQUIPMENT.map(e => e.value)}
+              selectedProducts={formData.productsHandled}
+              onProductsChange={(products) => updateFormData({ productsHandled: products })}
+            />
+            <CompliancePreview
+              trailerTypes={TERMINAL_EQUIPMENT.map(e => e.value)}
+              products={formData.productsHandled}
+              operatingStates={formData.state ? [formData.state] : []}
+              hasHazmat={formData.productsHandled.some(p => ['crude_oil','refined_fuel','jet_fuel','ethanol','biodiesel','asphalt','condensate','natural_gas_liquids','lpg','ammonia','chemicals','lng','lox','liquid_nitrogen','hazmat_dry'].includes(p))}
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
