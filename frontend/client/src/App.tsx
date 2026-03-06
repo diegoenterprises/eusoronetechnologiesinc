@@ -622,7 +622,7 @@ function Router() {
       <Route path={"/dispatch/fleet-map"} component={guard(DISP, <DispatchFleetMap />)} />
       <Route path={"/dispatch/exceptions"} component={guard(DISP, <DispatchExceptions />)} />
       <Route path={"/dispatch/drivers"} component={guard(DISP, <DispatchCommandCenter />)} />
-      <Route path={"/dispatch/create"} component={guard(DISP, <DispatchCommandCenter />)} />
+      <Route path={"/dispatch/create"} component={guard(DISP, <LoadCreationWizard quickMode={true} />)} />
       <Route path={"/load-board"} component={guard([...DISP, "BROKER"], <LoadBoard />)} />
 
       {/* ============================================ */}

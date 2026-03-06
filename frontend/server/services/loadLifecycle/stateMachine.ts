@@ -557,6 +557,8 @@ export const TRANSITIONS: Transition[] = [
     guards: [
       { type: "data", check: "has_driver", errorMessage: "Driver must be assigned" },
       { type: "hos", check: "driver_has_hours", errorMessage: "Driver does not have sufficient HOS hours" },
+      { type: "data", check: "equipment_matches_load", errorMessage: "Assigned vehicle does not match load requirements" },
+      { type: "data", check: "commodity_segregation_safe", errorMessage: "Hazmat class conflict — cannot co-load per 49 CFR 177.848" },
     ],
     effects: [
       { type: "notification", action: "driver_assigned", recipients: ["DRIVER"] },
@@ -600,6 +602,7 @@ export const TRANSITIONS: Transition[] = [
       { type: "document", check: "route_survey_complete", errorMessage: "Route survey required for oversized loads" },
       { type: "document", check: "ifta_valid", errorMessage: "IFTA license required for interstate operations" },
       { type: "document", check: "irp_valid", errorMessage: "IRP registration required for interstate operations" },
+      { type: "data", check: "route_state_compliance", errorMessage: "Route passes through state with compliance restriction for this load" },
     ],
     effects: [
       { type: "notification", action: "trip_started", recipients: ["SHIPPER", "CATALYST", "DISPATCH"] },

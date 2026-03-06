@@ -319,6 +319,133 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
       }
     }
 
+    // ── Equipment certification guard (Phase 3.1) ──
+    case "equipment_matches_load": {
+      const eqLoadId = ctx.load?.id;
+      const vehicleId = ctx.load?.vehicleId || (ctx.data?.vehicleId as number | undefined);
+      if (!vehicleId || !eqLoadId) return null; // No vehicle assigned yet — skip
+      try {
+        const db = await getDb();
+        if (!db) return IS_PROD ? guard.errorMessage : null;
+        const loadTrailer = ctx.load?.trailerType || ctx.load?.equipment || "";
+        const loadWeight = parseFloat(ctx.load?.weight || "0");
+        // Check vehicle specs from fleet
+        const [vRows] = await db.execute(sql`
+          SELECT trailerType, trailerSpec, maxPayloadLbs, reeferStatus
+          FROM vehicles WHERE id = ${vehicleId} LIMIT 1
+        `) as unknown as any[][];
+        const vehicle = (vRows || [])[0];
+        if (!vehicle) return IS_PROD ? guard.errorMessage : null;
+        // Tanker spec match
+        if (loadTrailer && (loadTrailer.startsWith("mc_") || loadTrailer.startsWith("dot_"))) {
+          if (vehicle.trailerSpec && vehicle.trailerSpec !== loadTrailer) {
+            return `Load requires ${loadTrailer} but vehicle is ${vehicle.trailerSpec}`;
+          }
+        }
+        // Reefer operational check
+        if (loadTrailer === "reefer" && vehicle.reeferStatus && vehicle.reeferStatus !== "operational") {
+          return "Reefer load requires vehicle with operational refrigeration unit";
+        }
+        // Weight capacity check
+        if (loadWeight > 0 && vehicle.maxPayloadLbs && loadWeight > parseFloat(vehicle.maxPayloadLbs)) {
+          return `Load weight (${loadWeight} lbs) exceeds vehicle capacity (${vehicle.maxPayloadLbs} lbs)`;
+        }
+        return null;
+      } catch {
+        return IS_PROD ? guard.errorMessage : null;
+      }
+    }
+
+    // ── Commodity segregation guard (Phase 3.3 — 49 CFR 177.848) ──
+    case "commodity_segregation_safe": {
+      const segLoadId = ctx.load?.id;
+      const segHazmat = ctx.load?.hazmatClass || ctx.load?.hazardClassNumber;
+      if (!segHazmat || !segLoadId) return null; // Non-hazmat load — skip
+      const segVehicleId = ctx.load?.vehicleId || (ctx.data?.vehicleId as number | undefined);
+      if (!segVehicleId) return null; // No vehicle yet
+      try {
+        const db = await getDb();
+        if (!db) return IS_PROD ? guard.errorMessage : null;
+        // Find other active loads on the same vehicle
+        const [otherRows] = await db.execute(sql`
+          SELECT id, hazmatClass, hazardClassNumber FROM loads
+          WHERE vehicleId = ${segVehicleId}
+            AND id != ${segLoadId}
+            AND status IN ('assigned', 'confirmed', 'en_route_pickup', 'at_pickup', 'loading', 'loaded', 'in_transit')
+        `) as unknown as any[][];
+        const otherLoads = otherRows || [];
+        const SEGREGATION: Record<string, string[]> = {
+          '1.1': ['2.1','2.3','3','4.1','4.2','4.3','5.1','5.2','6.1','7','8'],
+          '2.1': ['1.1','2.3','3','5.1','5.2','6.1'],
+          '2.3': ['1.1','2.1','3','4.1','4.2','4.3','5.1','5.2','6.1','8'],
+          '3': ['1.1','2.1','2.3','4.1','4.3','5.1','5.2','6.1'],
+          '4.1': ['1.1','2.3','3','5.1','5.2'],
+          '4.2': ['1.1','2.3','5.1','5.2','7','8'],
+          '4.3': ['1.1','2.3','3','5.1','5.2','8'],
+          '5.1': ['1.1','2.1','2.3','3','4.1','4.2','4.3','6.1','7'],
+          '5.2': ['1.1','2.1','2.3','3','4.1','4.2','4.3'],
+          '6.1': ['1.1','2.1','2.3','3','5.1'],
+          '7': ['1.1','4.2','5.1'],
+          '8': ['1.1','2.3','4.2','4.3'],
+        };
+        const incompatible = SEGREGATION[segHazmat] || [];
+        for (const other of otherLoads) {
+          const otherClass = other.hazmatClass || other.hazardClassNumber;
+          if (otherClass && incompatible.includes(otherClass)) {
+            return `Hazmat Class ${segHazmat} cannot be transported with Class ${otherClass} on same vehicle per 49 CFR 177.848`;
+          }
+        }
+        return null;
+      } catch {
+        return IS_PROD ? guard.errorMessage : null;
+      }
+    }
+
+    // ── Route state compliance guard (Phase 3.4) ──
+    case "route_state_compliance": {
+      const rcLoad = ctx.load;
+      if (!rcLoad) return null;
+      const loadWeight = parseFloat(rcLoad.weight || "0");
+      const origin = rcLoad.origin || rcLoad.pickupAddress || "";
+      const dest = rcLoad.destination || rcLoad.deliveryAddress || "";
+      // Extract state abbreviations from origin/destination
+      const stateRegex = /\b([A-Z]{2})\b/g;
+      const states = new Set<string>();
+      for (const match of (origin.match(stateRegex) || [])) states.add(match);
+      for (const match of (dest.match(stateRegex) || [])) states.add(match);
+      const STATE_RULES: Record<string, { carb?: boolean; weightLimit?: number; hazmatNote?: string }> = {
+        CA: { carb: true, weightLimit: 80000, hazmatNote: "Tunnel restrictions apply" },
+        NY: { weightLimit: 80000, hazmatNote: "NYC restricted hazmat routes" },
+        TX: { weightLimit: 84000 },
+        MT: { weightLimit: 131060 },
+        MI: { weightLimit: 164000 },
+        FL: { weightLimit: 80000 },
+        PA: { weightLimit: 80000 },
+        OH: { weightLimit: 80000 },
+        IL: { weightLimit: 80000 },
+        OK: { weightLimit: 90000 },
+        NM: { weightLimit: 86400 },
+        ND: { weightLimit: 105500 },
+        SD: { weightLimit: 129000 },
+      };
+      const warnings: string[] = [];
+      for (const state of Array.from(states)) {
+        const rules = STATE_RULES[state];
+        if (!rules) continue;
+        if (rules.weightLimit && loadWeight > rules.weightLimit && !rcLoad.specialPermit) {
+          warnings.push(`${state}: weight ${loadWeight} lbs exceeds limit ${rules.weightLimit} lbs — permit required`);
+        }
+        if (rules.carb && rcLoad.trailerType?.includes("tank")) {
+          warnings.push(`${state}: CARB compliance required for tanker vehicles`);
+        }
+      }
+      // Warn but don't hard-block in dev; block in prod only for weight violations
+      if (warnings.length > 0) {
+        return IS_PROD ? warnings[0] : null;
+      }
+      return null;
+    }
+
     // ── Approval guards (handled by approval gate system) ──
     case "rate_within_limit":
     case "payment_amount_valid":
@@ -760,8 +887,126 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
         }
         break;
       }
-      case "apply_cancellation_penalty":
-      case "release_escrow":
+      case "apply_cancellation_penalty": {
+        // Phase 4.3 — Cancellation financial handling based on load status at time of cancellation
+        const db = await getDb();
+        if (!db) break;
+        const [loadRows] = await db.execute(sql`SELECT status, rate, origin, destination, catalystId, driverId, hazmatClass, trailerType FROM loads WHERE id = ${loadId} LIMIT 1`) as unknown as any[][];
+        const cancelLoad = (loadRows || [])[0];
+        if (!cancelLoad) break;
+        const cancelStatus = cancelLoad.status || "";
+        const cancelRate = parseFloat(cancelLoad.rate || "0");
+        const cancelCarrierId = cancelLoad.catalystId || cancelLoad.driverId || 0;
+
+        // Pre-award: no financial impact
+        if (["draft", "posted", "bidding"].includes(cancelStatus)) {
+          console.log(`[Cancellation] Load ${loadId} cancelled pre-award — no financial impact`);
+          break;
+        }
+
+        // Post-award, pre-transit: TONU (Truck On Not Used) if carrier was confirmed
+        if (["awarded", "accepted", "assigned", "confirmed"].includes(cancelStatus)) {
+          const isConfirmed = cancelStatus === "confirmed";
+          const tonuAmount = isConfirmed ? Math.max(cancelRate * 0.25, 250) : 0; // 25% or $250 minimum if confirmed
+          if (tonuAmount > 0 && cancelCarrierId) {
+            try {
+              await db.execute(sql`
+                INSERT INTO accessorial_charges (loadId, type, amount, status, description, createdAt)
+                VALUES (${loadId}, 'TONU', ${tonuAmount.toFixed(2)}, 'auto_approved', ${`TONU — Load cancelled at ${cancelStatus} status`}, NOW())
+              `);
+              // Credit TONU to carrier wallet
+              const [wRows] = await db.execute(sql`SELECT id FROM wallets WHERE userId = ${cancelCarrierId} LIMIT 1`) as unknown as any[][];
+              const wallet = (wRows || [])[0];
+              if (wallet) {
+                await db.execute(sql`UPDATE wallets SET availableBalance = availableBalance + ${tonuAmount.toFixed(2)}, totalReceived = totalReceived + ${tonuAmount.toFixed(2)} WHERE id = ${wallet.id}`);
+                await db.execute(sql`
+                  INSERT INTO wallet_transactions (walletId, type, amount, fee, netAmount, currency, status, description, loadId, completedAt)
+                  VALUES (${wallet.id}, 'earnings', ${tonuAmount.toFixed(2)}, '0.00', ${tonuAmount.toFixed(2)}, 'USD', 'completed', ${`TONU — Load #${loadId} cancelled`}, ${loadId}, NOW())
+                `);
+              }
+              console.log(`[Cancellation] Load ${loadId} TONU: $${tonuAmount.toFixed(2)} credited to carrier ${cancelCarrierId}`);
+            } catch (tonuErr: any) { console.warn(`[Cancellation] TONU error:`, tonuErr?.message); }
+          }
+          break;
+        }
+
+        // En-route to pickup or at pickup: TONU + deadhead estimate
+        if (["en_route_pickup", "at_pickup"].includes(cancelStatus)) {
+          const tonuBase = Math.max(cancelRate * 0.30, 350); // 30% or $350 minimum
+          const deadheadEstimate = 75; // flat deadhead allowance
+          const totalTonu = tonuBase + deadheadEstimate;
+          if (cancelCarrierId) {
+            try {
+              await db.execute(sql`
+                INSERT INTO accessorial_charges (loadId, type, amount, status, description, createdAt)
+                VALUES (${loadId}, 'TONU', ${totalTonu.toFixed(2)}, 'auto_approved', ${`TONU + deadhead — Load cancelled at ${cancelStatus}`}, NOW())
+              `);
+              const [wRows] = await db.execute(sql`SELECT id FROM wallets WHERE userId = ${cancelCarrierId} LIMIT 1`) as unknown as any[][];
+              const wallet = (wRows || [])[0];
+              if (wallet) {
+                await db.execute(sql`UPDATE wallets SET availableBalance = availableBalance + ${totalTonu.toFixed(2)}, totalReceived = totalReceived + ${totalTonu.toFixed(2)} WHERE id = ${wallet.id}`);
+                await db.execute(sql`
+                  INSERT INTO wallet_transactions (walletId, type, amount, fee, netAmount, currency, status, description, loadId, completedAt)
+                  VALUES (${wallet.id}, 'earnings', ${totalTonu.toFixed(2)}, '0.00', ${totalTonu.toFixed(2)}, 'USD', 'completed', ${`TONU+Deadhead — Load #${loadId} cancelled`}, ${loadId}, NOW())
+                `);
+              }
+              console.log(`[Cancellation] Load ${loadId} TONU+Deadhead: $${totalTonu.toFixed(2)} credited to carrier ${cancelCarrierId}`);
+            } catch (tonuErr: any) { console.warn(`[Cancellation] TONU error:`, tonuErr?.message); }
+          }
+          break;
+        }
+
+        // In-transit or transit_hold: partial rate based on estimated completion
+        if (["in_transit", "transit_hold", "loading", "loaded"].includes(cancelStatus)) {
+          const partialPercent = cancelStatus === "in_transit" ? 0.60 : cancelStatus === "loaded" ? 0.50 : 0.40;
+          const partialRate = cancelRate * partialPercent;
+          if (cancelCarrierId && partialRate > 0) {
+            try {
+              // Create partial settlement
+              await db.execute(sql`
+                INSERT INTO settlements (loadId, shipperId, carrierId, loadRate, platformFeePercent, platformFeeAmount, carrierPayment, totalShipperCharge, status)
+                VALUES (${loadId}, ${cancelLoad.shipperId || 0}, ${cancelCarrierId}, ${cancelRate.toFixed(2)}, '5.00', ${(partialRate * 0.05).toFixed(2)}, ${(partialRate * 0.95).toFixed(2)}, ${partialRate.toFixed(2)}, 'partial_cancellation')
+              `);
+              const netPay = partialRate * 0.95;
+              const [wRows] = await db.execute(sql`SELECT id FROM wallets WHERE userId = ${cancelCarrierId} LIMIT 1`) as unknown as any[][];
+              const wallet = (wRows || [])[0];
+              if (wallet) {
+                await db.execute(sql`UPDATE wallets SET availableBalance = availableBalance + ${netPay.toFixed(2)}, totalReceived = totalReceived + ${netPay.toFixed(2)} WHERE id = ${wallet.id}`);
+                await db.execute(sql`
+                  INSERT INTO wallet_transactions (walletId, type, amount, fee, netAmount, currency, status, description, loadId, completedAt)
+                  VALUES (${wallet.id}, 'earnings', ${netPay.toFixed(2)}, ${(partialRate * 0.05).toFixed(2)}, ${netPay.toFixed(2)}, 'USD', 'completed', ${`Partial settlement (${Math.round(partialPercent * 100)}%) — Load #${loadId} cancelled in transit`}, ${loadId}, NOW())
+                `);
+              }
+              console.log(`[Cancellation] Load ${loadId} partial rate (${Math.round(partialPercent * 100)}%): $${netPay.toFixed(2)} credited to carrier ${cancelCarrierId}`);
+            } catch (partErr: any) { console.warn(`[Cancellation] Partial rate error:`, partErr?.message); }
+          }
+          break;
+        }
+        console.log(`[Cancellation] Load ${loadId} cancelled at status ${cancelStatus} — no additional penalty logic`);
+        break;
+      }
+      case "release_escrow": {
+        // Release any held escrow amounts back to shipper
+        const escDb = await getDb();
+        if (!escDb) break;
+        try {
+          // Check for escrow holds on this load
+          const [escRows] = await escDb.execute(sql`
+            SELECT id, amount, walletId FROM wallet_transactions
+            WHERE loadId = ${loadId} AND type = 'escrow_hold' AND status = 'pending'
+          `) as unknown as any[][];
+          for (const esc of (escRows || [])) {
+            await escDb.execute(sql`UPDATE wallet_transactions SET status = 'released', completedAt = NOW() WHERE id = ${esc.id}`);
+            if (esc.walletId && esc.amount) {
+              await escDb.execute(sql`UPDATE wallets SET reservedBalance = reservedBalance - ${esc.amount}, availableBalance = availableBalance + ${esc.amount} WHERE id = ${esc.walletId}`);
+            }
+          }
+          if ((escRows || []).length > 0) {
+            console.log(`[Escrow] Released ${(escRows || []).length} escrow hold(s) for load ${loadId}`);
+          }
+        } catch (escErr: any) { console.warn(`[Escrow] Release error:`, escErr?.message); }
+        break;
+      }
       case "start_tracking":
       case "create_rate_confirmation":
         console.log(`[LoadLifecycle] Financial effect: ${action} for load ${loadId}`);
@@ -1087,22 +1332,58 @@ export const loadLifecycleRouter = router({
       if (transition.to === "DELIVERED") {
         await generateRouteReport(numericLoadId, ctx.user?.id || 0);
 
-        // ── SETTLEMENT AUTOMATION — create settlement & credit carrier wallet ──
+        // ── SETTLEMENT AUTOMATION — with accessorials, hazmat surcharge, and carrier wallet credit ──
         try {
           const _sDb = await getDb();
           if (_sDb && load) {
             const loadRate = parseFloat(load.rate || "0");
             if (loadRate > 0) {
               const carrierId = load.catalystId || load.driverId || 0;
+
+              // 1. Calculate accessorial charges (detention, demurrage)
+              let accessorialTotal = 0;
+              try {
+                const [accRows] = await _sDb.execute(sql`
+                  SELECT type, amount, status FROM accessorial_charges
+                  WHERE loadId = ${numericLoadId} AND status IN ('approved', 'auto_approved')
+                `) as unknown as any[][];
+                for (const acc of (accRows || [])) {
+                  accessorialTotal += parseFloat(acc.amount || "0");
+                }
+              } catch { /* accessorial_charges table may not exist yet */ }
+
+              // 2. Calculate hazmat surcharge from platformFees table
+              let hazmatSurcharge = 0;
+              if (load.hazmatClass) {
+                try {
+                  const [feeRows] = await _sDb.execute(sql`
+                    SELECT flatAmount, percentage FROM platform_fees
+                    WHERE feeType = 'HAZMAT_SURCHARGE' AND active = true
+                      AND (effectiveFrom IS NULL OR effectiveFrom <= NOW())
+                      AND (effectiveTo IS NULL OR effectiveTo >= NOW())
+                    LIMIT 1
+                  `) as unknown as any[][];
+                  const hazFee = (feeRows || [])[0];
+                  if (hazFee) {
+                    hazmatSurcharge = parseFloat(hazFee.flatAmount || "0");
+                    if (hazFee.percentage && parseFloat(hazFee.percentage) > 0) {
+                      hazmatSurcharge += loadRate * (parseFloat(hazFee.percentage) / 100);
+                    }
+                  }
+                } catch { /* platformFees table may not exist yet */ }
+              }
+
+              // 3. Calculate platform commission fee
+              const totalShipperCharge = loadRate + accessorialTotal + hazmatSurcharge;
               const feeResult = await feeCalculator.calculateFee({
                 userId: load.shipperId,
                 userRole: "SHIPPER",
                 transactionType: "load_completion",
-                amount: loadRate,
+                amount: totalShipperCharge,
                 loadId: numericLoadId,
               });
               const platformFee = feeResult.finalFee;
-              const carrierPay = loadRate - platformFee;
+              const carrierPay = totalShipperCharge - platformFee;
 
               await _sDb.insert(settlements).values({
                 loadId: numericLoadId,
@@ -1113,7 +1394,7 @@ export const loadLifecycleRouter = router({
                 platformFeePercent: feeResult.breakdown?.baseRate?.toString() || "5.00",
                 platformFeeAmount: platformFee.toFixed(2),
                 carrierPayment: carrierPay.toFixed(2),
-                totalShipperCharge: loadRate.toFixed(2),
+                totalShipperCharge: totalShipperCharge.toFixed(2),
                 status: "pending",
               });
 
@@ -1134,7 +1415,7 @@ export const loadLifecycleRouter = router({
                     netAmount: carrierPay.toFixed(2),
                     currency: "USD",
                     status: "completed",
-                    description: `Settlement — Load #${load.loadNumber || numericLoadId}`,
+                    description: `Settlement — Load #${load.loadNumber || numericLoadId}${accessorialTotal > 0 ? ` (incl. $${accessorialTotal.toFixed(2)} accessorials)` : ""}${hazmatSurcharge > 0 ? ` (incl. $${hazmatSurcharge.toFixed(2)} hazmat surcharge)` : ""}`,
                     loadId: numericLoadId,
                     loadNumber: load.loadNumber || null,
                     completedAt: new Date(),
@@ -1144,25 +1425,25 @@ export const loadLifecycleRouter = router({
 
               // Record platform revenue
               try {
-                await feeCalculator.recordFeeCollection(numericLoadId, "load_completion", load.shipperId, loadRate, feeResult);
+                await feeCalculator.recordFeeCollection(numericLoadId, "load_completion", load.shipperId, totalShipperCharge, feeResult);
               } catch {}
 
-              // WS-E2E-003: Persist settlement document for audit trail
+              // Persist settlement document for audit trail
               try {
                 await _sDb.insert(settlementDocuments).values({
                   loadId: numericLoadId,
                   driverId: load.driverId || 0,
                   carrierId,
                   documentType: "SETTLEMENT",
-                  amount: loadRate.toFixed(2),
-                  deductions: { platformFee: parseFloat(platformFee.toFixed(2)), accessorials: 0 },
+                  amount: totalShipperCharge.toFixed(2),
+                  deductions: { platformFee: parseFloat(platformFee.toFixed(2)), accessorials: accessorialTotal, hazmatSurcharge },
                   netPay: carrierPay.toFixed(2),
                   status: "FINALIZED",
                   finalizedAt: new Date(),
                 });
               } catch (docErr: any) { console.warn('[SettlementDoc] Persist error:', docErr?.message); }
 
-              console.log(`[Settlement] Load ${numericLoadId} settled: rate=$${loadRate}, fee=$${platformFee.toFixed(2)}, carrier=$${carrierPay.toFixed(2)}`);
+              console.log(`[Settlement] Load ${numericLoadId} settled: rate=$${loadRate}, accessorials=$${accessorialTotal.toFixed(2)}, hazmat=$${hazmatSurcharge.toFixed(2)}, total=$${totalShipperCharge.toFixed(2)}, fee=$${platformFee.toFixed(2)}, carrier=$${carrierPay.toFixed(2)}`);
             }
           }
         } catch (settleErr: any) {

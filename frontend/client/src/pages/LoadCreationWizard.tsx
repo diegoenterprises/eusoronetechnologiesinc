@@ -22,6 +22,7 @@ import {
   GlassWater, MilkOff, Clock, Zap, Users, User,
   Container, Blinds, ArrowDownToLine
 } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -220,8 +221,80 @@ function reverseGeocode(lat: number, lng: number): Promise<string> {
   });
 }
 
-export default function LoadCreationWizard() {
+// ── Role-based wizard configuration ──
+const WIZARD_CONFIG: Record<string, { steps: number; showTerminalFields: boolean; showBidFields: boolean; showTASInventory: boolean; quickMode?: boolean; quickSteps?: number[] }> = {
+  SHIPPER: { steps: 8, showTerminalFields: false, showBidFields: false, showTASInventory: false },
+  BROKER: { steps: 8, showTerminalFields: false, showBidFields: true, showTASInventory: false },
+  DISPATCH: { steps: 5, showTerminalFields: false, showBidFields: false, showTASInventory: false, quickMode: true, quickSteps: [0, 1, 4, 6, 7] },
+  TERMINAL_MANAGER: { steps: 6, showTerminalFields: true, showBidFields: false, showTASInventory: true },
+  CATALYST: { steps: 7, showTerminalFields: false, showBidFields: false, showTASInventory: false },
+  DRIVER: { steps: 7, showTerminalFields: false, showBidFields: false, showTASInventory: false },
+  ADMIN: { steps: 8, showTerminalFields: true, showBidFields: true, showTASInventory: true },
+  SUPER_ADMIN: { steps: 8, showTerminalFields: true, showBidFields: true, showTASInventory: true },
+};
+
+// ── Commodity → unit mapping ──
+const COMMODITY_UNITS: Record<string, { volumeUnit: string; weightUnit: string; displayVolume: string; displayWeight: string }> = {
+  petroleum: { volumeUnit: "bbl", weightUnit: "tons", displayVolume: "Barrels", displayWeight: "Tons" },
+  chemicals: { volumeUnit: "gal", weightUnit: "lbs", displayVolume: "Gallons", displayWeight: "Lbs" },
+  gas: { volumeUnit: "gal", weightUnit: "lbs", displayVolume: "Gallons", displayWeight: "Lbs" },
+  liquid: { volumeUnit: "gal", weightUnit: "lbs", displayVolume: "Gallons", displayWeight: "Lbs" },
+  refrigerated: { volumeUnit: "pallets", weightUnit: "lbs", displayVolume: "Pallets", displayWeight: "Lbs" },
+  dry_bulk: { volumeUnit: "cu_ft", weightUnit: "tons", displayVolume: "Cubic Feet", displayWeight: "Tons" },
+  grain: { volumeUnit: "bu", weightUnit: "tons", displayVolume: "Bushels", displayWeight: "Tons" },
+  livestock: { volumeUnit: "head", weightUnit: "lbs", displayVolume: "Head", displayWeight: "Lbs" },
+  vehicles: { volumeUnit: "units", weightUnit: "lbs", displayVolume: "Units", displayWeight: "Lbs" },
+  water: { volumeUnit: "gal", weightUnit: "lbs", displayVolume: "Gallons", displayWeight: "Lbs" },
+  cryogenic: { volumeUnit: "liters", weightUnit: "kg", displayVolume: "Liters", displayWeight: "Kg" },
+  intermodal: { volumeUnit: "TEU", weightUnit: "tons", displayVolume: "TEU", displayWeight: "Tons" },
+  food_grade: { volumeUnit: "gal", weightUnit: "lbs", displayVolume: "Gallons", displayWeight: "Lbs" },
+  general: { volumeUnit: "pallets", weightUnit: "lbs", displayVolume: "Pallets", displayWeight: "Lbs" },
+  oversized: { volumeUnit: "units", weightUnit: "lbs", displayVolume: "Units", displayWeight: "Lbs" },
+  hazmat: { volumeUnit: "gal", weightUnit: "lbs", displayVolume: "Gallons", displayWeight: "Lbs" },
+  timber: { volumeUnit: "bf", weightUnit: "tons", displayVolume: "Board Feet", displayWeight: "Tons" },
+};
+
+// ── Hazmat segregation table (49 CFR 177.848) ──
+const SEGREGATION_TABLE: Record<string, string[]> = {
+  '1.1': ['2.1', '2.3', '3', '4.1', '4.2', '4.3', '5.1', '5.2', '6.1', '7', '8'],
+  '2.1': ['1.1', '2.3', '3', '5.1', '5.2', '6.1'],
+  '2.3': ['1.1', '2.1', '3', '4.1', '4.2', '4.3', '5.1', '5.2', '6.1', '8'],
+  '3': ['1.1', '2.1', '2.3', '4.1', '4.3', '5.1', '5.2', '6.1'],
+  '4.1': ['1.1', '2.3', '3', '5.1', '5.2'],
+  '4.2': ['1.1', '2.3', '5.1', '5.2', '7', '8'],
+  '4.3': ['1.1', '2.3', '3', '5.1', '5.2', '8'],
+  '5.1': ['1.1', '2.1', '2.3', '3', '4.1', '4.2', '4.3', '6.1', '7'],
+  '5.2': ['1.1', '2.1', '2.3', '3', '4.1', '4.2', '4.3'],
+  '6.1': ['1.1', '2.1', '2.3', '3', '5.1'],
+  '7': ['1.1', '4.2', '5.1'],
+  '8': ['1.1', '2.3', '4.2', '4.3'],
+};
+
+// ── State-specific compliance rules ──
+const STATE_RULES: Record<string, { carb?: boolean; weightLimit?: number; hazmatNote?: string }> = {
+  CA: { carb: true, weightLimit: 80000, hazmatNote: "Tunnel restrictions apply" },
+  NY: { weightLimit: 80000, hazmatNote: "NYC restricted hazmat routes" },
+  TX: { weightLimit: 84000 },
+  MT: { weightLimit: 131060 },
+  MI: { weightLimit: 164000 },
+  FL: { weightLimit: 80000 },
+  PA: { weightLimit: 80000 },
+  OH: { weightLimit: 80000 },
+  IL: { weightLimit: 80000 },
+  IN: { weightLimit: 80000 },
+  LA: { weightLimit: 80000 },
+  OK: { weightLimit: 90000 },
+  NM: { weightLimit: 86400 },
+  ND: { weightLimit: 105500 },
+  SD: { weightLimit: 129000 },
+};
+
+export default function LoadCreationWizard({ quickMode: quickModeProp }: { quickMode?: boolean } = {}) {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const userRole = (user?.role as string) || "SHIPPER";
+  const wizConfig = WIZARD_CONFIG[userRole] || WIZARD_CONFIG.SHIPPER;
+  const isQuickMode = quickModeProp || wizConfig.quickMode || false;
   const [step, setStepRaw] = useState(0);
   const stepHistoryRef = useRef<number[]>([0]);
   const isPopRef = useRef(false);
@@ -1171,6 +1244,231 @@ export default function LoadCreationWizard() {
                       </div>
                     </div>
                   )}
+                  {/* ── Tanker-Specific Fields (non-hazmat liquid tanks) ── */}
+                  {(selectedTrailer?.id === "liquid_tank" || selectedTrailer?.id === "gas_tank" || selectedTrailer?.id === "cryogenic" || selectedTrailer?.id === "food_grade_tank" || selectedTrailer?.id === "water_tank") && (
+                    <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Droplets className="w-4 h-4 text-blue-400" />
+                        <p className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Tanker Specifications</p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-slate-400 mb-1 block">Tank Capacity (gallons)</label>
+                          <Input type="number" value={formData.tankCapacity || ""} onChange={(e: any) => updateField("tankCapacity", e.target.value)}
+                            placeholder={selectedTrailer?.maxGal ? String(selectedTrailer.maxGal) : "9500"} className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400 mb-1 block">Tank Material</label>
+                          <Select value={formData.tankMaterial || ""} onValueChange={(v: any) => updateField("tankMaterial", v)}>
+                            <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm"><SelectValue placeholder="Select material" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="carbon_steel">Carbon Steel</SelectItem>
+                              <SelectItem value="stainless_304">Stainless Steel 304</SelectItem>
+                              <SelectItem value="stainless_316">Stainless Steel 316L</SelectItem>
+                              <SelectItem value="aluminum">Aluminum</SelectItem>
+                              <SelectItem value="fiberglass">Fiberglass / FRP</SelectItem>
+                              <SelectItem value="lined">Rubber/Epoxy Lined</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {(selectedTrailer?.id === "liquid_tank") && (
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Baffles / Compartments</label>
+                            <Select value={formData.baffleType || ""} onValueChange={(v: any) => updateField("baffleType", v)}>
+                              <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="single">Single Compartment</SelectItem>
+                                <SelectItem value="baffled">Baffled</SelectItem>
+                                <SelectItem value="multi_2">2 Compartments</SelectItem>
+                                <SelectItem value="multi_3">3 Compartments</SelectItem>
+                                <SelectItem value="multi_4">4 Compartments</SelectItem>
+                                <SelectItem value="multi_5">5+ Compartments</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        {(selectedTrailer?.id === "gas_tank" || selectedTrailer?.id === "cryogenic") && (
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Pressure Rating (PSI)</label>
+                            <Input type="number" value={formData.pressureRating || ""} onChange={(e: any) => updateField("pressureRating", e.target.value)}
+                              placeholder={selectedTrailer?.id === "cryogenic" ? "25" : "250"} className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                          </div>
+                        )}
+                        {selectedTrailer?.id === "cryogenic" && (
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Insulation Type</label>
+                            <Select value={formData.insulationType || ""} onValueChange={(v: any) => updateField("insulationType", v)}>
+                              <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="vacuum">Vacuum Jacketed</SelectItem>
+                                <SelectItem value="perlite">Perlite</SelectItem>
+                                <SelectItem value="foam">Polyurethane Foam</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Oversize / Flatbed Fields ── */}
+                  {["flatbed", "step_deck", "lowboy", "double_drop", "conestoga"].includes(selectedTrailer?.id || "") && (
+                    <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Scale className="w-4 h-4 text-amber-400" />
+                        <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Flatbed / Oversize Details</p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-xs text-slate-400 mb-1 block">Cargo Length (ft)</label>
+                          <Input type="number" value={formData.cargoLength || ""} onChange={(e: any) => updateField("cargoLength", e.target.value)}
+                            placeholder="48" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400 mb-1 block">Cargo Width (ft)</label>
+                          <Input type="number" value={formData.cargoWidth || ""} onChange={(e: any) => updateField("cargoWidth", e.target.value)}
+                            placeholder="8.5" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400 mb-1 block">Cargo Height (ft)</label>
+                          <Input type="number" value={formData.cargoHeight || ""} onChange={(e: any) => updateField("cargoHeight", e.target.value)}
+                            placeholder="8.5" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-700/20">
+                          <input type="checkbox" checked={formData.oversizePermitRequired || false} onChange={(e: any) => updateField("oversizePermitRequired", e.target.checked)}
+                            className="rounded border-slate-600" />
+                          <label className="text-xs text-slate-300">Oversize Permit Required</label>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-700/20">
+                          <input type="checkbox" checked={formData.escortRequired || false} onChange={(e: any) => updateField("escortRequired", e.target.checked)}
+                            className="rounded border-slate-600" />
+                          <label className="text-xs text-slate-300">Escort / Pilot Car Required</label>
+                        </div>
+                      </div>
+                      {formData.oversizePermitRequired && (
+                        <div className="mt-3">
+                          <label className="text-xs text-slate-400 mb-1 block">Permit Number(s)</label>
+                          <Input value={formData.oversizePermitNumber || ""} onChange={(e: any) => updateField("oversizePermitNumber", e.target.value)}
+                            placeholder="e.g., TX-OS-2026-12345" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                        </div>
+                      )}
+                      {(Number(formData.cargoWidth) > 8.5 || Number(formData.cargoHeight) > 13.5 || Number(formData.cargoLength) > 53) && (
+                        <div className="mt-3 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                          <p className="text-amber-400 text-xs">Dimensions exceed standard limits — oversize permit likely required.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Livestock Fields ── */}
+                  {selectedTrailer?.id === "livestock" && (
+                    <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Users className="w-4 h-4 text-green-400" />
+                        <p className="text-xs font-semibold text-green-400 uppercase tracking-wider">Livestock Details (USDA Regulated)</p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-slate-400 mb-1 block">Species</label>
+                          <Select value={formData.livestockSpecies || ""} onValueChange={(v: any) => updateField("livestockSpecies", v)}>
+                            <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm"><SelectValue placeholder="Select species" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="cattle">Cattle</SelectItem>
+                              <SelectItem value="hogs">Hogs / Swine</SelectItem>
+                              <SelectItem value="sheep">Sheep / Lambs</SelectItem>
+                              <SelectItem value="poultry">Poultry</SelectItem>
+                              <SelectItem value="horses">Horses / Equine</SelectItem>
+                              <SelectItem value="goats">Goats</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400 mb-1 block">Head Count</label>
+                          <Input type="number" value={formData.headCount || ""} onChange={(e: any) => updateField("headCount", e.target.value)}
+                            placeholder="e.g., 40" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400 mb-1 block">Avg Weight per Head (lbs)</label>
+                          <Input type="number" value={formData.weightPerHead || ""} onChange={(e: any) => updateField("weightPerHead", e.target.value)}
+                            placeholder="e.g., 1200" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                        </div>
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-700/20">
+                          <input type="checkbox" checked={formData.waterAccessRequired || false} onChange={(e: any) => updateField("waterAccessRequired", e.target.checked)}
+                            className="rounded border-slate-600" />
+                          <label className="text-xs text-slate-300">Water access at stops required (28-hour rule)</label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Auto Carrier Fields ── */}
+                  {selectedTrailer?.id === "auto_carrier" && (
+                    <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Truck className="w-4 h-4 text-purple-400" />
+                        <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider">Vehicle Transport Details</p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-xs text-slate-400 mb-1 block">Vehicle Count</label>
+                          <Input type="number" value={formData.vehicleCount || ""} onChange={(e: any) => updateField("vehicleCount", e.target.value)}
+                            placeholder="e.g., 8" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400 mb-1 block">Vehicle Type</label>
+                          <Select value={formData.vehicleTransportType || ""} onValueChange={(v: any) => updateField("vehicleTransportType", v)}>
+                            <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sedan">Sedans / Coupes</SelectItem>
+                              <SelectItem value="suv">SUVs / Crossovers</SelectItem>
+                              <SelectItem value="truck">Pickup Trucks</SelectItem>
+                              <SelectItem value="mixed">Mixed Types</SelectItem>
+                              <SelectItem value="specialty">Specialty / Exotic</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-700/20">
+                          <input type="checkbox" checked={formData.vehiclesOperable || true} onChange={(e: any) => updateField("vehiclesOperable", e.target.checked)}
+                            className="rounded border-slate-600" />
+                          <label className="text-xs text-slate-300">All vehicles operable</label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Intermodal Fields ── */}
+                  {selectedTrailer?.id === "intermodal_chassis" && (
+                    <div className="p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Container className="w-4 h-4 text-cyan-400" />
+                        <p className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Intermodal Container Details</p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-slate-400 mb-1 block">Container Size</label>
+                          <Select value={formData.containerSize || ""} onValueChange={(v: any) => updateField("containerSize", v)}>
+                            <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm"><SelectValue placeholder="Select size" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="20ft">20' Standard</SelectItem>
+                              <SelectItem value="40ft">40' Standard</SelectItem>
+                              <SelectItem value="40ft_hc">40' High Cube</SelectItem>
+                              <SelectItem value="45ft">45' High Cube</SelectItem>
+                              <SelectItem value="53ft">53' Domestic</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400 mb-1 block">Container Number</label>
+                          <Input value={formData.containerNumber || ""} onChange={(e: any) => updateField("containerNumber", e.target.value)}
+                            placeholder="e.g., MSCU1234567" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-700/20 border border-slate-200 dark:border-slate-700/30">
                     <div className="flex items-center gap-2"><Info className="w-4 h-4 text-slate-500" /><span className="text-slate-500 text-xs">{selectedTrailer?.id === "food_grade_tank" ? "Food-grade liquid load -- requires food safety certification & tanker endorsement. No hazmat classification needed." : selectedTrailer?.id === "water_tank" ? "Water tanker load -- requires tanker endorsement. No hazmat classification needed." : `Non-hazmat load -- no ERG classification required for ${selectedTrailer?.name}.`}</span></div>
                   </div>
