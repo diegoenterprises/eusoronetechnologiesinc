@@ -18,32 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
-const TRAILER_TYPES = [
-  { id: "liquid_tank", name: "Liquid Tank Trailer", icon: "droplets", hazmat: true },
-  { id: "gas_tank", name: "Pressurized Gas Tank", icon: "wind", hazmat: true },
-  { id: "cryogenic", name: "Cryogenic Tank", icon: "snowflake", hazmat: true },
-  { id: "hazmat_van", name: "Hazmat Box / Van", icon: "alert", hazmat: true },
-  { id: "dry_van", name: "Dry Van", icon: "box", hazmat: false },
-  { id: "reefer", name: "Refrigerated (Reefer)", icon: "thermometer", hazmat: false },
-  { id: "flatbed", name: "Standard Flatbed", icon: "truck", hazmat: false },
-  { id: "step_deck", name: "Step Deck", icon: "truck", hazmat: false },
-  { id: "lowboy", name: "Lowboy / RGN", icon: "truck", hazmat: false },
-  { id: "double_drop", name: "Double Drop", icon: "truck", hazmat: false },
-  { id: "conestoga", name: "Conestoga", icon: "truck", hazmat: false },
-  { id: "auto_carrier", name: "Auto Carrier", icon: "truck", hazmat: false },
-  { id: "livestock", name: "Livestock", icon: "truck", hazmat: false },
-  { id: "log_trailer", name: "Log Trailer", icon: "truck", hazmat: false },
-  { id: "bulk_hopper", name: "Dry Bulk / Hopper", icon: "package", hazmat: false },
-  { id: "hopper", name: "Gravity Hopper", icon: "package", hazmat: false },
-  { id: "grain_hopper", name: "Grain Hopper", icon: "package", hazmat: false },
-  { id: "pneumatic", name: "Pneumatic Tank", icon: "wind", hazmat: false },
-  { id: "end_dump", name: "End Dump", icon: "package", hazmat: false },
-  { id: "food_grade_tank", name: "Food-Grade Tank", icon: "droplets", hazmat: false },
-  { id: "water_tank", name: "Water Tank", icon: "droplets", hazmat: false },
-  { id: "intermodal_chassis", name: "Intermodal Chassis", icon: "box", hazmat: false },
-  { id: "curtain_side", name: "Curtain Side", icon: "box", hazmat: false },
-];
+import { TRAILER_TYPES } from "@/lib/loadConstants";
 
 const TRAILER_ICON: Record<string, React.ReactNode> = {
   droplets: <Droplets className="w-5 h-5" />,
