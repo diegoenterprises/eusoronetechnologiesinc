@@ -16,10 +16,11 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { getStripe } from "@/lib/stripe";
 import {
-  Settings as SettingsIcon, User, Bell, Shield, CreditCard,
+  Settings as SettingsIcon, User, Bell, Shield, CreditCard, Package,
   Save, Loader2, Camera, CheckCircle, Plus, Trash2, Star,
   Lock, Eye, EyeOff, Building2, AlertTriangle, Heart, Phone, Landmark, ExternalLink
 } from "lucide-react";
+import MyProductsTab from "@/components/MyProductsTab";
 import { toast } from "sonner";
 
 export default function Settings() {
@@ -318,6 +319,9 @@ export default function Settings() {
           </TabsTrigger>
           <TabsTrigger value="billing" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-lg text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">
             <CreditCard className="w-4 h-4 mr-2" />Billing
+          </TabsTrigger>
+          <TabsTrigger value="products" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-lg text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">
+            <Package className="w-4 h-4 mr-2" />My Products
           </TabsTrigger>
         </TabsList>
 
@@ -713,6 +717,11 @@ export default function Settings() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* ======== MY PRODUCTS TAB ======== */}
+        <TabsContent value="products" className="mt-6">
+          <MyProductsTab />
         </TabsContent>
       </Tabs>
     </div>

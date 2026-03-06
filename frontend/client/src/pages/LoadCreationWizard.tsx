@@ -38,7 +38,7 @@ import { MultiTruckVisualization } from "@/components/TruckVisualization";
 import RouteMap from "@/components/RouteMap";
 import DatePicker from "@/components/DatePicker";
 
-const ALL_STEPS = ["Trailer Type", "Product Classification", "SPECTRA-MATCH Verification", "Quantity & Weight", "Origin & Destination", "Catalyst Requirements", "Pricing", "Review"];
+const ALL_STEPS = ["My Products", "Trailer Type", "Product Classification", "SPECTRA-MATCH Verification", "Quantity & Weight", "Origin & Destination", "Catalyst Requirements", "Pricing", "Review"];
 
 const TRAILER_TYPES = [
   // ── Tanker / Liquid / Gas (Hazmat) ──
@@ -223,14 +223,14 @@ function reverseGeocode(lat: number, lng: number): Promise<string> {
 
 // ── Role-based wizard configuration ──
 const WIZARD_CONFIG: Record<string, { steps: number; showTerminalFields: boolean; showBidFields: boolean; showTASInventory: boolean; quickMode?: boolean; quickSteps?: number[] }> = {
-  SHIPPER: { steps: 8, showTerminalFields: false, showBidFields: false, showTASInventory: false },
-  BROKER: { steps: 8, showTerminalFields: false, showBidFields: true, showTASInventory: false },
-  DISPATCH: { steps: 5, showTerminalFields: false, showBidFields: false, showTASInventory: false, quickMode: true, quickSteps: [0, 1, 4, 6, 7] },
-  TERMINAL_MANAGER: { steps: 6, showTerminalFields: true, showBidFields: false, showTASInventory: true },
-  CATALYST: { steps: 7, showTerminalFields: false, showBidFields: false, showTASInventory: false },
-  DRIVER: { steps: 7, showTerminalFields: false, showBidFields: false, showTASInventory: false },
-  ADMIN: { steps: 8, showTerminalFields: true, showBidFields: true, showTASInventory: true },
-  SUPER_ADMIN: { steps: 8, showTerminalFields: true, showBidFields: true, showTASInventory: true },
+  SHIPPER: { steps: 9, showTerminalFields: false, showBidFields: false, showTASInventory: false },
+  BROKER: { steps: 9, showTerminalFields: false, showBidFields: true, showTASInventory: false },
+  DISPATCH: { steps: 6, showTerminalFields: false, showBidFields: false, showTASInventory: false, quickMode: true, quickSteps: [0, 1, 2, 5, 7, 8] },
+  TERMINAL_MANAGER: { steps: 7, showTerminalFields: true, showBidFields: false, showTASInventory: true },
+  CATALYST: { steps: 8, showTerminalFields: false, showBidFields: false, showTASInventory: false },
+  DRIVER: { steps: 8, showTerminalFields: false, showBidFields: false, showTASInventory: false },
+  ADMIN: { steps: 9, showTerminalFields: true, showBidFields: true, showTASInventory: true },
+  SUPER_ADMIN: { steps: 9, showTerminalFields: true, showBidFields: true, showTASInventory: true },
 };
 
 // ── Commodity → unit mapping ──
@@ -458,6 +458,26 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
   ) || { data: null, isLoading: false };
   const myDrivers: any[] = myDriversQuery.data || [];
 
+  // ── My Products: tRPC queries & mutations ──
+  const myProductsQuery = (trpc as any).productProfiles?.list?.useQuery?.(
+    { sortBy: "lastUsed", includeCompanyShared: true },
+    { staleTime: 30_000 }
+  ) || { data: [], isLoading: false, refetch: () => {} };
+  const myProducts: any[] = myProductsQuery.data || [];
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+  const [myProductSearch, setMyProductSearch] = useState("");
+  const [showSaveProductDialog, setShowSaveProductDialog] = useState(false);
+  const [saveProductNickname, setSaveProductNickname] = useState("");
+  const incrementUsageMutation = (trpc as any).productProfiles?.incrementUsage?.useMutation?.() || { mutate: () => {} };
+  const saveFromWizardMutation = (trpc as any).productProfiles?.createFromWizard?.useMutation?.({
+    onSuccess: () => {
+      toast.success("Product saved!", { description: "Available in My Products next time you create a load" });
+      setShowSaveProductDialog(false);
+      myProductsQuery.refetch?.();
+    },
+    onError: (err: any) => toast.error("Failed to save product", { description: err?.message }),
+  }) || { mutate: () => {}, isPending: false };
+
   const selectedTrailer = TRAILER_TYPES.find(t => t.id === formData.trailerType);
   const isHazmat = selectedTrailer?.hazmat ?? false;
   const isLiquidOrGas = selectedTrailer?.animType === "liquid" || selectedTrailer?.animType === "gas";
@@ -625,7 +645,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
   // Build active step indices: filter SPECTRA-MATCH for non-hazmat, filter by quickMode
   const activeStepIndices = useMemo(() => {
     let indices = ALL_STEPS.map((_, i) => i);
-    if (!isHazmat) indices = indices.filter(i => i !== 2); // Skip SPECTRA-MATCH
+    if (!isHazmat) indices = indices.filter(i => i !== 3); // Skip SPECTRA-MATCH
     if (isQuickMode && wizConfig.quickSteps) indices = indices.filter(i => wizConfig.quickSteps!.includes(i));
     return indices;
   }, [isHazmat, isQuickMode, wizConfig.quickSteps]);
@@ -665,7 +685,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
 
   // Attach Places Autocomplete when maps loaded and on step 3
   useEffect(() => {
-    if (!mapsLoaded || rs !== 4) return;
+    if (!mapsLoaded || rs !== 5) return;
     const g = (window as any).google?.maps?.places;
     if (!g) return;
     const opts = { types: ["geocode", "establishment"], componentRestrictions: { country: "us" }, fields: ["formatted_address", "geometry"] };
@@ -765,7 +785,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
       isReject: false,
       travelSurchargeMiles: 0,
     },
-    { enabled: rs >= 6 && (formData.distance || 0) > 0 && isBarrelLoad, staleTime: 120_000 }
+    { enabled: rs >= 7 && (formData.distance || 0) > 0 && isBarrelLoad, staleTime: 120_000 }
   ) || { data: null };
   const scheduleANonBarrelQuery = (trpc as any).rateSheet?.calculateRate?.useQuery?.(
     {
@@ -776,7 +796,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
       isReject: false,
       travelSurchargeMiles: 0,
     },
-    { enabled: rs >= 6 && (formData.distance || 0) > 0 && !isBarrelLoad && isTanker, staleTime: 120_000 }
+    { enabled: rs >= 7 && (formData.distance || 0) > 0 && !isBarrelLoad && isTanker, staleTime: 120_000 }
   ) || { data: null };
 
   // Hot Zones-powered instant rate intelligence (fires on Step 6 when origin/dest available)
@@ -810,7 +830,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
       hazmatClass: formData.hazmatClass || undefined,
       pickupDate: formData.pickupDate || new Date().toISOString(),
     },
-    { enabled: rs >= 6 && !!originParts[0] && !!destParts[0], staleTime: 120_000 }
+    { enabled: rs >= 7 && !!originParts[0] && !!destParts[0], staleTime: 120_000 }
   );
 
   // ML Engine — rate prediction + ETA + anomaly detection
@@ -838,15 +858,15 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
   })();
   const mlRatePrediction = (trpc as any).ml?.predictRate?.useQuery?.(
     { originState: mlOriginState, destState: mlDestState, distance: formData.distance || 0, weight: Number(formData.weight) || undefined, equipmentType: rateEquipmentType, cargoType: mlCargoType },
-    { enabled: rs >= 6 && !!mlOriginState && !!mlDestState && (formData.distance || 0) > 0, staleTime: 120_000 }
+    { enabled: rs >= 7 && !!mlOriginState && !!mlDestState && (formData.distance || 0) > 0, staleTime: 120_000 }
   ) || { data: null };
   const mlETA = (trpc as any).ml?.predictETA?.useQuery?.(
     { originState: mlOriginState, destState: mlDestState, distance: formData.distance || 0, equipmentType: rateEquipmentType, cargoType: mlCargoType, pickupDate: formData.pickupDate },
-    { enabled: rs >= 5 && !!mlOriginState && !!mlDestState && (formData.distance || 0) > 0, staleTime: 120_000 }
+    { enabled: rs >= 6 && !!mlOriginState && !!mlDestState && (formData.distance || 0) > 0, staleTime: 120_000 }
   ) || { data: null };
   const mlAnomalies = (trpc as any).ml?.detectAnomalies?.useQuery?.(
     { rate: Number(formData.rate) || undefined, distance: formData.distance || undefined, originState: mlOriginState || undefined, destState: mlDestState || undefined, weight: Number(formData.weight) || undefined },
-    { enabled: rs >= 6 && !!Number(formData.rate) && (formData.distance || 0) > 0, staleTime: 60_000 }
+    { enabled: rs >= 7 && !!Number(formData.rate) && (formData.distance || 0) > 0, staleTime: 60_000 }
   ) || { data: null };
 
   const updateField = (field: string, value: any) => setFormData((prev: any) => ({ ...prev, [field]: value }));
@@ -868,6 +888,59 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
       return prev;
     });
   }, [calcWeightResult]);
+
+  // ── My Products: auto-fill handler ──
+  const handleSelectProduct = useCallback((product: any) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      trailerType: product.trailerType,
+      equipment: product.equipment,
+      productName: product.productName,
+      hazmatClass: product.hazmatClass || undefined,
+      unNumber: product.unNumber || undefined,
+      ergGuide: product.ergGuide || undefined,
+      isTIH: product.isTIH || false,
+      isWR: product.isWR || false,
+      placardName: product.placardName || undefined,
+      properShippingName: product.properShippingName || undefined,
+      packingGroup: product.packingGroup || undefined,
+      technicalName: product.technicalName || undefined,
+      emergencyResponseNumber: product.emergencyResponseNumber || undefined,
+      emergencyPhone: product.emergencyPhone || undefined,
+      hazardClassNumber: product.hazardClassNumber || undefined,
+      subsidiaryHazards: product.subsidiaryHazards || undefined,
+      specialPermit: product.specialPermit || undefined,
+      quantity: product.defaultQuantity || undefined,
+      quantityUnit: product.quantityUnit || undefined,
+      weightUnit: product.weightUnit || undefined,
+      volumeUnit: product.volumeUnit || undefined,
+      hoseType: product.hoseType || undefined,
+      hoseLength: product.hoseLength || undefined,
+      fittingType: product.fittingType || undefined,
+      pumpRequired: product.pumpRequired || false,
+      compressorRequired: product.compressorRequired || false,
+      bottomLoadRequired: product.bottomLoadRequired || false,
+      vaporRecoveryRequired: product.vaporRecoveryRequired || false,
+      apiGravity: product.apiGravity || undefined,
+      bsw: product.bsw || undefined,
+      sulfurContent: product.sulfurContent || undefined,
+      flashPoint: product.flashPoint || undefined,
+      viscosity: product.viscosity || undefined,
+      pourPoint: product.pourPoint || undefined,
+      reidVaporPressure: product.reidVaporPressure || undefined,
+      appearance: product.appearance || undefined,
+      compartments: 1,
+    }));
+    setSelectedProductId(product.id);
+    incrementUsageMutation.mutate({ id: product.id });
+    const originStepIdx = activeStepIndices.findIndex((i: number) => ALL_STEPS[i] === "Origin & Destination");
+    if (originStepIdx >= 0) {
+      setStep(originStepIdx);
+    }
+    toast.success(`${product.nickname} loaded`, {
+      description: `${product.productName} — ${product.trailerType}${product.hazmatClass ? ` (Class ${product.hazmatClass})` : ''}`,
+    });
+  }, [activeStepIndices, setStep, incrementUsageMutation]);
 
   const getMaterialType = () => selectedTrailer?.animType || "liquid";
 
@@ -985,13 +1058,14 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
 
   const canProceed = () => {
     switch (rs) {
-      case 0: return !!formData.trailerType;
-      case 1: return formData.productName && (isHazmat ? (formData.hazmatClass && formData.properShippingName && formData.emergencyPhone) : true);
-      case 2: return true; // SPECTRA-MATCH params are optional
-      case 3: return formData.weight && formData.quantity;
-      case 4: return formData.origin && formData.destination;
-      case 5: return true;
-      case 6: return formData.rate || formData.ratePerMile;
+      case 0: return true; // My Products — always can proceed (skip or select)
+      case 1: return !!formData.trailerType;
+      case 2: return formData.productName && (isHazmat ? (formData.hazmatClass && formData.properShippingName && formData.emergencyPhone) : true);
+      case 3: return true; // SPECTRA-MATCH params are optional
+      case 4: return formData.weight && formData.quantity;
+      case 5: return formData.origin && formData.destination;
+      case 6: return true;
+      case 7: return formData.rate || formData.ratePerMile;
       default: return true;
     }
   };
@@ -1018,8 +1092,91 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
 
       <Card className="bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 rounded-xl">
         <CardContent className="p-6">
-          {/* STEP 0: Trailer Type Selection */}
+          {/* STEP 0: My Products — Select saved product or create new */}
           {rs === 0 && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-900 dark:text-white font-bold text-lg">My Products</p>
+                  <p className="text-slate-400 text-sm">Select a saved product for instant setup, or create a new one</p>
+                </div>
+                {myProducts.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={() => setStep(step + 1)} className="text-cyan-400 border-cyan-400/30 hover:bg-cyan-400/10">
+                    <Plus className="w-4 h-4 mr-1" /> New Product
+                  </Button>
+                )}
+              </div>
+
+              {myProducts.length === 0 ? (
+                <div className="text-center py-12 space-y-4">
+                  <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 flex items-center justify-center">
+                    <Package className="w-8 h-8 text-cyan-400" />
+                  </div>
+                  <div>
+                    <p className="text-slate-300 font-medium">No saved products yet</p>
+                    <p className="text-slate-500 text-sm mt-1">Create your first load and save the product for next time</p>
+                  </div>
+                  <Button onClick={() => setStep(step + 1)} className="bg-gradient-to-r from-cyan-500 to-emerald-500">
+                    Create New Product <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  {myProducts.length > 4 && (
+                    <Input
+                      placeholder="Search products..."
+                      value={myProductSearch}
+                      onChange={(e) => setMyProductSearch(e.target.value)}
+                      className="bg-slate-50 dark:bg-slate-700/30 border-slate-200 dark:border-slate-600/30"
+                    />
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+                    {myProducts
+                      .filter((p: any) => !myProductSearch || p.nickname?.toLowerCase().includes(myProductSearch.toLowerCase()) || p.productName?.toLowerCase().includes(myProductSearch.toLowerCase()))
+                      .map((product: any) => (
+                        <button
+                          key={product.id}
+                          onClick={() => handleSelectProduct(product)}
+                          className={cn(
+                            "p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.01] group",
+                            "bg-slate-50 dark:bg-slate-700/30 border-slate-200 dark:border-slate-600/30",
+                            "hover:border-cyan-400 dark:hover:border-cyan-500/50 hover:bg-cyan-50 dark:hover:bg-cyan-500/5"
+                          )}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 flex items-center justify-center flex-shrink-0 group-hover:from-cyan-500/30 group-hover:to-emerald-500/30">
+                              {TRAILER_ICON[TRAILER_TYPES.find(t => t.id === product.trailerType)?.icon || "package"] || <Package className="w-5 h-5" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-slate-900 dark:text-white font-bold text-sm truncate">{product.nickname}</p>
+                              <p className="text-slate-500 text-xs mt-0.5 truncate">{product.productName}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-600/50 text-slate-600 dark:text-slate-300">
+                                  {TRAILER_TYPES.find(t => t.id === product.trailerType)?.name || product.trailerType}
+                                </span>
+                                {product.hazmatClass && (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 font-medium">
+                                    Class {product.hazmatClass}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-[10px] text-slate-500">{product.usageCount || 0}x used</p>
+                              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-cyan-400 mt-1 ml-auto transition-colors" />
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* STEP 1: Trailer Type Selection */}
+          {rs === 1 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <p className="text-slate-900 dark:text-white font-bold text-lg">Select Your Trailer Type</p>
               <p className="text-slate-400 text-sm">This determines product options, hazmat classification, and load visualization.</p>
@@ -1048,8 +1205,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
             </div>
           )}
 
-          {/* STEP 1: Product Classification (driven by trailer type) */}
-          {rs === 1 && (
+          {/* STEP 2: Product Classification (driven by trailer type) */}
+          {rs === 2 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               {isHazmat ? (<>
                 <div ref={suggestRef} className="relative z-50">
@@ -1530,8 +1687,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
             </div>
           )}
 
-          {/* STEP 2: SPECTRA-MATCH Verification (hazmat only) */}
-          {rs === 2 && (
+          {/* STEP 3: SPECTRA-MATCH Verification (hazmat only) */}
+          {rs === 3 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="flex items-center gap-2 mb-2">
                 <EsangIcon className="w-5 h-5 text-cyan-400" />
@@ -1598,8 +1755,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
             </div>
           )}
 
-          {/* STEP 3: Quantity & Weight */}
-          {rs === 3 && (
+          {/* STEP 4: Quantity & Weight */}
+          {rs === 4 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1959,8 +2116,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
             </div>
           )}
 
-          {/* STEP 4: Origin & Destination with Google Maps + Terminal Picker */}
-          {rs === 4 && (
+          {/* STEP 5: Origin & Destination with Google Maps + Terminal Picker */}
+          {rs === 5 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               {/* Terminal Picker — Origin */}
               {(wizConfig.showTerminalFields || userRole === 'TERMINAL_MANAGER' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && myTerminals.length > 0 && (
@@ -2106,8 +2263,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
             </div>
           )}
 
-          {/* STEP 5: Catalyst Requirements */}
-          {rs === 5 && (
+          {/* STEP 6: Catalyst Requirements */}
+          {rs === 6 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div><label className="text-sm text-slate-400 mb-1 block">Minimum Safety Score</label><Input type="number" value={formData.minSafetyScore || ""} onChange={(e: any) => updateField("minSafetyScore", e.target.value)} placeholder="e.g., 80" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" /></div>
               {/* Required Endorsements — dropdown-based, no free text */}
@@ -2445,8 +2602,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
             </div>
           )}
 
-          {/* STEP 6: Pricing — Total Rate or Rate Per Mile */}
-          {rs === 6 && (
+          {/* STEP 7: Pricing — Total Rate or Rate Per Mile */}
+          {rs === 7 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               {/* Rate Mode Toggle */}
               <div className="flex items-center gap-2 p-1 bg-slate-700/30 rounded-lg w-fit">
@@ -2799,8 +2956,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
             </div>
           )}
 
-          {/* STEP 7: Review */}
-          {rs === 7 && (
+          {/* STEP 8: Review */}
+          {rs === 8 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
               {/* ── Header ── */}
               <div className="flex items-center justify-between">
@@ -3069,6 +3226,19 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                 </div>
               )}
               {formData.hazmatClass && <div className="mt-2"><HazmatDecalPreview hazmatClass={formData.hazmatClass} unNumber={formData.unNumber} productName={formData.productName} /></div>}
+
+              {/* Save as Product — shown on Review step when product was NOT loaded from profile */}
+              {!selectedProductId && formData.productName && (
+                <div className="flex gap-3 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowSaveProductDialog(true)}
+                    className="flex-1 border-cyan-400/30 text-cyan-400 hover:bg-cyan-400/10"
+                  >
+                    <Package className="w-4 h-4 mr-2" /> Save as Product
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -3088,6 +3258,35 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
           </Button>
         )}
       </div>
+
+      {/* Save as Product dialog */}
+      {showSaveProductDialog && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
+            <div>
+              <p className="text-slate-900 dark:text-white font-bold text-lg">Save as Product</p>
+              <p className="text-slate-400 text-sm mt-1">Give this product a name so you can reuse it</p>
+            </div>
+            <Input
+              placeholder="e.g., West Texas Intermediate, Regular Diesel, Corn Load"
+              value={saveProductNickname}
+              onChange={(e) => setSaveProductNickname(e.target.value)}
+              autoFocus
+              className="bg-slate-50 dark:bg-slate-700/30"
+            />
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" onClick={() => setShowSaveProductDialog(false)} className="flex-1">Cancel</Button>
+              <Button
+                onClick={() => saveFromWizardMutation.mutate({ nickname: saveProductNickname, wizardData: formData })}
+                disabled={!saveProductNickname.trim() || saveFromWizardMutation.isPending}
+                className="flex-1 bg-gradient-to-r from-cyan-500 to-emerald-500"
+              >
+                Save Product
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
