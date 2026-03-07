@@ -16,8 +16,14 @@ import { WS_EVENTS } from "@shared/websocket-events";
 import { getSafetyScores, getOOSStatus, getInsuranceStatus } from "../services/fmcsaBulkLookup";
 
 const loadStatusSchema = z.enum([
-  "unassigned", "assigned", "en_route_pickup", "at_pickup", 
-  "loading", "en_route_delivery", "at_delivery", "unloading", "delivered"
+  "draft", "posted", "bidding", "expired",
+  "awarded", "declined", "lapsed", "accepted", "assigned", "confirmed",
+  "en_route_pickup", "at_pickup", "pickup_checkin", "loading", "loading_exception", "loaded",
+  "in_transit", "transit_hold", "transit_exception",
+  "at_delivery", "delivery_checkin", "unloading", "unloading_exception", "unloaded",
+  "pod_pending", "pod_rejected", "delivered",
+  "invoiced", "disputed", "paid", "complete",
+  "cancelled", "on_hold",
 ]);
 
 const driverStatusSchema = z.enum([
@@ -268,11 +274,17 @@ export const dispatchRouter = router({
         if (input.dateRange) {
           conds.push(gte(loads.pickupDate, new Date(input.dateRange.start)));
         }
-        const rows = await db.select().from(loads)
+        const rows = await db.select({
+          load: loads,
+          driverName: users.name,
+        }).from(loads)
+          .leftJoin(drivers, eq(loads.driverId, drivers.userId))
+          .leftJoin(users, eq(drivers.userId, users.id))
           .where(conds.length > 0 ? and(...conds) : undefined)
           .orderBy(desc(loads.createdAt)).limit(100);
 
-        const boardLoads = rows.map(l => {
+        const boardLoads = rows.map(r => {
+          const l = r.load;
           const p = l.pickupLocation as any || {};
           const d = l.deliveryLocation as any || {};
           let siDisp: any = {};
@@ -285,6 +297,7 @@ export const dispatchRouter = router({
             pickupDate: l.pickupDate?.toISOString() || '',
             deliveryDate: l.deliveryDate?.toISOString() || '',
             driverId: l.driverId ? String(l.driverId) : null,
+            driverName: r.driverName || null,
             rate: l.rate ? parseFloat(String(l.rate)) : 0,
             commodity: l.commodityName || '',
             equipmentType: siDisp?.equipmentType || null,
@@ -678,11 +691,17 @@ export const dispatchRouter = router({
       const [prev] = await db.select({ status: loads.status, loadNumber: loads.loadNumber, driverId: loads.driverId }).from(loads).where(eq(loads.id, loadIdNum)).limit(1);
       const previousStatus = prev?.status || 'unknown';
 
-      // Update load status in DB
+      // Build updates for the load row
+      const UNASSIGNED_STATUSES = ['draft', 'posted', 'bidding', 'unassigned', 'expired', 'cancelled'];
       const updates: Record<string, any> = {
         status: input.status,
         updatedAt: new Date(),
       };
+
+      // Moving back to an unassigned status → clear the driver assignment
+      if (UNASSIGNED_STATUSES.includes(input.status)) {
+        updates.driverId = null;
+      }
       if (input.status === 'delivered') {
         updates.deliveryDate = new Date();
       }
@@ -691,8 +710,13 @@ export const dispatchRouter = router({
       // Update driver status based on load status
       if (prev?.driverId) {
         let driverStatus: 'active' | 'available' | 'on_load' | 'off_duty' = 'on_load';
-        if (input.status === 'delivered') driverStatus = 'available';
-        else if (input.status === 'loading' || input.status === 'unloading' || input.status === 'at_pickup' || input.status === 'at_delivery') driverStatus = 'on_load';
+        if (input.status === 'delivered' || UNASSIGNED_STATUSES.includes(input.status)) {
+          driverStatus = 'available';
+        } else if (['in_transit', 'en_route_pickup', 'en_route_delivery'].includes(input.status)) {
+          driverStatus = 'active';
+        } else if (['loading', 'unloading', 'at_pickup', 'at_delivery', 'pickup_checkin', 'delivery_checkin'].includes(input.status)) {
+          driverStatus = 'on_load';
+        }
         await db.update(drivers).set({ status: driverStatus }).where(eq(drivers.userId, prev.driverId));
       }
 
