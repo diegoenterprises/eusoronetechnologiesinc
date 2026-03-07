@@ -103,7 +103,6 @@ export default function Pricebook() {
         <div className="flex items-center gap-3">
           <BookOpen className="w-5 h-5 text-amber-400" />
           <h1 className="text-lg font-bold">Pricebook</h1>
-          <Badge className="bg-amber-500/20 text-amber-400 border-0 text-xs">WS-DC-004</Badge>
           <span className="text-xs text-slate-500">{entries.length} entries</span>
         </div>
         <div className="flex items-center gap-2">

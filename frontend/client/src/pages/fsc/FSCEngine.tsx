@@ -67,7 +67,6 @@ export default function FSCEngine() {
         <div className="flex items-center gap-3">
           <Fuel className="w-5 h-5 text-orange-400" />
           <h1 className="text-lg font-bold">FSC Engine</h1>
-          <Badge className="bg-orange-500/20 text-orange-400 border-0 text-xs">WS-DC-005</Badge>
           <span className="text-xs text-slate-500">{schedules.length} schedules</span>
         </div>
         <div className="flex items-center gap-2">

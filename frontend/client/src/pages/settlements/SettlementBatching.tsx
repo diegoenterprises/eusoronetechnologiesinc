@@ -121,7 +121,6 @@ export default function SettlementBatching() {
         <div className="flex items-center gap-3">
           <Layers className="w-5 h-5 text-emerald-400" />
           <h1 className="text-lg font-bold">Settlement Batching</h1>
-          <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-xs">WS-DC-003</Badge>
         </div>
         <div className="flex items-center gap-2">
           <Button

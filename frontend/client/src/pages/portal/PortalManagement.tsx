@@ -67,7 +67,6 @@ export default function PortalManagement() {
         <div className="flex items-center gap-3">
           <Shield className="w-5 h-5 text-purple-400" />
           <h1 className="text-lg font-bold">Portal Management</h1>
-          <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs">WS-DC-007</Badge>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-slate-400" onClick={() => tokensQuery.refetch()}>

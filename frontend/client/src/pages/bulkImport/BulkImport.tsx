@@ -138,7 +138,6 @@ export default function BulkImport() {
         <div className="flex items-center gap-3">
           <Upload className="w-5 h-5 text-violet-400" />
           <h1 className="text-lg font-bold">Bulk Load Import</h1>
-          <Badge className="bg-violet-500/20 text-violet-400 border-0 text-xs">WS-DC-006</Badge>
         </div>
         {step !== "upload" && (
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-slate-400" onClick={reset}>

@@ -69,7 +69,6 @@ export default function AllocationDashboard() {
         <div className="flex items-center gap-3">
           <Droplets className="w-5 h-5 text-cyan-400" />
           <h1 className="text-lg font-bold">Allocation Tracker</h1>
-          <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-xs">WS-DC-002</Badge>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" className="h-7 px-1" onClick={() => shiftDate(-1)}>
