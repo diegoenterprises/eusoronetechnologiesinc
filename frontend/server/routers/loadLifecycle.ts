@@ -1953,17 +1953,20 @@ export const loadLifecycleRouter = router({
       const demurrageCharges = timers.filter(t => t.type === "DEMURRAGE").reduce((s, t) => s + t.currentCharge, 0);
       const layoverCharges = timers.filter(t => t.type === "LAYOVER").reduce((s, t) => s + t.currentCharge, 0);
 
+      const fuelSurcharge = Math.round(distance * 0.58 * 100) / 100; // $0.58/mi avg
+      const hazmatSurcharge = (load as any).cargoType === "hazmat" ? Math.round(rate * 0.15 * 100) / 100 : 0;
+
       return {
         loadId: input.loadId,
         lineHaul: rate,
         distance,
-        fuelSurcharge: Math.round(distance * 0.58 * 100) / 100, // $0.58/mi avg
-        hazmatSurcharge: (load as any).cargoType === "hazmat" ? Math.round(rate * 0.15 * 100) / 100 : 0,
+        fuelSurcharge,
+        hazmatSurcharge,
         detentionCharges,
         demurrageCharges,
         layoverCharges,
         totalAccessorials: detentionCharges + demurrageCharges + layoverCharges,
-        totalCharges: rate + detentionCharges + demurrageCharges + layoverCharges,
+        totalCharges: rate + fuelSurcharge + hazmatSurcharge + detentionCharges + demurrageCharges + layoverCharges,
         activeTimers,
         timerHistory: timers,
         currency: "USD",

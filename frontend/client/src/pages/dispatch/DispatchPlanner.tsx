@@ -1,4 +1,4 @@
-import { useState, useCallback, DragEvent } from "react";
+import { useState, useCallback, useRef, useEffect, DragEvent } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,8 +9,89 @@ import { toast } from "sonner";
 import {
   CalendarDays, ChevronLeft, ChevronRight, GripVertical,
   Truck, AlertTriangle, Shield, Clock, MapPin, Package,
-  Sparkles, RefreshCw, Search, Zap, X, User,
+  Sparkles, RefreshCw, Search, Zap, X, User, ChevronUp, ChevronDown,
 } from "lucide-react";
+
+/* ── Dark-themed Mini Calendar ── */
+function MiniCalendar({ value, onChange, onClose }: { value: string; onChange: (v: string) => void; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [viewDate, setViewDate] = useState(() => {
+    const d = value ? new Date(value + "T12:00:00") : new Date();
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [onClose]);
+
+  const { year, month } = viewDate;
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = formatDate(new Date());
+  const days: (number | null)[] = Array(firstDay).fill(null);
+  for (let i = 1; i <= daysInMonth; i++) days.push(i);
+  while (days.length % 7 !== 0) days.push(null);
+
+  const monthLabel = new Date(year, month).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const navMonth = (delta: number) => {
+    let m = month + delta, y = year;
+    if (m < 0) { m = 11; y--; }
+    if (m > 11) { m = 0; y++; }
+    setViewDate({ year: y, month: m });
+  };
+
+  const selectDay = (day: number) => {
+    const d = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    onChange(d);
+    onClose();
+  };
+
+  return (
+    <div ref={ref} className="absolute right-0 top-full mt-1 z-50 w-64 rounded-xl border border-white/[0.1] bg-slate-900/95 backdrop-blur-xl shadow-2xl shadow-black/60 p-3 select-none">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-slate-200">{monthLabel}</span>
+        <div className="flex gap-1">
+          <button onClick={() => navMonth(-1)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-white/[0.08] text-slate-400"><ChevronUp className="w-3.5 h-3.5" /></button>
+          <button onClick={() => navMonth(1)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-white/[0.08] text-slate-400"><ChevronDown className="w-3.5 h-3.5" /></button>
+        </div>
+      </div>
+      <div className="grid grid-cols-7 text-center text-[10px] font-medium text-slate-500 mb-1">
+        {["S","M","T","W","T","F","S"].map((d, i) => <span key={i}>{d}</span>)}
+      </div>
+      <div className="grid grid-cols-7 gap-px">
+        {days.map((day, i) => {
+          if (!day) return <span key={i} />;
+          const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const isSelected = dateStr === value;
+          const isToday = dateStr === todayStr;
+          return (
+            <button
+              key={i}
+              onClick={() => selectDay(day)}
+              className={cn(
+                "w-8 h-7 rounded-md text-xs font-medium transition-all",
+                isSelected ? "bg-cyan-500 text-white shadow-md shadow-cyan-500/30" :
+                isToday ? "bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/30" :
+                "text-slate-300 hover:bg-white/[0.08]"
+              )}
+            >
+              {day}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.06]">
+        <button onClick={() => { onChange(formatDate(new Date())); onClose(); }} className="text-[10px] text-cyan-400 hover:text-cyan-300 font-medium">Today</button>
+        <button onClick={() => { onChange(""); onClose(); }} className="text-[10px] text-slate-500 hover:text-slate-300">Clear</button>
+      </div>
+    </div>
+  );
+}
 
 function formatDate(d: Date): string {
   return d.toISOString().split("T")[0];
@@ -40,6 +121,7 @@ export default function DispatchPlanner() {
   const [hazmatOnly, setHazmatOnly] = useState(false);
   const [draggingLoadId, setDraggingLoadId] = useState<number | null>(null);
   const [suggestLoadId, setSuggestLoadId] = useState<number | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const utils = (trpc as any).useUtils?.() || (trpc as any).useContext?.();
 
@@ -146,12 +228,25 @@ export default function DispatchPlanner() {
           <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-slate-400" onClick={() => changeDate(1)}>
             <ChevronRight className="w-4 h-4" />
           </Button>
-          <Input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-            className="h-7 w-36 text-xs bg-white/[0.04] border-white/[0.08] text-white"
-          />
+          <div className="relative">
+            <button
+              onClick={() => setCalendarOpen(!calendarOpen)}
+              className={cn(
+                "h-7 px-2.5 text-xs rounded-md border transition-all flex items-center gap-1.5",
+                calendarOpen ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-400" : "border-white/[0.08] bg-white/[0.04] text-slate-300 hover:bg-white/[0.06]"
+              )}
+            >
+              <CalendarDays className="w-3 h-3" />
+              {date.replace(/-/g, "/")}
+            </button>
+            {calendarOpen && (
+              <MiniCalendar
+                value={date}
+                onChange={(d) => setDate(d || formatDate(new Date()))}
+                onClose={() => setCalendarOpen(false)}
+              />
+            )}
+          </div>
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-slate-400" onClick={() => boardQuery.refetch()}>
             <RefreshCw className={cn("w-3.5 h-3.5 mr-1", boardQuery.isFetching && "animate-spin")} />
             Refresh

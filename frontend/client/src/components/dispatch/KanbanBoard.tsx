@@ -220,23 +220,23 @@ function LoadCard({
       aria-label={`Load ${load.loadNumber}, ${load.origin} to ${load.destination}`}
     >
       {/* Row 1: load number + badges + rate */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-mono font-bold tracking-tight text-white/90">{load.loadNumber}</span>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+          <span className="text-[11px] font-mono font-bold tracking-tight text-white/90 truncate">{load.loadNumber}</span>
           {load.hazmatClass && (
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-px rounded-md bg-red-500/15 border border-red-500/20">
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-px rounded-md bg-red-500/15 border border-red-500/20 shrink-0">
               <Flame className="w-2.5 h-2.5 text-red-400" />
               <span className="text-[7px] font-extrabold text-red-400 uppercase tracking-widest">HM</span>
             </span>
           )}
           {sub && (
-            <span className="text-[8px] font-medium px-1.5 py-px rounded-md bg-white/[0.06] text-slate-400 border border-white/[0.06]">
+            <span className="text-[8px] font-medium px-1.5 py-px rounded-md bg-white/[0.06] text-slate-400 border border-white/[0.06] shrink-0 truncate max-w-[60px]">
               {sub}
             </span>
           )}
         </div>
         {load.rate !== undefined && load.rate > 0 && (
-          <span className="text-[11px] font-semibold text-emerald-400 tabular-nums">${load.rate.toLocaleString()}</span>
+          <span className="text-[11px] font-semibold text-emerald-400 tabular-nums shrink-0">${load.rate.toLocaleString()}</span>
         )}
       </div>
 

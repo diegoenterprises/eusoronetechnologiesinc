@@ -12,8 +12,14 @@ import { getDb } from "../db";
 import { loads, users, companies, vehicles, drivers } from "../../drizzle/schema";
 
 const loadStatusSchema = z.enum([
-  "unassigned", "assigned", "en_route_pickup", "at_pickup", "loading", 
-  "in_transit", "at_delivery", "unloading", "delivered", "issue"
+  "draft", "posted", "bidding", "expired",
+  "awarded", "declined", "lapsed", "accepted", "assigned", "confirmed",
+  "en_route_pickup", "at_pickup", "pickup_checkin", "loading", "loading_exception", "loaded",
+  "in_transit", "transit_hold", "transit_exception",
+  "at_delivery", "delivery_checkin", "unloading", "unloading_exception", "unloaded",
+  "pod_pending", "pod_rejected", "delivered",
+  "invoiced", "disputed", "paid", "complete",
+  "cancelled", "on_hold",
 ]);
 
 export const dispatchRoleRouter = router({
