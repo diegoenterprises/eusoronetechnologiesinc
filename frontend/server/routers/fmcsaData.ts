@@ -879,7 +879,24 @@ export const fmcsaRouter = router({
     }))
     .query(async ({ input }) => {
       const pool = getPool();
-      const snapshot = await getCarrierSnapshot(input.dotNumber);
+
+      // ── ALL QUERIES IN PARALLEL — snapshot + BOC3 + inspections + instant verification ──
+      const [snapshot, boc3Result, inspResult, ivResult] = await Promise.all([
+        getCarrierSnapshot(input.dotNumber),
+        pool ? pool.query(`SELECT id FROM fmcsa_boc3 WHERE dot_number = ? LIMIT 1`, [input.dotNumber])
+               .then((r: any) => r[0]?.length > 0).catch(() => false)
+             : Promise.resolve(false),
+        pool ? pool.query(
+               `SELECT COUNT(*) AS total,
+                       SUM(CASE WHEN driver_oos = 'Y' OR vehicle_oos = 'Y' THEN 1 ELSE 0 END) AS oos_count
+                FROM fmcsa_inspections
+                WHERE dot_number = ? AND inspection_date >= DATE_SUB(NOW(), INTERVAL 24 MONTH)`,
+               [input.dotNumber]
+             ).then((r: any) => r[0]?.[0] || { total: 0, oos_count: 0 }).catch(() => ({ total: 0, oos_count: 0 }))
+             : Promise.resolve({ total: 0, oos_count: 0 }),
+        import("../services/instantVerification").then(m => m.getInstantVerification(input.dotNumber)).catch(() => null),
+      ]);
+
       if (!snapshot) {
         return {
           verified: false,
@@ -890,41 +907,13 @@ export const fmcsaRouter = router({
         };
       }
 
-      // ── BOC3 CHECK ──────────────────────────────────────────────────────
-      // A BOC3 filing (Designation of Process Agent) is REQUIRED for all
-      // for-hire interstate carriers. No BOC3 = cannot legally operate.
-      let hasBoc3 = false;
-      if (pool) {
-        try {
-          const [boc3Rows]: any = await pool.query(
-            `SELECT id FROM fmcsa_boc3 WHERE dot_number = ? LIMIT 1`,
-            [input.dotNumber]
-          );
-          hasBoc3 = boc3Rows.length > 0;
-        } catch {}
-      }
-
-      // ── INSPECTION HISTORY CHECK ────────────────────────────────────────
-      // Carriers with recent inspections showing high OOS rates are risky
-      let inspectionCheck = { total: 0, oosCount: 0, oosRate: 0, recentClean: true };
-      if (pool) {
-        try {
-          const [inspRows]: any = await pool.query(
-            `SELECT COUNT(*) AS total,
-                    SUM(CASE WHEN driver_oos = 'Y' OR vehicle_oos = 'Y' THEN 1 ELSE 0 END) AS oos_count
-             FROM fmcsa_inspections
-             WHERE dot_number = ? AND inspection_date >= DATE_SUB(NOW(), INTERVAL 24 MONTH)`,
-            [input.dotNumber]
-          );
-          const row = inspRows[0];
-          inspectionCheck.total = row?.total || 0;
-          inspectionCheck.oosCount = row?.oos_count || 0;
-          inspectionCheck.oosRate = inspectionCheck.total > 0
-            ? (inspectionCheck.oosCount / inspectionCheck.total) * 100
-            : 0;
-          inspectionCheck.recentClean = inspectionCheck.oosRate < 25;
-        } catch {}
-      }
+      const hasBoc3 = !!boc3Result;
+      const inspectionCheck = {
+        total: inspResult.total || 0,
+        oosCount: inspResult.oos_count || 0,
+        oosRate: inspResult.total > 0 ? (inspResult.oos_count / inspResult.total) * 100 : 0,
+        recentClean: inspResult.total > 0 ? (inspResult.oos_count / inspResult.total) * 100 < 25 : true,
+      };
 
       const issues: string[] = [];
       
@@ -1043,24 +1032,18 @@ export const fmcsaRouter = router({
         verificationScore: 0,
       };
 
-      // Enrich with enhanced formula data from instant verification service
-      try {
-        const { getInstantVerification } = await import("../services/instantVerification");
-        const iv = await getInstantVerification(input.dotNumber);
-        if (iv) {
-          result.snapshot.carrierAgeDays = iv.carrierAgeDays;
-          result.snapshot.isNewEntrant = iv.isNewEntrant;
-          result.snapshot.mcs150Stale = iv.mcs150Stale;
-          result.snapshot.crashSeverity24mo = iv.crashSeverity24mo;
-          result.snapshot.smsBasicBreaches = iv.smsBasicBreaches;
-          result.snapshot.violationsPerUnit = iv.violationsPerUnit;
-          result.snapshot.bipdCoverageAmount = iv.bipdCoverageAmount;
-          result.snapshot.scoreBreakdown = iv.scoreBreakdown;
-          result.snapshot.platformTrust = iv.platformTrust;
-          result.verificationScore = iv.verificationScore;
-        }
-      } catch {
-        // Instant verification enrichment is non-critical
+      // Enrich with enhanced formula data (already fetched in parallel above)
+      if (ivResult) {
+        result.snapshot.carrierAgeDays = ivResult.carrierAgeDays;
+        result.snapshot.isNewEntrant = ivResult.isNewEntrant;
+        result.snapshot.mcs150Stale = ivResult.mcs150Stale;
+        result.snapshot.crashSeverity24mo = ivResult.crashSeverity24mo;
+        result.snapshot.smsBasicBreaches = ivResult.smsBasicBreaches;
+        result.snapshot.violationsPerUnit = ivResult.violationsPerUnit;
+        result.snapshot.bipdCoverageAmount = ivResult.bipdCoverageAmount;
+        result.snapshot.scoreBreakdown = ivResult.scoreBreakdown;
+        result.snapshot.platformTrust = ivResult.platformTrust;
+        result.verificationScore = ivResult.verificationScore;
       }
 
       return result;

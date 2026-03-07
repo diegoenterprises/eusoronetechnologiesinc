@@ -13,6 +13,11 @@
 
 import { getPool } from "../db";
 
+// Short-lived snapshot cache — prevents duplicate DB hits when multiple
+// tRPC queries fetch the same carrier on a single page load (30s TTL)
+const _snapCache = new Map<string, { data: CarrierSnapshot | null; ts: number }>();
+const SNAP_CACHE_TTL = 30_000;
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -161,62 +166,44 @@ async function timedQuery(pool: any, sql: string, params: any[], timeoutMs = 800
 }
 
 export async function getCarrierSnapshot(dotNumber: string): Promise<CarrierSnapshot | null> {
+  // Check short-lived cache first (30s TTL)
+  const cached = _snapCache.get(dotNumber);
+  if (cached && Date.now() - cached.ts < SNAP_CACHE_TTL) return cached.data;
+
   const pool = getPool();
   if (!pool) return null;
   
   try {
-    // Get census data
-    const censusRows: any = await timedQuery(pool,
-      `SELECT * FROM fmcsa_census WHERE dot_number = ? LIMIT 1`,
-      [dotNumber]
-    );
+    // ── ALL 5 QUERIES IN PARALLEL — light-speed snapshot ──
+    const [censusRows, authRows, insRows, smsRows, oosRows] = await Promise.all([
+      timedQuery(pool, `SELECT * FROM fmcsa_census WHERE dot_number = ? LIMIT 1`, [dotNumber], 5000),
+      timedQuery(pool, `SELECT * FROM fmcsa_authority WHERE dot_number = ? ORDER BY fetched_at DESC LIMIT 1`, [dotNumber], 5000),
+      timedQuery(pool, `SELECT * FROM fmcsa_insurance WHERE dot_number = ? AND is_active = TRUE ORDER BY coverage_to DESC LIMIT 1`, [dotNumber], 5000),
+      timedQuery(pool, `SELECT * FROM fmcsa_sms_scores WHERE dot_number = ? ORDER BY run_date DESC LIMIT 1`, [dotNumber], 5000),
+      timedQuery(pool, `SELECT * FROM fmcsa_oos_orders WHERE dot_number = ? AND return_to_service_date IS NULL ORDER BY oos_date DESC LIMIT 1`, [dotNumber], 5000),
+    ]);
+
     const census = censusRows[0];
-    
-    // Get authority data
-    const authRows: any = await timedQuery(pool,
-      `SELECT * FROM fmcsa_authority WHERE dot_number = ? ORDER BY fetched_at DESC LIMIT 1`,
-      [dotNumber]
-    );
     let auth = authRows[0];
-    
-    // Get latest active insurance
-    const insRows: any = await timedQuery(pool,
-      `SELECT * FROM fmcsa_insurance 
-       WHERE dot_number = ? AND is_active = TRUE 
-       ORDER BY coverage_to DESC LIMIT 1`,
-      [dotNumber]
-    );
     const insurance = insRows[0];
-    
-    // Get latest SMS scores
-    const smsRows: any = await timedQuery(pool,
-      `SELECT * FROM fmcsa_sms_scores 
-       WHERE dot_number = ? 
-       ORDER BY run_date DESC LIMIT 1`,
-      [dotNumber]
-    );
     let sms = smsRows[0];
-    
-    // Get active OOS order
-    const oosRows: any = await timedQuery(pool,
-      `SELECT * FROM fmcsa_oos_orders 
-       WHERE dot_number = ? AND return_to_service_date IS NULL
-       ORDER BY oos_date DESC LIMIT 1`,
-      [dotNumber]
-    );
     const oos = oosRows[0];
     
-    // ── SAFER API FALLBACK ──────────────────────────────────────────────
-    // If we have census but missing authority/insurance/SMS, enrich from
-    // the live FMCSA QCMobile API so every viewed carrier has full data.
+    // ── SAFER API FALLBACK (non-blocking) ────────────────────────────────
+    // Fire-and-forget: enrich in background, don't block the response.
     let apiCarrier: any = null;
     let apiBasics: any[] = [];
     if (census && (!auth || !insurance || !sms)) {
-      const apiData = await fetchCarrierFromSaferApi(dotNumber);
-      if (apiData) {
-        apiCarrier = apiData.carrier;
-        apiBasics = apiData.basics || [];
-      }
+      try {
+        const apiData = await Promise.race([
+          fetchCarrierFromSaferApi(dotNumber),
+          new Promise<null>(res => setTimeout(() => res(null), 3000)),
+        ]);
+        if (apiData) {
+          apiCarrier = apiData.carrier;
+          apiBasics = apiData.basics || [];
+        }
+      } catch { /* SAFER API failed — return DB data only */ }
     }
 
     if (!census && !auth && !apiCarrier) return null;
@@ -275,7 +262,7 @@ export async function getCarrierSnapshot(dotNumber: string): Promise<CarrierSnap
       insuranceStatus = "INSUFFICIENT";
     }
     
-    return {
+    const snapResult: CarrierSnapshot = {
       dotNumber,
       legalName: census?.legal_name || auth?.legal_name || apiCarrier?.legalName || "Unknown",
       authorityStatus: authStatus,
@@ -313,6 +300,15 @@ export async function getCarrierSnapshot(dotNumber: string): Promise<CarrierSnap
       cargoCarried: (() => { try { const c = census?.cargo_carried; return typeof c === 'string' ? JSON.parse(c) : Array.isArray(c) ? c : null; } catch { return null; } })(),
       snapshotDate: new Date(),
     };
+
+    // Cache for 30s to prevent duplicate DB hits from parallel tRPC queries
+    _snapCache.set(dotNumber, { data: snapResult, ts: Date.now() });
+    // Evict stale entries periodically (keep map bounded)
+    if (_snapCache.size > 200) {
+      const now = Date.now();
+      Array.from(_snapCache.entries()).forEach(([k, v]) => { if (now - v.ts > SNAP_CACHE_TTL) _snapCache.delete(k); });
+    }
+    return snapResult;
   } catch (err) {
     console.error(`[CarrierMonitor] Error getting snapshot for ${dotNumber}:`, err);
     return null;
@@ -641,7 +637,7 @@ interface MonitoringJobResult {
 }
 
 // In-memory cache for previous snapshots (in production, use Redis)
-const snapshotCache = new Map<string, CarrierSnapshot>();
+const monitorCache = new Map<string, CarrierSnapshot>();
 
 export async function runMonitoringJob(): Promise<MonitoringJobResult> {
   console.log("[CarrierMonitor] Starting monitoring job...");
@@ -667,7 +663,7 @@ export async function runMonitoringJob(): Promise<MonitoringJobResult> {
         
         result.carriersChecked++;
         
-        const previousSnapshot = snapshotCache.get(carrier.dotNumber) || null;
+        const previousSnapshot = monitorCache.get(carrier.dotNumber) || null;
         const changes = await detectChanges(carrier.dotNumber, previousSnapshot, currentSnapshot);
         
         // Filter changes based on monitoring preferences
@@ -688,7 +684,7 @@ export async function runMonitoringJob(): Promise<MonitoringJobResult> {
         }
         
         // Update cache
-        snapshotCache.set(carrier.dotNumber, currentSnapshot);
+        monitorCache.set(carrier.dotNumber, currentSnapshot);
         
         // Update last checked timestamp
         const pool = getPool();
