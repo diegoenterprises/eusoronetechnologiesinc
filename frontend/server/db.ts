@@ -1905,6 +1905,277 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX sa_ack_idx (acknowledged)
     )`);
 
+    // --- Settlement Batching (WS-DC-003) ---
+    await ensureTable("settlement_batches", `CREATE TABLE settlement_batches (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      batchNumber VARCHAR(50) NOT NULL UNIQUE,
+      companyId INT NOT NULL,
+      batchType ENUM('shipper_payable','carrier_receivable','driver_payable') NOT NULL,
+      periodStart DATE NOT NULL,
+      periodEnd DATE NOT NULL,
+      status ENUM('draft','pending_approval','approved','processing','paid','failed','disputed') DEFAULT 'draft',
+      totalLoads INT DEFAULT 0,
+      subtotalAmount DECIMAL(12,2) DEFAULT 0.00,
+      fscAmount DECIMAL(12,2) DEFAULT 0.00,
+      accessorialAmount DECIMAL(12,2) DEFAULT 0.00,
+      deductionAmount DECIMAL(12,2) DEFAULT 0.00,
+      totalAmount DECIMAL(12,2) DEFAULT 0.00,
+      approvedBy INT DEFAULT NULL,
+      approvedAt TIMESTAMP NULL DEFAULT NULL,
+      paidAt TIMESTAMP NULL DEFAULT NULL,
+      stripePaymentId VARCHAR(255) DEFAULT NULL,
+      notes TEXT DEFAULT NULL,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX sb_company_idx (companyId),
+      INDEX sb_status_idx (status),
+      INDEX sb_period_idx (periodStart, periodEnd),
+      INDEX sb_type_idx (batchType)
+    )`);
+
+    await ensureTable("settlement_batch_items", `CREATE TABLE settlement_batch_items (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      batchId INT NOT NULL,
+      settlementId INT NOT NULL,
+      loadId INT NOT NULL,
+      loadNumber VARCHAR(50) DEFAULT NULL,
+      pickupDate DATE DEFAULT NULL,
+      deliveryDate DATE DEFAULT NULL,
+      lineAmount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+      fscAmount DECIMAL(12,2) DEFAULT 0.00,
+      accessorialAmount DECIMAL(12,2) DEFAULT 0.00,
+      deductions DECIMAL(12,2) DEFAULT 0.00,
+      netAmount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_batch_settlement (batchId, settlementId),
+      INDEX sbi_batch_idx (batchId),
+      INDEX sbi_settlement_idx (settlementId),
+      INDEX sbi_load_idx (loadId)
+    )`);
+
+    // --- Allocation Tracker (WS-DC-002) ---
+    await ensureTable("allocation_contracts", `CREATE TABLE allocation_contracts (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      companyId INT NOT NULL,
+      shipperId INT NOT NULL,
+      contractName VARCHAR(255) NOT NULL,
+      buyerName VARCHAR(255) DEFAULT NULL,
+      originTerminalId INT NOT NULL,
+      destinationTerminalId INT NOT NULL,
+      product VARCHAR(100) NOT NULL,
+      dailyNominationBbl DECIMAL(10,2) NOT NULL,
+      effectiveDate DATE NOT NULL,
+      expirationDate DATE NOT NULL,
+      ratePerBbl DECIMAL(10,4) DEFAULT NULL,
+      status ENUM('active','paused','expired','cancelled') DEFAULT 'active',
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX ac_company_idx (companyId),
+      INDEX ac_shipper_idx (shipperId),
+      INDEX ac_terminal_idx (originTerminalId, destinationTerminalId),
+      INDEX ac_status_idx (status)
+    )`);
+
+    await ensureTable("allocation_daily_tracking", `CREATE TABLE allocation_daily_tracking (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      allocationContractId INT NOT NULL,
+      trackingDate DATE NOT NULL,
+      nominatedBbl DECIMAL(10,2) NOT NULL,
+      loadedBbl DECIMAL(10,2) DEFAULT 0.00,
+      deliveredBbl DECIMAL(10,2) DEFAULT 0.00,
+      loadsCreated INT DEFAULT 0,
+      loadsCompleted INT DEFAULT 0,
+      status ENUM('pending','on_track','behind','ahead','completed') DEFAULT 'pending',
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_contract_date (allocationContractId, trackingDate),
+      INDEX adt_contract_date_idx (allocationContractId, trackingDate),
+      INDEX adt_date_idx (trackingDate),
+      INDEX adt_status_idx (status)
+    )`);
+
+    // --- Bulk Load Import (WS-DC-006) ---
+    await ensureTable("bulk_import_jobs", `CREATE TABLE bulk_import_jobs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      companyId INT NOT NULL,
+      uploadedBy INT NOT NULL,
+      fileName VARCHAR(255) NOT NULL,
+      totalRows INT NOT NULL DEFAULT 0,
+      successCount INT DEFAULT 0,
+      failCount INT DEFAULT 0,
+      status ENUM('uploaded','validating','validated','importing','completed','failed') DEFAULT 'uploaded',
+      validationErrors JSON DEFAULT NULL,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      completedAt TIMESTAMP NULL DEFAULT NULL,
+      INDEX bij_company_idx (companyId),
+      INDEX bij_status_idx (status),
+      INDEX bij_uploaded_by_idx (uploadedBy)
+    )`);
+
+    await ensureTable("bulk_import_rows", `CREATE TABLE bulk_import_rows (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      jobId INT NOT NULL,
+      rowNumber INT NOT NULL,
+      rawData JSON NOT NULL,
+      loadId INT DEFAULT NULL,
+      status ENUM('pending','valid','invalid','created','failed') DEFAULT 'pending',
+      errors JSON DEFAULT NULL,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_job_row (jobId, rowNumber),
+      INDEX bir_job_idx (jobId),
+      INDEX bir_load_idx (loadId),
+      INDEX bir_status_idx (status)
+    )`);
+
+    // --- Pricebook (WS-DC-004) ---
+    await ensureTable("pricebook_entries", `CREATE TABLE pricebook_entries (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      companyId INT NOT NULL,
+      entryName VARCHAR(255) NOT NULL,
+      originCity VARCHAR(100) DEFAULT NULL,
+      originState VARCHAR(2) DEFAULT NULL,
+      originTerminalId INT DEFAULT NULL,
+      destinationCity VARCHAR(100) DEFAULT NULL,
+      destinationState VARCHAR(2) DEFAULT NULL,
+      destinationTerminalId INT DEFAULT NULL,
+      cargoType VARCHAR(100) DEFAULT NULL,
+      hazmatClass VARCHAR(50) DEFAULT NULL,
+      rateType ENUM('per_mile','flat','per_barrel','per_gallon','per_ton') NOT NULL,
+      rate DECIMAL(12,4) NOT NULL,
+      fscIncluded TINYINT(1) DEFAULT 0,
+      fscMethod VARCHAR(50) DEFAULT NULL,
+      fscValue DECIMAL(10,4) DEFAULT NULL,
+      minimumCharge DECIMAL(12,2) DEFAULT NULL,
+      customerCompanyId INT DEFAULT NULL,
+      effectiveDate DATE NOT NULL,
+      expirationDate DATE DEFAULT NULL,
+      isActive TINYINT(1) DEFAULT 1,
+      createdBy INT NOT NULL,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX pbe_company_idx (companyId),
+      INDEX pbe_origin_terminal_idx (originTerminalId),
+      INDEX pbe_dest_terminal_idx (destinationTerminalId),
+      INDEX pbe_customer_idx (customerCompanyId),
+      INDEX pbe_active_idx (isActive, effectiveDate),
+      INDEX pbe_lookup_idx (companyId, originTerminalId, destinationTerminalId, cargoType, isActive)
+    )`);
+
+    await ensureTable("pricebook_history", `CREATE TABLE pricebook_history (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      pricebookEntryId INT NOT NULL,
+      previousRate DECIMAL(12,4) DEFAULT NULL,
+      newRate DECIMAL(12,4) DEFAULT NULL,
+      changedBy INT NOT NULL,
+      changedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX pbh_entry_idx (pricebookEntryId),
+      INDEX pbh_date_idx (changedAt)
+    )`);
+
+    // --- FSC Engine (WS-DC-005) ---
+    await ensureTable("fsc_schedules", `CREATE TABLE fsc_schedules (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      companyId INT NOT NULL,
+      scheduleName VARCHAR(255) NOT NULL,
+      basePrice DECIMAL(10,4) DEFAULT NULL,
+      method ENUM('cpm','percentage','table') NOT NULL,
+      cpmRate DECIMAL(10,4) DEFAULT NULL,
+      percentageRate DECIMAL(5,2) DEFAULT NULL,
+      paddRegion ENUM('1A','1B','1C','2','3','4','5') NOT NULL,
+      fuelType VARCHAR(50) DEFAULT 'diesel',
+      updateFrequency VARCHAR(50) DEFAULT 'weekly',
+      lastPaddPrice DECIMAL(10,4) DEFAULT NULL,
+      lastUpdateAt TIMESTAMP NULL DEFAULT NULL,
+      isActive TINYINT(1) DEFAULT 1,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX fsc_company_idx (companyId),
+      INDEX fsc_active_idx (isActive),
+      INDEX fsc_padd_idx (paddRegion)
+    )`);
+
+    await ensureTable("fsc_lookup_table", `CREATE TABLE fsc_lookup_table (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      scheduleId INT NOT NULL,
+      fuelPriceMin DECIMAL(10,4) NOT NULL,
+      fuelPriceMax DECIMAL(10,4) NOT NULL,
+      surchargeAmount DECIMAL(10,4) NOT NULL,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_schedule_range (scheduleId, fuelPriceMin, fuelPriceMax),
+      INDEX flt_schedule_idx (scheduleId)
+    )`);
+
+    await ensureTable("fsc_history", `CREATE TABLE fsc_history (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      scheduleId INT NOT NULL,
+      paddPrice DECIMAL(10,4) NOT NULL,
+      calculatedFsc DECIMAL(10,4) NOT NULL,
+      appliedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX fsh_schedule_idx (scheduleId, appliedAt)
+    )`);
+
+    // --- Customer Portal (WS-DC-007) ---
+    await ensureTable("portal_access_tokens", `CREATE TABLE portal_access_tokens (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      companyId INT NOT NULL,
+      issuedBy INT NOT NULL,
+      customerName VARCHAR(255) NOT NULL,
+      customerEmail VARCHAR(255) DEFAULT NULL,
+      accessToken VARCHAR(64) NOT NULL,
+      permissions JSON DEFAULT NULL,
+      expiresAt TIMESTAMP NOT NULL,
+      lastAccessAt TIMESTAMP NULL DEFAULT NULL,
+      isActive TINYINT(1) DEFAULT 1,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_access_token (accessToken),
+      INDEX pat_company_idx (companyId),
+      INDEX pat_active_idx (isActive, expiresAt)
+    )`);
+
+    await ensureTable("portal_load_links", `CREATE TABLE portal_load_links (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      portalTokenId INT NOT NULL,
+      loadId INT NOT NULL,
+      linkedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_token_load (portalTokenId, loadId),
+      INDEX pll_token_idx (portalTokenId),
+      INDEX pll_load_idx (loadId)
+    )`);
+
+    await ensureTable("portal_audit_log", `CREATE TABLE portal_audit_log (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      portalTokenId INT NOT NULL,
+      action VARCHAR(100) NOT NULL,
+      resourceType VARCHAR(100) DEFAULT NULL,
+      resourceId INT DEFAULT NULL,
+      accessedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX pal_token_idx (portalTokenId),
+      INDEX pal_date_idx (accessedAt)
+    )`);
+
+    // --- Dispatch Planner (WS-DC-001) ---
+    await ensureTable("dispatch_planner_slots", `CREATE TABLE dispatch_planner_slots (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      companyId INT NOT NULL,
+      date DATE NOT NULL,
+      driverId INT NOT NULL,
+      slotIndex INT NOT NULL DEFAULT 0,
+      loadId INT DEFAULT NULL,
+      status ENUM('available','assigned','completed','cancelled') DEFAULT 'available',
+      assignedAt TIMESTAMP NULL DEFAULT NULL,
+      assignedBy INT DEFAULT NULL,
+      notes TEXT DEFAULT NULL,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_slot (companyId, date, driverId, slotIndex),
+      INDEX dps_company_date_idx (companyId, date),
+      INDEX dps_driver_idx (driverId, date),
+      INDEX dps_load_idx (loadId),
+      INDEX dps_status_idx (status)
+    )`);
+
     console.log("[SchemaSync] Done.");
   } catch (err: any) {
     console.warn("[SchemaSync] Non-fatal error:", err?.message?.slice(0, 200));

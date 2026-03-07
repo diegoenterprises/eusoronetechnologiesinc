@@ -863,6 +863,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
     updateField("isWR", !!material.isWR);
     updateField("placardName", material.placardName || "");
     updateField("spectraVerified", true);
+    updateField("hazardClassNumber", material.hazardClass || "");
+    if (!formData.properShippingName) updateField("properShippingName", material.name || "");
     setShowSuggestions(false);
     setShowUNSuggestions(false);
     // Auto-recalculate weight from new product density
@@ -1159,7 +1161,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Hazmat Classification</label>
-                  <Select value={formData.hazmatClass || ""} onValueChange={(v: any) => updateField("hazmatClass", v)}>
+                  <Select value={formData.hazmatClass || ""} onValueChange={(v: any) => { updateField("hazmatClass", v); updateField("hazardClassNumber", v); }}>
                     <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg"><SelectValue placeholder="Select class" /></SelectTrigger>
                     <SelectContent>{getClassesForTrailer(formData.trailerType).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                   </Select>
@@ -1220,11 +1222,6 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                         <label className="text-xs text-slate-400 mb-1 block">Technical Name (if N.O.S.)</label>
                         <Input value={formData.technicalName || ""} onChange={(e: any) => updateField("technicalName", e.target.value)}
                           placeholder="e.g., Contains ethanol, methanol" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
-                      </div>
-                      <div>
-                        <label className="text-xs text-slate-400 mb-1 block">Hazard Class Number</label>
-                        <Input value={formData.hazardClassNumber || ""} onChange={(e: any) => updateField("hazardClassNumber", e.target.value)}
-                          placeholder="e.g., 3" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
                       </div>
                       <div>
                         <label className="text-xs text-slate-400 mb-1 block">Emergency Response # (ERG Guide)</label>
@@ -2548,7 +2545,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     </div>
                     <div className="text-center">
                       <p className="text-[10px] text-slate-500 uppercase">Market</p>
-                      <p className={`text-lg font-bold ${mlRatePrediction.data.marketCondition === "SELLER" ? "text-red-400" : mlRatePrediction.data.marketCondition === "BUYER" ? "text-green-400" : "text-yellow-400"}`}>{mlRatePrediction.data.marketCondition}</p>
+                      <p className={`text-lg font-bold ${mlRatePrediction.data.marketCondition === "SELLER" ? "text-red-400" : mlRatePrediction.data.marketCondition === "BUYER" ? "text-green-400" : "text-yellow-400"}`}>{mlRatePrediction.data.marketCondition === "BUYER" ? "Buyer's" : mlRatePrediction.data.marketCondition === "SELLER" ? "Seller's" : "Balanced"}</p>
                       <p className="text-[10px] text-slate-500">${mlRatePrediction.data.priceRange.low.toLocaleString()} - ${mlRatePrediction.data.priceRange.high.toLocaleString()}</p>
                     </div>
                   </div>
@@ -2828,7 +2825,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] text-purple-400 font-semibold">ML Spot: ${hz.ml.spotRate?.toLocaleString()}</span>
                             <span className="text-[10px] text-slate-400">{hz.ml.confidence}% conf</span>
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${hz.ml.marketCondition === "SELLER" ? "bg-red-500/15 text-red-400" : hz.ml.marketCondition === "BUYER" ? "bg-green-500/15 text-green-400" : "bg-yellow-500/15 text-yellow-400"}`}>{hz.ml.marketCondition}</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${hz.ml.marketCondition === "SELLER" ? "bg-red-500/15 text-red-400" : hz.ml.marketCondition === "BUYER" ? "bg-green-500/15 text-green-400" : "bg-yellow-500/15 text-yellow-400"}`}>{hz.ml.marketCondition === "BUYER" ? "Buyer's" : hz.ml.marketCondition === "SELLER" ? "Seller's" : "Balanced"}</span>
                           </div>
                           {hz.ml.eta && <p className="text-[10px] text-slate-400 mt-0.5 text-center">ML Transit: {hz.ml.eta.days}d ({hz.ml.eta.hours}h) / {hz.ml.eta.riskLevel} risk</p>}
                         </div>

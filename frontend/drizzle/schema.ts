@@ -17,7 +17,7 @@ import {
   unique,
   uniqueIndex,
 } from "drizzle-orm/mysql-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 /**
  * ENTERPRISE-GRADE DATABASE SCHEMA FOR EUSOTRIP PLATFORM
@@ -7418,6 +7418,37 @@ export type DispatchActionHistoryItem = typeof dispatchActionHistory.$inferSelec
 export type InsertDispatchActionHistoryItem = typeof dispatchActionHistory.$inferInsert;
 
 // ============================================================================
+// DISPATCH PLANNER SLOTS — WS-DC-001 Drag-and-Drop Planning Board
+// ============================================================================
+
+export const dispatchPlannerSlots = mysqlTable(
+  "dispatch_planner_slots",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    date: date("date").notNull(),
+    driverId: int("driverId").notNull(),
+    slotIndex: int("slotIndex").notNull().default(0),
+    loadId: int("loadId"),
+    status: mysqlEnum("status", ["available", "assigned", "completed", "cancelled"]).default("available"),
+    assignedAt: timestamp("assignedAt"),
+    assignedBy: int("assignedBy"),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyDateIdx: index("dps_company_date_idx").on(table.companyId, table.date),
+    driverIdx: index("dps_driver_idx").on(table.driverId, table.date),
+    loadIdx: index("dps_load_idx").on(table.loadId),
+    statusIdx: index("dps_status_idx").on(table.status),
+  })
+);
+
+export type DispatchPlannerSlot = typeof dispatchPlannerSlots.$inferSelect;
+export type InsertDispatchPlannerSlot = typeof dispatchPlannerSlots.$inferInsert;
+
+// ============================================================================
 // PLATFORM FEES — Phase 4 financial chain
 // ============================================================================
 
@@ -7444,4 +7475,536 @@ export const platformFees = mysqlTable(
 
 export type PlatformFee = typeof platformFees.$inferSelect;
 export type InsertPlatformFee = typeof platformFees.$inferInsert;
+
+// ============================================================================
+// SETTLEMENT BATCHES — WS-DC-003 3-Level Settlement Batching
+// ============================================================================
+
+export const settlementBatches = mysqlTable(
+  "settlement_batches",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    batchNumber: varchar("batchNumber", { length: 50 }).notNull().unique(),
+    companyId: int("companyId").notNull(),
+    batchType: mysqlEnum("batchType", ["shipper_payable", "carrier_receivable", "driver_payable"]).notNull(),
+    periodStart: date("periodStart").notNull(),
+    periodEnd: date("periodEnd").notNull(),
+    status: mysqlEnum("status", ["draft", "pending_approval", "approved", "processing", "paid", "failed", "disputed"]).default("draft"),
+    totalLoads: int("totalLoads").default(0),
+    subtotalAmount: decimal("subtotalAmount", { precision: 12, scale: 2 }).default("0.00"),
+    fscAmount: decimal("fscAmount", { precision: 12, scale: 2 }).default("0.00"),
+    accessorialAmount: decimal("accessorialAmount", { precision: 12, scale: 2 }).default("0.00"),
+    deductionAmount: decimal("deductionAmount", { precision: 12, scale: 2 }).default("0.00"),
+    totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).default("0.00"),
+    approvedBy: int("approvedBy"),
+    approvedAt: timestamp("approvedAt"),
+    paidAt: timestamp("paidAt"),
+    stripePaymentId: varchar("stripePaymentId", { length: 255 }),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("sb_company_idx").on(table.companyId),
+    statusIdx: index("sb_status_idx").on(table.status),
+    periodIdx: index("sb_period_idx").on(table.periodStart, table.periodEnd),
+    typeIdx: index("sb_type_idx").on(table.batchType),
+  })
+);
+
+export type SettlementBatch = typeof settlementBatches.$inferSelect;
+export type InsertSettlementBatch = typeof settlementBatches.$inferInsert;
+
+export const settlementBatchItems = mysqlTable(
+  "settlement_batch_items",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    batchId: int("batchId").notNull(),
+    settlementId: int("settlementId").notNull(),
+    loadId: int("loadId").notNull(),
+    loadNumber: varchar("loadNumber", { length: 50 }),
+    pickupDate: date("pickupDate"),
+    deliveryDate: date("deliveryDate"),
+    lineAmount: decimal("lineAmount", { precision: 12, scale: 2 }).notNull().default("0.00"),
+    fscAmount: decimal("fscAmount", { precision: 12, scale: 2 }).default("0.00"),
+    accessorialAmount: decimal("accessorialAmount", { precision: 12, scale: 2 }).default("0.00"),
+    deductions: decimal("deductions", { precision: 12, scale: 2 }).default("0.00"),
+    netAmount: decimal("netAmount", { precision: 12, scale: 2 }).notNull().default("0.00"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    batchIdx: index("sbi_batch_idx").on(table.batchId),
+    settlementIdx: index("sbi_settlement_idx").on(table.settlementId),
+    loadIdx: index("sbi_load_idx").on(table.loadId),
+  })
+);
+
+export type SettlementBatchItem = typeof settlementBatchItems.$inferSelect;
+export type InsertSettlementBatchItem = typeof settlementBatchItems.$inferInsert;
+
+// ============================================================================
+// ALLOCATION TRACKER — WS-DC-002 Barrels/Day Contract Fulfillment
+// ============================================================================
+
+export const allocationContracts = mysqlTable(
+  "allocation_contracts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    shipperId: int("shipperId").notNull(),
+    contractName: varchar("contractName", { length: 255 }).notNull(),
+    buyerName: varchar("buyerName", { length: 255 }),
+    originTerminalId: int("originTerminalId").notNull(),
+    destinationTerminalId: int("destinationTerminalId").notNull(),
+    product: varchar("product", { length: 100 }).notNull(),
+    dailyNominationBbl: decimal("dailyNominationBbl", { precision: 10, scale: 2 }).notNull(),
+    effectiveDate: date("effectiveDate").notNull(),
+    expirationDate: date("expirationDate").notNull(),
+    ratePerBbl: decimal("ratePerBbl", { precision: 10, scale: 4 }),
+    status: mysqlEnum("status", ["active", "paused", "expired", "cancelled"]).default("active"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("ac_company_idx").on(table.companyId),
+    shipperIdx: index("ac_shipper_idx").on(table.shipperId),
+    terminalIdx: index("ac_terminal_idx").on(table.originTerminalId, table.destinationTerminalId),
+    statusIdx: index("ac_status_idx").on(table.status),
+  })
+);
+
+export type AllocationContract = typeof allocationContracts.$inferSelect;
+export type InsertAllocationContract = typeof allocationContracts.$inferInsert;
+
+export const allocationDailyTracking = mysqlTable(
+  "allocation_daily_tracking",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    allocationContractId: int("allocationContractId").notNull(),
+    trackingDate: date("trackingDate").notNull(),
+    nominatedBbl: decimal("nominatedBbl", { precision: 10, scale: 2 }).notNull(),
+    loadedBbl: decimal("loadedBbl", { precision: 10, scale: 2 }).default("0.00"),
+    deliveredBbl: decimal("deliveredBbl", { precision: 10, scale: 2 }).default("0.00"),
+    loadsCreated: int("loadsCreated").default(0),
+    loadsCompleted: int("loadsCompleted").default(0),
+    status: mysqlEnum("status", ["pending", "on_track", "behind", "ahead", "completed"]).default("pending"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    contractDateIdx: index("adt_contract_date_idx").on(table.allocationContractId, table.trackingDate),
+    dateIdx: index("adt_date_idx").on(table.trackingDate),
+    statusIdx: index("adt_status_idx").on(table.status),
+  })
+);
+
+export type AllocationDailyTracking = typeof allocationDailyTracking.$inferSelect;
+export type InsertAllocationDailyTracking = typeof allocationDailyTracking.$inferInsert;
+
+// ============================================================================
+// BULK IMPORT — WS-DC-006 CSV Bulk Load Import
+// ============================================================================
+
+export const bulkImportJobs = mysqlTable(
+  "bulk_import_jobs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    uploadedBy: int("uploadedBy").notNull(),
+    fileName: varchar("fileName", { length: 255 }).notNull(),
+    totalRows: int("totalRows").notNull().default(0),
+    successCount: int("successCount").default(0),
+    failCount: int("failCount").default(0),
+    status: mysqlEnum("status", ["uploaded", "validating", "validated", "importing", "completed", "failed"]).default("uploaded"),
+    validationErrors: json("validationErrors").$type<Record<string, string[]>>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    completedAt: timestamp("completedAt"),
+  },
+  (table) => ({
+    companyIdx: index("bij_company_idx").on(table.companyId),
+    statusIdx: index("bij_status_idx").on(table.status),
+    uploadedByIdx: index("bij_uploaded_by_idx").on(table.uploadedBy),
+  })
+);
+
+export type BulkImportJob = typeof bulkImportJobs.$inferSelect;
+export type InsertBulkImportJob = typeof bulkImportJobs.$inferInsert;
+
+export const bulkImportRows = mysqlTable(
+  "bulk_import_rows",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    jobId: int("jobId").notNull(),
+    rowNumber: int("rowNumber").notNull(),
+    rawData: json("rawData").$type<Record<string, any>>().notNull(),
+    loadId: int("loadId"),
+    status: mysqlEnum("status", ["pending", "valid", "invalid", "created", "failed"]).default("pending"),
+    errors: json("errors").$type<string[]>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    jobIdx: index("bir_job_idx").on(table.jobId),
+    loadIdx: index("bir_load_idx").on(table.loadId),
+    statusIdx: index("bir_status_idx").on(table.status),
+  })
+);
+
+export type BulkImportRow = typeof bulkImportRows.$inferSelect;
+export type InsertBulkImportRow = typeof bulkImportRows.$inferInsert;
+
+// ============================================================================
+// PRICEBOOK — WS-DC-004 Rate Sheets with Cascading Lookup
+// ============================================================================
+
+export const pricebookEntries = mysqlTable(
+  "pricebook_entries",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    entryName: varchar("entryName", { length: 255 }).notNull(),
+    originCity: varchar("originCity", { length: 100 }),
+    originState: varchar("originState", { length: 2 }),
+    originTerminalId: int("originTerminalId"),
+    destinationCity: varchar("destinationCity", { length: 100 }),
+    destinationState: varchar("destinationState", { length: 2 }),
+    destinationTerminalId: int("destinationTerminalId"),
+    cargoType: varchar("cargoType", { length: 100 }),
+    hazmatClass: varchar("hazmatClass", { length: 50 }),
+    rateType: mysqlEnum("rateType", ["per_mile", "flat", "per_barrel", "per_gallon", "per_ton"]).notNull(),
+    rate: decimal("rate", { precision: 12, scale: 4 }).notNull(),
+    fscIncluded: tinyint("fscIncluded").default(0),
+    fscMethod: varchar("fscMethod", { length: 50 }),
+    fscValue: decimal("fscValue", { precision: 10, scale: 4 }),
+    minimumCharge: decimal("minimumCharge", { precision: 12, scale: 2 }),
+    customerCompanyId: int("customerCompanyId"),
+    effectiveDate: date("effectiveDate").notNull(),
+    expirationDate: date("expirationDate"),
+    isActive: tinyint("isActive").default(1),
+    createdBy: int("createdBy").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("pbe_company_idx").on(table.companyId),
+    originTerminalIdx: index("pbe_origin_terminal_idx").on(table.originTerminalId),
+    destTerminalIdx: index("pbe_dest_terminal_idx").on(table.destinationTerminalId),
+    customerIdx: index("pbe_customer_idx").on(table.customerCompanyId),
+    activeIdx: index("pbe_active_idx").on(table.isActive, table.effectiveDate),
+    lookupIdx: index("pbe_lookup_idx").on(table.companyId, table.originTerminalId, table.destinationTerminalId, table.cargoType, table.isActive),
+  })
+);
+
+export type PricebookEntry = typeof pricebookEntries.$inferSelect;
+export type InsertPricebookEntry = typeof pricebookEntries.$inferInsert;
+
+export const pricebookHistory = mysqlTable(
+  "pricebook_history",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    pricebookEntryId: int("pricebookEntryId").notNull(),
+    previousRate: decimal("previousRate", { precision: 12, scale: 4 }),
+    newRate: decimal("newRate", { precision: 12, scale: 4 }),
+    changedBy: int("changedBy").notNull(),
+    changedAt: timestamp("changedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    entryIdx: index("pbh_entry_idx").on(table.pricebookEntryId),
+    dateIdx: index("pbh_date_idx").on(table.changedAt),
+  })
+);
+
+export type PricebookHistoryRecord = typeof pricebookHistory.$inferSelect;
+export type InsertPricebookHistory = typeof pricebookHistory.$inferInsert;
+
+// ============================================================================
+// FSC ENGINE — WS-DC-005 Per-Contract Fuel Surcharge
+// ============================================================================
+
+export const fscSchedules = mysqlTable(
+  "fsc_schedules",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    scheduleName: varchar("scheduleName", { length: 255 }).notNull(),
+    basePrice: decimal("basePrice", { precision: 10, scale: 4 }),
+    method: mysqlEnum("method", ["cpm", "percentage", "table"]).notNull(),
+    cpmRate: decimal("cpmRate", { precision: 10, scale: 4 }),
+    percentageRate: decimal("percentageRate", { precision: 5, scale: 2 }),
+    paddRegion: mysqlEnum("paddRegion", ["1A", "1B", "1C", "2", "3", "4", "5"]).notNull(),
+    fuelType: varchar("fuelType", { length: 50 }).default("diesel"),
+    updateFrequency: varchar("updateFrequency", { length: 50 }).default("weekly"),
+    lastPaddPrice: decimal("lastPaddPrice", { precision: 10, scale: 4 }),
+    lastUpdateAt: timestamp("lastUpdateAt"),
+    isActive: tinyint("isActive").default(1),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("fsc_company_idx").on(table.companyId),
+    activeIdx: index("fsc_active_idx").on(table.isActive),
+    paddIdx: index("fsc_padd_idx").on(table.paddRegion),
+  })
+);
+
+export type FscSchedule = typeof fscSchedules.$inferSelect;
+export type InsertFscSchedule = typeof fscSchedules.$inferInsert;
+
+export const fscLookupTable = mysqlTable(
+  "fsc_lookup_table",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    scheduleId: int("scheduleId").notNull(),
+    fuelPriceMin: decimal("fuelPriceMin", { precision: 10, scale: 4 }).notNull(),
+    fuelPriceMax: decimal("fuelPriceMax", { precision: 10, scale: 4 }).notNull(),
+    surchargeAmount: decimal("surchargeAmount", { precision: 10, scale: 4 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    scheduleIdx: index("flt_schedule_idx").on(table.scheduleId),
+  })
+);
+
+export type FscLookupEntry = typeof fscLookupTable.$inferSelect;
+export type InsertFscLookupEntry = typeof fscLookupTable.$inferInsert;
+
+export const fscHistory = mysqlTable(
+  "fsc_history",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    scheduleId: int("scheduleId").notNull(),
+    paddPrice: decimal("paddPrice", { precision: 10, scale: 4 }).notNull(),
+    calculatedFsc: decimal("calculatedFsc", { precision: 10, scale: 4 }).notNull(),
+    appliedAt: timestamp("appliedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    scheduleIdx: index("fsh_schedule_idx").on(table.scheduleId, table.appliedAt),
+  })
+);
+
+export type FscHistoryRecord = typeof fscHistory.$inferSelect;
+export type InsertFscHistory = typeof fscHistory.$inferInsert;
+
+// ============================================================================
+// CUSTOMER PORTAL — WS-DC-007 Read-Only Customer Portal
+// ============================================================================
+
+export const portalAccessTokens = mysqlTable(
+  "portal_access_tokens",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    issuedBy: int("issuedBy").notNull(),
+    customerName: varchar("customerName", { length: 255 }).notNull(),
+    customerEmail: varchar("customerEmail", { length: 255 }),
+    accessToken: varchar("accessToken", { length: 64 }).notNull(),
+    permissions: json("permissions").$type<Record<string, string>>(),
+    expiresAt: timestamp("expiresAt").notNull(),
+    lastAccessAt: timestamp("lastAccessAt"),
+    isActive: tinyint("isActive").default(1),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("pat_company_idx").on(table.companyId),
+    activeIdx: index("pat_active_idx").on(table.isActive, table.expiresAt),
+  })
+);
+
+export type PortalAccessToken = typeof portalAccessTokens.$inferSelect;
+export type InsertPortalAccessToken = typeof portalAccessTokens.$inferInsert;
+
+export const portalLoadLinks = mysqlTable(
+  "portal_load_links",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    portalTokenId: int("portalTokenId").notNull(),
+    loadId: int("loadId").notNull(),
+    linkedAt: timestamp("linkedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    tokenIdx: index("pll_token_idx").on(table.portalTokenId),
+    loadIdx: index("pll_load_idx").on(table.loadId),
+  })
+);
+
+export type PortalLoadLink = typeof portalLoadLinks.$inferSelect;
+export type InsertPortalLoadLink = typeof portalLoadLinks.$inferInsert;
+
+export const portalAuditLog = mysqlTable(
+  "portal_audit_log",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    portalTokenId: int("portalTokenId").notNull(),
+    action: varchar("action", { length: 100 }).notNull(),
+    resourceType: varchar("resourceType", { length: 100 }),
+    resourceId: int("resourceId"),
+    accessedAt: timestamp("accessedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    tokenIdx: index("pal_token_idx").on(table.portalTokenId),
+    dateIdx: index("pal_date_idx").on(table.accessedAt),
+  })
+);
+
+export type PortalAuditLogEntry = typeof portalAuditLog.$inferSelect;
+export type InsertPortalAuditLog = typeof portalAuditLog.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QPilotOS Adaptation — WS-QP-001 through WS-QP-006
+// ═══════════════════════════════════════════════════════════════════════════
+
+// WS-QP-001: HRRN Dispatch Queue
+export const dispatchQueuePriorities = mysqlTable("dispatch_queue_priorities", {
+  id: int("id").autoincrement().primaryKey(),
+  loadId: int("loadId").notNull(),
+  companyId: int("companyId").notNull(),
+  enteredQueueAt: datetime("enteredQueueAt").notNull().default(sql`NOW()`),
+  estimatedServiceMinutes: int("estimatedServiceMinutes").notNull().default(120),
+  basePriority: decimal("basePriority", { precision: 8, scale: 4 }).notNull().default("1.0"),
+  currentHrrnScore: decimal("currentHrrnScore", { precision: 10, scale: 4 }).notNull().default("1.0"),
+  lastRecalculatedAt: datetime("lastRecalculatedAt").notNull().default(sql`NOW()`),
+  constraintFlags: json("constraintFlags"),
+  status: mysqlEnum("status", ["queued", "scheduling", "assigned", "expired"]).notNull().default("queued"),
+  assignedDriverId: int("assignedDriverId"),
+  assignedAt: datetime("assignedAt"),
+});
+
+// WS-QP-002: Resource Pre-Analysis
+export const resourcePreanalysis = mysqlTable("resource_preanalysis", {
+  id: int("id").autoincrement().primaryKey(),
+  loadId: int("loadId").notNull(),
+  companyId: int("companyId").notNull(),
+  analyzedAt: datetime("analyzedAt").notNull().default(sql`NOW()`),
+  verdict: mysqlEnum("verdict", ["can_dispatch", "partial_match", "cannot_dispatch"]).notNull(),
+  verdictReason: text("verdictReason").notNull(),
+  requiredResources: json("requiredResources").notNull(),
+  availableResources: json("availableResources").notNull(),
+  gapAnalysis: json("gapAnalysis"),
+  matchedDriverIds: json("matchedDriverIds"),
+  estimatedDispatchReady: datetime("estimatedDispatchReady"),
+  expiresAt: datetime("expiresAt").notNull(),
+});
+
+export const resourceCapacitySnapshot = mysqlTable("resource_capacity_snapshot", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  snapshotAt: datetime("snapshotAt").notNull().default(sql`NOW()`),
+  totalDrivers: int("totalDrivers").notNull().default(0),
+  availableDrivers: int("availableDrivers").notNull().default(0),
+  hazmatEndorsedDrivers: int("hazmatEndorsedDrivers").notNull().default(0),
+  twicCardDrivers: int("twicCardDrivers").notNull().default(0),
+  avgHosRemaining: decimal("avgHosRemaining", { precision: 8, scale: 2 }).notNull().default("0"),
+  equipmentCounts: json("equipmentCounts").notNull(),
+  activePermits: json("activePermits").notNull(),
+  escortAvailable: int("escortAvailable").notNull().default(0),
+});
+
+// WS-QP-003: Task Decomposition
+export const loadAnalysisTasks = mysqlTable("load_analysis_tasks", {
+  id: int("id").autoincrement().primaryKey(),
+  loadId: int("loadId").notNull(),
+  companyId: int("companyId").notNull(),
+  parentTaskId: int("parentTaskId"),
+  taskType: mysqlEnum("taskType", [
+    "hazmat_validation", "rate_prediction", "eta_estimation",
+    "carrier_matching", "route_optimization", "compliance_check",
+    "equipment_validation", "permit_check", "escort_check", "insurance_check",
+    "aggregation",
+  ]).notNull(),
+  status: mysqlEnum("status", ["pending", "running", "completed", "failed", "skipped"]).notNull().default("pending"),
+  priority: int("priority").notNull().default(5),
+  inputData: json("inputData"),
+  outputData: json("outputData"),
+  startedAt: datetime("startedAt"),
+  completedAt: datetime("completedAt"),
+  durationMs: int("durationMs"),
+  errorMessage: text("errorMessage"),
+});
+
+export const loadAnalysisResults = mysqlTable("load_analysis_results", {
+  id: int("id").autoincrement().primaryKey(),
+  loadId: int("loadId").notNull(),
+  companyId: int("companyId").notNull(),
+  aggregatedAt: datetime("aggregatedAt").notNull().default(sql`NOW()`),
+  overallScore: decimal("overallScore", { precision: 5, scale: 2 }).notNull().default("0"),
+  rateEstimate: decimal("rateEstimate", { precision: 10, scale: 2 }),
+  etaMinutes: int("etaMinutes"),
+  topCarriers: json("topCarriers"),
+  complianceStatus: mysqlEnum("complianceStatus", ["pass", "warn", "fail"]).notNull().default("pass"),
+  complianceIssues: json("complianceIssues"),
+  routeRecommendation: json("routeRecommendation"),
+  resourceVerdict: varchar("resourceVerdict", { length: 20 }),
+  fullReport: json("fullReport").notNull(),
+  mongoDocId: varchar("mongoDocId", { length: 64 }),
+});
+
+// WS-QP-005: Resource Broadcasts
+export const resourceBroadcastSubscriptions = mysqlTable("resource_broadcast_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  companyId: int("companyId").notNull(),
+  resourceType: mysqlEnum("resourceType", [
+    "driver_availability", "hos_warning", "equipment_status",
+    "permit_expiry", "certification_expiry", "twic_expiry", "insurance_expiry",
+    "capacity_alert", "maintenance_due",
+  ]).notNull(),
+  threshold: json("threshold"),
+  enabled: boolean("enabled").notNull().default(true),
+  createdAt: datetime("createdAt").notNull().default(sql`NOW()`),
+});
+
+export const resourceBroadcastLog = mysqlTable("resource_broadcast_log", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  broadcastType: varchar("broadcastType", { length: 50 }).notNull(),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).notNull(),
+  message: text("message").notNull(),
+  payload: json("payload"),
+  recipientCount: int("recipientCount").notNull().default(0),
+  broadcastAt: datetime("broadcastAt").notNull().default(sql`NOW()`),
+});
+
+// WS-QP-006: Multi-Pass Optimization
+export const optimizationRuns = mysqlTable("optimization_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  loadId: int("loadId").notNull(),
+  companyId: int("companyId").notNull(),
+  triggerType: mysqlEnum("triggerType", ["auto", "manual", "re_optimize"]).notNull().default("auto"),
+  status: mysqlEnum("status", ["running", "completed", "failed", "cancelled"]).notNull().default("running"),
+  totalPasses: int("totalPasses").notNull().default(6),
+  completedPasses: int("completedPasses").notNull().default(0),
+  currentPass: varchar("currentPass", { length: 50 }),
+  startedAt: datetime("startedAt").notNull().default(sql`NOW()`),
+  completedAt: datetime("completedAt"),
+  totalDurationMs: int("totalDurationMs"),
+  finalScore: decimal("finalScore", { precision: 5, scale: 2 }),
+});
+
+export const optimizationPassResults = mysqlTable("optimization_pass_results", {
+  id: int("id").autoincrement().primaryKey(),
+  runId: int("runId").notNull(),
+  passNumber: int("passNumber").notNull(),
+  passName: varchar("passName", { length: 50 }).notNull(),
+  inputSnapshot: json("inputSnapshot").notNull(),
+  outputSnapshot: json("outputSnapshot").notNull(),
+  improvementDelta: decimal("improvementDelta", { precision: 8, scale: 4 }),
+  durationMs: int("durationMs").notNull().default(0),
+  status: mysqlEnum("status", ["completed", "skipped", "failed"]).notNull().default("completed"),
+  notes: text("notes"),
+});
+
+export const lanePerformanceCache = mysqlTable("lane_performance_cache", {
+  id: int("id").autoincrement().primaryKey(),
+  originState: varchar("originState", { length: 2 }).notNull(),
+  destState: varchar("destState", { length: 2 }).notNull(),
+  equipmentType: varchar("equipmentType", { length: 30 }).notNull().default("flatbed"),
+  avgRate: decimal("avgRate", { precision: 10, scale: 2 }),
+  avgTransitHours: decimal("avgTransitHours", { precision: 6, scale: 2 }),
+  avgDetentionMinutes: int("avgDetentionMinutes"),
+  onTimePercentage: decimal("onTimePercentage", { precision: 5, scale: 2 }),
+  volumeLast30Days: int("volumeLast30Days").notNull().default(0),
+  topCarrierIds: json("topCarrierIds"),
+  lastUpdated: datetime("lastUpdated").notNull().default(sql`NOW()`),
+});
 

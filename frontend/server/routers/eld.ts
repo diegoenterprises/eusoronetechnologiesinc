@@ -467,6 +467,92 @@ export const eldRouter = router({
   }),
 
   // ════════════════════════════════════════════════════════════════
+  // 9b. connectProvider — Save ELD API key to integrationConnections
+  // ════════════════════════════════════════════════════════════════
+  connectProvider: protectedProcedure
+    .input(z.object({
+      providerSlug: z.string().min(1),
+      apiKey: z.string().min(1),
+      authType: z.string().default("bearer"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = ctx.user?.id || 0;
+      const companyId = ctx.user?.companyId || 0;
+      if (!companyId) throw new Error("No company associated with your account");
+      try {
+        const { integrationConnections } = await import("../../drizzle/schema");
+        // Upsert: if connection exists for this company+slug, update it
+        const existing = await db.select({ id: integrationConnections.id })
+          .from(integrationConnections)
+          .where(and(
+            eq(integrationConnections.companyId, companyId),
+            eq(integrationConnections.providerSlug, input.providerSlug),
+          ))
+          .limit(1);
+        if (existing.length > 0) {
+          await db.update(integrationConnections)
+            .set({
+              apiKey: input.apiKey,
+              authType: input.authType,
+              status: "connected",
+              lastConnectedAt: new Date(),
+              lastError: null,
+              errorCount: 0,
+            })
+            .where(eq(integrationConnections.id, existing[0].id));
+        } else {
+          await db.insert(integrationConnections).values({
+            companyId,
+            userId,
+            providerId: 0,
+            providerSlug: input.providerSlug,
+            authType: input.authType,
+            apiKey: input.apiKey,
+            status: "connected",
+            lastConnectedAt: new Date(),
+            syncEnabled: true,
+            syncDataTypes: ["gps", "hos", "dvir"],
+            connectedBy: userId,
+          });
+        }
+        // Clear service cache so next query picks up the new connection
+        const { eldService: svc } = await import("../services/eld");
+        svc.clearCache?.();
+        return { success: true, providerSlug: input.providerSlug };
+      } catch (e: any) {
+        console.error("[ELD] connectProvider error:", e);
+        throw new Error(`Failed to save connection: ${e.message}`);
+      }
+    }),
+
+  // ════════════════════════════════════════════════════════════════
+  // 9c. disconnectProvider — Remove an ELD connection
+  // ════════════════════════════════════════════════════════════════
+  disconnectProvider: protectedProcedure
+    .input(z.object({ providerSlug: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      try {
+        const { integrationConnections } = await import("../../drizzle/schema");
+        await db.update(integrationConnections)
+          .set({ status: "disconnected" })
+          .where(and(
+            eq(integrationConnections.companyId, companyId),
+            eq(integrationConnections.providerSlug, input.providerSlug),
+          ));
+        const { eldService: svc } = await import("../services/eld");
+        svc.clearCache?.();
+        return { success: true };
+      } catch (e: any) {
+        throw new Error(`Failed to disconnect: ${e.message}`);
+      }
+    }),
+
+  // ════════════════════════════════════════════════════════════════
   // 10. getFleetGPS — Multi-provider live GPS locations
   //     This is the universal endpoint that feeds the satellite map,
   //     fleet command center, active trip, and dispatch views.

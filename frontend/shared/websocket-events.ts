@@ -608,3 +608,40 @@ export interface WSAuthRequest {
   role: string;
   companyId?: string;
 }
+
+// ============================================================================
+// QPilotOS EVENTS — WS-QP-001 through WS-QP-006
+// ============================================================================
+export const QPILOTOS_EVENTS = {
+  // WS-QP-001: HRRN Dispatch Scheduler
+  HRRN_QUEUE_UPDATED: 'qpilot:hrrn:queue_updated',
+  HRRN_LOAD_ENQUEUED: 'qpilot:hrrn:load_enqueued',
+  HRRN_STARVATION_WARNING: 'qpilot:hrrn:starvation_warning',
+  HRRN_LOAD_ASSIGNED: 'qpilot:hrrn:load_assigned',
+
+  // WS-QP-002: Resource Pre-Analysis
+  PREANALYSIS_VERDICT: 'qpilot:preanalysis:verdict',
+  PREANALYSIS_CAPACITY_ALERT: 'qpilot:preanalysis:capacity_alert',
+  PREANALYSIS_SNAPSHOT: 'qpilot:preanalysis:snapshot',
+
+  // WS-QP-003: Task Decomposition
+  TASK_STARTED: 'qpilot:task:started',
+  TASK_PHASE_COMPLETE: 'qpilot:task:phase_complete',
+  TASK_COMPLETED: 'qpilot:task:completed',
+  TASK_FAILED: 'qpilot:task:failed',
+
+  // WS-QP-004: Dual-Storage
+  MONGO_SYNC: 'qpilot:mongo:sync',
+
+  // WS-QP-005: Resource Broadcasts
+  RESOURCE_ALERT: 'qpilot:resource:alert',
+  RESOURCE_HOS_WARNING: 'qpilot:resource:hos_warning',
+  RESOURCE_PERMIT_EXPIRY: 'qpilot:resource:permit_expiry',
+  RESOURCE_CAPACITY_LOW: 'qpilot:resource:capacity_low',
+
+  // WS-QP-006: Multi-Pass Optimization
+  OPTIMIZATION_STARTED: 'qpilot:optimization:started',
+  OPTIMIZATION_PASS_COMPLETE: 'qpilot:optimization:pass_complete',
+  OPTIMIZATION_COMPLETED: 'qpilot:optimization:completed',
+  OPTIMIZATION_FAILED: 'qpilot:optimization:failed',
+} as const;

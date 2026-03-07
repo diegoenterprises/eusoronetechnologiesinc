@@ -7,7 +7,144 @@ import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { adminProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { factoringInvoices, loads, users, companies } from "../../drizzle/schema";
+import { factoringInvoices, loads, users, companies, hzCarrierSafety } from "../../drizzle/schema";
+import { like } from "drizzle-orm";
+
+/**
+ * Platform-internal credit scoring algorithm.
+ * Computes a 300-850 score based on:
+ *   - FMCSA carrier safety data (if DOT/MC available)
+ *   - Platform payment history (loads delivered, factoring invoices paid)
+ *   - Company registration age
+ *   - Debtor payment behavior
+ * Returns score, rating (AAA-D), avgDaysToPay, yearsInBusiness, recommendation.
+ */
+async function computeCreditScore(db: any, entityName: string, mcNumber?: string | null, dotNumber?: string | null): Promise<{
+  creditScore: number;
+  creditRating: string;
+  avgDaysToPay: number | null;
+  yearsInBusiness: number | null;
+  publicRecords: number;
+  recommendation: "approve" | "review" | "decline";
+  resultData: Record<string, any>;
+}> {
+  let score = 550; // baseline
+  const factors: Record<string, any> = { source: "platform_internal", checkedAt: new Date().toISOString(), breakdown: {} };
+
+  // ── 1. FMCSA Safety Data (up to ±120 points) ──
+  let fmcsaData: any = null;
+  if (dotNumber) {
+    const [row] = await db.select().from(hzCarrierSafety).where(eq(hzCarrierSafety.dotNumber, dotNumber)).limit(1);
+    fmcsaData = row || null;
+  }
+  if (!fmcsaData && mcNumber) {
+    const [row] = await db.select().from(hzCarrierSafety).where(like(hzCarrierSafety.mcNumber, `%${mcNumber.replace(/\D/g, '')}%`)).limit(1);
+    fmcsaData = row || null;
+  }
+  if (fmcsaData) {
+    const rating = (fmcsaData.safetyRating || '').toLowerCase();
+    if (rating === 'satisfactory') score += 60;
+    else if (rating === 'conditional') score += 20;
+    else if (rating === 'unsatisfactory') score -= 80;
+    else score += 30; // rated but unknown category
+
+    // BASICs — penalize high scores
+    const basics = [
+      fmcsaData.unsafeDrivingScore, fmcsaData.hosComplianceScore, fmcsaData.driverFitnessScore,
+      fmcsaData.controlledSubstancesScore, fmcsaData.vehicleMaintenanceScore,
+      fmcsaData.hazmatComplianceScore, fmcsaData.crashIndicatorScore,
+    ].filter(Boolean).map(Number);
+    if (basics.length > 0) {
+      const maxBasic = Math.max(...basics);
+      const avgBasic = basics.reduce((a, b) => a + b, 0) / basics.length;
+      if (maxBasic >= 80) score -= 60;
+      else if (maxBasic >= 60) score -= 30;
+      else if (avgBasic < 30) score += 40;
+      else score += 10;
+    }
+    factors.breakdown.fmcsa = { found: true, safetyRating: fmcsaData.safetyRating, basicsCount: basics.length };
+  } else {
+    // No FMCSA data — slight penalty for unknown
+    score -= 20;
+    factors.breakdown.fmcsa = { found: false };
+  }
+
+  // ── 2. Platform Payment History (up to ±80 points) ──
+  let avgDaysToPay: number | null = null;
+  try {
+    // Check if entity appears as shipper in completed loads
+    const [loadStats] = await db.execute(
+      sql`SELECT COUNT(*) as total,
+            SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
+            MIN(createdAt) as firstLoad
+          FROM loads WHERE shipperName LIKE ${`%${entityName}%`} OR pickupCompany LIKE ${`%${entityName}%`}`
+    ) as any;
+    const ls = Array.isArray(loadStats) ? loadStats[0] : loadStats;
+    const totalLoads = Number(ls?.total || 0);
+    const deliveredLoads = Number(ls?.delivered || 0);
+    if (totalLoads > 0) {
+      const completionRate = deliveredLoads / totalLoads;
+      if (completionRate >= 0.95) score += 40;
+      else if (completionRate >= 0.8) score += 20;
+      else if (completionRate < 0.5) score -= 30;
+      factors.breakdown.platformLoads = { total: totalLoads, delivered: deliveredLoads, completionRate: Math.round(completionRate * 100) };
+    }
+
+    // Check factoring invoice payment speed
+    const [payStats] = await db.execute(
+      sql`SELECT COUNT(*) as total,
+            AVG(DATEDIFF(COALESCE(collectedAt, fundedAt, NOW()), submittedAt)) as avgDays,
+            SUM(CASE WHEN status IN ('collected', 'closed') THEN 1 ELSE 0 END) as paid,
+            SUM(CASE WHEN status IN ('chargedback', 'disputed', 'short_paid') THEN 1 ELSE 0 END) as problems
+          FROM factoring_invoices WHERE shipperName LIKE ${`%${entityName}%`}`
+    ) as any;
+    const ps = Array.isArray(payStats) ? payStats[0] : payStats;
+    const invoiceTotal = Number(ps?.total || 0);
+    if (invoiceTotal > 0) {
+      avgDaysToPay = Math.round(Number(ps?.avgDays || 30));
+      const problems = Number(ps?.problems || 0);
+      if (avgDaysToPay <= 15) score += 40;
+      else if (avgDaysToPay <= 30) score += 20;
+      else if (avgDaysToPay <= 45) score += 0;
+      else if (avgDaysToPay <= 60) score -= 20;
+      else score -= 40;
+      if (problems > 0) score -= Math.min(problems * 15, 60);
+      factors.breakdown.paymentHistory = { invoices: invoiceTotal, avgDaysToPay, problems };
+    }
+  } catch { /* tables may not have matching columns — graceful skip */ }
+
+  // ── 3. Company Age (up to +50 points) ──
+  let yearsInBusiness: number | null = null;
+  try {
+    const [comp] = await db.select({ createdAt: companies.createdAt }).from(companies)
+      .where(like(companies.name, `%${entityName}%`)).limit(1);
+    if (comp?.createdAt) {
+      yearsInBusiness = Math.max(0, Math.round((Date.now() - comp.createdAt.getTime()) / (365.25 * 86400000)));
+      if (yearsInBusiness >= 5) score += 50;
+      else if (yearsInBusiness >= 3) score += 35;
+      else if (yearsInBusiness >= 1) score += 15;
+      else score -= 10;
+      factors.breakdown.companyAge = { yearsInBusiness };
+    }
+  } catch {}
+
+  // ── Clamp score to 300-850 ──
+  score = Math.max(300, Math.min(850, score));
+
+  // ── Derive rating and recommendation ──
+  let creditRating: string;
+  let recommendation: "approve" | "review" | "decline";
+  if (score >= 750) { creditRating = "AAA"; recommendation = "approve"; }
+  else if (score >= 700) { creditRating = "AA"; recommendation = "approve"; }
+  else if (score >= 650) { creditRating = "A"; recommendation = "approve"; }
+  else if (score >= 600) { creditRating = "BBB"; recommendation = "review"; }
+  else if (score >= 550) { creditRating = "BB"; recommendation = "review"; }
+  else if (score >= 500) { creditRating = "B"; recommendation = "review"; }
+  else if (score >= 400) { creditRating = "C"; recommendation = "decline"; }
+  else { creditRating = "D"; recommendation = "decline"; }
+
+  return { creditScore: score, creditRating, avgDaysToPay, yearsInBusiness, publicRecords: 0, recommendation, resultData: factors };
+}
 
 const invoiceStatusSchema = z.enum([
   "submitted", "under_review", "approved", "funded", "collection",
@@ -236,28 +373,33 @@ export const factoringRouter = router({
       const { creditChecks } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const userId = Number(ctx.user?.id) || 0;
-      // Record credit check request — scores populated when credit bureau integration is configured
+      // Compute credit score using platform data
+      const scored = await computeCreditScore(db, input.customerName, input.mcNumber, null);
+      scored.resultData.address = input.customerAddress;
+      scored.resultData.taxId = input.taxId;
+      scored.resultData.requestedLimit = input.requestedLimit;
+
       const [result] = await db.insert(creditChecks).values({
         requestedBy: userId,
         entityName: input.customerName,
         entityType: "shipper",
         mcNumber: input.mcNumber || null,
         dotNumber: null,
-        creditScore: null,
-        creditRating: null,
-        avgDaysToPay: null,
-        yearsInBusiness: null,
-        publicRecords: null,
-        recommendation: "review" as any,
-        resultData: JSON.stringify({ source: "pending_credit_bureau", address: input.customerAddress, taxId: input.taxId, requestedLimit: input.requestedLimit }),
+        creditScore: scored.creditScore,
+        creditRating: scored.creditRating,
+        avgDaysToPay: scored.avgDaysToPay,
+        yearsInBusiness: scored.yearsInBusiness,
+        publicRecords: scored.publicRecords,
+        recommendation: scored.recommendation as any,
+        resultData: JSON.stringify(scored.resultData),
       }).$returningId();
       return {
         requestId: `credit_${result.id}`,
         customerName: input.customerName,
-        status: "pending",
-        score: null,
-        rating: null,
-        estimatedCompletion: new Date(Date.now() + 24 * 3600000).toISOString(),
+        status: "completed",
+        score: scored.creditScore,
+        rating: scored.creditRating,
+        recommendation: scored.recommendation,
         requestedBy: ctx.user?.id,
         requestedAt: new Date().toISOString(),
       };
@@ -675,30 +817,32 @@ export const factoringRouter = router({
 
       const userId = Number(ctx.user?.id) || 0;
 
-      // Record credit check request — scores populated when credit bureau (Ansonia, TranzAct) is integrated
+      // Compute credit score using platform data
+      const result = await computeCreditScore(db, input.entityName, input.mcNumber, input.dotNumber);
+
       await db.insert(creditChecks).values({
         requestedBy: userId,
         entityName: input.entityName,
         entityType: "shipper",
         mcNumber: input.mcNumber || null,
         dotNumber: input.dotNumber || null,
-        creditScore: null,
-        creditRating: null,
-        avgDaysToPay: null,
-        yearsInBusiness: null,
-        publicRecords: null,
-        recommendation: "review" as any,
-        resultData: JSON.stringify({ source: "pending_credit_bureau", checkedAt: new Date().toISOString() }),
+        creditScore: result.creditScore,
+        creditRating: result.creditRating,
+        avgDaysToPay: result.avgDaysToPay,
+        yearsInBusiness: result.yearsInBusiness,
+        publicRecords: result.publicRecords,
+        recommendation: result.recommendation as any,
+        resultData: JSON.stringify(result.resultData),
       });
 
       return {
         name: input.entityName,
-        score: null as number | null,
-        rating: null as string | null,
-        avgDaysToPay: null as number | null,
-        yearsInBusiness: null as number | null,
-        publicRecords: null as number | null,
-        recommendation: "pending" as string,
+        score: result.creditScore,
+        rating: result.creditRating,
+        avgDaysToPay: result.avgDaysToPay,
+        yearsInBusiness: result.yearsInBusiness,
+        publicRecords: result.publicRecords,
+        recommendation: result.recommendation,
       };
     }),
 

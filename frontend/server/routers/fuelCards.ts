@@ -15,10 +15,9 @@ export const fuelCardsRouter = router({
     if (!db) return [];
     try {
       const companyId = Number(ctx.user?.companyId) || 0;
-      let where = `companyId = ${companyId}`;
-      if (input?.status) where += ` AND status = '${input.status}'`;
+      const statusFilter = input?.status || null;
       const lim = input?.limit || 50;
-      const [rows] = await db.execute(sql.raw(`SELECT * FROM fuel_cards WHERE ${where} ORDER BY createdAt DESC LIMIT ${lim}`)) as any;
+      const [rows] = await db.execute(sql`SELECT * FROM fuel_cards WHERE companyId = ${companyId} AND (${statusFilter} IS NULL OR status = ${statusFilter}) ORDER BY createdAt DESC LIMIT ${lim}`) as any;
       return (rows || []).map((r: any) => ({
         id: String(r.id), cardNumber: `****${(r.cardNumber || '').slice(-4)}`, cardType: r.cardType,
         status: r.status, driverId: r.driverId, nameOnCard: r.nameOnCard,

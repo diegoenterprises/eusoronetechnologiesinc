@@ -22,6 +22,29 @@ import {
   CarrierSnapshot,
 } from "../services/carrierMonitor";
 
+// Safe query with timeout — prevents pool.query from hanging forever
+async function safeQuery(pool: any, sql: string, params: any[], timeoutMs = 8000): Promise<any[]> {
+  try {
+    return await Promise.race([
+      pool.query(sql, params).then((r: any) => r[0] || []),
+      new Promise<any[]>((_, reject) => setTimeout(() => reject(new Error(`Query timeout (${timeoutMs}ms)`)), timeoutMs)),
+    ]);
+  } catch (err: any) {
+    console.warn(`[fmcsaData] safeQuery timeout/error: ${err?.message}`);
+    return [];
+  }
+}
+
+// Timed SAFER API fetch — max 10s before returning null
+async function timedApiFetch(dotNumber: string, timeoutMs = 10000) {
+  try {
+    return await Promise.race([
+      fetchCarrierFromSaferApi(dotNumber),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ]);
+  } catch { return null; }
+}
+
 // Safe date formatter: MySQL returns DATE columns as JS Date objects which crash React
 const fmtDate = (d: any): string | null => {
   if (!d) return null;
@@ -63,7 +86,14 @@ export const fmcsaRouter = router({
     .input(z.object({ dotNumber: z.string() }))
     .query(async ({ input }) => {
       try {
-        const snap = await getCarrierSnapshot(input.dotNumber);
+        // 15s global timeout — never hang forever even if DB or API is stuck
+        const snap = await Promise.race([
+          getCarrierSnapshot(input.dotNumber),
+          new Promise<null>((resolve) => setTimeout(() => {
+            console.warn(`[fmcsaData.getSnapshot] Timeout for DOT# ${input.dotNumber}`);
+            resolve(null);
+          }, 15000)),
+        ]);
         if (!snap) return null;
         // Convert Date fields to strings so React doesn't crash on render
         return {
@@ -91,19 +121,13 @@ export const fmcsaRouter = router({
       const pool = getPool();
       if (!pool) return null;
       
-      let rows: any[] = [];
-      try {
-        const [dbRows]: any = await pool.query(
-          `SELECT * FROM fmcsa_sms_scores 
-           WHERE dot_number = ? 
-           ORDER BY run_date DESC 
-           LIMIT 12`,  // Last 12 months
-          [input.dotNumber]
-        );
-        rows = dbRows || [];
-      } catch (err: any) {
-        console.error(`[FMCSA] getSmsScores DB error:`, err?.message);
-      }
+      const rows = await safeQuery(pool,
+        `SELECT * FROM fmcsa_sms_scores 
+         WHERE dot_number = ? 
+         ORDER BY run_date DESC 
+         LIMIT 12`,
+        [input.dotNumber]
+      );
       
       if (rows.length > 0) {
         const latest = rows[0];
@@ -139,7 +163,7 @@ export const fmcsaRouter = router({
       }
       
       // Fallback: fetch BASIC scores from FMCSA SAFER API
-      const apiData = await fetchCarrierFromSaferApi(input.dotNumber);
+      const apiData = await timedApiFetch(input.dotNumber);
       if (!apiData || !apiData.basics || apiData.basics.length === 0) return null;
       
       const basicsMap: Record<string, { score: number | null; alert: boolean }> = {
@@ -198,7 +222,7 @@ export const fmcsaRouter = router({
       if (!pool) return [];
       
       try {
-        const [rows]: any = await pool.query(
+        const rows = await safeQuery(pool,
           `SELECT * FROM fmcsa_crashes 
            WHERE dot_number = ? 
            ORDER BY report_date DESC 
@@ -236,7 +260,7 @@ export const fmcsaRouter = router({
       if (!pool) return [];
       
       try {
-        const [rows]: any = await pool.query(
+        const rows = await safeQuery(pool,
           `SELECT * FROM fmcsa_inspections 
            WHERE dot_number = ? 
            ORDER BY inspection_date DESC 
@@ -277,7 +301,7 @@ export const fmcsaRouter = router({
       if (!pool) return [];
       
       try {
-        const [rows]: any = await pool.query(
+        const rows = await safeQuery(pool,
           `SELECT * FROM fmcsa_violations WHERE inspection_id = ?`,
           [input.inspectionId]
         );
@@ -308,28 +332,19 @@ export const fmcsaRouter = router({
       const pool = getPool();
       if (!pool) return { active: [], history: [], source: "none" as const };
       
-      let activeRows: any[] = [];
-      let historyRows: any[] = [];
-      try {
-        const [aRows]: any = await pool.query(
-          `SELECT * FROM fmcsa_insurance 
-           WHERE dot_number = ? AND is_active = TRUE
-           ORDER BY coverage_to DESC`,
-          [input.dotNumber]
-        );
-        activeRows = aRows || [];
-        
-        const [hRows]: any = await pool.query(
-          `SELECT * FROM fmcsa_insurance 
-           WHERE dot_number = ? AND is_active = FALSE
-           ORDER BY cancel_date DESC
-           LIMIT 20`,
-          [input.dotNumber]
-        );
-        historyRows = hRows || [];
-      } catch (err: any) {
-        console.error(`[FMCSA] getInsurance DB error:`, err?.message);
-      }
+      const activeRows = await safeQuery(pool,
+        `SELECT * FROM fmcsa_insurance 
+         WHERE dot_number = ? AND is_active = TRUE
+         ORDER BY coverage_to DESC`,
+        [input.dotNumber]
+      );
+      const historyRows = await safeQuery(pool,
+        `SELECT * FROM fmcsa_insurance 
+         WHERE dot_number = ? AND is_active = FALSE
+         ORDER BY cancel_date DESC
+         LIMIT 20`,
+        [input.dotNumber]
+      );
       
       const mapInsurance = (r: any) => ({
         type: r.insurance_type,
@@ -351,7 +366,7 @@ export const fmcsaRouter = router({
       }
       
       // Fallback: fetch from FMCSA SAFER API
-      const apiData = await fetchCarrierFromSaferApi(input.dotNumber);
+      const apiData = await timedApiFetch(input.dotNumber);
       if (!apiData) return { active: [], history: [], source: "none" as const };
       const c = apiData.carrier;
       const apiActive: any[] = [];
@@ -403,19 +418,13 @@ export const fmcsaRouter = router({
       const pool = getPool();
       if (!pool) return null;
       
-      let rows: any[] = [];
-      try {
-        const [dbRows]: any = await pool.query(
-          `SELECT * FROM fmcsa_authority 
-           WHERE dot_number = ?
-           ORDER BY fetched_at DESC
-           LIMIT 1`,
-          [input.dotNumber]
-        );
-        rows = dbRows || [];
-      } catch (err: any) {
-        console.error(`[FMCSA] getAuthority DB error:`, err?.message);
-      }
+      const rows = await safeQuery(pool,
+        `SELECT * FROM fmcsa_authority 
+         WHERE dot_number = ?
+         ORDER BY fetched_at DESC
+         LIMIT 1`,
+        [input.dotNumber]
+      );
       
       if (rows.length > 0) {
         const r = rows[0];
@@ -455,7 +464,7 @@ export const fmcsaRouter = router({
       }
       
       // Fallback: fetch from FMCSA SAFER API
-      const apiData = await fetchCarrierFromSaferApi(input.dotNumber);
+      const apiData = await timedApiFetch(input.dotNumber);
       if (!apiData) return null;
       const c = apiData.carrier;
       return {

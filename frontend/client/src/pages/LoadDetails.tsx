@@ -603,7 +603,7 @@ export default function LoadDetails() {
                 </div>
                 <div className="flex items-center gap-1 mt-1">
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${mlRatePrediction.data.marketCondition === "SELLER" ? "bg-red-500/15 text-red-400" : mlRatePrediction.data.marketCondition === "BUYER" ? "bg-green-500/15 text-green-400" : "bg-yellow-500/15 text-yellow-400"}`}>
-                    {mlRatePrediction.data.marketCondition}
+                    {mlRatePrediction.data.marketCondition === "BUYER" ? "Buyer's" : mlRatePrediction.data.marketCondition === "SELLER" ? "Seller's" : "Balanced"}
                   </span>
                   <span className="text-[10px] text-slate-500">{mlRatePrediction.data.confidence}% conf</span>
                 </div>

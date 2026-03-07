@@ -178,6 +178,19 @@ import { aiHealthRouter } from "./routers/aiHealth";
 import { documentVerificationRouter } from "./routers/documentVerification";
 import { cdlVerificationRouter } from "./routers/cdlVerification";
 import { taxReportingRouter } from "./routers/taxReporting";
+import { dispatchPlannerRouter } from "./routers/dispatchPlanner";
+import { settlementBatchingRouter } from "./routers/settlementBatching";
+import { allocationTrackerRouter } from "./routers/allocationTracker";
+import { bulkImportRouter } from "./routers/bulkImport";
+import { pricebookRouter } from "./routers/pricebook";
+import { fscEngineRouter } from "./routers/fscEngine";
+import { customerPortalRouter } from "./routers/customerPortal";
+import { hrrnSchedulerRouter } from "./routers/hrrnScheduler";
+import { resourcePreAnalysisRouter } from "./routers/resourcePreAnalysis";
+import { taskDecompositionRouter } from "./routers/taskDecomposition";
+import { dataStoreRouter } from "./routers/dataStore";
+import { resourceBroadcastsRouter } from "./routers/resourceBroadcasts";
+import { optimizationPipelineRouter } from "./routers/optimizationPipeline";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -889,6 +902,27 @@ export const appRouter = router({
   // Dispatch Role Operations
   dispatchRole: dispatchRoleRouter,
 
+  // Dispatch Planner — WS-DC-001 Drag-and-Drop Board
+  dispatchPlanner: dispatchPlannerRouter,
+
+  // Settlement Batching — WS-DC-003 3-Level Batching
+  settlementBatching: settlementBatchingRouter,
+
+  // Allocation Tracker — WS-DC-002 Barrels/Day
+  allocationTracker: allocationTrackerRouter,
+
+  // Bulk Load Import — WS-DC-006 CSV Import
+  bulkImport: bulkImportRouter,
+
+  // Pricebook — WS-DC-004 Rate Sheets
+  pricebook: pricebookRouter,
+
+  // FSC Engine — WS-DC-005 Fuel Surcharge
+  fscEngine: fscEngineRouter,
+
+  // Customer Portal — WS-DC-007 Read-Only Portal
+  customerPortal: customerPortalRouter,
+
   // Admin/Super Admin Operations
   admin: adminRouter,
 
@@ -1275,6 +1309,14 @@ export const appRouter = router({
 
   // P0: 1099 Tax Reporting — IRS 1099-NEC generation for contractors
   taxReporting: taxReportingRouter,
+
+  // QPilotOS Adaptation — WS-QP-001 through WS-QP-006
+  hrrnScheduler: hrrnSchedulerRouter,
+  resourcePreAnalysis: resourcePreAnalysisRouter,
+  taskDecomposition: taskDecompositionRouter,
+  dataStore: dataStoreRouter,
+  resourceBroadcasts: resourceBroadcastsRouter,
+  optimizationPipeline: optimizationPipelineRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,

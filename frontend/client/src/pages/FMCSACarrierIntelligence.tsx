@@ -760,31 +760,31 @@ export default function FMCSACarrierIntelligence() {
   // Carrier detail queries (only when a DOT is selected)
   const snapshot = trpc.fmcsaData.getSnapshot.useQuery(
     { dotNumber: selectedDot! },
-    { enabled: !!selectedDot }
+    { enabled: !!selectedDot, retry: 1, staleTime: 60_000 }
   );
   const smsScores = trpc.fmcsaData.getSmsScores.useQuery(
     { dotNumber: selectedDot! },
-    { enabled: !!selectedDot && (activeTab === "overview" || activeTab === "safety") }
+    { enabled: !!selectedDot && (activeTab === "overview" || activeTab === "safety"), retry: 1, staleTime: 60_000 }
   );
   const authority = trpc.fmcsaData.getAuthority.useQuery(
     { dotNumber: selectedDot! },
-    { enabled: !!selectedDot && (activeTab === "overview" || activeTab === "authority") }
+    { enabled: !!selectedDot && (activeTab === "overview" || activeTab === "authority"), retry: 1, staleTime: 60_000 }
   );
   const insurance = trpc.fmcsaData.getInsurance.useQuery(
     { dotNumber: selectedDot! },
-    { enabled: !!selectedDot && (activeTab === "overview" || activeTab === "insurance") }
+    { enabled: !!selectedDot && (activeTab === "overview" || activeTab === "insurance"), retry: 1, staleTime: 60_000 }
   );
   const crashes = trpc.fmcsaData.getCrashes.useQuery(
     { dotNumber: selectedDot!, limit: 50 },
-    { enabled: !!selectedDot && activeTab === "crashes" }
+    { enabled: !!selectedDot && activeTab === "crashes", retry: 1, staleTime: 60_000 }
   );
   const inspections = trpc.fmcsaData.getInspections.useQuery(
     { dotNumber: selectedDot!, limit: 50 },
-    { enabled: !!selectedDot && activeTab === "inspections" }
+    { enabled: !!selectedDot && activeTab === "inspections", retry: 1, staleTime: 60_000 }
   );
   const verification = trpc.fmcsaData.verifyCarrierForLoad.useQuery(
     { dotNumber: selectedDot!, loadType: "general" },
-    { enabled: !!selectedDot }
+    { enabled: !!selectedDot, retry: 1, staleTime: 60_000 }
   );
   const dbStats = trpc.fmcsaData.getStats.useQuery(undefined, { staleTime: 60_000 });
 

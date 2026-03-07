@@ -1446,6 +1446,63 @@ async function startServer() {
       }
     }, 30000);
 
+    // QPilotOS WS-QP-001: HRRN recalculation every 60 seconds
+    setTimeout(async () => {
+      try {
+        const { getDb } = await import("../db");
+        const { sql } = await import("drizzle-orm");
+        console.log("[QPilotOS/WS-QP-001] HRRN scheduler started (60s interval)");
+        setInterval(async () => {
+          try {
+            const db = await getDb();
+            if (!db) return;
+            await db.execute(sql`
+              UPDATE dispatch_queue_priorities
+              SET currentHrrnScore = ((TIMESTAMPDIFF(MINUTE, enteredQueueAt, NOW()) + GREATEST(estimatedServiceMinutes, 1)) / GREATEST(estimatedServiceMinutes, 1)) * basePriority,
+                  lastRecalculatedAt = NOW()
+              WHERE status = 'queued'
+            `);
+          } catch {}
+        }, 60000);
+      } catch (err) {
+        console.warn("[QPilotOS/WS-QP-001] HRRN scheduler failed to start:", (err as any)?.message);
+      }
+    }, 10000);
+
+    // QPilotOS WS-QP-004: MongoDB dual-storage connect (feature-flagged)
+    setTimeout(async () => {
+      try {
+        if (process.env.MONGO_ENABLED === "true") {
+          const { connectMongo } = await import("../services/mongoStore");
+          await connectMongo();
+        }
+      } catch (err) {
+        console.warn("[QPilotOS/WS-QP-004] MongoDB connect deferred:", (err as any)?.message);
+      }
+    }, 12000);
+
+    // QPilotOS WS-QP-006: Lane performance cache daily refresh
+    setTimeout(async () => {
+      try {
+        const { updateLaneCache } = await import("../services/optimizationPipeline");
+        const { getDb } = await import("../db");
+        const db = await getDb();
+        if (db) {
+          await updateLaneCache(db);
+          console.log("[QPilotOS/WS-QP-006] Lane cache initial refresh done");
+        }
+        // Daily refresh at 4 AM
+        setInterval(async () => {
+          try {
+            const db2 = await getDb();
+            if (db2) await updateLaneCache(db2);
+          } catch {}
+        }, 24 * 60 * 60000);
+      } catch (err) {
+        console.warn("[QPilotOS/WS-QP-006] Lane cache init deferred:", (err as any)?.message);
+      }
+    }, 18000);
+
     // Start Hot Zones data sync v5.0 — orchestrator + scheduler (22+ data sources)
     setTimeout(async () => {
       try {

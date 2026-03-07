@@ -1,16 +1,16 @@
 /**
- * KANBAN BOARD — Center column of Dispatch Command Center
+ * KANBAN BOARD — Dispatch Command Center
  * 4 swim lanes: UNASSIGNED → ASSIGNED → IN TRANSIT → DELIVERED TODAY
- * Supports drag-and-drop driver assignment from DriverRoster
+ * Drag load cards between lanes (status transition) or drop drivers onto cards (assignment).
+ * Design: frosted glass, depth layering, precision typography, purposeful color.
  */
 
-import React, { useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Package, Truck, Navigation, CheckCircle, AlertTriangle,
-  Clock, MapPin, Flame, Plus, GripVertical
+  Package, Truck, Navigation, CheckCircle,
+  Clock, Flame, Plus, GripVertical,
+  ArrowRight, User, MoveRight, Droplets
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,6 +38,7 @@ interface KanbanBoardProps {
   loads: KanbanLoad[];
   loading?: boolean;
   onAssignDriver?: (loadId: string, driverId: string) => void;
+  onMoveLoad?: (loadId: string, targetLane: string) => void;
   onLoadClick?: (load: KanbanLoad) => void;
   onCreateLoad?: () => void;
 }
@@ -46,50 +47,49 @@ interface LaneConfig {
   key: string;
   label: string;
   icon: React.ReactNode;
-  color: string;
-  bgColor: string;
-  borderColor: string;
+  accent: string;
+  grad: string;
+  emptyIcon: React.ReactNode;
+  emptyText: string;
   statuses: string[];
 }
 
 const LANES: LaneConfig[] = [
   {
-    key: "unassigned",
-    label: "Unassigned",
+    key: "unassigned", label: "Unassigned",
     icon: <Package className="w-3.5 h-3.5" />,
-    color: "text-red-400",
-    bgColor: "bg-red-500/10",
-    borderColor: "border-red-500/20",
+    accent: "#f87171", grad: "from-red-500/20 via-red-500/5 to-transparent",
+    emptyIcon: <Package className="w-7 h-7 text-red-500/20" />,
+    emptyText: "No unassigned loads",
     statuses: ["posted", "bidding", "unassigned"],
   },
   {
-    key: "assigned",
-    label: "Assigned",
+    key: "assigned", label: "Assigned",
     icon: <Truck className="w-3.5 h-3.5" />,
-    color: "text-blue-400",
-    bgColor: "bg-blue-500/10",
-    borderColor: "border-blue-500/20",
+    accent: "#60a5fa", grad: "from-blue-500/20 via-blue-500/5 to-transparent",
+    emptyIcon: <Truck className="w-7 h-7 text-blue-500/20" />,
+    emptyText: "No assigned loads",
     statuses: ["assigned", "en_route_pickup", "at_pickup", "loading"],
   },
   {
-    key: "in_transit",
-    label: "In Transit",
+    key: "in_transit", label: "In Transit",
     icon: <Navigation className="w-3.5 h-3.5" />,
-    color: "text-cyan-400",
-    bgColor: "bg-cyan-500/10",
-    borderColor: "border-cyan-500/20",
+    accent: "#22d3ee", grad: "from-cyan-500/20 via-cyan-500/5 to-transparent",
+    emptyIcon: <Navigation className="w-7 h-7 text-cyan-500/20" />,
+    emptyText: "No loads in transit",
     statuses: ["in_transit", "en_route_delivery", "at_delivery", "unloading"],
   },
   {
-    key: "delivered",
-    label: "Delivered Today",
+    key: "delivered", label: "Delivered Today",
     icon: <CheckCircle className="w-3.5 h-3.5" />,
-    color: "text-green-400",
-    bgColor: "bg-green-500/10",
-    borderColor: "border-green-500/20",
+    accent: "#4ade80", grad: "from-emerald-500/20 via-emerald-500/5 to-transparent",
+    emptyIcon: <CheckCircle className="w-7 h-7 text-emerald-500/20" />,
+    emptyText: "No deliveries today",
     statuses: ["delivered"],
   },
 ];
+
+/* ── helpers ── */
 
 function getLoadLane(load: KanbanLoad): string {
   if (!load.driverId && ["posted", "bidding", "unassigned"].includes(load.status)) return "unassigned";
@@ -100,208 +100,422 @@ function getLoadLane(load: KanbanLoad): string {
   return "assigned";
 }
 
-function getUrgencyBorder(load: KanbanLoad): string {
-  if (!load.pickupDate) return "";
-  const hours = (new Date(load.pickupDate).getTime() - Date.now()) / (1000 * 60 * 60);
-  if (hours < 0 || load.urgency === "high") return "border-l-2 border-l-red-500";
-  if (hours < 12 || load.urgency === "medium") return "border-l-2 border-l-yellow-500";
-  return "border-l-2 border-l-green-500/50";
+const SUB: Record<string, string> = {
+  en_route_pickup: "En Route", at_pickup: "At Pickup", loading: "Loading",
+  en_route_delivery: "En Route", at_delivery: "At Drop", unloading: "Unloading", bidding: "Bidding",
+};
+
+function urgency(l: KanbanLoad): "overdue" | "urgent" | "soon" | "normal" {
+  if (!l.pickupDate) return "normal";
+  const h = (new Date(l.pickupDate).getTime() - Date.now()) / 3600000;
+  if (h < 0 || l.urgency === "high") return "overdue";
+  if (h < 6 || l.urgency === "medium") return "urgent";
+  if (h < 24) return "soon";
+  return "normal";
 }
 
-function formatTime(dateStr?: string): string {
-  if (!dateStr) return "";
-  try {
-    const d = new Date(dateStr);
-    return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-  } catch { return ""; }
+function fmtTime(d?: string): string {
+  if (!d) return "";
+  try { return new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch { return ""; }
 }
 
-function LoadCard({ load, onLoadClick, isDropTarget }: { load: KanbanLoad; onLoadClick?: (l: KanbanLoad) => void; isDropTarget?: boolean }) {
+/* ── shimmer skeleton ── */
+
+function ShimmerCard() {
+  return (
+    <div className="animate-pulse bg-white/[0.03] p-3 space-y-2.5 rounded-xl border border-white/[0.06]">
+      <div className="flex justify-between">
+        <div className="h-3 w-20 bg-white/[0.08] rounded-full" />
+        <div className="h-3 w-12 bg-emerald-500/10 rounded-full" />
+      </div>
+      <div className="space-y-1.5">
+        <div className="h-2.5 w-full bg-white/[0.06] rounded-full" />
+        <div className="h-2.5 w-3/4 bg-white/[0.06] rounded-full" />
+      </div>
+      <div className="flex gap-2">
+        <div className="h-2 w-14 bg-white/[0.04] rounded-full" />
+        <div className="h-2 w-20 bg-white/[0.04] rounded-full" />
+      </div>
+    </div>
+  );
+}
+
+function ShimmerLane() {
+  return (
+    <div className="flex flex-col min-h-0">
+      <div className="animate-pulse h-9 bg-white/[0.04] rounded-t-xl mb-px" />
+      <div className="flex-1 space-y-2 p-2 bg-white/[0.01] rounded-b-xl border border-t-0 border-white/[0.04]">
+        <ShimmerCard /><ShimmerCard />
+        <div className="opacity-40"><ShimmerCard /></div>
+      </div>
+    </div>
+  );
+}
+
+/* ── pipeline progress bar ── */
+
+function PipelineBar({ counts }: { counts: number[] }) {
+  const t = counts.reduce((a, b) => a + b, 0) || 1;
+  const colors = ["#f87171", "#60a5fa", "#22d3ee", "#4ade80"];
+  return (
+    <div className="flex items-center gap-[2px] h-[3px] mx-1 mb-2.5 rounded-full overflow-hidden bg-white/[0.04]">
+      {counts.map((c, i) => (
+        <motion.div
+          key={i} className="h-full rounded-full"
+          style={{ backgroundColor: colors[i] }}
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.max((c / t) * 100, c > 0 ? 4 : 0)}%` }}
+          transition={{ type: "spring", stiffness: 300, damping: 30, delay: i * 0.06 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ── load card ── */
+
+const URGENCY_BORDER: Record<string, string> = {
+  overdue: "border-l-[3px] border-l-red-500",
+  urgent: "border-l-[3px] border-l-amber-400",
+  soon: "border-l-[3px] border-l-yellow-400/60",
+  normal: "border-l-[3px] border-l-transparent",
+};
+
+function LoadCard({
+  load, accent, onLoadClick, isDropTarget, isDragging, onDragStart,
+}: {
+  load: KanbanLoad; accent: string;
+  onLoadClick?: (l: KanbanLoad) => void;
+  isDropTarget?: boolean; isDragging?: boolean;
+  onDragStart?: (e: React.DragEvent, l: KanbanLoad) => void;
+}) {
+  const urg = urgency(load);
+  const sub = SUB[load.status];
+
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
+      layout="position"
+      layoutId={`load-${load.id}`}
+      initial={{ opacity: 0, y: 8, scale: 0.97 }}
+      animate={{ opacity: isDragging ? 0.35 : 1, y: 0, scale: isDropTarget ? 1.02 : 1 }}
+      exit={{ opacity: 0, scale: 0.95, y: -4 }}
+      transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.8 }}
+      draggable
+      onDragStart={(e) => onDragStart?.(e as any, load)}
       className={cn(
-        "rounded-lg border p-2.5 cursor-pointer transition-colors",
-        "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06]",
-        getUrgencyBorder(load),
-        isDropTarget && "ring-2 ring-cyan-500/50 bg-cyan-500/5"
+        "group relative rounded-xl p-3 cursor-grab active:cursor-grabbing select-none",
+        "bg-gradient-to-br from-white/[0.05] to-white/[0.02]",
+        "border border-white/[0.08]",
+        "backdrop-blur-sm",
+        "hover:from-white/[0.08] hover:to-white/[0.04]",
+        "hover:border-white/[0.14]",
+        "hover:shadow-lg hover:shadow-black/20",
+        "active:shadow-xl active:shadow-black/30",
+        "transition-all duration-200 ease-out",
+        URGENCY_BORDER[urg],
+        isDropTarget && "ring-2 ring-cyan-400/60 border-cyan-400/30 shadow-lg shadow-cyan-500/10",
       )}
       onClick={() => onLoadClick?.(load)}
       role="article"
       aria-label={`Load ${load.loadNumber}, ${load.origin} to ${load.destination}`}
     >
-      <div className="flex items-center justify-between mb-1.5">
+      {/* Row 1: load number + badges + rate */}
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-mono font-bold text-white">{load.loadNumber}</span>
+          <span className="text-[11px] font-mono font-bold tracking-tight text-white/90">{load.loadNumber}</span>
           {load.hazmatClass && (
-            <Badge className="bg-red-500/20 text-red-400 border-0 text-[8px] px-1 py-0">
-              <Flame className="w-2.5 h-2.5 mr-0.5" aria-hidden="true" />HM
-            </Badge>
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-px rounded-md bg-red-500/15 border border-red-500/20">
+              <Flame className="w-2.5 h-2.5 text-red-400" />
+              <span className="text-[7px] font-extrabold text-red-400 uppercase tracking-widest">HM</span>
+            </span>
+          )}
+          {sub && (
+            <span className="text-[8px] font-medium px-1.5 py-px rounded-md bg-white/[0.06] text-slate-400 border border-white/[0.06]">
+              {sub}
+            </span>
           )}
         </div>
         {load.rate !== undefined && load.rate > 0 && (
-          <span className="text-[10px] font-semibold text-green-400">${load.rate.toLocaleString()}</span>
+          <span className="text-[11px] font-semibold text-emerald-400 tabular-nums">${load.rate.toLocaleString()}</span>
         )}
       </div>
 
-      <div className="space-y-1">
-        <div className="flex items-center gap-1 text-[10px]">
-          <MapPin className="w-2.5 h-2.5 text-green-400 shrink-0" aria-hidden="true" />
-          <span className="text-slate-300 truncate">{load.origin}</span>
+      {/* Row 2: route visualization */}
+      <div className="flex items-start gap-2 mb-2">
+        <div className="flex flex-col items-center mt-[3px] shrink-0">
+          <div className="w-[7px] h-[7px] rounded-full bg-emerald-400/80 ring-[2.5px] ring-emerald-400/15" />
+          <div className="w-px h-3.5 bg-gradient-to-b from-emerald-400/40 to-red-400/40" />
+          <div className="w-[7px] h-[7px] rounded-full bg-red-400/80 ring-[2.5px] ring-red-400/15" />
         </div>
-        <div className="flex items-center gap-1 text-[10px]">
-          <MapPin className="w-2.5 h-2.5 text-red-400 shrink-0" aria-hidden="true" />
-          <span className="text-slate-300 truncate">{load.destination}</span>
+        <div className="flex-1 min-w-0 space-y-0.5">
+          <p className="text-[10px] font-medium text-slate-200 truncate leading-snug">{load.origin}</p>
+          <p className="text-[10px] text-slate-400/80 truncate leading-snug">{load.destination}</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mt-1.5 text-[9px] text-slate-500">
-        {load.commodity && <span>{load.commodity}</span>}
+      {/* Row 3: meta pills */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {load.commodity && (
+          <span className="inline-flex items-center gap-0.5 text-[9px] text-slate-500 bg-white/[0.04] px-1.5 py-0.5 rounded-md">
+            <Droplets className="w-2.5 h-2.5 opacity-60" />{load.commodity}
+          </span>
+        )}
         {load.pickupDate && (
-          <span className="flex items-center gap-0.5">
-            <Clock className="w-2.5 h-2.5" aria-hidden="true" />{formatTime(load.pickupDate)}
+          <span className={cn(
+            "inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-md",
+            urg === "overdue" ? "text-red-400 bg-red-500/10" :
+            urg === "urgent" ? "text-amber-400 bg-amber-500/10" :
+            "text-slate-500 bg-white/[0.04]",
+          )}>
+            <Clock className="w-2.5 h-2.5" />{fmtTime(load.pickupDate)}
+          </span>
+        )}
+        {load.weight && load.weight > 0 && (
+          <span className="text-[9px] text-slate-500 bg-white/[0.04] px-1.5 py-0.5 rounded-md tabular-nums">
+            {(load.weight / 2000).toFixed(1)}T
           </span>
         )}
       </div>
 
-      {load.driverName && (
-        <div className="mt-1.5 pt-1.5 border-t border-white/[0.06] flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded-full bg-blue-600 flex items-center justify-center text-[8px] font-bold text-white">
-            {load.driverName.charAt(0)}
+      {/* Row 4: driver */}
+      {load.driverName ? (
+        <div className="mt-2.5 pt-2 border-t border-white/[0.06] flex items-center gap-2">
+          <div className="relative">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[9px] font-bold text-white shadow-sm shadow-blue-500/30">
+              {load.driverName.charAt(0)}
+            </div>
+            <div className="absolute -bottom-px -right-px w-[7px] h-[7px] rounded-full bg-emerald-400 border-[1.5px] border-[#0d1424]" />
           </div>
-          <span className="text-[10px] text-blue-400">{load.driverName}</span>
+          <span className="text-[10px] font-medium text-blue-300/90">{load.driverName}</span>
+        </div>
+      ) : (
+        <div className="mt-2.5 pt-2 border-t border-dashed border-white/[0.05]">
+          <div className="flex items-center gap-1.5 text-[9px] text-slate-600 italic">
+            <User className="w-3 h-3 opacity-50" />
+            <span>Drop driver to assign</span>
+          </div>
         </div>
       )}
+
+      {/* Subtle radial glow on hover */}
+      <div
+        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{ background: `radial-gradient(140px circle at 50% 30%, ${accent}0a, transparent 70%)` }}
+      />
     </motion.div>
   );
 }
 
-export default function KanbanBoard({ loads, loading, onAssignDriver, onLoadClick, onCreateLoad }: KanbanBoardProps) {
+/* ══════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ══════════════════════════════════════════════════════════ */
+
+export default function KanbanBoard({ loads, loading, onAssignDriver, onMoveLoad, onLoadClick, onCreateLoad }: KanbanBoardProps) {
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [dropLane, setDropLane] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const enterCount = useRef<Record<string, number>>({});
 
   const laneLoads = LANES.map(lane => ({
     ...lane,
     items: loads.filter(l => getLoadLane(l) === lane.key),
   }));
 
-  const handleDragOver = (e: React.DragEvent, laneKey: string) => {
-    if (laneKey !== "unassigned") return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
+  /* ── drag handlers ── */
 
-  const handleDragEnter = (e: React.DragEvent, loadId: string) => {
-    e.preventDefault();
-    setDropTarget(loadId);
-  };
+  const onDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }, []);
 
-  const handleDragLeave = () => {
-    setDropTarget(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, loadId: string) => {
+  const onLaneEnter = useCallback((e: React.DragEvent, k: string) => {
     e.preventDefault();
-    setDropTarget(null);
+    enterCount.current[k] = (enterCount.current[k] || 0) + 1;
+    setDropLane(k);
+  }, []);
+
+  const onLaneLeave = useCallback((_e: React.DragEvent, k: string) => {
+    enterCount.current[k] = (enterCount.current[k] || 0) - 1;
+    if (enterCount.current[k] <= 0) { enterCount.current[k] = 0; setDropLane(prev => prev === k ? null : prev); }
+  }, []);
+
+  const onCardEnter = useCallback((e: React.DragEvent, id: string) => {
+    e.preventDefault(); e.stopPropagation(); setDropTarget(id);
+  }, []);
+
+  const reset = useCallback(() => {
+    setDropTarget(null); setDropLane(null); setDraggingId(null); enterCount.current = {};
+  }, []);
+
+  const handleDropOnLoad = useCallback((e: React.DragEvent, loadId: string) => {
+    e.preventDefault(); e.stopPropagation(); reset();
     try {
-      const data = JSON.parse(e.dataTransfer.getData("application/json"));
-      if (data.driverId && onAssignDriver) {
-        onAssignDriver(loadId, data.driverId);
-      }
+      const d = JSON.parse(e.dataTransfer.getData("application/json"));
+      if (d.driverId && onAssignDriver) onAssignDriver(loadId, d.driverId);
     } catch {}
-  };
+  }, [onAssignDriver, reset]);
 
+  const handleDropOnLane = useCallback((e: React.DragEvent, laneKey: string) => {
+    e.preventDefault(); reset();
+    try {
+      const d = JSON.parse(e.dataTransfer.getData("application/json"));
+      if (d.loadId && onMoveLoad) onMoveLoad(d.loadId, laneKey);
+    } catch {}
+  }, [onMoveLoad, reset]);
+
+  const handleLoadDragStart = useCallback((e: React.DragEvent, load: KanbanLoad) => {
+    setDraggingId(load.id);
+    e.dataTransfer.setData("application/json", JSON.stringify({ loadId: load.id, loadNumber: load.loadNumber, type: "load" }));
+    e.dataTransfer.effectAllowed = "move";
+  }, []);
+
+  /* ── loading ── */
   if (loading) {
     return (
-      <div className="grid grid-cols-4 gap-3 h-full">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="space-y-2">
-            <Skeleton className="h-8 w-full rounded-lg" />
-            <Skeleton className="h-24 w-full rounded-lg" />
-            <Skeleton className="h-24 w-full rounded-lg" />
-          </div>
-        ))}
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between px-1 mb-3">
+          <div className="h-5 w-32 bg-white/[0.06] rounded-lg animate-pulse" />
+          <div className="h-7 w-24 bg-white/[0.06] rounded-lg animate-pulse" />
+        </div>
+        <div className="h-[3px] mx-1 mb-2.5 bg-white/[0.04] rounded-full animate-pulse" />
+        <div className="grid grid-cols-4 gap-2.5 flex-1 min-h-0">
+          {[0,1,2,3].map(i => <ShimmerLane key={i} />)}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" onDragEnd={reset}>
+      {/* Header */}
       <div className="flex items-center justify-between px-1 mb-2">
-        <h2 className="text-sm font-semibold text-white flex items-center gap-1.5">
-          <GripVertical className="w-4 h-4 text-cyan-400" />
+        <h2 className="text-sm font-semibold text-white/90 flex items-center gap-2">
+          <div className="p-1 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-white/[0.06]">
+            <GripVertical className="w-3.5 h-3.5 text-cyan-400" />
+          </div>
           Dispatch Board
+          <span className="text-[10px] font-normal text-slate-500 ml-0.5 tabular-nums">{loads.length} loads</span>
         </h2>
         {onCreateLoad && (
           <Button
             size="sm"
-            className="h-6 px-2 text-[10px] bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-md"
+            className={cn(
+              "h-7 px-3 text-[10px] font-medium rounded-lg",
+              "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500",
+              "shadow-md shadow-cyan-500/20 border border-cyan-400/20",
+              "transition-all duration-200",
+            )}
             onClick={onCreateLoad}
           >
-            <Plus className="w-3 h-3 mr-1" aria-hidden="true" />Quick Load
+            <Plus className="w-3 h-3 mr-1" />Quick Load
           </Button>
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-2 flex-1 min-h-0">
-        {laneLoads.map(lane => (
-          <div
-            key={lane.key}
-            className="flex flex-col min-h-0"
-            onDragOver={e => handleDragOver(e, lane.key)}
-          >
-            {/* Lane Header */}
-            <div className={cn("rounded-t-lg px-2.5 py-1.5 flex items-center gap-1.5", lane.bgColor, lane.borderColor, "border-b")}>
-              <span className={lane.color}>{lane.icon}</span>
-              <span className={cn("text-[11px] font-medium", lane.color)}>{lane.label}</span>
-              <Badge className={cn("border-0 text-[9px] ml-auto px-1.5 py-0", lane.bgColor, lane.color)}>
-                {lane.items.length}
-              </Badge>
-            </div>
+      {/* Pipeline bar */}
+      <PipelineBar counts={laneLoads.map(l => l.items.length)} />
 
-            {/* Lane Body */}
-            <div className={cn(
-              "flex-1 overflow-y-auto space-y-1.5 p-1.5 rounded-b-lg",
-              "bg-white/[0.01] border border-t-0 border-white/[0.04]"
-            )}>
-              {lane.items.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-6 text-center">
-                  <span className={cn("text-[10px]", lane.color, "opacity-50")}>
-                    {lane.key === "unassigned" ? "No unassigned loads" : `No ${lane.label.toLowerCase()} loads`}
-                  </span>
-                  {lane.key === "unassigned" && onCreateLoad && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 px-2 text-[10px] text-cyan-500 hover:text-cyan-400 mt-1"
-                      onClick={onCreateLoad}
-                    >
-                      <Plus className="w-3 h-3 mr-1" aria-hidden="true" />Create Load
-                    </Button>
-                  )}
-                </div>
+      {/* Lanes */}
+      <div className="grid grid-cols-4 gap-2.5 flex-1 min-h-0">
+        {laneLoads.map((lane, idx) => {
+          const dropping = dropLane === lane.key;
+          const active = draggingId !== null;
+
+          return (
+            <div
+              key={lane.key}
+              className={cn(
+                "flex flex-col min-h-0 rounded-xl transition-all duration-300",
+                dropping && "ring-2 ring-offset-1 ring-offset-[#0B1120]",
               )}
-              <AnimatePresence>
-                {lane.items.map(load => (
+              style={dropping ? { ["--tw-ring-color" as any]: `${lane.accent}60` } : undefined}
+              onDragOver={onDragOver}
+              onDragEnter={e => onLaneEnter(e, lane.key)}
+              onDragLeave={e => onLaneLeave(e, lane.key)}
+              onDrop={e => handleDropOnLane(e, lane.key)}
+            >
+              {/* Lane header — frosted glass */}
+              <div className={cn(
+                "relative rounded-t-xl px-3 py-2 flex items-center gap-2 overflow-hidden",
+                "border border-b-0 border-white/[0.06] backdrop-blur-xl",
+              )}>
+                <div className={cn("absolute inset-0 bg-gradient-to-r opacity-80", lane.grad)} />
+                <div className="relative flex items-center gap-2 w-full">
+                  <span style={{ color: lane.accent }}>{lane.icon}</span>
+                  <span className="text-[11px] font-semibold tracking-tight" style={{ color: lane.accent }}>{lane.label}</span>
                   <div
-                    key={load.id}
-                    onDragOver={e => { e.preventDefault(); handleDragEnter(e, load.id); }}
-                    onDragLeave={handleDragLeave}
-                    onDrop={e => handleDrop(e, load.id)}
+                    className="ml-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold tabular-nums"
+                    style={{ backgroundColor: `${lane.accent}18`, color: lane.accent, border: `1px solid ${lane.accent}25` }}
                   >
-                    <LoadCard
-                      load={load}
-                      onLoadClick={onLoadClick}
-                      isDropTarget={dropTarget === load.id}
-                    />
+                    {lane.items.length}
                   </div>
-                ))}
-              </AnimatePresence>
+                </div>
+                {idx < 3 && (
+                  <div className="absolute -right-[5px] top-1/2 -translate-y-1/2 z-10">
+                    <MoveRight className="w-2.5 h-2.5 text-slate-600/60" />
+                  </div>
+                )}
+              </div>
+
+              {/* Lane body */}
+              <div className={cn(
+                "flex-1 overflow-y-auto p-2 rounded-b-xl space-y-2",
+                "border border-t-0 border-white/[0.04]",
+                "bg-gradient-to-b from-white/[0.015] to-transparent",
+                dropping && "from-white/[0.04] to-white/[0.01]",
+                "transition-colors duration-300",
+              )}>
+                {/* Drop-here indicator when dragging into empty lane */}
+                {active && dropping && lane.items.length === 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center justify-center py-8 rounded-xl border-2 border-dashed"
+                    style={{ borderColor: `${lane.accent}40`, backgroundColor: `${lane.accent}08` }}
+                  >
+                    <ArrowRight className="w-5 h-5 mb-1.5" style={{ color: `${lane.accent}80` }} />
+                    <span className="text-[10px] font-medium" style={{ color: `${lane.accent}99` }}>Drop here</span>
+                  </motion.div>
+                )}
+
+                {/* Beautiful empty state */}
+                {lane.items.length === 0 && !active && (
+                  <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <div className="mb-2 opacity-60">{lane.emptyIcon}</div>
+                    <span className="text-[10px] text-slate-600">{lane.emptyText}</span>
+                    {lane.key === "unassigned" && onCreateLoad && (
+                      <Button
+                        size="sm" variant="ghost"
+                        className="h-6 px-2.5 text-[10px] text-cyan-500 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg mt-2"
+                        onClick={onCreateLoad}
+                      >
+                        <Plus className="w-3 h-3 mr-1" />Create Load
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Cards */}
+                <AnimatePresence mode="popLayout">
+                  {lane.items.map(load => (
+                    <div
+                      key={load.id}
+                      onDragOver={e => { e.preventDefault(); e.stopPropagation(); onCardEnter(e, load.id); }}
+                      onDragLeave={() => setDropTarget(null)}
+                      onDrop={e => handleDropOnLoad(e, load.id)}
+                    >
+                      <LoadCard
+                        load={load}
+                        accent={lane.accent}
+                        onLoadClick={onLoadClick}
+                        isDropTarget={dropTarget === load.id}
+                        isDragging={draggingId === load.id}
+                        onDragStart={handleLoadDragStart}
+                      />
+                    </div>
+                  ))}
+                </AnimatePresence>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

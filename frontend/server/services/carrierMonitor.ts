@@ -152,27 +152,35 @@ export async function fetchCarrierFromSaferApi(dotNumber: string): Promise<{
 // SNAPSHOT GENERATION
 // ============================================================================
 
+/** Safe query with timeout — prevents pool.query from hanging forever */
+async function timedQuery(pool: any, sql: string, params: any[], timeoutMs = 8000): Promise<any[]> {
+  return Promise.race([
+    pool.query(sql, params).then((r: any) => r[0] || []),
+    new Promise<any[]>((_, reject) => setTimeout(() => reject(new Error(`Query timeout (${timeoutMs}ms)`)), timeoutMs)),
+  ]);
+}
+
 export async function getCarrierSnapshot(dotNumber: string): Promise<CarrierSnapshot | null> {
   const pool = getPool();
   if (!pool) return null;
   
   try {
     // Get census data
-    const [censusRows]: any = await pool.query(
+    const censusRows: any = await timedQuery(pool,
       `SELECT * FROM fmcsa_census WHERE dot_number = ? LIMIT 1`,
       [dotNumber]
     );
     const census = censusRows[0];
     
     // Get authority data
-    const [authRows]: any = await pool.query(
+    const authRows: any = await timedQuery(pool,
       `SELECT * FROM fmcsa_authority WHERE dot_number = ? ORDER BY fetched_at DESC LIMIT 1`,
       [dotNumber]
     );
     let auth = authRows[0];
     
     // Get latest active insurance
-    const [insRows]: any = await pool.query(
+    const insRows: any = await timedQuery(pool,
       `SELECT * FROM fmcsa_insurance 
        WHERE dot_number = ? AND is_active = TRUE 
        ORDER BY coverage_to DESC LIMIT 1`,
@@ -181,7 +189,7 @@ export async function getCarrierSnapshot(dotNumber: string): Promise<CarrierSnap
     const insurance = insRows[0];
     
     // Get latest SMS scores
-    const [smsRows]: any = await pool.query(
+    const smsRows: any = await timedQuery(pool,
       `SELECT * FROM fmcsa_sms_scores 
        WHERE dot_number = ? 
        ORDER BY run_date DESC LIMIT 1`,
@@ -190,7 +198,7 @@ export async function getCarrierSnapshot(dotNumber: string): Promise<CarrierSnap
     let sms = smsRows[0];
     
     // Get active OOS order
-    const [oosRows]: any = await pool.query(
+    const oosRows: any = await timedQuery(pool,
       `SELECT * FROM fmcsa_oos_orders 
        WHERE dot_number = ? AND return_to_service_date IS NULL
        ORDER BY oos_date DESC LIMIT 1`,

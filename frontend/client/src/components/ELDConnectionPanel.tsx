@@ -47,7 +47,7 @@ export default function ELDConnectionPanel({ compact = false, onConnected }: ELD
 
   const providersQuery = (trpc as any).eld?.getAllProviders?.useQuery?.(undefined, { staleTime: 300000 });
   const connectionQuery = (trpc as any).eld?.getConnectionStatus?.useQuery?.(undefined, { refetchInterval: 60000 });
-  const connectMutation = (trpc as any).integrations?.create?.useMutation?.({
+  const connectMutation = (trpc as any).eld?.connectProvider?.useMutation?.({
     onSuccess: () => {
       toast.success(`Connected to ${selectedProvider?.name}!`);
       setConnecting(false);
@@ -73,7 +73,6 @@ export default function ELDConnectionPanel({ compact = false, onConnected }: ELD
     }
     setConnecting(true);
     connectMutation?.mutate?.({
-      providerId: 0,
       providerSlug: selectedProvider.slug,
       authType: "bearer",
       apiKey: apiKey.trim(),

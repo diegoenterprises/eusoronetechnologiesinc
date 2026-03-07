@@ -182,10 +182,36 @@ export default function DispatchCommandCenter() {
   const stats = statsQuery.data as any;
   const exceptionCount = (issuesQuery.data as any[])?.length || 0;
 
+  // ── Move Load mutation (drag between lanes) ──
+  const moveLoadMutation = (trpc as any).dispatch.updateLoadStatus.useMutation({
+    onSuccess: (data: any) => {
+      toast.success(`Load moved to ${data.status || "new status"}`);
+      boardQuery.refetch();
+      driversQuery.refetch();
+    },
+    onError: (err: any) => {
+      toast.error("Move failed", { description: err.message });
+    },
+  });
+
   // ── Handlers ──
   const handleAssignDriver = useCallback((loadId: string, driverId: string) => {
     assignMutation.mutate({ loadId, driverId });
   }, [assignMutation]);
+
+  // Map Kanban lane keys to the first logical status for that lane
+  const LANE_TO_STATUS: Record<string, string> = {
+    unassigned: "posted",
+    assigned: "assigned",
+    in_transit: "in_transit",
+    delivered: "delivered",
+  };
+
+  const handleMoveLoad = useCallback((loadId: string, targetLane: string) => {
+    const targetStatus = LANE_TO_STATUS[targetLane];
+    if (!targetStatus) return;
+    moveLoadMutation.mutate({ loadId, status: targetStatus });
+  }, [moveLoadMutation]);
 
   const quickLoadMutation = (trpc as any).dispatch.quickCreateLoad.useMutation({
     onSuccess: (data: any) => {
@@ -338,8 +364,9 @@ export default function DispatchCommandCenter() {
             loads={kanbanLoads}
             loading={boardQuery.isLoading}
             onAssignDriver={handleAssignDriver}
+            onMoveLoad={handleMoveLoad}
             onLoadClick={(load) => {
-              if (load.id) navigate(`/loads/${load.id.replace(/\D/g, "")}`);
+              if (load.id) navigate(`/load/${load.id}`);
             }}
             onCreateLoad={() => setShowQuickLoad(true)}
           />
@@ -365,7 +392,7 @@ export default function DispatchCommandCenter() {
               onQuickLoad={() => setShowQuickLoad(true)}
               onBroadcast={() => setShowBroadcast(true)}
               onViewSettlements={() => navigate("/settlements")}
-              onViewCheckCalls={() => navigate("/dispatch/drivers")}
+              onViewCheckCalls={() => navigate("/dispatch/assigned")}
               onViewExceptions={() => navigate("/dispatch/exceptions")}
             />
           )}

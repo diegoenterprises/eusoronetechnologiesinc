@@ -23,12 +23,11 @@ export const permitsRouter = router({
       if (!db) { const r: any[] = []; return Object.assign(r, { permits: r, total: 0, filter: r.filter.bind(r) }); }
       try {
         const userId = Number(ctx.user?.id) || 0;
-        let where = `userId = ${userId}`;
-        if (input.status) where += ` AND status = '${input.status}'`;
-        if (input.type) where += ` AND type = '${input.type}'`;
-        const [countRes] = await db.execute(sql.raw(`SELECT COUNT(*) as cnt FROM permits_records WHERE ${where}`)) as any;
+        const statusFilter = input.status || null;
+        const typeFilter = input.type || null;
+        const [countRes] = await db.execute(sql`SELECT COUNT(*) as cnt FROM permits_records WHERE userId = ${userId} AND (${statusFilter} IS NULL OR status = ${statusFilter}) AND (${typeFilter} IS NULL OR type = ${typeFilter})`) as any;
         const total = Number((countRes || [])[0]?.cnt) || 0;
-        const [rows] = await db.execute(sql.raw(`SELECT * FROM permits_records WHERE ${where} ORDER BY createdAt DESC LIMIT ${input.limit} OFFSET ${input.offset}`)) as any;
+        const [rows] = await db.execute(sql`SELECT * FROM permits_records WHERE userId = ${userId} AND (${statusFilter} IS NULL OR status = ${statusFilter}) AND (${typeFilter} IS NULL OR type = ${typeFilter}) ORDER BY createdAt DESC LIMIT ${input.limit} OFFSET ${input.offset}`) as any;
         const permits = (rows || []).map((r: any) => ({
           id: String(r.id), permitNumber: r.permitNumber, type: r.type, status: r.status,
           states: r.states ? JSON.parse(r.states) : [], origin: r.origin, destination: r.destination,

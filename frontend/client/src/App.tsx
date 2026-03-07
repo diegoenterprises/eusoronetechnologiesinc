@@ -72,6 +72,13 @@ const FireResponse = lazy(() => import("./pages/FireResponse"));
 const IncidentReportForm = lazy(() => import("./pages/IncidentReportForm"));
 const TripPay = lazy(() => import("./pages/TripPay"));
 const SettlementHistory = lazy(() => import("./pages/SettlementHistory"));
+const SettlementBatching = lazy(() => import("./pages/settlements/SettlementBatching"));
+const AllocationDashboard = lazy(() => import("./pages/allocations/AllocationDashboard"));
+const BulkImport = lazy(() => import("./pages/bulkImport/BulkImport"));
+const Pricebook = lazy(() => import("./pages/pricebook/Pricebook"));
+const FSCEngine = lazy(() => import("./pages/fsc/FSCEngine"));
+const CustomerPortal = lazy(() => import("./pages/portal/CustomerPortal"));
+const PortalManagement = lazy(() => import("./pages/portal/PortalManagement"));
 const DeductionsBreakdown = lazy(() => import("./pages/DeductionsBreakdown"));
 const BonusTracker = lazy(() => import("./pages/BonusTracker"));
 const DirectDeposit = lazy(() => import("./pages/DirectDeposit"));
@@ -121,6 +128,9 @@ const RegisterSafety = lazy(() => import("./pages/RegisterSafety"));
 const RegisterAdmin = lazy(() => import("./pages/RegisterAdmin"));
 const DispatchDashboard = lazy(() => import("./pages/DispatchDashboard"));
 const DispatchCommandCenter = lazy(() => import("./pages/DispatchCommandCenter"));
+const DispatchPlanner = lazy(() => import("./pages/dispatch/DispatchPlanner"));
+const DispatchAssignedLoads = lazy(() => import("./pages/dispatch/DispatchAssignedLoads"));
+const DispatchELDIntelligence = lazy(() => import("./pages/dispatch/DispatchELDIntelligence"));
 const LoadBoard = lazy(() => import("./pages/LoadBoard"));
 const SafetyDashboard = lazy(() => import("./pages/SafetyDashboard"));
 const ComplianceDashboard = lazy(() => import("./pages/ComplianceDashboard"));
@@ -404,6 +414,7 @@ function Router() {
       <Route path={"/terms-of-service"} component={TermsOfService} />
       <Route path={"/privacy-policy"} component={PrivacyPolicy} />
       <Route path={"/validate/:token"} component={AccessValidation} />
+      <Route path={"/portal"} component={() => <CustomerPortal />} />
 
       {/* ============================================ */}
       {/* SHARED ROUTES (All Authenticated Users) */}
@@ -493,13 +504,14 @@ function Router() {
       {/* ============================================ */}
       <Route path={"/marketplace"} component={guard([...CARR, "BROKER", "DRIVER", "DISPATCH"], <FindLoadsPage />)} />
       <Route path={"/bids"} component={guard([...CARR, "BROKER", "DRIVER", "DISPATCH", "ESCORT"], <BidManagement />)} />
-      <Route path={"/bids/submit/:loadId"} component={guard(CARR, <CatalystBidSubmission />)} />
-      <Route path={"/bids/:bidId"} component={guard(CARR, <BidDetails />)} />
-      <Route path={"/contract/sign/:loadId"} component={guard(CARR, <ContractSigning />)} />
+      <Route path={"/bids/submit/:loadId"} component={guard([...CARR, "DISPATCH"], <CatalystBidSubmission />)} />
+      <Route path={"/bids/:bidId"} component={guard([...CARR, "DISPATCH"], <BidDetails />)} />
+      <Route path={"/contract/sign/:loadId"} component={guard([...CARR, "DISPATCH"], <ContractSigning />)} />
       <Route path={"/loads/assigned"} component={guard([...CARR, "DRIVER", "DISPATCH", "ESCORT"], <AssignedLoadsPage />)} />
       <Route path={"/loads/transit"} component={guard([...CARR, "DRIVER"], <InTransitPage />)} />
       <Route path={"/loads/:loadId/bids"} component={guard(LOAD, <LoadBids />)} />
       <Route path={"/load/:loadId"} component={guard(LOAD, <LoadDetails />)} />
+      <Route path={"/loads/:loadId"} component={guard(LOAD, <LoadDetails />)} />
       <Route path={"/fleet"} component={guard([...CARR, "DISPATCH"], <FleetCommandCenter />)} />
       <Route path={"/fleet-management"} component={guard(CARR, <FleetCommandCenter />)} />
       <Route path={"/driver/management"} component={guard(CARR, <FleetCommandCenter />)} />
@@ -509,7 +521,8 @@ function Router() {
       <Route path={"/equipment"} component={guard(CARR, <EquipmentMgmtPage />)} />
       <Route path={"/invoices"} component={guard([...CARR, ...SHIP, ...BROK, "ESCORT"], <InvoiceMgmtPage />)} />
       <Route path={"/revenue"} component={guard([...CARR, ...BROK], <RevenueAnalyticsPage />)} />
-      <Route path={"/settlements"} component={guard([...CARR, "DISPATCH"], <SettlementStatementsPage />)} />
+      <Route path={"/settlements/batching"} component={guard([...CARR, ...DISP, ...SHIP, "BROKER"], <SettlementBatching />)} />
+      <Route path={"/settlements"} component={guard([...CARR, ...DISP, ...SHIP, "BROKER"], <SettlementStatementsPage />)} />
       <Route path={"/maintenance"} component={guard(CARR, <MaintenanceSchedulePage />)} />
       <Route path={"/compliance/ifta"} component={guard([...CARR, ...COMP], <IFTAReportingPage />)} />
       <Route path={"/permits"} component={guard([...CARR, ...COMP], <PermitMgmtPage />)} />
@@ -613,6 +626,14 @@ function Router() {
       {/* ============================================ */}
       {/* DISPATCH (DISPATCHER) ROUTES */}
       {/* ============================================ */}
+      <Route path={"/dispatch/eld"} component={guard(DISP, <DispatchELDIntelligence />)} />
+      <Route path={"/dispatch/assigned"} component={guard(DISP, <DispatchAssignedLoads />)} />
+      <Route path={"/dispatch/planner"} component={guard(DISP, <DispatchPlanner />)} />
+      <Route path={"/dispatch/allocations"} component={guard([...DISP, ...SHIP, "TERMINAL_MANAGER", "ADMIN"], <AllocationDashboard />)} />
+      <Route path={"/dispatch/bulk-import"} component={guard([...DISP, ...SHIP, "BROKER", "ADMIN"], <BulkImport />)} />
+      <Route path={"/dispatch/pricebook"} component={guard([...DISP, ...SHIP, "BROKER", "ADMIN"], <Pricebook />)} />
+      <Route path={"/dispatch/fsc-engine"} component={guard([...DISP, ...SHIP, "BROKER", "ADMIN"], <FSCEngine />)} />
+      <Route path={"/admin/portal"} component={guard([...DISP, "ADMIN"], <PortalManagement />)} />
       <Route path={"/dispatch"} component={guard(DISP, <DispatchCommandCenter />)} />
       <Route path={"/dispatch/board"} component={guard(DISP, <DispatchBoard />)} />
       <Route path={"/specializations"} component={guard(DISP, <Specializations />)} />

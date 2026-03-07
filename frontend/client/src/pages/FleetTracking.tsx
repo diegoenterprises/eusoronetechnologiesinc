@@ -5,7 +5,7 @@
  */
 
 import { useState } from "react";
-import { Truck, MapPin, Users, AlertTriangle, Circle, RefreshCw, Activity, Search, Navigation, Gauge, Radio, Shield, Zap } from "lucide-react";
+import { Truck, MapPin, Users, AlertTriangle, Circle, RefreshCw, Activity, Search, Navigation, Gauge, Radio, Shield, Zap, Clock, Moon, Coffee, Phone, MessageSquare } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { TelemetryMap } from "../components/maps/TelemetryMap";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,6 +41,16 @@ export default function FleetTracking() {
   const { data: activeConvoys } = (trpc as any).convoy.getActiveConvoys.useQuery(
     { limit: 5 }
   );
+
+  // ELD HOS data for dispatcher fleet view
+  const { data: eldDrivers } = (trpc as any).eld?.getDriverStatus?.useQuery?.({}, { refetchInterval: 60000 }) || {};
+  const eldMap = new Map<string, any>();
+  if (eldDrivers && Array.isArray(eldDrivers)) {
+    for (const d of eldDrivers) {
+      if (d.name) eldMap.set(d.name.toLowerCase(), d);
+      if (d.driverId) eldMap.set(String(d.driverId), d);
+    }
+  }
 
   const allLocations = fleetLocations?.filter((loc: any) =>
     loc.name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -183,7 +193,11 @@ export default function FleetTracking() {
                 <p className={cn("text-center py-8 text-sm", L ? "text-slate-400" : "text-slate-500")}>No drivers found</p>
               ) : (
                 <div className={cn("divide-y", L ? "divide-slate-100" : "divide-slate-700/20")}>
-                  {filteredLocations.map((driver: any) => (
+                  {filteredLocations.map((driver: any) => {
+                    const eld = eldMap.get(driver.name?.toLowerCase()) || eldMap.get(String(driver.userId));
+                    const driveHrs = eld ? Math.round((660 - (eld.driveTimeRemaining || 660)) / 60 * 10) / 10 : null;
+                    const driveLeft = driveHrs !== null ? Math.max(0, 11 - driveHrs) : null;
+                    return (
                     <div key={driver.userId} onClick={() => setSelectedDriver(driver.userId)}
                       className={cn("px-4 py-3 cursor-pointer transition-all", selectedDriver === driver.userId
                         ? L ? "bg-blue-50/80 border-l-2 border-l-blue-500" : "bg-blue-500/10 border-l-2 border-l-blue-500"
@@ -193,17 +207,24 @@ export default function FleetTracking() {
                         <div className="flex items-center gap-2.5">
                           <div className={cn("w-2 h-2 rounded-full", driver.isMoving ? "bg-green-500 animate-pulse" : "bg-slate-400")} />
                           <span className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{driver.name}</span>
+                          {eld?.hasViolation && <Badge className="border-0 bg-red-500/15 text-red-500 text-[9px] font-bold">HOS</Badge>}
                         </div>
                         <Badge className={cn("border-0 text-[10px] font-bold", driver.isMoving ? "bg-green-500/15 text-green-500" : "bg-slate-500/15 text-slate-400")}>
                           {driver.isMoving ? `${driver.speed?.toFixed(0) || 0} mph` : "Stopped"}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
-                        <span>{driver.lat?.toFixed(4)}, {driver.lng?.toFixed(4)}</span>
                         {driver.loadId && <span className="text-blue-500 font-medium">Load #{driver.loadId}</span>}
+                        {driveLeft !== null && (
+                          <span className={cn("flex items-center gap-1", driveLeft <= 1 ? "text-red-400" : "text-slate-400")}>
+                            <Clock className="w-3 h-3" />{driveLeft.toFixed(1)}h drive left
+                          </span>
+                        )}
+                        {!driver.loadId && !driveLeft && <span>{driver.lat?.toFixed(4)}, {driver.lng?.toFixed(4)}</span>}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -239,8 +260,13 @@ export default function FleetTracking() {
         </div>
       </div>
 
-      {/* ── Selected Driver Detail ── */}
-      {selectedData && (
+      {/* ── Selected Driver Detail + ELD HOS ── */}
+      {selectedData && (() => {
+        const eld = eldMap.get(selectedData.name?.toLowerCase()) || eldMap.get(String(selectedData.userId));
+        const driveUsed = eld ? Math.round((660 - (eld.driveTimeRemaining || 660)) / 60 * 10) / 10 : 0;
+        const shiftUsed = eld ? Math.round((840 - (eld.onDutyTimeRemaining || 840)) / 60 * 10) / 10 : 0;
+        const cycleUsed = eld ? Math.round((4200 - (eld.cycleTimeRemaining || 4200)) / 60 * 10) / 10 : 0;
+        return (
         <Card className={cn(cc, "border-blue-500/30")}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
@@ -252,10 +278,11 @@ export default function FleetTracking() {
                   <p className={cn("font-semibold", L ? "text-slate-800" : "text-white")}>{selectedData.name}</p>
                   <p className="text-xs text-slate-400">{selectedData.lat?.toFixed(5)}, {selectedData.lng?.toFixed(5)}</p>
                 </div>
+                {eld?.hasViolation && <Badge className="border-0 bg-red-500/15 text-red-500 text-[10px] font-bold ml-2">HOS VIOLATION</Badge>}
               </div>
               <button onClick={() => setSelectedDriver(null)} className="text-xs text-slate-400 hover:text-slate-600">Dismiss</button>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3 mb-3">
               <div className={cn("rounded-xl p-3 text-center", L ? "bg-slate-50" : "bg-slate-800/50")}>
                 <p className="text-lg font-bold text-green-500">{selectedData.speed?.toFixed(0) || 0}</p>
                 <p className="text-[10px] text-slate-400 uppercase">mph</p>
@@ -269,9 +296,58 @@ export default function FleetTracking() {
                 <p className="text-[10px] text-slate-400 uppercase">Status</p>
               </div>
             </div>
+
+            {/* ELD HOS Bars */}
+            {eld && (
+              <div className={cn("rounded-xl p-3 border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-slate-700/30")}>
+                <div className="flex items-center gap-2 mb-2.5">
+                  <Activity className="w-3.5 h-3.5 text-cyan-500" />
+                  <span className={cn("text-xs font-semibold", L ? "text-slate-700" : "text-white")}>ELD Hours of Service</span>
+                  <Badge className={cn("border-0 text-[9px] font-bold ml-auto",
+                    (eld.currentStatus || eld.status) === "driving" ? "bg-green-500/15 text-green-500" :
+                    ["onDuty","on_duty"].includes(eld.currentStatus || eld.status) ? "bg-blue-500/15 text-blue-500" :
+                    "bg-slate-500/15 text-slate-400"
+                  )}>
+                    {(eld.currentStatus || eld.status || "off_duty").replace(/_/g, " ")}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: "Drive", used: driveUsed, max: 11, color: "green" },
+                    { label: "Shift", used: shiftUsed, max: 14, color: "blue" },
+                    { label: "Cycle", used: cycleUsed, max: 70, color: "purple" },
+                  ].map(h => {
+                    const pct = Math.min(100, (h.used / h.max) * 100);
+                    const remaining = Math.max(0, h.max - h.used);
+                    return (
+                      <div key={h.label}>
+                        <div className="flex justify-between text-[10px] mb-1">
+                          <span className="text-slate-400">{h.label}</span>
+                          <span className={cn("font-bold tabular-nums",
+                            pct >= 85 ? "text-red-400" : h.color === "green" ? "text-green-400" : h.color === "blue" ? "text-blue-400" : "text-purple-400"
+                          )}>{remaining.toFixed(1)}h</span>
+                        </div>
+                        <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                          <div className={cn("h-full rounded-full",
+                            pct >= 85 ? "bg-red-500" : h.color === "green" ? "bg-green-500" : h.color === "blue" ? "bg-blue-500" : "bg-purple-500"
+                          )} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Quick actions */}
+            <div className="flex items-center gap-2 mt-3">
+              <Button size="sm" variant="outline" className="rounded-lg text-[10px] h-7 gap-1"><Phone className="w-3 h-3" />Call</Button>
+              <Button size="sm" variant="outline" className="rounded-lg text-[10px] h-7 gap-1"><MessageSquare className="w-3 h-3" />Message</Button>
+            </div>
           </CardContent>
         </Card>
-      )}
+        );
+      })()}
 
       {/* ── Active Alerts ── */}
       {activeAlerts && activeAlerts.length > 0 && (

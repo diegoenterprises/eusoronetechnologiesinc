@@ -324,6 +324,14 @@ class ELDService {
   }
 
   /**
+   * Clear provider cache — called after connect/disconnect to force reload
+   */
+  clearCache(): void {
+    this.providers.clear();
+    this.companyLoadCache.clear();
+  }
+
+  /**
    * Check if any ELD provider is configured
    */
   isConfigured(): boolean {
@@ -417,7 +425,7 @@ class ELDService {
    */
   private normalizeLocations(raw: any, providerName: string): ELDFleetLocation[] {
     try {
-      // Samsara: { data: [{ id, name, location: { latitude, longitude, speed, heading, time } }] }
+      // ── Samsara ──
       if (providerName === "Samsara" && raw?.data) {
         return raw.data.filter((v: any) => v.location).map((v: any) => ({
           driverId: v.driverAssignment?.id || v.id || "",
@@ -432,7 +440,55 @@ class ELDService {
         }));
       }
 
-      // Motive: { vehicles: [{ vehicle: { id }, current_location: { lat, lon, speed, bearing, located_at } }] }
+      // ── Geotab ──
+      if (providerName === "Geotab" && raw?.result) {
+        return raw.result.filter((v: any) => v.latitude).map((v: any) => ({
+          driverId: v.driver?.id || "",
+          vehicleId: v.device?.id || v.id || "",
+          lat: v.latitude,
+          lng: v.longitude,
+          speed: (v.speed || 0) * 0.621371,
+          heading: v.bearing || 0,
+          timestamp: v.dateTime || new Date().toISOString(),
+          engineStatus: v.currentStateDuration != null ? "on" : undefined,
+        }));
+      }
+
+      // ── Powerfleet ──
+      if (providerName === "Powerfleet" && (raw?.vehicles || raw?.data)) {
+        const arr = raw.vehicles || raw.data || [];
+        return arr.filter((v: any) => v.position || v.location).map((v: any) => {
+          const pos = v.position || v.location || {};
+          return {
+            driverId: v.driver?.id || v.driverId || "",
+            vehicleId: v.vehicleId || v.id || "",
+            lat: pos.latitude || pos.lat || 0,
+            lng: pos.longitude || pos.lng || 0,
+            speed: pos.speed || 0,
+            heading: pos.heading || pos.course || 0,
+            timestamp: pos.timestamp || pos.time || new Date().toISOString(),
+            engineStatus: pos.ignition ? "on" : "off",
+            odometerMi: pos.odometer,
+          };
+        });
+      }
+
+      // ── Zonar ──
+      if (providerName === "Zonar" && (raw?.assets || raw?.data)) {
+        const arr = raw.assets || raw.data || [];
+        return arr.filter((v: any) => v.location).map((v: any) => ({
+          driverId: v.driver?.id || v.driverId || "",
+          vehicleId: v.assetId || v.id || "",
+          lat: v.location.lat || v.location.latitude || 0,
+          lng: v.location.lon || v.location.longitude || 0,
+          speed: v.location.speed || 0,
+          heading: v.location.heading || 0,
+          timestamp: v.location.timestamp || new Date().toISOString(),
+          engineStatus: v.location.ignitionOn ? "on" : "off",
+        }));
+      }
+
+      // ── Motive (KeepTruckin) ──
       if (providerName === "Motive" && (raw?.vehicles || raw?.data)) {
         const arr = raw.vehicles || raw.data || [];
         return arr.filter((v: any) => v.current_location || v.location).map((v: any) => {
@@ -450,21 +506,112 @@ class ELDService {
         });
       }
 
-      // Geotab: { result: [{ device: { id }, latitude, longitude, speed, bearing, dateTime }] }
-      if (providerName === "Geotab" && raw?.result) {
-        return raw.result.filter((v: any) => v.latitude).map((v: any) => ({
-          driverId: v.driver?.id || "",
-          vehicleId: v.device?.id || v.id || "",
-          lat: v.latitude,
-          lng: v.longitude,
-          speed: (v.speed || 0) * 0.621371, // km/h → mph
-          heading: v.bearing || 0,
-          timestamp: v.dateTime || new Date().toISOString(),
+      // ── Lytx ──
+      if (providerName === "Lytx" && (raw?.positions || raw?.data)) {
+        const arr = raw.positions || raw.data || [];
+        return arr.filter((v: any) => v.latitude || v.lat).map((v: any) => ({
+          driverId: v.driverId || v.driver_id || "",
+          vehicleId: v.vehicleId || v.vehicle_id || v.id || "",
+          lat: v.latitude || v.lat || 0,
+          lng: v.longitude || v.lng || 0,
+          speed: v.speedMph || v.speed || 0,
+          heading: v.heading || v.direction || 0,
+          timestamp: v.positionTime || v.timestamp || new Date().toISOString(),
+          engineStatus: v.ignitionOn ? "on" : "off",
         }));
       }
 
-      // Generic fallback: try common field patterns
-      const items = raw?.data || raw?.vehicles || raw?.result || raw?.positions || (Array.isArray(raw) ? raw : []);
+      // ── Netradyne ──
+      if (providerName === "Netradyne" && (raw?.vehicles || raw?.data)) {
+        const arr = raw.vehicles || raw.data || [];
+        return arr.filter((v: any) => v.gps || v.location).map((v: any) => {
+          const gps = v.gps || v.location || {};
+          return {
+            driverId: v.driverId || v.driver?.id || "",
+            vehicleId: v.vehicleId || v.id || "",
+            lat: gps.lat || gps.latitude || 0,
+            lng: gps.lng || gps.longitude || 0,
+            speed: gps.speed || gps.speedMph || 0,
+            heading: gps.bearing || gps.heading || 0,
+            timestamp: gps.timestamp || gps.time || new Date().toISOString(),
+            engineStatus: gps.engineRunning ? "on" : "off",
+          };
+        });
+      }
+
+      // ── Verizon Connect ──
+      if (providerName === "Verizon Connect" && (raw?.vehicles || raw?.data)) {
+        const arr = raw.vehicles || raw.data || [];
+        return arr.filter((v: any) => v.lastKnownPosition || v.position || v.location).map((v: any) => {
+          const pos = v.lastKnownPosition || v.position || v.location || {};
+          return {
+            driverId: v.driverId || v.driver?.id || "",
+            vehicleId: v.id || v.vehicleId || "",
+            lat: pos.latitude || pos.lat || 0,
+            lng: pos.longitude || pos.lng || 0,
+            speed: pos.speed || pos.speedMph || 0,
+            heading: pos.heading || pos.direction || 0,
+            timestamp: pos.dateTime || pos.timestamp || new Date().toISOString(),
+            engineStatus: pos.ignitionStatus === "on" ? "on" : pos.ignitionStatus === "off" ? "off" : undefined,
+            odometerMi: pos.odometer,
+          };
+        });
+      }
+
+      // ── Azuga ──
+      if (providerName === "Azuga" && (raw?.positions || raw?.data)) {
+        const arr = raw.positions || raw.data || [];
+        return arr.filter((v: any) => v.lat || v.latitude).map((v: any) => ({
+          driverId: v.driverId || v.driver_id || "",
+          vehicleId: v.vehicleId || v.vehicle_id || v.id || "",
+          lat: v.lat || v.latitude || 0,
+          lng: v.lon || v.lng || v.longitude || 0,
+          speed: v.speed || v.speedMph || 0,
+          heading: v.heading || v.bearing || 0,
+          timestamp: v.time || v.timestamp || new Date().toISOString(),
+          engineStatus: v.ignition ? "on" : "off",
+          fuelPct: v.fuelLevel,
+        }));
+      }
+
+      // ── Solera (Omnitracs) ──
+      if (providerName === "Solera" && (raw?.vehicles || raw?.data)) {
+        const arr = raw.vehicles || raw.data || [];
+        return arr.filter((v: any) => v.position || v.location).map((v: any) => {
+          const pos = v.position || v.location || {};
+          return {
+            driverId: v.driverId || v.driver?.id || "",
+            vehicleId: v.unitId || v.id || "",
+            lat: pos.lat || pos.latitude || 0,
+            lng: pos.lon || pos.longitude || 0,
+            speed: pos.speed || 0,
+            heading: pos.heading || pos.course || 0,
+            timestamp: pos.timestamp || new Date().toISOString(),
+            engineStatus: pos.engineRunning ? "on" : "off",
+          };
+        });
+      }
+
+      // ── Trimble / PeopleNet ──
+      if (providerName === "Trimble / PeopleNet" && (raw?.positions || raw?.data || raw?.vehicles)) {
+        const arr = raw.positions || raw.vehicles || raw.data || [];
+        return arr.filter((v: any) => v.latitude || v.lat || v.position).map((v: any) => {
+          const pos = v.position || v;
+          return {
+            driverId: v.driverId || v.driver?.id || pos.driverId || "",
+            vehicleId: v.vehicleId || v.id || "",
+            lat: pos.latitude || pos.lat || 0,
+            lng: pos.longitude || pos.lng || 0,
+            speed: ((pos.speed || 0) * 0.621371),
+            heading: pos.heading || pos.course || 0,
+            timestamp: pos.positionTime || pos.timestamp || new Date().toISOString(),
+            odometerMi: pos.odometer ? pos.odometer * 0.621371 : undefined,
+          };
+        });
+      }
+
+      // ── Generic fallback ──
+      const items = raw?.data || raw?.vehicles || raw?.result || raw?.positions || raw?.assets || (Array.isArray(raw) ? raw : []);
       return items.filter((v: any) => (v.lat || v.latitude) && (v.lng || v.longitude || v.lon)).map((v: any) => ({
         driverId: v.driverId || v.driver_id || v.driver?.id || "",
         vehicleId: v.vehicleId || v.vehicle_id || v.id || "",
@@ -483,40 +630,249 @@ class ELDService {
   }
 
   /**
-   * Get driver's current HOS status
+   * Map various duty status strings to standard DutyStatus enum
+   */
+  private mapDutyStatus(status?: string): DutyStatus {
+    if (!status) return "OFF";
+    const s = status.toLowerCase().replace(/[^a-z]/g, "");
+    if (s.includes("driving") || s === "d" || s === "drive") return "D";
+    if (s.includes("sleeper") || s === "sb" || s.includes("berth")) return "SB";
+    if (s.includes("onduty") || s === "on" || s.includes("notdriving")) return "ON";
+    if (s.includes("yard") || s === "ym") return "YM";
+    if (s.includes("personal") || s === "pc") return "PC";
+    return "OFF";
+  }
+
+  /**
+   * Get driver's current HOS status.
+   * Uses provider-specific hosEndpoint from metadata.
    */
   async getDriverHOS(driverId: string, provider?: string): Promise<ELDDriverLog | null> {
-    if (!this.isConfigured()) {
-      return null;
-    }
+    if (!this.isConfigured()) return null;
 
-    const providerConfig = provider
-      ? this.providers.get(provider)
-      : this.providers.values().next().value;
+    const providerSlug = provider || this.providers.keys().next().value;
+    const providerConfig = providerSlug ? this.providers.get(providerSlug) : undefined;
+    if (!providerConfig) return null;
 
-    if (!providerConfig) {
-      return null;
+    const meta = ELD_PROVIDERS.find(p => p.name === providerConfig.name)
+      || ELD_PROVIDERS.find(p => providerConfig.baseUrl.includes(p.baseUrl.replace("https://", "")));
+    const hosPath = meta?.hosEndpoint || `/drivers/${driverId}/hos`;
+
+    let fullUrl = `${providerConfig.baseUrl}${hosPath}`;
+    if (!hosPath.includes(driverId)) {
+      const sep = fullUrl.includes("?") ? "&" : "?";
+      fullUrl += `${sep}driverId=${driverId}`;
     }
 
     try {
-      const response = await fetch(
-        `${providerConfig.baseUrl}/drivers/${driverId}/hos`,
-        {
-          headers: {
-            Authorization: `Bearer ${providerConfig.apiKey}`,
-            Accept: "application/json",
-          },
-        }
-      );
+      const response = await fetch(fullUrl, {
+        headers: {
+          Authorization: `${meta?.authHeader || "Bearer"} ${providerConfig.apiKey}`,
+          Accept: "application/json",
+        },
+        signal: AbortSignal.timeout(15000),
+      });
 
       if (!response.ok) {
-        console.error(`[ELD] API error: ${response.status}`);
+        console.warn(`[ELD/HOS] ${providerConfig.name} API error: ${response.status}`);
         return null;
       }
 
-      return await response.json();
+      const raw = await response.json();
+      return this.normalizeHOS(raw, providerConfig.name, driverId);
     } catch (error) {
-      console.error("[ELD] getDriverHOS error:", error);
+      console.warn(`[ELD/HOS] ${providerConfig.name} fetch error:`, (error as Error).message);
+      return null;
+    }
+  }
+
+  /**
+   * Normalize HOS response from any provider into standard ELDDriverLog.
+   */
+  private normalizeHOS(raw: any, providerName: string, driverId: string): ELDDriverLog | null {
+    try {
+      const now = new Date().toISOString();
+      const base: ELDDriverLog = {
+        driverId,
+        date: now.split("T")[0],
+        currentStatus: "OFF",
+        statusSince: now,
+        location: { lat: 0, lng: 0 },
+        vehicle: { id: "", unitNumber: "" },
+        hoursAvailable: { driving: 660, onDuty: 840, cycle: 4200, breakRemaining: 30 },
+        violations: [],
+        logs: [],
+      };
+
+      // ── Samsara ──
+      if (providerName === "Samsara") {
+        const d = raw?.data?.[0] || raw?.data || raw;
+        const clk = d?.hosStatusSummary || d?.clocks || {};
+        return { ...base,
+          currentStatus: this.mapDutyStatus(d?.hosStatusType || d?.currentDutyStatus),
+          statusSince: d?.hosStatusStartTime || now,
+          location: { lat: d?.location?.latitude || 0, lng: d?.location?.longitude || 0 },
+          vehicle: { id: d?.vehicle?.id || "", unitNumber: d?.vehicle?.name || "" },
+          hoursAvailable: {
+            driving: clk?.drivingRemainingMs ? clk.drivingRemainingMs / 60000 : clk?.driveTimeRemaining || 660,
+            onDuty: clk?.shiftRemainingMs ? clk.shiftRemainingMs / 60000 : clk?.onDutyRemaining || 840,
+            cycle: clk?.cycleRemainingMs ? clk.cycleRemainingMs / 60000 : clk?.cycleRemaining || 4200,
+            breakRemaining: clk?.breakRemainingMs ? clk.breakRemainingMs / 60000 : clk?.breakRemaining || 30,
+          },
+          violations: (d?.violations || []).map((v: any) => ({
+            id: v.id || String(Math.random()), type: "drive_time" as const,
+            severity: (v.severity === "warning" ? "warning" : "violation") as "warning" | "violation",
+            description: v.description || v.regulationDescription || "HOS violation",
+            occurredAt: v.startTime || now, resolved: v.resolved || false,
+          })),
+        };
+      }
+
+      // ── Motive ──
+      if (providerName === "Motive") {
+        const d = raw?.driver_daily_log || raw?.data?.[0] || raw;
+        const r = d?.hours_remaining || d?.hoursRemaining || {};
+        return { ...base,
+          currentStatus: this.mapDutyStatus(d?.duty_status || d?.current_status),
+          statusSince: d?.status_since || now,
+          location: { lat: d?.location?.lat || 0, lng: d?.location?.lon || d?.location?.lng || 0 },
+          vehicle: { id: d?.vehicle?.id || "", unitNumber: d?.vehicle?.number || "" },
+          hoursAvailable: {
+            driving: (r.drive || r.driving || 11) * 60,
+            onDuty: (r.shift || r.on_duty || 14) * 60,
+            cycle: (r.cycle || 70) * 60,
+            breakRemaining: (r.break || 0.5) * 60,
+          },
+        };
+      }
+
+      // ── Geotab ──
+      if (providerName === "Geotab") {
+        const d = raw?.result?.[0] || raw;
+        const a = d?.availability || {};
+        return { ...base,
+          currentStatus: this.mapDutyStatus(d?.status || d?.dutyStatus),
+          statusSince: d?.dateTime || now,
+          vehicle: { id: d?.device?.id || "", unitNumber: d?.device?.name || "" },
+          hoursAvailable: {
+            driving: (a.driving?.value || a.drivingDuration || 11) * 60,
+            onDuty: (a.duty?.value || a.onDutyDuration || 14) * 60,
+            cycle: (a.cycle?.value || a.cycleDuration || 70) * 60,
+            breakRemaining: (a.rest?.value || 0.5) * 60,
+          },
+        };
+      }
+
+      // ── Powerfleet ──
+      if (providerName === "Powerfleet") {
+        const d = raw?.driver || raw?.data?.[0] || raw;
+        const h = d?.hos || d?.hoursOfService || {};
+        return { ...base,
+          currentStatus: this.mapDutyStatus(h?.currentStatus || d?.dutyStatus),
+          statusSince: h?.statusSince || now,
+          hoursAvailable: {
+            driving: (h?.drivingRemaining || 11) * 60, onDuty: (h?.onDutyRemaining || 14) * 60,
+            cycle: (h?.cycleRemaining || 70) * 60, breakRemaining: (h?.breakRemaining || 0.5) * 60,
+          },
+        };
+      }
+
+      // ── Zonar ──
+      if (providerName === "Zonar") {
+        const d = raw?.driver || raw?.data?.[0] || raw;
+        const h = d?.hours || d?.hoursOfService || {};
+        return { ...base,
+          currentStatus: this.mapDutyStatus(h?.currentDutyStatus || d?.status),
+          statusSince: h?.statusStartTime || now,
+          hoursAvailable: {
+            driving: (h?.drivingRemaining || 11) * 60, onDuty: (h?.shiftRemaining || 14) * 60,
+            cycle: (h?.cycleRemaining || 70) * 60, breakRemaining: (h?.breakRemaining || 0.5) * 60,
+          },
+        };
+      }
+
+      // ── Lytx ──
+      if (providerName === "Lytx") {
+        const d = raw?.compliance || raw?.data?.[0] || raw;
+        return { ...base,
+          currentStatus: this.mapDutyStatus(d?.dutyStatus || d?.currentStatus),
+          statusSince: d?.statusTime || now,
+          hoursAvailable: {
+            driving: (d?.drivingHoursRemaining || 11) * 60, onDuty: (d?.onDutyHoursRemaining || 14) * 60,
+            cycle: (d?.cycleHoursRemaining || 70) * 60, breakRemaining: d?.breakMinutesRemaining || 30,
+          },
+        };
+      }
+
+      // ── Netradyne ──
+      if (providerName === "Netradyne") {
+        const d = raw?.driver || raw?.data?.[0] || raw;
+        const h = d?.hos || {};
+        return { ...base,
+          currentStatus: this.mapDutyStatus(h?.status || d?.dutyStatus),
+          statusSince: h?.statusSince || now,
+          hoursAvailable: {
+            driving: (h?.drivingRemaining || 11) * 60, onDuty: (h?.shiftRemaining || 14) * 60,
+            cycle: (h?.cycleRemaining || 70) * 60, breakRemaining: (h?.breakRemaining || 0.5) * 60,
+          },
+        };
+      }
+
+      // ── Verizon Connect ──
+      if (providerName === "Verizon Connect") {
+        const d = raw?.hos || raw?.data?.[0] || raw;
+        return { ...base,
+          currentStatus: this.mapDutyStatus(d?.currentDutyStatus || d?.status),
+          statusSince: d?.lastStatusChange || now,
+          hoursAvailable: {
+            driving: (d?.availableDrive || 11) * 60, onDuty: (d?.availableShift || 14) * 60,
+            cycle: (d?.availableCycle || 70) * 60, breakRemaining: (d?.breakTimeRemaining || 0.5) * 60,
+          },
+        };
+      }
+
+      // ── Azuga ──
+      if (providerName === "Azuga") {
+        const d = raw?.dutyStatus || raw?.data?.[0] || raw;
+        return { ...base,
+          currentStatus: this.mapDutyStatus(d?.status || d?.currentDutyStatus),
+          statusSince: d?.statusTime || now,
+          hoursAvailable: {
+            driving: (d?.hoursRemaining?.driving || 11) * 60, onDuty: (d?.hoursRemaining?.onDuty || 14) * 60,
+            cycle: (d?.hoursRemaining?.cycle || 70) * 60, breakRemaining: (d?.hoursRemaining?.break || 0.5) * 60,
+          },
+        };
+      }
+
+      // ── Solera (Omnitracs) ──
+      if (providerName === "Solera") {
+        const d = raw?.hosLog || raw?.data?.[0] || raw;
+        return { ...base,
+          currentStatus: this.mapDutyStatus(d?.dutyStatus || d?.currentStatus),
+          statusSince: d?.statusStartTime || now,
+          hoursAvailable: {
+            driving: (d?.drivingAvailable || 11) * 60, onDuty: (d?.onDutyAvailable || 14) * 60,
+            cycle: (d?.cycleAvailable || 70) * 60, breakRemaining: (d?.breakAvailable || 0.5) * 60,
+          },
+        };
+      }
+
+      // ── Trimble / PeopleNet ──
+      if (providerName === "Trimble / PeopleNet") {
+        const d = raw?.hoursOfService || raw?.data?.[0] || raw;
+        return { ...base,
+          currentStatus: this.mapDutyStatus(d?.currentDutyStatus || d?.status),
+          statusSince: d?.statusStartTime || now,
+          hoursAvailable: {
+            driving: (d?.remainingDrive || 11) * 60, onDuty: (d?.remainingDuty || 14) * 60,
+            cycle: (d?.remainingCycle || 70) * 60, breakRemaining: (d?.remainingBreak || 0.5) * 60,
+          },
+        };
+      }
+
+      return base;
+    } catch (e) {
+      console.error(`[ELD/HOS] normalizeHOS error for ${providerName}:`, e);
       return null;
     }
   }
@@ -538,31 +894,120 @@ class ELDService {
   }
 
   /**
-   * Get driver's log entries for a date range
+   * Get driver's log entries for a date range.
+   * Uses provider-specific hosEndpoint with date params.
    */
   async getDriverLogs(
     driverId: string,
     startDate: string,
-    endDate: string
+    endDate: string,
+    provider?: string
   ): Promise<ELDLogEntry[]> {
-    if (!this.isConfigured()) {
+    if (!this.isConfigured()) return [];
+
+    const providerSlug = provider || this.providers.keys().next().value;
+    const providerConfig = providerSlug ? this.providers.get(providerSlug) : undefined;
+    if (!providerConfig) return [];
+
+    const meta = ELD_PROVIDERS.find(p => p.name === providerConfig.name)
+      || ELD_PROVIDERS.find(p => providerConfig.baseUrl.includes(p.baseUrl.replace("https://", "")));
+    const hosPath = meta?.hosEndpoint || `/drivers/${driverId}/logs`;
+
+    let fullUrl = `${providerConfig.baseUrl}${hosPath}`;
+    const sep = fullUrl.includes("?") ? "&" : "?";
+    fullUrl += `${sep}driverId=${driverId}&startDate=${startDate}&endDate=${endDate}`;
+
+    try {
+      const response = await fetch(fullUrl, {
+        headers: {
+          Authorization: `${meta?.authHeader || "Bearer"} ${providerConfig.apiKey}`,
+          Accept: "application/json",
+        },
+        signal: AbortSignal.timeout(15000),
+      });
+
+      if (!response.ok) {
+        console.warn(`[ELD/Logs] ${providerConfig.name} API error: ${response.status}`);
+        return [];
+      }
+
+      const raw = await response.json();
+      const entries = raw?.data || raw?.logs || raw?.result || raw?.entries || (Array.isArray(raw) ? raw : []);
+      return entries.map((e: any) => ({
+        id: e.id || String(Math.random()),
+        status: this.mapDutyStatus(e.status || e.dutyStatus || e.duty_status) as DutyStatus,
+        startTime: e.startTime || e.start_time || e.startDate || "",
+        endTime: e.endTime || e.end_time || e.endDate || null,
+        duration: e.duration || e.durationMinutes || e.duration_minutes || 0,
+        location: e.location || e.locationDescription || e.address || "",
+        notes: e.notes || e.annotation || e.remark || undefined,
+        edited: e.edited || e.isEdited || false,
+        certified: e.certified || e.isCertified || e.driverCertified || false,
+      }));
+    } catch (err) {
+      console.warn(`[ELD/Logs] ${providerConfig.name} fetch error:`, (err as Error).message);
       return [];
     }
-
-    // Would call actual ELD API
-    return [];
   }
 
   /**
-   * Get vehicle information from ELD
+   * Get vehicle information from ELD.
+   * Queries the provider's vehicle/asset endpoint.
    */
-  async getVehicleInfo(vehicleId: string): Promise<ELDVehicleInfo | null> {
-    if (!this.isConfigured()) {
+  async getVehicleInfo(vehicleId: string, provider?: string): Promise<ELDVehicleInfo | null> {
+    if (!this.isConfigured()) return null;
+
+    const providerSlug = provider || this.providers.keys().next().value;
+    const providerConfig = providerSlug ? this.providers.get(providerSlug) : undefined;
+    if (!providerConfig) return null;
+
+    const meta = ELD_PROVIDERS.find(p => p.name === providerConfig.name)
+      || ELD_PROVIDERS.find(p => providerConfig.baseUrl.includes(p.baseUrl.replace("https://", "")));
+
+    try {
+      const response = await fetch(
+        `${providerConfig.baseUrl}/vehicles/${vehicleId}`,
+        {
+          headers: {
+            Authorization: `${meta?.authHeader || "Bearer"} ${providerConfig.apiKey}`,
+            Accept: "application/json",
+          },
+          signal: AbortSignal.timeout(15000),
+        },
+      );
+
+      if (!response.ok) {
+        console.warn(`[ELD/Vehicle] ${providerConfig.name} API error: ${response.status}`);
+        return null;
+      }
+
+      const raw = await response.json();
+      const v = raw?.data || raw?.vehicle || raw?.result || raw;
+      return {
+        vehicleId: v.id || v.vehicleId || vehicleId,
+        unitNumber: v.name || v.unitNumber || v.number || "",
+        vin: v.vin || v.VIN || "",
+        make: v.make || "",
+        model: v.model || "",
+        year: v.year || 0,
+        eldDeviceId: v.eldDevice?.id || v.deviceId || v.device?.serialNumber || "",
+        eldProvider: providerConfig.name,
+        lastConnection: v.lastCommunication || v.lastConnection || v.lastSeen || new Date().toISOString(),
+        odometer: v.odometerMeters ? v.odometerMeters * 0.000621371 : v.odometer || v.odometerMiles || 0,
+        engineHours: v.engineHours || v.engine_hours || 0,
+        fuelLevel: v.fuelPercent?.value || v.fuelLevel || v.fuel_level || undefined,
+        location: {
+          lat: v.location?.latitude || v.location?.lat || v.gps?.lat || 0,
+          lng: v.location?.longitude || v.location?.lng || v.gps?.lng || 0,
+          speed: v.location?.speedMilesPerHour || v.location?.speed || v.gps?.speed || 0,
+          heading: v.location?.heading || v.gps?.heading || 0,
+          timestamp: v.location?.time || v.gps?.timestamp || new Date().toISOString(),
+        },
+      };
+    } catch (err) {
+      console.warn(`[ELD/Vehicle] ${providerConfig.name} fetch error:`, (err as Error).message);
       return null;
     }
-
-    // Would call actual ELD API
-    return null;
   }
 
   /**

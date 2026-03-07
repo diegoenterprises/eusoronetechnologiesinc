@@ -123,7 +123,9 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Wallet, payments, rates, invoices & escrow",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, payments & escrow" },
+        { icon: "DollarSign", label: "Settlements", path: "/settlements", badge: 0, description: "Settlement statements & payment status" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
+        { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
       ],
     },
     {
@@ -231,6 +233,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Wallet, earnings, rates & payments",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, earnings & payments" },
+        { icon: "DollarSign", label: "Settlements", path: "/settlements", badge: 0, description: "Settlement statements & payment status" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
       ],
@@ -334,7 +337,9 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Balance, commission, rates & revenue",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, commission & payments" },
+        { icon: "DollarSign", label: "Settlements", path: "/settlements", badge: 0, description: "Settlement statements & payment status" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates, surcharges & reconciliation" },
+        { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
       ],
     },
     {
@@ -437,7 +442,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
-      description: "Earnings, trip pay, settlements, bonuses & direct deposit"
+      description: "Earnings, trip pay, settlements, bonuses & direct deposit",
+      children: [
+        { icon: "Wallet", label: "Balance", path: "/wallet", badge: 0, description: "Account balance & payments" },
+        { icon: "Truck", label: "Trip Pay", path: "/driver/trip-pay", badge: 0, description: "Per-trip pay breakdown" },
+        { icon: "DollarSign", label: "Settlement History", path: "/driver/settlement-history", badge: 0, description: "Weekly/bi-weekly settlement statements" },
+        { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
+      ],
     },
     {
       icon: "MessageSquare",
@@ -482,10 +493,31 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     // ─── OPERATIONS ───
     {
       icon: "LayoutDashboard",
+      label: "Dashboard",
+      path: "/",
+      badge: 0,
+      description: "Dispatch dashboard overview"
+    },
+    {
+      icon: "LayoutDashboard",
       label: "Command Center",
       path: "/dispatch",
       badge: 0,
       description: "Dispatch command center — drivers, Kanban board, activity feed"
+    },
+    {
+      icon: "CalendarDays",
+      label: "Dispatch Planner",
+      path: "/dispatch/planner",
+      badge: 0,
+      description: "Drag-and-drop load assignment to driver timelines"
+    },
+    {
+      icon: "Droplet",
+      label: "Allocation Tracker",
+      path: "/dispatch/allocations",
+      badge: 0,
+      description: "Daily barrel allocation tracking & contract fulfillment"
     },
     {
       icon: "Package",
@@ -496,7 +528,8 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Search", label: "Find Loads", path: "/marketplace", badge: 0, description: "Available loads & AI-matched opportunities" },
         { icon: "Plus", label: "Create Load", path: "/dispatch/create", badge: 0, description: "Quick 3-field load creation" },
-        { icon: "CheckCircle", label: "Assigned Loads", path: "/loads", badge: 0, description: "All active loads — status, tracking & POD" },
+        { icon: "Upload", label: "Bulk Import", path: "/dispatch/bulk-import", badge: 0, description: "CSV bulk load import with validation" },
+        { icon: "CheckCircle", label: "Assigned Loads", path: "/dispatch/assigned", badge: 0, description: "All dispatched & assigned loads — status, tracking & POD" },
       ],
     },
     {
@@ -508,7 +541,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "ShieldCheck", label: "Insurance Verification", path: "/insurance/verification", badge: 0, description: "AI document scanning & FMCSA cross-verification" },
         { icon: "MapPin", label: "Fleet Tracking", path: "/fleet-tracking", badge: 0, description: "Real-time fleet GPS tracking & geofencing" },
-        { icon: "Siren", label: "Active Trip", path: "/active-trip", badge: 0, description: "Live trip dashboard, SOS & state compliance" },
       ],
     },
     {
@@ -519,6 +551,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Active exceptions, delays, stale loads & compliance issues"
     },
     // ─── BUSINESS ───
+    {
+      icon: "Shield",
+      label: "Customer Portal",
+      path: "/admin/portal",
+      badge: 0,
+      description: "Token management, load linking & portal analytics"
+    },
     {
       icon: "Handshake",
       label: "My Partners",
@@ -565,8 +604,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, earnings & payments" },
         { icon: "DollarSign", label: "Settlements", path: "/settlements", badge: 0, description: "Fleet settlement status, driver earnings & payouts" },
+        { icon: "Layers", label: "Settlement Batching", path: "/settlements/batching", badge: 0, description: "3-level batch grouping, approval & payment" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates, surcharges & reconciliation" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU & accessorial fees" },
+        { icon: "BookOpen", label: "Pricebook", path: "/dispatch/pricebook", badge: 0, description: "Rate sheets with cascading lookup priority" },
+        { icon: "Fuel", label: "FSC Engine", path: "/dispatch/fsc-engine", badge: 0, description: "Per-contract fuel surcharge calculator" },
       ],
     },
     {
@@ -869,6 +911,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, invoices & payments" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
+        { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU & accessorial fees" },
       ],
     },
     {
@@ -1332,11 +1375,12 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   let result = [...menu];
 
   // Dynamically inject ELD Intelligence for qualifying roles
-  if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/eld')) {
+  if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/eld' || m.path === '/dispatch/eld')) {
+    const eldPath = normalizedRole === 'DISPATCH' ? '/dispatch/eld' : '/eld';
     const eldItem: MenuItem = {
       icon: "Activity",
       label: "ELD Intelligence",
-      path: "/eld",
+      path: eldPath,
       badge: 0,
       description: ELD_DESCRIPTIONS[normalizedRole] || "Fleet ELD health, HOS compliance & road intelligence",
     };
@@ -1357,7 +1401,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       description: "FMCSA carrier vetting — authority, insurance, safety scores, inspections & monitoring",
     };
     // Insert after ELD Intelligence or after FMCSA Lookup
-    const eldIdx = result.findIndex(m => m.path === '/eld');
+    const eldIdx = result.findIndex(m => m.path === '/eld' || m.path === '/dispatch/eld');
     const fmcsaIdx = result.findIndex(m => m.path === '/fmcsa-lookup');
     const ciInsertIdx = eldIdx >= 0 ? eldIdx + 1 : fmcsaIdx >= 0 ? fmcsaIdx + 1 : result.length;
     result.splice(ciInsertIdx, 0, ciItem);
