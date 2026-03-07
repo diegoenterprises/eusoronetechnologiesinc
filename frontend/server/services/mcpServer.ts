@@ -22,6 +22,9 @@ import {
   fscSchedules, fscLookupTable, fscHistory,
   portalAccessTokens, portalLoadLinks, portalAuditLog,
   creditChecks, factoringInvoices,
+  drivers, vehicles, settlements, notifications,
+  conversations, messages, documents, inspections,
+  agreements,
 } from "../../drizzle/schema";
 import { eq, and, desc, like, sql, count, gte, lte, or, inArray } from "drizzle-orm";
 
@@ -61,16 +64,17 @@ const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".next", "__pycache__
 
 function createEusoTripMcpServer(): McpServer {
   const mcp = new McpServer(
-    { name: "EusoTrip Platform", version: "1.0.0" },
+    { name: "EusoTrip Platform", version: "2.0.0" },
     {
       capabilities: {
         tools: {},
         resources: {},
         prompts: {},
       },
-      instructions: `You are connected to the EusoTrip logistics platform — a full-stack freight management system. 
-Use these tools to query loads, users, companies, FMCSA carrier safety data, platform fees, analytics, and more.
-All monetary values are in USD. Dates are ISO 8601. User roles include: DRIVER, CATALYST (carrier/broker), SHIPPER, DISPATCHER, TERMINAL_MANAGER, ADMIN, SUPER_ADMIN.`,
+      instructions: `You are connected to the EusoTrip logistics platform — a full-stack freight management system built by Eusorone Technologies Inc.
+Use these tools to query loads, users, companies, drivers, vehicles, settlements, FMCSA carrier safety data, dispatch operations, financial analytics, and more.
+All monetary values are in USD. Dates are ISO 8601. User roles: DRIVER, CATALYST (carrier/broker), SHIPPER, DISPATCHER, BROKER, TERMINAL_MANAGER, ADMIN, SUPER_ADMIN.
+Domains: eusotrip.com (primary), eusorone.com (alias). Stack: React + TypeScript, Express + tRPC, MySQL, Azure App Service.`,
     }
   );
 
@@ -1085,6 +1089,351 @@ All monetary values are in USD. Dates are ISO 8601. User roles include: DRIVER, 
   );
 
   // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: search_drivers — list/search drivers with status, HOS, endorsements
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "search_drivers",
+    "Search drivers on the platform. Returns driver info, status, safety score, hazmat endorsement, total miles and loads. Join with users table for name/email.",
+    {
+      status: z.string().optional().describe("Filter by status: active, inactive, suspended, available, off_duty, on_load"),
+      companyId: z.number().optional().describe("Filter by company ID"),
+      hazmatOnly: z.boolean().optional().describe("Only show drivers with hazmat endorsement"),
+      search: z.string().optional().describe("Search driver by name or email (via users table)"),
+      limit: z.number().optional().default(25),
+    },
+    async ({ status, companyId, hazmatOnly, search, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+
+      try {
+        const conditions: any[] = [];
+        if (status) conditions.push(eq(drivers.status, status as any));
+        if (companyId) conditions.push(eq(drivers.companyId, companyId));
+        if (hazmatOnly) conditions.push(eq(drivers.hazmatEndorsement, true));
+
+        let results: any[];
+        if (search) {
+          results = await db.select({
+            driverId: drivers.id, userId: drivers.userId, companyId: drivers.companyId,
+            status: drivers.status, safetyScore: drivers.safetyScore,
+            hazmatEndorsement: drivers.hazmatEndorsement, totalMiles: drivers.totalMiles,
+            totalLoads: drivers.totalLoads, licenseState: drivers.licenseState,
+            licenseExpiry: drivers.licenseExpiry, medicalCardExpiry: drivers.medicalCardExpiry,
+            name: users.name, email: users.email, phone: users.phone,
+          })
+            .from(drivers)
+            .leftJoin(users, eq(drivers.userId, users.id))
+            .where(and(...conditions, or(like(users.name, `%${search}%`), like(users.email, `%${search}%`))))
+            .orderBy(desc(drivers.updatedAt))
+            .limit(limit || 25);
+        } else {
+          results = await db.select({
+            driverId: drivers.id, userId: drivers.userId, companyId: drivers.companyId,
+            status: drivers.status, safetyScore: drivers.safetyScore,
+            hazmatEndorsement: drivers.hazmatEndorsement, totalMiles: drivers.totalMiles,
+            totalLoads: drivers.totalLoads, licenseState: drivers.licenseState,
+            licenseExpiry: drivers.licenseExpiry, medicalCardExpiry: drivers.medicalCardExpiry,
+            name: users.name, email: users.email, phone: users.phone,
+          })
+            .from(drivers)
+            .leftJoin(users, eq(drivers.userId, users.id))
+            .where(conditions.length > 0 ? and(...conditions) : undefined)
+            .orderBy(desc(drivers.updatedAt))
+            .limit(limit || 25);
+        }
+
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: results.length, drivers: results }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Driver search error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: list_vehicles — fleet vehicles with status, type, mileage
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "list_vehicles",
+    "List fleet vehicles. Filter by type, status, or company. Returns VIN, make/model/year, mileage, status, maintenance dates.",
+    {
+      vehicleType: z.string().optional().describe("Filter by type: tractor, trailer, tanker, flatbed, refrigerated, dry_van, etc."),
+      status: z.string().optional().describe("Filter by status: available, in_use, maintenance, out_of_service"),
+      companyId: z.number().optional().describe("Filter by company ID"),
+      limit: z.number().optional().default(25),
+    },
+    async ({ vehicleType, status, companyId, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+
+      try {
+        const conditions: any[] = [];
+        if (vehicleType) conditions.push(eq(vehicles.vehicleType, vehicleType as any));
+        if (status) conditions.push(eq(vehicles.status, status as any));
+        if (companyId) conditions.push(eq(vehicles.companyId, companyId));
+
+        const results = await db.select({
+          id: vehicles.id, companyId: vehicles.companyId, vin: vehicles.vin,
+          make: vehicles.make, model: vehicles.model, year: vehicles.year,
+          licensePlate: vehicles.licensePlate, vehicleType: vehicles.vehicleType,
+          capacity: vehicles.capacity, mileage: vehicles.mileage,
+          status: vehicles.status, currentDriverId: vehicles.currentDriverId,
+          nextMaintenanceDate: vehicles.nextMaintenanceDate,
+          nextInspectionDate: vehicles.nextInspectionDate,
+        })
+          .from(vehicles)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(vehicles.updatedAt))
+          .limit(limit || 25);
+
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: results.length, vehicles: results }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Vehicle list error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: dispatch_board — get current Kanban board state
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "dispatch_board",
+    "Get the current dispatch board state — loads grouped by Kanban lane (unassigned, assigned, in_transit, delivered). Shows load counts and details per lane.",
+    {},
+    async () => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+
+      try {
+        const LANE_MAP: Record<string, string[]> = {
+          unassigned: ["posted", "bidding", "unassigned", "draft"],
+          assigned: ["assigned", "en_route_pickup", "at_pickup", "loading"],
+          in_transit: ["in_transit", "en_route_delivery", "at_delivery", "unloading"],
+          delivered: ["delivered"],
+        };
+
+        const board: Record<string, any[]> = {};
+        for (const [lane, statuses] of Object.entries(LANE_MAP)) {
+          const items = await db.select({
+            id: loads.id, loadNumber: loads.loadNumber, status: loads.status,
+            pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
+            rate: loads.rate, driverId: loads.driverId, cargoType: loads.cargoType,
+            updatedAt: loads.updatedAt,
+          })
+            .from(loads)
+            .where(inArray(loads.status, statuses as any))
+            .orderBy(desc(loads.updatedAt))
+            .limit(50);
+          board[lane] = items;
+        }
+
+        const summary = Object.fromEntries(Object.entries(board).map(([k, v]) => [k, v.length]));
+        return { content: [{ type: "text" as const, text: JSON.stringify({ summary, board }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Dispatch board error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: settlement_overview — settlement stats and recent batches
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "settlement_overview",
+    "Get settlement overview: total settlements, amounts by status (pending, approved, paid), and recent settlement records.",
+    {
+      status: z.string().optional().describe("Filter by status"),
+      limit: z.number().optional().default(20),
+    },
+    async ({ status, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+
+      try {
+        const conditions: any[] = [];
+        if (status) conditions.push(eq(settlements.status, status as any));
+
+        const results = await db.select().from(settlements)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(settlements.createdAt))
+          .limit(limit || 20);
+
+        const [stats] = await db.select({
+          total: sql<number>`COUNT(*)`,
+          totalAmount: sql<number>`COALESCE(SUM(CAST(${settlements.totalAmount} AS DECIMAL)), 0)`,
+        }).from(settlements);
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              totalSettlements: stats?.total || 0,
+              totalAmount: Math.round((stats?.totalAmount || 0) * 100) / 100,
+              recent: results,
+            }, null, 2),
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Settlement error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: list_agreements — contracts/agreements between parties
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "list_agreements",
+    "List agreements (contracts) between platform parties. Filter by status or type. Shows signatories, dates, and terms.",
+    {
+      status: z.string().optional().describe("Filter by status: draft, sent, signed, executed, terminated, expired"),
+      limit: z.number().optional().default(20),
+    },
+    async ({ status, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+
+      try {
+        const conditions: any[] = [];
+        if (status) conditions.push(eq(agreements.status, status as any));
+
+        const results = await db.select().from(agreements)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(agreements.createdAt))
+          .limit(limit || 20);
+
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: results.length, agreements: results }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Agreements error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: wallet_overview — wallet balances and transaction summary
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "wallet_overview",
+    "Get wallet balances across the platform. Shows available balance, pending, total received/spent, Stripe status. Filter by user ID.",
+    {
+      userId: z.number().optional().describe("Get wallet for a specific user ID"),
+      limit: z.number().optional().default(25),
+    },
+    async ({ userId, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+
+      try {
+        if (userId) {
+          const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
+          if (!wallet) return { content: [{ type: "text" as const, text: `No wallet found for user ${userId}` }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ wallet }, null, 2) }] };
+        }
+
+        const results = await db.select({
+          userId: wallets.userId,
+          availableBalance: wallets.availableBalance,
+          pendingBalance: wallets.pendingBalance,
+          totalReceived: wallets.totalReceived,
+          totalSpent: wallets.totalSpent,
+          stripeAccountStatus: wallets.stripeAccountStatus,
+        })
+          .from(wallets)
+          .orderBy(desc(wallets.availableBalance))
+          .limit(limit || 25);
+
+        const [totals] = await db.select({
+          walletCount: sql<number>`COUNT(*)`,
+          totalAvailable: sql<number>`COALESCE(SUM(CAST(${wallets.availableBalance} AS DECIMAL)), 0)`,
+          totalPending: sql<number>`COALESCE(SUM(CAST(${wallets.pendingBalance} AS DECIMAL)), 0)`,
+        }).from(wallets);
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              totalWallets: totals?.walletCount || 0,
+              platformTotalAvailable: Math.round((totals?.totalAvailable || 0) * 100) / 100,
+              platformTotalPending: Math.round((totals?.totalPending || 0) * 100) / 100,
+              wallets: results,
+            }, null, 2),
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Wallet error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: messaging_overview — recent conversations and messages
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "messaging_overview",
+    "Get messaging overview: recent conversations and message counts. Useful for understanding platform communication activity.",
+    {
+      limit: z.number().optional().default(20),
+    },
+    async ({ limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+
+      try {
+        const convos = await db.select().from(conversations)
+          .orderBy(desc(conversations.updatedAt))
+          .limit(limit || 20);
+
+        const [msgStats] = await db.select({
+          totalMessages: sql<number>`COUNT(*)`,
+          totalConversations: sql<number>`(SELECT COUNT(*) FROM conversations)`,
+        }).from(messages);
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              totalConversations: msgStats?.totalConversations || 0,
+              totalMessages: msgStats?.totalMessages || 0,
+              recentConversations: convos,
+            }, null, 2),
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Messaging error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: notification_history — recent platform notifications
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "notification_history",
+    "View recent platform notifications. Filter by user ID or type. Shows notification content, read status, priority.",
+    {
+      userId: z.number().optional().describe("Filter by user ID"),
+      limit: z.number().optional().default(30),
+    },
+    async ({ userId, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+
+      try {
+        const conditions: any[] = [];
+        if (userId) conditions.push(eq(notifications.userId, userId));
+
+        const results = await db.select().from(notifications)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(notifications.createdAt))
+          .limit(limit || 30);
+
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: results.length, notifications: results }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Notification error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
   // RESOURCE: platform overview
   // ══════════════════════════════════════════════════════════════════════════
   mcp.resource(
@@ -1120,13 +1469,16 @@ KEY FEATURES:
 - Hot Zones: 22+ data sources for market intelligence
 - Platform fees: dynamic, configurable by Super Admin
 - Accessorial management: detention, lumper, TONU claims
-- Dispatch Planner: daily driver slot scheduling (WS-DC-001)
-- Settlement Batching: 3-level batch grouping & approval (WS-DC-003)
-- Allocation Tracker: daily barrel/volume tracking per contract (WS-DC-002)
-- Bulk Load Import: CSV upload wizard with validation (WS-DC-006)
-- Pricebook: rate sheets with cascading priority lookup, CSV import/export, rate history (WS-DC-004)
-- FSC Engine: fuel surcharge calculator — CPM, percentage, table lookup with PADD pricing (WS-DC-005)
-- Customer Portal: read-only token-based portal for shippers/brokers, GPS tracking with 2-min delay (WS-DC-007)
+- Dispatch Planner: daily driver slot scheduling with drag-and-drop
+- Settlement Batching: 3-level batch grouping & approval workflows
+- Allocation Tracker: daily barrel/volume tracking per contract
+- Bulk Load Import: CSV upload wizard with validation and preview
+- Pricebook: rate sheets with cascading priority lookup, CSV import/export, rate history
+- FSC Engine: fuel surcharge calculator — CPM, percentage, table lookup with PADD pricing
+- Customer Portal: read-only token-based portal for shippers/brokers, GPS tracking with 2-min delay
+- Agreements: digital contract management with e-signature workflow
+- Commission Engine: automated commission calculations for brokers/agents
+- CDL Verification: driver license and endorsement validation
 - Factoring Credit Score: platform-internal 300-850 scoring using FMCSA safety, payment history, company age (AAA-D ratings)
 - EusoSMS: Azure Communication Services SMS gateway with retry queue, opt-out management, delivery tracking (30+ event types)
 
@@ -1181,11 +1533,15 @@ AUDIT STATUS: 127/127 PASS (100%) — all P1/P2 security and functionality gaps 
           type: "text" as const,
           text: `Generate a comprehensive ${focus || "executive"} report for the EusoTrip platform covering the ${period || "current month"}. 
 Use the available tools to pull real data:
-1. Call platform_analytics to get overall metrics
-2. Call get_platform_fees to understand current fee structure
-3. Call search_loads with relevant filters to analyze load volume
-4. Call accessorial_stats for claims data
-5. Call list_users to understand user base
+1. Call platform_analytics for overall metrics
+2. Call dispatch_board for current dispatch state
+3. Call search_loads to analyze load volume and trends
+4. Call search_drivers for fleet driver status
+5. Call settlement_overview for financial settlements
+6. Call wallet_overview for platform-wide balances
+7. Call factoring_overview for factoring program health
+8. Call accessorial_stats for claims data
+9. Call get_platform_fees for current fee structure
 
 Format as a professional business report with sections, key metrics, trends, and actionable recommendations.`,
         },
