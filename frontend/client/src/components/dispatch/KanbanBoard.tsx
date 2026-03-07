@@ -345,10 +345,14 @@ export default function KanbanBoard({ loads, loading, onAssignDriver, onMoveLoad
   }, []);
 
   const handleDropOnLoad = useCallback((e: React.DragEvent, loadId: string) => {
-    e.preventDefault(); e.stopPropagation(); reset();
+    e.preventDefault();
     try {
       const d = JSON.parse(e.dataTransfer.getData("application/json"));
-      if (d.driverId && onAssignDriver) onAssignDriver(loadId, d.driverId);
+      if (d.driverId && onAssignDriver) {
+        e.stopPropagation(); reset();
+        onAssignDriver(loadId, d.driverId);
+      }
+      // Load-to-lane moves: don't stopPropagation — let it bubble to the lane handler
     } catch {}
   }, [onAssignDriver, reset]);
 
