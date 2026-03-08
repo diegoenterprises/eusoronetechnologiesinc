@@ -49,15 +49,22 @@ export const lightspeedRouter = router({
     }))
     .query(async ({ input }) => {
       const { query, limit } = input;
-      const trimmed = query.trim();
+      const trimmed = query.trim().toLowerCase();
       if (trimmed.length < 1) return { results: [], source: "empty" as const, ms: 0 };
 
       const start = Date.now();
 
+      // Redis typeahead cache — sub-1ms for repeated keystrokes (SEARCH tier, 60s TTL)
+      const cacheKey = `ta:${trimmed}:${limit}`;
+      const cached = await cacheGet<{ results: any[]; source: string }>("SEARCH", cacheKey);
+      if (cached) {
+        return { ...cached, source: "redis" as const, ms: Date.now() - start };
+      }
+
       // Try materialized view first (FULLTEXT indexed, sub-5ms)
       const mvResults = await searchMV(trimmed, limit);
       if (mvResults.length > 0) {
-        return {
+        const mvPayload = {
           results: mvResults.map(r => ({
             dotNumber: r.dotNumber,
             legalName: r.legalName,
@@ -72,8 +79,9 @@ export const lightspeedRouter = router({
             nbrPowerUnit: r.nbrPowerUnit,
           })),
           source: "mv" as const,
-          ms: Date.now() - start,
         };
+        cacheSet("SEARCH", cacheKey, mvPayload, 60).catch(() => {});
+        return { ...mvPayload, ms: Date.now() - start };
       }
 
       // Fallback: direct FULLTEXT on fmcsa_census (slower but always available)
@@ -113,7 +121,7 @@ export const lightspeedRouter = router({
           ) as any;
         }
 
-        return {
+        const censusPayload = {
           results: (rows || []).map((r: any) => ({
             dotNumber: String(r.dot_number),
             legalName: r.legal_name || "Unknown",
@@ -128,8 +136,9 @@ export const lightspeedRouter = router({
             nbrPowerUnit: r.nbr_power_unit || 0,
           })),
           source: "census" as const,
-          ms: Date.now() - start,
         };
+        cacheSet("SEARCH", cacheKey, censusPayload, 60).catch(() => {});
+        return { ...censusPayload, ms: Date.now() - start };
       } catch (err: any) {
         console.warn("[LIGHTSPEED] Typeahead fallback error:", err.message?.slice(0, 100));
         return { results: [], source: "error" as const, ms: Date.now() - start };

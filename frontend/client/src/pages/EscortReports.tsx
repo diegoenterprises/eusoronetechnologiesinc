@@ -1,4 +1,7 @@
 /**
+ * @deprecated — Consolidated into EscortEarnings.tsx "Reports" tab (Task 6.2.2)
+ * Route /escort/reports now redirects to /escort/earnings
+ *
  * ESCORT REPORTS PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

@@ -9,30 +9,21 @@
 
 import { z } from "zod";
 import { router, publicProcedure } from "../_core/trpc";
+import { cacheGet, cacheSet } from "../services/cache/redisCache";
 
 const FMCSA_BASE = "https://mobile.fmcsa.dot.gov/qc/services";
 const FMCSA_KEY = process.env.FMCSA_WEBKEY || "891b0bbf613e9937bd584968467527aa1f29aec2";
 
-// In-memory cache to avoid hammering FMCSA API (24h TTL)
-const catalystCache = new Map<string, { data: any; expires: number }>();
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+// LIGHTSPEED: Distributed Redis cache (24h TTL, WARM tier)
+// Falls back to in-memory automatically when Redis unavailable
+const FMCSA_CACHE_TTL = 86400; // 24 hours in seconds
 
-function getCached(key: string) {
-  const entry = catalystCache.get(key);
-  if (entry && entry.expires > Date.now()) return entry.data;
-  if (entry) catalystCache.delete(key);
-  return null;
+async function getCached(key: string): Promise<any> {
+  return cacheGet("WARM", `fmcsa:${key}`);
 }
 
-function setCache(key: string, data: any) {
-  catalystCache.set(key, { data, expires: Date.now() + CACHE_TTL });
-  // Evict old entries if cache grows too large
-  if (catalystCache.size > 5000) {
-    const now = Date.now();
-    Array.from(catalystCache.entries()).forEach(([k, v]) => {
-      if (v.expires < now) catalystCache.delete(k);
-    });
-  }
+async function setCache(key: string, data: any): Promise<void> {
+  await cacheSet("WARM", `fmcsa:${key}`, data, FMCSA_CACHE_TTL);
 }
 
 async function fmcsaFetch(endpoint: string) {
@@ -140,7 +131,7 @@ export const fmcsaRouter = router({
       }
 
       const cacheKey = `dot:${input.dotNumber}`;
-      const cached = getCached(cacheKey);
+      const cached = await getCached(cacheKey);
       if (cached) return cached;
 
       try {
@@ -220,7 +211,7 @@ export const fmcsaRouter = router({
       }
 
       const cacheKey = `mc:${input.mcNumber}`;
-      const cached = getCached(cacheKey);
+      const cached = await getCached(cacheKey);
       if (cached) return cached;
 
       try {
@@ -294,7 +285,7 @@ export const fmcsaRouter = router({
       }
 
       const cacheKey = `hmsp:${input.dotNumber}`;
-      const cached = getCached(cacheKey);
+      const cached = await getCached(cacheKey);
       // If cached and no specific class requested, return cached
       if (cached && !input.requestedHazmatClass) return cached;
 

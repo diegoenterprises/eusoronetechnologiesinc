@@ -2,6 +2,7 @@
  * EUSOBOARD — FIND LOADS MARKETPLACE
  * Premium load marketplace with KPI strip, compact/expanded views,
  * sort controls, earnings estimates, bookmarks, and market intelligence.
+ * GAP-091: Driver Preferred Lanes — highlights loads matching saved lane preferences.
  * State-of-the-art | Theme-aware | Investor-grade.
  */
 
@@ -20,13 +21,13 @@ import {
   Droplets, FlaskConical, AlertTriangle, Gavel, SlidersHorizontal,
   ChevronLeft, ChevronRight, RefreshCw, TrendingUp, DollarSign,
   ArrowUpDown, LayoutGrid, LayoutList, Bookmark, BookmarkCheck,
-  Target, Flame, Clock, Star, ArrowUp, ArrowDown, Percent
+  Target, Flame, Clock, Star, ArrowUp, ArrowDown, Percent, Heart, Route
 } from "lucide-react";
 import { useLocation } from "wouter";
 import LoadCargoAnimation from "@/components/LoadCargoAnimation";
 
 type EquipFilter = "all" | "tanker" | "flatbed" | "dry_van" | "reefer" | "hopper" | "cryogenic" | "hazmat" | "pneumatic" | "end_dump" | "intermodal_chassis" | "curtain_side" | "step_deck" | "lowboy" | "double_drop" | "conestoga" | "auto_carrier" | "livestock" | "log_trailer" | "grain_hopper" | "food_grade_tank" | "water_tank";
-type SortKey = "rate_desc" | "rate_asc" | "rpm_desc" | "distance_asc" | "distance_desc" | "newest" | "pickup";
+type SortKey = "rate_desc" | "rate_asc" | "rpm_desc" | "distance_asc" | "distance_desc" | "newest" | "pickup" | "preferred";
 type ViewMode = "expanded" | "compact";
 
 const PLATFORM_FEE_PCT = 0.08;
@@ -56,11 +57,27 @@ export default function FindLoads() {
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [viewMode, setViewMode] = useState<ViewMode>("expanded");
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
+  const [preferredOnly, setPreferredOnly] = useState(false);
 
   const loadsQuery = (trpc as any).loadBoard.search.useQuery({ limit: 100 });
   const statsQuery = (trpc as any).loadBoard.getStats.useQuery();
   const mlDemand = (trpc as any).ml?.forecastDemand?.useQuery?.({}) || { data: null };
   const mlStatus = (trpc as any).ml?.getModelStatus?.useQuery?.() || { data: null };
+  const lanesQuery = (trpc as any).drivers?.getPreferredLanes?.useQuery?.() || { data: null };
+  const preferredLanes: Array<{ origin: string; destination: string }> = lanesQuery.data?.lanes || [];
+  const maxDeadhead = lanesQuery.data?.maxDeadheadMiles || 500;
+
+  const isPreferredLane = useCallback((load: any) => {
+    if (preferredLanes.length === 0) return false;
+    const oState = (load.origin?.state || "").toUpperCase().trim();
+    const dState = (load.destination?.state || "").toUpperCase().trim();
+    if (!oState || !dState) return false;
+    return preferredLanes.some((lane) => {
+      const lo = lane.origin.toUpperCase().trim();
+      const ld = lane.destination.toUpperCase().trim();
+      return oState === lo && dState === ld;
+    });
+  }, [preferredLanes]);
 
   const allLoads = (loadsQuery.data as any)?.loads || [];
   const marketStats = (loadsQuery.data as any)?.marketStats;
@@ -79,7 +96,8 @@ export default function FindLoads() {
         const raw = load.pickupDate || load.createdAt;
         if (raw) { const ld = new Date(raw); matchesDate = isSameDay(ld, selectedDate); }
       }
-      return matchesSearch && matchesEquip && matchesDate;
+      const matchesPreferred = !preferredOnly || isPreferredLane(load);
+      return matchesSearch && matchesEquip && matchesDate && matchesPreferred;
     });
     // Sort
     const rpm = (l: any) => l.distance > 0 && l.rate > 0 ? l.rate / l.distance : 0;
@@ -91,11 +109,17 @@ export default function FindLoads() {
         case "distance_asc": return (a.distance || 0) - (b.distance || 0);
         case "distance_desc": return (b.distance || 0) - (a.distance || 0);
         case "pickup": return new Date(a.pickupDate || a.createdAt || 0).getTime() - new Date(b.pickupDate || b.createdAt || 0).getTime();
+        case "preferred": {
+          const aP = isPreferredLane(a) ? 1 : 0;
+          const bP = isPreferredLane(b) ? 1 : 0;
+          if (bP !== aP) return bP - aP;
+          return (b.rate || 0) - (a.rate || 0);
+        }
         default: return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
       }
     });
     return result;
-  }, [allLoads, searchTerm, equipFilter, dateFilterActive, selectedDate, sortKey]);
+  }, [allLoads, searchTerm, equipFilter, dateFilterActive, selectedDate, sortKey, preferredOnly, isPreferredLane]);
 
   const getCargoIcon = (ct: string) => {
     if (ct === "petroleum" || ct === "liquid") return <Droplets className="w-4 h-4" />;
@@ -108,6 +132,7 @@ export default function FindLoads() {
   const totalMarketValue = allLoads.reduce((s: number, l: any) => s + (l.rate || 0), 0);
   const avgRPM = allLoads.length > 0 ? allLoads.reduce((s: number, l: any) => s + (l.distance > 0 && l.rate > 0 ? l.rate / l.distance : 0), 0) / allLoads.length : 0;
   const hazmatCount = allLoads.filter((l: any) => l.hazmat).length;
+  const preferredCount = useMemo(() => allLoads.filter((l: any) => isPreferredLane(l)).length, [allLoads, isPreferredLane]);
 
   const equipTabs: { id: EquipFilter; label: string }[] = [
     { id: "all", label: `All (${allLoads.length})` },
@@ -130,6 +155,7 @@ export default function FindLoads() {
     { id: "rate_asc", label: "Rate: Low→High" }, { id: "rpm_desc", label: "$/Mile: Best" },
     { id: "distance_asc", label: "Distance: Short" }, { id: "distance_desc", label: "Distance: Long" },
     { id: "pickup", label: "Pickup: Soonest" },
+    ...(preferredLanes.length > 0 ? [{ id: "preferred" as SortKey, label: "My Lanes First" }] : []),
   ];
 
   const isLight = L;
@@ -178,7 +204,7 @@ export default function FindLoads() {
           { l: "Avg Rate", v: marketStats?.avgRate ? `$${marketStats.avgRate.toLocaleString()}` : "\u2014", I: TrendingUp, c: "text-purple-500", b: "from-purple-500/10 to-purple-600/5" },
           { l: "Avg $/Mile", v: avgRPM > 0 ? `$${avgRPM.toFixed(2)}` : "\u2014", I: Percent, c: "text-cyan-500", b: "from-cyan-500/10 to-cyan-600/5" },
           { l: "Hazmat", v: hazmatCount, I: Flame, c: "text-red-500", b: "from-red-500/10 to-red-600/5" },
-          { l: "Bids Placed", v: boardStats?.bidsReceived ?? "\u2014", I: Gavel, c: "text-amber-500", b: "from-amber-500/10 to-amber-600/5" },
+          { l: "My Lanes", v: preferredCount, I: Route, c: "text-pink-500", b: "from-pink-500/10 to-pink-600/5" },
         ].map((k) => (
           <div key={k.l} className={cn("rounded-2xl p-3 bg-gradient-to-br border", `${k.b} border-slate-200/60 dark:border-slate-700/30`)}>
             <k.I className={cn("w-4 h-4 mb-1", k.c)} />
@@ -205,6 +231,11 @@ export default function FindLoads() {
           ))}
         </div>
         <div className="flex items-center gap-1">
+          {preferredLanes.length > 0 && (
+            <button onClick={() => setPreferredOnly(!preferredOnly)} className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all mr-1", preferredOnly ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md" : L ? "bg-pink-50 text-pink-500 border border-pink-200 hover:bg-pink-100" : "bg-pink-500/10 text-pink-400 border border-pink-500/30 hover:bg-pink-500/20")}>
+              <Route className="w-3.5 h-3.5" />{preferredOnly ? "My Lanes" : "My Lanes"}{preferredOnly ? ` (${preferredCount})` : ""}
+            </button>
+          )}
           <button onClick={() => setViewMode("expanded")} className={cn("p-2 rounded-lg transition-all", viewMode === "expanded" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : L ? "text-slate-400 hover:bg-slate-100" : "text-slate-400 hover:bg-slate-700")}>
             <LayoutGrid className="w-4 h-4" />
           </button>
@@ -318,6 +349,7 @@ export default function FindLoads() {
                     {load.distance > 0 && <span className="text-[10px] text-slate-400">{load.distance} mi</span>}
                     <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-bold", L ? "bg-slate-100 text-slate-500" : "bg-slate-700 text-slate-300")}>{getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass)}</span>
                     {load.hazmatClass && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-red-500/15 text-red-500">HM {load.hazmatClass}</span>}
+                    {isPreferredLane(load) && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-pink-500/15 text-pink-500 flex items-center gap-0.5"><Heart className="w-2.5 h-2.5" />My Lane</span>}
                   </div>
                 </div>
                 {/* Rate Column */}
@@ -457,6 +489,11 @@ export default function FindLoads() {
                     )}
                     {load.weight > 0 && (
                       <span className={cn("text-[11px] px-2.5 py-1 rounded-lg font-medium border", L ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>{Number(load.weight).toLocaleString()} {load.weightUnit || "lbs"}</span>
+                    )}
+                    {isPreferredLane(load) && (
+                      <span className="text-[11px] px-2.5 py-1 rounded-lg font-bold bg-pink-500/15 text-pink-500 border border-pink-500/30 flex items-center gap-1">
+                        <Heart className="w-3 h-3" />Preferred Lane
+                      </span>
                     )}
                   </div>
 

@@ -1,8 +1,9 @@
 /**
- * MY LOADS PAGE
+ * MY LOADS PAGE (Task 6.3.2: History Filter)
  * Redesigned to match the mobile-first inspiration:
  * - Week date picker with day selector
  * - Filter tabs: All / Pending / Scheduled / In Progress / Past
+ * - Past tab includes History Filter: date range (7d/30d/90d/all) + status sub-filter
  * - Load cards with company branding, route line, equipment tags
  * - Track / Post a Job action buttons
  * Theme-aware | Brand gradient | Oil & gas industry focused
@@ -24,7 +25,7 @@ import {
   Package, Plus, Search, MapPin, Truck, ChevronLeft, ChevronRight,
   AlertTriangle, Navigation, Building2, Droplets, FlaskConical,
   Eye, MessageSquare, Phone, ExternalLink, ArrowRight, Clock,
-  DollarSign, Weight, Route, RefreshCw, User, X
+  DollarSign, Weight, Route, RefreshCw, User, X, History, CalendarDays
 } from "lucide-react";
 import { useLocation } from "wouter";
 import LoadCargoAnimation from "@/components/LoadCargoAnimation";
@@ -66,6 +67,8 @@ export default function MyLoads() {
   const [weekBase, setWeekBase] = useState(new Date());
 
   const [previewLoad, setPreviewLoad] = useState<any>(null);
+  const [historyRange, setHistoryRange] = useState<"7d" | "30d" | "90d" | "all">("30d");
+  const [historyStatus, setHistoryStatus] = useState<"all" | "delivered" | "cancelled" | "disputed">("all");
 
   // Format selected date as YYYY-MM-DD for DB query
   const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
@@ -144,9 +147,27 @@ export default function MyLoads() {
         }
       }
 
-      return matchesSearch && matchesFilter && matchesDate;
+      // History filters (only when Past tab is active)
+      let matchesHistory = true;
+      if (activeFilter === "past") {
+        if (historyStatus !== "all") {
+          matchesHistory = load.status === historyStatus;
+        }
+        if (historyRange !== "all") {
+          const loadDateRaw = load.deliveryDate || load.updatedAt || load.createdAt;
+          if (loadDateRaw) {
+            const loadDate = new Date(loadDateRaw);
+            const now = new Date();
+            const daysAgo = historyRange === "7d" ? 7 : historyRange === "30d" ? 30 : 90;
+            const cutoff = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+            matchesHistory = matchesHistory && loadDate >= cutoff;
+          }
+        }
+      }
+
+      return matchesSearch && matchesFilter && matchesDate && matchesHistory;
     });
-  }, [loadsQuery.data, searchTerm, activeFilter, dateFilterActive, selectedDate]);
+  }, [loadsQuery.data, searchTerm, activeFilter, dateFilterActive, selectedDate, historyRange, historyStatus]);
 
   // Active load stats
   const allLoads = (loadsQuery.data as any[]) || [];
@@ -312,6 +333,31 @@ export default function MyLoads() {
           </button>
         ))}
       </div>
+
+      {/* ── History Filter (Past tab only) ── */}
+      {activeFilter === "past" && (
+        <div className={cn("rounded-xl border p-3 flex flex-col sm:flex-row items-start sm:items-center gap-3", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+          <div className="flex items-center gap-1.5">
+            <History className="w-4 h-4 text-slate-400 flex-shrink-0" />
+            <span className={cn("text-xs font-medium whitespace-nowrap", isLight ? "text-slate-500" : "text-slate-400")}>Range:</span>
+            {(["7d", "30d", "90d", "all"] as const).map((r) => (
+              <button key={r} onClick={() => setHistoryRange(r)} className={cn("px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all", historyRange === r ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-700 text-slate-400 hover:bg-slate-600")}>
+                {r === "7d" ? "7 Days" : r === "30d" ? "30 Days" : r === "90d" ? "90 Days" : "All Time"}
+              </button>
+            ))}
+          </div>
+          <div className={cn("w-px h-6 hidden sm:block", isLight ? "bg-slate-200" : "bg-slate-700")} />
+          <div className="flex items-center gap-1.5">
+            <CalendarDays className="w-4 h-4 text-slate-400 flex-shrink-0" />
+            <span className={cn("text-xs font-medium whitespace-nowrap", isLight ? "text-slate-500" : "text-slate-400")}>Status:</span>
+            {(["all", "delivered", "cancelled", "disputed"] as const).map((s) => (
+              <button key={s} onClick={() => setHistoryStatus(s)} className={cn("px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all capitalize", historyStatus === s ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-700 text-slate-400 hover:bg-slate-600")}>
+                {s === "all" ? "All" : s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Load Cards ── */}
       {loadsQuery.isLoading ? (

@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into driver/DriverEarnings.tsx (Trip Pay tab). Remove after migration verification.
  * TRIP PAY PAGE
  * Driver-facing trip payment breakdown screen.
  * Shows per-trip earnings including line haul, fuel surcharge, accessorials,

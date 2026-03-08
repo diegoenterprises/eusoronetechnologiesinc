@@ -5,6 +5,8 @@
  */
 
 import React, { useState } from "react";
+import ConvoyLiveTracker from "@/components/convoy/ConvoyLiveTracker";
+import ConvoyRoutePlan from "@/components/convoy/ConvoyRoutePlan";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,12 +16,14 @@ import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
 import {
   Car, Search, MapPin, Clock, CheckCircle,
-  Truck, Users, Phone, Navigation
+  Truck, Users, Phone, Navigation, Route
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ActiveConvoys() {
   const [search, setSearch] = useState("");
+  const [trackingConvoyId, setTrackingConvoyId] = useState<number | null>(null);
+  const [routePlanConvoyId, setRoutePlanConvoyId] = useState<number | null>(null);
 
   const convoysQuery = (trpc as any).escorts.getActiveConvoys.useQuery({ search });
   const statsQuery = (trpc as any).escorts.getConvoyStats.useQuery();
@@ -155,11 +159,41 @@ export default function ActiveConvoys() {
                       <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg">
                         <Phone className="w-4 h-4 mr-1" />Contact
                       </Button>
-                      <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 rounded-lg">
-                        <Navigation className="w-4 h-4 mr-1" />Navigate
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={cn("rounded-lg", routePlanConvoyId === convoy.id ? "border-emerald-500/50 text-emerald-400" : "bg-slate-700/50 border-slate-600/50")}
+                        onClick={() => setRoutePlanConvoyId(routePlanConvoyId === convoy.id ? null : convoy.id)}
+                      >
+                        <Route className="w-4 h-4 mr-1" />{routePlanConvoyId === convoy.id ? "Hide Plan" : "Route Plan"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        className={cn("rounded-lg", trackingConvoyId === convoy.id ? "bg-red-600 hover:bg-red-700" : "bg-cyan-600 hover:bg-cyan-700")}
+                        onClick={() => setTrackingConvoyId(trackingConvoyId === convoy.id ? null : convoy.id)}
+                      >
+                        <Navigation className="w-4 h-4 mr-1" />{trackingConvoyId === convoy.id ? "Close Map" : "Live Track"}
                       </Button>
                     </div>
                   </div>
+
+                  {/* GAP-082: Live Convoy Tracker Map */}
+                  {trackingConvoyId === convoy.id && (
+                    <div className="mt-3">
+                      <ConvoyLiveTracker convoyId={convoy.id} />
+                    </div>
+                  )}
+
+                  {/* GAP-082 Task 5.2: Convoy Route Plan */}
+                  {routePlanConvoyId === convoy.id && (
+                    <div className="mt-3">
+                      <ConvoyRoutePlan
+                        convoyId={convoy.id}
+                        loadId={convoy.loadId}
+                        totalDistanceMiles={convoy.distance}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -6,6 +6,12 @@
  * emergency contact, and 24-hr response number.
  * Papers must be within driver's reach or on driver's seat when away.
  * Theme-aware | Brand gradient | Oil & gas industry focused
+ *
+ * Phase 4 Enhancement:
+ * - Multi-jurisdiction support: US (49 CFR), Canada (TDG), Mexico (NOM)
+ * - ACE/ACI customs manifest panel
+ * - CANUTEC / SETIQ emergency numbers
+ * - Bilingual shipping descriptions (EN/FR for TDG, EN/ES for NOM)
  */
 
 import React, { useState } from "react";
@@ -20,18 +26,27 @@ import { toast } from "sonner";
 import {
   FileText, AlertTriangle, Phone, Download, Printer,
   Shield, CheckCircle, Clock, MapPin, Truck,
-  Package, RefreshCw, Info, Eye, ChevronRight
+  Package, RefreshCw, Info, Eye, ChevronRight,
+  Globe, Flag, DollarSign, Languages
 } from "lucide-react";
 
 type PaperSection = "shipping" | "emergency" | "handling";
+type Jurisdiction = "us" | "ca" | "mx" | "cross_border";
 
 export default function ShippingPapers() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [activeSection, setActiveSection] = useState<PaperSection>("shipping");
+  const [jurisdiction, setJurisdiction] = useState<Jurisdiction>("us");
 
   const shipmentsQuery = (trpc as any).hazmat?.getShipments?.useQuery?.({ limit: 5 }) || { data: [], isLoading: false, refetch: () => {} };
   const hazardClassesQuery = (trpc as any).hazmat?.getHazardClasses?.useQuery?.() || { data: [], isLoading: false };
+
+  // Phase 4: Cross-border queries
+  const tdgClassesQuery = (trpc as any).crossBorder?.tdg?.getClasses?.useQuery?.() || { data: [] };
+  const canutecQuery = (trpc as any).crossBorder?.tdg?.getEmergencyInfo?.useQuery?.() || { data: null };
+  const provincePermitsQuery = (trpc as any).crossBorder?.tdg?.getProvincePermits?.useQuery?.() || { data: [] };
+  const fxRatesQuery = (trpc as any).crossBorder?.fx?.getRates?.useQuery?.() || { data: null };
 
   const shipments: any[] = Array.isArray(shipmentsQuery.data) ? shipmentsQuery.data : [];
   const hazardClasses: any[] = Array.isArray(hazardClassesQuery.data) ? hazardClassesQuery.data : [];
@@ -95,17 +110,50 @@ export default function ShippingPapers() {
         </div>
       </div>
 
-      {/* Accessibility reminder */}
+      {/* Jurisdiction Selector */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {([
+          { id: "us" as Jurisdiction, label: "US (49 CFR)", icon: "🇺🇸" },
+          { id: "ca" as Jurisdiction, label: "Canada (TDG)", icon: "🇨🇦" },
+          { id: "mx" as Jurisdiction, label: "Mexico (NOM)", icon: "🇲🇽" },
+          { id: "cross_border" as Jurisdiction, label: "Cross-Border", icon: "🌎" },
+        ]).map((j) => (
+          <button
+            key={j.id}
+            onClick={() => setJurisdiction(j.id)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all border",
+              jurisdiction === j.id
+                ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-md"
+                : isLight
+                  ? "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                  : "bg-slate-800/60 border-slate-700/50 text-slate-400 hover:border-slate-600"
+            )}
+          >
+            <span className="text-base">{j.icon}</span>
+            {j.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Accessibility reminder — jurisdiction-aware */}
       <div className={cn(
         "flex items-start gap-3 p-4 rounded-xl text-sm",
         isLight ? "bg-amber-50 border border-amber-200 text-amber-700" : "bg-amber-500/10 border border-amber-500/20 text-amber-300"
       )}>
         <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
         <div>
-          <p className="font-medium">Driver Accessibility Requirement</p>
+          <p className="font-medium">
+            {jurisdiction === "ca" ? "Driver Accessibility / Accessibilité du conducteur" :
+             jurisdiction === "mx" ? "Requisito de Accesibilidad del Conductor" :
+             "Driver Accessibility Requirement"}
+          </p>
           <p className="text-xs mt-0.5 opacity-80">
-            Shipping papers must be within the driver's immediate reach while at the vehicle's controls,
-            or on the driver's seat when away from the vehicle (49 CFR 177.817).
+            {jurisdiction === "ca"
+              ? "Shipping documents must be within driver's reach (TDG Regulations s. 3.5). / Les documents d'expédition doivent être à portée du conducteur."
+              : jurisdiction === "mx"
+              ? "Los documentos de embarque deben estar al alcance del conductor según NOM-005-SCT/2008."
+              : "Shipping papers must be within the driver's immediate reach while at the vehicle's controls, or on the driver's seat when away from the vehicle (49 CFR 177.817)."}
           </p>
         </div>
       </div>
@@ -258,30 +306,49 @@ export default function ShippingPapers() {
                 </div>
               )}
 
-              {/* Emergency Info Section */}
+              {/* Emergency Info Section — jurisdiction-aware */}
               {activeSection === "emergency" && (
                 <div className="space-y-4">
-                  <div className={cn(
-                    "p-4 rounded-xl border-2",
-                    isLight ? "bg-red-50 border-red-300" : "bg-red-500/10 border-red-500/30"
-                  )}>
+                  {/* Primary emergency number — jurisdiction-dependent */}
+                  <div className={cn("p-4 rounded-xl border-2", isLight ? "bg-red-50 border-red-300" : "bg-red-500/10 border-red-500/30")}>
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 rounded-lg bg-red-500/20">
-                        <Phone className="w-5 h-5 text-red-500" />
-                      </div>
+                      <div className="p-2 rounded-lg bg-red-500/20"><Phone className="w-5 h-5 text-red-500" /></div>
                       <div>
                         <p className={cn("text-xs font-medium uppercase tracking-wider", isLight ? "text-red-500" : "text-red-400")}>
-                          24-Hour Emergency Response
+                          {jurisdiction === "ca" ? "CANUTEC — 24h Urgence / Emergency" : jurisdiction === "mx" ? "SETIQ — Emergencia 24h" : "24-Hour Emergency Response"}
                         </p>
                         <p className={cn("text-xl font-bold", isLight ? "text-red-700" : "text-red-300")}>
-                          CHEMTREC: 1-800-424-9300
+                          {jurisdiction === "ca" ? (canutecQuery.data?.primaryNumeric || "1-888-226-8837") : jurisdiction === "mx" ? "01-800-00-214-00 (SETIQ)" : "CHEMTREC: 1-800-424-9300"}
                         </p>
                       </div>
                     </div>
                     <p className={cn("text-xs", isLight ? "text-red-600" : "text-red-400/80")}>
-                      Required per 49 CFR 172.604 — Must be on shipping paper. Available 24/7 for emergency response guidance.
+                      {jurisdiction === "ca"
+                        ? "Requis selon le Règlement sur le TMD / Required per TDG Regulations. Cellulaire: *666"
+                        : jurisdiction === "mx"
+                        ? "Requerido por NOM-005-SCT/2008 — Centro de información para emergencias en transporte."
+                        : "Required per 49 CFR 172.604 — Must be on shipping paper. Available 24/7."}
                     </p>
                   </div>
+
+                  {/* Cross-border shows ALL emergency numbers */}
+                  {jurisdiction === "cross_border" && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                        <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-1", isLight ? "text-slate-400" : "text-slate-500")}>🇺🇸 US — CHEMTREC</p>
+                        <p className={cn("text-lg font-bold", isLight ? "text-blue-600" : "text-blue-400")}>1-800-424-9300</p>
+                      </div>
+                      <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                        <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-1", isLight ? "text-slate-400" : "text-slate-500")}>🇨🇦 Canada — CANUTEC</p>
+                        <p className={cn("text-lg font-bold", isLight ? "text-blue-600" : "text-blue-400")}>{canutecQuery.data?.primaryNumeric || "1-888-226-8837"}</p>
+                        <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>Cell: *666</p>
+                      </div>
+                      <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                        <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-1", isLight ? "text-slate-400" : "text-slate-500")}>🇲🇽 Mexico — SETIQ</p>
+                        <p className={cn("text-lg font-bold", isLight ? "text-blue-600" : "text-blue-400")}>01-800-00-214-00</p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
@@ -313,7 +380,7 @@ export default function ShippingPapers() {
                     </div>
                     <div>
                       <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>
-                        Emergency Response Guidebook
+                        {jurisdiction === "ca" ? "Guide des mesures d'urgence / Emergency Response Guidebook" : "Emergency Response Guidebook"}
                       </p>
                       <p className={cn("text-xs mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>
                         Refer to ERG Guide #{currentLoad.unNumber ? "128" : "111"} for Class {currentLoad.hazmatClass || "3"} materials.
@@ -321,6 +388,36 @@ export default function ShippingPapers() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Province permits — TDG only */}
+                  {(jurisdiction === "ca" || jurisdiction === "cross_border") && Array.isArray(provincePermitsQuery.data) && provincePermitsQuery.data.length > 0 && (
+                    <div className={cn("p-4 rounded-xl border", isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/5 border-blue-500/20")}>
+                      <p className={cn("text-xs font-medium uppercase tracking-wider mb-2", isLight ? "text-blue-600" : "text-blue-400")}>🇨🇦 Province Permit Requirements</p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {provincePermitsQuery.data.filter((p: any) => p.permitRequired).map((p: any) => (
+                          <div key={p.provinceCode} className={cn("p-2 rounded-lg text-xs", isLight ? "bg-white" : "bg-slate-800/50")}>
+                            <p className={cn("font-medium", isLight ? "text-slate-700" : "text-white")}>{p.provinceName}</p>
+                            <p className={cn(isLight ? "text-slate-500" : "text-slate-400")}>{p.permitType}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* FX rates — cross-border */}
+                  {jurisdiction === "cross_border" && fxRatesQuery.data?.rates && (
+                    <div className={cn("p-4 rounded-xl border", isLight ? "bg-green-50 border-green-200" : "bg-green-500/5 border-green-500/20")}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <DollarSign className="w-4 h-4 text-green-500" />
+                        <p className={cn("text-xs font-medium uppercase tracking-wider", isLight ? "text-green-600" : "text-green-400")}>Live FX Rates</p>
+                      </div>
+                      <div className="flex gap-4 text-xs">
+                        <span className={cn(isLight ? "text-slate-700" : "text-white")}>USD→CAD: <strong>{fxRatesQuery.data.rates.USD_CAD}</strong></span>
+                        <span className={cn(isLight ? "text-slate-700" : "text-white")}>USD→MXN: <strong>{fxRatesQuery.data.rates.USD_MXN}</strong></span>
+                        <span className={cn(isLight ? "text-slate-700" : "text-white")}>CAD→MXN: <strong>{fxRatesQuery.data.rates.CAD_MXN}</strong></span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

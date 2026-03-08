@@ -30,6 +30,7 @@ import { terminalsRouter } from "./routers/terminals";
 import { escortsRouter } from "./routers/escorts";
 import { driversRouter } from "./routers/drivers";
 import { analyticsRouter } from "./routers/analytics";
+import { rbacAdminRouter } from "./routers/rbacAdmin";
 import { catalystsRouter } from "./routers/catalysts";
 import { brokersRouter } from "./routers/brokers";
 import { shippersRouter } from "./routers/shippers";
@@ -83,6 +84,7 @@ import { insuranceRouter } from "./routers/insurance";
 import { onboardingRouter } from "./routers/onboarding";
 import { registrationRouter } from "./routers/registration";
 import { maintenanceRouter } from "./routers/maintenance";
+import { fleetMaintenanceRouter } from "./routers/fleetMaintenance";
 import { announcementsRouter } from "./routers/announcements";
 import { bolRouter } from "./routers/bol";
 import { newsRouter } from "./routers/news";
@@ -192,6 +194,32 @@ import { dataStoreRouter } from "./routers/dataStore";
 import { resourceBroadcastsRouter } from "./routers/resourceBroadcasts";
 import { optimizationPipelineRouter } from "./routers/optimizationPipeline";
 import { lightspeedRouter } from "./routers/lightspeed";
+import { loadStopsRouter } from "./routers/loadStops";
+import { loadTemplatesRouter } from "./routers/loadTemplates";
+import { relayRouter } from "./routers/relay";
+import { predictivePricingRouter } from "./routers/predictivePricing";
+import { industryVerticalsRouter } from "./routers/industryVerticals";
+import { complianceTemplatesRouter } from "./routers/complianceTemplates";
+import { carrierTierRouter } from "./routers/carrierTier";
+import { carrierCapacityRouter } from "./routers/carrierCapacity";
+import { tankMonitorRouter } from "./routers/tankMonitor";
+import { demurrageChargesRouter } from "./routers/demurrageCharges";
+import { nlLoadCreatorRouter } from "./routers/nlLoadCreator";
+import { voiceESANGRouter } from "./routers/voiceESANG";
+import { rfpManagerRouter } from "./routers/rfpManager";
+import { bidReviewRouter } from "./routers/bidReview";
+import { photoInspectionRouter } from "./routers/photoInspection";
+import { contextualPricingRouter } from "./routers/contextualPricing";
+import { complianceRulesRouter } from "./routers/complianceRules";
+import { anomalyMonitorRouter } from "./routers/anomalyMonitor";
+import { missionBalancerRouter } from "./routers/missionBalancer";
+import { loadConsolidationRouter } from "./routers/loadConsolidation";
+import { mobileCommandRouter } from "./routers/mobileCommand";
+import { crossBorderComplianceRouter } from "./routers/crossBorderCompliance";
+import { esangAIRouter } from "./routers/esangAI";
+import { infrastructureRouter } from "./routers/infrastructure";
+import { industryProfilesRouter } from "./routers/industryProfiles";
+import { developerPortalRouter } from "./routers/developerPortal";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -1059,6 +1087,9 @@ export const appRouter = router({
   // Vehicle Maintenance
   maintenance: maintenanceRouter,
 
+  // Fleet Predictive Maintenance (GAP-101)
+  fleetMaintenance: fleetMaintenanceRouter,
+
   // System Announcements
   announcements: announcementsRouter,
 
@@ -1322,6 +1353,65 @@ export const appRouter = router({
   // Project LIGHTSPEED — Sub-100ms data acceleration stack
   lightspeed: lightspeedRouter,
 
+  // GAP-002: Multi-Stop Load Support
+  loadStops: loadStopsRouter,
+
+  // GAP-003: Load Template System
+  loadTemplates: loadTemplatesRouter,
+
+  // GAP-128: Multi-Driver Load Handoff (Relay Mode)
+  relay: relayRouter,
+
+  // GAP-346: Predictive Load Pricing
+  predictivePricing: predictivePricingRouter,
+
+  // GAP-274-339: Industry Vertical Configuration
+  industryVerticals: industryVerticalsRouter,
+  // Task 4.3: Compliance & Documentation Templates by Vertical
+  complianceTemplates: complianceTemplatesRouter,
+  // GAP-063: Carrier Tier System Gold/Silver/Bronze
+  carrierTier: carrierTierRouter,
+  // GAP-063 Task 6.2: Capacity Calendar & Find Similar Carriers AI
+  carrierCapacity: carrierCapacityRouter,
+  // GAP-310: Real-time Tank Level Monitoring
+  tankMonitor: tankMonitorRouter,
+  // GAP-315: Automated Demurrage Charge Generation
+  demurrageCharges: demurrageChargesRouter,
+  // GAP-339: Natural Language Load Creation
+  nlLoadCreator: nlLoadCreatorRouter,
+  // GAP-360: Voice-First ESANG Interaction
+  voiceESANG: voiceESANGRouter,
+  // GAP-062: RFP Creation & Distribution
+  rfpManager: rfpManagerRouter,
+  // GAP-062 Task 11.2: Bid Review & Award Process
+  bidReview: bidReviewRouter,
+  // GAP-164: Photo-based Pre-trip Inspection AI
+  photoInspection: photoInspectionRouter,
+  // Task 13.1: Contextual Intelligence Layer for Dynamic Pricing
+  contextualPricing: contextualPricingRouter,
+  // GAP-424: Top 5 Compliance Rules Automation
+  complianceRules: complianceRulesRouter,
+  // GAP-367: ESANG AI Anomaly Monitoring
+  anomalyMonitor: anomalyMonitorRouter,
+  // GAP-438: AI-Optimized Mission Balancing
+  missionBalancer: missionBalancerRouter,
+  // GAP-083: Multi-Shipper Load Consolidation
+  loadConsolidation: loadConsolidationRouter,
+  // Task 21.1: Driver & Escort Mobile Command Center
+  mobileCommand: mobileCommandRouter,
+
+  // ═══ Phase 4: Intelligence Layer (Months 13-18) ═══
+  // GAP-407/408/410: Cross-Border Compliance (TDG, ACE/ACI, NOM, CTPAT, FX)
+  crossBorder: crossBorderComplianceRouter,
+  // GAP-440/417: ESANG AI Decision Logging, Auto-Dispatch, Auto-Approve
+  esangAI: esangAIRouter,
+  // GAP-450: Infrastructure Resilience (Backup, Uptime, Weather/Disaster)
+  infrastructure: infrastructureRouter,
+  // GAP-421-435: Industry Profile System (Pharma, Radioactive, Explosives, Gov)
+  industryProfile: industryProfilesRouter,
+  // Developer Portal + MCP Write Tools
+  devPortal: developerPortalRouter,
+
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,
   catalyst: catalystsRouter,
@@ -1329,6 +1419,9 @@ export const appRouter = router({
   escort: escortsRouter,
   shipper: shippersRouter,
   terminal: terminalsRouter,
+
+  // Task 3.2.3: Multi-tenant RBAC Admin
+  rbacAdmin: rbacAdminRouter,
 });
 
 export type AppRouter = typeof appRouter;

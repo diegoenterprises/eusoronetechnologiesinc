@@ -1,4 +1,7 @@
 /**
+ * @deprecated — Consolidated into DriverSafetyScorecard.tsx "My Scorecard" tab (Task 6.1.1)
+ * Routes /driver-scorecard and /driver-scorecard/:driverId now redirect to /driver/safety-score
+ * 
  * DRIVER SCORECARD PAGE
  * 100% Dynamic - No mock data
  */

@@ -1,7 +1,10 @@
 /**
- * SHIPPER COMPLIANCE - Business Verification, Credit, Insurance
+ * SHIPPER COMPLIANCE — Consolidated (Task 6.3.1)
+ * Merges: ShipperCompliance.tsx (Documents) + ComplianceCalendar.tsx (Calendar)
+ * Tabs: Documents | Calendar
+ * Business Verification, Credit, Insurance + Compliance Calendar
  */
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,11 +12,14 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
-import { Factory, AlertTriangle, Clock, Upload, Shield, CheckCircle2, XCircle, Building, DollarSign, FileText, CreditCard } from "lucide-react";
+import { Factory, AlertTriangle, Clock, Upload, Shield, CheckCircle2, XCircle, Building, DollarSign, FileText, CreditCard, Calendar as CalendarIcon } from "lucide-react";
 import DatePicker from "@/components/DatePicker";
+
+const CalendarTab = lazy(() => import("./ComplianceCalendar"));
 
 const SHIPPER_DOCS = [
   { value: "business_license", label: "Business License", category: "business", required: true },
@@ -39,6 +45,7 @@ export default function ShipperCompliance() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [selectedType, setSelectedType] = useState("");
   const [expirationDate, setExpirationDate] = useState("");
+  const [topTab, setTopTab] = useState("documents");
   const [activeTab, setActiveTab] = useState("all");
 
   const complianceQuery = (trpc as any).compliance.getShipperCompliance.useQuery();
@@ -69,7 +76,7 @@ export default function ShipperCompliance() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Shipper Compliance</h1>
-          <p className="text-muted-foreground">Business Verification, Credit & Insurance</p>
+          <p className="text-muted-foreground">Business Verification, Credit, Insurance & Calendar</p>
         </div>
         <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
           <DialogTrigger asChild><Button><Upload className="w-4 h-4 mr-2" />Upload Document</Button></DialogTrigger>
@@ -102,6 +109,14 @@ export default function ShipperCompliance() {
         </CardContent>
       </Card>
 
+      <Tabs value={topTab} onValueChange={setTopTab}>
+        <TabsList>
+          <TabsTrigger value="documents"><FileText className="w-4 h-4 mr-1.5" />Documents</TabsTrigger>
+          <TabsTrigger value="calendar"><CalendarIcon className="w-4 h-4 mr-1.5" />Calendar</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="documents" className="space-y-6">
+
       <Card className="border-blue-500 bg-blue-50 dark:bg-blue-950">
         <CardContent className="pt-6 flex items-center gap-4">
           <CreditCard className="w-8 h-8 text-blue-600" />
@@ -133,6 +148,20 @@ export default function ShipperCompliance() {
               </Card>
             ))}
           </div>
+        </TabsContent>
+      </Tabs>
+
+        </TabsContent>
+
+        <TabsContent value="calendar">
+          <Suspense fallback={
+            <div className="p-4 space-y-4">
+              <Skeleton className="h-8 w-64 rounded-lg" />
+              <Skeleton className="h-48 w-full rounded-xl" />
+            </div>
+          }>
+            <div className="[&>div]:!p-0"><CalendarTab /></div>
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>

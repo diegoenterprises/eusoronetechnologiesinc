@@ -1,6 +1,7 @@
 /**
- * ASSIGNED LOADS PAGE - CATALYST ROLE
- * Accepted loads awaiting pickup with preparation checklist and scheduling
+ * @deprecated CONSOLIDATED — Task 4.5.2
+ * Assigned loads view is now served by MyLoads (/loads).
+ * This file is retained for reference only. Do not import.
  */
 
 import { useState } from "react";

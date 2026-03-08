@@ -1,4 +1,7 @@
 /**
+ * @deprecated — Consolidated into DriverHOS.tsx "Fleet HOS" tab (Task 6.1.2)
+ * Route /hos-compliance now redirects to /hos
+ *
  * HOS COMPLIANCE PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

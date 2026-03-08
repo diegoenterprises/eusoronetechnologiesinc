@@ -64,6 +64,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Plus", label: "Create Load", path: "/loads/create", badge: 0, description: "Post new shipment" },
         { icon: "Package", label: "My Loads", path: "/loads", badge: 0, description: "All loads, tracking & status" },
         { icon: "Repeat", label: "Recurring Loads", path: "/loads/recurring", badge: 0, description: "Schedule recurring shipments & dedicated lanes" },
+        { icon: "FileText", label: "Load Templates", path: "/loads/templates", badge: 0, description: "Save & reuse frequent load configurations" },
         { icon: "Navigation", label: "Dispatch Control", path: "/shipper/dispatch", badge: 0, description: "Routes, tracking & catalyst coordination" },
       ],
     },
@@ -133,7 +134,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Market Intelligence",
       path: "/market-pricing",
       badge: 0,
-      description: "Rates, commodities, hot zones & freight intelligence"
+      description: "Rates, commodities, hot zones & freight intelligence",
+      children: [
+        { icon: "TrendingUp", label: "Market Pricing", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
+        { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
+      ],
     },
     {
       icon: "Truck",
@@ -174,6 +179,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Search", label: "Find Loads", path: "/marketplace", badge: 0, description: "Available loads to bid on" },
         { icon: "Scale", label: "My Bids", path: "/bids", badge: 0, description: "Active and pending bids" },
         { icon: "CheckCircle", label: "Assigned Loads", path: "/loads", badge: 0, description: "Accepted loads" },
+        { icon: "ArrowRightLeft", label: "Relay Mode", path: "/relay", badge: 0, description: "Multi-driver load handoff & relay legs" },
       ],
     },
     {
@@ -243,7 +249,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Market Intelligence",
       path: "/market-pricing",
       badge: 0,
-      description: "Rates, commodities, hot zones & freight intelligence"
+      description: "Rates, commodities, hot zones & freight intelligence",
+      children: [
+        { icon: "TrendingUp", label: "Market Pricing", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
+        { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
+      ],
     },
     {
       icon: "Truck",
@@ -311,14 +321,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Authority docs, surety bond & compliance" },
       ],
     },
-    {
-      icon: "BarChart3",
-      label: "Analytics",
-      path: "/analytics",
-      badge: 0,
-      description: "Market analytics"
-    },
-    // ─── PLATFORM FOOTER ───
+    // ─── PLATFORM FOOTER ─── (Analytics absorbed into Dashboard tab — Task 4.5.1)
     {
       icon: "MessageSquare",
       label: "Messages",
@@ -347,7 +350,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Market Intelligence",
       path: "/market-pricing",
       badge: 0,
-      description: "Rates, commodities, hot zones & freight intelligence"
+      description: "Rates, commodities, hot zones & freight intelligence",
+      children: [
+        { icon: "TrendingUp", label: "Market Pricing", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
+        { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
+      ],
     },
     {
       icon: "Truck",
@@ -445,7 +452,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Earnings, trip pay, settlements, bonuses & direct deposit",
       children: [
         { icon: "Wallet", label: "Balance", path: "/wallet", badge: 0, description: "Account balance & payments" },
-        { icon: "Truck", label: "Trip Pay", path: "/driver/trip-pay", badge: 0, description: "Per-trip pay breakdown" },
+        { icon: "Truck", label: "Earnings & Trip Pay", path: "/driver/earnings", badge: 0, description: "Earnings summary & per-trip pay breakdown" },
         { icon: "DollarSign", label: "Settlement History", path: "/driver/settlement-history", badge: 0, description: "Weekly/bi-weekly settlement statements" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
       ],
@@ -465,7 +472,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Market Intelligence",
       path: "/market-pricing",
       badge: 0,
-      description: "Rates, commodities, hot zones & freight intelligence"
+      description: "Rates, commodities, hot zones & freight intelligence",
+      children: [
+        { icon: "TrendingUp", label: "Market Pricing", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
+        { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
+      ],
     },
     {
       icon: "Truck",
@@ -530,6 +541,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Plus", label: "Create Load", path: "/dispatch/create", badge: 0, description: "Quick 3-field load creation" },
         { icon: "Upload", label: "Bulk Import", path: "/dispatch/bulk-import", badge: 0, description: "CSV bulk load import with validation" },
         { icon: "CheckCircle", label: "Assigned Loads", path: "/dispatch/assigned", badge: 0, description: "All dispatched & assigned loads — status, tracking & POD" },
+        { icon: "ArrowRightLeft", label: "Relay Mode", path: "/relay", badge: 0, description: "Multi-driver load handoff & relay leg management" },
       ],
     },
     {
@@ -830,6 +842,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "LayoutDashboard", label: "Terminal Hub", path: "/terminal/hub", badge: 0, description: "Dashboard, scheduling, inventory, SCADA & appointments" },
         { icon: "Container", label: "Dock Hub", path: "/terminal/dock-hub", badge: 0, description: "Dock management, bay assignment, loading & gate ops" },
+        { icon: "Gauge", label: "Tank Monitor", path: "/tank-monitor", badge: 0, description: "Real-time tank levels, alerts & demand forecasting" },
       ],
     },
     {
@@ -1219,6 +1232,21 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       ],
     },
     {
+      icon: "Brain",
+      label: "Intelligence",
+      path: "/admin/esang-operations",
+      badge: 0,
+      description: "AI operations, infrastructure health & cross-border compliance",
+      children: [
+        { icon: "Brain", label: "ESANG AI Ops", path: "/admin/esang-operations", badge: 0, description: "Decision audit, model performance, auto-dispatch" },
+        { icon: "Activity", label: "Uptime & DR", path: "/admin/uptime", badge: 0, description: "Service health, SLA tracking, backup & disaster recovery" },
+        { icon: "CloudLightning", label: "Disaster Resilience", path: "/admin/disaster-resilience", badge: 0, description: "Weather threats, auto-reroute, sheltering" },
+        { icon: "Globe", label: "Cross-Border", path: "/shipping-papers", badge: 0, description: "TDG, ACE/ACI, NOM multi-jurisdiction shipping papers" },
+        { icon: "Factory", label: "Industry Profiles", path: "/admin/industry-profiles", badge: 0, description: "Pharma, radioactive, explosives & 10+ verticals" },
+        { icon: "Code", label: "Developer Portal", path: "/admin/developer-portal", badge: 0, description: "API keys, MCP write tools, webhooks & SDK" },
+      ],
+    },
+    {
       icon: "Settings",
       label: "Settings",
       path: "/admin/settings",
@@ -1406,6 +1434,213 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     const fmcsaIdx = result.findIndex(m => m.path === '/fmcsa-lookup');
     const ciInsertIdx = eldIdx >= 0 ? eldIdx + 1 : fmcsaIdx >= 0 ? fmcsaIdx + 1 : result.length;
     result.splice(ciInsertIdx, 0, ciItem);
+  }
+
+  // GAP-063: Inject Carrier Tier System for qualifying roles
+  if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/carrier-tiers')) {
+    const tierItem: MenuItem = {
+      icon: "Crown",
+      label: "Carrier Tiers",
+      path: "/carrier-tiers",
+      badge: 0,
+      description: "Gold/Silver/Bronze carrier classification, benefits & promotion paths",
+    };
+    const ciIdx = result.findIndex(m => m.path === '/carrier-intelligence');
+    const tierInsertIdx = ciIdx >= 0 ? ciIdx + 1 : result.length;
+    result.splice(tierInsertIdx, 0, tierItem);
+  }
+
+  // GAP-063 Task 6.2: Inject Carrier Capacity & Similar Carriers for qualifying roles
+  if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/carrier-capacity')) {
+    const capItem: MenuItem = {
+      icon: "Calendar",
+      label: "Carrier Capacity",
+      path: "/carrier-capacity",
+      badge: 0,
+      description: "Capacity calendar, availability search & find similar carriers AI",
+    };
+    const tierIdx = result.findIndex(m => m.path === '/carrier-tiers');
+    const capInsertIdx = tierIdx >= 0 ? tierIdx + 1 : result.length;
+    result.splice(capInsertIdx, 0, capItem);
+  }
+
+  // GAP-315: Inject Demurrage & Detention Charges for qualifying roles
+  if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/demurrage-charges')) {
+    const dmrItem: MenuItem = {
+      icon: "Timer",
+      label: "Demurrage Charges",
+      path: "/demurrage-charges",
+      badge: 0,
+      description: "Automated demurrage & detention charge generation, review & approval",
+    };
+    const capIdx = result.findIndex(m => m.path === '/carrier-capacity');
+    const dmrInsertIdx = capIdx >= 0 ? capIdx + 1 : result.length;
+    result.splice(dmrInsertIdx, 0, dmrItem);
+  }
+
+  // GAP-339: Inject Natural Language Load Creator for qualifying roles
+  const NL_QUALIFYING_ROLES = new Set(['SHIPPER', 'CATALYST', 'BROKER', 'DISPATCH', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN']);
+  if (NL_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/nl-load-creator')) {
+    const nlItem: MenuItem = {
+      icon: "Sparkles",
+      label: "AI Load Creator",
+      path: "/nl-load-creator",
+      badge: 0,
+      description: "Create loads from natural language descriptions using AI",
+    };
+    const dmrIdx = result.findIndex(m => m.path === '/demurrage-charges');
+    const nlInsertIdx = dmrIdx >= 0 ? dmrIdx + 1 : result.length;
+    result.splice(nlInsertIdx, 0, nlItem);
+  }
+
+  // GAP-360: Inject Voice ESANG for all roles
+  if (!result.some(m => m.path === '/voice-esang')) {
+    const voiceItem: MenuItem = {
+      icon: "Mic",
+      label: "Voice ESANG",
+      path: "/voice-esang",
+      badge: 0,
+      description: "Voice-first AI assistant — talk to ESANG with voice commands",
+    };
+    const nlIdx = result.findIndex(m => m.path === '/nl-load-creator');
+    const voiceInsertIdx = nlIdx >= 0 ? nlIdx + 1 : result.length;
+    result.splice(voiceInsertIdx, 0, voiceItem);
+  }
+
+  // GAP-062: Inject RFP Manager for shipper/broker roles
+  const RFP_QUALIFYING_ROLES = new Set(['SHIPPER', 'BROKER', 'ADMIN', 'SUPER_ADMIN', 'TERMINAL_MANAGER']);
+  if (RFP_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/rfp-manager')) {
+    const rfpItem: MenuItem = {
+      icon: "FileText",
+      label: "RFP Manager",
+      path: "/rfp-manager",
+      badge: 0,
+      description: "Create, distribute & award carrier RFPs",
+    };
+    const voiceIdx = result.findIndex(m => m.path === '/voice-esang');
+    const rfpInsertIdx = voiceIdx >= 0 ? voiceIdx + 1 : result.length;
+    result.splice(rfpInsertIdx, 0, rfpItem);
+  }
+
+  // GAP-062 Task 11.2: Inject Bid Review after RFP Manager
+  if (RFP_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/bid-review')) {
+    const bidReviewItem: MenuItem = {
+      icon: "Trophy",
+      label: "Bid Review",
+      path: "/bid-review",
+      badge: 0,
+      description: "Compare bids, negotiate counter-offers, and award lanes",
+    };
+    const rfpIdx = result.findIndex(m => m.path === '/rfp-manager');
+    const bidInsertIdx = rfpIdx >= 0 ? rfpIdx + 1 : result.length;
+    result.splice(bidInsertIdx, 0, bidReviewItem);
+  }
+
+  // GAP-164: Inject Photo Inspection for carrier/driver/compliance roles
+  const PHOTO_INSP_ROLES = new Set(['CATALYST', 'DRIVER', 'COMPLIANCE_OFFICER', 'SAFETY_OFFICER', 'ADMIN', 'SUPER_ADMIN']);
+  if (PHOTO_INSP_ROLES.has(normalizedRole) && !result.some(m => m.path === '/photo-inspection')) {
+    const photoInspItem: MenuItem = {
+      icon: "Camera",
+      label: "AI Photo Inspection",
+      path: "/photo-inspection",
+      badge: 0,
+      description: "AI-powered pre-trip vehicle inspection with photo analysis",
+    };
+    const bidIdx = result.findIndex(m => m.path === '/bid-review');
+    const inspIdx = result.findIndex(m => m.path === '/inspection-forms');
+    const photoInsertIdx = inspIdx >= 0 ? inspIdx + 1 : bidIdx >= 0 ? bidIdx + 1 : result.length;
+    result.splice(photoInsertIdx, 0, photoInspItem);
+  }
+
+  // GAP-424: Inject Compliance Rules for compliance/safety/carrier/admin roles
+  const COMPLIANCE_RULES_ROLES = new Set(['COMPLIANCE_OFFICER', 'SAFETY_OFFICER', 'CATALYST', 'ADMIN', 'SUPER_ADMIN']);
+  if (COMPLIANCE_RULES_ROLES.has(normalizedRole) && !result.some(m => m.path === '/compliance-rules')) {
+    const compRulesItem: MenuItem = {
+      icon: "Shield",
+      label: "Compliance Rules",
+      path: "/compliance-rules",
+      badge: 0,
+      description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement",
+    };
+    const photoIdx = result.findIndex(m => m.path === '/photo-inspection');
+    const compInsertIdx = photoIdx >= 0 ? photoIdx + 1 : result.length;
+    result.splice(compInsertIdx, 0, compRulesItem);
+  }
+
+  // GAP-367: Inject Anomaly Monitor for admin/compliance/safety roles
+  const ANOMALY_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'COMPLIANCE_OFFICER', 'SAFETY_OFFICER']);
+  if (ANOMALY_ROLES.has(normalizedRole) && !result.some(m => m.path === '/anomaly-monitor')) {
+    const anomalyItem: MenuItem = {
+      icon: "Brain",
+      label: "Anomaly Monitor",
+      path: "/anomaly-monitor",
+      badge: 0,
+      description: "AI-powered anomaly detection across all operations",
+    };
+    const compRulesIdx = result.findIndex(m => m.path === '/compliance-rules');
+    const anomalyInsertIdx = compRulesIdx >= 0 ? compRulesIdx + 1 : result.length;
+    result.splice(anomalyInsertIdx, 0, anomalyItem);
+  }
+
+  // GAP-438: Inject Mission Balancer for dispatch/carrier/admin roles
+  const MISSION_ROLES = new Set(['DISPATCHER', 'CATALYST', 'ADMIN', 'SUPER_ADMIN']);
+  if (MISSION_ROLES.has(normalizedRole) && !result.some(m => m.path === '/mission-balancer')) {
+    const missionItem: MenuItem = {
+      icon: "Target",
+      label: "Mission Balancer",
+      path: "/mission-balancer",
+      badge: 0,
+      description: "AI-optimized load distribution & fleet workload balancing",
+    };
+    const anomalyIdx = result.findIndex(m => m.path === '/anomaly-monitor');
+    const missionInsertIdx = anomalyIdx >= 0 ? anomalyIdx + 1 : result.length;
+    result.splice(missionInsertIdx, 0, missionItem);
+  }
+
+  // GAP-083: Inject Load Consolidation for shipper/broker/dispatch/admin roles
+  const CONSOLIDATION_ROLES = new Set(['SHIPPER', 'BROKER', 'DISPATCHER', 'CATALYST', 'ADMIN', 'SUPER_ADMIN']);
+  if (CONSOLIDATION_ROLES.has(normalizedRole) && !result.some(m => m.path === '/load-consolidation')) {
+    const consolItem: MenuItem = {
+      icon: "Layers",
+      label: "Load Consolidation",
+      path: "/load-consolidation",
+      badge: 0,
+      description: "Multi-shipper shipment consolidation for cost savings",
+    };
+    const missionIdx = result.findIndex(m => m.path === '/mission-balancer');
+    const consolInsertIdx = missionIdx >= 0 ? missionIdx + 1 : result.length;
+    result.splice(consolInsertIdx, 0, consolItem);
+  }
+
+  // Task 21.1: Inject Mobile Command Center for driver/carrier/dispatch roles
+  const MOBILE_CMD_ROLES = new Set(['DRIVER', 'CATALYST', 'DISPATCHER', 'ESCORT', 'ADMIN', 'SUPER_ADMIN']);
+  if (MOBILE_CMD_ROLES.has(normalizedRole) && !result.some(m => m.path === '/mobile-command')) {
+    const mobileItem: MenuItem = {
+      icon: "Smartphone",
+      label: "Command Center",
+      path: "/mobile-command",
+      badge: 0,
+      description: "Mobile-optimized driver operations dashboard",
+    };
+    // Insert near top for drivers, at end for others
+    const dashIdx = result.findIndex(m => m.path === '/dashboard' || m.path === '/');
+    const mobileInsertIdx = dashIdx >= 0 ? dashIdx + 1 : 0;
+    result.splice(mobileInsertIdx, 0, mobileItem);
+  }
+
+  // Task 13.1: Inject Contextual Pricing for shipper/broker/carrier/dispatch roles
+  const PRICING_ROLES = new Set(['SHIPPER', 'BROKER', 'CATALYST', 'DISPATCHER', 'ADMIN', 'SUPER_ADMIN']);
+  if (PRICING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/contextual-pricing')) {
+    const pricingItem: MenuItem = {
+      icon: "Zap",
+      label: "Smart Pricing",
+      path: "/contextual-pricing",
+      badge: 0,
+      description: "AI-enriched dynamic pricing with real-time market signals",
+    };
+    const rateIdx = result.findIndex(m => m.path === '/rate-negotiations');
+    const pricingInsertIdx = rateIdx >= 0 ? rateIdx + 1 : result.length;
+    result.splice(pricingInsertIdx, 0, pricingItem);
   }
 
   return result;

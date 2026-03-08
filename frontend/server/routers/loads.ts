@@ -8,7 +8,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { loads, bids, users, companies, terminals } from "../../drizzle/schema";
+import { loads, bids, users, companies, terminals, loadStops } from "../../drizzle/schema";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import {
   emitLoadStatusChange,
@@ -272,6 +272,44 @@ export const loadsRouter = router({
             continue;
           }
           throw err; // non-retryable error
+        }
+      }
+
+      // GAP-002: Auto-create pickup + delivery stops from origin/destination
+      if (insertedId && db) {
+        try {
+          const originCity = input?.origin?.split(",")[0]?.trim() || "";
+          const originState = input?.origin?.split(",")[1]?.trim() || "";
+          const destCity = input?.destination?.split(",")[0]?.trim() || "";
+          const destState = input?.destination?.split(",")[1]?.trim() || "";
+          await db.insert(loadStops).values([
+            {
+              loadId: insertedId,
+              sequence: 1,
+              stopType: "pickup" as const,
+              address: input?.origin || null,
+              city: originCity || null,
+              state: originState || null,
+              lat: input?.originLat ? String(input.originLat) : null,
+              lng: input?.originLng ? String(input.originLng) : null,
+              appointmentStart: input?.pickupDate ? new Date(input.pickupDate) : null,
+              status: "pending" as const,
+            },
+            {
+              loadId: insertedId,
+              sequence: 2,
+              stopType: "delivery" as const,
+              address: input?.destination || null,
+              city: destCity || null,
+              state: destState || null,
+              lat: input?.destLat ? String(input.destLat) : null,
+              lng: input?.destLng ? String(input.destLng) : null,
+              appointmentStart: input?.deliveryDate ? new Date(input.deliveryDate) : null,
+              status: "pending" as const,
+            },
+          ] as any);
+        } catch (stopErr) {
+          console.warn('[Loads] Failed to auto-create load stops:', stopErr);
         }
       }
 
@@ -2699,4 +2737,250 @@ export const bidsRouter = router({
         throw new Error("Failed to place bid");
       }
     }),
+
+  /**
+   * GAP-023: Bulk Load Upload — CSV Import
+   * Accepts CSV text, parses rows, validates, and batch-inserts loads.
+   * Expected CSV columns (header row required):
+   *   origin, destination, pickupDate, deliveryDate, weight, weightUnit,
+   *   cargoType, hazmatClass, unNumber, rate, equipment, notes
+   */
+  bulkImportCSV: protectedProcedure
+    .input(z.object({
+      csvText: z.string().min(10),
+      dryRun: z.boolean().default(false),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const shipperId = await resolveUserId(ctx.user);
+      if (!shipperId) throw new TRPCError({ code: "UNAUTHORIZED", message: "Could not resolve user" });
+
+      const lines = input.csvText.trim().split("\n").map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) throw new TRPCError({ code: "BAD_REQUEST", message: "CSV must have a header row and at least one data row" });
+
+      // Parse header
+      const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, ""));
+      const colIdx = (name: string) => headers.indexOf(name);
+
+      const errors: { row: number; message: string }[] = [];
+      const parsed: any[] = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        try {
+          const cols = parseCSVLine(lines[i]);
+          const get = (name: string) => {
+            const idx = colIdx(name);
+            return idx >= 0 && idx < cols.length ? cols[idx].trim() : "";
+          };
+
+          const origin = get("origin") || get("origincity");
+          const destination = get("destination") || get("destcity") || get("destinationcity");
+          if (!origin && !destination) {
+            errors.push({ row: i + 1, message: "Missing origin and destination" });
+            continue;
+          }
+
+          const originParts = origin.split(",").map((s: string) => s.trim());
+          const destParts = destination.split(",").map((s: string) => s.trim());
+
+          parsed.push({
+            shipperId,
+            loadNumber: `BLK-${Date.now().toString(36).toUpperCase()}-${String(i).padStart(3, "0")}`,
+            status: "draft",
+            cargoType: get("cargotype") || get("cargo") || get("product") || "General",
+            hazmatClass: get("hazmatclass") || get("hazmat") || null,
+            unNumber: get("unnumber") || get("un") || null,
+            weight: get("weight") || null,
+            weightUnit: get("weightunit") || "lbs",
+            rate: get("rate") || null,
+            distance: null,
+            pickupLocation: { city: originParts[0] || "", state: originParts[1] || "" },
+            deliveryLocation: { city: destParts[0] || "", state: destParts[1] || "" },
+            pickupDate: get("pickupdate") ? new Date(get("pickupdate")) : null,
+            deliveryDate: get("deliverydate") ? new Date(get("deliverydate")) : null,
+            specialInstructions: get("notes") || get("instructions") || null,
+            createdAt: new Date(),
+          });
+        } catch (e: any) {
+          errors.push({ row: i + 1, message: e?.message?.slice(0, 80) || "Parse error" });
+        }
+      }
+
+      if (input.dryRun) {
+        return {
+          dryRun: true,
+          totalRows: lines.length - 1,
+          validRows: parsed.length,
+          errorRows: errors.length,
+          errors: errors.slice(0, 20),
+          preview: parsed.slice(0, 5).map(p => ({
+            loadNumber: p.loadNumber,
+            origin: `${p.pickupLocation.city}, ${p.pickupLocation.state}`,
+            destination: `${p.deliveryLocation.city}, ${p.deliveryLocation.state}`,
+            cargoType: p.cargoType,
+            rate: p.rate,
+          })),
+          importedCount: 0,
+        };
+      }
+
+      // Batch insert
+      let importedCount = 0;
+      for (const load of parsed) {
+        try {
+          await db.insert(loads).values(load as any);
+          importedCount++;
+        } catch (e: any) {
+          errors.push({ row: 0, message: `Insert failed: ${e?.message?.slice(0, 60)}` });
+        }
+      }
+
+      return {
+        dryRun: false,
+        totalRows: lines.length - 1,
+        validRows: parsed.length,
+        errorRows: errors.length,
+        errors: errors.slice(0, 20),
+        preview: [],
+        importedCount,
+      };
+    }),
+
+  /**
+   * GAP-078: Load History Export
+   * Generates CSV-ready data for load history export.
+   * Scoped by user role (admin sees all, shipper sees own, catalyst sees assigned).
+   */
+  exportHistory: protectedProcedure
+    .input(z.object({
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      status: z.string().optional(),
+      format: z.enum(["csv", "json"]).default("csv"),
+      limit: z.number().min(1).max(5000).default(1000),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      try {
+        const filters: any[] = [];
+        const role = await resolveUserRole(ctx.user);
+
+        if (!isAdminRole(role)) {
+          const dbUserId = await resolveUserId(ctx.user);
+          if (role === "CATALYST" || role === "DISPATCH") {
+            filters.push(sql`(${loads.shipperId} = ${dbUserId} OR ${loads.catalystId} = ${dbUserId})`);
+          } else if (role === "DRIVER" || role === "ESCORT") {
+            filters.push(sql`(${loads.driverId} = ${dbUserId} OR ${loads.shipperId} = ${dbUserId})`);
+          } else {
+            filters.push(eq(loads.shipperId, dbUserId));
+          }
+        }
+
+        if (input.startDate) {
+          filters.push(sql`${loads.createdAt} >= ${input.startDate}`);
+        }
+        if (input.endDate) {
+          filters.push(sql`${loads.createdAt} <= ${input.endDate + " 23:59:59"}`);
+        }
+        if (input.status) {
+          filters.push(eq(loads.status, input.status as any));
+        }
+
+        const rows = await db.select({
+          id: loads.id,
+          loadNumber: loads.loadNumber,
+          status: loads.status,
+          cargoType: loads.cargoType,
+          hazmatClass: loads.hazmatClass,
+          weight: loads.weight,
+          weightUnit: loads.weightUnit,
+          rate: loads.rate,
+          distance: loads.distance,
+          pickupLocation: loads.pickupLocation,
+          deliveryLocation: loads.deliveryLocation,
+          pickupDate: loads.pickupDate,
+          deliveryDate: loads.deliveryDate,
+          actualDeliveryDate: loads.actualDeliveryDate,
+          createdAt: loads.createdAt,
+        })
+          .from(loads)
+          .where(filters.length > 0 ? and(...filters) : undefined)
+          .orderBy(desc(loads.createdAt))
+          .limit(input.limit);
+
+        const exportRows = rows.map((r: any) => {
+          const pickup = r.pickupLocation as any || {};
+          const delivery = r.deliveryLocation as any || {};
+          const rate = r.rate ? parseFloat(String(r.rate)) : 0;
+          const dist = r.distance ? parseFloat(String(r.distance)) : 0;
+          return {
+            loadNumber: r.loadNumber || "",
+            status: r.status || "",
+            cargoType: r.cargoType || "",
+            hazmatClass: r.hazmatClass || "",
+            weight: r.weight ? `${r.weight} ${r.weightUnit || "lbs"}` : "",
+            rate: rate.toFixed(2),
+            ratePerMile: dist > 0 ? (rate / dist).toFixed(2) : "",
+            distance: dist > 0 ? dist.toFixed(1) : "",
+            originCity: pickup.city || "",
+            originState: pickup.state || "",
+            destCity: delivery.city || "",
+            destState: delivery.state || "",
+            pickupDate: r.pickupDate?.toISOString().split("T")[0] || "",
+            deliveryDate: r.deliveryDate?.toISOString().split("T")[0] || "",
+            actualDelivery: r.actualDeliveryDate?.toISOString().split("T")[0] || "",
+            createdAt: r.createdAt?.toISOString().split("T")[0] || "",
+          };
+        });
+
+        if (input.format === "csv") {
+          const headers = [
+            "Load #", "Status", "Cargo Type", "Hazmat Class", "Weight",
+            "Rate ($)", "Rate/Mile ($)", "Distance (mi)",
+            "Origin City", "Origin State", "Dest City", "Dest State",
+            "Pickup Date", "Delivery Date", "Actual Delivery", "Created",
+          ];
+          const csvLines = [headers.join(",")];
+          for (const row of exportRows) {
+            csvLines.push([
+              row.loadNumber, row.status, row.cargoType, row.hazmatClass, row.weight,
+              row.rate, row.ratePerMile, row.distance,
+              `"${row.originCity}"`, row.originState, `"${row.destCity}"`, row.destState,
+              row.pickupDate, row.deliveryDate, row.actualDelivery, row.createdAt,
+            ].join(","));
+          }
+          return { format: "csv", rowCount: exportRows.length, data: csvLines.join("\n"), exportedAt: new Date().toISOString() };
+        }
+
+        return { format: "json", rowCount: exportRows.length, data: exportRows, exportedAt: new Date().toISOString() };
+      } catch (error) {
+        console.error("[Loads] exportHistory error:", error);
+        throw new Error("Failed to export load history");
+      }
+    }),
 });
+
+// ── CSV line parser (handles quoted fields with commas) ─────────────
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+      else { inQuotes = !inQuotes; }
+    } else if (ch === "," && !inQuotes) {
+      result.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result;
+}

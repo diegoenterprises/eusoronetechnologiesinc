@@ -1333,6 +1333,69 @@ export async function notifySOSEmergencyContact(params: {
   }));
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+//  SAFETY INCIDENT ALERTS  (GAP-289)
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Notify safety manager when a new incident is reported.
+ * Fires for critical/major severity — email + SMS within 30s.
+ */
+export async function notifySafetyIncident(params: {
+  safetyManagerEmail: string;
+  safetyManagerPhone?: string;
+  safetyManagerName: string;
+  incidentId: string;
+  incidentNumber: string;
+  type: string;
+  severity: string;
+  location: string;
+  description: string;
+  reportedBy: string;
+  driverName?: string;
+  occurredAt: string;
+}) {
+  const sevColor = params.severity === "critical" ? "#ef4444" : params.severity === "major" ? "#f97316" : "#eab308";
+  const sevLabel = params.severity.toUpperCase();
+  const typeLabel = params.type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const incidentUrl = `${APP_URL}/safety/incident-management?id=${params.incidentId}`;
+  const timeStr = new Date(params.occurredAt).toLocaleString("en-US", { timeZone: "America/Chicago" });
+
+  // Email — branded, high-priority
+  safe(() => emailService.send({
+    to: params.safetyManagerEmail,
+    subject: `[${sevLabel}] Safety Incident ${params.incidentNumber} — ${typeLabel} - EusoTrip`,
+    html: emailWrap(`Safety Incident — ${sevLabel}`, `
+      ${p(`Hello ${params.safetyManagerName},`)}
+      ${p(`A new <strong style="color:${sevColor}">${sevLabel}</strong> safety incident has been reported and requires your immediate attention.`)}
+      <div style="margin:20px 0;padding:20px;background:rgba(${params.severity === "critical" ? "239,68,68" : "249,115,22"},0.08);border:1px solid rgba(${params.severity === "critical" ? "239,68,68" : "249,115,22"},0.25);border-radius:14px">
+        <p style="margin:0 0 4px;font-size:11px;color:#64748B;text-transform:uppercase;letter-spacing:1px">Incident ${params.incidentNumber}</p>
+        <p style="margin:0;font-size:18px;font-weight:700;color:${sevColor};letter-spacing:-0.2px">${typeLabel}</p>
+      </div>
+      ${infoTable(
+        infoRow("Severity", `<strong style="color:${sevColor}">${sevLabel}</strong>`) +
+        infoRow("Type", typeLabel) +
+        infoRow("Location", params.location || "Not specified") +
+        infoRow("Occurred At", timeStr + " CT") +
+        (params.driverName ? infoRow("Driver", params.driverName) : "") +
+        infoRow("Reported By", params.reportedBy)
+      )}
+      ${p(`<strong style="color:#E2E8F0">Description:</strong>`)}
+      ${p(params.description.slice(0, 500))}
+      ${btn(incidentUrl, "Review Incident")}
+      ${muted("This alert was generated automatically by EusoTrip's safety monitoring system.")}
+    `, sevColor),
+  }));
+
+  // SMS — concise alert
+  if (params.safetyManagerPhone) {
+    safe(() => sendSms({
+      to: params.safetyManagerPhone!,
+      message: `EusoTrip SAFETY [${sevLabel}]: ${typeLabel} incident ${params.incidentNumber} reported at ${params.location || "unknown location"}. ${params.driverName ? `Driver: ${params.driverName}. ` : ""}Review: ${incidentUrl}`,
+    }));
+  }
+}
+
 // ─── Exported Branded Email Builders ─────────────────────────────────
 
 /**

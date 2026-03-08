@@ -1,5 +1,6 @@
 /**
  * COMPLIANCE CALENDAR PAGE
+ * Also embedded in ShipperCompliance.tsx "Calendar" tab (Task 6.3.1)
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards
  */

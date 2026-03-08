@@ -1,6 +1,7 @@
 /**
- * CATALYST ANALYTICS PAGE - CATALYST ROLE
- * Revenue tracking, efficiency metrics, and performance analytics
+ * @deprecated CONSOLIDATED — Task 4.5.2
+ * Catalyst analytics is now served by the general Analytics page (/analytics).
+ * This file is retained for reference only. Do not import.
  */
 
 import { useState } from "react";

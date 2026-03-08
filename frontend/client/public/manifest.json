@@ -1,0 +1,23 @@
+{
+  "name": "EusoTrip — Freight & Energy Logistics",
+  "short_name": "EusoTrip",
+  "description": "The future of freight and energy logistics. Manage loads, track shipments, and optimize operations from anywhere.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#060918",
+  "theme_color": "#1473FF",
+  "icons": [
+    {
+      "src": "/eusotrip-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity", "logistics"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
+}

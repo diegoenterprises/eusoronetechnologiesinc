@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into compliance/HazmatCompliance.tsx (Route Compliance tab). Remove after migration verification.
  * HAZMAT ROUTE COMPLIANCE PAGE
  * Driver-facing hazmat route compliance verification screen.
  * Pre-trip route compliance checker that validates the planned

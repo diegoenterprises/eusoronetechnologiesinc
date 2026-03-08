@@ -1,7 +1,7 @@
 /**
- * EARNINGS PAGE
- * 100% Dynamic - No mock data
- * Theme-aware | Brand gradient | Shipper design standard
+ * @deprecated CONSOLIDATED — Task 4.5.2
+ * Earnings is now served by EusoWallet (/wallet).
+ * This file is retained for reference only. Do not import.
  */
 
 import React, { useState } from "react";

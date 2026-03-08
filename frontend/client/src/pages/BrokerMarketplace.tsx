@@ -1,7 +1,7 @@
 /**
- * BROKER MARKETPLACE PAGE
- * 100% Dynamic - No mock data
- * UI Style: Gradient headers, stat cards with icons, rounded cards
+ * @deprecated CONSOLIDATED — Task 4.5.1
+ * Broker marketplace functionality is now served by FindLoads (/marketplace).
+ * This file is retained for reference only. Do not import.
  */
 
 import React, { useState } from "react";

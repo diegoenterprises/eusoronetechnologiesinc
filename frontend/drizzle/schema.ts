@@ -356,6 +356,194 @@ export type Load = typeof loads.$inferSelect;
 export type InsertLoad = typeof loads.$inferInsert;
 
 // ============================================================================
+// LOAD STOPS — Multi-Stop Load Support (GAP-002)
+// Each load can have N ordered stops (pickup, delivery, fuel, rest, etc.)
+// The first stop is always origin, last is final destination.
+// ============================================================================
+
+export const loadStops = mysqlTable(
+  "load_stops",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    sequence: int("sequence").notNull(),
+    stopType: mysqlEnum("stopType", [
+      "pickup", "delivery", "fuel", "rest", "scale",
+      "inspection", "crossdock", "relay", "customs",
+    ]).notNull(),
+    facilityName: varchar("facilityName", { length: 255 }),
+    address: varchar("address", { length: 500 }),
+    city: varchar("city", { length: 100 }),
+    state: varchar("state", { length: 50 }),
+    zipCode: varchar("zipCode", { length: 20 }),
+    lat: decimal("lat", { precision: 10, scale: 8 }),
+    lng: decimal("lng", { precision: 11, scale: 8 }),
+    contactName: varchar("contactName", { length: 200 }),
+    contactPhone: varchar("contactPhone", { length: 30 }),
+    appointmentStart: timestamp("appointmentStart"),
+    appointmentEnd: timestamp("appointmentEnd"),
+    arrivedAt: timestamp("arrivedAt"),
+    departedAt: timestamp("departedAt"),
+    status: mysqlEnum("status", [
+      "pending", "en_route", "arrived", "loading", "unloading", "completed", "skipped",
+    ]).default("pending").notNull(),
+    notes: text("notes"),
+    referenceNumber: varchar("referenceNumber", { length: 100 }),
+    estimatedWeight: decimal("estimatedWeight", { precision: 10, scale: 2 }),
+    actualWeight: decimal("actualWeight", { precision: 10, scale: 2 }),
+    dwellMinutes: int("dwellMinutes"),
+    distanceFromPrev: decimal("distanceFromPrev", { precision: 10, scale: 2 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("load_stops_load_idx").on(table.loadId),
+    seqIdx: index("load_stops_seq_idx").on(table.loadId, table.sequence),
+  })
+);
+
+export type LoadStop = typeof loadStops.$inferSelect;
+export type InsertLoadStop = typeof loadStops.$inferInsert;
+
+// ============================================================================
+// LOAD RELAY LEGS — Multi-Driver Load Handoff / Relay Mode (GAP-128)
+// Splits a single load into sequential legs, each assigned to a different driver.
+// Handoff occurs at relay points (truck stops, yards, terminals).
+// ============================================================================
+
+export const loadRelayLegs = mysqlTable(
+  "load_relay_legs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    legNumber: int("legNumber").notNull(),
+    driverId: int("driverId"),
+    vehicleId: int("vehicleId"),
+    status: mysqlEnum("status", [
+      "planned", "driver_assigned", "en_route", "at_handoff",
+      "handed_off", "completed", "cancelled",
+    ]).default("planned").notNull(),
+    // Origin of this leg
+    originFacility: varchar("originFacility", { length: 255 }),
+    originAddress: varchar("originAddress", { length: 500 }),
+    originCity: varchar("originCity", { length: 100 }),
+    originState: varchar("originState", { length: 50 }),
+    originLat: decimal("originLat", { precision: 10, scale: 8 }),
+    originLng: decimal("originLng", { precision: 11, scale: 8 }),
+    // Destination / handoff point of this leg
+    destFacility: varchar("destFacility", { length: 255 }),
+    destAddress: varchar("destAddress", { length: 500 }),
+    destCity: varchar("destCity", { length: 100 }),
+    destState: varchar("destState", { length: 50 }),
+    destLat: decimal("destLat", { precision: 10, scale: 8 }),
+    destLng: decimal("destLng", { precision: 11, scale: 8 }),
+    // Scheduling
+    plannedStartAt: timestamp("plannedStartAt"),
+    plannedEndAt: timestamp("plannedEndAt"),
+    actualStartAt: timestamp("actualStartAt"),
+    actualEndAt: timestamp("actualEndAt"),
+    // Handoff details
+    handoffType: mysqlEnum("handoffType", [
+      "drop_and_hook", "live_transfer", "yard_relay", "terminal_swap",
+    ]).default("drop_and_hook"),
+    handoffNotes: text("handoffNotes"),
+    handoffConfirmedByDriverId: int("handoffConfirmedByDriverId"),
+    handoffConfirmedAt: timestamp("handoffConfirmedAt"),
+    // Distances & pay
+    legDistance: decimal("legDistance", { precision: 10, scale: 2 }),
+    legRate: decimal("legRate", { precision: 10, scale: 2 }),
+    // Seal tracking
+    sealNumber: varchar("sealNumber", { length: 50 }),
+    sealVerified: boolean("sealVerified").default(false),
+    // Metadata
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("relay_legs_load_idx").on(table.loadId),
+    legIdx: index("relay_legs_leg_idx").on(table.loadId, table.legNumber),
+    driverIdx: index("relay_legs_driver_idx").on(table.driverId),
+    statusIdx: index("relay_legs_status_idx").on(table.status),
+  })
+);
+
+export type LoadRelayLeg = typeof loadRelayLegs.$inferSelect;
+export type InsertLoadRelayLeg = typeof loadRelayLegs.$inferInsert;
+
+// ============================================================================
+// LOAD TEMPLATES (GAP-003)
+// Reusable templates for frequently-posted loads. Shippers/brokers can save
+// lane, commodity, equipment, hazmat, rate, stops, and scheduling preferences.
+// ============================================================================
+
+export const loadTemplates = mysqlTable(
+  "load_templates",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    ownerId: int("ownerId").notNull(),
+    companyId: int("companyId"),
+    name: varchar("name", { length: 200 }).notNull(),
+    description: text("description"),
+    // Lane
+    origin: json("origin").$type<{ address?: string; city?: string; state?: string; zipCode?: string; lat?: number; lng?: number; facilityName?: string }>(),
+    destination: json("destination").$type<{ address?: string; city?: string; state?: string; zipCode?: string; lat?: number; lng?: number; facilityName?: string }>(),
+    distance: decimal("distance", { precision: 10, scale: 2 }),
+    // Cargo
+    commodity: varchar("commodity", { length: 200 }),
+    cargoType: varchar("cargoType", { length: 50 }),
+    equipmentType: varchar("equipmentType", { length: 80 }),
+    trailerType: varchar("trailerType", { length: 80 }),
+    weight: varchar("weight", { length: 50 }),
+    weightUnit: varchar("weightUnit", { length: 20 }).default("lbs"),
+    quantity: varchar("quantity", { length: 50 }),
+    quantityUnit: varchar("quantityUnit", { length: 30 }),
+    // Hazmat
+    hazmatClass: varchar("hazmatClass", { length: 10 }),
+    unNumber: varchar("unNumber", { length: 20 }),
+    packingGroup: varchar("packingGroup", { length: 5 }),
+    properShippingName: varchar("properShippingName", { length: 200 }),
+    // Rate
+    rate: decimal("rate", { precision: 10, scale: 2 }),
+    rateType: mysqlEnum("rateType", ["flat", "per_mile", "per_barrel", "per_gallon", "per_ton"]).default("flat"),
+    // Multi-stop template data (GAP-002 integration)
+    stops: json("stops").$type<Array<{
+      stopType: string; facilityName?: string; address?: string;
+      city?: string; state?: string; zipCode?: string;
+      contactName?: string; contactPhone?: string; notes?: string;
+    }>>(),
+    // Equipment requirements
+    equipmentRequirements: json("equipmentRequirements").$type<{
+      hoseType?: string; hoseLength?: string; fittingType?: string;
+      pumpRequired?: boolean; compressorRequired?: boolean;
+      bottomLoadRequired?: boolean; vaporRecoveryRequired?: boolean;
+    }>(),
+    // Scheduling preferences
+    preferredDays: json("preferredDays").$type<string[]>(),
+    preferredPickupTime: varchar("preferredPickupTime", { length: 10 }),
+    // Special instructions
+    specialInstructions: text("specialInstructions"),
+    notes: text("notes"),
+    // Meta
+    usageCount: int("usageCount").default(0).notNull(),
+    lastUsedAt: timestamp("lastUsedAt"),
+    isFavorite: boolean("isFavorite").default(false).notNull(),
+    isArchived: boolean("isArchived").default(false).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    ownerIdx: index("lt_owner_idx").on(table.ownerId),
+    companyIdx: index("lt_company_idx").on(table.companyId),
+    nameIdx: index("lt_name_idx").on(table.name),
+    favoriteIdx: index("lt_favorite_idx").on(table.isFavorite),
+  })
+);
+
+export type LoadTemplate = typeof loadTemplates.$inferSelect;
+export type InsertLoadTemplate = typeof loadTemplates.$inferInsert;
+
+// ============================================================================
 // BIDS
 // ============================================================================
 

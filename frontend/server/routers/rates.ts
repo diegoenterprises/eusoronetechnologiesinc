@@ -416,4 +416,106 @@ export const ratesRouter = router({
       });
     } catch (e) { return []; }
   }),
+
+  /**
+   * GAP-056: Lane Rate Comparison / Benchmarking
+   * Compares a proposed or actual rate against platform historical data
+   * for the same origin/destination state pair within a distance band.
+   * Returns percentile ranking, market position, and savings opportunity.
+   */
+  compareLaneRate: protectedProcedure
+    .input(z.object({
+      originState: z.string(),
+      destState: z.string(),
+      rate: z.number(),
+      distance: z.number().min(1),
+      cargoType: z.string().optional(),
+      lookbackDays: z.number().default(90),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const yourRPM = input.rate / input.distance;
+      const lane = `${input.originState} → ${input.destState}`;
+
+      // Fallback national benchmarks by distance band
+      const nationalRPM = input.distance < 250 ? 3.10 : input.distance < 500 ? 2.65 : input.distance < 1000 ? 2.40 : input.distance < 1500 ? 2.25 : 2.15;
+
+      if (!db) {
+        return {
+          lane, yourRate: input.rate, yourRPM: +yourRPM.toFixed(2), distance: input.distance,
+          marketAvgRPM: nationalRPM, marketMinRPM: +(nationalRPM * 0.8).toFixed(2), marketMaxRPM: +(nationalRPM * 1.3).toFixed(2),
+          percentile: 50, position: "AT_MARKET" as const, sampleSize: 0,
+          savingsVsAvg: 0, recommendation: "Insufficient platform data — using national benchmark.",
+          source: "national_benchmark",
+        };
+      }
+
+      try {
+        const since = new Date(Date.now() - input.lookbackDays * 86400000);
+        const distMin = Math.max(1, input.distance * 0.75);
+        const distMax = input.distance * 1.25;
+
+        const rows = await db.select({
+          rate: loads.rate,
+          distance: loads.distance,
+        }).from(loads).where(and(
+          eq(loads.status, "delivered" as any),
+          gte(loads.createdAt, since),
+          sql`CAST(${loads.rate} AS DECIMAL) > 0`,
+          sql`CAST(${loads.distance} AS DECIMAL) > 0`,
+          sql`CAST(${loads.distance} AS DECIMAL) BETWEEN ${distMin} AND ${distMax}`,
+          sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.state')) = ${input.originState}`,
+          sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.state')) = ${input.destState}`,
+        )).limit(500);
+
+        const rpms = rows
+          .map((r: any) => parseFloat(String(r.rate)) / parseFloat(String(r.distance)))
+          .filter((v: number) => v > 0 && v < 20)
+          .sort((a: number, b: number) => a - b);
+
+        if (rpms.length < 3) {
+          return {
+            lane, yourRate: input.rate, yourRPM: +yourRPM.toFixed(2), distance: input.distance,
+            marketAvgRPM: nationalRPM, marketMinRPM: +(nationalRPM * 0.8).toFixed(2), marketMaxRPM: +(nationalRPM * 1.3).toFixed(2),
+            percentile: 50, position: "AT_MARKET" as const, sampleSize: rpms.length,
+            savingsVsAvg: 0, recommendation: `Only ${rpms.length} comparable loads found — using national benchmark.`,
+            source: "national_benchmark",
+          };
+        }
+
+        const avgRPM = rpms.reduce((s: number, v: number) => s + v, 0) / rpms.length;
+        const minRPM = rpms[0];
+        const maxRPM = rpms[rpms.length - 1];
+        const belowCount = rpms.filter((v: number) => v <= yourRPM).length;
+        const percentile = Math.round((belowCount / rpms.length) * 100);
+
+        const position = percentile >= 75 ? "ABOVE_MARKET" : percentile <= 25 ? "BELOW_MARKET" : "AT_MARKET";
+        const savingsVsAvg = +((yourRPM - avgRPM) * input.distance).toFixed(2);
+
+        let recommendation = "";
+        if (position === "ABOVE_MARKET") {
+          recommendation = `Your rate is in the ${percentile}th percentile. You may be able to negotiate $${Math.abs(savingsVsAvg).toFixed(0)} lower based on ${rpms.length} comparable loads.`;
+        } else if (position === "BELOW_MARKET") {
+          recommendation = `Your rate is in the ${percentile}th percentile — competitive. Carriers may push back on this rate.`;
+        } else {
+          recommendation = `Your rate is at market (${percentile}th percentile) based on ${rpms.length} comparable loads.`;
+        }
+
+        return {
+          lane, yourRate: input.rate, yourRPM: +yourRPM.toFixed(2), distance: input.distance,
+          marketAvgRPM: +avgRPM.toFixed(2), marketMinRPM: +minRPM.toFixed(2), marketMaxRPM: +maxRPM.toFixed(2),
+          percentile, position, sampleSize: rpms.length,
+          savingsVsAvg, recommendation,
+          source: "platform_data",
+        };
+      } catch (e) {
+        return {
+          lane, yourRate: input.rate, yourRPM: +yourRPM.toFixed(2), distance: input.distance,
+          marketAvgRPM: nationalRPM, marketMinRPM: +(nationalRPM * 0.8).toFixed(2), marketMaxRPM: +(nationalRPM * 1.3).toFixed(2),
+          percentile: 50, position: "AT_MARKET" as const, sampleSize: 0,
+          savingsVsAvg: 0, recommendation: "Rate comparison unavailable — using national benchmark.",
+          source: "national_benchmark",
+        };
+      }
+    }),
 });

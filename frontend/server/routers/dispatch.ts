@@ -14,6 +14,7 @@ import { eq, and, desc, sql, gte, isNull, ne } from "drizzle-orm";
 import { emitDispatchEvent, emitDriverStatusChange, emitLoadStatusChange, emitNotification, emitEscortJobAssigned, emitEscortJobAvailable } from "../_core/websocket";
 import { WS_EVENTS } from "@shared/websocket-events";
 import { getSafetyScores, getOOSStatus, getInsuranceStatus } from "../services/fmcsaBulkLookup";
+import { suggestAssignments } from "../services/ai/autoDispatch";
 
 const loadStatusSchema = z.enum([
   "draft", "posted", "bidding", "expired",
@@ -1578,5 +1579,83 @@ export const dispatchRouter = router({
         console.error("[Dispatch] getEscortAssignments error:", error);
         return [];
       }
+    }),
+
+  /**
+   * AI Smart Assign — suggest top drivers for unassigned loads (GAP-075)
+   */
+  suggestAssignments: protectedProcedure
+    .input(z.object({
+      loadIds: z.array(z.number()).min(1).max(50),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DISPATCH', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'LOAD' }, (ctx as any).req);
+      const companyId = ctx.user?.companyId || 0;
+      const suggestions = await suggestAssignments(input.loadIds, companyId);
+      return suggestions;
+    }),
+
+  /**
+   * Smart Bulk Assign — confirm multiple Smart Assign suggestions at once (GAP-075)
+   */
+  smartBulkAssign: protectedProcedure
+    .input(z.object({
+      assignments: z.array(z.object({
+        loadId: z.number(),
+        driverId: z.number(),
+      })).min(1).max(50),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DISPATCH', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'LOAD' }, (ctx as any).req);
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const results: { loadId: number; success: boolean; error?: string }[] = [];
+      const companyId = String(ctx.user?.companyId || 0);
+
+      for (const a of input.assignments) {
+        try {
+          // Get driver userId from drivers table
+          const [driverRow] = await db.select({ userId: drivers.userId }).from(drivers).where(eq(drivers.id, a.driverId)).limit(1);
+          if (!driverRow) { results.push({ loadId: a.loadId, success: false, error: "Driver not found" }); continue; }
+
+          await db.update(loads).set({
+            driverId: driverRow.userId,
+            status: "assigned" as any,
+            updatedAt: new Date(),
+          }).where(eq(loads.id, a.loadId));
+
+          await db.update(drivers).set({ status: "on_load" }).where(eq(drivers.id, a.driverId));
+
+          const [loadRow] = await db.select({ loadNumber: loads.loadNumber }).from(loads).where(eq(loads.id, a.loadId)).limit(1);
+
+          emitDispatchEvent(companyId, {
+            loadId: String(a.loadId),
+            loadNumber: loadRow?.loadNumber || `LOAD-${a.loadId}`,
+            driverId: String(a.driverId),
+            eventType: WS_EVENTS.DISPATCH_ASSIGNMENT_NEW,
+            priority: "normal",
+            message: `Smart Assign: Driver assigned to ${loadRow?.loadNumber || a.loadId}`,
+            timestamp: new Date().toISOString(),
+          });
+
+          emitNotification(String(driverRow.userId), {
+            id: `notif_${Date.now()}_${a.loadId}`,
+            type: "assignment",
+            title: "New Load Assignment",
+            message: `You have been assigned to load ${loadRow?.loadNumber || a.loadId}`,
+            priority: "high",
+            data: { loadId: String(a.loadId) },
+            actionUrl: `/driver/loads/${a.loadId}`,
+            timestamp: new Date().toISOString(),
+          });
+
+          results.push({ loadId: a.loadId, success: true });
+        } catch (err: any) {
+          results.push({ loadId: a.loadId, success: false, error: err.message });
+        }
+      }
+
+      return { assigned: results.filter(r => r.success).length, failed: results.filter(r => !r.success).length, results };
     }),
 });

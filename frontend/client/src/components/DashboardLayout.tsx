@@ -105,6 +105,7 @@ import { Button } from "./ui/button";
 import { AmbientGlow, DominoPage } from "./animations";
 import { trpc } from "@/lib/trpc";
 import EsangFloatingButton from "./EsangFloatingButton";
+import EmergencyFAB from "./driver/EmergencyFAB";
 
 // Icon map for rendering icons from string names
 const iconMap: Record<string, React.ReactNode> = {
@@ -1036,6 +1037,9 @@ export default function DashboardLayout({
 
           {/* ESANG AI Floating Button — all dashboard screens */}
           <EsangFloatingButton />
+
+          {/* GAP-267: Emergency FAB — driver screens only (role-gated inside component) */}
+          <EmergencyFAB />
 
           {/* Security Compliance Footer */}
           <footer role="contentinfo" className={`border-t backdrop-blur-sm px-4 py-4 mt-auto ${theme === "light" ? "border-slate-200/60 bg-white/80" : "border-gray-800/50 bg-gray-900/40"}`}>

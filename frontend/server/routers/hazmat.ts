@@ -1211,7 +1211,142 @@ export const hazmatRouter = router({
       };
     }),
 
-  // 20. getIncidentHistory — Past hazmat incidents for a company/driver
+  // 20. getRestrictedZones — GAP-042 Hazmat Zone Mapping (geographic polygons for map overlay)
+  getRestrictedZones: protectedProcedure
+    .input(z.object({
+      hazmatClass: z.string().optional(),
+      region: z.enum(["northeast", "southeast", "midwest", "southwest", "west", "all"]).optional().default("all"),
+    }))
+    .query(async ({ input }) => {
+      // Real restricted zone data — tunnels, bridges, urban exclusion zones with GPS coordinates
+      const RESTRICTED_ZONES: Array<{
+        id: string; name: string; type: "tunnel" | "bridge" | "urban_exclusion" | "water_crossing" | "school_zone" | "hospital_zone";
+        state: string; region: string;
+        center: { lat: number; lng: number }; radiusMiles: number;
+        blockedClasses: string[]; tunnelCategory?: string;
+        timeRestriction?: string; regulation: string; severity: "blocked" | "restricted" | "advisory";
+        alternateRoute?: string;
+      }> = [
+        // Northeast tunnels
+        { id: "hz-lincoln", name: "Lincoln Tunnel", type: "tunnel", state: "NY", region: "northeast", center: { lat: 40.7628, lng: -74.0140 }, radiusMiles: 0.5, blockedClasses: ["1.1","1.2","1.3","1.4","1.5","1.6","2.1","2.3","3","4.1","4.2","4.3","5.1","5.2","6.1","7"], tunnelCategory: "E", regulation: "49 CFR 397.71", severity: "blocked", alternateRoute: "George Washington Bridge (I-95)" },
+        { id: "hz-holland", name: "Holland Tunnel", type: "tunnel", state: "NY", region: "northeast", center: { lat: 40.7270, lng: -74.0119 }, radiusMiles: 0.5, blockedClasses: ["1.1","1.2","1.3","1.4","1.5","1.6","2.1","2.3","3","4.1","4.2","4.3","5.1","5.2","6.1","7"], tunnelCategory: "E", regulation: "49 CFR 397.71", severity: "blocked", alternateRoute: "George Washington Bridge (I-95) or Bayonne Bridge" },
+        { id: "hz-queens-midtown", name: "Queens-Midtown Tunnel", type: "tunnel", state: "NY", region: "northeast", center: { lat: 40.7440, lng: -73.9712 }, radiusMiles: 0.4, blockedClasses: ["1.1","1.2","1.3","2.3","3","4.2","4.3","5.1","5.2","6.1","7"], tunnelCategory: "D", regulation: "49 CFR 397.71", severity: "blocked", alternateRoute: "Queensboro Bridge (no toll)" },
+        { id: "hz-bbt", name: "Brooklyn-Battery Tunnel", type: "tunnel", state: "NY", region: "northeast", center: { lat: 40.6898, lng: -74.0147 }, radiusMiles: 0.4, blockedClasses: ["1.1","1.2","1.3","2.3","3","4.2","4.3","5.1","5.2","6.1","7"], tunnelCategory: "D", regulation: "49 CFR 397.71", severity: "blocked", alternateRoute: "Brooklyn Bridge or Manhattan Bridge" },
+        { id: "hz-ted-williams", name: "Ted Williams Tunnel (I-90)", type: "tunnel", state: "MA", region: "northeast", center: { lat: 42.3500, lng: -71.0350 }, radiusMiles: 0.3, blockedClasses: ["1.1","1.2","1.3","2.3","3","4.2","4.3","5.1","5.2","6.1","7"], tunnelCategory: "D", regulation: "49 CFR 397.71", severity: "blocked", alternateRoute: "Tobin Bridge (US-1)" },
+        { id: "hz-sumner", name: "Sumner/Callahan Tunnels", type: "tunnel", state: "MA", region: "northeast", center: { lat: 42.3665, lng: -71.0490 }, radiusMiles: 0.3, blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], tunnelCategory: "C", regulation: "49 CFR 397.71", severity: "blocked", alternateRoute: "Tobin Bridge" },
+        // Mid-Atlantic
+        { id: "hz-balt-harbor", name: "Baltimore Harbor Tunnel", type: "tunnel", state: "MD", region: "northeast", center: { lat: 39.2535, lng: -76.5810 }, radiusMiles: 0.5, blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], tunnelCategory: "C", regulation: "49 CFR 397.71", severity: "blocked", alternateRoute: "Francis Scott Key Bridge bypass via I-695" },
+        { id: "hz-fort-mchenry", name: "Fort McHenry Tunnel (I-95)", type: "tunnel", state: "MD", region: "northeast", center: { lat: 39.2625, lng: -76.5780 }, radiusMiles: 0.5, blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], tunnelCategory: "C", regulation: "49 CFR 397.71", severity: "blocked", alternateRoute: "I-695 bypass" },
+        // Virginia
+        { id: "hz-hrbt", name: "Hampton Roads Bridge-Tunnel", type: "water_crossing", state: "VA", region: "southeast", center: { lat: 36.9928, lng: -76.3050 }, radiusMiles: 1.0, blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], tunnelCategory: "C", regulation: "49 CFR 397.71", severity: "blocked", alternateRoute: "Monitor-Merrimac (I-664) or James River Bridge" },
+        { id: "hz-mmbt", name: "Monitor-Merrimac Bridge-Tunnel", type: "water_crossing", state: "VA", region: "southeast", center: { lat: 36.9530, lng: -76.3880 }, radiusMiles: 1.0, blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], tunnelCategory: "C", regulation: "49 CFR 397.71", severity: "restricted", alternateRoute: "James River Bridge (US-258)" },
+        // Colorado
+        { id: "hz-eisenhower", name: "Eisenhower/Johnson Tunnels (I-70)", type: "tunnel", state: "CO", region: "midwest", center: { lat: 39.6805, lng: -105.9139 }, radiusMiles: 0.5, blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], tunnelCategory: "C", regulation: "49 CFR 397.71", severity: "blocked", alternateRoute: "Loveland Pass (US-6) — seasonal, check conditions" },
+        // Washington
+        { id: "hz-sr99", name: "SR 99 Tunnel (Seattle)", type: "tunnel", state: "WA", region: "west", center: { lat: 47.5950, lng: -122.3380 }, radiusMiles: 0.3, blockedClasses: ["1.1","1.2","1.3","2.3","3","4.2","4.3","5.1","5.2","6.1","7"], tunnelCategory: "D", regulation: "49 CFR 397.71", severity: "blocked", alternateRoute: "I-5 through downtown Seattle" },
+        // Urban exclusion zones
+        { id: "hz-nyc-exclusion", name: "New York City Hazmat Exclusion", type: "urban_exclusion", state: "NY", region: "northeast", center: { lat: 40.7580, lng: -73.9855 }, radiusMiles: 8, blockedClasses: ["1.1","1.2","1.3","2.3","7"], timeRestriction: "12AM-6AM without NYC DOT permit", regulation: "NYC DOT Hazmat Regulations", severity: "restricted", alternateRoute: "I-95 or I-287 bypass" },
+        { id: "hz-dc-exclusion", name: "Washington DC Hazmat Zone", type: "urban_exclusion", state: "DC", region: "northeast", center: { lat: 38.8951, lng: -77.0364 }, radiusMiles: 5, blockedClasses: ["1.1","1.2","1.3","2.3","7"], regulation: "DC Municipal Regulations 18-2708", severity: "restricted", alternateRoute: "I-495 Capital Beltway" },
+        { id: "hz-chicago-exclusion", name: "Chicago Metro Hazmat Restricted", type: "urban_exclusion", state: "IL", region: "midwest", center: { lat: 41.8781, lng: -87.6298 }, radiusMiles: 10, blockedClasses: ["1.1","1.2","1.3"], timeRestriction: "Rush hours 6AM-9AM, 3PM-7PM weekdays", regulation: "49 CFR 397.67 + Cook County Ordinance", severity: "restricted", alternateRoute: "I-294/I-355 bypass" },
+        { id: "hz-la-exclusion", name: "Los Angeles Metro Hazmat Zone", type: "urban_exclusion", state: "CA", region: "west", center: { lat: 34.0522, lng: -118.2437 }, radiusMiles: 12, blockedClasses: ["1.1","1.2","1.3","2.3"], timeRestriction: "Certain freeways during peak hours", regulation: "Caltrans + CHP Regulations", severity: "restricted", alternateRoute: "I-15 to I-10 bypass via Cajon Pass" },
+      ];
+
+      let zones = RESTRICTED_ZONES;
+      if (input.region !== "all") zones = zones.filter(z => z.region === input.region);
+      if (input.hazmatClass) {
+        const nc = normalizeClass(input.hazmatClass);
+        zones = zones.filter(z => z.blockedClasses.some(bc => input.hazmatClass === bc || nc === bc.split(".")[0]));
+      }
+
+      return {
+        zones,
+        total: zones.length,
+        regulation: "49 CFR 397 — Transportation of Hazardous Materials; Driving and Parking Rules",
+      };
+    }),
+
+  // 21. checkProximity — Real-time proximity check against restricted zones (GAP-042)
+  checkProximity: protectedProcedure
+    .input(z.object({
+      lat: z.number(),
+      lng: z.number(),
+      hazmatClass: z.string(),
+      alertRadiusMiles: z.number().optional().default(5),
+    }))
+    .query(async ({ input }) => {
+      // Haversine distance
+      const haversine = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+        const R = 3958.8;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      };
+
+      // Get all restricted zones for this hazmat class
+      const allZones = [
+        { id: "hz-lincoln", name: "Lincoln Tunnel", lat: 40.7628, lng: -74.0140, radiusMiles: 0.5, blockedClasses: ["1.1","1.2","1.3","1.4","1.5","1.6","2.1","2.3","3","4.1","4.2","4.3","5.1","5.2","6.1","7"], severity: "blocked" as const, alternate: "George Washington Bridge (I-95)" },
+        { id: "hz-holland", name: "Holland Tunnel", lat: 40.7270, lng: -74.0119, radiusMiles: 0.5, blockedClasses: ["1.1","1.2","1.3","1.4","1.5","1.6","2.1","2.3","3","4.1","4.2","4.3","5.1","5.2","6.1","7"], severity: "blocked" as const, alternate: "George Washington Bridge or Bayonne Bridge" },
+        { id: "hz-queens-midtown", name: "Queens-Midtown Tunnel", lat: 40.7440, lng: -73.9712, radiusMiles: 0.4, blockedClasses: ["1.1","1.2","1.3","2.3","3","4.2","4.3","5.1","5.2","6.1","7"], severity: "blocked" as const, alternate: "Queensboro Bridge" },
+        { id: "hz-bbt", name: "Brooklyn-Battery Tunnel", lat: 40.6898, lng: -74.0147, radiusMiles: 0.4, blockedClasses: ["1.1","1.2","1.3","2.3","3","4.2","4.3","5.1","5.2","6.1","7"], severity: "blocked" as const, alternate: "Brooklyn Bridge" },
+        { id: "hz-ted-williams", name: "Ted Williams Tunnel", lat: 42.3500, lng: -71.0350, radiusMiles: 0.3, blockedClasses: ["1.1","1.2","1.3","2.3","3","4.2","4.3","5.1","5.2","6.1","7"], severity: "blocked" as const, alternate: "Tobin Bridge" },
+        { id: "hz-balt-harbor", name: "Baltimore Harbor Tunnel", lat: 39.2535, lng: -76.5810, radiusMiles: 0.5, blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], severity: "blocked" as const, alternate: "I-695 bypass" },
+        { id: "hz-fort-mchenry", name: "Fort McHenry Tunnel", lat: 39.2625, lng: -76.5780, radiusMiles: 0.5, blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], severity: "blocked" as const, alternate: "I-695 bypass" },
+        { id: "hz-hrbt", name: "Hampton Roads Bridge-Tunnel", lat: 36.9928, lng: -76.3050, radiusMiles: 1.0, blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], severity: "blocked" as const, alternate: "I-664 or James River Bridge" },
+        { id: "hz-eisenhower", name: "Eisenhower/Johnson Tunnels", lat: 39.6805, lng: -105.9139, radiusMiles: 0.5, blockedClasses: ["1.1","1.2","1.3","2.3","4.2","5.2","7"], severity: "blocked" as const, alternate: "Loveland Pass (US-6)" },
+        { id: "hz-sr99", name: "SR 99 Tunnel (Seattle)", lat: 47.5950, lng: -122.3380, radiusMiles: 0.3, blockedClasses: ["1.1","1.2","1.3","2.3","3","4.2","4.3","5.1","5.2","6.1","7"], severity: "blocked" as const, alternate: "I-5" },
+        { id: "hz-nyc", name: "NYC Hazmat Exclusion Zone", lat: 40.7580, lng: -73.9855, radiusMiles: 8, blockedClasses: ["1.1","1.2","1.3","2.3","7"], severity: "restricted" as const, alternate: "I-95 or I-287 bypass" },
+        { id: "hz-dc", name: "Washington DC Zone", lat: 38.8951, lng: -77.0364, radiusMiles: 5, blockedClasses: ["1.1","1.2","1.3","2.3","7"], severity: "restricted" as const, alternate: "I-495 Capital Beltway" },
+        { id: "hz-chicago", name: "Chicago Metro Zone", lat: 41.8781, lng: -87.6298, radiusMiles: 10, blockedClasses: ["1.1","1.2","1.3"], severity: "restricted" as const, alternate: "I-294/I-355 bypass" },
+      ];
+
+      const nc = normalizeClass(input.hazmatClass);
+      const nearbyAlerts: Array<{
+        zoneId: string; zoneName: string; distanceMiles: number;
+        severity: "blocked" | "restricted"; alternateRoute: string;
+        alert: "inside" | "approaching" | "nearby";
+        message: string;
+      }> = [];
+
+      for (const zone of allZones) {
+        if (!zone.blockedClasses.some(bc => input.hazmatClass === bc || nc === bc.split(".")[0])) continue;
+        const dist = haversine(input.lat, input.lng, zone.lat, zone.lng);
+        if (dist > input.alertRadiusMiles + zone.radiusMiles) continue;
+
+        const alert = dist <= zone.radiusMiles ? "inside" : dist <= zone.radiusMiles + 2 ? "approaching" : "nearby";
+        const message = alert === "inside"
+          ? `⚠️ INSIDE restricted zone: ${zone.name} — Class ${input.hazmatClass} PROHIBITED. Reroute immediately via ${zone.alternate}`
+          : alert === "approaching"
+          ? `🔶 APPROACHING restricted zone: ${zone.name} in ${dist.toFixed(1)} mi — Class ${input.hazmatClass} prohibited. Use ${zone.alternate}`
+          : `📍 Restricted zone ahead: ${zone.name} (${dist.toFixed(1)} mi) — Plan route via ${zone.alternate}`;
+
+        nearbyAlerts.push({
+          zoneId: zone.id,
+          zoneName: zone.name,
+          distanceMiles: parseFloat(dist.toFixed(2)),
+          severity: zone.severity,
+          alternateRoute: zone.alternate,
+          alert,
+          message,
+        });
+      }
+
+      nearbyAlerts.sort((a, b) => a.distanceMiles - b.distanceMiles);
+
+      return {
+        position: { lat: input.lat, lng: input.lng },
+        hazmatClass: input.hazmatClass,
+        alertRadius: input.alertRadiusMiles,
+        alerts: nearbyAlerts,
+        inRestrictedZone: nearbyAlerts.some(a => a.alert === "inside"),
+        approachingZone: nearbyAlerts.some(a => a.alert === "approaching"),
+        voiceAlerts: nearbyAlerts
+          .filter(a => a.alert === "inside" || a.alert === "approaching")
+          .map(a => a.message),
+      };
+    }),
+
+  // 22. getIncidentHistory — Past hazmat incidents for a company/driver
   getIncidentHistory: protectedProcedure
     .input(z.object({ companyId: z.number().optional(), driverId: z.number().optional(), limit: z.number().optional() }).optional())
     .query(async ({ ctx, input }) => {

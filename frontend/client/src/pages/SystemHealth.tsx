@@ -1,7 +1,7 @@
 /**
- * SYSTEM HEALTH PAGE
- * 100% Dynamic - No mock data
- * UI Style: Gradient headers, stat cards with icons, rounded cards
+ * @deprecated CONSOLIDATED — Task 5.1.1
+ * System health is now served by admin/SystemHealth.tsx (/admin/system-health).
+ * This file is retained for reference only. Do not import.
  */
 
 import React from "react";

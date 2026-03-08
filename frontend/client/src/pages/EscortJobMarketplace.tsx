@@ -1,21 +1,24 @@
 /**
  * ESCORT JOB MARKETPLACE PAGE
+ * GAP-081: Escort Job Matching Enhancement
  * Shows only loads that require escort services (requiresEscort=true OR oversized cargo).
  * Displays load number, cargo type, hazmat class, weight, escort positions, applicants.
+ * Match scoring based on escort's certifications and state coverage.
  */
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
 import {
   Car, MapPin, DollarSign, Search, Package,
   Calendar, AlertTriangle, CheckCircle, Navigation,
-  Users, Shield, Weight, ArrowRight
+  Users, Shield, Weight, ArrowRight, Sparkles, Star, Target
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -31,12 +34,16 @@ function fmtDateShort(iso: string) {
   catch { return ""; }
 }
 
+type SortKey = "newest" | "match" | "pay_desc" | "distance_asc" | "urgency";
+
 export default function EscortJobMarketplace() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("match");
 
   const jobsQuery = (trpc as any).escorts.getAvailableJobs.useQuery({ filter, search });
   const statsQuery = (trpc as any).escorts.getMarketplaceStats.useQuery();
+  const certsQuery = (trpc as any).escorts?.getMyCertifications?.useQuery?.() || { data: null };
 
   const applyMutation = (trpc as any).escorts.applyForJob.useMutation({
     onSuccess: () => { toast.success("Application submitted"); jobsQuery.refetch(); },
@@ -46,12 +53,52 @@ export default function EscortJobMarketplace() {
   const stats = statsQuery.data;
   const jobs: any[] = jobsQuery.data || [];
 
-  // Client-side filter
-  const filteredJobs = filter === "all" ? jobs
-    : filter === "urgent" ? jobs.filter((j: any) => j.urgency === "urgent")
-    : filter === "open" ? jobs.filter((j: any) => j.positionsOpen > 0)
-    : filter === "filled" ? jobs.filter((j: any) => j.urgency === "filled")
-    : jobs;
+  const myCerts: any[] = Array.isArray(certsQuery.data) ? certsQuery.data : [];
+  const certifiedStates = useMemo(() => new Set(myCerts.filter((c: any) => c.status === "valid" || c.status === "active").map((c: any) => (c.state || "").toUpperCase().trim())), [myCerts]);
+
+  const getMatchScore = useCallback((job: any) => {
+    let score = 0;
+    const originState = (job.originState || "").toUpperCase().trim();
+    const destState = (job.destState || "").toUpperCase().trim();
+    if (originState && certifiedStates.has(originState)) score += 40;
+    if (destState && certifiedStates.has(destState)) score += 30;
+    if (job.positionsOpen > 0) score += 15;
+    if (job.urgency === "urgent") score += 10;
+    if (!job.hazmatClass) score += 5;
+    return Math.min(score, 100);
+  }, [certifiedStates]);
+
+  const getMatchTier = (score: number) => {
+    if (score >= 70) return { label: "Great Match", color: "text-emerald-400", bg: "bg-emerald-500/15", border: "border-emerald-500/30" };
+    if (score >= 40) return { label: "Good Match", color: "text-blue-400", bg: "bg-blue-500/15", border: "border-blue-500/30" };
+    if (score > 0) return { label: "Partial Match", color: "text-amber-400", bg: "bg-amber-500/15", border: "border-amber-500/30" };
+    return { label: "Low Match", color: "text-slate-400", bg: "bg-slate-500/15", border: "border-slate-500/30" };
+  };
+
+  // Client-side filter + sort
+  const filteredJobs = useMemo(() => {
+    let result = filter === "all" ? jobs
+      : filter === "urgent" ? jobs.filter((j: any) => j.urgency === "urgent")
+      : filter === "open" ? jobs.filter((j: any) => j.positionsOpen > 0)
+      : filter === "filled" ? jobs.filter((j: any) => j.urgency === "filled")
+      : filter === "matched" ? jobs.filter((j: any) => getMatchScore(j) >= 40)
+      : jobs;
+    result = [...result].sort((a: any, b: any) => {
+      switch (sortKey) {
+        case "match": return getMatchScore(b) - getMatchScore(a);
+        case "pay_desc": return (b.escortPay || 0) - (a.escortPay || 0);
+        case "distance_asc": return (a.distance || 9999) - (b.distance || 9999);
+        case "urgency": {
+          const u = (j: any) => j.urgency === "urgent" ? 0 : j.urgency === "filled" ? 2 : 1;
+          return u(a) - u(b);
+        }
+        default: return new Date(b.postedAt || 0).getTime() - new Date(a.postedAt || 0).getTime();
+      }
+    });
+    return result;
+  }, [jobs, filter, sortKey, getMatchScore]);
+
+  const matchedCount = useMemo(() => jobs.filter((j: any) => getMatchScore(j) >= 40).length, [jobs, getMatchScore]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -66,7 +113,7 @@ export default function EscortJobMarketplace() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
@@ -121,6 +168,17 @@ export default function EscortJobMarketplace() {
             </div>
           </CardContent>
         </Card>
+        <Card className="bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 border-emerald-500/20 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-emerald-500/20"><Sparkles className="w-6 h-6 text-emerald-400" /></div>
+              <div>
+                <p className="text-2xl font-bold text-emerald-400">{matchedCount}</p>
+                <p className="text-xs text-slate-400">Matched Jobs</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters */}
@@ -135,11 +193,28 @@ export default function EscortJobMarketplace() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Jobs</SelectItem>
+            <SelectItem value="matched">Best Matches</SelectItem>
             <SelectItem value="urgent">Urgent Only</SelectItem>
             <SelectItem value="open">Positions Open</SelectItem>
             <SelectItem value="filled">Filled</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      {/* Sort Controls */}
+      <div className="flex items-center gap-2 overflow-x-auto">
+        <span className="text-xs text-slate-500 font-medium whitespace-nowrap">Sort:</span>
+        {([
+          { id: "match" as SortKey, label: "Best Match" },
+          { id: "newest" as SortKey, label: "Newest" },
+          { id: "pay_desc" as SortKey, label: "Highest Pay" },
+          { id: "distance_asc" as SortKey, label: "Shortest Distance" },
+          { id: "urgency" as SortKey, label: "Most Urgent" },
+        ]).map((s) => (
+          <button key={s.id} onClick={() => setSortKey(s.id)} className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all", sortKey === s.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : "bg-slate-800 text-slate-400 hover:bg-slate-700")}>
+            {s.label}
+          </button>
+        ))}
       </div>
 
       {/* Jobs List */}
@@ -196,6 +271,11 @@ export default function EscortJobMarketplace() {
                         {job.urgency === "filled" && (
                           <Badge className="bg-slate-500/20 text-slate-400 border-0 text-xs">Positions Filled</Badge>
                         )}
+                        {(() => { const ms = getMatchScore(job); const tier = getMatchTier(ms); return ms > 0 ? (
+                          <Badge className={cn("border text-xs flex items-center gap-1", tier.bg, tier.color, tier.border)}>
+                            <Sparkles className="w-3 h-3" />{tier.label} ({ms}%)
+                          </Badge>
+                        ) : null; })()}
                       </div>
                       {job.commodityName && (
                         <p className="text-sm text-slate-400 flex items-center gap-1">

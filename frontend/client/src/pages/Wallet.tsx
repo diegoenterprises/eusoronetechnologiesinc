@@ -704,6 +704,58 @@ export default function Wallet() {
         </Card>
       )}
 
+      {/* ── Role-Aware Financial Context ── */}
+      {(() => {
+        const r = (user?.role || "").toUpperCase();
+        const isShipper = r === "SHIPPER";
+        const isCarrier = ["CATALYST", "CARRIER"].includes(r);
+        const isDriver = r === "DRIVER";
+        const isBroker = r === "BROKER";
+        const isFactoring = r === "FACTORING";
+        const escrowTotal = escrowHolds.reduce((s: number, e: any) => s + (e.amount || 0), 0);
+        const pendingAmt = balance?.pending || 0;
+
+        if (isShipper) return (
+          <div className={cn("rounded-xl border p-3 flex items-center gap-3 flex-wrap", isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/5 border-blue-500/20")}>
+            <Building2 className="w-4 h-4 text-blue-500 flex-shrink-0" />
+            <span className={cn("text-xs font-semibold", isLight ? "text-blue-700" : "text-blue-400")}>Shipper Finance</span>
+            <span className="text-[10px] text-slate-400">•</span>
+            <span className="text-[10px] text-slate-400">${escrowTotal.toLocaleString()} in escrow</span>
+            <span className="text-[10px] text-slate-400">•</span>
+            <span className="text-[10px] text-slate-400">${pendingAmt.toLocaleString()} pending to carriers</span>
+          </div>
+        );
+        if (isCarrier || isDriver) return (
+          <div className={cn("rounded-xl border p-3 flex items-center gap-3 flex-wrap", isLight ? "bg-emerald-50 border-emerald-200" : "bg-emerald-500/5 border-emerald-500/20")}>
+            <CircleDollarSign className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+            <span className={cn("text-xs font-semibold", isLight ? "text-emerald-700" : "text-emerald-400")}>{isDriver ? "Driver" : "Carrier"} Earnings</span>
+            <span className="text-[10px] text-slate-400">•</span>
+            <span className="text-[10px] text-emerald-500 font-semibold">${(balance?.available || 0).toLocaleString()} available</span>
+            <span className="text-[10px] text-slate-400">•</span>
+            <span className="text-[10px] text-slate-400">${pendingAmt.toLocaleString()} pending settlement</span>
+          </div>
+        );
+        if (isBroker) return (
+          <div className={cn("rounded-xl border p-3 flex items-center gap-3 flex-wrap", isLight ? "bg-purple-50 border-purple-200" : "bg-purple-500/5 border-purple-500/20")}>
+            <Scale className="w-4 h-4 text-purple-500 flex-shrink-0" />
+            <span className={cn("text-xs font-semibold", isLight ? "text-purple-700" : "text-purple-400")}>Broker Finance</span>
+            <span className="text-[10px] text-slate-400">•</span>
+            <span className="text-[10px] text-slate-400">${escrowTotal.toLocaleString()} in escrow</span>
+            <span className="text-[10px] text-slate-400">•</span>
+            <span className="text-[10px] text-slate-400">${(balance?.monthVolume || 0).toLocaleString()} month volume</span>
+          </div>
+        );
+        if (isFactoring) return (
+          <div className={cn("rounded-xl border p-3 flex items-center gap-3 flex-wrap", isLight ? "bg-amber-50 border-amber-200" : "bg-amber-500/5 border-amber-500/20")}>
+            <Receipt className="w-4 h-4 text-amber-500 flex-shrink-0" />
+            <span className={cn("text-xs font-semibold", isLight ? "text-amber-700" : "text-amber-400")}>Factoring Portfolio</span>
+            <span className="text-[10px] text-slate-400">•</span>
+            <span className="text-[10px] text-slate-400">${pendingAmt.toLocaleString()} receivables</span>
+          </div>
+        );
+        return null;
+      })()}
+
       {/* Tab Navigation */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
         {TABS.map(tab => (

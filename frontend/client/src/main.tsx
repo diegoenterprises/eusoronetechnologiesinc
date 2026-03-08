@@ -88,3 +88,25 @@ createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </trpc.Provider>
 );
+
+// PWA Service Worker Registration (Tasks 3.3.1/3.3.2)
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((reg) => {
+        console.log("[PWA] Service worker registered, scope:", reg.scope);
+        reg.addEventListener("updatefound", () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener("statechange", () => {
+              if (newWorker.state === "activated" && navigator.serviceWorker.controller) {
+                console.log("[PWA] New content available — refresh to update.");
+              }
+            });
+          }
+        });
+      })
+      .catch((err) => console.warn("[PWA] SW registration failed:", err));
+  });
+}

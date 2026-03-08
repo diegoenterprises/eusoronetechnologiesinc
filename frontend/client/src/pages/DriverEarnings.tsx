@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into driver/DriverEarnings.tsx (Earnings Summary tab). Remove after migration verification.
  * DRIVER EARNINGS PAGE
  * 100% Dynamic - No mock data
  */

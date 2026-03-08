@@ -1,7 +1,7 @@
 /**
- * FEATURE FLAGS PAGE
- * 100% Dynamic - No mock data
- * UI Style: Gradient headers, stat cards with icons, rounded cards
+ * @deprecated CONSOLIDATED — Task 5.1.3
+ * Feature flags is now served by admin/SystemConfiguration.tsx (/admin/system-config).
+ * This file is retained as a tab component. Do not route to directly.
  */
 
 import React, { useState } from "react";

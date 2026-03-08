@@ -727,6 +727,7 @@ function VerificationChecklist({ dotNumber }: { dotNumber: string }) {
 // ============================================================================
 
 export default function FMCSACarrierIntelligence() {
+  const { user: ciUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedDot, setSelectedDot] = useState<string | null>(null);
@@ -830,6 +831,39 @@ export default function FMCSACarrierIntelligence() {
               </div>
             </div>
           </div>
+
+          {/* ── Role-Aware Context Banner ── */}
+          {(() => {
+            const r = (ciUser?.role || "").toUpperCase();
+            if (["SHIPPER", "BROKER"].includes(r)) return (
+              <div className="mb-3 rounded-lg border border-blue-500/20 bg-blue-500/5 p-2.5 flex items-center gap-2 flex-wrap">
+                <Shield className="w-4 h-4 text-blue-400 shrink-0" />
+                <span className="text-xs font-semibold text-blue-400">{r === "SHIPPER" ? "Shipper" : "Broker"} Vetting</span>
+                <span className="text-[10px] text-gray-400">•</span>
+                <span className="text-[10px] text-gray-400">Search carriers to verify safety, authority & insurance before booking</span>
+                <button onClick={() => setShowInvite(true)} className="ml-auto text-[10px] px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors flex items-center gap-1">
+                  <UserPlus className="w-3 h-3" />Invite Carrier
+                </button>
+              </div>
+            );
+            if (["CATALYST", "CARRIER", "DRIVER"].includes(r)) return (
+              <div className="mb-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2.5 flex items-center gap-2 flex-wrap">
+                <Award className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="text-xs font-semibold text-emerald-400">{r === "DRIVER" ? "Driver" : "Carrier"} Profile</span>
+                <span className="text-[10px] text-gray-400">•</span>
+                <span className="text-[10px] text-gray-400">View your safety scores, compare with peers, upload compliance docs</span>
+              </div>
+            );
+            if (["COMPLIANCE_OFFICER", "SAFETY_MANAGER"].includes(r)) return (
+              <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5 flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="text-xs font-semibold text-amber-400">Compliance Monitoring</span>
+                <span className="text-[10px] text-gray-400">•</span>
+                <span className="text-[10px] text-gray-400">Monitor carrier safety scores, authority changes & insurance lapses</span>
+              </div>
+            );
+            return null;
+          })()}
 
           {/* Search Bar */}
           <div className="relative" ref={searchRef}>

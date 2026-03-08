@@ -19,12 +19,13 @@ import { getLoadTitle, getEquipmentLabel, isHazmatLoad } from "@/lib/loadUtils";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
-  Search, MapPin, Package, DollarSign, Truck, RefreshCw,
+  Search, MapPin, Package, DollarSign, Truck, RefreshCw, Plus,
   Eye, Clock, Navigation, Building2, Droplets, FlaskConical,
   AlertTriangle, Gavel, TrendingUp, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { useLocation } from "wouter";
 import LoadCargoAnimation from "@/components/LoadCargoAnimation";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 type BoardFilter = "all" | "posted" | "bidding" | "in_transit" | "delivered";
 
@@ -52,10 +53,108 @@ function isSameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+// ── Role-Specific Quick Actions Panel ──
+function RoleContextPanel({ role, isLight, onNavigate, stats }: { role: string; isLight: boolean; onNavigate: (p: string) => void; stats: { total: number; posted: number; inTransit: number; value: number } }) {
+  const r = (role || "").toUpperCase();
+  const isShipper = ["SHIPPER"].includes(r);
+  const isCarrier = ["CATALYST", "CARRIER"].includes(r);
+  const isDriver = ["DRIVER"].includes(r);
+  const isBroker = ["BROKER"].includes(r);
+  const isDispatch = ["DISPATCH", "DISPATCHER"].includes(r);
+
+  if (isShipper) {
+    return (
+      <div className={cn("rounded-xl border p-3 flex items-center gap-3 flex-wrap", isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/5 border-blue-500/20")}>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Building2 className="w-4 h-4 text-blue-500" />
+          <span className={cn("text-xs font-semibold", isLight ? "text-blue-700" : "text-blue-400")}>Shipper View</span>
+          <span className="text-[10px] text-slate-400">•</span>
+          <span className="text-[10px] text-slate-400">{stats.posted} posted</span>
+          <span className="text-[10px] text-slate-400">•</span>
+          <span className="text-[10px] text-slate-400">${stats.value.toLocaleString()} total value</span>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" className="h-7 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg" onClick={() => onNavigate("/loads/create")}>
+            <Plus className="w-3 h-3 mr-1" />Post Load
+          </Button>
+          <Button size="sm" variant="outline" className={cn("h-7 text-[10px] rounded-lg", isLight ? "border-blue-200" : "border-blue-500/30")} onClick={() => onNavigate("/loads")}>
+            My Loads
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isCarrier || isDriver) {
+    return (
+      <div className={cn("rounded-xl border p-3 flex items-center gap-3 flex-wrap", isLight ? "bg-emerald-50 border-emerald-200" : "bg-emerald-500/5 border-emerald-500/20")}>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Truck className="w-4 h-4 text-emerald-500" />
+          <span className={cn("text-xs font-semibold", isLight ? "text-emerald-700" : "text-emerald-400")}>{isDriver ? "Driver" : "Carrier"} View</span>
+          <span className="text-[10px] text-slate-400">•</span>
+          <span className="text-[10px] text-slate-400">{stats.posted} available loads</span>
+          <span className="text-[10px] text-slate-400">•</span>
+          <span className="text-[10px] text-emerald-500 font-semibold">{stats.inTransit} in transit</span>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className={cn("h-7 text-[10px] rounded-lg", isLight ? "border-emerald-200" : "border-emerald-500/30")} onClick={() => onNavigate("/find-loads")}>
+            <Search className="w-3 h-3 mr-1" />Find Loads
+          </Button>
+          <Button size="sm" variant="outline" className={cn("h-7 text-[10px] rounded-lg", isLight ? "border-emerald-200" : "border-emerald-500/30")} onClick={() => onNavigate("/bids")}>
+            <Gavel className="w-3 h-3 mr-1" />My Bids
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isBroker) {
+    return (
+      <div className={cn("rounded-xl border p-3 flex items-center gap-3 flex-wrap", isLight ? "bg-purple-50 border-purple-200" : "bg-purple-500/5 border-purple-500/20")}>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <TrendingUp className="w-4 h-4 text-purple-500" />
+          <span className={cn("text-xs font-semibold", isLight ? "text-purple-700" : "text-purple-400")}>Broker View</span>
+          <span className="text-[10px] text-slate-400">•</span>
+          <span className="text-[10px] text-slate-400">{stats.total} loads • {stats.posted} open</span>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" className="h-7 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg" onClick={() => onNavigate("/loads/create")}>
+            <Plus className="w-3 h-3 mr-1" />Broker Load
+          </Button>
+          <Button size="sm" variant="outline" className={cn("h-7 text-[10px] rounded-lg", isLight ? "border-purple-200" : "border-purple-500/30")} onClick={() => onNavigate("/carrier-intelligence")}>
+            Match Carrier
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isDispatch) {
+    return (
+      <div className={cn("rounded-xl border p-3 flex items-center gap-3 flex-wrap", isLight ? "bg-amber-50 border-amber-200" : "bg-amber-500/5 border-amber-500/20")}>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Navigation className="w-4 h-4 text-amber-500" />
+          <span className={cn("text-xs font-semibold", isLight ? "text-amber-700" : "text-amber-400")}>Dispatch View</span>
+          <span className="text-[10px] text-slate-400">•</span>
+          <span className="text-[10px] text-slate-400">{stats.inTransit} active • {stats.posted} awaiting assignment</span>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className={cn("h-7 text-[10px] rounded-lg", isLight ? "border-amber-200" : "border-amber-500/30")} onClick={() => onNavigate("/mission-balancer")}>
+            Assign Loads
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export default function LoadBoard() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<BoardFilter>("all");
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -145,6 +244,14 @@ export default function LoadBoard() {
           <RefreshCw className="w-4 h-4 mr-2" /> Refresh
         </Button>
       </div>
+
+      {/* ── Role-Specific Context Panel ── */}
+      <RoleContextPanel
+        role={user?.role || ""}
+        isLight={isLight}
+        onNavigate={setLocation}
+        stats={{ total: totalLoads, posted: postedLoads, inTransit, value: totalValue }}
+      />
 
       {/* ── Search ── */}
       <div className={cn(

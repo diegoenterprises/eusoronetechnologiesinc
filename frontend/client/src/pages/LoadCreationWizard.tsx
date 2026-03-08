@@ -33,6 +33,7 @@ import {
   fuzzyMatch, calcWeight,
 } from "@/lib/cargoCalculations";
 import HazmatRouteRestrictions from "@/components/HazmatRouteRestrictions";
+import { VerticalFieldsPanel, VerticalSelector } from "@/components/VerticalFieldsPanel";
 import RegulatoryCompliancePanel from "@/components/RegulatoryCompliancePanel";
 import { MultiTruckVisualization } from "@/components/TruckVisualization";
 import RouteMap from "@/components/RouteMap";
@@ -319,6 +320,11 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
   const productDropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<any>(null);
   const unDebounceRef = useRef<any>(null);
+  const [selectedVertical, setSelectedVertical] = useState("");
+  const [verticalFieldData, setVerticalFieldData] = useState<Record<string, any>>({});
+  const handleVerticalFieldChange = useCallback((key: string, value: any) => {
+    setVerticalFieldData(prev => ({ ...prev, [key]: value }));
+  }, []);
   const [rateMode, setRateMode] = useState<"total" | "perMile">("total");
   const [compSearchQuery, setCompSearchQuery] = useState("");
   const [activeCompIdx, setActiveCompIdx] = useState<number | null>(null);
@@ -965,6 +971,9 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
       hazardClassNumber: formData.hazardClassNumber || undefined,
       subsidiaryHazards: formData.subsidiaryHazards || undefined,
       specialPermit: formData.specialPermit || undefined,
+      // GAP-274-339: Industry Vertical metadata
+      verticalId: selectedVertical || undefined,
+      verticalData: Object.keys(verticalFieldData).length > 0 ? verticalFieldData : undefined,
     });
   };
 
@@ -1112,6 +1121,19 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     <p className="text-cyan-400 text-sm font-bold">{selectedTrailer.name}</p>
                     <p className="text-slate-400 text-[10px]">{isHazmat ? "Next: Product Classification with ERG 2020 search" : "Next: Product / Commodity Description"}</p>
                   </div>
+                </div>
+              )}
+
+              {/* GAP-274-339: Industry Vertical — custom fields, compliance, docs */}
+              {selectedTrailer && (
+                <div className="mt-4 pt-4 border-t border-slate-700/50">
+                  <VerticalFieldsPanel
+                    selectedVertical={selectedVertical}
+                    onVerticalChange={setSelectedVertical}
+                    verticalData={verticalFieldData}
+                    onFieldChange={handleVerticalFieldChange}
+                    compact={false}
+                  />
                 </div>
               )}
             </div>

@@ -2180,6 +2180,47 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX dps_status_idx (status)
     )`);
 
+    // --- GAP-128: Multi-Driver Load Handoff (Relay Mode) ---
+    await ensureTable("load_relay_legs", `CREATE TABLE IF NOT EXISTS load_relay_legs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      loadId INT NOT NULL,
+      legNumber INT NOT NULL,
+      driverId INT DEFAULT NULL,
+      vehicleId INT DEFAULT NULL,
+      status ENUM('planned','driver_assigned','en_route','at_handoff','handed_off','completed','cancelled') NOT NULL DEFAULT 'planned',
+      originFacility VARCHAR(255) DEFAULT NULL,
+      originAddress VARCHAR(500) DEFAULT NULL,
+      originCity VARCHAR(100) DEFAULT NULL,
+      originState VARCHAR(50) DEFAULT NULL,
+      originLat DECIMAL(10,8) DEFAULT NULL,
+      originLng DECIMAL(11,8) DEFAULT NULL,
+      destFacility VARCHAR(255) DEFAULT NULL,
+      destAddress VARCHAR(500) DEFAULT NULL,
+      destCity VARCHAR(100) DEFAULT NULL,
+      destState VARCHAR(50) DEFAULT NULL,
+      destLat DECIMAL(10,8) DEFAULT NULL,
+      destLng DECIMAL(11,8) DEFAULT NULL,
+      plannedStartAt TIMESTAMP NULL DEFAULT NULL,
+      plannedEndAt TIMESTAMP NULL DEFAULT NULL,
+      actualStartAt TIMESTAMP NULL DEFAULT NULL,
+      actualEndAt TIMESTAMP NULL DEFAULT NULL,
+      handoffType ENUM('drop_and_hook','live_transfer','yard_relay','terminal_swap') DEFAULT 'drop_and_hook',
+      handoffNotes TEXT DEFAULT NULL,
+      handoffConfirmedByDriverId INT DEFAULT NULL,
+      handoffConfirmedAt TIMESTAMP NULL DEFAULT NULL,
+      legDistance DECIMAL(10,2) DEFAULT NULL,
+      legRate DECIMAL(10,2) DEFAULT NULL,
+      sealNumber VARCHAR(50) DEFAULT NULL,
+      sealVerified BOOLEAN DEFAULT FALSE,
+      notes TEXT DEFAULT NULL,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX relay_legs_load_idx (loadId),
+      INDEX relay_legs_leg_idx (loadId, legNumber),
+      INDEX relay_legs_driver_idx (driverId),
+      INDEX relay_legs_status_idx (status)
+    )`);
+
     console.log("[SchemaSync] Done.");
   } catch (err: any) {
     console.warn("[SchemaSync] Non-fatal error:", err?.message?.slice(0, 200));

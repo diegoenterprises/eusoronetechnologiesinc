@@ -1,24 +1,30 @@
 /**
- * ESCORT CERTIFICATIONS PAGE
+ * ESCORT CERTIFICATIONS — Consolidated (Task 6.2.1)
+ * Merges: EscortCertifications.tsx (My Certifications) + EscortPermits.tsx (Permits)
+ * Tabs: My Certifications | Permits
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import React from "react";
+import React, { useState, lazy, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import {
   Award, CheckCircle, AlertTriangle, Clock, MapPin,
-  Upload, FileText, Calendar
+  Upload, FileText, Calendar, Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+const PermitsTab = lazy(() => import("./EscortPermits"));
+
 export default function EscortCertifications() {
+  const [activeTab, setActiveTab] = useState("certifications");
   const certsQuery = (trpc as any).escorts.getMyCertifications.useQuery();
   const statesQuery = (trpc as any).escorts.getStateRequirements.useQuery();
   const statsQuery = (trpc as any).escorts.getCertificationStats.useQuery();
@@ -48,12 +54,23 @@ export default function EscortCertifications() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Escort Certifications
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Manage your state certifications</p>
+          <p className="text-slate-400 text-sm mt-1">Manage your state certifications & permits</p>
         </div>
         <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
           <Upload className="w-4 h-4 mr-2" />Upload New
         </Button>
       </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="certifications"><Award className="w-4 h-4 mr-1.5" />My Certifications</TabsTrigger>
+          <TabsTrigger value="permits"><Shield className="w-4 h-4 mr-1.5" />Permits</TabsTrigger>
+        </TabsList>
+
+        {/* ═══════════════════════════════════════════
+            TAB 1: MY CERTIFICATIONS (original content)
+         ═══════════════════════════════════════════ */}
+        <TabsContent value="certifications" className="space-y-6">
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -205,6 +222,23 @@ export default function EscortCertifications() {
           )}
         </CardContent>
       </Card>
+
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════
+            TAB 2: PERMITS (from EscortPermits.tsx)
+         ═══════════════════════════════════════════ */}
+        <TabsContent value="permits">
+          <Suspense fallback={
+            <div className="p-4 space-y-4">
+              <Skeleton className="h-8 w-64 rounded-lg" />
+              <Skeleton className="h-48 w-full rounded-xl" />
+            </div>
+          }>
+            <div className="[&>div]:!p-0"><PermitsTab /></div>
+          </Suspense>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

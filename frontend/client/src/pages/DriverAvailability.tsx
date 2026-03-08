@@ -6,7 +6,7 @@
  * Theme-aware | Brand gradient | Oil & gas industry focused
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,8 @@ import DatePicker from "@/components/DatePicker";
 import {
   Clock, CheckCircle, MapPin, Calendar, Truck,
   RefreshCw, Power, Coffee, Home, ChevronRight,
-  Navigation, Sun, Moon as MoonIcon, ArrowRight
+  Navigation, Sun, Moon as MoonIcon, ArrowRight,
+  Brain, TrendingUp, DollarSign, Plus, X
 } from "lucide-react";
 
 type AvailabilityStatus = "available" | "on_break" | "off_duty" | "en_route" | "home_time";
@@ -44,8 +45,28 @@ export default function DriverAvailability() {
   const [maxMiles, setMaxMiles] = useState("500");
   const [homeDate, setHomeDate] = useState("");
 
+  const [savedLanes, setSavedLanes] = useState<Array<{ origin: string; destination: string; frequency?: number; avgRate?: number }>>([]);
+  const [newOrigin, setNewOrigin] = useState("");
+  const [newDest, setNewDest] = useState("");
+
   const profileQuery = (trpc as any).drivers?.getProfile?.useQuery?.() || { data: null, isLoading: false, refetch: () => {} };
-  const isLoading = profileQuery.isLoading;
+  const prefsQuery = (trpc as any).drivers?.getPreferredLanes?.useQuery?.() || { data: null, isLoading: false };
+  const learnQuery = (trpc as any).drivers?.learnLanePreferences?.useQuery?.() || { data: null, isLoading: false };
+  const isLoading = profileQuery.isLoading || prefsQuery.isLoading;
+
+  const updatePrefsMutation = (trpc as any).drivers?.updatePreferredLanes?.useMutation?.({
+    onSuccess: () => { toast.success("Preferences saved to your profile"); prefsQuery.refetch?.(); },
+    onError: (err: any) => toast.error("Failed to save", { description: err.message }),
+  }) || { mutate: () => toast.success("Availability preferences saved"), isPending: false };
+
+  // Hydrate local state from DB
+  useEffect(() => {
+    if (prefsQuery.data) {
+      if (prefsQuery.data.lanes?.length) setSavedLanes(prefsQuery.data.lanes);
+      if (prefsQuery.data.maxDeadheadMiles) setMaxMiles(String(prefsQuery.data.maxDeadheadMiles));
+      if (prefsQuery.data.availableDays?.length) setSelectedDays(prefsQuery.data.availableDays);
+    }
+  }, [prefsQuery.data]);
 
   const toggleDay = (day: string) => {
     setSelectedDays((prev) =>
@@ -59,8 +80,31 @@ export default function DriverAvailability() {
     toast.success(`Status updated to ${s?.label}`);
   };
 
+  const handleAddLane = () => {
+    if (!newOrigin.trim() || !newDest.trim()) { toast.error("Enter both origin and destination state"); return; }
+    const o = newOrigin.trim().toUpperCase().slice(0, 2);
+    const d = newDest.trim().toUpperCase().slice(0, 2);
+    if (savedLanes.some(l => l.origin === o && l.destination === d)) { toast.error("Lane already added"); return; }
+    setSavedLanes(prev => [...prev, { origin: o, destination: d }]);
+    setNewOrigin(""); setNewDest("");
+  };
+
+  const handleRemoveLane = (idx: number) => setSavedLanes(prev => prev.filter((_, i) => i !== idx));
+
+  const handleAdoptSuggested = (lane: { origin: string; destination: string; frequency?: number; avgRate?: number }) => {
+    if (savedLanes.some(l => l.origin === lane.origin && l.destination === lane.destination)) {
+      toast.info("Lane already in your preferences"); return;
+    }
+    setSavedLanes(prev => [...prev, { origin: lane.origin, destination: lane.destination, frequency: lane.frequency, avgRate: lane.avgRate }]);
+    toast.success(`Added ${lane.origin} → ${lane.destination}`);
+  };
+
   const handleSavePreferences = () => {
-    toast.success("Availability preferences saved");
+    updatePrefsMutation.mutate({
+      lanes: savedLanes,
+      maxDeadheadMiles: parseInt(maxMiles) || 500,
+      availableDays: selectedDays,
+    });
   };
 
   const activeStatus = STATUS_OPTIONS.find((s) => s.id === currentStatus);
@@ -162,40 +206,121 @@ export default function DriverAvailability() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className={cn("text-xs font-medium mb-1.5", isLight ? "text-slate-500" : "text-slate-400")}>Preferred Lanes</p>
-                  <div className="relative">
-                    <Navigation className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input
-                      value={preferredLanes}
-                      onChange={(e: any) => setPreferredLanes(e.target.value)}
-                      placeholder="e.g. TX → OK, Gulf Coast, Permian Basin"
-                      className={cn(inputCls, "pl-10")}
-                    />
+              {/* Preferred Lanes List */}
+              <div>
+                <p className={cn("text-xs font-medium mb-2", isLight ? "text-slate-500" : "text-slate-400")}>Preferred Lanes</p>
+                {savedLanes.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {savedLanes.map((lane, idx) => (
+                      <Badge key={idx} className={cn("px-3 py-1.5 text-sm rounded-lg border gap-1.5", isLight ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-blue-500/15 text-blue-400 border-blue-500/30")}>
+                        <Navigation className="w-3 h-3" />
+                        {lane.origin} → {lane.destination}
+                        {lane.avgRate ? <span className="text-[10px] opacity-70">(${lane.avgRate})</span> : null}
+                        <button onClick={() => handleRemoveLane(idx)} className="ml-1 hover:text-red-400"><X className="w-3 h-3" /></button>
+                      </Badge>
+                    ))}
                   </div>
+                ) : (
+                  <p className={cn("text-xs mb-3", isLight ? "text-slate-400" : "text-slate-500")}>No preferred lanes set. Add lanes below or learn from your history.</p>
+                )}
+                <div className="flex gap-2">
+                  <Input value={newOrigin} onChange={(e: any) => setNewOrigin(e.target.value)} placeholder="Origin (TX)" maxLength={2} className={cn(inputCls, "w-24 text-center uppercase")} />
+                  <ArrowRight className={cn("w-5 h-5 mt-3 flex-shrink-0", isLight ? "text-slate-400" : "text-slate-500")} />
+                  <Input value={newDest} onChange={(e: any) => setNewDest(e.target.value)} placeholder="Dest (OK)" maxLength={2} className={cn(inputCls, "w-24 text-center uppercase")} />
+                  <Button variant="outline" className={cn("h-11 rounded-xl", isLight ? "border-slate-200" : "bg-slate-700/50 border-slate-600/50")} onClick={handleAddLane}>
+                    <Plus className="w-4 h-4 mr-1" />Add
+                  </Button>
                 </div>
-                <div>
-                  <p className={cn("text-xs font-medium mb-1.5", isLight ? "text-slate-500" : "text-slate-400")}>Max Deadhead Miles</p>
-                  <div className="relative">
-                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input
-                      type="number"
-                      value={maxMiles}
-                      onChange={(e: any) => setMaxMiles(e.target.value)}
-                      placeholder="500"
-                      className={cn(inputCls, "pl-10")}
-                    />
-                  </div>
+              </div>
+
+              <div>
+                <p className={cn("text-xs font-medium mb-1.5", isLight ? "text-slate-500" : "text-slate-400")}>Max Deadhead Miles</p>
+                <div className="relative">
+                  <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Input
+                    type="number"
+                    value={maxMiles}
+                    onChange={(e: any) => setMaxMiles(e.target.value)}
+                    placeholder="500"
+                    className={cn(inputCls, "pl-10 max-w-xs")}
+                  />
                 </div>
               </div>
 
               <Button
                 className="w-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl h-11"
                 onClick={handleSavePreferences}
+                disabled={updatePrefsMutation.isPending}
               >
-                <CheckCircle className="w-4 h-4 mr-2" /> Save Preferences
+                <CheckCircle className="w-4 h-4 mr-2" /> {updatePrefsMutation.isPending ? "Saving..." : "Save Preferences"}
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* GAP-108: Learn from History */}
+          <Card className={cc}>
+            <CardHeader className="pb-3">
+              <CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
+                <Brain className="w-5 h-5 text-[#BE01FF]" />
+                Learn from History
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>
+                Based on your completed loads, here are your most-run lanes. Click to add to preferences.
+              </p>
+              {learnQuery.isLoading ? (
+                <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
+              ) : (learnQuery.data?.suggestedLanes?.length || 0) === 0 ? (
+                <div className={cn("text-center py-8 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-slate-700/30")}>
+                  <Truck className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+                  <p className={cn("text-sm", isLight ? "text-slate-400" : "text-slate-500")}>Complete more loads to unlock lane suggestions</p>
+                </div>
+              ) : (
+                <>
+                  <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{learnQuery.data.totalLoadsAnalyzed} loads analyzed</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {learnQuery.data.suggestedLanes.slice(0, 10).map((lane: any, idx: number) => {
+                      const alreadySaved = savedLanes.some(l => l.origin === lane.origin && l.destination === lane.destination);
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => !alreadySaved && handleAdoptSuggested(lane)}
+                          disabled={alreadySaved}
+                          className={cn(
+                            "flex items-center justify-between p-3 rounded-xl border transition-all text-left",
+                            alreadySaved
+                              ? isLight ? "bg-green-50 border-green-200 opacity-60" : "bg-green-500/10 border-green-500/30 opacity-60"
+                              : isLight ? "bg-white border-slate-200 hover:border-[#1473FF]/50 hover:shadow-sm" : "bg-slate-800/50 border-slate-700/30 hover:border-[#1473FF]/50"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Navigation className={cn("w-4 h-4", alreadySaved ? "text-green-500" : "text-[#1473FF]")} />
+                            <div>
+                              <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{lane.origin} → {lane.destination}</p>
+                              <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>
+                                {lane.frequency} loads • ${lane.avgRate} avg • {lane.avgDistance} mi
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {lane.rpm > 0 && (
+                              <Badge className={cn("text-[10px] border", isLight ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30")}>
+                                ${lane.rpm}/mi
+                              </Badge>
+                            )}
+                            {alreadySaved ? (
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <Plus className="w-4 h-4 text-slate-400" />
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 

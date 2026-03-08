@@ -1,7 +1,7 @@
 /**
- * FLEET PAGE
- * 100% Dynamic - No mock data
- * UI Style: Gradient headers, stat cards with icons, rounded cards
+ * @deprecated CONSOLIDATED — Task 4.5.2
+ * Fleet management is now served by FleetCommandCenter (/carrier/fleet-hub).
+ * This file is retained for reference only. Do not import.
  */
 
 import React, { useState } from "react";

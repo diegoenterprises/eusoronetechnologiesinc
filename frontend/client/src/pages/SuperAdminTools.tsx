@@ -1,7 +1,7 @@
 /**
- * SUPER ADMIN TOOLS PAGE
- * Frontend for superAdmin router — platform-wide admin controls,
- * user management, system configuration, and monitoring.
+ * @deprecated CONSOLIDATED — Task 5.1.4
+ * Functionality absorbed into SuperAdminDashboard (Platform Command Center).
+ * Route /super-admin/tools now redirects to SuperAdminDashboard.
  */
 
 import React, { useState } from "react";

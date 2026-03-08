@@ -17,7 +17,7 @@ import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { loads, companies, vehicles, bids, drivers, users, loadBids, bidAutoAcceptRules, negotiations, negotiationMessages, laneContracts, agreements } from "../../drizzle/schema";
+import { loads, companies, vehicles, bids, drivers, users, loadBids, bidAutoAcceptRules, negotiations, negotiationMessages, laneContracts, agreements, loadStops } from "../../drizzle/schema";
 import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -759,6 +759,23 @@ export const loadBoardRouter = router({
       properShippingName: z.string().optional(),
       rate: z.number(),
       expiresIn: z.number().default(24),
+      stops: z.array(z.object({
+        stopType: z.enum(["pickup", "delivery", "fuel", "rest", "scale", "inspection", "crossdock", "relay", "customs"]),
+        facilityName: z.string().optional(),
+        address: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        zipCode: z.string().optional(),
+        lat: z.number().optional(),
+        lng: z.number().optional(),
+        contactName: z.string().optional(),
+        contactPhone: z.string().optional(),
+        appointmentStart: z.string().optional(),
+        appointmentEnd: z.string().optional(),
+        notes: z.string().optional(),
+        referenceNumber: z.string().optional(),
+        estimatedWeight: z.number().optional(),
+      })).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
@@ -843,6 +860,38 @@ export const loadBoardRouter = router({
         originalShipperId: isBroker ? null : profile.userId,
         brokerChainDepth: isBroker ? 1 : 0,
       } as any).$returningId();
+
+      // GAP-002: Insert multi-stop data if provided
+      const allStops = input.stops && input.stops.length > 0 ? input.stops : [
+        { stopType: "pickup" as const, facilityName: input.origin.facility, address: input.origin.address, city: input.origin.city, state: input.origin.state, zipCode: input.origin.zip, contactName: input.origin.contact, contactPhone: input.origin.phone },
+        { stopType: "delivery" as const, facilityName: input.destination.facility, address: input.destination.address, city: input.destination.city, state: input.destination.state, zipCode: input.destination.zip, contactName: input.destination.contact, contactPhone: input.destination.phone },
+      ];
+      try {
+        const stopValues = allStops.map((s: any, i: number) => ({
+          loadId: result.id,
+          sequence: i + 1,
+          stopType: s.stopType,
+          facilityName: s.facilityName || null,
+          address: s.address || null,
+          city: s.city || null,
+          state: s.state || null,
+          zipCode: s.zipCode || null,
+          lat: s.lat ? String(s.lat) : null,
+          lng: s.lng ? String(s.lng) : null,
+          contactName: s.contactName || null,
+          contactPhone: s.contactPhone || null,
+          appointmentStart: s.appointmentStart ? new Date(s.appointmentStart) : null,
+          appointmentEnd: s.appointmentEnd ? new Date(s.appointmentEnd) : null,
+          notes: s.notes || null,
+          referenceNumber: s.referenceNumber || null,
+          estimatedWeight: s.estimatedWeight ? String(s.estimatedWeight) : null,
+          status: "pending" as const,
+        }));
+        await db.insert(loadStops).values(stopValues as any);
+      } catch (stopErr) {
+        console.warn('[LoadBoard] Failed to insert load stops:', stopErr);
+      }
+
       return {
         id: String(result.id),
         loadNumber,

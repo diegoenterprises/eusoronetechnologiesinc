@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into compliance/HazmatCompliance.tsx (Registration tab). Remove after migration verification.
  * HAZMAT REGISTRATION PAGE
  * Carrier hazmat registration and PHMSA compliance tracker.
  * Displays PHMSA registration status, DOT special permits,

@@ -144,6 +144,51 @@ export const incidentsRouter = router({
         indexComplianceRecord({ id: insertedId, type: input.type, description: input.description, status: "reported", severity: input.severity });
       } catch {}
 
+      // GAP-289: Safety Incident Email Alert — notify safety manager for critical/major
+      if (input.severity === "critical" || input.severity === "major") {
+        try {
+          const { notifySafetyIncident } = await import("../services/notifications");
+          // Find safety manager(s) for this company
+          const safetyManagers = await db.select({
+            id: users.id, email: users.email, phone: users.phone, name: users.name,
+          }).from(users).where(and(
+            eq(users.companyId, companyId),
+            eq(users.role, "SAFETY_MANAGER" as any),
+          )).limit(3);
+
+          // Also get driver name for the alert
+          let driverName = "";
+          if (input.driverId) {
+            const [driver] = await db.select({ name: users.name })
+              .from(users).where(eq(users.id, parseInt(input.driverId, 10))).limit(1);
+            if (driver) driverName = driver.name || "";
+          }
+
+          const reporterName = (ctx.user as any)?.name || (ctx.user as any)?.email || "Unknown";
+
+          for (const sm of safetyManagers) {
+            if (sm.email) {
+              notifySafetyIncident({
+                safetyManagerEmail: sm.email,
+                safetyManagerPhone: sm.phone || undefined,
+                safetyManagerName: sm.name || "Safety Manager",
+                incidentId: String(insertedId),
+                incidentNumber: `INC-${String(insertedId).padStart(5, "0")}`,
+                type: input.type,
+                severity: input.severity,
+                location: input.location,
+                description: input.description,
+                reportedBy: reporterName,
+                driverName: driverName || undefined,
+                occurredAt: `${input.date}T${input.time}`,
+              });
+            }
+          }
+        } catch (err: any) {
+          console.warn("[incidents.report] Safety alert failed:", err?.message?.slice(0, 80));
+        }
+      }
+
       // AI Turbocharge: NLP severity classification + entity extraction
       let aiAnalysis: any = null;
       try {

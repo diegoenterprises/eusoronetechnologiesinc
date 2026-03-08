@@ -320,6 +320,174 @@ export const convoyRouter = router({
     return { success: true };
   }),
 
+  // GAP-082 Task 5.2: Convoy Route Optimization — fuel, rest, timing, permits
+  optimizeConvoyRoute: protectedProcedure.input(z.object({
+    convoyId: z.number().optional(),
+    loadId: z.number().optional(),
+    originLat: z.number(),
+    originLng: z.number(),
+    destLat: z.number(),
+    destLng: z.number(),
+    totalDistanceMiles: z.number(),
+    estimatedTravelHours: z.number().optional(),
+    isOversize: z.boolean().default(false),
+    loadWidth: z.number().optional(),
+    loadHeight: z.number().optional(),
+    loadWeight: z.number().optional(),
+    departureTime: z.string().optional(),
+    transitStates: z.array(z.string()).default([]),
+  })).query(async ({ input }) => {
+    const avgSpeed = input.isOversize ? 35 : 45; // mph convoy average
+    const travelHours = input.estimatedTravelHours || (input.totalDistanceMiles / avgSpeed);
+    const fuelRangeMiles = 350; // avg truck fuel range for convoy (conservative)
+    const driverHOSLimit = 11; // max driving hours
+    const daylightStart = 7; // 7 AM
+    const daylightEnd = 18; // 6 PM (sunset conservative)
+    const daylightHours = daylightEnd - daylightStart;
+
+    // ── Fuel Stops ──
+    const fuelStopCount = Math.max(0, Math.floor(input.totalDistanceMiles / fuelRangeMiles));
+    const fuelStops: Array<{ stopNumber: number; approximateMile: number; estimatedTime: string; notes: string }> = [];
+    for (let i = 1; i <= fuelStopCount; i++) {
+      const mile = i * fuelRangeMiles;
+      const hoursIn = mile / avgSpeed;
+      fuelStops.push({
+        stopNumber: i,
+        approximateMile: mile,
+        estimatedTime: `+${hoursIn.toFixed(1)}h from departure`,
+        notes: "Fuel all convoy vehicles simultaneously. Lead escort fuels first, then load, then rear.",
+      });
+    }
+
+    // ── Rest / HOS Stops ──
+    const restStops: Array<{ stopNumber: number; type: string; approximateHour: number; duration: string; reason: string }> = [];
+    if (travelHours > 5) {
+      restStops.push({ stopNumber: 1, type: "break", approximateHour: 5, duration: "30 min", reason: "Mandatory 30-min break after 5h driving (HOS 49 CFR 395.3)" });
+    }
+    if (travelHours > driverHOSLimit) {
+      const overnightStops = Math.ceil(travelHours / driverHOSLimit) - 1;
+      for (let i = 0; i < overnightStops; i++) {
+        restStops.push({
+          stopNumber: restStops.length + 1,
+          type: "overnight",
+          approximateHour: driverHOSLimit * (i + 1),
+          duration: "10h off-duty",
+          reason: `HOS 11h driving limit — 10h consecutive off-duty required (49 CFR 395.3)`,
+        });
+      }
+    }
+
+    // ── Daylight-Only Windows (Oversize/Heavy Haul) ──
+    const daylightWindows: Array<{ day: number; start: string; end: string; drivingHours: number; miles: number }> = [];
+    if (input.isOversize) {
+      const departureDateObj = input.departureTime ? new Date(input.departureTime) : new Date();
+      let remainingMiles = input.totalDistanceMiles;
+      let dayNum = 1;
+
+      while (remainingMiles > 0) {
+        const dayMiles = Math.min(remainingMiles, avgSpeed * daylightHours);
+        const dayDate = new Date(departureDateObj);
+        dayDate.setDate(dayDate.getDate() + dayNum - 1);
+
+        // Skip weekends (most states restrict oversize on weekends)
+        const dow = dayDate.getDay();
+        if (dow === 0 || dow === 6) {
+          dayNum++;
+          continue;
+        }
+
+        daylightWindows.push({
+          day: dayNum,
+          start: `${dayDate.toISOString().split("T")[0]} ${String(daylightStart).padStart(2, "0")}:00`,
+          end: `${dayDate.toISOString().split("T")[0]} ${String(daylightEnd).padStart(2, "0")}:00`,
+          drivingHours: Math.min(daylightHours, remainingMiles / avgSpeed),
+          miles: Math.round(dayMiles),
+        });
+
+        remainingMiles -= dayMiles;
+        dayNum++;
+        if (dayNum > 14) break; // safety cap
+      }
+    }
+
+    // ── State Permit Checkpoints ──
+    const STATE_RESTRICTIONS: Record<string, { daylightOnly: boolean; noWeekends: boolean; noHolidays: boolean; maxSpeed: number; escortRequired: boolean; policeEscort: boolean; notes: string }> = {
+      TX: { daylightOnly: true, noWeekends: true, noHolidays: true, maxSpeed: 45, escortRequired: false, policeEscort: false, notes: "Permit office: TxDMV. Electronic permits available." },
+      CA: { daylightOnly: true, noWeekends: true, noHolidays: true, maxSpeed: 35, escortRequired: true, policeEscort: false, notes: "Caltrans permit required. Width >12ft needs escort. CHP notification for width >14ft." },
+      FL: { daylightOnly: true, noWeekends: false, noHolidays: true, maxSpeed: 45, escortRequired: false, policeEscort: false, notes: "FDOT permits. Saturday travel allowed with restrictions." },
+      NY: { daylightOnly: true, noWeekends: true, noHolidays: true, maxSpeed: 40, escortRequired: true, policeEscort: true, notes: "NYSDOT requires police escort for width >14ft. No travel on NYC bridges." },
+      PA: { daylightOnly: true, noWeekends: true, noHolidays: true, maxSpeed: 40, escortRequired: true, policeEscort: false, notes: "PennDOT. Height >15ft requires utility coordination." },
+      OH: { daylightOnly: true, noWeekends: true, noHolidays: true, maxSpeed: 45, escortRequired: false, policeEscort: false, notes: "ODOT electronic permits. Annual permits available for repeat lanes." },
+      IL: { daylightOnly: true, noWeekends: true, noHolidays: true, maxSpeed: 45, escortRequired: false, policeEscort: false, notes: "IDOT. Superloads require 5-day advance notice." },
+      GA: { daylightOnly: true, noWeekends: true, noHolidays: true, maxSpeed: 45, escortRequired: false, policeEscort: false, notes: "GDOT permits online. Height >15ft6in requires route survey." },
+      LA: { daylightOnly: true, noWeekends: true, noHolidays: true, maxSpeed: 45, escortRequired: false, policeEscort: false, notes: "DOTD. Baton Rouge area requires special routing." },
+      OK: { daylightOnly: true, noWeekends: true, noHolidays: true, maxSpeed: 45, escortRequired: false, policeEscort: false, notes: "OTA turnpike permits separate from ODOT highway permits." },
+    };
+
+    const permitCheckpoints = input.transitStates.map(st => {
+      const restrictions = STATE_RESTRICTIONS[st.toUpperCase()];
+      return {
+        state: st.toUpperCase(),
+        permitRequired: input.isOversize,
+        restrictions: restrictions || { daylightOnly: true, noWeekends: true, noHolidays: true, maxSpeed: 45, escortRequired: false, policeEscort: false, notes: "Contact state DOT for permit requirements" },
+      };
+    });
+
+    // ── Estimated Timeline ──
+    let totalDays: number;
+    if (input.isOversize) {
+      totalDays = daylightWindows.length || Math.ceil(travelHours / daylightHours);
+    } else {
+      totalDays = Math.ceil(travelHours / driverHOSLimit);
+    }
+
+    // ── Convoy-Specific Warnings ──
+    const warnings: string[] = [];
+    if (input.isOversize && input.loadWidth && input.loadWidth > 14) {
+      warnings.push("Width >14ft — most states require front and rear escort vehicles");
+    }
+    if (input.isOversize && input.loadWidth && input.loadWidth > 16) {
+      warnings.push("Width >16ft — law enforcement escort likely required in multiple states");
+    }
+    if (input.isOversize && input.loadHeight && input.loadHeight > 15.5) {
+      warnings.push("Height >15.5ft — utility line coordination required. Contact power companies along route.");
+    }
+    if (input.loadWeight && input.loadWeight > 120000) {
+      warnings.push("Gross weight >120,000 lbs — bridge analysis required for route");
+    }
+    if (travelHours > 24) {
+      warnings.push("Multi-day convoy — ensure relay escorts or overnight secure parking");
+    }
+    if (input.transitStates.length > 3) {
+      warnings.push(`${input.transitStates.length} transit states — allow extra time for permit coordination`);
+    }
+
+    return {
+      summary: {
+        totalDistanceMiles: input.totalDistanceMiles,
+        estimatedTravelHours: Math.round(travelHours * 10) / 10,
+        estimatedDays: totalDays,
+        avgConvoySpeed: avgSpeed,
+        fuelStopCount: fuelStops.length,
+        restStopCount: restStops.length,
+        permitStates: permitCheckpoints.length,
+      },
+      fuelStops,
+      restStops,
+      daylightWindows,
+      permitCheckpoints,
+      warnings,
+      recommendations: [
+        "Stage all convoy vehicles at origin 1 hour before departure",
+        "Verify radio communication between all vehicles before departure",
+        "Lead escort should carry route plan and all state permits",
+        fuelStops.length > 0 ? "Pre-identify truck stops with sufficient parking for convoy" : "",
+        input.isOversize ? "Contact each state permit office 3-5 business days before travel" : "",
+        input.isOversize ? "Verify utility line clearances on route survey before departure" : "",
+      ].filter(Boolean),
+    };
+  }),
+
   // AI-enhanced spacing and speed prediction based on historical data + conditions
   predictOptimalSpacing: protectedProcedure.input(z.object({
     convoyId: z.number().optional(),
@@ -426,6 +594,110 @@ export const convoyRouter = router({
         ...(recommendedMaxSpeed < 35 ? ["Low speed advisory — consider alternate timing"] : []),
       ],
     };
+  }),
+
+  // GAP-082: Get convoy alerts (separation breaches, speed violations)
+  getConvoyAlerts: protectedProcedure.input(z.object({ convoyId: z.number() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+
+    const [convoy] = await db.select().from(convoys).where(eq(convoys.id, input.convoyId)).limit(1);
+    if (!convoy) return [];
+
+    const alerts: Array<{ id: string; type: string; severity: "critical" | "warning" | "info"; message: string; timestamp: string }> = [];
+    const now = new Date().toISOString();
+
+    // Check lead separation
+    if (convoy.currentLeadDistance != null) {
+      const target = convoy.targetLeadDistanceMeters || 800;
+      if (Number(convoy.currentLeadDistance) > target * 1.5) {
+        alerts.push({ id: `lead-crit-${convoy.id}`, type: "separation", severity: "critical", message: `Lead vehicle separation ${Math.round(Number(convoy.currentLeadDistance))}m exceeds critical threshold (${Math.round(target * 1.5)}m)`, timestamp: now });
+      } else if (Number(convoy.currentLeadDistance) > target) {
+        alerts.push({ id: `lead-warn-${convoy.id}`, type: "separation", severity: "warning", message: `Lead vehicle separation ${Math.round(Number(convoy.currentLeadDistance))}m exceeds target (${target}m)`, timestamp: now });
+      }
+    }
+
+    // Check rear separation
+    if (convoy.currentRearDistance != null) {
+      const target = convoy.targetRearDistanceMeters || 500;
+      if (Number(convoy.currentRearDistance) > target * 1.5) {
+        alerts.push({ id: `rear-crit-${convoy.id}`, type: "separation", severity: "critical", message: `Rear vehicle separation ${Math.round(Number(convoy.currentRearDistance))}m exceeds critical threshold (${Math.round(target * 1.5)}m)`, timestamp: now });
+      } else if (Number(convoy.currentRearDistance) > target) {
+        alerts.push({ id: `rear-warn-${convoy.id}`, type: "separation", severity: "warning", message: `Rear vehicle separation ${Math.round(Number(convoy.currentRearDistance))}m exceeds target (${target}m)`, timestamp: now });
+      }
+    }
+
+    // Check speed violations via latest positions
+    const userIds = [convoy.leadUserId, convoy.loadUserId];
+    if (convoy.rearUserId) userIds.push(convoy.rearUserId);
+    for (const uid of userIds) {
+      const [loc] = await db.select({ speed: locationHistory.speed }).from(locationHistory)
+        .where(eq(locationHistory.userId, uid)).orderBy(desc(locationHistory.serverTimestamp)).limit(1);
+      if (loc?.speed && Number(loc.speed) > (convoy.maxSpeedMph || 45) * 1.609) {
+        const role = uid === convoy.leadUserId ? "Lead" : uid === convoy.loadUserId ? "Load" : "Rear";
+        alerts.push({ id: `speed-${uid}`, type: "speed", severity: "warning", message: `${role} vehicle exceeding max speed (${Math.round(Number(loc.speed) / 1.609)} mph > ${convoy.maxSpeedMph || 45} mph)`, timestamp: now });
+      }
+    }
+
+    // Position staleness check
+    for (const uid of userIds) {
+      const [loc] = await db.select({ ts: locationHistory.serverTimestamp }).from(locationHistory)
+        .where(eq(locationHistory.userId, uid)).orderBy(desc(locationHistory.serverTimestamp)).limit(1);
+      if (loc?.ts) {
+        const age = Date.now() - new Date(loc.ts).getTime();
+        if (age > 120_000) {
+          const role = uid === convoy.leadUserId ? "Lead" : uid === convoy.loadUserId ? "Load" : "Rear";
+          alerts.push({ id: `stale-${uid}`, type: "signal", severity: age > 300_000 ? "critical" : "warning", message: `${role} vehicle GPS signal stale (${Math.round(age / 60_000)}m ago)`, timestamp: now });
+        }
+      }
+    }
+
+    return alerts;
+  }),
+
+  // GAP-082: Get convoy position history (breadcrumb trail)
+  getConvoyHistory: protectedProcedure.input(z.object({ convoyId: z.number(), minutes: z.number().default(30) })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { convoyId: input.convoyId, trails: [] };
+
+    const [convoy] = await db.select().from(convoys).where(eq(convoys.id, input.convoyId)).limit(1);
+    if (!convoy) return { convoyId: input.convoyId, trails: [] };
+
+    const userIds = [
+      { userId: convoy.leadUserId, role: "lead" },
+      { userId: convoy.loadUserId, role: "load" },
+    ];
+    if (convoy.rearUserId) userIds.push({ userId: convoy.rearUserId, role: "rear" });
+
+    const cutoff = new Date(Date.now() - input.minutes * 60 * 1000);
+    const trails: Array<{ role: string; points: Array<{ lat: number; lng: number; speed: number; ts: string }> }> = [];
+
+    for (const { userId, role } of userIds) {
+      const points = await db.select({
+        lat: locationHistory.latitude,
+        lng: locationHistory.longitude,
+        speed: locationHistory.speed,
+        ts: locationHistory.serverTimestamp,
+      }).from(locationHistory)
+        .where(and(
+          eq(locationHistory.userId, userId),
+          sql`${locationHistory.serverTimestamp} >= ${cutoff}`,
+        ))
+        .orderBy(locationHistory.serverTimestamp)
+        .limit(200);
+
+      trails.push({
+        role,
+        points: points.map(p => ({
+          lat: Number(p.lat),
+          lng: Number(p.lng),
+          speed: p.speed ? Number(p.speed) : 0,
+          ts: p.ts?.toISOString() || "",
+        })),
+      });
+    }
+
+    return { convoyId: input.convoyId, trails };
   }),
 
   // Get active convoys for a company/fleet

@@ -1,22 +1,27 @@
 /**
- * DRIVER HOURS OF SERVICE PAGE
+ * DRIVER HOURS OF SERVICE — Consolidated (Task 6.1.2)
+ * Merges: DriverHOS.tsx (My HOS) + HOSCompliance.tsx (Fleet HOS)
+ * Tabs: My HOS | Fleet HOS
  * Dedicated HOS compliance screen — Jony Ive design, theme-aware
  * Shows driving/on-duty/cycle clocks, violations, today's log, break info
  */
 
-import React from "react";
+import React, { useState, lazy, Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   Clock, AlertTriangle, CheckCircle, Shield, Activity,
-  Coffee, Timer, TrendingDown, Gauge, Calendar
+  Coffee, Timer, TrendingDown, Gauge, Calendar, Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ELDConnectionPanel from "@/components/ELDConnectionPanel";
+
+const FleetHOSTab = lazy(() => import("./HOSCompliance"));
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string; lightBg: string }> = {
   driving:  { label: "Driving",  color: "text-emerald-500", bg: "bg-emerald-500",  lightBg: "bg-emerald-100" },
@@ -34,6 +39,7 @@ function parseHours(str: string | undefined): number {
 export default function DriverHOS() {
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const [activeTab, setActiveTab] = useState("my-hos");
 
   const dashQuery = (trpc as any).drivers.getDriverDashboard.useQuery(undefined, { refetchInterval: 30000, staleTime: 15000 });
   const hos = dashQuery.data?.hos;
@@ -94,6 +100,17 @@ export default function DriverHOS() {
           )}
         </div>
       </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="my-hos"><Gauge className="w-4 h-4 mr-1.5" />My HOS</TabsTrigger>
+          <TabsTrigger value="fleet"><Users className="w-4 h-4 mr-1.5" />Fleet HOS</TabsTrigger>
+        </TabsList>
+
+        {/* ═══════════════════════════════════════════
+            TAB 1: MY HOS (original DriverHOS content)
+         ═══════════════════════════════════════════ */}
+        <TabsContent value="my-hos" className="space-y-5">
 
       {/* ELD Connection Status */}
       <ELDConnectionPanel compact />
@@ -302,6 +319,23 @@ export default function DriverHOS() {
           <p className={cn("text-sm", muted)}>You're in full HOS compliance. Keep it up!</p>
         </div>
       )}
+
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════
+            TAB 2: FLEET HOS (from HOSCompliance.tsx)
+         ═══════════════════════════════════════════ */}
+        <TabsContent value="fleet">
+          <Suspense fallback={
+            <div className="p-4 space-y-4">
+              <Skeleton className="h-8 w-64 rounded-lg" />
+              <Skeleton className="h-48 w-full rounded-xl" />
+            </div>
+          }>
+            <div className="[&>div]:!p-0"><FleetHOSTab /></div>
+          </Suspense>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

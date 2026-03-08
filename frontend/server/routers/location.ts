@@ -1030,6 +1030,30 @@ const complianceSubRouter = router({
 // MERGED LOCATION ROUTER (Section 14)
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════════════
+// PREDICTIVE ETA SUB-ROUTER (Task 2.4.1)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const predictiveETASubRouter = router({
+  calculate: protectedProcedure
+    .input(z.object({
+      loadId: z.number().optional(),
+      originLat: z.number(),
+      originLng: z.number(),
+      destLat: z.number(),
+      destLng: z.number(),
+      distanceMiles: z.number().min(1),
+      departureTime: z.string().optional(),
+      isHazmat: z.boolean().optional(),
+      isOversize: z.boolean().optional(),
+      driverHoursRemaining: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { calculatePredictiveETA } = await import("../services/logistics/predictiveETA");
+      return calculatePredictiveETA(input);
+    }),
+});
+
 export const locationRouter = router({
   telemetry: telemetrySubRouter,
   geofences: geofencesSubRouter,
@@ -1038,4 +1062,5 @@ export const locationRouter = router({
   tracking: trackingSubRouter,
   detention: detentionSubRouter,
   compliance: complianceSubRouter,
+  predictiveETA: predictiveETASubRouter,
 });

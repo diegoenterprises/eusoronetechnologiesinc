@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { EusoDialogProvider } from "@/components/EusoDialog";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
 import type { UserRole } from "./hooks/useRoleAccess";
@@ -38,23 +38,19 @@ const ZeunProviderNetwork = lazy(() => import("./pages/ZeunProviderNetwork"));
 const ActiveTrip = lazy(() => import("./pages/ActiveTrip"));
 const MarketIntelligence2026 = lazy(() => import("./pages/MarketIntelligence2026"));
 const MyLoadsPage = lazy(() => import("./pages/MyLoads"));
-const PlatformLoadsOversight = lazy(() => import("./pages/PlatformLoadsOversight"));
+// PlatformLoadsOversight — DEPRECATED (Task 5.1.2), absorbed into admin/PlatformOversight
 const PlatformAgreementsOversight = lazy(() => import("./pages/PlatformAgreementsOversight"));
-const PlatformClaimsOversight = lazy(() => import("./pages/PlatformClaimsOversight"));
-const PlatformSupportOversight = lazy(() => import("./pages/PlatformSupportOversight"));
+// PlatformClaimsOversight — DEPRECATED (Task 5.1.2), absorbed into admin/PlatformOversight
+// PlatformSupportOversight — DEPRECATED (Task 5.1.2), absorbed into admin/PlatformOversight
 const LoadCreatePage = lazy(() => import("./pages/LoadCreate"));
 const FindLoadsPage = lazy(() => import("./pages/FindLoads"));
 // ActiveLoads merged into MyLoads
 // TrackShipments merged into ShipperDispatchControl
 const CatalystsPage = lazy(() => import("./pages/Catalysts"));
 // Payments merged into Wallet (EusoWallet)
-const AssignedLoadsPage = lazy(() => import("./pages/AssignedLoads"));
-const InTransitPage = lazy(() => import("./pages/InTransit"));
-const CatalystAnalyticsPage = lazy(() => import("./pages/CatalystAnalytics"));
-const FleetPage = lazy(() => import("./pages/Fleet"));
-const DriversPage = lazy(() => import("./pages/Drivers"));
+// AssignedLoads, InTransit, CatalystAnalytics, Fleet, Drivers, Earnings — DEPRECATED (Task 4.5.2)
+// Functionality absorbed: AssignedLoads/InTransit → MyLoads, CatalystAnalytics → Analytics, Fleet/Drivers → FleetCommandCenter, Earnings → Wallet
 const FleetCommandCenter = lazy(() => import("./pages/FleetCommandCenter"));
-const EarningsPage = lazy(() => import("./pages/Earnings"));
 const ErgPage = lazy(() => import("./pages/Erg"));
 const Login = lazy(() => import("./pages/Login"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -64,7 +60,7 @@ const PlacardVerification = lazy(() => import("./pages/PlacardVerification"));
 const ShippingPapers = lazy(() => import("./pages/ShippingPapers"));
 const SpillResponse = lazy(() => import("./pages/SpillResponse"));
 const EvacuationDistance = lazy(() => import("./pages/EvacuationDistance"));
-const HazmatEndorsement = lazy(() => import("./pages/HazmatEndorsement"));
+// HazmatEndorsement — DEPRECATED (Task 5.3.2), absorbed into compliance/HazmatCompliance
 const TWICCard = lazy(() => import("./pages/TWICCard"));
 const DrugTestAcknowledgment = lazy(() => import("./pages/DrugTestAcknowledgment"));
 const SegregationRules = lazy(() => import("./pages/SegregationRules"));
@@ -90,7 +86,7 @@ const PrivacySettings = lazy(() => import("./pages/PrivacySettings"));
 const NRCReport = lazy(() => import("./pages/NRCReport"));
 const DOT5800Form = lazy(() => import("./pages/DOT5800Form"));
 const SecurityPlan = lazy(() => import("./pages/SecurityPlan"));
-const HazmatRegistration = lazy(() => import("./pages/HazmatRegistration"));
+// HazmatRegistration — DEPRECATED (Task 5.3.2), absorbed into compliance/HazmatCompliance
 const CorrectiveActions = lazy(() => import("./pages/CorrectiveActions"));
 const RegulatoryUpdates = lazy(() => import("./pages/RegulatoryUpdates"));
 const TankValve = lazy(() => import("./pages/TankValve"));
@@ -107,7 +103,7 @@ const TodaySchedule = lazy(() => import("./pages/TodaySchedule"));
 const HazmatDriverFilter = lazy(() => import("./pages/HazmatDriverFilter"));
 const HazmatEquipmentFilter = lazy(() => import("./pages/HazmatEquipmentFilter"));
 const HazmatRouteRestriction = lazy(() => import("./pages/HazmatRouteRestriction"));
-const HazmatRouteCompliance = lazy(() => import("./pages/HazmatRouteCompliance"));
+// HazmatRouteCompliance — DEPRECATED (Task 5.3.2), absorbed into compliance/HazmatCompliance
 const HazmatCheckIn = lazy(() => import("./pages/HazmatCheckIn"));
 const DockAssignment = lazy(() => import("./pages/DockAssignment"));
 const LoadingUnloadingStatus = lazy(() => import("./pages/LoadingUnloadingStatus"));
@@ -169,7 +165,8 @@ const RateCalculator = lazy(() => import("./pages/RateCalculator"));
 const DriverEarnings = lazy(() => import("./pages/DriverEarnings"));
 const TrainingManagement = lazy(() => import("./pages/TrainingManagement"));
 const FuelManagement = lazy(() => import("./pages/FuelManagement"));
-const DriverScorecard = lazy(() => import("./pages/DriverScorecard"));
+// @deprecated — consolidated into DriverSafetyScorecard (Task 6.1.1)
+// const DriverScorecard = lazy(() => import("./pages/DriverScorecard"));
 const Rewards = lazy(() => import("./pages/Rewards"));
 const ClearinghouseDashboard = lazy(() => import("./pages/ClearinghouseDashboard"));
 const TerminalSCADA = lazy(() => import("./pages/TerminalSCADA"));
@@ -191,6 +188,7 @@ const ShipperAgreementWizard = lazy(() => import("./pages/ShipperAgreementWizard
 const AgreementsLibrary = lazy(() => import("./pages/AgreementsLibrary"));
 const AgreementDetail = lazy(() => import("./pages/AgreementDetail"));
 const RecurringLoadScheduler = lazy(() => import("./pages/RecurringLoadScheduler"));
+const LoadTemplates = lazy(() => import("./pages/LoadTemplates"));
 const BrokerContractWizard = lazy(() => import("./pages/BrokerContractWizard"));
 const ShipperDispatchControl = lazy(() => import("./pages/ShipperDispatchControl"));
 const FleetOverview = lazy(() => import("./pages/FleetOverview"));
@@ -202,7 +200,8 @@ const NotificationCenter = lazy(() => import("./pages/NotificationCenter"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
 const CompanyProfile = lazy(() => import("./pages/CompanyProfile"));
 const ActiveConvoys = lazy(() => import("./pages/ActiveConvoys"));
-const EscortReports = lazy(() => import("./pages/EscortReports"));
+// @deprecated — consolidated into EscortEarnings (Task 6.2.2)
+// const EscortReports = lazy(() => import("./pages/EscortReports"));
 const EscortIncidents = lazy(() => import("./pages/EscortIncidents"));
 const Specializations = lazy(() => import("./pages/Specializations"));
 const MatchedLoads = lazy(() => import("./pages/MatchedLoads"));
@@ -220,18 +219,18 @@ const Violations = lazy(() => import("./pages/Violations"));
 const Audits = lazy(() => import("./pages/Audits"));
 const SafetyMetrics = lazy(() => import("./pages/SafetyMetrics"));
 const SafetyIncidents = lazy(() => import("./pages/SafetyIncidents"));
-const BrokerMarketplace = lazy(() => import("./pages/BrokerMarketplace"));
-const BrokerCatalysts = lazy(() => import("./pages/BrokerCatalysts"));
-const BrokerAnalytics = lazy(() => import("./pages/BrokerAnalytics"));
+// BrokerMarketplace, BrokerCatalysts, BrokerAnalytics — DEPRECATED (Task 4.5.1)
+// Functionality absorbed: Marketplace → FindLoads, Catalysts → CatalystsPage, Analytics → BrokerDashboard
 const LoadingBays = lazy(() => import("./pages/LoadingBays"));
 const TerminalInventory = lazy(() => import("./pages/TerminalInventory"));
-const BOLGeneration = lazy(() => import("./pages/BOLGeneration"));
+// BOLGeneration — DEPRECATED (Task 5.3.1), absorbed into compliance/ShippingPapers
 const DriverCurrentJob = lazy(() => import("./pages/DriverCurrentJob"));
 const DriverVehicle = lazy(() => import("./pages/DriverVehicle"));
 const DriverHOS = lazy(() => import("./pages/DriverHOS"));
 const DispatchFleetMap = lazy(() => import("./pages/DispatchFleetMap"));
 const DispatchExceptions = lazy(() => import("./pages/DispatchExceptions"));
-const EscortPermits = lazy(() => import("./pages/EscortPermits"));
+// @deprecated — consolidated into EscortCertifications (Task 6.2.1)
+// const EscortPermits = lazy(() => import("./pages/EscortPermits"));
 const EscortSchedule = lazy(() => import("./pages/EscortSchedule"));
 const SpectraMatch = lazy(() => import("./pages/SpectraMatch"));
 const EusoTicket = lazy(() => import("./pages/EusoTicket"));
@@ -252,10 +251,10 @@ const RatingsReviews = lazy(() => import("./pages/RatingsReviews"));
 const ClaimsPage = lazy(() => import("./pages/Claims"));
 const MarketPricing = lazy(() => import("./pages/MarketPricing"));
 const AccountStatus = lazy(() => import("./pages/AccountStatus"));
-const DatabaseHealth = lazy(() => import("./pages/DatabaseHealth"));
+// DatabaseHealth — DEPRECATED (Task 5.1.1), absorbed into admin/SystemHealth
 const OperatingAuthority = lazy(() => import("./pages/OperatingAuthority"));
 const AdminApprovalQueue = lazy(() => import("./pages/AdminApprovalQueue"));
-const CatalystCompliance = lazy(() => import("./pages/CatalystCompliance"));
+// CatalystCompliance — DEPRECATED (Task 4.5.2), redirected to OperatingAuthority
 const FuelPrices = lazy(() => import("./pages/FuelPrices"));
 const WeatherAlerts = lazy(() => import("./pages/WeatherAlerts"));
 const TheHaul = lazy(() => import("./pages/TheHaul"));
@@ -277,10 +276,12 @@ const EquipmentIntelligence = lazy(() => import("./pages/EquipmentIntelligence")
 const RateSheetReconciliation = lazy(() => import("./pages/RateSheetReconciliation"));
 // ── Gold Standard Wiring: 46 previously dead-code pages ─────────────────────
 const BackgroundChecks = lazy(() => import("./pages/BackgroundChecks"));
-const BOLManagementPage = lazy(() => import("./pages/BOLManagement"));
+// BOLManagementPage — DEPRECATED (Task 5.3.1), absorbed into compliance/ShippingPapers
 const BrokerCompliancePage = lazy(() => import("./pages/BrokerCompliance"));
 const ChangePasswordPage = lazy(() => import("./pages/ChangePassword"));
 const DetentionTrackingPage = lazy(() => import("./pages/DetentionTracking"));
+const RelayModePage = lazy(() => import("./pages/RelayMode"));
+const PredictiveLoadPricingPage = lazy(() => import("./pages/PredictiveLoadPricing"));
 const DriverNavPage = lazy(() => import("./pages/DriverNavigation"));
 const DriverSafetyScorecardPage = lazy(() => import("./pages/DriverSafetyScorecard"));
 const DrugAlcoholTestingPage = lazy(() => import("./pages/DrugAlcoholTesting"));
@@ -290,9 +291,12 @@ const FMCSACarrierIntelligencePage = lazy(() => import("./pages/FMCSACarrierInte
 const EquipmentMgmtPage = lazy(() => import("./pages/EquipmentManagement"));
 const ERGGuidePage = lazy(() => import("./pages/ERGGuide"));
 const ERGLookupPage = lazy(() => import("./pages/ERGLookup"));
-const FeatureFlagsPage = lazy(() => import("./pages/FeatureFlags"));
-const HazmatCertsPage = lazy(() => import("./pages/HazmatCertifications"));
-const HOSCompliancePage = lazy(() => import("./pages/HOSCompliance"));
+// FeatureFlagsPage — DEPRECATED (Task 5.1.3), absorbed into admin/SystemConfiguration
+const SystemConfigurationHub = lazy(() => import("./pages/admin/SystemConfiguration"));
+// HazmatCertsPage — DEPRECATED (Task 5.3.2), absorbed into compliance/HazmatCompliance
+const HazmatComplianceHub = lazy(() => import("./pages/compliance/HazmatCompliance"));
+// @deprecated — consolidated into DriverHOS (Task 6.1.2)
+// const HOSCompliancePage = lazy(() => import("./pages/HOSCompliance"));
 const IFTAReportingPage = lazy(() => import("./pages/IFTAReporting"));
 const InsuranceMgmtPage = lazy(() => import("./pages/InsuranceManagement"));
 const InvoiceMgmtPage = lazy(() => import("./pages/InvoiceManagement"));
@@ -345,6 +349,21 @@ const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 // ── Frontend Gap Audit: 16 new pages for backend routers ─────────────────────
 const RateNegotiations = lazy(() => import("./pages/RateNegotiations"));
 const CarrierScorecardPage = lazy(() => import("./pages/CarrierScorecardPage"));
+const CarrierTierDashboard = lazy(() => import("./pages/CarrierTierDashboard"));
+const CarrierCapacityPage = lazy(() => import("./pages/CarrierCapacityPage"));
+const TankLevelMonitor = lazy(() => import("./pages/TankLevelMonitor"));
+const DemurrageChargesPage = lazy(() => import("./pages/DemurrageChargesPage"));
+const NLLoadCreatorPage = lazy(() => import("./pages/NLLoadCreatorPage"));
+const VoiceESANGPage = lazy(() => import("./pages/VoiceESANGPage"));
+const RFPManagerPage = lazy(() => import("./pages/RFPManagerPage"));
+const BidReviewPage = lazy(() => import("./pages/BidReviewPage"));
+const PhotoInspectionPage = lazy(() => import("./pages/PhotoInspectionPage"));
+const ContextualPricingPage = lazy(() => import("./pages/ContextualPricingPage"));
+const ComplianceRulesPage = lazy(() => import("./pages/ComplianceRulesPage"));
+const AnomalyMonitorPage = lazy(() => import("./pages/AnomalyMonitorPage"));
+const MissionBalancerPage = lazy(() => import("./pages/MissionBalancerPage"));
+const LoadConsolidationPage = lazy(() => import("./pages/LoadConsolidationPage"));
+const MobileCommandPage = lazy(() => import("./pages/MobileCommandPage"));
 const TruckPostingBoard = lazy(() => import("./pages/TruckPostingBoard"));
 const DrugTestingManagement = lazy(() => import("./pages/DrugTestingManagement"));
 const DriverQualificationFiles = lazy(() => import("./pages/DriverQualificationFiles"));
@@ -357,7 +376,7 @@ const VendorManagement = lazy(() => import("./pages/VendorManagement"));
 const CommissionEnginePage = lazy(() => import("./pages/CommissionEnginePage"));
 const NewsfeedPage = lazy(() => import("./pages/NewsfeedPage"));
 const ComplianceNetworksPage = lazy(() => import("./pages/ComplianceNetworksPage"));
-const SuperAdminTools = lazy(() => import("./pages/SuperAdminTools"));
+// SuperAdminTools — DEPRECATED (Task 5.1.4), absorbed into SuperAdminDashboard
 const AuditLogsPage = lazy(() => import("./pages/AuditLogsPage"));
 const FacilitySearch = lazy(() => import("./pages/FacilitySearch"));
 const FacilityProfile = lazy(() => import("./pages/FacilityProfile"));
@@ -376,10 +395,18 @@ const DriverQualification = lazy(() => import("./pages/compliance/DriverQualific
 const RegulatoryIntelligence = lazy(() => import("./pages/compliance/RegulatoryIntelligence"));
 const VehicleInspectionHub = lazy(() => import("./pages/driver/VehicleInspection"));
 const EmergencyResponse = lazy(() => import("./pages/driver/EmergencyResponse"));
+const DriverEarningsHub = lazy(() => import("./pages/driver/DriverEarnings"));
 const TerminalHub = lazy(() => import("./pages/terminal/TerminalHub"));
 const DockHub = lazy(() => import("./pages/terminal/DockHub"));
 const FacilityHub = lazy(() => import("./pages/terminal/FacilityHub"));
 const FleetHub = lazy(() => import("./pages/carrier/FleetHub"));
+const ERGHub = lazy(() => import("./pages/hazmat/ERGHub"));
+// ── Phase 4: Intelligence Layer (Cross-Border, AI Ops, Infrastructure, Industry) ──
+const DeveloperPortal = lazy(() => import("./pages/admin/DeveloperPortal"));
+const ESANGOperations = lazy(() => import("./pages/admin/ESANGOperations"));
+const UptimeDashboard = lazy(() => import("./pages/admin/UptimeDashboard"));
+const IndustryProfiles = lazy(() => import("./pages/admin/IndustryProfiles"));
+const DisasterResilience = lazy(() => import("./pages/admin/DisasterResilience"));
 
 function Router() {
   // Role constants for route protection
@@ -468,14 +495,14 @@ function Router() {
       <Route path={"/settings/2fa-setup"} component={guard(ALL, <TwoFactorSetupPage />)} />
       <Route path={"/settings/2fa"} component={guard(ALL, <TwoFactorAuthPage />)} />
       <Route path={"/settings/sessions"} component={guard(ALL, <SessionMgmtPage />)} />
-      <Route path={"/bol-management"} component={guard(ALL, <BOLManagementPage />)} />
+      <Route path={"/bol-management"} component={guard(ALL, <ShippingPapersHub />)} />
       <Route path={"/rate-sheet"} component={guard(ALL, <RateSheetReconciliation />)} />
       <Route path={"/pod"} component={guard(ALL, <PODManagementPage />)} />
       <Route path={"/erg/guide"} component={guard(ALL, <ERGGuidePage />)} />
       <Route path={"/erg/lookup"} component={guard(ALL, <ERGLookupPage />)} />
       <Route path={"/fmcsa-lookup"} component={guard([...CARR, ...BROK, ...COMP, ...SHIP], <SAFERLookupPage />)} />
       <Route path={"/carrier-intelligence"} component={guard(ELDR, <FMCSACarrierIntelligencePage />)} />
-      <Route path={"/hazmat/certifications"} component={guard(ALL, <HazmatCertsPage />)} />
+      <Route path={"/hazmat/certifications"} component={guard(ALL, <HazmatComplianceHub />)} />
       <Route path={"/insurance"} component={guard([...CARR, ...BROK, ...COMP, "ESCORT"], <InsuranceMgmtPage />)} />
       <Route path={"/insurance/per-load"} component={guard([...CARR, ...SHIP, ...BROK], <PerLoadInsurance />)} />
       <Route path={"/insurance/verification"} component={guard([...CARR, ...BROK, ...COMP, ...SHIP, ...DRIV, "ESCORT", "DISPATCH"], <InsuranceVerification />)} />
@@ -498,6 +525,7 @@ function Router() {
       <Route path={"/loads/create"} component={guard([...SHIP, "BROKER", "DISPATCH", "TERMINAL_MANAGER"], <LoadCreationWizard />)} />
       <Route path={"/loads/active"} component={guard(LOAD, <MyLoadsPage />)} />
       <Route path={"/loads/recurring"} component={guard(SHIP, <RecurringLoadScheduler />)} />
+      <Route path={"/loads/templates"} component={guard([...SHIP, "BROKER", "DISPATCH"], <LoadTemplates />)} />
       <Route path={"/loads/:id"} component={guard(LOAD, <LoadDetails />)} />
       <Route path={"/loads"} component={guard(LOAD, <MyLoadsPage />)} />
       <Route path={"/tracking"} component={guard(LOAD, <ShipperDispatchControl />)} />
@@ -521,8 +549,8 @@ function Router() {
       <Route path={"/bids/submit/:loadId"} component={guard([...CARR, "DISPATCH"], <CatalystBidSubmission />)} />
       <Route path={"/bids/:bidId"} component={guard([...CARR, "DISPATCH"], <BidDetails />)} />
       <Route path={"/contract/sign/:loadId"} component={guard([...CARR, "DISPATCH"], <ContractSigning />)} />
-      <Route path={"/loads/assigned"} component={guard([...CARR, "DRIVER", "DISPATCH", "ESCORT"], <AssignedLoadsPage />)} />
-      <Route path={"/loads/transit"} component={guard([...CARR, "DRIVER"], <InTransitPage />)} />
+      <Route path={"/loads/assigned"} component={guard([...CARR, "DRIVER", "DISPATCH", "ESCORT"], <MyLoadsPage />)} />
+      <Route path={"/loads/transit"} component={guard([...CARR, "DRIVER"], <MyLoadsPage />)} />
       <Route path={"/loads/:loadId/bids"} component={guard(LOAD, <LoadBids />)} />
       <Route path={"/load/:loadId"} component={guard(LOAD, <LoadDetails />)} />
       <Route path={"/loads/:loadId"} component={guard(LOAD, <LoadDetails />)} />
@@ -542,7 +570,8 @@ function Router() {
       <Route path={"/permits"} component={guard([...CARR, ...COMP], <PermitMgmtPage />)} />
       <Route path={"/compliance/mvr"} component={guard([...CARR, ...COMP], <MVRReportsPage />)} />
       <Route path={"/compliance/drug-alcohol"} component={guard([...SAFE, ...COMP, ...CARR], <DrugAlcoholTestingPage />)} />
-      <Route path={"/hos-compliance"} component={guard([...DRIV, ...CARR, ...COMP], <HOSCompliancePage />)} />
+      {/* @deprecated — redirected to consolidated DriverHOS (Task 6.1.2) */}
+      <Route path="/hos-compliance"><Redirect to="/hos" /></Route>
       <Route path={"/on-time"} component={guard([...DISP, ...CARR, ...SHIP], <OnTimePerformancePage />)} />
 
       {/* ============================================ */}
@@ -572,8 +601,9 @@ function Router() {
       <Route path={"/inspection/pre-trip"} component={guard(DRIV, <PreTripInspection />)} />
       <Route path={"/inspection/dvir"} component={guard(DRIV, <DVIR />)} />
       <Route path={"/eld"} component={guard(DRIV, <ELDLogs />)} />
-      <Route path={"/driver-scorecard"} component={guard(DRIV, <DriverScorecard />)} />
-      <Route path={"/driver-scorecard/:driverId"} component={guard(DRIV, <DriverScorecard />)} />
+      {/* @deprecated — redirected to consolidated DriverSafetyScorecard (Task 6.1.1) */}
+      <Route path="/driver-scorecard"><Redirect to="/driver/safety-score" /></Route>
+      <Route path="/driver-scorecard/:driverId"><Redirect to="/driver/safety-score" /></Route>
       <Route path={"/rewards"} component={guard(ALL, <Rewards />)} />
       <Route path={"/leaderboard"} component={guard(ALL, <Leaderboard />)} />
       <Route path={"/fuel"} component={guard(DRIV, <FuelManagement />)} />
@@ -582,7 +612,7 @@ function Router() {
       <Route path={"/driver/shipping-papers"} component={guard(DRIV, <ShippingPapers />)} />
       <Route path={"/driver/spill-response"} component={guard(DRIV, <SpillResponse />)} />
       <Route path={"/driver/evacuation-distance"} component={guard(DRIV, <EvacuationDistance />)} />
-      <Route path={"/driver/hazmat-endorsement"} component={guard(DRIV, <HazmatEndorsement />)} />
+      <Route path={"/driver/hazmat-endorsement"} component={guard(DRIV, <HazmatComplianceHub />)} />
       <Route path={"/driver/twic-card"} component={guard(DRIV, <TWICCard />)} />
       <Route path={"/driver/drug-test"} component={guard(DRIV, <DrugTestAcknowledgment />)} />
       <Route path={"/hazmat/segregation-rules"} component={guard(ALL, <SegregationRules />)} />
@@ -601,7 +631,7 @@ function Router() {
       <Route path={"/hazmat/nrc-report"} component={guard(ALL, <NRCReport />)} />
       <Route path={"/hazmat/dot-5800"} component={guard(ALL, <DOT5800Form />)} />
       <Route path={"/hazmat/security-plan"} component={guard(ALL, <SecurityPlan />)} />
-      <Route path={"/hazmat/registration"} component={guard(ALL, <HazmatRegistration />)} />
+      <Route path={"/hazmat/registration"} component={guard(ALL, <HazmatComplianceHub />)} />
       <Route path={"/hazmat/corrective-actions"} component={guard(ALL, <CorrectiveActions />)} />
       <Route path={"/hazmat/regulatory-updates"} component={guard(ALL, <RegulatoryUpdates />)} />
       <Route path={"/hazmat/tank-valve"} component={guard(ALL, <TankValve />)} />
@@ -619,7 +649,7 @@ function Router() {
       <Route path={"/hazmat/driver-filter"} component={guard(DISP, <HazmatDriverFilter />)} />
       <Route path={"/hazmat/equipment-filter"} component={guard(DISP, <HazmatEquipmentFilter />)} />
       <Route path={"/hazmat/route-restrictions"} component={guard(ALL, <HazmatRouteRestriction />)} />
-      <Route path={"/hazmat/route-compliance"} component={guard(ALL, <HazmatRouteCompliance />)} />
+      <Route path={"/hazmat/route-compliance"} component={guard(ALL, <HazmatComplianceHub />)} />
       <Route path={"/hazmat/check-in"} component={guard(DRIV, <HazmatCheckIn />)} />
       <Route path={"/hazmat/dock-assignment"} component={guard(DRIV, <DockAssignment />)} />
       <Route path={"/hazmat/loading-status"} component={guard(DRIV, <LoadingUnloadingStatus />)} />
@@ -669,10 +699,12 @@ function Router() {
       <Route path={"/convoys"} component={guard(ESCT, <ActiveConvoys />)} />
       <Route path={"/team"} component={guard(ESCT, <EscortTeam />)} />
       <Route path={"/escort/incidents"} component={guard(ESCT, <EscortIncidents />)} />
-      <Route path={"/escort/reports"} component={guard(ESCT, <EscortReports />)} />
+      {/* @deprecated — redirected to consolidated EscortEarnings (Task 6.2.2) */}
+      <Route path="/escort/reports"><Redirect to="/escort/earnings" /></Route>
       <Route path={"/escort/jobs"} component={guard(ESCT, <EscortJobs />)} />
       <Route path={"/escort/marketplace"} component={guard(ESCT, <EscortJobMarketplace />)} />
-      <Route path={"/escort/permits"} component={guard(ESCT, <EscortPermits />)} />
+      {/* @deprecated — redirected to consolidated EscortCertifications (Task 6.2.1) */}
+      <Route path="/escort/permits"><Redirect to="/escort/certifications" /></Route>
       <Route path={"/escort/schedule"} component={guard(ESCT, <EscortSchedule />)} />
       <Route path={"/escort/earnings"} component={guard(ESCT, <EscortEarnings />)} />
       <Route path={"/escort/certifications"} component={guard(ESCT, <EscortCertifications />)} />
@@ -696,11 +728,13 @@ function Router() {
       <Route path={"/terminal/reports"} component={guard(TERM, <TerminalOperations />)} />
       <Route path={"/loading-bays"} component={guard(TERM, <LoadingBays />)} />
       <Route path={"/terminal-inventory"} component={guard(TERM, <TerminalInventory />)} />
-      <Route path={"/bol"} component={guard(TERM, <BOLGeneration />)} />
+      <Route path={"/bol"} component={guard(TERM, <ShippingPapersHub />)} />
       <Route path={"/supply-chain"} component={guard(TERM, <TerminalPartners />)} />
       <Route path={"/my-terminals"} component={guard([...SHIP, ...CARR, ...BROK], <MyTerminals />)} />
       <Route path={"/spectra-match"} component={guard(TERM, <SpectraMatch />)} />
       <Route path={"/detention"} component={guard([...TERM, ...CARR, ...SHIP], <DetentionTrackingPage />)} />
+      <Route path={"/relay"} component={guard([...TERM, ...CARR, ...SHIP, ...DISP], <RelayModePage />)} />
+      <Route path={"/predictive-pricing"} component={guard([...SHIP, ...CARR, ...BROK, ...DISP], <PredictiveLoadPricingPage />)} />
       <Route path={"/accessorials"} component={guard([...TERM, ...CARR, ...SHIP, ...DISP, ...ADMN], <AccessorialManagement />)} />
       <Route path={"/euso-ticket"} component={guard(TERM, <EusoTicket />)} />
       <Route path={"/run-tickets"} component={guard(TERM, <EusoTicket />)} />
@@ -779,13 +813,20 @@ function Router() {
       <Route path={"/admin/audit-logs"} component={guard(ADMN, <AuditLogs />)} />
       <Route path={"/admin/rss-feeds"} component={guard(ADMN, <AdminRSSFeeds />)} />
       <Route path={"/admin/platform-fees"} component={guard(ADMN, <AdminPlatformFees />)} />
-      <Route path={"/admin/feature-flags"} component={guard(ADMN, <FeatureFlagsPage />)} />
+      <Route path={"/admin/feature-flags"} component={guard(ADMN, <SystemConfigurationHub />)} />
+      <Route path={"/admin/system-config"} component={guard(ADMN, <SystemConfigurationHub />)} />
       <Route path={"/admin/roles"} component={guard(ADMN, <RolePermissionsPage />)} />
       <Route path={"/admin/support-tickets"} component={guard(ADMN, <SupportTickets />)} />
       <Route path={"/admin/rates"} component={guard(ADMN, <RateManagement />)} />
       <Route path={"/admin/api"} component={guard(ADMN, <APIManagement />)} />
       <Route path={"/admin/integrations"} component={guard(ADMN, <IntegrationSettings />)} />
       <Route path={"/admin/sync"} component={guard(ADMN, <SyncDashboard />)} />
+      {/* Phase 4: Intelligence Layer */}
+      <Route path={"/admin/developer-portal"} component={guard(ADMN, <DeveloperPortal />)} />
+      <Route path={"/admin/esang-operations"} component={guard(ADMN, <ESANGOperations />)} />
+      <Route path={"/admin/uptime"} component={guard(ADMN, <UptimeDashboard />)} />
+      <Route path={"/admin/industry-profiles"} component={guard(ADMN, <IndustryProfiles />)} />
+      <Route path={"/admin/disaster-resilience"} component={guard(ADMN, <DisasterResilience />)} />
 
       {/* ============================================ */}
       {/* SUPER ADMIN ROUTES */}
@@ -793,11 +834,11 @@ function Router() {
       <Route path={"/super-admin"} component={guard(SUPR, <SuperAdminDashboard />)} />
       <Route path={"/super-admin/users"} component={guard(SUPR, <UserManagement />)} />
       <Route path={"/super-admin/companies"} component={guard(SUPR, <CompanyPage />)} />
-      <Route path={"/super-admin/loads"} component={guard(SUPR, <PlatformLoadsOversight />)} />
+      <Route path={"/super-admin/loads"} component={guard(SUPR, <PlatformOversight />)} />
       <Route path={"/super-admin/agreements"} component={guard(SUPR, <PlatformAgreementsOversight />)} />
-      <Route path={"/super-admin/claims"} component={guard(SUPR, <PlatformClaimsOversight />)} />
-      <Route path={"/super-admin/support"} component={guard(SUPR, <PlatformSupportOversight />)} />
-      <Route path={"/super-admin/database"} component={guard(SUPR, <DatabaseHealth />)} />
+      <Route path={"/super-admin/claims"} component={guard(SUPR, <PlatformOversight />)} />
+      <Route path={"/super-admin/support"} component={guard(SUPR, <PlatformOversight />)} />
+      <Route path={"/super-admin/database"} component={guard(SUPR, <SystemHealth />)} />
       <Route path={"/super-admin/logs"} component={guard(SUPR, <AuditLogs />)} />
       <Route path={"/super-admin/monitoring"} component={guard(SUPR, <Analytics />)} />
       <Route path={"/super-admin/settings"} component={guard(SUPR, <SettingsPage />)} />
@@ -816,7 +857,7 @@ function Router() {
       <Route path={"/tools/rate-calculator"} component={guard(ALL, <RateCalculator />)} />
       <Route path={"/directory"} component={guard(ALL, <IndustryDirectory />)} />
       <Route path={"/live-news"} component={guard(ALL, <LiveNewsFeed />)} />
-      <Route path={"/catalyst-compliance"} component={guard(CARR, <CatalystCompliance />)} />
+      <Route path={"/catalyst-compliance"} component={guard(CARR, <OperatingAuthority />)} />
       <Route path={"/fuel-prices"} component={guard(ALL, <FuelPrices />)} />
       <Route path={"/weather-alerts"} component={guard(ALL, <WeatherAlerts />)} />
       <Route path={"/the-haul"} component={guard(ALL, <TheHaul />)} />
@@ -831,6 +872,21 @@ function Router() {
       {/* ============================================ */}
       <Route path="/rate-negotiations" component={guard([...SHIP, ...CARR, ...BROK], <RateNegotiations />)} />
       <Route path="/carrier-scorecard" component={guard([...SHIP, ...CARR, ...BROK, ...COMP], <CarrierScorecardPage />)} />
+      <Route path="/carrier-tiers" component={guard([...SHIP, ...CARR, ...BROK, ...COMP], <CarrierTierDashboard />)} />
+      <Route path="/carrier-capacity" component={guard([...SHIP, ...CARR, ...BROK, ...COMP, ...DISP], <CarrierCapacityPage />)} />
+      <Route path="/tank-monitor" component={guard(ALL, <TankLevelMonitor />)} />
+      <Route path="/demurrage-charges" component={guard([...SHIP, ...CARR, ...BROK, ...COMP, ...DISP], <DemurrageChargesPage />)} />
+      <Route path="/nl-load-creator" component={guard([...SHIP, ...CARR, ...BROK, ...DISP], <NLLoadCreatorPage />)} />
+      <Route path="/voice-esang" component={guard(ALL, <VoiceESANGPage />)} />
+      <Route path="/rfp-manager" component={guard([...SHIP, ...BROK, ...COMP], <RFPManagerPage />)} />
+      <Route path="/bid-review" component={guard([...SHIP, ...BROK, ...COMP], <BidReviewPage />)} />
+      <Route path="/photo-inspection" component={guard([...CARR, ...DRIV, ...COMP, ...SAFE], <PhotoInspectionPage />)} />
+      <Route path="/contextual-pricing" component={guard([...SHIP, ...CARR, ...BROK, ...DISP], <ContextualPricingPage />)} />
+      <Route path="/compliance-rules" component={guard([...COMP, ...SAFE, ...CARR, ...ADMN], <ComplianceRulesPage />)} />
+      <Route path="/anomaly-monitor" component={guard([...ADMN, ...COMP, ...SAFE], <AnomalyMonitorPage />)} />
+      <Route path="/mission-balancer" component={guard([...DISP, ...CARR, ...ADMN], <MissionBalancerPage />)} />
+      <Route path="/load-consolidation" component={guard([...SHIP, ...BROK, ...DISP, ...ADMN], <LoadConsolidationPage />)} />
+      <Route path="/mobile-command" component={guard([...DRIV, ...CARR, ...DISP], <MobileCommandPage />)} />
       <Route path="/truck-posting" component={guard([...SHIP, ...CARR, ...BROK, ...DISP], <TruckPostingBoard />)} />
       <Route path="/drug-testing" component={guard([...COMP, ...SAFE, ...CARR], <DrugTestingManagement />)} />
       <Route path="/dq-files" component={guard([...COMP, ...SAFE, ...CARR], <DriverQualificationFiles />)} />
@@ -843,7 +899,7 @@ function Router() {
       <Route path="/commission-engine" component={guard(ADMN, <CommissionEnginePage />)} />
       <Route path="/newsfeed" component={guard(ALL, <NewsfeedPage />)} />
       <Route path="/compliance-networks" component={guard([...COMP, ...SAFE, ...CARR], <ComplianceNetworksPage />)} />
-      <Route path="/super-admin/tools" component={guard(SUPR, <SuperAdminTools />)} />
+      <Route path="/super-admin/tools" component={guard(SUPR, <SuperAdminDashboard />)} />
       <Route path="/audit-logs" component={guard(ADMN, <AuditLogsPage />)} />
 
       {/* ============================================ */}
@@ -866,14 +922,17 @@ function Router() {
       <Route path={"/admin/system-health"} component={guard(SUPR, <SystemHealth />)} />
       <Route path={"/admin/platform-oversight"} component={guard(SUPR, <PlatformOversight />)} />
       <Route path={"/compliance/shipping-papers"} component={guard([...COMP, ...CARR, ...SHIP, "TERMINAL_MANAGER"], <ShippingPapersHub />)} />
+      <Route path={"/compliance/hazmat"} component={guard([...COMP, ...CARR, ...SAFE, ...DRIV], <HazmatComplianceHub />)} />
       <Route path={"/compliance/driver-qualification"} component={guard([...COMP, ...SAFE, ...CARR], <DriverQualification />)} />
       <Route path={"/compliance/regulatory-intelligence"} component={guard([...COMP, ...SAFE, ...CARR], <RegulatoryIntelligence />)} />
       <Route path={"/driver/vehicle-inspection"} component={guard(DRIV, <VehicleInspectionHub />)} />
       <Route path={"/driver/emergency-response"} component={guard(DRIV, <EmergencyResponse />)} />
+      <Route path={"/driver/earnings"} component={guard(DRIV, <DriverEarningsHub />)} />
       <Route path={"/terminal/hub"} component={guard(TERM, <TerminalHub />)} />
       <Route path={"/terminal/dock-hub"} component={guard(TERM, <DockHub />)} />
       <Route path={"/terminal/facility-hub"} component={guard([...TERM, ...SHIP, ...CARR, ...BROK], <FacilityHub />)} />
       <Route path={"/carrier/fleet-hub"} component={guard([...CARR, "DISPATCH"], <FleetHub />)} />
+      <Route path={"/hazmat/erg-hub"} component={guard(ALL, <ERGHub />)} />
 
       {/* ============================================ */}
       {/* FALLBACK */}

@@ -1,6 +1,7 @@
 /**
- * ACCESSORIAL MANAGEMENT PAGE — Revenue Stream 12
+ * ACCESSORIAL MANAGEMENT PAGE — Revenue Stream 12 (GAP-206: Real-Time Approval)
  * Full lifecycle: submit claims, approve/deny, fee schedule, dashboard stats, auto-invoicing
+ * + Real-time approval queue with auto-polling, bulk actions, one-click approve/deny
  * Wired to: trpc.accessorial.* router
  * Roles: Driver (submit), Carrier/Fleet (review), Shipper (approve/pay), Dispatcher (monitor), Admin (override)
  */
@@ -20,7 +21,8 @@ import {
   FileText, TrendingUp, Receipt, Truck, Upload,
   Calculator, ArrowUpRight, BarChart3, Loader2,
   ChevronRight, Eye, ThumbsUp, ThumbsDown, Ban,
-  Timer, MapPin, Package, Gavel,
+  Timer, MapPin, Package, Gavel, Bell, SquareCheck, Square,
+  RefreshCw, Zap, ListChecks,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -76,6 +78,10 @@ export default function AccessorialManagement() {
     departureTime: "",
   });
 
+  // ── Approval Queue state ──
+  const [selectedForBulk, setSelectedForBulk] = useState<Set<number>>(new Set());
+  const [bulkAction, setBulkAction] = useState<string | null>(null);
+
   // ── Queries ──
   const statsQuery = trpc.accessorial.getDashboardStats.useQuery({ period: "30d" });
   const claimsQuery = trpc.accessorial.getClaims.useQuery(
@@ -85,6 +91,11 @@ export default function AccessorialManagement() {
   const claimDetailQuery = trpc.accessorial.getClaimById.useQuery(
     { claimId: selectedClaim! },
     { enabled: !!selectedClaim }
+  );
+  // GAP-206: Auto-polling pending claims for real-time approval queue
+  const pendingQueue = trpc.accessorial.getClaims.useQuery(
+    { status: "pending_review" as any, limit: 100 },
+    { refetchInterval: 10_000, refetchIntervalInBackground: true }
   );
 
   // ── Mutations ──
@@ -172,6 +183,14 @@ export default function AccessorialManagement() {
           <TabsTrigger value="dashboard"><BarChart3 className="w-4 h-4 mr-1" />Dashboard</TabsTrigger>
           <TabsTrigger value="claims"><FileText className="w-4 h-4 mr-1" />Claims</TabsTrigger>
           <TabsTrigger value="submit"><Upload className="w-4 h-4 mr-1" />Submit Claim</TabsTrigger>
+          <TabsTrigger value="queue" className="relative">
+            <Zap className="w-4 h-4 mr-1" />Approval Queue
+            {(pendingQueue.data?.total || 0) > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse">
+                {pendingQueue.data?.total || 0}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="fees"><Receipt className="w-4 h-4 mr-1" />Fee Schedule</TabsTrigger>
         </TabsList>
 
@@ -610,7 +629,201 @@ export default function AccessorialManagement() {
         </TabsContent>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            TAB 4: FEE SCHEDULE
+            TAB 5: REAL-TIME APPROVAL QUEUE (GAP-206)
+         ═══════════════════════════════════════════════════════════════════ */}
+        <TabsContent value="queue" className="space-y-4">
+          {/* Queue header with bulk actions */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Badge className="bg-red-500/20 text-red-400 border-0 text-sm px-3 py-1">
+                <Bell className="w-3.5 h-3.5 mr-1.5" />
+                {pendingQueue.data?.total || 0} Pending Approval
+              </Badge>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => pendingQueue.refetch()}
+                disabled={pendingQueue.isFetching}
+                className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}
+              >
+                <RefreshCw className={cn("w-3.5 h-3.5 mr-1", pendingQueue.isFetching && "animate-spin")} />
+                {pendingQueue.isFetching ? "Refreshing..." : "Auto-refreshing every 10s"}
+              </Button>
+            </div>
+            {selectedForBulk.size > 0 && (
+              <div className="flex items-center gap-2">
+                <span className={cn("text-xs font-medium", isLight ? "text-slate-600" : "text-slate-300")}>
+                  {selectedForBulk.size} selected
+                </span>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setBulkAction("approve");
+                    selectedForBulk.forEach(id => updateStatus.mutate({ claimId: id, action: "approve" }));
+                    setSelectedForBulk(new Set());
+                    setTimeout(() => { pendingQueue.refetch(); statsQuery.refetch(); }, 1500);
+                  }}
+                  disabled={updateStatus.isPending}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
+                >
+                  <ThumbsUp className="w-3 h-3 mr-1" /> Approve All
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setBulkAction("deny");
+                    selectedForBulk.forEach(id => updateStatus.mutate({ claimId: id, action: "deny", reason: "Bulk denied" }));
+                    setSelectedForBulk(new Set());
+                    setTimeout(() => { pendingQueue.refetch(); statsQuery.refetch(); }, 1500);
+                  }}
+                  disabled={updateStatus.isPending}
+                  className="border-red-500/50 text-red-400 hover:bg-red-500/10 text-xs h-8"
+                >
+                  <ThumbsDown className="w-3 h-3 mr-1" /> Deny All
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setSelectedForBulk(new Set())}
+                  className="text-xs h-8"
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Select all toggle */}
+          {(pendingQueue.data?.claims?.length || 0) > 0 && (
+            <button
+              onClick={() => {
+                const allIds = pendingQueue.data?.claims?.map((c: any) => c.id) || [];
+                if (selectedForBulk.size === allIds.length) {
+                  setSelectedForBulk(new Set());
+                } else {
+                  setSelectedForBulk(new Set(allIds));
+                }
+              }}
+              className={cn("flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg transition-colors",
+                isLight ? "text-slate-600 hover:bg-slate-100" : "text-slate-400 hover:bg-slate-800"
+              )}
+            >
+              {selectedForBulk.size === (pendingQueue.data?.claims?.length || 0) && selectedForBulk.size > 0
+                ? <SquareCheck className="w-4 h-4 text-blue-400" />
+                : <Square className="w-4 h-4" />
+              }
+              Select All ({pendingQueue.data?.claims?.length || 0})
+            </button>
+          )}
+
+          {/* Queue list */}
+          {pendingQueue.isLoading ? (
+            <div className="space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (pendingQueue.data?.claims?.length || 0) === 0 ? (
+            <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
+              <CardContent className="py-16 text-center">
+                <ListChecks className={cn("w-12 h-12 mx-auto mb-3", isLight ? "text-slate-300" : "text-slate-600")} />
+                <p className={cn("font-medium", isLight ? "text-slate-700" : "text-slate-200")}>All caught up!</p>
+                <p className={cn("text-sm mt-1", isLight ? "text-slate-400" : "text-slate-500")}>No claims pending review</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {pendingQueue.data?.claims?.map((claim: any) => {
+                const typeConfig = ACCESSORIAL_LABELS[claim.accessorialType] || ACCESSORIAL_LABELS.other;
+                const isChecked = selectedForBulk.has(claim.id);
+                return (
+                  <Card
+                    key={claim.id}
+                    className={cn(
+                      "rounded-xl border transition-all",
+                      isChecked ? "ring-2 ring-blue-500/50" : "",
+                      isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50"
+                    )}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-4">
+                        {/* Checkbox */}
+                        <button
+                          onClick={() => {
+                            setSelectedForBulk(prev => {
+                              const next = new Set(prev);
+                              if (next.has(claim.id)) next.delete(claim.id); else next.add(claim.id);
+                              return next;
+                            });
+                          }}
+                          className="flex-shrink-0"
+                        >
+                          {isChecked
+                            ? <SquareCheck className="w-5 h-5 text-blue-400" />
+                            : <Square className={cn("w-5 h-5", isLight ? "text-slate-300" : "text-slate-600")} />
+                          }
+                        </button>
+
+                        {/* Info */}
+                        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0", typeConfig.color.replace("text-", "bg-").replace("400", "500/20"))}>
+                          {typeConfig.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white")}>{typeConfig.label}</span>
+                            <span className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Load #{claim.loadId}</span>
+                          </div>
+                          <p className={cn("text-xs mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>
+                            {claim.facilityName || "N/A"} · {claim.claimedByName || `User #${claim.claimedByUserId}`} · {claim.createdAt ? new Date(claim.createdAt).toLocaleString() : ""}
+                          </p>
+                        </div>
+
+                        {/* Amount */}
+                        <div className="text-right flex-shrink-0 mr-4">
+                          <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${claim.totalAmount?.toFixed(2)}</p>
+                          <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>Fee: ${claim.platformFee?.toFixed(2)}</p>
+                        </div>
+
+                        {/* Quick-action buttons */}
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <Button
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); updateStatus.mutate({ claimId: claim.id, action: "approve" }); }}
+                            disabled={updateStatus.isPending}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 w-9 p-0"
+                            title="Approve"
+                          >
+                            <ThumbsUp className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => { e.stopPropagation(); updateStatus.mutate({ claimId: claim.id, action: "dispute", reason: "Requires additional documentation" }); }}
+                            disabled={updateStatus.isPending}
+                            className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10 h-9 w-9 p-0"
+                            title="Dispute"
+                          >
+                            <Gavel className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => { e.stopPropagation(); updateStatus.mutate({ claimId: claim.id, action: "deny", reason: "Claim denied" }); }}
+                            disabled={updateStatus.isPending}
+                            className="border-red-500/50 text-red-400 hover:bg-red-500/10 h-9 w-9 p-0"
+                            title="Deny"
+                          >
+                            <ThumbsDown className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            TAB 6: FEE SCHEDULE
          ═══════════════════════════════════════════════════════════════════ */}
         <TabsContent value="fees" className="space-y-4">
           <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>

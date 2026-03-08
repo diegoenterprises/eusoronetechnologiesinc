@@ -1,7 +1,7 @@
 /**
- * BROKER ANALYTICS PAGE
- * 100% Dynamic - No mock data
- * UI Style: Gradient headers, stat cards with icons, rounded cards
+ * @deprecated CONSOLIDATED — Task 4.5.1
+ * Broker analytics is now absorbed into the enhanced BrokerDashboard (/).
+ * This file is retained for reference only. Do not import.
  */
 
 import React, { useState } from "react";

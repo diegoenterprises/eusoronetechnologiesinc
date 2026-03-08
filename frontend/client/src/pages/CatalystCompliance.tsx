@@ -1,7 +1,7 @@
 /**
- * CATALYST COMPLIANCE - MC Authority, DOT, Insurance, FMCSA
- * Premium redesign — real data from DB, no mock data
- * Theme-aware | Brand gradient | Sonner toasts
+ * @deprecated CONSOLIDATED — Task 4.5.2
+ * Catalyst compliance is now served by Operating Authority (/authority) & Documents (/documents).
+ * This file is retained for reference only. Do not import.
  */
 import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

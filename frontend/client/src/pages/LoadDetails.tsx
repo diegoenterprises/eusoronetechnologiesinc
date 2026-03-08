@@ -12,7 +12,7 @@
  * Theme-aware | Brand gradient | Role-aware actions | Trailer-type compliance
  */
 
-import React, { useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,8 +22,9 @@ import {
   Package, MapPin, Truck, DollarSign, Calendar, ArrowLeft,
   Phone, Navigation, Clock, User, AlertTriangle, CheckCircle, Shield,
   Building2, Scale, FileText, Loader2, ChevronRight, Info,
-  CloudRain, Flame, Fuel, Radio, Activity, Receipt, Droplets, ArrowRight, Download,
+  CloudRain, Flame, Fuel, Radio, Activity, Receipt, Droplets, ArrowRight, Download, Copy,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useLocation, useParams } from "wouter";
@@ -42,7 +43,9 @@ import FinancialSummaryCard from "@/components/financial/FinancialSummaryCard";
 import { useLoadSocket } from "@/hooks/useLoadSocket";
 import ApprovalGateCard, { ApprovalBadge } from "@/components/load/ApprovalGateCard";
 import GuardChecklist from "@/components/load/GuardChecklist";
+import MultiStopPanel from "@/components/load/MultiStopPanel";
 import ConvoySyncDashboard from "@/components/convoy/ConvoySyncDashboard";
+import ConvoyLiveTracker from "@/components/convoy/ConvoyLiveTracker";
 import HazmatRouteRestrictions from "@/components/HazmatRouteRestrictions";
 import RegulatoryCompliancePanel from "@/components/RegulatoryCompliancePanel";
 
@@ -191,6 +194,14 @@ export default function LoadDetails() {
       }
     },
     onError: (err: any) => toast.error("Deny error", { description: err.message }),
+  });
+
+  // ── GAP-003: Save as Template ──
+  const [templateNamePrompt, setTemplateNamePrompt] = useState("");
+  const [showTemplateSave, setShowTemplateSave] = useState(false);
+  const saveTemplateMutation = (trpc as any).loadTemplates?.saveFromLoad?.useMutation?.({
+    onSuccess: (data: any) => { toast.success(`Saved as template: ${data.name}`); setShowTemplateSave(false); setTemplateNamePrompt(""); },
+    onError: (err: any) => toast.error("Failed to save template", { description: err?.message }),
   });
 
   // ── Real-time WebSocket subscription ──
@@ -770,6 +781,11 @@ export default function LoadDetails() {
         />
       )}
 
+      {/* GAP-082: Live Convoy Map Tracker */}
+      {convoyData && convoyData.status === "active" && (
+        <ConvoyLiveTracker loadId={Number(loadId)} className="mt-4" />
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* ── Route Card ── */}
@@ -816,6 +832,12 @@ export default function LoadDetails() {
             </div>
           </CardContent>
         </Card>
+
+        {/* ── Multi-Stop Route Panel (GAP-002) ── */}
+        <MultiStopPanel
+          loadId={Number(loadId) || 0}
+          canEdit={canUpdateStatus || isShipper}
+        />
 
         {/* ── Route Intelligence (HotZones Corridor Data) ── */}
         {routeIntel && (
@@ -1302,7 +1324,7 @@ export default function LoadDetails() {
 
             {/* Quick Actions — only for involved parties on assigned+ loads */}
             {isInvolvedParty && isPostAssignment && (
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button variant="outline" size="sm" className={cn("rounded-lg text-xs", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-700 hover:bg-slate-700")} onClick={() => setLocation("/docks")}>
                   <FileText className="w-3.5 h-3.5 mr-1.5" />Generate BOL
                 </Button>
@@ -1313,6 +1335,32 @@ export default function LoadDetails() {
                   <Receipt className="w-3.5 h-3.5 mr-1.5" />Reconciliation
                 </Button>
               </div>
+            )}
+
+            {/* GAP-003: Save as Template */}
+            {isShipper && load && (
+              showTemplateSave ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    className={cn("h-8 text-xs rounded-lg flex-1", isLight ? "bg-white border-slate-200" : "bg-slate-900/50 border-slate-700/50 text-slate-200")}
+                    placeholder="Template name..."
+                    value={templateNamePrompt}
+                    onChange={(e: any) => setTemplateNamePrompt(e.target.value)}
+                    autoFocus
+                    onKeyDown={(e: any) => { if (e.key === "Enter" && templateNamePrompt.trim()) saveTemplateMutation?.mutate?.({ loadId: Number(loadId), name: templateNamePrompt.trim() }); }}
+                  />
+                  <Button size="sm" className="h-8 text-xs bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-lg"
+                    onClick={() => templateNamePrompt.trim() && saveTemplateMutation?.mutate?.({ loadId: Number(loadId), name: templateNamePrompt.trim() })}
+                    disabled={saveTemplateMutation?.isPending || !templateNamePrompt.trim()}>
+                    Save
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setShowTemplateSave(false); setTemplateNamePrompt(""); }}>Cancel</Button>
+                </div>
+              ) : (
+                <Button variant="outline" size="sm" className={cn("rounded-lg text-xs w-full border-dashed", isLight ? "border-slate-300 text-slate-500" : "border-slate-600 text-slate-400")} onClick={() => setShowTemplateSave(true)}>
+                  <Copy className="w-3.5 h-3.5 mr-1.5" />Save as Template
+                </Button>
+              )
             )}
           </CardContent>
         </Card>

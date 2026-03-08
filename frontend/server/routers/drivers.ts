@@ -2040,4 +2040,183 @@ export const driversRouter = router({
       return empty;
     }
   }),
+
+  // ══════════════════════════════════════════════════════════════════
+  // GAP-108: Driver Route Preference Learning
+  // ══════════════════════════════════════════════════════════════════
+
+  /**
+   * drivers.getPreferredLanes
+   * Returns the driver's explicitly set preferred lanes from user metadata.
+   */
+  getPreferredLanes: auditedOperationsProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { lanes: [], maxDeadheadMiles: 500, availableDays: [] };
+    try {
+      const userId = ctx.user?.id || 0;
+      if (!userId) return { lanes: [], maxDeadheadMiles: 500, availableDays: [] };
+      const [user] = await db.select({ metadata: users.metadata })
+        .from(users).where(eq(users.id, userId)).limit(1);
+      if (!user?.metadata) return { lanes: [], maxDeadheadMiles: 500, availableDays: [] };
+      try {
+        const meta = JSON.parse(user.metadata);
+        return {
+          lanes: (meta.preferredLanes || []) as Array<{ origin: string; destination: string; frequency?: number; avgRate?: number }>,
+          maxDeadheadMiles: meta.maxDeadheadMiles || 500,
+          availableDays: meta.availableDays || ["Mon", "Tue", "Wed", "Thu", "Fri"],
+        };
+      } catch { return { lanes: [], maxDeadheadMiles: 500, availableDays: [] }; }
+    } catch (e) { return { lanes: [], maxDeadheadMiles: 500, availableDays: [] }; }
+  }),
+
+  /**
+   * drivers.updatePreferredLanes
+   * Stores the driver's preferred lanes, max deadhead, and available days in user metadata.
+   */
+  updatePreferredLanes: auditedOperationsProcedure
+    .input(z.object({
+      lanes: z.array(z.object({
+        origin: z.string(),
+        destination: z.string(),
+        frequency: z.number().optional(),
+        avgRate: z.number().optional(),
+      })),
+      maxDeadheadMiles: z.number().min(0).max(5000).optional(),
+      availableDays: z.array(z.string()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = ctx.user?.id || 0;
+      if (!userId) throw new Error("Authentication required");
+
+      const [user] = await db.select({ metadata: users.metadata })
+        .from(users).where(eq(users.id, userId)).limit(1);
+      let meta: any = {};
+      try { meta = user?.metadata ? JSON.parse(user.metadata) : {}; } catch {}
+      meta.preferredLanes = input.lanes;
+      if (input.maxDeadheadMiles !== undefined) meta.maxDeadheadMiles = input.maxDeadheadMiles;
+      if (input.availableDays !== undefined) meta.availableDays = input.availableDays;
+
+      await db.update(users).set({ metadata: JSON.stringify(meta) })
+        .where(eq(users.id, userId));
+      return { success: true, lanesCount: input.lanes.length };
+    }),
+
+  /**
+   * drivers.learnLanePreferences
+   * Analyzes the driver's completed load history to suggest preferred lanes.
+   * Groups loads by origin-state → dest-state, counts frequency, computes avg rate.
+   */
+  learnLanePreferences: auditedOperationsProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { suggestedLanes: [], totalLoadsAnalyzed: 0 };
+    try {
+      const userId = ctx.user?.id || 0;
+      if (!userId) return { suggestedLanes: [], totalLoadsAnalyzed: 0 };
+
+      const completedLoads = await db.select({
+        pickupLocation: loads.pickupLocation,
+        deliveryLocation: loads.deliveryLocation,
+        rate: loads.rate,
+        distance: loads.distance,
+      })
+        .from(loads)
+        .where(and(
+          eq(loads.driverId, userId),
+          eq(loads.status, "delivered"),
+        ))
+        .orderBy(desc(loads.createdAt))
+        .limit(500);
+
+      if (completedLoads.length === 0) return { suggestedLanes: [], totalLoadsAnalyzed: 0 };
+
+      // Group by origin-state → dest-state
+      const laneMap = new Map<string, { origin: string; destination: string; count: number; totalRate: number; totalDistance: number }>();
+      for (const load of completedLoads) {
+        const p = load.pickupLocation as any || {};
+        const d = load.deliveryLocation as any || {};
+        const originState = p.state || "??";
+        const destState = d.state || "??";
+        const key = `${originState}-${destState}`;
+        const existing = laneMap.get(key) || { origin: originState, destination: destState, count: 0, totalRate: 0, totalDistance: 0 };
+        existing.count++;
+        existing.totalRate += load.rate ? parseFloat(String(load.rate)) : 0;
+        existing.totalDistance += load.distance ? parseFloat(String(load.distance)) : 0;
+        laneMap.set(key, existing);
+      }
+
+      // Sort by frequency, take top 20
+      const suggestedLanes = Array.from(laneMap.values())
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 20)
+        .map(lane => ({
+          origin: lane.origin,
+          destination: lane.destination,
+          frequency: lane.count,
+          avgRate: lane.count > 0 ? Math.round(lane.totalRate / lane.count) : 0,
+          avgDistance: lane.count > 0 ? Math.round(lane.totalDistance / lane.count) : 0,
+          rpm: lane.totalDistance > 0 ? Math.round((lane.totalRate / lane.totalDistance) * 100) / 100 : 0,
+        }));
+
+      return { suggestedLanes, totalLoadsAnalyzed: completedLoads.length };
+    } catch (e) {
+      console.error("[Drivers] learnLanePreferences error:", e);
+      return { suggestedLanes: [], totalLoadsAnalyzed: 0 };
+    }
+  }),
+
+  /**
+   * drivers.getLaneHistory
+   * Returns a timeline of loads for a specific lane (origin-state → dest-state).
+   */
+  getLaneHistory: auditedOperationsProcedure
+    .input(z.object({
+      originState: z.string().length(2),
+      destState: z.string().length(2),
+      limit: z.number().min(1).max(50).optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const userId = ctx.user?.id || 0;
+        if (!userId) return [];
+
+        const allLoads = await db.select({
+          id: loads.id,
+          loadNumber: loads.loadNumber,
+          pickupLocation: loads.pickupLocation,
+          deliveryLocation: loads.deliveryLocation,
+          rate: loads.rate,
+          distance: loads.distance,
+          status: loads.status,
+          createdAt: loads.createdAt,
+        })
+          .from(loads)
+          .where(and(
+            eq(loads.driverId, userId),
+            eq(loads.status, "delivered"),
+          ))
+          .orderBy(desc(loads.createdAt))
+          .limit(200);
+
+        // Filter by lane
+        const laneLoads = allLoads.filter(l => {
+          const p = l.pickupLocation as any || {};
+          const d = l.deliveryLocation as any || {};
+          return p.state === input.originState && d.state === input.destState;
+        }).slice(0, input.limit || 20);
+
+        return laneLoads.map(l => {
+          const p = l.pickupLocation as any || {};
+          const d = l.deliveryLocation as any || {};
+          return {
+            id: l.id,
+            loadNumber: l.loadNumber || `LD-${l.id}`,
+            origin: p.city && p.state ? `${p.city}, ${p.state}` : p.state || "Unknown",
+            destination: d.city && d.state ? `${d.city}, ${d.state}` : d.state || "Unknown",
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+            distance: l.distance ? parseFloat(String(l.distance)) : 0,
+            date: l.createdAt?.toISOString() || "",
+          };
+        });
+      } catch (e) { return []; }
+    }),
 });

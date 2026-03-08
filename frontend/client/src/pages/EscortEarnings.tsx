@@ -1,23 +1,29 @@
 /**
- * ESCORT EARNINGS PAGE
+ * ESCORT EARNINGS — Consolidated (Task 6.2.2)
+ * Merges: EscortEarnings.tsx (Earnings) + EscortReports.tsx (Reports)
+ * Tabs: Earnings | Reports
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import {
   DollarSign, TrendingUp, TrendingDown, Clock,
-  Calendar, CheckCircle, Car
+  Calendar, CheckCircle, Car, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const ReportsTab = lazy(() => import("./EscortReports"));
+
 export default function EscortEarnings() {
+  const [activeTab, setActiveTab] = useState("earnings");
   const [period, setPeriod] = useState("month");
 
   const earningsQuery = (trpc as any).escorts.getEarnings.useQuery({ period });
@@ -34,7 +40,7 @@ export default function EscortEarnings() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Earnings
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Track your escort job earnings</p>
+          <p className="text-slate-400 text-sm mt-1">Track your escort job earnings & reports</p>
         </div>
         <Select value={period} onValueChange={setPeriod}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -48,6 +54,17 @@ export default function EscortEarnings() {
           </SelectContent>
         </Select>
       </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="earnings"><DollarSign className="w-4 h-4 mr-1.5" />Earnings</TabsTrigger>
+          <TabsTrigger value="reports"><FileText className="w-4 h-4 mr-1.5" />Reports</TabsTrigger>
+        </TabsList>
+
+        {/* ═══════════════════════════════════════════
+            TAB 1: EARNINGS (original content)
+         ═══════════════════════════════════════════ */}
+        <TabsContent value="earnings" className="space-y-6">
 
       {/* Earnings Summary */}
       {earningsQuery.isLoading ? (
@@ -186,6 +203,23 @@ export default function EscortEarnings() {
           )}
         </CardContent>
       </Card>
+
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════
+            TAB 2: REPORTS (from EscortReports.tsx)
+         ═══════════════════════════════════════════ */}
+        <TabsContent value="reports">
+          <Suspense fallback={
+            <div className="p-4 space-y-4">
+              <Skeleton className="h-8 w-64 rounded-lg" />
+              <Skeleton className="h-48 w-full rounded-xl" />
+            </div>
+          }>
+            <div className="[&>div]:!p-0"><ReportsTab /></div>
+          </Suspense>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

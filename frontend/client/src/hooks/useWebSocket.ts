@@ -281,3 +281,121 @@ export function useComplianceAlerts() {
   return alerts;
 }
 
+// ═══════════════════════════════════════════════════════════
+// TASK 6.4.1 — REMAINING REAL-TIME WEBSOCKET HOOKS
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Hook for real-time financial events (payments, invoices, settlements)
+ */
+export function useFinancialEvents() {
+  const [events, setEvents] = useState<any[]>([]);
+  const { lastMessage } = useWebSocket('/financial');
+
+  useEffect(() => {
+    if (lastMessage?.type?.startsWith('FINANCIAL_') || lastMessage?.type?.startsWith('financial:')) {
+      setEvents(prev => [lastMessage.data, ...prev].slice(0, 50));
+    }
+  }, [lastMessage]);
+
+  return events;
+}
+
+/**
+ * Hook for real-time terminal events (appointments, check-ins, queue)
+ */
+export function useTerminalEvents(terminalId?: string) {
+  const channel = terminalId ? `/terminal/${terminalId}` : '/terminal';
+  const [events, setEvents] = useState<any[]>([]);
+  const { lastMessage } = useWebSocket(channel);
+
+  useEffect(() => {
+    if (lastMessage?.type?.startsWith('terminal:')) {
+      setEvents(prev => [lastMessage.data, ...prev].slice(0, 50));
+    }
+  }, [lastMessage]);
+
+  return events;
+}
+
+/**
+ * Hook for real-time dispatch events (exceptions, check calls, delays)
+ */
+export function useDispatchEvents() {
+  const [events, setEvents] = useState<any[]>([]);
+  const { lastMessage } = useWebSocket('/dispatch');
+
+  useEffect(() => {
+    if (lastMessage?.type?.startsWith('dispatch:')) {
+      setEvents(prev => [lastMessage.data, ...prev].slice(0, 50));
+    }
+  }, [lastMessage]);
+
+  return events;
+}
+
+/**
+ * Hook for real-time gamification events (achievements, XP, level-up)
+ */
+export function useGamificationEvents() {
+  const [events, setEvents] = useState<any[]>([]);
+  const { lastMessage } = useWebSocket('/gamification');
+
+  useEffect(() => {
+    if (lastMessage?.type?.startsWith('gamification:')) {
+      setEvents(prev => [lastMessage.data, ...prev].slice(0, 20));
+    }
+  }, [lastMessage]);
+
+  return events;
+}
+
+/**
+ * Hook for real-time escort/convoy events (job updates, position, convoy alerts)
+ */
+export function useEscortEvents() {
+  const [events, setEvents] = useState<any[]>([]);
+  const { lastMessage } = useWebSocket('/escort');
+
+  useEffect(() => {
+    if (lastMessage?.type?.startsWith('escort:') || lastMessage?.type?.startsWith('convoy:')) {
+      setEvents(prev => [lastMessage.data, ...prev].slice(0, 50));
+    }
+  }, [lastMessage]);
+
+  return events;
+}
+
+/**
+ * Hook for real-time breakdown/repair events (Zeun mechanics)
+ */
+export function useBreakdownEvents() {
+  const [events, setEvents] = useState<any[]>([]);
+  const { lastMessage } = useWebSocket('/zeun');
+
+  useEffect(() => {
+    if (lastMessage?.type?.startsWith('zeun:')) {
+      setEvents(prev => [lastMessage.data, ...prev].slice(0, 30));
+    }
+  }, [lastMessage]);
+
+  return events;
+}
+
+/**
+ * Hook for real-time tracking events (geofence, weather, ETA, traffic)
+ */
+export function useTrackingEvents(loadId?: string) {
+  const channel = loadId ? `/tracking/${loadId}` : '/tracking';
+  const [events, setEvents] = useState<any[]>([]);
+  const { lastMessage } = useWebSocket(channel);
+
+  useEffect(() => {
+    if (lastMessage?.type?.startsWith('tracking:')) {
+      setEvents(prev => [lastMessage.data, ...prev].slice(0, 50));
+    }
+  }, [lastMessage]);
+
+  return events;
+}
+

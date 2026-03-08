@@ -1874,4 +1874,170 @@ export const terminalsRouter = router({
         throw new Error(`Failed to remove integration key: ${e.message}`);
       }
     }),
+
+  /**
+   * GAP-312: Get Terminal Operating Hours
+   * Returns hours of operation, holidays, and special schedules.
+   * Stored as JSON metadata on the terminal record.
+   */
+  getOperatingHours: protectedProcedure
+    .input(z.object({ terminalId: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return defaultOperatingHours(input.terminalId);
+
+      try {
+        const tId = parseInt(input.terminalId, 10);
+        const [terminal] = await db.select({
+          id: terminals.id,
+          name: terminals.name,
+          status: terminals.status,
+        }).from(terminals).where(eq(terminals.id, tId)).limit(1);
+
+        if (!terminal) return defaultOperatingHours(input.terminalId);
+
+        // Try to load stored hours from terminal_metadata (JSON column approach)
+        // If no custom hours exist, return industry-standard defaults
+        try {
+          const [meta]: any = await db.execute(
+            sql`SELECT operating_hours FROM terminal_metadata WHERE terminal_id = ${tId} LIMIT 1`
+          );
+          if (meta?.[0]?.operating_hours) {
+            const stored = typeof meta[0].operating_hours === "string"
+              ? JSON.parse(meta[0].operating_hours)
+              : meta[0].operating_hours;
+            return { terminalId: input.terminalId, terminalName: terminal.name, ...stored };
+          }
+        } catch {
+          // Table doesn't exist yet — fall through to defaults
+        }
+
+        return defaultOperatingHours(input.terminalId, terminal.name);
+      } catch {
+        return defaultOperatingHours(input.terminalId);
+      }
+    }),
+
+  /**
+   * GAP-312: Set Terminal Operating Hours
+   * Saves custom operating hours, holidays, and special schedules.
+   */
+  setOperatingHours: protectedProcedure
+    .input(z.object({
+      terminalId: z.string(),
+      regularHours: z.array(z.object({
+        day: z.enum(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]),
+        open: z.string(),
+        close: z.string(),
+        isOpen: z.boolean(),
+      })),
+      holidays: z.array(z.object({
+        date: z.string(),
+        name: z.string(),
+        isOpen: z.boolean(),
+        open: z.string().optional(),
+        close: z.string().optional(),
+      })).optional(),
+      specialSchedules: z.array(z.object({
+        startDate: z.string(),
+        endDate: z.string(),
+        reason: z.string(),
+        open: z.string(),
+        close: z.string(),
+      })).optional(),
+      timezone: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const tId = parseInt(input.terminalId, 10);
+      const hoursData = {
+        regularHours: input.regularHours,
+        holidays: input.holidays || [],
+        specialSchedules: input.specialSchedules || [],
+        timezone: input.timezone || "America/Chicago",
+        notes: input.notes || "",
+        updatedAt: new Date().toISOString(),
+        updatedBy: ctx.user?.id || null,
+      };
+
+      try {
+        // Ensure terminal_metadata table exists
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS terminal_metadata (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            terminal_id INT NOT NULL UNIQUE,
+            operating_hours JSON,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_tm_terminal (terminal_id)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        `);
+
+        // Upsert
+        await db.execute(sql`
+          INSERT INTO terminal_metadata (terminal_id, operating_hours)
+          VALUES (${tId}, ${JSON.stringify(hoursData)})
+          ON DUPLICATE KEY UPDATE operating_hours = VALUES(operating_hours)
+        `);
+
+        return { success: true, terminalId: input.terminalId };
+      } catch (e: any) {
+        console.error("[Terminals] setOperatingHours error:", e?.message?.slice(0, 100));
+        throw new Error("Failed to save operating hours");
+      }
+    }),
+
+  /**
+   * GAP-312: Check if terminal is currently open
+   */
+  isTerminalOpen: protectedProcedure
+    .input(z.object({ terminalId: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const now = new Date();
+      const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+      const today = dayNames[now.getDay()];
+      const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+      const hours = defaultOperatingHours(input.terminalId);
+      const todayHours = hours.regularHours.find((h: any) => h.day === today);
+      if (!todayHours || !todayHours.isOpen) {
+        return { isOpen: false, reason: "Closed today", opensAt: null };
+      }
+      if (currentTime < todayHours.open) {
+        return { isOpen: false, reason: `Opens at ${todayHours.open}`, opensAt: todayHours.open };
+      }
+      if (currentTime > todayHours.close) {
+        return { isOpen: false, reason: `Closed at ${todayHours.close}`, opensAt: null };
+      }
+      return { isOpen: true, reason: null, closesAt: todayHours.close };
+    }),
 });
+
+// ── Default Operating Hours (Oil terminal industry standard) ────────
+function defaultOperatingHours(terminalId: string, terminalName?: string) {
+  return {
+    terminalId,
+    terminalName: terminalName || "Terminal",
+    regularHours: [
+      { day: "monday", open: "06:00", close: "22:00", isOpen: true },
+      { day: "tuesday", open: "06:00", close: "22:00", isOpen: true },
+      { day: "wednesday", open: "06:00", close: "22:00", isOpen: true },
+      { day: "thursday", open: "06:00", close: "22:00", isOpen: true },
+      { day: "friday", open: "06:00", close: "22:00", isOpen: true },
+      { day: "saturday", open: "06:00", close: "18:00", isOpen: true },
+      { day: "sunday", open: "00:00", close: "00:00", isOpen: false },
+    ],
+    holidays: [
+      { date: "2026-01-01", name: "New Year's Day", isOpen: false },
+      { date: "2026-07-04", name: "Independence Day", isOpen: false },
+      { date: "2026-11-26", name: "Thanksgiving", isOpen: false },
+      { date: "2026-12-25", name: "Christmas Day", isOpen: false },
+    ],
+    specialSchedules: [] as { startDate: string; endDate: string; reason: string; open: string; close: string }[],
+    timezone: "America/Chicago",
+    notes: "",
+  };
+}

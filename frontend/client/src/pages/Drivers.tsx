@@ -1,7 +1,7 @@
 /**
- * DRIVERS PAGE
- * 100% Dynamic - No mock data
- * Theme-aware | Brand gradient | Shipper design standard
+ * @deprecated CONSOLIDATED — Task 4.5.2
+ * Driver management is now served by FleetCommandCenter (/carrier/fleet-hub).
+ * This file is retained for reference only. Do not import.
  */
 
 import React, { useState } from "react";

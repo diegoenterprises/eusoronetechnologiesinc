@@ -1,7 +1,7 @@
 /**
- * IN TRANSIT PAGE - CATALYST ROLE
- * Theme-aware | Brand gradient | Shipper design standard
- * Loads currently being transported with real-time driver tracking and delivery management
+ * @deprecated CONSOLIDATED — Task 4.5.2
+ * In-transit loads view is now served by MyLoads (/loads).
+ * This file is retained for reference only. Do not import.
  */
 
 import { useState, useEffect } from "react";

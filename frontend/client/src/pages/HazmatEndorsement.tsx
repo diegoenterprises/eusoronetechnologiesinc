@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into compliance/HazmatCompliance.tsx (Endorsement tab). Remove after migration verification.
  * HAZMAT ENDORSEMENT PAGE
  * Driver-facing screen for managing hazmat endorsement (H) on CDL.
  * Tracks TSA security threat assessment status, endorsement expiry,

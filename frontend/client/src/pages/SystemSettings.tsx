@@ -1,7 +1,7 @@
 /**
- * SYSTEM SETTINGS PAGE
- * 100% Dynamic - No mock data
- * UI Style: Gradient headers, stat cards with icons, rounded cards
+ * @deprecated CONSOLIDATED — Task 5.1.4
+ * Functionality overlaps with admin/SystemConfiguration.tsx (/admin/system-config).
+ * This file is retained for reference only.
  */
 
 import React from "react";

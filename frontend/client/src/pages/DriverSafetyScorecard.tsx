@@ -1,24 +1,39 @@
 /**
- * DRIVER SAFETY SCORECARD PAGE
+ * DRIVER SAFETY SCORECARD — Consolidated (Task 6.1.1)
+ * Merges: DriverScorecard.tsx (My Scorecard) + DriverSafetyScorecard.tsx (Fleet Rankings)
+ * Tabs: My Scorecard | Fleet Rankings
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import {
   Shield, User, AlertTriangle, CheckCircle, TrendingUp,
-  TrendingDown, Search, Star, Clock
+  TrendingDown, Search, Star, Clock, Award, Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const MyScorecardTab = lazy(() => import("./DriverScorecard"));
+
+function TabLoader() {
+  return (
+    <div className="p-4 space-y-4">
+      <Skeleton className="h-8 w-64 rounded-lg" />
+      <Skeleton className="h-48 w-full rounded-xl" />
+    </div>
+  );
+}
+
 export default function DriverSafetyScorecard() {
+  const [activeTab, setActiveTab] = useState("my-scorecard");
   const [search, setSearch] = useState("");
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
 
@@ -49,196 +64,215 @@ export default function DriverSafetyScorecard() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Driver Safety Scorecard
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Individual driver safety performance</p>
+          <p className="text-slate-400 text-sm mt-1">Personal performance and fleet safety rankings</p>
         </div>
-        {selectedDriver && (
+        {activeTab === "fleet" && selectedDriver && (
           <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setSelectedDriver(null)}>
             Back to List
           </Button>
         )}
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-green-500/20">
-                <CheckCircle className="w-6 h-6 text-green-400" />
-              </div>
-              <div>
-                {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{stats?.excellent || 0}</p>
-                )}
-                <p className="text-xs text-slate-400">Excellent</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="my-scorecard"><Award className="w-4 h-4 mr-1.5" />My Scorecard</TabsTrigger>
+          <TabsTrigger value="fleet"><Users className="w-4 h-4 mr-1.5" />Fleet Rankings</TabsTrigger>
+        </TabsList>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-yellow-500/20">
-                <Shield className="w-6 h-6 text-yellow-400" />
-              </div>
-              <div>
-                {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{stats?.good || 0}</p>
-                )}
-                <p className="text-xs text-slate-400">Good</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* ═══════════════════════════════════════════
+            TAB 1: MY SCORECARD (from DriverScorecard.tsx)
+         ═══════════════════════════════════════════ */}
+        <TabsContent value="my-scorecard">
+          <Suspense fallback={<TabLoader />}><div className="[&>div]:!p-0"><MyScorecardTab /></div></Suspense>
+        </TabsContent>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-red-500/20">
-                <AlertTriangle className="w-6 h-6 text-red-400" />
-              </div>
-              <div>
-                {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-red-400">{stats?.needsImprovement || 0}</p>
-                )}
-                <p className="text-xs text-slate-400">Needs Work</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* ═══════════════════════════════════════════
+            TAB 2: FLEET RANKINGS (original content)
+         ═══════════════════════════════════════════ */}
+        <TabsContent value="fleet" className="space-y-6">
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-full bg-green-500/20">
+                    <CheckCircle className="w-6 h-6 text-green-400" />
+                  </div>
+                  <div>
+                    {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                      <p className="text-2xl font-bold text-green-400">{stats?.excellent || 0}</p>
+                    )}
+                    <p className="text-xs text-slate-400">Excellent</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-cyan-500/20">
-                <Star className="w-6 h-6 text-cyan-400" />
-              </div>
-              <div>
-                {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-cyan-400">{stats?.avgScore || 0}</p>
-                )}
-                <p className="text-xs text-slate-400">Avg Score</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-full bg-yellow-500/20">
+                    <Shield className="w-6 h-6 text-yellow-400" />
+                  </div>
+                  <div>
+                    {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                      <p className="text-2xl font-bold text-yellow-400">{stats?.good || 0}</p>
+                    )}
+                    <p className="text-xs text-slate-400">Good</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-      {/* Driver Detail */}
-      {selectedDriver ? (
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          {driverDetailQuery.isLoading ? (
-            <div className="p-6 space-y-4">
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-40 w-full" />
-            </div>
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-full bg-red-500/20">
+                    <AlertTriangle className="w-6 h-6 text-red-400" />
+                  </div>
+                  <div>
+                    {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                      <p className="text-2xl font-bold text-red-400">{stats?.needsImprovement || 0}</p>
+                    )}
+                    <p className="text-xs text-slate-400">Needs Work</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-full bg-cyan-500/20">
+                    <Star className="w-6 h-6 text-cyan-400" />
+                  </div>
+                  <div>
+                    {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                      <p className="text-2xl font-bold text-cyan-400">{stats?.avgScore || 0}</p>
+                    )}
+                    <p className="text-xs text-slate-400">Avg Score</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Driver Detail */}
+          {selectedDriver ? (
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+              {driverDetailQuery.isLoading ? (
+                <div className="p-6 space-y-4">
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-40 w-full" />
+                </div>
+              ) : (
+                <>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-emerald-500 flex items-center justify-center text-2xl font-bold text-white">
+                        {(driverDetailQuery.data as any)?.name?.charAt(0)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-white text-xl font-bold">{(driverDetailQuery.data as any)?.name}</p>
+                          {getScoreBadge((driverDetailQuery.data as any)?.overallScore || 0)}
+                        </div>
+                        <p className="text-slate-400">{(driverDetailQuery.data as any)?.licenseNumber}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={cn("text-4xl font-bold", getScoreColor((driverDetailQuery.data as any)?.overallScore || 0))}>{(driverDetailQuery.data as any)?.overallScore}</p>
+                        <p className="text-sm text-slate-500">Overall Score</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {(driverDetailQuery.data as any)?.categories?.map((cat: any) => (
+                        <div key={cat.name} className="p-4 rounded-xl bg-slate-700/30">
+                          <p className="text-sm text-slate-400 mb-2">{cat.name}</p>
+                          <p className={cn("text-2xl font-bold", getScoreColor(cat.score))}>{cat.score}</p>
+                          <Progress value={cat.score} className="h-2 mt-2" />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-slate-700/30">
+                      <p className="text-white font-medium mb-3">Recent Events</p>
+                      {(driverDetailQuery.data as any)?.recentEvents?.length === 0 ? (
+                        <p className="text-sm text-slate-500">No recent events</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {(driverDetailQuery.data as any)?.recentEvents?.map((event: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-slate-800/50">
+                              <div className="flex items-center gap-2">
+                                {event.type === "positive" ? <CheckCircle className="w-4 h-4 text-green-400" /> : <AlertTriangle className="w-4 h-4 text-red-400" />}
+                                <span className="text-sm text-slate-300">{event.description}</span>
+                              </div>
+                              <span className="text-xs text-slate-500">{event.date}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </>
+              )}
+            </Card>
           ) : (
             <>
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-emerald-500 flex items-center justify-center text-2xl font-bold text-white">
-                    {(driverDetailQuery.data as any)?.name?.charAt(0)}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-white text-xl font-bold">{(driverDetailQuery.data as any)?.name}</p>
-                      {getScoreBadge((driverDetailQuery.data as any)?.overallScore || 0)}
-                    </div>
-                    <p className="text-slate-400">{(driverDetailQuery.data as any)?.licenseNumber}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className={cn("text-4xl font-bold", getScoreColor((driverDetailQuery.data as any)?.overallScore || 0))}>{(driverDetailQuery.data as any)?.overallScore}</p>
-                    <p className="text-sm text-slate-500">Overall Score</p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {(driverDetailQuery.data as any)?.categories?.map((cat: any) => (
-                    <div key={cat.name} className="p-4 rounded-xl bg-slate-700/30">
-                      <p className="text-sm text-slate-400 mb-2">{cat.name}</p>
-                      <p className={cn("text-2xl font-bold", getScoreColor(cat.score))}>{cat.score}</p>
-                      <Progress value={cat.score} className="h-2 mt-2" />
-                    </div>
-                  ))}
-                </div>
+              {/* Search */}
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+              </div>
 
-                <div className="p-4 rounded-xl bg-slate-700/30">
-                  <p className="text-white font-medium mb-3">Recent Events</p>
-                  {(driverDetailQuery.data as any)?.recentEvents?.length === 0 ? (
-                    <p className="text-sm text-slate-500">No recent events</p>
+              {/* Drivers List */}
+              <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-white text-lg flex items-center gap-2">
+                    <User className="w-5 h-5 text-cyan-400" />
+                    Driver Rankings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {driversQuery.isLoading ? (
+                    <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+                  ) : (driversQuery.data as any)?.length === 0 ? (
+                    <div className="text-center py-12">
+                      <User className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+                      <p className="text-slate-400">No drivers found</p>
+                    </div>
                   ) : (
-                    <div className="space-y-2">
-                      {(driverDetailQuery.data as any)?.recentEvents?.map((event: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-slate-800/50">
-                          <div className="flex items-center gap-2">
-                            {event.type === "positive" ? <CheckCircle className="w-4 h-4 text-green-400" /> : <AlertTriangle className="w-4 h-4 text-red-400" />}
-                            <span className="text-sm text-slate-300">{event.description}</span>
+                    <div className="divide-y divide-slate-700/50">
+                      {(driversQuery.data as any)?.map((driver: any, idx: number) => (
+                        <div key={driver.id} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => setSelectedDriver(driver.id)}>
+                          <div className="flex items-center gap-4">
+                            <div className="w-8 text-center font-bold text-slate-500">#{idx + 1}</div>
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white">
+                              {driver.name?.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="text-white font-medium">{driver.name}</p>
+                              <p className="text-xs text-slate-500">{driver.totalMiles?.toLocaleString()} miles | {driver.inspections} inspections</p>
+                            </div>
                           </div>
-                          <span className="text-xs text-slate-500">{event.date}</span>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1">
+                              {driver.trend === "up" ? <TrendingUp className="w-4 h-4 text-green-400" /> : driver.trend === "down" ? <TrendingDown className="w-4 h-4 text-red-400" /> : null}
+                            </div>
+                            {getScoreBadge(driver.score)}
+                            <span className={cn("text-2xl font-bold", getScoreColor(driver.score))}>{driver.score}</span>
+                          </div>
                         </div>
                       ))}
                     </div>
                   )}
-                </div>
-              </CardContent>
+                </CardContent>
+              </Card>
             </>
           )}
-        </Card>
-      ) : (
-        <>
-          {/* Search */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
-          </div>
-
-          {/* Drivers List */}
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-white text-lg flex items-center gap-2">
-                <User className="w-5 h-5 text-cyan-400" />
-                Driver Rankings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {driversQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-              ) : (driversQuery.data as any)?.length === 0 ? (
-                <div className="text-center py-12">
-                  <User className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-                  <p className="text-slate-400">No drivers found</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-700/50">
-                  {(driversQuery.data as any)?.map((driver: any, idx: number) => (
-                    <div key={driver.id} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => setSelectedDriver(driver.id)}>
-                      <div className="flex items-center gap-4">
-                        <div className="w-8 text-center font-bold text-slate-500">#{idx + 1}</div>
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white">
-                          {driver.name?.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="text-white font-medium">{driver.name}</p>
-                          <p className="text-xs text-slate-500">{driver.totalMiles?.toLocaleString()} miles | {driver.inspections} inspections</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1">
-                          {driver.trend === "up" ? <TrendingUp className="w-4 h-4 text-green-400" /> : driver.trend === "down" ? <TrendingDown className="w-4 h-4 text-red-400" /> : null}
-                        </div>
-                        {getScoreBadge(driver.score)}
-                        <span className={cn("text-2xl font-bold", getScoreColor(driver.score))}>{driver.score}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

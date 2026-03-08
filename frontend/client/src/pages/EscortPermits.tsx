@@ -1,4 +1,7 @@
 /**
+ * @deprecated — Consolidated into EscortCertifications.tsx "Permits" tab (Task 6.2.1)
+ * Route /escort/permits now redirects to /escort/certifications
+ *
  * ESCORT PERMITS PAGE
  * 100% Dynamic - No mock data
  * State certifications and permit management for oversize/overweight escorts
