@@ -1478,34 +1478,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(dmrInsertIdx, 0, dmrItem);
   }
 
-  // GAP-339: Inject Natural Language Load Creator for qualifying roles
-  const NL_QUALIFYING_ROLES = new Set(['SHIPPER', 'CATALYST', 'BROKER', 'DISPATCH', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN']);
-  if (NL_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/nl-load-creator')) {
-    const nlItem: MenuItem = {
-      icon: "Sparkles",
-      label: "AI Load Creator",
-      path: "/nl-load-creator",
-      badge: 0,
-      description: "Create loads from natural language descriptions using AI",
-    };
-    const dmrIdx = result.findIndex(m => m.path === '/demurrage-charges');
-    const nlInsertIdx = dmrIdx >= 0 ? dmrIdx + 1 : result.length;
-    result.splice(nlInsertIdx, 0, nlItem);
-  }
-
-  // GAP-360: Inject Voice ESANG for all roles
-  if (!result.some(m => m.path === '/voice-esang')) {
-    const voiceItem: MenuItem = {
-      icon: "Mic",
-      label: "Voice ESANG",
-      path: "/voice-esang",
-      badge: 0,
-      description: "Voice-first AI assistant — talk to ESANG with voice commands",
-    };
-    const nlIdx = result.findIndex(m => m.path === '/nl-load-creator');
-    const voiceInsertIdx = nlIdx >= 0 ? nlIdx + 1 : result.length;
-    result.splice(voiceInsertIdx, 0, voiceItem);
-  }
+  // GAP-339 & GAP-360: AI Load Creator and Voice ESANG merged into ESANG floating button (bottom-right)
+  // No longer shown as separate sidebar items
 
   // GAP-062: Inject RFP Manager for shipper/broker roles
   const RFP_QUALIFYING_ROLES = new Set(['SHIPPER', 'BROKER', 'ADMIN', 'SUPER_ADMIN', 'TERMINAL_MANAGER']);
@@ -1517,8 +1491,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       badge: 0,
       description: "Create, distribute & award carrier RFPs",
     };
-    const voiceIdx = result.findIndex(m => m.path === '/voice-esang');
-    const rfpInsertIdx = voiceIdx >= 0 ? voiceIdx + 1 : result.length;
+    const dmrIdx2 = result.findIndex(m => m.path === '/demurrage-charges');
+    const rfpInsertIdx = dmrIdx2 >= 0 ? dmrIdx2 + 1 : result.length;
     result.splice(rfpInsertIdx, 0, rfpItem);
   }
 

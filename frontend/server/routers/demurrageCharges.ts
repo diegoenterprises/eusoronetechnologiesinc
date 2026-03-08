@@ -54,8 +54,8 @@ export const demurrageChargesRouter = router({
           `);
           timerRows = ((result as unknown as any[][])[0]) || [];
         } catch {
-          // financial_timers table may not exist yet — generate simulated charges
-          timerRows = generateSimulatedTimers(dateFrom, dateTo);
+          // financial_timers table may not exist yet — return empty
+          timerRows = [];
         }
 
         const charges: DemurrageCharge[] = [];
@@ -154,7 +154,8 @@ export const demurrageChargesRouter = router({
           `);
           timerRows = ((result as unknown as any[][])[0]) || [];
         } catch {
-          timerRows = generateSimulatedTimers(dateFrom, dateTo);
+          // financial_timers table may not exist yet — return empty
+          timerRows = [];
         }
 
         // Build charges for analytics
@@ -242,48 +243,3 @@ export const demurrageChargesRouter = router({
     }),
 });
 
-// ── Simulated Timer Data (when financial_timers table doesn't exist) ──
-
-function generateSimulatedTimers(dateFrom: string, dateTo: string): any[] {
-  const timers = [];
-  const types = ["DETENTION", "DEMURRAGE", "PUMP_TIME", "LAYOVER"];
-  const rates = { DETENTION: 75, DEMURRAGE: 75, PUMP_TIME: 75, LAYOVER: 350 };
-  const freeTimes = { DETENTION: 120, DEMURRAGE: 120, PUMP_TIME: 30, LAYOVER: 0 };
-
-  const startMs = new Date(dateFrom).getTime();
-  const endMs = new Date(dateTo).getTime();
-  const numTimers = Math.min(30, Math.max(5, Math.floor((endMs - startMs) / 86400000)));
-
-  for (let i = 0; i < numTimers; i++) {
-    const type = types[i % types.length];
-    const waitMinutes = 120 + Math.floor(Math.random() * 300); // 2-7 hours
-    const freeTime = freeTimes[type as keyof typeof freeTimes] || 120;
-    const billableMinutes = Math.max(0, waitMinutes - freeTime);
-    const hourlyRate = rates[type as keyof typeof rates] || 75;
-    const totalCharge = type === "LAYOVER"
-      ? Math.ceil(waitMinutes / 1440) * 350
-      : Math.round((billableMinutes / 60) * hourlyRate * 100) / 100;
-
-    const timerDate = new Date(startMs + Math.random() * (endMs - startMs));
-    const startedAt = new Date(timerDate.getTime() - waitMinutes * 60000);
-
-    timers.push({
-      id: 1000 + i,
-      load_id: 100 + i,
-      type,
-      status: "STOPPED",
-      total_minutes: waitMinutes,
-      billable_minutes: billableMinutes,
-      free_time_minutes: freeTime,
-      hourly_rate: String(hourlyRate),
-      total_charge: String(totalCharge),
-      currency: "USD",
-      started_at: startedAt.toISOString(),
-      stopped_at: timerDate.toISOString(),
-      catalystId: (i % 5) + 1,
-      shipperId: (i % 3) + 1,
-    });
-  }
-
-  return timers;
-}

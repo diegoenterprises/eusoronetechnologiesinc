@@ -96,6 +96,10 @@ import {
   Landmark,
   TestTube2,
   FolderOpen,
+  Crown,
+  Timer,
+  Mic,
+  Sparkles,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -180,6 +184,10 @@ const iconMap: Record<string, React.ReactNode> = {
   ShieldAlert: <ShieldAlert size={20} />,
   TestTube: <TestTube2 size={20} />,
   FolderOpen: <FolderOpen size={20} />,
+  Crown: <Crown size={20} />,
+  Timer: <Timer size={20} />,
+  Mic: <Mic size={20} />,
+  Sparkles: <Sparkles size={20} />,
 };
 
 // --- Notification Bell Component ---
