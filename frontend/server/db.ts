@@ -8,6 +8,10 @@ import { ensureGamificationProfile } from "./services/gamificationDispatcher";
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: ReturnType<typeof mysql2.createPool> | null = null;
 
+// LIGHTSPEED: Dedicated read pool for read/write splitting
+let _readPool: ReturnType<typeof mysql2.createPool> | null = null;
+let _readDb: ReturnType<typeof drizzle> | null = null;
+
 /**
  * Connection pool configuration for multi-user scale.
  * - connectionLimit: max concurrent connections (Azure MySQL default max = 300)
@@ -2211,8 +2215,48 @@ export function getPool() {
   return _pool?.promise() || null;
 }
 
+// LIGHTSPEED: Get dedicated read pool (falls back to primary if no read replica configured)
+export function getReadPool() {
+  return _readPool?.promise() || _pool?.promise() || null;
+}
+
+// LIGHTSPEED: Get Drizzle instance on read replica (falls back to primary)
+export async function getReadDb() {
+  if (_readDb) return _readDb;
+  // Initialize read pool if we have a read replica URL
+  const readUrl = process.env.DATABASE_READ_URL;
+  if (readUrl && !_readPool) {
+    try {
+      _readPool = mysql2.createPool({
+        uri: readUrl,
+        connectionLimit: 80,
+        waitForConnections: true,
+        queueLimit: 300,
+        idleTimeout: 60000,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 15000,
+        maxIdle: 20,
+        connectTimeout: 15000,
+      });
+      _readDb = drizzle(_readPool);
+      console.log("[LIGHTSPEED] ✓ Read replica pool initialized (limit: 80)");
+      return _readDb;
+    } catch (err: any) {
+      console.warn("[LIGHTSPEED] Read replica unavailable, using primary:", err.message?.slice(0, 80));
+    }
+  }
+  // Fallback to primary
+  return await getDb();
+}
+
 // Graceful shutdown — call on process exit
 export async function closeDb(): Promise<void> {
+  if (_readPool) {
+    await new Promise<void>((resolve) => { _readPool!.end(() => resolve()); });
+    _readPool = null;
+    _readDb = null;
+    console.log("[Database] Read replica pool closed");
+  }
   if (_pool) {
     await new Promise<void>((resolve, reject) => {
       _pool!.end((err) => { if (err) reject(err); else resolve(); });

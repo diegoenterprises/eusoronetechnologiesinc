@@ -31,6 +31,7 @@ import {
   runMonitoringJob,
   sendPendingAlerts,
 } from "../services/carrierMonitor";
+import { runPreComputePipeline } from "../services/lightspeed/preCompute";
 
 // ============================================================================
 // CONFIGURATION
@@ -74,6 +75,8 @@ function scheduleDailyEtl(): void {
   // census, authority, insurance, crashes, inspections, violations, OOS, BOC3, revocations
   cron.schedule("0 18 * * *", async () => {
     await withErrorHandling("Daily ETL (ALL daily datasets)", runDailyEtl);
+    // LIGHTSPEED: Post-ETL pre-computation pipeline (refresh MV, warm caches, push WS)
+    await withErrorHandling("LIGHTSPEED Post-ETL Pipeline", runPreComputePipeline);
   });
   
   console.log("[FMCSA Cron] ✓ Scheduled: Daily ETL at 12:00 PM CT (18:00 UTC) — all 9 daily datasets");
@@ -89,6 +92,8 @@ function scheduleMonthlyEtl(): void {
   // (SMS data is usually available by 15th)
   cron.schedule("30 18 16 * *", async () => {
     await withErrorHandling("Monthly ETL (SMS BASIC Scores)", runMonthlyEtl);
+    // LIGHTSPEED: Refresh MV after SMS scores update (risk scores change)
+    await withErrorHandling("LIGHTSPEED Post-SMS Pipeline", runPreComputePipeline);
   });
   
   console.log("[FMCSA Cron] ✓ Scheduled: Monthly ETL on 16th at 12:30 PM CT (18:30 UTC) — SMS scores");

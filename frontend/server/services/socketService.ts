@@ -62,6 +62,22 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
       socket.join(`role:${userRole.toLowerCase()}`);
     }
 
+    // ── LIGHTSPEED: Join carrier watch room ──
+    socket.on("carrier:watch", (dotNumber: string) => {
+      socket.join(`carrier:${dotNumber}`);
+    });
+    socket.on("carrier:unwatch", (dotNumber: string) => {
+      socket.leave(`carrier:${dotNumber}`);
+    });
+
+    // ── LIGHTSPEED: Join load board global room ──
+    socket.on("loadboard:join", () => {
+      socket.join("loadboard:global");
+    });
+    socket.on("loadboard:leave", () => {
+      socket.leave("loadboard:global");
+    });
+
     socket.on("disconnect", (reason) => {
       console.log(`[WS] Disconnected: ${socket.id} (${reason})`);
     });
@@ -177,4 +193,83 @@ export async function getLoadRoomSize(loadId: string): Promise<number> {
   const room = `load:${loadId}`;
   const sockets = await io.in(room).fetchSockets();
   return sockets.length;
+}
+
+// ═══════════════════════════════════════════════════════════
+// LIGHTSPEED — Real-time push events
+// ═══════════════════════════════════════════════════════════
+
+export interface CarrierSafetyChangeEvent {
+  dotNumber: string;
+  legalName: string;
+  field: string;
+  oldValue: string | number | null;
+  newValue: string | number | null;
+  severity: "CRITICAL" | "WARNING" | "INFO";
+  timestamp: string;
+}
+
+export interface LoadBoardUpdateEvent {
+  action: "new" | "removed" | "updated";
+  loadId: string;
+  loadNumber?: string;
+  status?: string;
+  timestamp: string;
+}
+
+export interface ETLProgressEvent {
+  dataset: string;
+  progress: number;
+  eta?: string;
+  status: "running" | "complete" | "failed";
+  timestamp: string;
+}
+
+/**
+ * LIGHTSPEED: Push carrier safety change to all watchers.
+ * Sent to: carrier room + fleet room + dispatch roles
+ */
+export function emitCarrierSafetyChange(event: CarrierSafetyChangeEvent): void {
+  if (!io) return;
+  io.to(`carrier:${event.dotNumber}`).emit("carrier:safety:changed", event);
+  io.to("role:dispatch").emit("carrier:safety:changed", event);
+  io.to("role:admin").emit("carrier:safety:changed", event);
+  io.to("role:broker").emit("carrier:safety:changed", event);
+  if (event.severity === "CRITICAL") {
+    io.to("role:super_admin").emit("carrier:safety:changed", event);
+  }
+}
+
+/**
+ * LIGHTSPEED: Push load board update to all viewers.
+ */
+export function emitLoadBoardUpdate(event: LoadBoardUpdateEvent): void {
+  if (!io) return;
+  io.to("loadboard:global").emit("loadboard:update", event);
+}
+
+/**
+ * LIGHTSPEED: Push ETL progress to admin users.
+ */
+export function emitETLProgress(event: ETLProgressEvent): void {
+  if (!io) return;
+  io.to("role:admin").emit("etl:progress", event);
+  io.to("role:super_admin").emit("etl:progress", event);
+}
+
+/**
+ * LIGHTSPEED: Push data refresh notification to all connected clients.
+ * Triggers React Query background refetch via SWR pattern.
+ */
+export function emitDataRefreshed(source: string): void {
+  if (!io) return;
+  io.emit("data:refreshed", { timestamp: new Date().toISOString(), source });
+}
+
+/**
+ * Get total connected client count.
+ */
+export function getConnectedCount(): number {
+  if (!io) return 0;
+  return io.engine?.clientsCount || 0;
 }

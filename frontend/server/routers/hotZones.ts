@@ -12,6 +12,7 @@ import { loads, hzZoneIntelligence, hzWeatherAlerts, hzFuelPrices, hzDataSyncLog
 import { getFromCache, setInCache } from "../services/cache/hotZonesCache";
 import { getFreshnessStatus } from "../services/cache/cacheConfig";
 import { getSmartCacheStats } from "../services/cache/smartCache";
+import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 import { syncOrchestrator } from "../services/sync/syncOrchestrator";
 import { dataEvents } from "../services/events/dataEventEmitter";
 
@@ -465,8 +466,24 @@ interface DbEnhancement {
   fmcsaTotalCensus: number;
 }
 async function getDbEnhancement(): Promise<DbEnhancement> {
-  // Return cached result if fresh (avoids re-running 5 heavy GROUP BY queries every poll)
+  // Layer 1: In-memory cache (fastest, single-instance)
   if (_dbEnhCache && Date.now() - _dbEnhCache.ts < DB_ENH_TTL) return _dbEnhCache.data;
+
+  // Layer 2: LIGHTSPEED Redis cache (distributed, cross-instance)
+  try {
+    const redisCached = await lsCacheThrough<DbEnhancement>("WARM", "hz:db_enhancement", async () => {
+      return await _fetchDbEnhancement();
+    }, 120); // 2min TTL in Redis
+    if (redisCached) {
+      _dbEnhCache = { data: redisCached, ts: Date.now() };
+      return redisCached;
+    }
+  } catch {}
+
+  return await _fetchDbEnhancement();
+}
+
+async function _fetchDbEnhancement(): Promise<DbEnhancement> {
 
   const result: DbEnhancement = {
     loadsByState: {}, totalPlatformLoads: 0, avgRateByState: {}, trucksByState: {},

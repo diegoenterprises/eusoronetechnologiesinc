@@ -11,6 +11,7 @@ import { getDb } from "../db";
 import { vehicles, geofences, users, loads, fuelTransactions, inspections, drivers } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { requireAccess } from "../services/security/rbac/access-check";
+import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 
 const vehicleStatusSchema = z.enum(["active", "maintenance", "out_of_service", "retired"]);
 const vehicleTypeSchema = z.enum(["truck", "trailer", "tanker", "flatbed", "reefer"]);
@@ -63,29 +64,32 @@ export const fleetRouter = router({
     .query(async ({ ctx }) => {
       await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'GEOFENCE' }, (ctx as any).req);
       const db = await getDb();
-      if (!db) {
-        return { total: 0, terminals: 0, yards: 0, hubs: 0, alertsEnabled: 0, active: 0, alertsToday: 0, vehiclesInside: 0 };
-      }
+      const fallback = { total: 0, terminals: 0, yards: 0, hubs: 0, alertsEnabled: 0, active: 0, alertsToday: 0, vehiclesInside: 0 };
+      if (!db) return fallback;
 
+      const companyId = ctx.user?.companyId || 0;
+
+      // LIGHTSPEED: Redis distributed cache (5min TTL, company-scoped)
       try {
-        const companyId = ctx.user?.companyId || 0;
-        const [total] = await db.select({ count: sql<number>`count(*)` }).from(geofences).where(eq(geofences.companyId, companyId));
-        const [terminals] = await db.select({ count: sql<number>`count(*)` }).from(geofences).where(and(eq(geofences.companyId, companyId), eq(geofences.type, 'terminal')));
-        const [active] = await db.select({ count: sql<number>`count(*)` }).from(geofences).where(and(eq(geofences.companyId, companyId), eq(geofences.isActive, true)));
+        return await lsCacheThrough("AGGREGATE", `fleet:geofence_stats:${companyId}`, async () => {
+          const [total] = await db.select({ count: sql<number>`count(*)` }).from(geofences).where(eq(geofences.companyId, companyId));
+          const [terminals] = await db.select({ count: sql<number>`count(*)` }).from(geofences).where(and(eq(geofences.companyId, companyId), eq(geofences.type, 'terminal')));
+          const [active] = await db.select({ count: sql<number>`count(*)` }).from(geofences).where(and(eq(geofences.companyId, companyId), eq(geofences.isActive, true)));
 
-        return {
-          total: total?.count || 0,
-          terminals: terminals?.count || 0,
-          yards: 0,
-          hubs: 0,
-          alertsEnabled: active?.count || 0,
-          active: active?.count || 0,
-          alertsToday: 0,
-          vehiclesInside: 0,
-        };
+          return {
+            total: total?.count || 0,
+            terminals: terminals?.count || 0,
+            yards: 0,
+            hubs: 0,
+            alertsEnabled: active?.count || 0,
+            active: active?.count || 0,
+            alertsToday: 0,
+            vehiclesInside: 0,
+          };
+        }, 300); // 5min TTL
       } catch (error) {
         console.error('[Fleet] getGeofenceStats error:', error);
-        return { total: 0, terminals: 0, yards: 0, hubs: 0, alertsEnabled: 0, active: 0, alertsToday: 0, vehiclesInside: 0 };
+        return fallback;
       }
     }),
 

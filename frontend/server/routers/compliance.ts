@@ -14,6 +14,7 @@ import { eq, and, desc, asc, sql, gte, lte, or, isNotNull, count } from "drizzle
 import { fmcsaService } from "../services/fmcsa";
 import { clearinghouseService } from "../services/clearinghouse";
 import { requireAccess } from "../services/security/rbac/access-check";
+import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 
 const documentStatusSchema = z.enum(["valid", "expiring_soon", "expired", "missing"]);
 const complianceCategorySchema = z.enum(["dq_file", "hos", "drug_alcohol", "vehicle", "hazmat", "documentation"]);
@@ -88,58 +89,58 @@ export const complianceRouter = router({
     .query(async ({ ctx }) => {
       await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'COMPLIANCE_RECORD' }, (ctx as any).req);
       const db = await getDb();
-      if (!db) {
-        return { complianceScore: 0, overallScore: 0, expiringDocs: 0, overdueItems: 0, pendingAudits: 0, violations: 0, trend: "stable", expiring: 0, compliant: 0, nonCompliant: 0 };
-      }
+      const fallback = { complianceScore: 0, overallScore: 0, expiringDocs: 0, overdueItems: 0, pendingAudits: 0, violations: 0, trend: "stable", expiring: 0, compliant: 0, nonCompliant: 0 };
+      if (!db) return fallback;
 
+      const companyId = ctx.user?.companyId || 0;
+
+      // LIGHTSPEED: Redis distributed cache (5min TTL, company-scoped)
       try {
-        const companyId = ctx.user?.companyId || 0;
-        const now = new Date();
-        const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        return await lsCacheThrough("AGGREGATE", `compliance:dash:${companyId}`, async () => {
+          const now = new Date();
+          const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-        // Get drivers with their compliance status
-        const [totalDrivers] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, companyId));
-        
-        // Get expiring documents (within 30 days)
-        const [expiringDocs] = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(documents)
-          .where(and(
-            sql`${documents.expiryDate} IS NOT NULL`,
-            gte(documents.expiryDate, now),
-            lte(documents.expiryDate, thirtyDaysFromNow)
-          ));
+          const [totalDrivers] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, companyId));
+          
+          const [expiringDocs] = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(documents)
+            .where(and(
+              sql`${documents.expiryDate} IS NOT NULL`,
+              gte(documents.expiryDate, now),
+              lte(documents.expiryDate, thirtyDaysFromNow)
+            ));
 
-        // Get expired documents
-        const [expiredDocs] = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(documents)
-          .where(and(
-            sql`${documents.expiryDate} IS NOT NULL`,
-            lte(documents.expiryDate, now)
-          ));
+          const [expiredDocs] = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(documents)
+            .where(and(
+              sql`${documents.expiryDate} IS NOT NULL`,
+              lte(documents.expiryDate, now)
+            ));
 
-        const total = totalDrivers?.count || 0;
-        const expired = expiredDocs?.count || 0;
-        const expiring = expiringDocs?.count || 0;
-        const compliant = Math.max(0, total - expired);
-        const score = total > 0 ? Math.round((compliant / total) * 100) : 100;
+          const total = totalDrivers?.count || 0;
+          const expired = expiredDocs?.count || 0;
+          const expiring = expiringDocs?.count || 0;
+          const compliant = Math.max(0, total - expired);
+          const score = total > 0 ? Math.round((compliant / total) * 100) : 100;
 
-        return {
-          complianceScore: score,
-          overallScore: score,
-          expiringDocs: expiring,
-          overdueItems: expired,
-          pendingAudits: 0,
-          violations: 0,
-          trend: "stable",
-          expiring,
-          compliant,
-          nonCompliant: expired,
-        };
+          return {
+            complianceScore: score,
+            overallScore: score,
+            expiringDocs: expiring,
+            overdueItems: expired,
+            pendingAudits: 0,
+            violations: 0,
+            trend: "stable" as const,
+            expiring,
+            compliant,
+            nonCompliant: expired,
+          };
+        }, 300); // 5min TTL
       } catch (error) {
         console.error('[Compliance] getDashboardStats error:', error);
-        return { complianceScore: 0, overallScore: 0, expiringDocs: 0, overdueItems: 0, pendingAudits: 0, violations: 0, trend: "stable", expiring: 0, compliant: 0, nonCompliant: 0 };
+        return fallback;
       }
     }),
 

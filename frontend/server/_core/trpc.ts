@@ -380,3 +380,25 @@ export const isolatedComplianceProcedure = isolatedRoleProcedure(ROLES.COMPLIANC
 export const isolatedSafetyProcedure = isolatedRoleProcedure(ROLES.SAFETY_MANAGER);
 export const isolatedOperationsProcedure = isolatedRoleProcedure(ROLES.SHIPPER, ROLES.CATALYST, ROLES.BROKER, ROLES.DISPATCH);
 export const isolatedTerminalShipperProcedure = isolatedRoleProcedure(ROLES.TERMINAL_MANAGER, ROLES.SHIPPER, ROLES.BROKER, ROLES.CATALYST);
+
+// =============================================================================
+// LIGHTSPEED CACHE MIDDLEWARE
+// Automatically caches ALL query results with intelligent per-router TTLs.
+// Imported and wired at the tRPC level so every endpoint benefits.
+// =============================================================================
+
+let _lightspeedMiddleware: ReturnType<typeof t.middleware> | null = null;
+
+export function getLightspeedMiddleware() {
+  if (!_lightspeedMiddleware) {
+    try {
+      const { buildLightspeedCacheMiddleware } = require("../middleware/lightspeedCache");
+      _lightspeedMiddleware = buildLightspeedCacheMiddleware(t);
+    } catch (e) {
+      console.warn("[LIGHTSPEED] Cache middleware failed to load:", e);
+      // Passthrough middleware — no caching
+      _lightspeedMiddleware = t.middleware(async (opts: any) => opts.next());
+    }
+  }
+  return _lightspeedMiddleware;
+}

@@ -29,6 +29,7 @@ import {
 } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte, count, sum } from "drizzle-orm";
 import { getSafetyScores, getCrashSummary, getInsuranceStatus, getAuthority, getOOSStatus } from "../services/fmcsaBulkLookup";
+import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 
 // Helper to get date ranges
 const getDateRange = (days: number) => {
@@ -54,30 +55,34 @@ export const dashboardRouter = router({
     const userId = ctx.user?.id || 0;
     const companyId = ctx.user?.companyId || 0;
 
+    // LIGHTSPEED: Redis distributed cache (2min TTL, user-scoped)
+    const cacheKey = `dash:stats:${role}:${userId}:${companyId}`;
     try {
-      switch (role) {
-        case 'SHIPPER':
-          return await getShipperStats(db, userId);
-        case 'CATALYST':
-          return await getCatalystStats(db, companyId);
-        case 'BROKER':
-          return await getBrokerStats(db, userId);
-        case 'DRIVER':
-          return await getDriverStats(db, userId);
-        case 'DISPATCH':
-          return await getDispatchStats(db, companyId);
-        case 'TERMINAL_MANAGER':
-          return await getTerminalStats(db, companyId);
-        case 'COMPLIANCE_OFFICER':
-          return await getComplianceStats(db, companyId);
-        case 'SAFETY_MANAGER':
-          return await getSafetyStats(db, companyId);
-        case 'ADMIN':
-        case 'SUPER_ADMIN':
-          return await getAdminStats(db);
-        default:
-          return getSeedStats(role);
-      }
+      return await lsCacheThrough("AGGREGATE", cacheKey, async () => {
+        switch (role) {
+          case 'SHIPPER':
+            return await getShipperStats(db, userId);
+          case 'CATALYST':
+            return await getCatalystStats(db, companyId);
+          case 'BROKER':
+            return await getBrokerStats(db, userId);
+          case 'DRIVER':
+            return await getDriverStats(db, userId);
+          case 'DISPATCH':
+            return await getDispatchStats(db, companyId);
+          case 'TERMINAL_MANAGER':
+            return await getTerminalStats(db, companyId);
+          case 'COMPLIANCE_OFFICER':
+            return await getComplianceStats(db, companyId);
+          case 'SAFETY_MANAGER':
+            return await getSafetyStats(db, companyId);
+          case 'ADMIN':
+          case 'SUPER_ADMIN':
+            return await getAdminStats(db);
+          default:
+            return getSeedStats(role);
+        }
+      }, 120); // 2min TTL
     } catch (error) {
       console.error('[Dashboard] Stats query failed:', error);
       return getSeedStats(role);

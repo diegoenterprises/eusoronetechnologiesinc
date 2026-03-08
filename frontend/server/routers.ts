@@ -191,6 +191,7 @@ import { taskDecompositionRouter } from "./routers/taskDecomposition";
 import { dataStoreRouter } from "./routers/dataStore";
 import { resourceBroadcastsRouter } from "./routers/resourceBroadcasts";
 import { optimizationPipelineRouter } from "./routers/optimizationPipeline";
+import { lightspeedRouter } from "./routers/lightspeed";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -1317,6 +1318,9 @@ export const appRouter = router({
   dataStore: dataStoreRouter,
   resourceBroadcasts: resourceBroadcastsRouter,
   optimizationPipeline: optimizationPipelineRouter,
+
+  // Project LIGHTSPEED — Sub-100ms data acceleration stack
+  lightspeed: lightspeedRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,

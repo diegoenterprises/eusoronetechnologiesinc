@@ -11,7 +11,20 @@ import "./index.css";
 import "./styles/theme-dark-premium.css";
 import "./styles/theme-light.css";
 
-const queryClient = new QueryClient();
+// LIGHTSPEED: React Query SWR configuration for sub-100ms perceived loads
+// Data stays "fresh" for 5 min (no refetch), then serves stale while revalidating in background
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,        // 5 min — data is "fresh", no refetch
+      gcTime: 30 * 60 * 1000,           // 30 min — keep unused data in cache
+      refetchOnWindowFocus: false,       // Don't refetch on tab switch
+      refetchOnReconnect: "always",      // Always refetch after disconnect
+      retry: 1,                          // Fast fail — don't retry 3x
+      retryDelay: 500,                   // Quick retry
+    },
+  },
+});
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;

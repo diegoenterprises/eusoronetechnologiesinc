@@ -8,6 +8,7 @@ import { z } from "zod";
 import { sql, eq, and, desc } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 
 const NWS_BASE = "https://api.weather.gov";
 const NWS_UA = process.env.NWS_USER_AGENT || "EusoTrip/2.0 (contact@eusoro.com)";
@@ -21,23 +22,24 @@ async function nwsFetch(url: string, timeoutMs = 8000): Promise<any> {
   return res.json();
 }
 
-// Geocode city/state → lat/lng via NWS points API (returns forecast URLs)
+// LIGHTSPEED: Cache NWS point lookups (geocoding is slow, results are static)
 async function getNwsPoint(city: string, state: string) {
-  // Use a simple geocoding approach: NWS doesn't have city lookup,
-  // so we try the nominatim OSM geocoder as fallback
+  const cacheKey = `wx:point:${city.toLowerCase()}:${state.toLowerCase()}`;
   try {
-    const geo = await fetch(
-      `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}&country=US&format=json&limit=1`,
-      { headers: { "User-Agent": NWS_UA }, signal: AbortSignal.timeout(5000) }
-    );
-    const results = await geo.json();
-    if (results?.[0]) {
-      const { lat, lon } = results[0];
-      const point = await nwsFetch(`${NWS_BASE}/points/${parseFloat(lat).toFixed(4)},${parseFloat(lon).toFixed(4)}`);
-      return point.properties;
-    }
-  } catch { /* geocoding failed */ }
-  return null;
+    return await lsCacheThrough("WARM", cacheKey, async () => {
+      const geo = await fetch(
+        `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}&country=US&format=json&limit=1`,
+        { headers: { "User-Agent": NWS_UA }, signal: AbortSignal.timeout(5000) }
+      );
+      const results = await geo.json();
+      if (results?.[0]) {
+        const { lat, lon } = results[0];
+        const point = await nwsFetch(`${NWS_BASE}/points/${parseFloat(lat).toFixed(4)},${parseFloat(lon).toFixed(4)}`);
+        return point.properties;
+      }
+      return null;
+    }, 3600); // 1 hour — geocode results don't change
+  } catch { return null; }
 }
 
 export const weatherRouter = router({

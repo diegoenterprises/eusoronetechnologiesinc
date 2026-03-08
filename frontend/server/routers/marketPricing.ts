@@ -17,6 +17,7 @@ import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 import { desc, sql, eq, and, gte, lte } from "drizzle-orm";
 import { fetchMarketSnapshot, type MarketSnapshot, searchCommodityPriceAPI, searchYahooFinance, fetchCommodityPriceAPI, fetchCPAPIHistorical, fetchAllCPAPIQuotes, CPAPI_SYMBOL_MAP } from "../services/marketDataService";
+import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 
 // Cached live snapshot (shared across endpoints)
 let _liveSnapshot: MarketSnapshot | null = null;
@@ -24,6 +25,15 @@ let _liveSnapshotAt = 0;
 async function getLiveSnapshot(): Promise<MarketSnapshot | null> {
   if (_liveSnapshot && Date.now() - _liveSnapshotAt < 30 * 1000) return _liveSnapshot;
   try {
+    // LIGHTSPEED: Redis distributed cache (45s TTL) with in-memory fallback
+    const snapshot = await lsCacheThrough<MarketSnapshot>("HOT", "mkt:live_snapshot", async () => {
+      return await fetchMarketSnapshot();
+    }, 45);
+    if (snapshot) {
+      _liveSnapshot = snapshot;
+      _liveSnapshotAt = Date.now();
+      return snapshot;
+    }
     _liveSnapshot = await fetchMarketSnapshot();
     _liveSnapshotAt = Date.now();
     return _liveSnapshot;
