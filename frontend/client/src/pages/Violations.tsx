@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into compliance/RegulatoryIntelligence.tsx (Violations tab). Remove after migration verification.
  * VIOLATIONS PAGE - Compliance Officer
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

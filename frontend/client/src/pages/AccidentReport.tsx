@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into safety/IncidentManagement.tsx (Accident Reports tab). Remove after migration verification.
  * ACCIDENT REPORT PAGE
  * 100% Dynamic - No mock data
  */

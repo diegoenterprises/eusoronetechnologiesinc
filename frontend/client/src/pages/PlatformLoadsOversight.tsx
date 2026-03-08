@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into admin/PlatformOversight.tsx (Loads tab). Remove after migration verification.
  * PLATFORM LOADS OVERSIGHT — Super Admin view of ALL loads on the platform
  * Not a shipper's "My Loads" — this is the overseer's view of every load lifecycle
  */

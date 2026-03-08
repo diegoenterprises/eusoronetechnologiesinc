@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into safety/SafetyCommandCenter.tsx (Metrics tab). Remove after migration verification.
  * SAFETY METRICS PAGE - Safety Manager
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

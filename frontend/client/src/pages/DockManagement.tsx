@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/DockHub.tsx (Dock Management tab). Remove after migration verification.
  * DOCK MANAGEMENT
  * Jony Ive design language — every element intentional, every pixel purposeful.
  *

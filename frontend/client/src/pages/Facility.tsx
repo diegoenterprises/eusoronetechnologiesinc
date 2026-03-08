@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/FacilityHub.tsx (Terminal Profile tab). Remove after migration verification.
  * TERMINAL PROFILE
  * Jony Ive design language — every element intentional, every pixel purposeful.
  *

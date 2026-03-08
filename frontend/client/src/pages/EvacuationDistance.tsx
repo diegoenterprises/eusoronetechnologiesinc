@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into driver/EmergencyResponse.tsx (Evacuation Distances tab). Remove after migration verification.
  * EVACUATION DISTANCE PAGE
  * Driver-facing hazmat evacuation distance reference from ERG green pages.
  * Shows initial isolation and protective action distances by hazard class,

@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/FacilityHub.tsx (Partners tab). Remove after migration verification.
  * TERMINAL PARTNERS — Supply Chain Management
  * 
  * Terminal Manager view of all shippers, marketers, brokers, and transporters

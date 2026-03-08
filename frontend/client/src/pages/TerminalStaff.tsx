@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/FacilityHub.tsx (Staff tab). Remove after migration verification.
  * ACCESS CONTROLLERS PAGE — Role-Aware
  * Terminal Managers: oil terminal gate/rack/bay staff
  * Shippers/Marketers: warehouse, dock, yard, cold storage, distribution center staff

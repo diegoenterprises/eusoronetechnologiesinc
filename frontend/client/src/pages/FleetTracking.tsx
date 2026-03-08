@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into carrier/FleetHub.tsx (Live Tracking tab). Remove after migration verification.
  * FLEET TRACKING — Premium Real-Time Fleet Intelligence
  * Jony Ive-inspired: frosted glass, purposeful motion, clean data.
  * 100% Dynamic — tRPC with 10s live polling.

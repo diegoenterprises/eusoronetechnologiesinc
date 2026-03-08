@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into compliance/DriverQualification.tsx (Drug & Alcohol tab). Remove after migration verification.
  * DRUG & ALCOHOL TESTING PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

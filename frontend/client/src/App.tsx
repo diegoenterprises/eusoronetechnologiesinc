@@ -366,6 +366,20 @@ const DTNSyncDashboard = lazy(() => import("./pages/DTNSyncDashboard"));
 const IntegrationsPortal = lazy(() => import("./pages/IntegrationsPortal"));
 // IntegrationKeys fused into IntegrationsPortal
 const AccessorialManagement = lazy(() => import("./pages/AccessorialManagement"));
+// ── Page Consolidation: 14 new tabbed parent pages ──────────────────────────
+const SafetyCommandCenter = lazy(() => import("./pages/safety/SafetyCommandCenter"));
+const IncidentManagement = lazy(() => import("./pages/safety/IncidentManagement"));
+const SystemHealth = lazy(() => import("./pages/admin/SystemHealth"));
+const PlatformOversight = lazy(() => import("./pages/admin/PlatformOversight"));
+const ShippingPapersHub = lazy(() => import("./pages/compliance/ShippingPapers"));
+const DriverQualification = lazy(() => import("./pages/compliance/DriverQualification"));
+const RegulatoryIntelligence = lazy(() => import("./pages/compliance/RegulatoryIntelligence"));
+const VehicleInspectionHub = lazy(() => import("./pages/driver/VehicleInspection"));
+const EmergencyResponse = lazy(() => import("./pages/driver/EmergencyResponse"));
+const TerminalHub = lazy(() => import("./pages/terminal/TerminalHub"));
+const DockHub = lazy(() => import("./pages/terminal/DockHub"));
+const FacilityHub = lazy(() => import("./pages/terminal/FacilityHub"));
+const FleetHub = lazy(() => import("./pages/carrier/FleetHub"));
 
 function Router() {
   // Role constants for route protection
@@ -843,6 +857,23 @@ function Router() {
       {/* ACTIVE TRIP — Driver's real-time command center */}
       {/* ============================================ */}
       <Route path={"/active-trip"} component={guard(ALL, <ActiveTrip />)} />
+
+      {/* ============================================ */}
+      {/* CONSOLIDATED PAGES (Tabbed Parent Pages) */}
+      {/* ============================================ */}
+      <Route path={"/safety/command-center"} component={guard(SAFE, <SafetyCommandCenter />)} />
+      <Route path={"/safety/incident-management"} component={guard(SAFE, <IncidentManagement />)} />
+      <Route path={"/admin/system-health"} component={guard(SUPR, <SystemHealth />)} />
+      <Route path={"/admin/platform-oversight"} component={guard(SUPR, <PlatformOversight />)} />
+      <Route path={"/compliance/shipping-papers"} component={guard([...COMP, ...CARR, ...SHIP, "TERMINAL_MANAGER"], <ShippingPapersHub />)} />
+      <Route path={"/compliance/driver-qualification"} component={guard([...COMP, ...SAFE, ...CARR], <DriverQualification />)} />
+      <Route path={"/compliance/regulatory-intelligence"} component={guard([...COMP, ...SAFE, ...CARR], <RegulatoryIntelligence />)} />
+      <Route path={"/driver/vehicle-inspection"} component={guard(DRIV, <VehicleInspectionHub />)} />
+      <Route path={"/driver/emergency-response"} component={guard(DRIV, <EmergencyResponse />)} />
+      <Route path={"/terminal/hub"} component={guard(TERM, <TerminalHub />)} />
+      <Route path={"/terminal/dock-hub"} component={guard(TERM, <DockHub />)} />
+      <Route path={"/terminal/facility-hub"} component={guard([...TERM, ...SHIP, ...CARR, ...BROK], <FacilityHub />)} />
+      <Route path={"/carrier/fleet-hub"} component={guard([...CARR, "DISPATCH"], <FleetHub />)} />
 
       {/* ============================================ */}
       {/* FALLBACK */}

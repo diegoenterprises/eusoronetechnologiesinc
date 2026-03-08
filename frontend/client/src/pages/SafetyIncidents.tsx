@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into safety/IncidentManagement.tsx (All Incidents tab). Remove after migration verification.
  * SAFETY INCIDENTS PAGE - Safety Manager
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

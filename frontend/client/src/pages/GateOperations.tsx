@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/DockHub.tsx (Gate Operations tab). Remove after migration verification.
  * GATE OPERATIONS
  * Jony Ive design language — every element intentional, every pixel purposeful.
  *

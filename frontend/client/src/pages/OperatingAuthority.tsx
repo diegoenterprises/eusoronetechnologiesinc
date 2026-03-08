@@ -1,3 +1,6 @@
+/**
+ * @deprecated — consolidated into compliance/RegulatoryIntelligence.tsx (Operating Authority tab). Remove after migration verification.
+ */
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

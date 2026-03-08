@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/DockHub.tsx (Loading Bays tab). Remove after migration verification.
  * LOADING BAYS PAGE - Terminal Manager
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

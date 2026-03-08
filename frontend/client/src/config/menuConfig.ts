@@ -183,8 +183,8 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Vehicles, tracking & live trips",
       children: [
+        { icon: "LayoutDashboard", label: "Fleet Hub", path: "/carrier/fleet-hub", badge: 0, description: "Fleet tracking, overview, management & command center" },
         { icon: "ShieldCheck", label: "Insurance Verification", path: "/insurance/verification", badge: 0, description: "AI document scanning & FMCSA cross-verification" },
-        { icon: "MapPin", label: "Fleet Tracking", path: "/fleet-tracking", badge: 0, description: "Real-time fleet GPS tracking" },
         { icon: "Siren", label: "Active Trip", path: "/active-trip", badge: 0, description: "Real-time trip dashboard, SOS & ZEUN" },
       ],
     },
@@ -826,11 +826,10 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Operations",
       path: "/appointments",
       badge: 0,
-      description: "Appointments, gate & dock management",
+      description: "Terminal hub, dock & gate operations",
       children: [
-        { icon: "CalendarDays", label: "Appointments", path: "/appointments", badge: 0, description: "Schedule & manage facility appointments" },
-        { icon: "Shield", label: "Gate Operations", path: "/gate", badge: 0, description: "Check-in, verify & route trucks" },
-        { icon: "Container", label: "Dock Management", path: "/docks", badge: 0, description: "Bay status, assignment & loading operations" },
+        { icon: "LayoutDashboard", label: "Terminal Hub", path: "/terminal/hub", badge: 0, description: "Dashboard, scheduling, inventory, SCADA & appointments" },
+        { icon: "Container", label: "Dock Hub", path: "/terminal/dock-hub", badge: 0, description: "Dock management, bay assignment, loading & gate ops" },
       ],
     },
     {
@@ -848,10 +847,10 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
     {
       icon: "Building2",
-      label: "Terminal Profile",
-      path: "/facility",
+      label: "Facility Hub",
+      path: "/terminal/facility-hub",
       badge: 0,
-      description: "Identity, compliance, operations & SpectraMatch"
+      description: "Terminal profile, facilities, staff & partnerships"
     },
     {
       icon: "Fuel",
@@ -958,7 +957,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Monitoring, violations, audits & calendar",
       children: [
         { icon: "Shield", label: "Compliance", path: "/compliance", badge: 0, description: "Regulatory compliance monitoring" },
-        { icon: "AlertTriangle", label: "Violations", path: "/violations", badge: 0, description: "Compliance violations" },
+        { icon: "AlertTriangle", label: "Regulatory Intelligence", path: "/compliance/regulatory-intelligence", badge: 0, description: "Violations, IFTA, MVR, SAFER & operating authority" },
         { icon: "CheckCircle", label: "Audits", path: "/audits", badge: 0, description: "Compliance audits" },
         { icon: "CalendarDays", label: "Compliance Calendar", path: "/compliance/calendar", badge: 0, description: "Expiration tracking & renewal deadlines" },
       ],
@@ -981,7 +980,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Clearinghouse",
       path: "/compliance/clearinghouse",
       badge: 0,
-      description: "FMCSA Drug & Alcohol Clearinghouse"
+      description: "FMCSA Drug & Alcohol Clearinghouse",
+      children: [
+        { icon: "Database", label: "Clearinghouse", path: "/compliance/clearinghouse", badge: 0, description: "FMCSA Drug & Alcohol Clearinghouse" },
+        { icon: "UserCheck", label: "Driver Qualification", path: "/compliance/driver-qualification", badge: 0, description: "CDL, drug/alcohol testing & background checks" },
+      ],
     },
     {
       icon: "Handshake",
@@ -1060,7 +1063,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "GraduationCap", label: "Training", path: "/safety/training", badge: 0, description: "Safety training programs" },
         { icon: "Users", label: "Safety Meetings", path: "/safety/meetings", badge: 0, description: "Schedule & document safety meetings" },
         { icon: "ClipboardCheck", label: "Inspections", path: "/safety/inspections", badge: 0, description: "Vehicle & facility inspections" },
-        { icon: "AlertTriangle", label: "Incidents", path: "/safety/incidents", badge: 0, description: "Incident reports & investigations" },
+        { icon: "AlertTriangle", label: "Incidents", path: "/safety/incident-management", badge: 0, description: "Incident reports, accidents & investigations" },
       ],
     },
     {
@@ -1071,7 +1074,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Safety scores & drug/alcohol testing",
       children: [
         { icon: "BarChart3", label: "Safety Scores", path: "/safety/scores", badge: 0, description: "CSA scores & safety metrics" },
-        { icon: "TestTube", label: "Drug & Alcohol", path: "/safety/drug-testing", badge: 0, description: "Testing programs & results" },
+        { icon: "TestTube", label: "Drug & Alcohol", path: "/compliance/driver-qualification", badge: 0, description: "CDL, drug/alcohol testing & background checks" },
       ],
     },
     {
@@ -1249,9 +1252,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Loads, claims, support & mechanics",
       children: [
-        { icon: "Package", label: "Loads", path: "/super-admin/loads", badge: 0, description: "All platform loads — status, disputes, lifecycle" },
-        { icon: "AlertTriangle", label: "Claims & Disputes", path: "/super-admin/claims", badge: 0, description: "Active claims, disputes & resolutions" },
-        { icon: "HelpCircle", label: "Support Tickets", path: "/super-admin/support", badge: 0, description: "User support requests & issue resolution" },
+        { icon: "Package", label: "Platform Oversight", path: "/admin/platform-oversight", badge: 0, description: "All loads, claims & support in one view" },
         { icon: "Wrench", label: "ZEUN Mechanics", path: "/admin/zeun", badge: 0, description: "Breakdown reports, diagnostics & repairs" },
       ],
     },
@@ -1288,7 +1289,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Security, database & configuration",
       children: [
         { icon: "Shield", label: "Security", path: "/super-admin/security", badge: 0, description: "Security settings & threat monitoring" },
-        { icon: "Database", label: "Database", path: "/super-admin/database", badge: 0, description: "Database health & management" },
+        { icon: "Database", label: "System Health", path: "/admin/system-health", badge: 0, description: "Database, platform health & system status" },
         { icon: "Settings", label: "Platform Config", path: "/super-admin/settings", badge: 0, description: "System settings & configuration" },
       ],
     },

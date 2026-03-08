@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into compliance/RegulatoryIntelligence.tsx (SAFER tab). Remove after migration verification.
  * SAFER LOOKUP PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

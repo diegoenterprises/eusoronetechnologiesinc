@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/TerminalHub.tsx (Inventory tab). Remove after migration verification.
  * TERMINAL INVENTORY PAGE - Terminal Manager
  * 100% Dynamic - No mock data
  * Tank levels, commodity tracking, SCADA integration

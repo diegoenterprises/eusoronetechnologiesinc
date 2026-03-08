@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/FacilityHub.tsx (My Terminals tab). Remove after migration verification.
  * MY TERMINALS — Shipper/Marketer Terminal Access View
  * 
  * Shows which terminals this shipper/marketer has active partnerships with.

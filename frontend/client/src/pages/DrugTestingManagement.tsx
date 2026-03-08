@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into compliance/DriverQualification.tsx (Testing Mgmt tab). Remove after migration verification.
  * DRUG TESTING MANAGEMENT PAGE
  * Frontend for drugTesting router — DOT drug/alcohol testing compliance,
  * random pool management, scheduling, results, and Clearinghouse queries.

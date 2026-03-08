@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into driver/EmergencyResponse.tsx (Fire Response tab). Remove after migration verification.
  * FIRE RESPONSE PAGE
  * Driver-facing hazmat fire emergency response guide.
  * Class-specific fire suppression guidance from ERG orange pages.

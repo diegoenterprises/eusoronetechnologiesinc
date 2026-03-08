@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/TerminalHub.tsx (SCADA tab). Remove after migration verification.
  * TERMINAL SCADA DASHBOARD
  * Real-time terminal operations and SCADA monitoring
  * Based on 07_TERMINAL_MANAGER_USER_JOURNEY.md

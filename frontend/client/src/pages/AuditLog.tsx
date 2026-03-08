@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into AuditLogsPage.tsx (Activity Log tab, inline detail expansion). Remove after migration verification.
  * AuditLog Page
  * Single audit log entry view
  */

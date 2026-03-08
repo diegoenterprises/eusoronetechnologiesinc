@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into admin/SystemHealth.tsx (System Status tab). Remove after migration verification.
  * SYSTEM STATUS PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

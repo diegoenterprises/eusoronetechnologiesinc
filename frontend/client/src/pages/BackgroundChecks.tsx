@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into compliance/DriverQualification.tsx (Background Checks tab). Remove after migration verification.
  * BACKGROUND CHECKS PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

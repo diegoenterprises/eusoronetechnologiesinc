@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/TerminalHub.tsx (Dashboard tab). Remove after migration verification.
  * TERMINAL COMMAND CENTER
  * Integration-powered dashboard: OPIS rack pricing, Genscape supply intel,
  * Enverus crude benchmarks, TAS connection status — all woven into

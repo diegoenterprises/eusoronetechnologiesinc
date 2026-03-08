@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into carrier/FleetHub.tsx (Fleet Overview tab). Remove after migration verification.
  * FLEET OVERVIEW PAGE
  * 100% Dynamic - No mock data
  */

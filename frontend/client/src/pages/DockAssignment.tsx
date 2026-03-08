@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/DockHub.tsx (Dock Assignment tab). Remove after migration verification.
  * DOCK ASSIGNMENT PAGE
  * Driver-facing dock/bay assignment screen for loading/unloading.
  * Shows assigned dock number, position instructions, wait time,

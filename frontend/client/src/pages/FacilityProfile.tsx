@@ -1,3 +1,6 @@
+/**
+ * @deprecated — consolidated into terminal/FacilityHub.tsx (Facility Details tab). Remove after migration verification.
+ */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useParams } from "wouter";

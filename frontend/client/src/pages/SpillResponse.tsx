@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into driver/EmergencyResponse.tsx (Spill Response tab). Remove after migration verification.
  * SPILL RESPONSE PAGE
  * Driver-facing hazmat emergency spill response guide.
  * Step-by-step protocol for hazardous material spills per 49 CFR 171.15/171.16.

@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into compliance/RegulatoryIntelligence.tsx (MVR Reports tab). Remove after migration verification.
  * MVR REPORTS PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

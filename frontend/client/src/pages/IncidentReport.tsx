@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into safety/IncidentManagement.tsx (Quick Report tab). Remove after migration verification.
  * INCIDENT REPORT PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into compliance/RegulatoryIntelligence.tsx (NRC tab). Remove after migration verification.
  * NRC REPORT PAGE
  * National Response Center hazmat incident reporting screen.
  * Guides drivers through the mandatory NRC phone report (49 CFR 171.15)

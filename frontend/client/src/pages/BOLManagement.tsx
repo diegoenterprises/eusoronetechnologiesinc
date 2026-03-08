@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into compliance/ShippingPapers.tsx (Manage BOLs tab). Remove after migration verification.
  * BOL MANAGEMENT PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

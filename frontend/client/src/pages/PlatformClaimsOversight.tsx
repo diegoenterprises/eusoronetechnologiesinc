@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into admin/PlatformOversight.tsx (Claims & Disputes tab). Remove after migration verification.
  * PLATFORM CLAIMS & DISPUTES OVERSIGHT — Super Admin view of ALL claims/disputes
  */
 import React, { useState } from "react";

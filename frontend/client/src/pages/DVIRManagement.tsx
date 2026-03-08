@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into driver/VehicleInspection.tsx (DVIR Management tab). Remove after migration verification.
  * DVIR MANAGEMENT PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

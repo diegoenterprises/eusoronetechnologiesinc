@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into compliance/DriverQualification.tsx (CDL Verification tab). Remove after migration verification.
  * CDL VERIFICATION PAGE
  * Driver-facing screen for viewing and managing Commercial Driver's License
  * verification status. Shows CDL details, endorsements, expiration timeline,

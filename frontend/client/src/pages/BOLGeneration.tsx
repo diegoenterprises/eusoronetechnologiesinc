@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into compliance/ShippingPapers.tsx (Generate BOL tab). Remove after migration verification.
  * BOL GENERATION PAGE - Terminal Manager
  * 100% Dynamic - No mock data
  * Bill of Lading generation and management

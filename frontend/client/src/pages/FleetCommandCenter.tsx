@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into carrier/FleetHub.tsx (Command Center tab). Remove after migration verification.
  * FLEET & WORKFORCE COMMAND CENTER
  * Unified vehicles + drivers hub for catalysts.
  */

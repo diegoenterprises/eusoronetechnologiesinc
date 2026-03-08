@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into AuditLogsPage.tsx (Activity Log tab). Remove after migration verification.
  * AUDIT LOGS PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

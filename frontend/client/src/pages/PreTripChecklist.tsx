@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into driver/VehicleInspection.tsx (Pre-Trip Checklist tab). Remove after migration verification.
  * PRE-TRIP CHECKLIST PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

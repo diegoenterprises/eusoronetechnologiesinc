@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/TerminalHub.tsx (Scheduling tab). Remove after migration verification.
  * TERMINAL SCHEDULING PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

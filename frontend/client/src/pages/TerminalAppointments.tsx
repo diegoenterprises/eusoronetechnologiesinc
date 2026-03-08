@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/TerminalHub.tsx (Appointments tab). Remove after migration verification.
  * TERMINAL APPOINTMENTS
  * Jony Ive design language — every element intentional, every pixel purposeful.
  *

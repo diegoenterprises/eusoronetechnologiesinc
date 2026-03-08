@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into admin/PlatformOversight.tsx (Support Tickets tab). Remove after migration verification.
  * PLATFORM SUPPORT TICKETS OVERSIGHT — Super Admin view of ALL support tickets
  */
 import React, { useState } from "react";

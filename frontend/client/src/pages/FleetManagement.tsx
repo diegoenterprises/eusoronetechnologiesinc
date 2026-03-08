@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into carrier/FleetHub.tsx (Fleet Management tab). Remove after migration verification.
  * FLEET MANAGEMENT PAGE
  * 100% Dynamic - No mock data
  * Theme-aware | Brand gradient | Shipper design standard

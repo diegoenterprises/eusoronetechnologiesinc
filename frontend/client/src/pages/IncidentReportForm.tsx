@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into safety/IncidentManagement.tsx (HazMat Report tab). Remove after migration verification.
  * INCIDENT REPORT FORM PAGE
  * Driver-facing hazmat incident documentation and reporting form.
  * Captures incident details, materials involved, injuries, environmental

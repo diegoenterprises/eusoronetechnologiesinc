@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into AuditLogsPage.tsx (Compliance Audits tab). Remove after migration verification.
  * AUDITS PAGE - Compliance Officer
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards

@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into terminal/TerminalHub.tsx (Operations tab). Remove after migration verification.
  * TERMINAL OPERATIONS REPORTS
  * Jony Ive design — every element intentional.
  * 100% Dynamic — tRPC backed, timeframe selectable.

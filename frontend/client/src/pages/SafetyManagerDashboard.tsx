@@ -1,4 +1,5 @@
 /**
+ * @deprecated — consolidated into safety/SafetyCommandCenter.tsx (Overview tab). Remove after migration verification.
  * SAFETY MANAGER DASHBOARD PAGE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards
