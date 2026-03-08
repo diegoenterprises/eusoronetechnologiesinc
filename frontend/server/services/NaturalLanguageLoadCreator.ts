@@ -82,7 +82,7 @@ const CITY_STATE_MAP: Record<string, string> = {
   indianapolis: "IN", columbus: "OH", cleveland: "OH", pittsburgh: "PA",
   philadelphia: "PA", boston: "MA", baltimore: "MD", "jacksonville": "FL",
   "louisville": "KY", "milwaukee": "WI", albuquerque: "NM", tucson: "AZ",
-  "little rock": "AR", birmingham: "AL", baton rouge: "LA", richmond: "VA",
+  "little rock": "AR", "birmingham": "AL", "baton rouge": "LA", "richmond": "VA",
   raleigh: "NC", omaha: "NE", "des moines": "IA", wichita: "KS",
 };
 
