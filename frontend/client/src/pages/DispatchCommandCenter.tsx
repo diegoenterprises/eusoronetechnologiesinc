@@ -261,9 +261,9 @@ export default function DispatchCommandCenter() {
   const activityEvents: ActivityEvent[] = useMemo(() => {
     const events: ActivityEvent[] = [];
     const issues = (issuesQuery.data as any[]) || [];
-    issues.forEach((issue: any) => {
+    issues.forEach((issue: any, index: number) => {
       events.push({
-        id: issue.id || `issue-${Math.random()}`,
+        id: issue.id || `issue-${index}`,
         type: "exception",
         message: issue.description || "Issue reported",
         timestamp: issue.reportedAt || new Date().toISOString(),

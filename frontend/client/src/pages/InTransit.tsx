@@ -66,11 +66,15 @@ export default function InTransitPage() {
     return Math.min(Math.max(progress, 0), 100);
   };
 
-  const getCurrentSpeed = (): number => Math.floor(Math.random() * 20) + 55;
+  const getCurrentSpeed = (load: any): number => {
+    if (!load.pickupDate || !load.deliveryDate || !load.distance) return 0;
+    const totalHours = (new Date(load.deliveryDate).getTime() - new Date(load.pickupDate).getTime()) / 3600000;
+    if (totalHours <= 0) return 0;
+    return Math.round(load.distance / totalHours);
+  };
 
-  const getCurrentLocation = (): string => {
-    const locations = ["I-10 near Houston, TX", "I-40 near Amarillo, TX", "I-20 near Dallas, TX", "US-75 near Sherman, TX", "Rest Stop - Mile Marker 245"];
-    return locations[Math.floor(Math.random() * locations.length)];
+  const getCurrentLocation = (load: any): string => {
+    return load.currentLocation || load.pickupLocation?.city || "Location data unavailable";
   };
 
   const handleCompleteDelivery = (loadId: number) => {
@@ -159,8 +163,8 @@ export default function InTransitPage() {
           {filteredLoads.map((load: any) => {
             const eta = calculateETA(load.deliveryDate);
             const progress = getProgressPercentage(load);
-            const speed = getCurrentSpeed();
-            const location = getCurrentLocation();
+            const speed = getCurrentSpeed(load);
+            const location = getCurrentLocation(load);
             const isDelayed = eta === "Overdue";
             const originCity = load.pickupLocation?.city || load.origin?.city || "Origin";
             const originState = load.pickupLocation?.state || load.origin?.state || "";

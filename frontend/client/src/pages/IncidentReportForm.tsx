@@ -106,7 +106,7 @@ export default function IncidentReportForm() {
             <div className={cn("mt-6 p-4 rounded-xl inline-block", isLight ? "bg-slate-50" : "bg-slate-700/30")}>
               <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Report Reference</p>
               <p className={cn("text-lg font-mono font-bold", isLight ? "text-slate-800" : "text-white")}>
-                IR-{new Date().getFullYear()}-{String(Math.floor(Math.random() * 99999)).padStart(5, "0")}
+                IR-{new Date().getFullYear()}-{String(Date.now() % 100000).padStart(5, "0")}
               </p>
             </div>
           </CardContent>

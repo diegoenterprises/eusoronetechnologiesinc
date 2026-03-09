@@ -52,8 +52,12 @@ export default function AssignedLoadsPage() {
     return `${diffDays}d ${diffHours % 24}h`;
   };
 
-  const getPreparationProgress = (): number => {
-    return Math.floor(Math.random() * 40) + 60; // 60-100%
+  const getPreparationProgress = (load: any): number => {
+    if (!load.pickupDate) return 60;
+    const hoursUntilPickup = (new Date(load.pickupDate).getTime() - Date.now()) / 3600000;
+    if (hoursUntilPickup <= 0) return 100;
+    if (hoursUntilPickup >= 48) return 60;
+    return Math.round(60 + (1 - hoursUntilPickup / 48) * 40);
   };
 
   const filteredLoads = loads?.filter((load: any) => {
@@ -133,7 +137,7 @@ export default function AssignedLoadsPage() {
           <div className="grid gap-4">
             {filteredLoads.map((load: any) => {
               const timeRemaining = getPickupTimeRemaining(load.pickupDate);
-              const progress = getPreparationProgress();
+              const progress = getPreparationProgress(load);
               const isUrgent = timeRemaining.includes("h") || timeRemaining === "Overdue";
 
               return (
