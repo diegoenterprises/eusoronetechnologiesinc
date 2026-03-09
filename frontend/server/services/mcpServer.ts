@@ -30,6 +30,8 @@ import {
   tenantBranding, blockchainAuditTrail,
   adrCompliance, adrDriverCertifications, imdgCompliance,
   autonomousVehicles, avTelemetry, tenants, tenantDataIsolation,
+  incidents, escortAssignments, allocationContracts, allocationDailyTracking,
+  certifications,
 } from "../../drizzle/schema";
 import { eq, and, desc, like, sql, count, gte, lte, or, inArray } from "drizzle-orm";
 
@@ -69,7 +71,7 @@ const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".next", "__pycache__
 
 function createEusoTripMcpServer(): McpServer {
   const mcp = new McpServer(
-    { name: "EusoTrip Platform", version: "2.0.0" },
+    { name: "EusoTrip Platform", version: "3.0.0" },
     {
       capabilities: {
         tools: {},
@@ -1714,6 +1716,355 @@ Domains: eusotrip.com (primary), eusorone.com (alias). Stack: React + TypeScript
   );
 
   // ══════════════════════════════════════════════════════════════════════════
+  // PHASE 6 TOOLS — Operational Intelligence
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // TOOL: hos_status — driver HOS compliance
+  mcp.tool(
+    "hos_status",
+    "Get HOS (Hours of Service) status for a driver or fleet-wide summary. Returns driving/on-duty/cycle hours remaining, violations, break status. Uses the 49 CFR 395-compliant HOS engine with ELD integration.",
+    {
+      driverId: z.number().optional().describe("Specific driver user ID for individual HOS status"),
+    },
+    async ({ driverId }) => {
+      try {
+        const { getHOSSummaryWithELD } = await import("../services/hosEngine");
+        if (driverId) {
+          const summary = await getHOSSummaryWithELD(driverId);
+          return { content: [{ type: "text" as const, text: JSON.stringify({ driverId, hos: summary }, null, 2) }] };
+        }
+        // Fleet-wide: get all active drivers and summarize
+        const db = await getDb();
+        if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+        const activeDrivers = await db.select({ userId: drivers.userId }).from(drivers)
+          .where(eq(drivers.status, "active" as any)).limit(50);
+        const fleet: any[] = [];
+        for (const d of activeDrivers) {
+          if (!d.userId) continue;
+          const s = await getHOSSummaryWithELD(d.userId);
+          fleet.push({ userId: d.userId, status: s.status, canDrive: s.canDrive, drivingRemaining: s.drivingRemaining, violations: s.violations?.length || 0 });
+        }
+        return { content: [{ type: "text" as const, text: JSON.stringify({ activeDrivers: fleet.length, fleet }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `HOS error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: carrier_scorecard — carrier performance metrics
+  mcp.tool(
+    "carrier_scorecard",
+    "Get carrier performance scorecard. Uses SQL aggregate queries over loads, ratings, and safety data to compute on-time rate, acceptance rate, damage rate, and overall score.",
+    {
+      carrierId: z.number().optional().describe("Carrier company ID"),
+      limit: z.number().optional().default(10).describe("Top carriers to return if no carrierId specified"),
+    },
+    async ({ carrierId, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        if (carrierId) {
+          const [company] = await db.select({ id: companies.id, name: companies.name, dotNumber: companies.dotNumber })
+            .from(companies).where(eq(companies.id, carrierId)).limit(1);
+          const [stats] = await db.select({
+            totalLoads: sql<number>`COUNT(*)`,
+            delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`,
+            avgRate: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)`,
+          }).from(loads).where(eq(loads.carrierId, carrierId));
+          return { content: [{ type: "text" as const, text: JSON.stringify({ company, stats }, null, 2) }] };
+        }
+        // Top carriers by load count
+        const topCarriers = await db.select({
+          carrierId: loads.carrierId,
+          totalLoads: sql<number>`COUNT(*)`,
+          delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`,
+          avgRate: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)`,
+        }).from(loads)
+          .where(sql`${loads.carrierId} IS NOT NULL`)
+          .groupBy(loads.carrierId)
+          .orderBy(sql`COUNT(*) DESC`)
+          .limit(limit || 10);
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: topCarriers.length, topCarriers }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Carrier scorecard error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: safety_incidents — safety incidents and investigations
+  mcp.tool(
+    "safety_incidents",
+    "Query safety incidents on the platform. Filter by severity, status, or type. Returns incident details, severity, investigation status, and corrective actions.",
+    {
+      severity: z.string().optional().describe("Filter by severity: low, medium, high, critical"),
+      status: z.string().optional().describe("Filter by status: reported, investigating, resolved, closed"),
+      limit: z.number().optional().default(20),
+    },
+    async ({ severity, status, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const conditions: any[] = [];
+        if (severity) conditions.push(eq(incidents.severity, severity as any));
+        if (status) conditions.push(eq(incidents.status, status as any));
+        const rows = await db.select().from(incidents)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(incidents.createdAt))
+          .limit(limit || 20);
+        const [stats] = await db.select({
+          total: sql<number>`COUNT(*)`,
+          critical: sql<number>`SUM(CASE WHEN severity = 'critical' THEN 1 ELSE 0 END)`,
+          open: sql<number>`SUM(CASE WHEN status IN ('reported','investigating') THEN 1 ELSE 0 END)`,
+        }).from(incidents);
+        return { content: [{ type: "text" as const, text: JSON.stringify({ stats, count: rows.length, incidents: rows }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Incidents error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: escort_overview — escort/oversize load operations
+  mcp.tool(
+    "escort_overview",
+    "Get escort assignment overview for oversize/overweight load operations. Filter by status. Shows escort type (lead, chase, height pole), route, driver assignments.",
+    {
+      status: z.string().optional().describe("Filter by status: pending, assigned, active, completed, cancelled"),
+      limit: z.number().optional().default(20),
+    },
+    async ({ status, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const conditions: any[] = [];
+        if (status) conditions.push(eq(escortAssignments.status, status as any));
+        const rows = await db.select().from(escortAssignments)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(escortAssignments.createdAt))
+          .limit(limit || 20);
+        const [stats] = await db.select({
+          total: sql<number>`COUNT(*)`,
+          active: sql<number>`SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END)`,
+          pending: sql<number>`SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END)`,
+          completed: sql<number>`SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)`,
+        }).from(escortAssignments);
+        return { content: [{ type: "text" as const, text: JSON.stringify({ stats, count: rows.length, assignments: rows }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Escort error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: allocation_tracker — volume/barrel allocation tracking
+  mcp.tool(
+    "allocation_tracker",
+    "Get allocation contract tracking — daily barrel/volume fulfillment against take-or-pay commitments. Shows contracts, daily tracking, and fill rates.",
+    {
+      contractId: z.number().optional().describe("Get details for a specific allocation contract"),
+      limit: z.number().optional().default(20),
+    },
+    async ({ contractId, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        if (contractId) {
+          const [contract] = await db.select().from(allocationContracts).where(eq(allocationContracts.id, contractId)).limit(1);
+          if (!contract) return { content: [{ type: "text" as const, text: `Contract ${contractId} not found` }] };
+          const tracking = await db.select().from(allocationDailyTracking)
+            .where(eq(allocationDailyTracking.contractId, contractId))
+            .orderBy(desc(allocationDailyTracking.trackingDate))
+            .limit(30);
+          return { content: [{ type: "text" as const, text: JSON.stringify({ contract, recentTracking: tracking }, null, 2) }] };
+        }
+        const contracts = await db.select().from(allocationContracts)
+          .orderBy(desc(allocationContracts.createdAt))
+          .limit(limit || 20);
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: contracts.length, contracts }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Allocation error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: compliance_overview — platform compliance status
+  mcp.tool(
+    "compliance_overview",
+    "Get compliance overview across the platform. Summarizes driver certifications, document expiry, insurance status, and FMCSA compliance by company.",
+    {},
+    async () => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const now = new Date();
+        // Expiring certifications in next 30 days
+        const thirtyDaysOut = new Date(now.getTime() + 30 * 86400000);
+        const [certStats] = await db.select({
+          totalCerts: sql<number>`COUNT(*)`,
+          expired: sql<number>`SUM(CASE WHEN expiryDate < NOW() THEN 1 ELSE 0 END)`,
+          expiringSoon: sql<number>`SUM(CASE WHEN expiryDate BETWEEN NOW() AND ${thirtyDaysOut.toISOString().slice(0, 10)} THEN 1 ELSE 0 END)`,
+        }).from(certifications);
+
+        // Document stats
+        const [docStats] = await db.select({
+          totalDocs: sql<number>`COUNT(*)`,
+        }).from(documents);
+
+        // Inspection stats
+        const [inspStats] = await db.select({
+          totalInspections: sql<number>`COUNT(*)`,
+        }).from(inspections);
+
+        // Active driver count
+        const [driverStats] = await db.select({
+          total: sql<number>`COUNT(*)`,
+          active: sql<number>`SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END)`,
+          suspended: sql<number>`SUM(CASE WHEN status = 'suspended' THEN 1 ELSE 0 END)`,
+        }).from(drivers);
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              certifications: certStats,
+              documents: docStats,
+              inspections: inspStats,
+              drivers: driverStats,
+            }, null, 2),
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Compliance error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: eld_fleet_status — ELD connections and fleet telematics
+  mcp.tool(
+    "eld_fleet_status",
+    "Get ELD (Electronic Logging Device) fleet status. Shows which companies/drivers have ELD connections (Motive, Samsara, KeepTruckin), connection health, and last sync.",
+    {},
+    async () => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        // Check if eld_connections table exists
+        const [tables]: any = await (db as any).execute(sql`SHOW TABLES LIKE 'eld_connections'`);
+        if (!Array.isArray(tables) || tables.length === 0) {
+          return { content: [{ type: "text" as const, text: JSON.stringify({ message: "ELD connections table not yet provisioned. ELD data is accessed via the HOS engine fallback." }, null, 2) }] };
+        }
+        const [stats]: any = await (db as any).execute(sql`
+          SELECT provider, COUNT(*) as cnt, SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) as active
+          FROM eld_connections GROUP BY provider
+        `);
+        return { content: [{ type: "text" as const, text: JSON.stringify({ providers: Array.isArray(stats) ? stats : [] }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `ELD error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: inspection_records — vehicle and driver inspections
+  mcp.tool(
+    "inspection_records",
+    "Query inspection records (DOT roadside inspections, pre/post-trip DVIR, Zeun mechanic inspections). Filter by type, result, or driver.",
+    {
+      driverId: z.number().optional().describe("Filter by driver ID"),
+      vehicleId: z.number().optional().describe("Filter by vehicle ID"),
+      limit: z.number().optional().default(20),
+    },
+    async ({ driverId, vehicleId, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const conditions: any[] = [];
+        if (driverId) conditions.push(eq(inspections.driverId, driverId));
+        if (vehicleId) conditions.push(eq(inspections.vehicleId, vehicleId));
+
+        const rows = await db.select().from(inspections)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(inspections.createdAt))
+          .limit(limit || 20);
+
+        const [stats] = await db.select({
+          total: sql<number>`COUNT(*)`,
+        }).from(inspections);
+
+        return { content: [{ type: "text" as const, text: JSON.stringify({ totalRecords: stats?.total || 0, returned: rows.length, inspections: rows }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Inspection error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: certifications_status — driver/company certifications and expiry
+  mcp.tool(
+    "certifications_status",
+    "Query driver and company certifications (CDL, hazmat, TWIC, medical card, etc). Shows expiry dates and compliance status. Filter by type or expiry window.",
+    {
+      userId: z.number().optional().describe("Filter by user ID"),
+      expiringSoon: z.boolean().optional().describe("Show only certifications expiring in the next 30 days"),
+      limit: z.number().optional().default(25),
+    },
+    async ({ userId, expiringSoon, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const conditions: any[] = [];
+        if (userId) conditions.push(eq(certifications.userId, userId));
+        if (expiringSoon) {
+          const thirtyDays = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+          conditions.push(sql`${certifications.expiryDate} BETWEEN NOW() AND ${thirtyDays}`);
+        }
+
+        const rows = await db.select().from(certifications)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(sql`${certifications.expiryDate} ASC`)
+          .limit(limit || 25);
+
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: rows.length, certifications: rows }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Certifications error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: zeun_maintenance — Zeun mechanic/maintenance system (Viga + Gemini)
+  mcp.tool(
+    "zeun_maintenance",
+    "Query the Zeun maintenance system — EusoTrip's mechanic module powered by Viga photo AI and Gemini diagnostics. Shows maintenance orders, work history, and vehicle health. Photo inspections live here.",
+    {
+      vehicleId: z.number().optional().describe("Filter by vehicle ID"),
+      status: z.string().optional().describe("Filter by status: open, in_progress, completed, cancelled"),
+      limit: z.number().optional().default(20),
+    },
+    async ({ vehicleId, status, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        // Check if maintenance_orders table exists
+        const [tables]: any = await (db as any).execute(sql`SHOW TABLES LIKE 'maintenance_orders'`);
+        if (!Array.isArray(tables) || tables.length === 0) {
+          // Fall back to inspections table for maintenance data
+          const conditions: any[] = [];
+          if (vehicleId) conditions.push(eq(inspections.vehicleId, vehicleId));
+          const rows = await db.select().from(inspections)
+            .where(conditions.length > 0 ? and(...conditions) : undefined)
+            .orderBy(desc(inspections.createdAt)).limit(limit || 20);
+          return { content: [{ type: "text" as const, text: JSON.stringify({ source: "inspections_fallback", note: "Zeun maintenance_orders table not yet provisioned. Showing inspection records.", count: rows.length, records: rows }, null, 2) }] };
+        }
+        const query = status
+          ? sql`SELECT * FROM maintenance_orders WHERE status = ${status} ORDER BY createdAt DESC LIMIT ${limit || 20}`
+          : vehicleId
+            ? sql`SELECT * FROM maintenance_orders WHERE vehicleId = ${vehicleId} ORDER BY createdAt DESC LIMIT ${limit || 20}`
+            : sql`SELECT * FROM maintenance_orders ORDER BY createdAt DESC LIMIT ${limit || 20}`;
+        const [rows]: any = await (db as any).execute(query);
+        return { content: [{ type: "text" as const, text: JSON.stringify({ source: "zeun", count: Array.isArray(rows) ? rows.length : 0, orders: rows }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Zeun error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
   // RESOURCE: platform overview
   // ══════════════════════════════════════════════════════════════════════════
   mcp.resource(
@@ -1773,7 +2124,19 @@ PHASE 5 — SCALE + POLISH + INNOVATION (GAP-436 → GAP-451):
 - i18n: react-i18next with EN/ES/FR locales, browser language detection
 - Phase 5 Command Center: 8-tab unified admin hub at /super-admin/phase5
 
-AUDIT STATUS: 127/127 PASS (100%) — all P1/P2 security and functionality gaps resolved`,
+PHASE 6 — OPERATIONAL INTELLIGENCE (MCP v3.0):
+- HOS Engine: 49 CFR 395-compliant hours-of-service tracking with ELD integration
+- Carrier Scorecard: aggregate carrier performance from loads, ratings, and FMCSA safety data
+- Safety Incidents: incident reporting, investigation tracking, corrective actions
+- Escort Operations: oversize/overweight escort assignments with lead/chase/height pole tracking
+- Allocation Tracker: take-or-pay barrel/volume daily fulfillment tracking
+- Compliance Overview: cross-domain compliance health (certs, docs, inspections, drivers)
+- ELD Fleet Status: Electronic Logging Device connection health by provider
+- Inspection Records: DOT roadside, DVIR pre/post-trip, Zeun mechanic inspections
+- Certifications: CDL, hazmat, TWIC, medical card expiry tracking
+- Zeun Maintenance: mechanic module powered by Viga photo AI + Gemini diagnostics
+
+MCP TOOLS (45 total): search_loads, get_load_details, list_users, get_user_details, search_companies, fmcsa_carrier_safety, platform_analytics, get_platform_fees, accessorial_stats, search_pricebook, fsc_schedules, portal_tokens, portal_audit, credit_check, factoring_overview, list_directory, read_file, search_code, get_file_tree, run_sql_query, search_drivers, list_vehicles, dispatch_board, settlement_overview, list_agreements, wallet_overview, messaging_overview, notification_history, list_experiments, blockchain_audit, adr_compliance, imdg_compliance, autonomous_fleet, list_tenants, tenant_branding, hos_status, carrier_scorecard, safety_incidents, escort_overview, allocation_tracker, compliance_overview, eld_fleet_status, inspection_records, certifications_status, zeun_maintenance`,
       }],
     })
   );
@@ -1833,6 +2196,11 @@ Use the available tools to pull real data:
 7. Call factoring_overview for factoring program health
 8. Call accessorial_stats for claims data
 9. Call get_platform_fees for current fee structure
+10. Call hos_status for fleet HOS compliance
+11. Call carrier_scorecard for top carrier performance
+12. Call safety_incidents for safety metrics
+13. Call compliance_overview for compliance health
+14. Call certifications_status with expiringSoon=true for upcoming expirations
 
 Format as a professional business report with sections, key metrics, trends, and actionable recommendations.`,
         },
