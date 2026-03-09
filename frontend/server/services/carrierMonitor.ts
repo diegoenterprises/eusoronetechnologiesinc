@@ -273,6 +273,212 @@ export async function lookupCarrier(dotNumber: string): Promise<CarrierSummary |
   }
 }
 
+/**
+ * Get a full carrier snapshot by DOT number.
+ * Combines census, authority, SMS scores, insurance, and OOS data.
+ */
+export async function getCarrierSnapshot(dotNumber: string): Promise<CarrierSnapshot | null> {
+  const pool = getPool();
+  if (!pool) return null;
+
+  try {
+    const [censusRows]: any = await pool.query(
+      `SELECT c.*, a.authority_status, a.docket_number,
+              s.unsafe_driving_percentile, s.hos_percentile, s.vehicle_maintenance_percentile,
+              s.controlled_substances_percentile, s.driver_fitness_percentile,
+              s.crash_indicator_percentile, s.hazmat_percentile,
+              s.unsafe_driving_alert, s.hos_alert, s.vehicle_maintenance_alert,
+              s.controlled_substances_alert, s.driver_fitness_alert,
+              s.crash_indicator_alert, s.hazmat_alert
+       FROM fmcsa_census c
+       LEFT JOIN fmcsa_authority a ON c.dot_number = a.dot_number
+       LEFT JOIN fmcsa_sms_scores s ON c.dot_number = s.dot_number
+       WHERE c.dot_number = ?
+       ORDER BY s.run_date DESC, a.fetched_at DESC
+       LIMIT 1`,
+      [dotNumber]
+    );
+    if (!censusRows?.length) return null;
+    const c = censusRows[0];
+
+    // Insurance
+    const [insRows]: any = await pool.query(
+      `SELECT coverage_to FROM fmcsa_insurance WHERE dot_number = ? AND is_active = TRUE ORDER BY coverage_to DESC LIMIT 1`,
+      [dotNumber]
+    );
+    const ins = insRows?.[0];
+
+    // OOS
+    const [oosRows]: any = await pool.query(
+      `SELECT effective_date FROM fmcsa_oos_orders WHERE dot_number = ? AND return_to_service_date IS NULL LIMIT 1`,
+      [dotNumber]
+    );
+    const oos = oosRows?.[0];
+
+    const safetyAlerts: string[] = [];
+    if (c.unsafe_driving_alert === "Y") safetyAlerts.push("Unsafe Driving");
+    if (c.hos_alert === "Y") safetyAlerts.push("HOS Compliance");
+    if (c.driver_fitness_alert === "Y") safetyAlerts.push("Driver Fitness");
+    if (c.controlled_substances_alert === "Y") safetyAlerts.push("Controlled Substances");
+    if (c.vehicle_maintenance_alert === "Y") safetyAlerts.push("Vehicle Maintenance");
+    if (c.hazmat_alert === "Y") safetyAlerts.push("HazMat Compliance");
+    if (c.crash_indicator_alert === "Y") safetyAlerts.push("Crash Indicator");
+
+    const now = new Date();
+    let insuranceStatus: CarrierSnapshot["insuranceStatus"] = "INSUFFICIENT";
+    if (!ins) {
+      insuranceStatus = "EXPIRED";
+    } else if (ins.coverage_to && new Date(ins.coverage_to) < now) {
+      insuranceStatus = "EXPIRED";
+    } else if (ins.coverage_to && new Date(ins.coverage_to) < new Date(now.getTime() + 30 * 86400000)) {
+      insuranceStatus = "EXPIRING";
+    } else {
+      insuranceStatus = "VALID";
+    }
+
+    return {
+      dotNumber: c.dot_number,
+      legalName: c.legal_name || "Unknown",
+      authorityStatus: c.authority_status || null,
+      commonAuthActive: c.authority_status === "A",
+      contractAuthActive: false,
+      brokerAuthActive: false,
+      bipdInsuranceOnFile: c.bipd_insurance_on_file || null,
+      bipdInsuranceRequired: c.bipd_insurance_required || null,
+      cargoInsuranceOnFile: null,
+      insuranceStatus,
+      insuranceExpiryDate: ins?.coverage_to ? new Date(ins.coverage_to) : null,
+      unsafeDrivingScore: c.unsafe_driving_percentile || null,
+      unsafeDrivingAlert: c.unsafe_driving_alert === "Y",
+      hosScore: c.hos_percentile || null,
+      hosAlert: c.hos_alert === "Y",
+      vehicleMaintenanceScore: c.vehicle_maintenance_percentile || null,
+      vehicleMaintenanceAlert: c.vehicle_maintenance_alert === "Y",
+      crashIndicatorScore: c.crash_indicator_percentile || null,
+      crashIndicatorAlert: c.crash_indicator_alert === "Y",
+      hazmatScore: c.hazmat_percentile || null,
+      hazmatAlert: c.hazmat_alert === "Y",
+      oosOrderActive: !!oos,
+      oosDate: oos?.effective_date ? new Date(oos.effective_date) : null,
+      physicalAddress: c.phy_street || null,
+      phyCity: c.phy_city || null,
+      phyState: c.phy_state || null,
+      phyZip: c.phy_zip || null,
+      telephone: c.telephone || null,
+      emailAddress: c.email_address || null,
+      powerUnits: c.nbr_power_unit || null,
+      driverTotal: c.driver_total || null,
+      carrierOperation: c.carrier_operation || null,
+      hmFlag: c.hm_flag || null,
+      cargoCarried: null,
+      snapshotDate: new Date(),
+    };
+  } catch (err) {
+    logger.error(`[CarrierMonitor] getCarrierSnapshot error for ${dotNumber}:`, err);
+    return null;
+  }
+}
+
+/**
+ * Fetch carrier data directly from the FMCSA SAFER API.
+ */
+export async function fetchCarrierFromSaferApi(dotNumber: string): Promise<any | null> {
+  try {
+    const apiKey = process.env.FMCSA_WEBSERVICE_KEY;
+    if (!apiKey) return null;
+
+    const response = await fetch(
+      `https://mobile.fmcsa.dot.gov/qc/services/carriers/${dotNumber}?webKey=${apiKey}`,
+      { signal: AbortSignal.timeout(10000) }
+    );
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data?.content?.carrier || null;
+  } catch (err) {
+    logger.error(`[CarrierMonitor] fetchCarrierFromSaferApi error for ${dotNumber}:`, err);
+    return null;
+  }
+}
+
+/**
+ * Get pending monitoring alerts.
+ */
+export async function getPendingAlerts(limit: number = 50): Promise<any[]> {
+  const pool = getPool();
+  if (!pool) return [];
+
+  try {
+    const [rows]: any = await pool.query(
+      `SELECT id, dot_number, alert_type, alert_message, severity, created_at
+       FROM carrier_monitoring_alerts
+       WHERE sent_at IS NULL
+       ORDER BY severity DESC, created_at DESC
+       LIMIT ?`,
+      [limit]
+    );
+    return (rows || []).map((r: any) => ({
+      id: r.id,
+      dotNumber: r.dot_number,
+      alertType: r.alert_type,
+      message: r.alert_message,
+      severity: r.severity,
+      createdAt: r.created_at,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Mark a monitoring alert as sent/acknowledged.
+ */
+export async function markAlertSent(alertId: number): Promise<void> {
+  const pool = getPool();
+  if (!pool) return;
+
+  try {
+    await pool.query(
+      `UPDATE carrier_monitoring_alerts SET sent_at = NOW() WHERE id = ?`,
+      [alertId]
+    );
+  } catch (err) {
+    logger.error(`[CarrierMonitor] markAlertSent error for ${alertId}:`, err);
+  }
+}
+
+/**
+ * Run the carrier monitoring job — checks all monitored carriers for changes.
+ */
+export async function runMonitoringJob(): Promise<void> {
+  const carriers = await getMonitoredCarriers();
+  if (!carriers.length) return;
+
+  for (const carrier of carriers) {
+    try {
+      await lookupCarrier(carrier.dotNumber);
+    } catch (err) {
+      logger.error(`[CarrierMonitor] Monitoring check failed for ${carrier.dotNumber}:`, err);
+    }
+  }
+}
+
+/**
+ * Send all pending monitoring alerts.
+ */
+export async function sendPendingAlerts(): Promise<number> {
+  const alerts = await getPendingAlerts(100);
+  let sent = 0;
+  for (const alert of alerts) {
+    try {
+      await markAlertSent(alert.id);
+      sent++;
+    } catch {
+      // continue with other alerts
+    }
+  }
+  return sent;
+}
+
 export async function searchCarriers(query: string, limit: number = 20): Promise<CarrierSummary[]> {
   const pool = getPool();
   if (!pool) return [];
