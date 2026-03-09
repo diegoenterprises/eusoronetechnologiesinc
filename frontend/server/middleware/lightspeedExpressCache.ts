@@ -381,7 +381,6 @@ const ROUTE_TTL: Record<string, number> = {
 
   // ── MARKET / SUPPLY CHAIN / FUEL INDEX ──
   "market.getOverview": 60,
-  "market.getTrends": 120,
   "supplyChain.getStatus": 120,
   "supplyChain.getAlerts": 60,
   "supplyChain.getAnalysis": 300,

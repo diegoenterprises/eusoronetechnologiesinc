@@ -181,29 +181,31 @@ export const driversRouter = router({
   getHOSStatus: auditedOperationsProcedure
     .input(z.object({}).optional())
     .query(async ({ ctx }) => {
+      const userId = Number(ctx.user?.id) || 0;
+      const summary = await getHOSSummaryWithELD(userId);
       return {
-        status: "driving",
-        drivingRemaining: "6h 30m",
-        onDutyRemaining: "8h 00m",
-        cycleRemaining: "52h 30m",
-        breakRemaining: "2h 00m",
-        drivingUsed: 4.5,
-        onDutyUsed: 6,
-        cycleUsed: 17.5,
-        drivingToday: 4.5,
-        onDutyToday: 6,
-        violation: false,
+        status: summary.status,
+        drivingRemaining: summary.drivingRemaining,
+        onDutyRemaining: summary.onDutyRemaining,
+        cycleRemaining: summary.cycleRemaining,
+        breakRemaining: summary.breakRemaining,
+        drivingUsed: summary.drivingHours,
+        onDutyUsed: summary.onDutyHours,
+        cycleUsed: summary.cycleHours,
+        drivingToday: summary.drivingHours,
+        onDutyToday: summary.onDutyHours,
+        violation: (summary.violations?.length || 0) > 0,
         hoursAvailable: {
-          driving: 6.5,
-          onDuty: 8.0,
-          cycle: 52.5,
+          driving: parseFloat(summary.drivingRemaining) || 0,
+          onDuty: parseFloat(summary.onDutyRemaining) || 0,
+          cycle: parseFloat(summary.cycleRemaining) || 0,
         },
-        driving: 6.5,
-        onDuty: 8.0,
-        cycle: 52.5,
-        violations: [],
-        lastBreak: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        nextBreakRequired: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+        driving: parseFloat(summary.drivingRemaining) || 0,
+        onDuty: parseFloat(summary.onDutyRemaining) || 0,
+        cycle: parseFloat(summary.cycleRemaining) || 0,
+        violations: summary.violations || [],
+        lastBreak: summary.lastBreak || new Date().toISOString(),
+        nextBreakRequired: summary.nextBreakRequired || new Date().toISOString(),
       };
     }),
 
@@ -477,19 +479,21 @@ export const driversRouter = router({
   getHOSStatusByDriver: auditedOperationsProcedure
     .input(z.object({ driverId: z.string() }))
     .query(async ({ input }) => {
+      const driverId = parseInt(input.driverId, 10) || 0;
+      const summary = await getHOSSummaryWithELD(driverId);
       return {
         driverId: input.driverId,
-        currentStatus: "driving",
-        statusStartTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        hoursAvailable: {
-          driving: 6.5,
-          onDuty: 8.0,
-          cycle: 52.5,
+        currentStatus: summary.status,
+        statusStartTime: summary.todayLog?.[summary.todayLog.length - 1]?.startedAt || new Date().toISOString(),
+        hoursAvailable: summary.hoursAvailable || {
+          driving: parseFloat(summary.drivingRemaining) || 0,
+          onDuty: parseFloat(summary.onDutyRemaining) || 0,
+          cycle: parseFloat(summary.cycleRemaining) || 0,
         },
-        violations: [],
-        lastBreak: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        nextBreakRequired: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-        cycleReset: "2025-01-27T00:00:00Z",
+        violations: summary.violations || [],
+        lastBreak: summary.lastBreak || new Date().toISOString(),
+        nextBreakRequired: summary.nextBreakRequired || new Date().toISOString(),
+        cycleReset: new Date(Date.now() + ((70 - summary.cycleHours) * 3600000)).toISOString(),
       };
     }),
 
