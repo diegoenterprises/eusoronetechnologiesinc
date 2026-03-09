@@ -163,21 +163,6 @@ export default function DispatchCommandCenter() {
     onError: (err: any) => toast.error("Bulk assign failed", { description: err.message }),
   });
 
-  const handleSmartAssign = useCallback(() => {
-    const unassignedIds = allLoads
-      .filter(l => ["posted", "pending", "bidding"].includes(l.status))
-      .map(l => Number(l.id))
-      .filter(id => !isNaN(id));
-    if (unassignedIds.length === 0) { toast.error("No unassigned loads"); return; }
-    smartAssignMutation.mutate({ loadIds: unassignedIds.slice(0, 50) });
-  }, [allLoads, smartAssignMutation]);
-
-  const handleConfirmBulkAssign = useCallback(() => {
-    const assignments = Array.from(selectedAssignments.entries()).map(([loadId, driverId]) => ({ loadId, driverId }));
-    if (assignments.length === 0) { toast.error("Select at least one driver"); return; }
-    bulkAssignMutation.mutate({ assignments });
-  }, [selectedAssignments, bulkAssignMutation]);
-
   const quickLoadMutation = (trpc as any).dispatch.quickCreateLoad.useMutation({
     onSuccess: (data: any) => {
       toast.success(`Load ${data.loadNumber} created`);
@@ -229,6 +214,21 @@ export default function DispatchCommandCenter() {
       equipmentType: l.equipmentType || null,
     }));
   }, [boardQuery.data]);
+
+  const handleSmartAssign = useCallback(() => {
+    const unassignedIds = allLoads
+      .filter(l => ["posted", "pending", "bidding"].includes(l.status))
+      .map(l => Number(l.id))
+      .filter(id => !isNaN(id));
+    if (unassignedIds.length === 0) { toast.error("No unassigned loads"); return; }
+    smartAssignMutation.mutate({ loadIds: unassignedIds.slice(0, 50) });
+  }, [allLoads, smartAssignMutation]);
+
+  const handleConfirmBulkAssign = useCallback(() => {
+    const assignments = Array.from(selectedAssignments.entries()).map(([loadId, driverId]) => ({ loadId, driverId }));
+    if (assignments.length === 0) { toast.error("Select at least one driver"); return; }
+    bulkAssignMutation.mutate({ assignments });
+  }, [selectedAssignments, bulkAssignMutation]);
 
   // ── Status Counts ──
   const statusCounts = useMemo(() => {
@@ -541,7 +541,7 @@ export default function DispatchCommandCenter() {
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          {load.rate > 0 && <div className="text-xs font-semibold text-emerald-400">${Number(load.rate).toLocaleString()}</div>}
+                          {(load.rate ?? 0) > 0 && <div className="text-xs font-semibold text-emerald-400">${Number(load.rate).toLocaleString()}</div>}
                           {load.pickupDate && <div className="text-[10px] text-slate-500 flex items-center gap-1 justify-end"><Clock className="w-3 h-3" />{new Date(load.pickupDate).toLocaleDateString()}</div>}
                         </div>
                         <ChevronRight className="w-4 h-4 text-slate-600 shrink-0" />
