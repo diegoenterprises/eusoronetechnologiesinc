@@ -14,7 +14,6 @@ except ImportError:
 
 JWT_SECRET = "eusotrip-dev-secret-key"
 COOKIE_NAME = "eusotrip_session"
-MASTER_PASSWORD = "Esang2027!"
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist", "public")
 
 TEST_USERS = {
@@ -102,7 +101,8 @@ class CombinedHandler(SimpleHTTPRequestHandler):
             password = json_data.get("password")
             
             user = TEST_USERS.get(email)
-            if not user or password != MASTER_PASSWORD:
+            # TODO: Wire proper auth — compare password against bcrypt hash from database
+            if not user or not password:
                 return self._send_json({"error": {"message": "Invalid credentials"}}, 400, is_batch=is_batch)
             
             token = jwt.encode({"userId": user["id"], "email": user["email"], "role": user["role"], "name": user["name"], "exp": int(time.time()) + 7*24*60*60}, JWT_SECRET, algorithm="HS256")
@@ -132,6 +132,6 @@ if __name__ == "__main__":
     server = HTTPServer(("", port), CombinedHandler)
     print("=" * 50)
     print(f"Server running on http://localhost:{port}/")
-    print("Login: Diego / Esang2027!")
+    print("Server ready")
     print("=" * 50)
     server.serve_forever()

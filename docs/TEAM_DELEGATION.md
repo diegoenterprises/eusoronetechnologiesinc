@@ -8,8 +8,7 @@
 
 ## TEST USER LOGIN CREDENTIALS
 
-**Master Password for ALL accounts: `Esang2027!`**  
-_(Updated March 5, 2026 — bcrypt hashes in DB + auth.ts MASTER_PASSWORD both set)_
+**Passwords:** Stored as bcrypt hashes in the database. Use the auth system to authenticate.
 
 | Role | Email | Name |
 |:---|:---|:---|

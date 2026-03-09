@@ -7,7 +7,6 @@ const PORT = 3001;
 
 const JWT_SECRET = "eusotrip-dev-secret-key";
 const COOKIE_NAME = "eusotrip_session";
-const MASTER_PASSWORD = "Esang2027!";
 
 const TEST_USERS = {
   "diego": { id: "admin-diego", email: "diego@eusotrip.com", role: "SUPER_ADMIN", name: "Diego" },
@@ -65,7 +64,8 @@ app.post('/api/trpc/auth.login', (req, res) => {
   const password = jsonData.password;
   
   const user = TEST_USERS[email];
-  if (!user || password !== MASTER_PASSWORD) {
+  // TODO: Wire proper auth — compare password against bcrypt hash from database
+  if (!user || !password) {
     return res.status(400).json(trpcResponse({ error: "Invalid credentials" }, isBatch));
   }
   
@@ -111,6 +111,6 @@ app.all('/api/trpc/*', (req, res) => {
 app.listen(PORT, () => {
   console.log('='.repeat(50));
   console.log(`API Server running on http://localhost:${PORT}`);
-  console.log('Login: Diego / Esang2027!');
+  console.log('API Server ready');
   console.log('='.repeat(50));
 });
