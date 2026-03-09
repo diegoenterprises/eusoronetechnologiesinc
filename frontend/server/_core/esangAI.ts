@@ -5,6 +5,7 @@
  */
 
 import { ENV } from "./env";
+import { logger } from "./logger";
 import {
   searchMaterials, getMaterialByUN, getGuide,
   getFullERGInfo, getERGForProduct, EMERGENCY_CONTACTS,
@@ -443,7 +444,7 @@ class ESANGAIService {
   constructor() {
     this.apiKey = ENV.geminiApiKey || "";
     if (!this.apiKey) {
-      console.warn("[ESANG AI] Gemini API key not configured");
+      logger.warn("[ESANG AI] Gemini API key not configured");
     }
   }
 
@@ -523,7 +524,7 @@ class ESANGAIService {
       try {
         response = await this.callGeminiAPI(message, history, contextPrompt);
       } catch (geminiErr) {
-        console.warn("[ESANG AI] Gemini failed, trying secondary LLM fallback:", (geminiErr as any)?.message);
+        logger.warn("[ESANG AI] Gemini failed, trying secondary LLM fallback:", (geminiErr as any)?.message);
         response = await this.callFallbackLLM(message, history, contextPrompt);
       }
 
@@ -599,7 +600,7 @@ class ESANGAIService {
 
       return response;
     } catch (error) {
-      console.error("[ESANG AI] Chat error:", error);
+      logger.error("[ESANG AI] Chat error:", error);
       return {
         message: "I apologize, but I'm experiencing technical difficulties. Please try again in a moment.",
         suggestions: ["Try again", "Contact support"],
@@ -667,7 +668,7 @@ class ESANGAIService {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("[ESANG AI] Gemini API error:", error);
+      logger.error("[ESANG AI] Gemini API error:", error);
       throw new Error(`Gemini API error: ${response.status}`);
     }
 
@@ -718,18 +719,18 @@ class ESANGAIService {
           const data = await resp.json();
           const text = data.choices?.[0]?.message?.content || "";
           if (text) {
-            console.log("[ESANG AI] Fallback LLM (OpenAI) responded successfully");
+            logger.info("[ESANG AI] Fallback LLM (OpenAI) responded successfully");
             return { message: text, suggestions: this.extractSuggestions(text), actions: this.extractActions(text) };
           }
         }
-        console.warn("[ESANG AI] OpenAI fallback failed:", resp.status);
+        logger.warn("[ESANG AI] OpenAI fallback failed:", resp.status);
       } catch (oaiErr) {
-        console.warn("[ESANG AI] OpenAI fallback error:", (oaiErr as any)?.message);
+        logger.warn("[ESANG AI] OpenAI fallback error:", (oaiErr as any)?.message);
       }
     }
 
     // Final fallback: offline response
-    console.warn("[ESANG AI] All LLMs unavailable — returning offline response");
+    logger.warn("[ESANG AI] All LLMs unavailable — returning offline response");
     return {
       message: "I'm currently experiencing connectivity issues with my AI services. Here's what I can still help with:\n\n" +
         "• **Navigation** — Use the sidebar to access any platform feature\n" +
@@ -991,7 +992,7 @@ Category: ${request.category || "unknown"}\nAPI Gravity: ${request.apiGravity}°
       });
 
       if (!response.ok) {
-        console.error("[SPECTRA-MATCH AI] Gemini API error:", response.status);
+        logger.error("[SPECTRA-MATCH AI] Gemini API error:", response.status);
         return this.fallbackSpectraMatch(request);
       }
 
@@ -1004,7 +1005,7 @@ Category: ${request.category || "unknown"}\nAPI Gravity: ${request.apiGravity}°
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
       } catch {
-        console.warn("[SPECTRA-MATCH AI] Failed to parse Gemini response, using fallback");
+        logger.warn("[SPECTRA-MATCH AI] Failed to parse Gemini response, using fallback");
         return this.fallbackSpectraMatch(request);
       }
 
@@ -1024,7 +1025,7 @@ Category: ${request.category || "unknown"}\nAPI Gravity: ${request.apiGravity}°
 
       return result;
     } catch (error) {
-      console.error("[SPECTRA-MATCH AI] Error:", error);
+      logger.error("[SPECTRA-MATCH AI] Error:", error);
       return this.fallbackSpectraMatch(request);
     }
   }
@@ -1063,7 +1064,7 @@ Category: ${request.category || "unknown"}\nAPI Gravity: ${request.apiGravity}°
       this.terminalProductPatterns.set(request.terminalId, patterns);
     }
 
-    console.log(`[SPECTRA-MATCH LEARN] User ${userId}: ${product} (${confidence}%) | Total history: ${history.length}`);
+    logger.info(`[SPECTRA-MATCH LEARN] User ${userId}: ${product} (${confidence}%) | Total history: ${history.length}`);
   }
 
   /**
@@ -1323,7 +1324,7 @@ Enhance each clause with specific, legally-precise language incorporating all th
       });
 
       if (!response.ok) {
-        console.error("[EUSOCONTRACT AI] Gemini API error:", response.status);
+        logger.error("[EUSOCONTRACT AI] Gemini API error:", response.status);
         return this.fallbackAgreementContent(request);
       }
 
@@ -1335,13 +1336,13 @@ Enhance each clause with specific, legally-precise language incorporating all th
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
       } catch {
-        console.warn("[EUSOCONTRACT AI] Failed to parse Gemini response, using fallback");
+        logger.warn("[EUSOCONTRACT AI] Failed to parse Gemini response, using fallback");
         return this.fallbackAgreementContent(request);
       }
 
       // Build full contract document from AI-enhanced clauses
-      const enhancedClauses = (parsed.enhancedClauses || []).map((c: any) => ({
-        id: c.id || `clause_${Math.random().toString(36).slice(2, 8)}`,
+      const enhancedClauses = (parsed.enhancedClauses || []).map((c: any, i: number) => ({
+        id: c.id || `clause_${Date.now().toString(36)}_${i}`,
         title: c.title || "Untitled Clause",
         body: c.body || "",
         isModified: true,
@@ -1349,7 +1350,7 @@ Enhance each clause with specific, legally-precise language incorporating all th
 
       const content = this.renderAgreementDocument(request, enhancedClauses);
 
-      console.log(`[EUSOCONTRACT AI] Generated ${request.agreementType} agreement with ${enhancedClauses.length} AI-enhanced clauses`);
+      logger.info(`[EUSOCONTRACT AI] Generated ${request.agreementType} agreement with ${enhancedClauses.length} AI-enhanced clauses`);
 
       return {
         content,
@@ -1358,7 +1359,7 @@ Enhance each clause with specific, legally-precise language incorporating all th
         riskFlags: parsed.riskFlags || [],
       };
     } catch (error) {
-      console.error("[EUSOCONTRACT AI] Error:", error);
+      logger.error("[EUSOCONTRACT AI] Error:", error);
       return this.fallbackAgreementContent(request);
     }
   }
@@ -1520,7 +1521,7 @@ Enhance each clause with specific, legally-precise language incorporating all th
         estimatedRepairHours: parsed.estimatedRepairHours || 4,
         partsLikelyNeeded: parsed.partsLikelyNeeded || [], safetyWarnings: parsed.safetyWarnings || [], preventiveTips: parsed.preventiveTips || [],
       };
-    } catch (e) { console.error("[ZEUN AI] Diagnosis error:", e); return this.fallbackZeunDiag(request); }
+    } catch (e) { logger.error("[ZEUN AI] Diagnosis error:", e); return this.fallbackZeunDiag(request); }
   }
 
   private fallbackZeunDiag(r: any) {
@@ -1779,7 +1780,7 @@ Respond in VALID JSON array only — no markdown, no explanation:
       });
 
       if (!resp.ok) {
-        console.error("[ESANG AI] Provider discovery API error:", resp.status);
+        logger.error("[ESANG AI] Provider discovery API error:", resp.status);
         return this.fallbackProviders(request);
       }
 
@@ -1789,10 +1790,10 @@ Respond in VALID JSON array only — no markdown, no explanation:
 
       if (!Array.isArray(parsed) || parsed.length === 0) return this.fallbackProviders(request);
 
-      console.log(`[ESANG AI] Generated ${parsed.length} providers near ${request.latitude.toFixed(2)}, ${request.longitude.toFixed(2)}`);
+      logger.info(`[ESANG AI] Generated ${parsed.length} providers near ${request.latitude.toFixed(2)}, ${request.longitude.toFixed(2)}`);
       return parsed;
     } catch (e) {
-      console.error("[ESANG AI] Provider discovery error:", e);
+      logger.error("[ESANG AI] Provider discovery error:", e);
       return this.fallbackProviders(request);
     }
   }
@@ -1805,7 +1806,7 @@ Respond in VALID JSON array only — no markdown, no explanation:
 
     return Array.from({ length: 8 }, (_, i) => {
       const angle = (i / 8) * 2 * Math.PI;
-      const dist = 5 + Math.random() * (request.radiusMiles * 0.6);
+      const dist = 5 + ((i + 1) / 8) * (request.radiusMiles * 0.6);
       const latOffset = (dist / 69) * Math.cos(angle);
       const lngOffset = (dist / (69 * Math.cos(request.latitude * Math.PI / 180))) * Math.sin(angle);
       return {
@@ -1820,14 +1821,14 @@ Respond in VALID JSON array only — no markdown, no explanation:
         longitude: request.longitude + lngOffset,
         phone: "800-555-0100",
         website: null,
-        services: servicesList.slice(0, 3 + Math.floor(Math.random() * 4)),
+        services: servicesList.slice(0, 3 + (i % 4)),
         certifications: ["ASE"],
         oemBrands: ["Freightliner", "Kenworth"],
         available24x7: i < 3,
         hasMobileService: i % 3 === 0,
-        rating: 3.5 + Math.random() * 1.5,
-        reviewCount: 10 + Math.floor(Math.random() * 200),
-        averageWaitTimeMinutes: 20 + Math.floor(Math.random() * 120),
+        rating: 3.5 + (i % 4) * 0.4,
+        reviewCount: 10 + i * 25,
+        averageWaitTimeMinutes: 20 + i * 15,
       };
     });
   }

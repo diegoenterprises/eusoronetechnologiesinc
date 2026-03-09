@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { publicProcedure, adminProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { auditLogs, users } from "../../drizzle/schema";
 
@@ -55,7 +56,7 @@ export const auditLogsRouter = router({
           total: total?.count || 0,
         };
       } catch (error) {
-        console.error('[AuditLogs] getLogs error:', error);
+        logger.error('[AuditLogs] getLogs error:', error);
         return { logs: [], totalPages: 0, total: 0 };
       }
     }),
@@ -68,7 +69,7 @@ export const auditLogsRouter = router({
       const userList = await db.select({ id: users.id, name: users.name }).from(users).limit(100);
       return userList.map(u => ({ id: String(u.id), name: u.name || 'Unknown' }));
     } catch (error) {
-      console.error('[AuditLogs] getUsers error:', error);
+      logger.error('[AuditLogs] getUsers error:', error);
       return [];
     }
   }),
@@ -92,7 +93,7 @@ export const auditLogsRouter = router({
         securityEvents: 0,
       };
     } catch (error) {
-      console.error('[AuditLogs] getSummary error:', error);
+      logger.error('[AuditLogs] getSummary error:', error);
       return { totalEvents: 0, todayEvents: 0, activeUsers: 0, securityEvents: 0 };
     }
   }),

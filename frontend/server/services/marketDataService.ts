@@ -11,7 +11,10 @@
  * Falls back to seed data when API keys are not configured.
  */
 
+import { logger } from "../_core/logger";
+
 // ===== In-memory cache with TTL =====
+
 interface CacheEntry<T> {
   data: T;
   fetchedAt: number;
@@ -60,7 +63,7 @@ export async function fetchFRED(seriesId: string, limit = 52): Promise<FREDObser
 
     const res = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) });
     if (!res.ok) {
-      console.error(`FRED API error for ${seriesId}: ${res.status}`);
+      logger.error(`FRED API error for ${seriesId}: ${res.status}`);
       return [];
     }
 
@@ -76,7 +79,7 @@ export async function fetchFRED(seriesId: string, limit = 52): Promise<FREDObser
     setCache(cacheKey, observations, 60 * 60 * 1000);
     return observations;
   } catch (err) {
-    console.error(`FRED fetch failed for ${seriesId}:`, err);
+    logger.error(`FRED fetch failed for ${seriesId}:`, err);
     return [];
   }
 }
@@ -112,7 +115,7 @@ export async function fetchEIADiesel(region = "NUS", limit = 12): Promise<EIADat
 
     const res = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) });
     if (!res.ok) {
-      console.error(`EIA API error: ${res.status}`);
+      logger.error(`EIA API error: ${res.status}`);
       return [];
     }
 
@@ -128,7 +131,7 @@ export async function fetchEIADiesel(region = "NUS", limit = 12): Promise<EIADat
     setCache(cacheKey, points, 4 * 60 * 60 * 1000);
     return points;
   } catch (err) {
-    console.error("EIA fetch failed:", err);
+    logger.error("EIA fetch failed:", err);
     return [];
   }
 }
@@ -183,7 +186,7 @@ export async function fetchBLS(seriesIds: string[]): Promise<Record<string, BLSD
     });
 
     if (!res.ok) {
-      console.error(`BLS API error: ${res.status}`);
+      logger.error(`BLS API error: ${res.status}`);
       return {};
     }
 
@@ -203,7 +206,7 @@ export async function fetchBLS(seriesIds: string[]): Promise<Record<string, BLSD
     setCache(cacheKey, result, 6 * 60 * 60 * 1000);
     return result;
   } catch (err) {
-    console.error("BLS fetch failed:", err);
+    logger.error("BLS fetch failed:", err);
     return {};
   }
 }
@@ -251,7 +254,7 @@ export async function fetchFMCSACatalyst(dotNumber: string): Promise<FMCSACataly
     setCache(cacheKey, catalyst, 24 * 60 * 60 * 1000);
     return catalyst;
   } catch (err) {
-    console.error(`FMCSA fetch failed for DOT ${dotNumber}:`, err);
+    logger.error(`FMCSA fetch failed for DOT ${dotNumber}:`, err);
     return null;
   }
 }
@@ -320,24 +323,24 @@ async function ensureYahooCrumb(): Promise<boolean> {
       cookies = raw.map((c: string) => c.split(";")[0]);
     }
     const cookieStr = cookies.join("; ");
-    if (!cookieStr) { console.warn("[Yahoo] No cookies from fc.yahoo.com"); return false; }
+    if (!cookieStr) { logger.warn("[Yahoo] No cookies from fc.yahoo.com"); return false; }
 
     // Step 2: Get crumb
     const r2 = await fetch("https://query2.finance.yahoo.com/v1/test/getcrumb", {
       headers: { "User-Agent": YF_UA, "Cookie": cookieStr },
       signal: AbortSignal.timeout(5000),
     });
-    if (!r2.ok) { console.warn(`[Yahoo] Crumb fetch ${r2.status}`); return false; }
+    if (!r2.ok) { logger.warn(`[Yahoo] Crumb fetch ${r2.status}`); return false; }
     const crumb = await r2.text();
-    if (!crumb || crumb.length < 3) { console.warn("[Yahoo] Empty crumb"); return false; }
+    if (!crumb || crumb.length < 3) { logger.warn("[Yahoo] Empty crumb"); return false; }
 
     _yCrumb = crumb;
     _yCookies = cookieStr;
     _yCrumbTs = Date.now();
-    console.log("[Yahoo] Crumb authenticated OK");
+    logger.info("[Yahoo] Crumb authenticated OK");
     return true;
   } catch (err) {
-    console.warn(`[Yahoo] Crumb auth failed: ${(err as Error).message}`);
+    logger.warn(`[Yahoo] Crumb auth failed: ${(err as Error).message}`);
     return false;
   }
 }
@@ -409,17 +412,17 @@ export async function fetchYahooFinanceQuotes(symbols: string[]): Promise<Map<st
           });
         }
         if (quotes.size > 0) {
-          console.log(`[Yahoo] Crumb batch: ${quotes.size} quotes`);
+          logger.info(`[Yahoo] Crumb batch: ${quotes.size} quotes`);
           setCache(cacheKey, quotes, 5 * 60 * 1000);
           return quotes;
         }
       } else {
-        console.warn(`[Yahoo] Crumb batch returned ${res.status}`);
+        logger.warn(`[Yahoo] Crumb batch returned ${res.status}`);
         // Invalidate crumb if auth failed
         if (res.status === 401 || res.status === 403) { _yCrumb = null; _yCrumbTs = 0; }
       }
     } catch (err) {
-      console.warn(`[Yahoo] Crumb batch failed: ${(err as Error).message}`);
+      logger.warn(`[Yahoo] Crumb batch failed: ${(err as Error).message}`);
     }
   }
 
@@ -444,10 +447,10 @@ export async function fetchYahooFinanceQuotes(symbols: string[]): Promise<Map<st
   }
 
   if (quotes.size > 0) {
-    console.log(`[Yahoo] Chart fallback: ${quotes.size} quotes`);
+    logger.info(`[Yahoo] Chart fallback: ${quotes.size} quotes`);
     setCache(cacheKey, quotes, 5 * 60 * 1000);
   } else {
-    console.warn("[Yahoo] All endpoints failed — relying on FRED/EIA");
+    logger.warn("[Yahoo] All endpoints failed — relying on FRED/EIA");
   }
   return quotes;
 }
@@ -507,7 +510,7 @@ export async function fetchCommodityPriceAPI(symbols: string[]): Promise<Record<
       });
 
       if (!res.ok) {
-        console.warn(`CommodityPriceAPI ${base} returned ${res.status}`);
+        logger.warn(`CommodityPriceAPI ${base} returned ${res.status}`);
         continue;
       }
 
@@ -515,15 +518,15 @@ export async function fetchCommodityPriceAPI(symbols: string[]): Promise<Record<
       const rates: Record<string, number> = json.rates || json.data?.rates || json.data || {};
       if (Object.keys(rates).length === 0) continue;
 
-      console.log(`[CPAPI] ${base}: ${Object.keys(rates).length} prices`);
+      logger.info(`[CPAPI] ${base}: ${Object.keys(rates).length} prices`);
       setCache(cacheKey, rates, 2 * 60 * 1000);
       return rates;
     } catch (err) {
-      console.warn(`CommodityPriceAPI ${base} failed: ${(err as Error).message?.slice(0, 80)}`);
+      logger.warn(`CommodityPriceAPI ${base} failed: ${(err as Error).message?.slice(0, 80)}`);
     }
   }
 
-  console.warn("[CPAPI] All endpoints exhausted");
+  logger.warn("[CPAPI] All endpoints exhausted");
   return {};
 }
 
@@ -555,7 +558,7 @@ export async function fetchCPAPIHistorical(symbols: string[], date: string): Pro
     setCache(cacheKey, rates, 24 * 60 * 60 * 1000);
     return rates;
   } catch (err) {
-    console.error("CommodityPriceAPI historical fetch failed:", err);
+    logger.error("CommodityPriceAPI historical fetch failed:", err);
     return {};
   }
 }
@@ -604,7 +607,7 @@ export async function searchCommodityPriceAPI(query: string): Promise<Array<{ sy
       return { symbol: sym, name, price: prices[sym] || 0 };
     });
   } catch (err) {
-    console.error("CommodityPriceAPI search failed:", err);
+    logger.error("CommodityPriceAPI search failed:", err);
     return [];
   }
 }
@@ -622,7 +625,7 @@ export async function searchYahooFinance(query: string): Promise<Array<{ symbol:
       signal: AbortSignal.timeout(8000),
     });
     if (!searchRes.ok) {
-      console.warn(`[MarketData] Yahoo autosuggest returned ${searchRes.status}`);
+      logger.warn(`[MarketData] Yahoo autosuggest returned ${searchRes.status}`);
       return [];
     }
     const searchJson = await searchRes.json();
@@ -662,7 +665,7 @@ export async function searchYahooFinance(query: string): Promise<Array<{ symbol:
     for (const r of settled) { if (r && r.price > 0) results.push(r); }
     return results;
   } catch (err) {
-    console.warn("[MarketData] Yahoo Finance search failed:", (err as Error).message);
+    logger.warn("[MarketData] Yahoo Finance search failed:", (err as Error).message);
     return [];
   }
 }
@@ -885,12 +888,12 @@ export async function snapshotLoadsToDuckDB(): Promise<{ success: boolean; rows:
 
     if (res.ok) {
       const result = await res.json() as any;
-      console.log(`[MarketData] DuckDB snapshot: ${result.rows_ingested} loads ingested`);
+      logger.info(`[MarketData] DuckDB snapshot: ${result.rows_ingested} loads ingested`);
       return { success: true, rows: result.rows_ingested };
     }
     return { success: false, rows: 0 };
   } catch (err) {
-    console.warn("[MarketData] DuckDB snapshot failed:", err);
+    logger.warn("[MarketData] DuckDB snapshot failed:", err);
     return { success: false, rows: 0 };
   }
 }

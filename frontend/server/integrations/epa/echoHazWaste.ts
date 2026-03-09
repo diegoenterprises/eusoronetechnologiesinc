@@ -13,6 +13,7 @@
  * - Enforcement actions = regulatory pressure in a zone
  * - Zone density of RCRA handlers = hazmat market opportunity score
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzRcraHandlers } from "../../../drizzle/schema";
 import { sql } from "drizzle-orm";
@@ -43,7 +44,7 @@ export async function fetchRCRAHandlers(stateCode: string): Promise<void> {
   });
 
   if (!response.ok) {
-    console.error(`[ECHO-HazWaste] API error ${response.status} for ${stateCode}`);
+    logger.error(`[ECHO-HazWaste] API error ${response.status} for ${stateCode}`);
     return;
   }
 
@@ -119,7 +120,7 @@ export async function fetchRCRAHandlers(stateCode: string): Promise<void> {
     }
   }
 
-  console.log(`[ECHO-HazWaste] ${stateCode}: ${inserted}/${facilities.length} RCRA handlers`);
+  logger.info(`[ECHO-HazWaste] ${stateCode}: ${inserted}/${facilities.length} RCRA handlers`);
 }
 
 /**
@@ -174,7 +175,7 @@ export async function enrichViolationDetails(stateCode: string): Promise<void> {
  * Called daily at 4:30 AM.
  */
 export async function syncECHOHazWaste(): Promise<void> {
-  console.log("[ECHO-HazWaste] Starting RCRA handler sync...");
+  logger.info("[ECHO-HazWaste] Starting RCRA handler sync...");
 
   for (const state of TARGET_STATES) {
     try {
@@ -182,7 +183,7 @@ export async function syncECHOHazWaste(): Promise<void> {
       // Rate limit: ~30 req/min max for ECHO
       await new Promise((r) => setTimeout(r, 2000));
     } catch (err) {
-      console.error(`[ECHO-HazWaste] Error syncing ${state}:`, err);
+      logger.error(`[ECHO-HazWaste] Error syncing ${state}:`, err);
     }
   }
 
@@ -194,5 +195,5 @@ export async function syncECHOHazWaste(): Promise<void> {
     } catch {}
   }
 
-  console.log("[ECHO-HazWaste] RCRA handler sync complete");
+  logger.info("[ECHO-HazWaste] RCRA handler sync complete");
 }

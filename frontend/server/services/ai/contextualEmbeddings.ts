@@ -20,6 +20,7 @@
  * Reference: pplx-embed-context-v1 (ConTEB SOTA, arXiv:2602.11151)
  */
 
+import { logger } from "../../_core/logger";
 import { embeddingService, EmbeddingService } from "../embeddings/embeddingService";
 import { getDb } from "../../db";
 import { sql } from "drizzle-orm";
@@ -195,7 +196,7 @@ export async function buildContextualIndex(
   try {
     const healthy = await embeddingService.isHealthy();
     if (!healthy) {
-      console.warn("[ContextualEmbed] Embedding service unavailable");
+      logger.warn("[ContextualEmbed] Embedding service unavailable");
       indexBuilding = false;
       return { indexed: 0, errors: 0, chunks: contextualIndex.length };
     }
@@ -207,7 +208,7 @@ export async function buildContextualIndex(
       allChunks.push(...chunks);
     }
 
-    console.log(`[ContextualEmbed] Chunked ${documents.length} documents into ${allChunks.length} contextual chunks`);
+    logger.info(`[ContextualEmbed] Chunked ${documents.length} documents into ${allChunks.length} contextual chunks`);
 
     // Batch embed using contextual text (includes document prefix)
     for (let i = 0; i < allChunks.length; i += BATCH_SIZE) {
@@ -223,7 +224,7 @@ export async function buildContextualIndex(
           }
         }
       } catch (err: any) {
-        console.error(`[ContextualEmbed] Batch ${i}-${i + batch.length} failed:`, err.message);
+        logger.error(`[ContextualEmbed] Batch ${i}-${i + batch.length} failed:`, err.message);
         errors += batch.length;
       }
     }
@@ -232,7 +233,7 @@ export async function buildContextualIndex(
     contextualIndex = allChunks.filter(c => c.embedding !== null);
     lastIndexBuild = Date.now();
 
-    console.log(`[ContextualEmbed] Index built: ${indexed} embedded, ${errors} errors, ${contextualIndex.length} total`);
+    logger.info(`[ContextualEmbed] Index built: ${indexed} embedded, ${errors} errors, ${contextualIndex.length} total`);
   } finally {
     indexBuilding = false;
   }
@@ -313,7 +314,7 @@ export async function contextualSearch(
       contextEnhanced: true,
     };
   } catch (err: any) {
-    console.error("[ContextualEmbed] Search error:", err.message);
+    logger.error("[ContextualEmbed] Search error:", err.message);
     return {
       results: [],
       totalIndexed: contextualIndex.length,

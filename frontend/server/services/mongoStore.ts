@@ -11,6 +11,8 @@
  * Feature-flagged: MONGO_ENABLED=true to activate
  */
 
+import { logger } from "../_core/logger";
+
 const MONGO_ENABLED = process.env.MONGO_ENABLED === "true";
 const MONGO_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/eusotrip";
 
@@ -37,10 +39,10 @@ export async function connectMongo(): Promise<any> {
     await db.collection("bol_documents").createIndex({ loadId: 1 });
     await db.collection("gamification_history").createIndex({ userId: 1, eventType: 1, timestamp: -1 });
 
-    console.log("[QPilotOS/WS-QP-004] MongoDB connected, indexes created");
+    logger.info("[QPilotOS/WS-QP-004] MongoDB connected, indexes created");
     return db;
   } catch (err: any) {
-    console.warn("[QPilotOS/WS-QP-004] MongoDB unavailable:", err.message);
+    logger.warn("[QPilotOS/WS-QP-004] MongoDB unavailable:", err.message);
     return null;
   }
 }

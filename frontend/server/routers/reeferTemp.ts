@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { adminProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { reeferReadings, reeferAlerts } from "../../drizzle/schema";
 
@@ -49,7 +50,7 @@ export const reeferTempRouter = router({
           recordedAt: r.recordedAt?.toISOString() || '',
         }));
       } catch (e) {
-        console.error("[ReeferTemp] getReadings error:", e);
+        logger.error("[ReeferTemp] getReadings error:", e);
         return [];
       }
     }),
@@ -90,7 +91,7 @@ export const reeferTempRouter = router({
         }
         return result;
       } catch (e) {
-        console.error("[ReeferTemp] getLatestByZone error:", e);
+        logger.error("[ReeferTemp] getLatestByZone error:", e);
         return {};
       }
     }),
@@ -134,7 +135,7 @@ export const reeferTempRouter = router({
           excursions: stats?.excursions || 0,
         };
       } catch (e) {
-        console.error("[ReeferTemp] getStats error:", e);
+        logger.error("[ReeferTemp] getStats error:", e);
         return fallback;
       }
     }),
@@ -166,7 +167,7 @@ export const reeferTempRouter = router({
 
         return rows.map(r => ({ hour: r.hour, avg: r.avg }));
       } catch (e) {
-        console.error("[ReeferTemp] getHourlyAvgs error:", e);
+        logger.error("[ReeferTemp] getHourlyAvgs error:", e);
         return [];
       }
     }),
@@ -252,7 +253,7 @@ export const reeferTempRouter = router({
           createdAt: a.createdAt?.toISOString() || '',
         }));
       } catch (e) {
-        console.error("[ReeferTemp] getAlerts error:", e);
+        logger.error("[ReeferTemp] getAlerts error:", e);
         return [];
       }
     }),
@@ -323,7 +324,7 @@ export const reeferTempRouter = router({
             });
             alertsCreated++;
           }
-        } catch (e) { console.warn("[ReeferTemp] ingestTelemetry insert error:", e); }
+        } catch (e) { logger.warn("[ReeferTemp] ingestTelemetry insert error:", e); }
       }
 
       return { success: true, inserted, alertsCreated, source: input.source };

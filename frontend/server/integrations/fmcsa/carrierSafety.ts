@@ -4,6 +4,7 @@
  * Auth: Web Services Key (FMCSA_WEBSERVICE_KEY)
  * Refresh: Daily at 2 AM
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzCarrierSafety, loads } from "../../../drizzle/schema";
 import { sql } from "drizzle-orm";
@@ -63,7 +64,7 @@ export async function fetchCarrierSafety(dotNumber: string): Promise<any | null>
 export async function syncCarrierSafetyData(): Promise<void> {
   const key = process.env.FMCSA_WEBSERVICE_KEY;
   if (!key) {
-    console.warn("[FMCSA] No FMCSA_WEBSERVICE_KEY set, skipping carrier safety sync");
+    logger.warn("[FMCSA] No FMCSA_WEBSERVICE_KEY set, skipping carrier safety sync");
     return;
   }
 
@@ -80,7 +81,7 @@ export async function syncCarrierSafetyData(): Promise<void> {
       .limit(100);
   } catch {
     // If metadata column doesn't have DOT numbers, just return
-    console.log("[FMCSA] No carrier DOT numbers found in loads, skipping");
+    logger.info("[FMCSA] No carrier DOT numbers found in loads, skipping");
     return;
   }
 
@@ -119,7 +120,7 @@ export async function syncCarrierSafetyData(): Promise<void> {
       // Rate limit: 100ms between requests
       await new Promise((r) => setTimeout(r, 100));
     } catch (err) {
-      console.error(`[FMCSA] Failed for DOT ${dot}:`, err);
+      logger.error(`[FMCSA] Failed for DOT ${dot}:`, err);
     }
   }
 }

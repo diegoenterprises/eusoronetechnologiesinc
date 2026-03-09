@@ -19,6 +19,7 @@
  * Models retrain periodically from fresh DB queries.
  */
 
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, users, bids, companies, escortAssignments } from "../../drizzle/schema";
 import { eq, desc, sql, and, gte, lte, or, ne, isNotNull } from "drizzle-orm";
@@ -263,11 +264,11 @@ class MLEngine {
   }
 
   async initialize(): Promise<void> {
-    console.log("[MLEngine] Initializing...");
+    logger.info("[MLEngine] Initializing...");
     await this.train();
     // Retrain every 30 minutes
     this.trainInterval = setInterval(() => this.train(), 30 * 60 * 1000);
-    console.log("[MLEngine] Initialized. Retraining every 30 min.");
+    logger.info("[MLEngine] Initialized. Retraining every 30 min.");
   }
 
   // ── TRAINING ────────────────────────────────────────────────
@@ -540,12 +541,12 @@ class MLEngine {
         escortStats.avgFlatRate = flatRates.length > 0 ? flatRates.reduce((a, b) => a + b, 0) / flatRates.length : 0;
         escortStats.avgPerMileRate = perMileRates.length > 0 ? perMileRates.reduce((a, b) => a + b, 0) / perMileRates.length : 0;
         escortStats.avgPerHourRate = perHourRates.length > 0 ? perHourRates.reduce((a, b) => a + b, 0) / perHourRates.length : 0;
-      } catch (e) { console.error('[MLEngine] Escort training error:', e); }
+      } catch (e) { logger.error('[MLEngine] Escort training error:', e); }
 
       this.state.escortRateStats = escortStats;
-      console.log(`[MLEngine] Trained in ${Date.now() - start}ms: ${allLoads.length} loads, ${laneMap.size} lanes, ${carrierMap.size} carriers, ${escortStats.totalAssignments} escort assignments`);
+      logger.info(`[MLEngine] Trained in ${Date.now() - start}ms: ${allLoads.length} loads, ${laneMap.size} lanes, ${carrierMap.size} carriers, ${escortStats.totalAssignments} escort assignments`);
     } catch (e) {
-      console.error("[MLEngine] Training error:", e);
+      logger.error("[MLEngine] Training error:", e);
     } finally {
       this.state.isTraining = false;
     }
@@ -904,7 +905,7 @@ class MLEngine {
         }));
         const result = await sidecarForecast(lane, history, 4);
         if (result?.success && result.forecast.length > 0) {
-          console.log(`[MLEngine] Darts/Prophet forecast for ${lane}: model=${result.model_used}, trend=${result.trend}`);
+          logger.info(`[MLEngine] Darts/Prophet forecast for ${lane}: model=${result.model_used}, trend=${result.trend}`);
           // Compute confidence from data depth + model quality + CI tightness
           const dataWeeks = ls.weeklyVolumes.length;
           const dataDepthScore = Math.min(dataWeeks / 12, 1.0); // max at 12+ weeks

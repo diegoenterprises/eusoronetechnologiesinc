@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { notifications, users } from "../../drizzle/schema";
 
@@ -44,7 +45,7 @@ export const alertsRouter = router({
           dismissedAt: null,
         }));
       } catch (error) {
-        console.error('[Alerts] list error:', error);
+        logger.error('[Alerts] list error:', error);
         return [];
       }
     }),
@@ -66,7 +67,7 @@ export const alertsRouter = router({
           message: n.message || '', createdAt: n.createdAt?.toISOString() || '',
           acknowledged: n.isRead || false,
         }));
-      } catch (e) { console.error('[Alerts] getAll error:', e); return []; }
+      } catch (e) { logger.error('[Alerts] getAll error:', e); return []; }
     }),
 
   /**

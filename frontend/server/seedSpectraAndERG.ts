@@ -13,6 +13,7 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql2 from "mysql2";
 import { sql } from "drizzle-orm";
+import { logger } from "./_core/logger";
 import {
   crudeOilSpecs,
   ergGuides,
@@ -31,17 +32,17 @@ import {
 async function seed() {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
-    console.error("DATABASE_URL is required");
+    logger.error("DATABASE_URL is required");
     process.exit(1);
   }
 
   const pool = mysql2.createPool({ uri: dbUrl, connectionLimit: 5 });
   const db = drizzle(pool);
 
-  console.log("🔧 Starting SpectraMatch + ERG data migration...\n");
+  logger.info("🔧 Starting SpectraMatch + ERG data migration...\n");
 
   // ── 1. Create tables if not exist ──────────────────────────────────────────
-  console.log("📦 Creating tables...");
+  logger.info("📦 Creating tables...");
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS crude_oil_specs (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -118,7 +119,7 @@ async function seed() {
   `);
 
   // ── 2. Seed crude oil specs ────────────────────────────────────────────────
-  console.log(`\n🛢️  Seeding ${CRUDE_OIL_SPECS.length} crude oil specifications...`);
+  logger.info(`\n🛢️  Seeding ${CRUDE_OIL_SPECS.length} crude oil specifications...`);
   // Clear existing
   await db.execute(sql`DELETE FROM crude_oil_specs`);
 
@@ -147,11 +148,11 @@ async function seed() {
     );
     process.stdout.write(`  ✓ ${Math.min(i + 20, CRUDE_OIL_SPECS.length)}/${CRUDE_OIL_SPECS.length}\r`);
   }
-  console.log(`  ✅ ${CRUDE_OIL_SPECS.length} crude oil specs inserted`);
+  logger.info(`  ✅ ${CRUDE_OIL_SPECS.length} crude oil specs inserted`);
 
   // ── 3. Seed ERG guides ─────────────────────────────────────────────────────
   const guideEntries = Object.values(ERG_GUIDES);
-  console.log(`\n📙 Seeding ${guideEntries.length} ERG emergency response guides...`);
+  logger.info(`\n📙 Seeding ${guideEntries.length} ERG emergency response guides...`);
   await db.execute(sql`DELETE FROM erg_guides`);
 
   for (let i = 0; i < guideEntries.length; i += 20) {
@@ -168,10 +169,10 @@ async function seed() {
     );
     process.stdout.write(`  ✓ ${Math.min(i + 20, guideEntries.length)}/${guideEntries.length}\r`);
   }
-  console.log(`  ✅ ${guideEntries.length} ERG guides inserted`);
+  logger.info(`  ✅ ${guideEntries.length} ERG guides inserted`);
 
   // ── 4. Seed ERG materials ──────────────────────────────────────────────────
-  console.log(`\n📘 Seeding ${ERG_MATERIALS.length} ERG hazmat materials...`);
+  logger.info(`\n📘 Seeding ${ERG_MATERIALS.length} ERG hazmat materials...`);
   await db.execute(sql`DELETE FROM erg_materials`);
 
   for (let i = 0; i < ERG_MATERIALS.length; i += 50) {
@@ -192,10 +193,10 @@ async function seed() {
     );
     process.stdout.write(`  ✓ ${Math.min(i + 50, ERG_MATERIALS.length)}/${ERG_MATERIALS.length}\r`);
   }
-  console.log(`  ✅ ${ERG_MATERIALS.length} ERG materials inserted`);
+  logger.info(`  ✅ ${ERG_MATERIALS.length} ERG materials inserted`);
 
   // ── 5. Seed protective distances ───────────────────────────────────────────
-  console.log(`\n📗 Seeding ${TIH_PROTECTIVE_DISTANCES.length} protective distance entries...`);
+  logger.info(`\n📗 Seeding ${TIH_PROTECTIVE_DISTANCES.length} protective distance entries...`);
   await db.execute(sql`DELETE FROM erg_protective_distances`);
 
   for (let i = 0; i < TIH_PROTECTIVE_DISTANCES.length; i += 50) {
@@ -211,23 +212,23 @@ async function seed() {
     );
     process.stdout.write(`  ✓ ${Math.min(i + 50, TIH_PROTECTIVE_DISTANCES.length)}/${TIH_PROTECTIVE_DISTANCES.length}\r`);
   }
-  console.log(`  ✅ ${TIH_PROTECTIVE_DISTANCES.length} protective distances inserted`);
+  logger.info(`  ✅ ${TIH_PROTECTIVE_DISTANCES.length} protective distances inserted`);
 
   // ── Summary ────────────────────────────────────────────────────────────────
-  console.log("\n═══════════════════════════════════════════════════════════");
-  console.log("✅ MIGRATION COMPLETE");
-  console.log("═══════════════════════════════════════════════════════════");
-  console.log(`  🛢️  Crude Oil Specs:        ${CRUDE_OIL_SPECS.length} grades`);
-  console.log(`  📙 ERG Guides:              ${guideEntries.length} guides`);
-  console.log(`  📘 ERG Materials:           ${ERG_MATERIALS.length} materials`);
-  console.log(`  📗 Protective Distances:    ${TIH_PROTECTIVE_DISTANCES.length} entries`);
-  console.log("═══════════════════════════════════════════════════════════\n");
+  logger.info("\n═══════════════════════════════════════════════════════════");
+  logger.info("✅ MIGRATION COMPLETE");
+  logger.info("═══════════════════════════════════════════════════════════");
+  logger.info(`  🛢️  Crude Oil Specs:        ${CRUDE_OIL_SPECS.length} grades`);
+  logger.info(`  📙 ERG Guides:              ${guideEntries.length} guides`);
+  logger.info(`  📘 ERG Materials:           ${ERG_MATERIALS.length} materials`);
+  logger.info(`  📗 Protective Distances:    ${TIH_PROTECTIVE_DISTANCES.length} entries`);
+  logger.info("═══════════════════════════════════════════════════════════\n");
 
   await pool.end();
   process.exit(0);
 }
 
 seed().catch((err) => {
-  console.error("❌ Seed failed:", err);
+  logger.error("❌ Seed failed:", err);
   process.exit(1);
 });

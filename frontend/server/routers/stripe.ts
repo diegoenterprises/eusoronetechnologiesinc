@@ -13,6 +13,7 @@
 import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, companies, wallets, walletTransactions, payments, subscriptions as subscriptionsTable, subscriptionUsage } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
@@ -107,7 +108,7 @@ async function getOrCreateStripeCustomer(userOpenId: string | number, email: str
           .set({ stripeCustomerId: customer.id })
           .where(and(eq(users.id, resolved.id), sql`(${users.stripeCustomerId} IS NULL OR ${users.stripeCustomerId} = '')`));
       } catch {
-        console.warn("[Stripe] Could not store customer ID on user record");
+        logger.warn("[Stripe] Could not store customer ID on user record");
       }
 
       // Sync stripeCustomerId to wallet (ensure wallet↔user isolation)
@@ -299,9 +300,9 @@ export const stripeRouter = router({
           input.amount,
           feeResult
         );
-        console.log(`[Stripe] Load ${input.loadNumber} fee: $${feeResult.finalFee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
+        logger.info(`[Stripe] Load ${input.loadNumber} fee: $${feeResult.finalFee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
       } catch (feeErr) {
-        console.warn("[Stripe] Fee calculator fallback:", (feeErr as Error).message);
+        logger.warn("[Stripe] Fee calculator fallback:", (feeErr as Error).message);
         platformFeeCents = calculatePlatformFee(amountCents);
       }
 
@@ -473,7 +474,7 @@ export const stripeRouter = router({
           cancelAtPeriodEnd: sub.cancel_at_period_end,
         };
       } catch (error) {
-        console.error("[Stripe] getSubscription error:", error);
+        logger.error("[Stripe] getSubscription error:", error);
         return {
           active: false,
           plan: null,
@@ -682,7 +683,7 @@ export const stripeRouter = router({
           },
         });
       } catch (stripeErr: any) {
-        console.error(`[EusoConnect] Account creation failed: ${stripeErr.type} — ${stripeErr.message}`, stripeErr.raw?.message || "");
+        logger.error(`[EusoConnect] Account creation failed: ${stripeErr.type} — ${stripeErr.message}`, stripeErr.raw?.message || "");
         // Surface actionable error with EusoWallet branding
         if (stripeErr.type === 'StripeInvalidRequestError') {
           throw new Error(`EusoWallet account setup is being configured. Bank account connections via EusoWallet are available now. Payout enrollment will be enabled shortly.`);
@@ -701,7 +702,7 @@ export const stripeRouter = router({
             .set({ stripeConnectId: account.id })
             .where(eq(users.id, userId));
         } catch {
-          console.warn("[Stripe] Could not store connect ID on user record");
+          logger.warn("[Stripe] Could not store connect ID on user record");
         }
 
         try {
@@ -723,7 +724,7 @@ export const stripeRouter = router({
             });
           }
         } catch (err) {
-          console.warn("[Stripe] Could not sync connect ID to wallet:", err);
+          logger.warn("[Stripe] Could not sync connect ID to wallet:", err);
         }
       }
 
@@ -810,7 +811,7 @@ export const stripeRouter = router({
           currency: "usd",
         };
       } catch (e: any) {
-        console.warn("[Stripe] getConnectBalance error:", e.message);
+        logger.warn("[Stripe] getConnectBalance error:", e.message);
         return { hasAccount: false, available: 0, pending: 0 };
       }
     }),
@@ -867,7 +868,7 @@ export const stripeRouter = router({
           currency: ea.currency || "usd",
         }));
       } catch (e: any) {
-        console.warn("[Stripe] getConnectExternalAccounts error:", e.message);
+        logger.warn("[Stripe] getConnectExternalAccounts error:", e.message);
         return [];
       }
     }),
@@ -918,7 +919,7 @@ export const stripeRouter = router({
         .set({ stripeConnectId: connectId, stripeAccountStatus: newStatus })
         .where(eq(wallets.userId, userId));
 
-      console.log(`[Stripe Connect] Synced status for user ${userId}: ${newStatus}`);
+      logger.info(`[Stripe Connect] Synced status for user ${userId}: ${newStatus}`);
       return {
         accountId: connectId,
         status: newStatus,
@@ -978,9 +979,9 @@ export const stripeRouter = router({
           if (input.loadId) {
             await feeCalculator.recordFeeCollection(input.loadId, "load_booking", ctx.user.id, input.amount, feeResult);
           }
-          console.log(`[Stripe] PaymentIntent fee: $${feeResult.finalFee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
+          logger.info(`[Stripe] PaymentIntent fee: $${feeResult.finalFee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
         } catch (feeErr) {
-          console.warn("[Stripe] PaymentIntent fee calculator fallback:", (feeErr as Error).message);
+          logger.warn("[Stripe] PaymentIntent fee calculator fallback:", (feeErr as Error).message);
           feeCents = calculatePlatformFee(amountCents);
         }
         params.application_fee_amount = feeCents;

@@ -5,6 +5,7 @@
  */
 import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import { missions, missionProgress } from "../../drizzle/schema";
 
 interface MT { name:string; desc:string; cat:"deliveries"|"earnings"|"safety"|"efficiency"|"social"|"special"|"onboarding"; tt:"count"|"amount"|"distance"|"streak"|"rating"|"time"; tv:number; tu?:string; rt:"miles"|"xp"|"crate"|"priority_perk"|"fee_reduction"|"cash"; rv:number; xp:number; roles:string[]; tp:"weekly"|"daily"; }
@@ -194,9 +195,9 @@ export async function generateWeeklyMissions(): Promise<number> {
       }
     }
 
-    console.log(`[MissionGenerator] Week ${weekNum}: created ${created} missions, deactivated expired.`);
+    logger.info(`[MissionGenerator] Week ${weekNum}: created ${created} missions, deactivated expired.`);
   } catch (err) {
-    console.error("[MissionGenerator] Error:", err);
+    logger.error("[MissionGenerator] Error:", err);
   }
 
   return created;
@@ -295,9 +296,9 @@ export async function forceRotateMissions(forRole?: string): Promise<number> {
       }
     }
 
-    console.log(`[MissionGenerator] Force-rotated: created ${created} new missions for roles: ${roles.join(", ")}`);
+    logger.info(`[MissionGenerator] Force-rotated: created ${created} new missions for roles: ${roles.join(", ")}`);
   } catch (err) {
-    console.error("[MissionGenerator] Force-rotate error:", err);
+    logger.error("[MissionGenerator] Force-rotate error:", err);
   }
 
   return created;
@@ -384,9 +385,9 @@ export async function initNewUserGamification(userId: number): Promise<void> {
       },
     });
 
-    console.log(`[MissionGenerator] Gamification profile created for user ${userId}`);
+    logger.info(`[MissionGenerator] Gamification profile created for user ${userId}`);
   } catch (err) {
-    console.error(`[MissionGenerator] Failed to init gamification for user ${userId}:`, err);
+    logger.error(`[MissionGenerator] Failed to init gamification for user ${userId}:`, err);
   }
 }
 
@@ -394,10 +395,10 @@ let _timer: ReturnType<typeof setInterval> | null = null;
 
 export function startMissionScheduler() {
   // Generate on startup
-  setTimeout(() => generateWeeklyMissions().catch(console.error), 10000);
+  setTimeout(() => generateWeeklyMissions().catch(logger.error), 10000);
   // Re-check every 6 hours
-  _timer = setInterval(() => generateWeeklyMissions().catch(console.error), 6 * 60 * 60 * 1000);
-  console.log("[MissionGenerator] Scheduler started (generates weekly, checks every 6hrs)");
+  _timer = setInterval(() => generateWeeklyMissions().catch(logger.error), 6 * 60 * 60 * 1000);
+  logger.info("[MissionGenerator] Scheduler started (generates weekly, checks every 6hrs)");
 }
 
 export function stopMissionScheduler() {

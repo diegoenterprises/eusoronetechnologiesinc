@@ -5,6 +5,7 @@
 import { getDb } from "../db";
 import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "./logger";
 
 const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"];
 
@@ -27,11 +28,11 @@ export async function resolveUserRole(ctxUser: any): Promise<string> {
       .where(eq(users.email, email))
       .limit(1);
     if (row?.role && ADMIN_ROLES.includes(row.role)) {
-      console.log(`[resolveRole] JWT role=${tokenRole} but DB role=${row.role} for ${email} — using DB role`);
+      logger.info(`[resolveRole] JWT role=${tokenRole} but DB role=${row.role} for ${email} — using DB role`);
       return row.role;
     }
   } catch (err) {
-    console.warn("[resolveRole] DB lookup failed, using JWT role:", err);
+    logger.warn("[resolveRole] DB lookup failed, using JWT role:", err);
   }
 
   return tokenRole;

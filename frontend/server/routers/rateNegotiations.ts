@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, or } from "drizzle-orm";
+import { randomInt } from "crypto";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import {
@@ -39,7 +40,7 @@ function decryptNegMessage(msg: any): any {
 
 function generateNegotiationNumber(): string {
   const year = new Date().getFullYear();
-  const seq = Math.floor(Math.random() * 99999).toString().padStart(5, "0");
+  const seq = randomInt(0, 100000).toString().padStart(5, "0");
   return `NEG-${year}-${seq}`;
 }
 

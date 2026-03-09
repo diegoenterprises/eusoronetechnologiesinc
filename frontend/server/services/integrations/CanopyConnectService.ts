@@ -4,6 +4,7 @@
  */
 
 import { BaseIntegrationService, SyncResult, MappedRecord } from "./BaseIntegrationService";
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { insurancePolicies, certificatesOfInsurance, insuranceClaims } from "../../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
@@ -70,7 +71,7 @@ export class CanopyConnectService extends BaseIntegrationService {
       await this.makeRequest("/me");
       return true;
     } catch (error) {
-      console.error("[CanopyConnect] Connection test failed:", error);
+      logger.error("[CanopyConnect] Connection test failed:", error);
       return false;
     }
   }
@@ -148,12 +149,12 @@ export class CanopyConnectService extends BaseIntegrationService {
             stats.updated++;
           }
         } catch (error) {
-          console.error(`[CanopyConnect] Failed to sync policy ${policy.id}:`, error);
+          logger.error(`[CanopyConnect] Failed to sync policy ${policy.id}:`, error);
           stats.failed++;
         }
       }
     } catch (error) {
-      console.error("[CanopyConnect] Failed to fetch policies:", error);
+      logger.error("[CanopyConnect] Failed to fetch policies:", error);
       throw error;
     }
 
@@ -182,12 +183,12 @@ export class CanopyConnectService extends BaseIntegrationService {
             stats.updated++;
           }
         } catch (error) {
-          console.error(`[CanopyConnect] Failed to sync certificate ${cert.id}:`, error);
+          logger.error(`[CanopyConnect] Failed to sync certificate ${cert.id}:`, error);
           stats.failed++;
         }
       }
     } catch (error) {
-      console.error("[CanopyConnect] Failed to fetch certificates:", error);
+      logger.error("[CanopyConnect] Failed to fetch certificates:", error);
       throw error;
     }
 
@@ -216,12 +217,12 @@ export class CanopyConnectService extends BaseIntegrationService {
             stats.updated++;
           }
         } catch (error) {
-          console.error(`[CanopyConnect] Failed to sync claim ${claim.id}:`, error);
+          logger.error(`[CanopyConnect] Failed to sync claim ${claim.id}:`, error);
           stats.failed++;
         }
       }
     } catch (error) {
-      console.error("[CanopyConnect] Failed to fetch claims:", error);
+      logger.error("[CanopyConnect] Failed to fetch claims:", error);
       throw error;
     }
 

@@ -4,6 +4,7 @@
  */
 
 import { z } from "zod";
+import { randomBytes } from "crypto";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
   TDG_CLASSES, TDG_COMMODITY_MAP, CANUTEC_EMERGENCY, PROVINCE_PERMITS,
@@ -51,7 +52,7 @@ const tdgRouter = router({
       const routeProvs = [input.origin.province, input.destination.province].filter(Boolean) as string[];
       const validation = validateTDGCompliance({ unNumber: input.unNumber, hazmatClass: input.hazmatClass, weight: input.weight, packagingGroup: input.packagingGroup }, routeProvs);
       return {
-        documentId: `TDG-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+        documentId: `TDG-${Date.now()}-${randomBytes(4).toString('hex').toUpperCase()}`,
         documentType: "TDG_SHIPPING_DOCUMENT", generatedAt: new Date().toISOString(),
         jurisdiction: "CANADA", regulatoryBasis: "Transportation of Dangerous Goods Act (S.C. 1992, c. 34)",
         shippingDescription: desc, classification: classification || { unNumber: input.unNumber, tdgClass: input.hazmatClass, packagingGroup: input.packagingGroup, canutecNumber: CANUTEC_EMERGENCY.primaryNumeric },
@@ -79,7 +80,7 @@ const aceAciRouter = router({
       portOfEntry: z.string().optional(), estimatedArrival: z.string().optional(),
     }))
     .mutation(({ input }) => {
-      const entryNumber = `ACE-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+      const entryNumber = `ACE-${new Date().getFullYear()}-${randomBytes(5).toString('hex').toUpperCase()}`;
       const hasHazmat = input.commodities.some(c => c.unNumber || c.hazmatClass);
       return { success: true, entryNumber, manifestId: `MAN-${Date.now()}`, status: "SUBMITTED", submittedAt: new Date().toISOString(), portOfEntry: input.portOfEntry || "AUTO_ASSIGNED", estimatedProcessingTime: hasHazmat ? "4-8 hours" : "1-4 hours", hazmatNotification: hasHazmat ? { required: true, advanceNoticeDays: 15, notificationId: `HAZN-${Date.now()}` } : { required: false }, isfRequired: true, isfStatus: "PENDING" };
     }),
@@ -95,7 +96,7 @@ const aceAciRouter = router({
       estimatedArrival: z.string(), portOfEntry: z.string().optional(),
     }))
     .mutation(({ input }) => {
-      const aciNumber = `ACI-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+      const aciNumber = `ACI-${new Date().getFullYear()}-${randomBytes(5).toString('hex').toUpperCase()}`;
       const hasHazmat = input.commodities.some(c => c.unNumber || c.hazmatClass);
       return { success: true, aciNumber, status: "ADVANCE_FILED", submittedAt: new Date().toISOString(), advanceNoticeCompliant: hasHazmat ? new Date(input.estimatedArrival).getTime() - Date.now() >= 15 * 86400000 : true, cbsaReferenceNumber: `CBSA-${Date.now()}` };
     }),
@@ -120,7 +121,7 @@ const nomRouter = router({
   }),
   generateDocument: protectedProcedure.input(z.object({ loadId: z.string().optional(), unNumber: z.string(), hazmatClass: z.string(), packagingGroup: z.string().optional(), origin: z.object({ name: z.string(), city: z.string(), state: z.string(), country: z.string() }), destination: z.object({ name: z.string(), city: z.string(), state: z.string(), country: z.string() }) }))
     .mutation(({ input }) => ({
-      documentId: `NOM-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+      documentId: `NOM-${Date.now()}-${randomBytes(4).toString('hex').toUpperCase()}`,
       documentType: "NOM_005_SHIPPING_PAPER", generatedAt: new Date().toISOString(), jurisdiction: "MEXICO",
       regulatoryBasis: "NOM-005-SCT/2008", language: "es",
       shippingDescription: { es: `UN${input.unNumber}, Clase ${input.hazmatClass}${input.packagingGroup ? `, GE ${input.packagingGroup}` : ""}`, en: `UN${input.unNumber}, Class ${input.hazmatClass}${input.packagingGroup ? `, PG ${input.packagingGroup}` : ""}` },
@@ -131,7 +132,7 @@ const nomRouter = router({
 
 const ctpatRouter = router({
   getStatus: protectedProcedure.input(z.object({ carrierId: z.string().optional(), dotNumber: z.string().optional() })).query(() => ({
-    certified: true, certificationNumber: `CTPAT-${Math.random().toString(36).slice(2, 10).toUpperCase()}`, tier: "Tier II",
+    certified: true, certificationNumber: `CTPAT-${randomBytes(5).toString('hex').toUpperCase()}`, tier: "Tier II",
     expiryDate: new Date(Date.now() + 365 * 86400000).toISOString(), lastAuditDate: new Date(Date.now() - 90 * 86400000).toISOString(),
     complianceScore: 94, renewalDueDate: new Date(Date.now() + 275 * 86400000).toISOString(),
     benefits: ["Reduced border inspections", "Priority processing at ports of entry", "FAST lane access", "Front-of-line at land borders"],

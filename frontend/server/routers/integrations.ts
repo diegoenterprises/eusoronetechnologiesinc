@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, adminProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { fmcsaService } from "../services/fmcsa";
 import { eldService } from "../services/eld";
 import { clearinghouseService } from "../services/clearinghouse";
@@ -542,7 +543,7 @@ export const integrationsRouter = router({
           return roles.includes(userRole) || roles.includes("ALL");
         });
       } catch (error) {
-        console.error("[Integrations] getProviders error:", error);
+        logger.error("[Integrations] getProviders error:", error);
         return [];
       }
     }),
@@ -562,7 +563,7 @@ export const integrationsRouter = router({
         
         return provider || null;
       } catch (error) {
-        console.error("[Integrations] getProviderBySlug error:", error);
+        logger.error("[Integrations] getProviderBySlug error:", error);
         return null;
       }
     }),
@@ -591,7 +592,7 @@ export const integrationsRouter = router({
           return roles.includes(userRole) || roles.includes("ALL");
         });
       } catch (error) {
-        console.error("[Integrations] getProvidersByCategory error:", error);
+        logger.error("[Integrations] getProvidersByCategory error:", error);
         return [];
       }
     }),
@@ -629,7 +630,7 @@ export const integrationsRouter = router({
           provider: c.provider,
         }));
       } catch (error) {
-        console.error("[Integrations] getConnections error:", error);
+        logger.error("[Integrations] getConnections error:", error);
         return [];
       }
     }),
@@ -655,7 +656,7 @@ export const integrationsRouter = router({
         
         return connection || null;
       } catch (error) {
-        console.error("[Integrations] getConnectionByProvider error:", error);
+        logger.error("[Integrations] getConnectionByProvider error:", error);
         return null;
       }
     }),
@@ -909,7 +910,7 @@ export const integrationsRouter = router({
             lastRecordsSynced: result.recordsCreated + result.recordsUpdated,
           }).where(eq(integrationConnections.id, connection.id));
         } catch (e: any) {
-          console.error(`[Integrations] Sync failed for ${input.providerSlug}:`, e);
+          logger.error(`[Integrations] Sync failed for ${input.providerSlug}:`, e);
           await db.update(integrationSyncLogs).set({
             status: "failed",
             completedAt: new Date(),
@@ -962,7 +963,7 @@ export const integrationsRouter = router({
         
         return logs;
       } catch (error) {
-        console.error("[Integrations] getSyncHistory error:", error);
+        logger.error("[Integrations] getSyncHistory error:", error);
         return [];
       }
     }),
@@ -991,7 +992,7 @@ export const integrationsRouter = router({
         
         return { connected, syncing, errors, totalRecords };
       } catch (error) {
-        console.error("[Integrations] getDashboardStats error:", error);
+        logger.error("[Integrations] getDashboardStats error:", error);
         return { connected: 0, syncing: 0, errors: 0, totalRecords: 0 };
       }
     }),

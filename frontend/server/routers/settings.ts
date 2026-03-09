@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import { eq } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { users, companies } from "../../drizzle/schema";
@@ -139,7 +140,7 @@ export const settingsRouter = router({
       const newKey = {
         id: `key_${Date.now()}`,
         name: input.name,
-        keyHash: `pk_live_${Math.random().toString(36).substring(2, 15)}`,
+        keyHash: `pk_live_${randomBytes(8).toString('hex')}`,
         scopes: input.scopes,
         createdAt: new Date().toISOString(),
       };
@@ -180,7 +181,7 @@ export const settingsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = await resolveUserId(ctx.user);
       const settings = await getUserSettings(userId);
-      const wh = { id: `wh_${Date.now()}`, url: input.url, events: input.events, secret: input.secret || `whsec_${Math.random().toString(36).substring(2, 15)}`, createdAt: new Date().toISOString() };
+      const wh = { id: `wh_${Date.now()}`, url: input.url, events: input.events, secret: input.secret || `whsec_${randomBytes(8).toString('hex')}`, createdAt: new Date().toISOString() };
       if (!settings.webhooks) settings.webhooks = [];
       settings.webhooks.push(wh);
       await saveUserSettings(userId, settings);

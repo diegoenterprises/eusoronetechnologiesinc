@@ -1,6 +1,7 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
 import { authService } from "./auth";
+import { logger } from "./logger";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -25,7 +26,7 @@ export async function createContext(
         user,
       };
     } catch (error) {
-      console.error('[Context] Failed to parse test user:', error);
+      logger.error('[Context] Failed to parse test user:', error);
     }
   }
 

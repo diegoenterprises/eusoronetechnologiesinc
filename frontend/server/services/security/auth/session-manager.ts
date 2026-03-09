@@ -10,6 +10,7 @@
 
 import crypto from "crypto";
 import { sql } from "drizzle-orm";
+import { logger } from "../../../_core/logger";
 import { getDb } from "../../../db";
 import { recordAuditEvent, AuditAction, AuditCategory } from "../../../_core/auditService";
 
@@ -86,7 +87,7 @@ export async function createSession(
                     ${refreshExpiresAt.toISOString()}, ${mfaVerified ? 1 : 0})`
       );
     } catch (err) {
-      console.warn("[SessionManager] DB insert failed, session created in-memory only:", err);
+      logger.warn("[SessionManager] DB insert failed, session created in-memory only:", err);
     }
   }
 

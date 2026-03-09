@@ -10,6 +10,7 @@
 
 import { z } from "zod";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { 
   loads, 
@@ -83,7 +84,7 @@ export const dashboardRouter = router({
         }
       }, 120); // 2min TTL
     } catch (error) {
-      console.error('[Dashboard] Stats query failed:', error);
+      logger.error('[Dashboard] Stats query failed:', error);
       throw new Error("Unable to load dashboard data. Please try again.");
     }
   }),
@@ -1170,7 +1171,7 @@ export const dashboardRouter = router({
       const pendingCount = permits.filter(p => p.status === "pending" || p.status === "expired").length;
       return { permits, allValid, pendingCount };
     } catch (error) {
-      console.error("[Dashboard] getPermitVerification error:", error);
+      logger.error("[Dashboard] getPermitVerification error:", error);
       return { permits: [], allValid: false, pendingCount: 0 };
     }
   }),
@@ -1216,7 +1217,7 @@ export const dashboardRouter = router({
         requiresEscort: needsEscort,
       };
     } catch (error) {
-      console.error("[Dashboard] getOversizedLoads error:", error);
+      logger.error("[Dashboard] getOversizedLoads error:", error);
       return { active: [], totalActive: 0, requiresEscort: 0 };
     }
   }),
@@ -1246,7 +1247,7 @@ export const dashboardRouter = router({
       const score = protocols.length > 0 ? Math.round((passed / protocols.length) * 100) : 100;
       return { protocols, complianceScore: score };
     } catch (error) {
-      console.error("[Dashboard] getSafetyProtocols error:", error);
+      logger.error("[Dashboard] getSafetyProtocols error:", error);
       return { protocols: [], complianceScore: 0 };
     }
   }),
@@ -1282,7 +1283,7 @@ export const dashboardRouter = router({
         enRoute: enRoute?.count || 0,
       };
     } catch (error) {
-      console.error("[Dashboard] getCoordinationMap error:", error);
+      logger.error("[Dashboard] getCoordinationMap error:", error);
       return { total: 0, escorts: 0, drivers: 0, enRoute: 0 };
     }
   }),
@@ -1327,7 +1328,7 @@ export const dashboardRouter = router({
         totalThisYear: yearCount?.count || 0,
       };
     } catch (error) {
-      console.error("[Dashboard] getIncidentReports error:", error);
+      logger.error("[Dashboard] getIncidentReports error:", error);
       return { incidents: [], totalThisMonth: 0, totalThisYear: 0 };
     }
   }),
@@ -1361,7 +1362,7 @@ export const dashboardRouter = router({
       const issueCount = items.filter(i => i.status !== "good").length;
       return { items, allGood: issueCount === 0, issueCount };
     } catch (error) {
-      console.error("[Dashboard] getEquipmentChecklist error:", error);
+      logger.error("[Dashboard] getEquipmentChecklist error:", error);
       return { items: [], allGood: true, issueCount: 0 };
     }
   }),

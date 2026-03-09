@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, like } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import crypto from "crypto";
 import { getDb } from "../db";
 import { users, auditLogs, notificationPreferences, companies } from "../../drizzle/schema";
@@ -20,7 +21,7 @@ async function ensureUserExists(ctxUser: any): Promise<number> {
       const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
       if (row) return row.id;
     } catch (err) {
-      console.warn("[ensureUserExists] email lookup failed:", err);
+      logger.warn("[ensureUserExists] email lookup failed:", err);
     }
   }
 
@@ -41,7 +42,7 @@ async function ensureUserExists(ctxUser: any): Promise<number> {
       if (insertedId) return insertedId;
     } catch (insertErr: any) {
       // If openId column doesn't exist, retry without it
-      console.warn("[ensureUserExists] insert with openId failed, retrying without:", insertErr?.message);
+      logger.warn("[ensureUserExists] insert with openId failed, retrying without:", insertErr?.message);
       delete insertData.openId;
       const result = await db.insert(users).values(insertData as any);
       const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
@@ -54,7 +55,7 @@ async function ensureUserExists(ctxUser: any): Promise<number> {
     }
     return 0;
   } catch (err: any) {
-    console.error("[ensureUserExists] Insert failed:", err);
+    logger.error("[ensureUserExists] Insert failed:", err);
     // Duplicate key? Try to find by email again
     if (email) {
       try {
@@ -167,7 +168,7 @@ export const usersRouter = router({
         deletionDate: null,
       };
     } catch (error) {
-      console.error('[Users] getProfile error:', error);
+      logger.error('[Users] getProfile error:', error);
       return {
         id: userOpenId,
         firstName: ctx.user?.name?.split(" ")[0] || "User",
@@ -696,7 +697,7 @@ export const usersRouter = router({
         await db.update(users).set(updateData).where(eq(users.id, userId));
         return { success: true };
       } catch (error: any) {
-        console.error("[users.updateProfile] Error:", error);
+        logger.error("[users.updateProfile] Error:", error);
         if (error.message?.includes("phone")) {
           const fullName = input.firstName || input.lastName
             ? `${input.firstName || ""} ${input.lastName || ""}`.trim()
@@ -768,7 +769,7 @@ export const usersRouter = router({
         await db.update(users).set({ profilePicture: input.imageData, updatedAt: new Date() }).where(eq(users.id, userId));
         return { success: true };
       } catch (error: any) {
-        console.error("[users.uploadProfilePicture] Error:", error);
+        logger.error("[users.uploadProfilePicture] Error:", error);
         throw new Error("Failed to upload profile picture");
       }
     }),
@@ -933,7 +934,7 @@ export const usersRouter = router({
           const hashedCodes = hashBackupCodes(backupCodes);
           try {
             await db.execute(sql`INSERT INTO mfa_secrets (userId, secret, enabled, backupCodes, lastVerified) VALUES (${userId}, ${input.secret}, TRUE, ${JSON.stringify(hashedCodes)}, NOW()) ON DUPLICATE KEY UPDATE secret = ${input.secret}, enabled = TRUE, backupCodes = ${JSON.stringify(hashedCodes)}, lastVerified = NOW()`);
-          } catch (e: any) { console.error('[MFA] DB persist error:', e?.message?.slice(0, 100)); }
+          } catch (e: any) { logger.error('[MFA] DB persist error:', e?.message?.slice(0, 100)); }
           return { success: true, enabledAt: new Date().toISOString(), backupCodes };
         }
         return { success: valid, enabledAt: valid ? new Date().toISOString() : null };
@@ -1182,7 +1183,7 @@ export const usersRouter = router({
           await db.update(users).set({ metadata: meta }).where(eq(users.id, newUserId));
           await emailService.sendVerificationEmail(input.email, verification.token, input.name);
         } catch (e) {
-          console.error('[users.create] Failed to send invite email:', e);
+          logger.error('[users.create] Failed to send invite email:', e);
         }
       }
 
@@ -1513,7 +1514,7 @@ export const usersRouter = router({
             html: `<p>Hi ${user.name || 'there'},</p><p>You requested a password reset. Click below to reset your password:</p><p><a href="${resetUrl}" style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">Reset Password</a></p><p>This link expires in 1 hour. If you didn't request this, ignore this email.</p><p>— EusoTrip Security</p>`,
           });
         } catch (emailErr) {
-          console.error("[PasswordReset] Email send failed:", emailErr);
+          logger.error("[PasswordReset] Email send failed:", emailErr);
         }
 
         // 6. Log to audit
@@ -1524,7 +1525,7 @@ export const usersRouter = router({
           } as any);
         } catch {}
       } catch (err: any) {
-        console.error("[PasswordReset] Request error:", err?.message?.slice(0, 200));
+        logger.error("[PasswordReset] Request error:", err?.message?.slice(0, 200));
       }
 
       return { success: true };

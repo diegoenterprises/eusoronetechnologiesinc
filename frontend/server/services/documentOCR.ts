@@ -18,6 +18,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { tmpdir } from "os";
 import { ENV } from "../_core/env";
+import { logger } from "../_core/logger";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -70,7 +71,7 @@ async function runPaddleOCR(base64Data: string): Promise<OCRResult | null> {
         try { unlinkSync(tmpFile); } catch {}
 
         if (error) {
-          console.warn("[DocumentOCR] PaddleOCR unavailable:", error.message);
+          logger.warn("[DocumentOCR] PaddleOCR unavailable:", error.message);
           resolve(null);
           return;
         }
@@ -78,7 +79,7 @@ async function runPaddleOCR(base64Data: string): Promise<OCRResult | null> {
         try {
           const result = JSON.parse(stdout);
           if (!result.success) {
-            console.warn("[DocumentOCR] PaddleOCR error:", result.error);
+            logger.warn("[DocumentOCR] PaddleOCR error:", result.error);
             resolve(null);
             return;
           }
@@ -92,7 +93,7 @@ async function runPaddleOCR(base64Data: string): Promise<OCRResult | null> {
             avgConfidence: result.avgConfidence || 0,
           });
         } catch (parseErr) {
-          console.warn("[DocumentOCR] PaddleOCR parse error:", parseErr);
+          logger.warn("[DocumentOCR] PaddleOCR parse error:", parseErr);
           resolve(null);
         }
       }
@@ -109,7 +110,7 @@ const GEMINI_VISION_URL =
 async function runGeminiVisionOCR(base64Data: string): Promise<OCRResult | null> {
   const apiKey = ENV.geminiApiKey;
   if (!apiKey) {
-    console.warn("[DocumentOCR] ESANG AI API key not configured");
+    logger.warn("[DocumentOCR] ESANG AI API key not configured");
     return null;
   }
 
@@ -156,7 +157,7 @@ async function runGeminiVisionOCR(base64Data: string): Promise<OCRResult | null>
     });
 
     if (!response.ok) {
-      console.warn("[DocumentOCR] ESANG AI Vision error:", response.status);
+      logger.warn("[DocumentOCR] ESANG AI Vision error:", response.status);
       return null;
     }
 
@@ -179,7 +180,7 @@ async function runGeminiVisionOCR(base64Data: string): Promise<OCRResult | null>
       avgConfidence: 0.9,
     };
   } catch (err) {
-    console.error("[DocumentOCR] ESANG AI Vision error:", err);
+    logger.error("[DocumentOCR] ESANG AI Vision error:", err);
     return null;
   }
 }
@@ -246,7 +247,7 @@ async function classifyWithESANG(ocrText: string, filename: string): Promise<Doc
     });
 
     if (!response.ok) {
-      console.warn("[DocumentOCR] ESANG classification error:", response.status);
+      logger.warn("[DocumentOCR] ESANG classification error:", response.status);
       return fallbackClassification(filename, ocrText);
     }
 
@@ -269,7 +270,7 @@ async function classifyWithESANG(ocrText: string, filename: string): Promise<Doc
       isExpirable: parsed.isExpirable || false,
     };
   } catch (err) {
-    console.error("[DocumentOCR] ESANG classification error:", err);
+    logger.error("[DocumentOCR] ESANG classification error:", err);
     return fallbackClassification(filename, ocrText);
   }
 }
@@ -363,7 +364,7 @@ export async function digitizeDocument(
   base64Data: string,
   filename: string
 ): Promise<DigitizeResult> {
-  console.log(`[DocumentOCR] Digitizing: ${filename}`);
+  logger.info(`[DocumentOCR] Digitizing: ${filename}`);
 
   let ocrResult: OCRResult | null = null;
   let extractedTables: Array<{ headers: string[]; rows: any[][] }> = [];
@@ -387,7 +388,7 @@ export async function digitizeDocument(
         avgConfidence: sidecarResult.avg_confidence,
       };
       extractedTables = sidecarResult.tables || [];
-      console.log(`[DocumentOCR] Docling/Sidecar: ${ocrResult.lines.length} lines, ${extractedTables.length} tables`);
+      logger.info(`[DocumentOCR] Docling/Sidecar: ${ocrResult.lines.length} lines, ${extractedTables.length} tables`);
     }
   } catch { /* AI sidecar unavailable */ }
 
@@ -398,7 +399,7 @@ export async function digitizeDocument(
 
   // Step 2: Fall back to ESANG AI Vision
   if (!ocrResult || !ocrResult.text.trim()) {
-    console.log("[DocumentOCR] PaddleOCR unavailable, using ESANG AI Vision");
+    logger.info("[DocumentOCR] PaddleOCR unavailable, using ESANG AI Vision");
     ocrResult = await runGeminiVisionOCR(base64Data);
   }
 
@@ -406,7 +407,7 @@ export async function digitizeDocument(
     ocrResult = { text: "", lines: [], engine: "gemini_vision", avgConfidence: 0 };
   }
 
-  console.log(
+  logger.info(
     `[DocumentOCR] OCR complete via ${ocrResult.engine}: ${ocrResult.lines.length} lines, avg confidence ${ocrResult.avgConfidence}`
   );
 
@@ -418,7 +419,7 @@ export async function digitizeDocument(
     classification.extractedFields._tablesExtracted = String(extractedTables.length);
   }
 
-  console.log(
+  logger.info(
     `[DocumentOCR] Classified as ${classification.category}/${classification.subcategory} (${classification.confidence}% confidence)`
   );
 

@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { logger } from "./_core/logger";
 import { esangAI } from "./_core/esangAI";
 import {
   searchMaterials, getMaterialByUN, getGuide,
@@ -563,7 +564,7 @@ export const esangRouter = router({
         messages: input.messages, userRole: ctx.user.role || "USER", userName: ctx.user.name || "User",
       });
     } catch (e) {
-      console.error("[ESANG] smartReplies error:", e);
+      logger.error("[ESANG] smartReplies error:", e);
       return { replies: [], sentiment: "neutral", summary: "" };
     }
   }),

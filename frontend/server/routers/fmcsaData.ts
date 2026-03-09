@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getPool } from "../db";
 import {
   lookupCarrier,
@@ -30,7 +31,7 @@ async function safeQuery(pool: any, sql: string, params: any[], timeoutMs = 8000
       new Promise<any[]>((_, reject) => setTimeout(() => reject(new Error(`Query timeout (${timeoutMs}ms)`)), timeoutMs)),
     ]);
   } catch (err: any) {
-    console.warn(`[fmcsaData] safeQuery timeout/error: ${err?.message}`);
+    logger.warn(`[fmcsaData] safeQuery timeout/error: ${err?.message}`);
     return [];
   }
 }
@@ -90,7 +91,7 @@ export const fmcsaRouter = router({
         const snap = await Promise.race([
           getCarrierSnapshot(input.dotNumber),
           new Promise<null>((resolve) => setTimeout(() => {
-            console.warn(`[fmcsaData.getSnapshot] Timeout for DOT# ${input.dotNumber}`);
+            logger.warn(`[fmcsaData.getSnapshot] Timeout for DOT# ${input.dotNumber}`);
             resolve(null);
           }, 15000)),
         ]);
@@ -103,7 +104,7 @@ export const fmcsaRouter = router({
           snapshotDate: snap.snapshotDate instanceof Date ? snap.snapshotDate.toISOString() : String(snap.snapshotDate || ""),
         };
       } catch (err) {
-        console.error("[fmcsaData.getSnapshot] Error:", err);
+        logger.error("[fmcsaData.getSnapshot] Error:", err);
         return null;
       }
     }),
@@ -242,7 +243,7 @@ export const fmcsaRouter = router({
           severityWeight: r.severity_weight,
         }));
       } catch (err: any) {
-        console.error(`[FMCSA] getCrashes error for ${input.dotNumber}:`, err?.message);
+        logger.error(`[FMCSA] getCrashes error for ${input.dotNumber}:`, err?.message);
         return [];
       }
     }),
@@ -286,7 +287,7 @@ export const fmcsaRouter = router({
           },
         }));
       } catch (err: any) {
-        console.error(`[FMCSA] getInspections error for ${input.dotNumber}:`, err?.message);
+        logger.error(`[FMCSA] getInspections error for ${input.dotNumber}:`, err?.message);
         return [];
       }
     }),
@@ -314,7 +315,7 @@ export const fmcsaRouter = router({
           severityWeight: r.severity_weight,
         }));
       } catch (err: any) {
-        console.error(`[FMCSA] getViolations error:`, err?.message);
+        logger.error(`[FMCSA] getViolations error:`, err?.message);
         return [];
       }
     }),
@@ -861,9 +862,9 @@ export const fmcsaRouter = router({
         const { runDailyEtl } = await import("../etl/fmcsaEtl");
         // Fire and forget — don't await (would timeout the HTTP request)
         runDailyEtl().then(() => {
-          console.log("[FMCSA ETL] Triggered ETL completed successfully");
+          logger.info("[FMCSA ETL] Triggered ETL completed successfully");
         }).catch((err: any) => {
-          console.error("[FMCSA ETL] Triggered ETL failed:", err.message);
+          logger.error("[FMCSA ETL] Triggered ETL failed:", err.message);
         });
         return { triggered: true, message: "ETL started in background. Check getStats in a few minutes." };
       } catch (err: any) {
@@ -1327,7 +1328,7 @@ export const fmcsaRouter = router({
         // In production this would trigger a background job via the Gemini API
         // to analyze the document image/PDF and determine validity.
         // For now, we log the request and it will be processed by the verification worker.
-        console.log(`[HazMat Verification] Document queued for DOT# ${input.dotNumber}: ${input.docType} — ${input.fileName}`);
+        logger.info(`[HazMat Verification] Document queued for DOT# ${input.dotNumber}: ${input.docType} — ${input.fileName}`);
 
         return {
           success: true,

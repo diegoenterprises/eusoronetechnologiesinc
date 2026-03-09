@@ -3,6 +3,7 @@
  * Triggers immediate refresh when critical conditions are detected
  */
 import { EventEmitter } from "events";
+import { logger } from "../../_core/logger";
 import { smartInvalidateByType, smartForceRefresh } from "../cache/smartCache";
 
 export type DataEventType =
@@ -36,7 +37,7 @@ class HotZonesEventEmitter extends EventEmitter {
       this.eventLog = this.eventLog.slice(-this.maxLogSize);
     }
 
-    console.log(`[DataEvent] ${event.type} (${event.severity}): ${event.summary}`);
+    logger.info(`[DataEvent] ${event.type} (${event.severity}): ${event.summary}`);
     this.emit("data_event", event);
     this.emit(event.type, event);
 

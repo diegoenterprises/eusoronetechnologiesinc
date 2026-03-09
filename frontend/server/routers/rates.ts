@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { sql, eq, and, gte, desc } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 
@@ -58,7 +59,7 @@ export const ratesRouter = router({
           trend: data.count > 10 ? 'up' : data.count > 5 ? 'stable' : 'down',
         }));
       } catch (error) {
-        console.error('[Rates] getLaneAnalysis error:', error);
+        logger.error('[Rates] getLaneAnalysis error:', error);
         return [];
       }
     }),
@@ -96,7 +97,7 @@ export const ratesRouter = router({
           avgMiles: Math.round(stats[0]?.avgMiles || 0),
         };
       } catch (error) {
-        console.error('[Rates] getLaneStats error:', error);
+        logger.error('[Rates] getLaneStats error:', error);
         return { totalLanes: 0, avgRate: 0, hotLanes: 0, coldLanes: 0, loadsThisMonth: 0, topLaneVolume: 0, trending: "stable", rateChange: 0, avgMiles: 0 };
       }
     }),
@@ -309,7 +310,7 @@ export const ratesRouter = router({
             specialInstructions: input.notes || null,
           } as any).$returningId();
           return { id: String(result.id), ...input, createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
-        } catch (e) { console.error('[Rates] saveQuote error:', e); }
+        } catch (e) { logger.error('[Rates] saveQuote error:', e); }
       }
       return { id: `quote_${Date.now()}`, ...input, createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
     }),

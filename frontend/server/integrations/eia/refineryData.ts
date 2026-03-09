@@ -5,6 +5,7 @@
  * Refresh: Daily at 7 AM
  * Data: Refinery utilization, operable capacity by PADD
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { sql } from "drizzle-orm";
 
@@ -21,7 +22,7 @@ const PADD_STATES: Record<string, string[]> = {
 export async function fetchRefineryData(): Promise<void> {
   const apiKey = process.env.EIA_API_KEY;
   if (!apiKey) {
-    console.warn("[EIA-Refinery] No EIA_API_KEY set, skipping refinery data sync");
+    logger.warn("[EIA-Refinery] No EIA_API_KEY set, skipping refinery data sync");
     return;
   }
 
@@ -56,6 +57,6 @@ export async function fetchRefineryData(): Promise<void> {
       );
     }
   } catch (e) {
-    console.error("[EIA-Refinery] Failed:", e);
+    logger.error("[EIA-Refinery] Failed:", e);
   }
 }

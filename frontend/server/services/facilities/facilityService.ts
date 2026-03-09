@@ -4,6 +4,7 @@
  * Adapts the spec's PostGIS queries to MySQL ST_Distance_Sphere.
  */
 import { getDb } from "../../db";
+import { logger } from "../../_core/logger";
 import { facilities, facilityStatsCache, facilityRatings, facilityRequirements } from "../../../drizzle/schema";
 import { eq, and, like, desc, sql, or, inArray, isNotNull } from "drizzle-orm";
 
@@ -74,7 +75,7 @@ export async function searchFacilities(opts: {
 
     if (rows.length > 0) return rows;
   } catch (ftErr) {
-    console.warn("[FacilityService] FULLTEXT search failed (index may not exist), falling back to LIKE:", (ftErr as any)?.message?.substring(0, 120));
+    logger.warn("[FacilityService] FULLTEXT search failed (index may not exist), falling back to LIKE:", (ftErr as any)?.message?.substring(0, 120));
   }
 
   // 2) LIKE fallback — always runs if FULLTEXT returns 0 or throws
@@ -93,7 +94,7 @@ export async function searchFacilities(opts: {
       .orderBy(facilities.facilityName)
       .limit(limit);
   } catch (likeErr) {
-    console.error("[FacilityService] LIKE search error:", likeErr);
+    logger.error("[FacilityService] LIKE search error:", likeErr);
     return [];
   }
 }
@@ -153,7 +154,7 @@ export async function getNearbyFacilities(opts: {
       distanceMiles: r.distanceMeters ? Math.round((r.distanceMeters / 1609.34) * 10) / 10 : 0,
     }));
   } catch (e) {
-    console.error("[FacilityService] getNearby error:", e);
+    logger.error("[FacilityService] getNearby error:", e);
     return [];
   }
 }
@@ -185,7 +186,7 @@ export async function getFacilityById(id: number) {
       ratingSummary: ratingSummary || { avgRating: 0, totalRatings: 0 },
     };
   } catch (e) {
-    console.error("[FacilityService] getById error:", e);
+    logger.error("[FacilityService] getById error:", e);
     return null;
   }
 }
@@ -251,9 +252,9 @@ export async function importEiaRefineries(): Promise<{ inserted: number; errors:
   if (!db) return { inserted: 0, errors: 0 };
   let inserted = 0, errors = 0;
   try {
-    console.log("[ETL] Fetching EIA Petroleum Refineries...");
+    logger.info("[ETL] Fetching EIA Petroleum Refineries...");
     const features = await fetchAllArcGisFeatures(EIA_REFINERIES_URL);
-    console.log(`[ETL] Got ${features.length} EIA refinery features`);
+    logger.info(`[ETL] Got ${features.length} EIA refinery features`);
     for (const f of features) {
       try {
         const p = f.properties || {};
@@ -283,8 +284,8 @@ export async function importEiaRefineries(): Promise<{ inserted: number; errors:
         if (!e?.message?.includes("Duplicate")) errors++;
       }
     }
-    console.log(`[ETL] EIA Refineries: ${inserted} inserted, ${errors} errors`);
-  } catch (e) { console.error("[ETL] EIA Refineries import failed:", e); }
+    logger.info(`[ETL] EIA Refineries: ${inserted} inserted, ${errors} errors`);
+  } catch (e) { logger.error("[ETL] EIA Refineries import failed:", e); }
   return { inserted, errors };
 }
 
@@ -294,7 +295,7 @@ export async function importCuratedTerminals(): Promise<{ inserted: number; erro
   if (!db) return { inserted: 0, errors: 0 };
   let inserted = 0, errors = 0;
   try {
-    console.log("[ETL] Seeding curated US petroleum terminals...");
+    logger.info("[ETL] Seeding curated US petroleum terminals...");
     for (const t of CURATED_TERMINALS) {
       try {
         await db.insert(facilities).values({
@@ -325,8 +326,8 @@ export async function importCuratedTerminals(): Promise<{ inserted: number; erro
         if (!e?.message?.includes("Duplicate")) errors++;
       }
     }
-    console.log(`[ETL] Curated Terminals: ${inserted} inserted, ${errors} errors`);
-  } catch (e) { console.error("[ETL] Curated terminals failed:", e); }
+    logger.info(`[ETL] Curated Terminals: ${inserted} inserted, ${errors} errors`);
+  } catch (e) { logger.error("[ETL] Curated terminals failed:", e); }
   return { inserted, errors };
 }
 
@@ -613,7 +614,7 @@ export async function importPipelineStations(): Promise<{ inserted: number; erro
   if (!db) return { inserted: 0, errors: 0 };
   let inserted = 0, errors = 0;
   try {
-    console.log("[ETL] Seeding pipeline injection/receipt points...");
+    logger.info("[ETL] Seeding pipeline injection/receipt points...");
     for (const s of PIPELINE_STATIONS) {
       try {
         await db.insert(facilities).values({
@@ -643,8 +644,8 @@ export async function importPipelineStations(): Promise<{ inserted: number; erro
         if (!e?.message?.includes("Duplicate")) errors++;
       }
     }
-    console.log(`[ETL] Pipeline stations: ${inserted} inserted, ${errors} errors`);
-  } catch (e) { console.error("[ETL] Pipeline stations failed:", e); }
+    logger.info(`[ETL] Pipeline stations: ${inserted} inserted, ${errors} errors`);
+  } catch (e) { logger.error("[ETL] Pipeline stations failed:", e); }
   return { inserted, errors };
 }
 
@@ -661,18 +662,18 @@ export async function ensureFulltextIndex(): Promise<void> {
       LIMIT 1
     `).then(async ([rows]: any) => {
       if (!rows || (Array.isArray(rows) && rows.length === 0)) {
-        console.log("[FacilityService] Creating FULLTEXT index ft_fac_search...");
+        logger.info("[FacilityService] Creating FULLTEXT index ft_fac_search...");
         await db.execute(sql`
           ALTER TABLE facilities
           ADD FULLTEXT INDEX ft_fac_search (facility_name, operator_name, facility_city)
         `);
-        console.log("[FacilityService] FULLTEXT index created");
+        logger.info("[FacilityService] FULLTEXT index created");
       }
     });
   } catch (e: any) {
     // Index may already exist — that's fine
     if (!e?.message?.includes("Duplicate")) {
-      console.warn("[FacilityService] FULLTEXT index warning:", e?.message);
+      logger.warn("[FacilityService] FULLTEXT index warning:", e?.message);
     }
   }
 }
@@ -685,14 +686,14 @@ export async function autoSeedIfEmpty(): Promise<void> {
     const [row] = await db.select({ cnt: sql<number>`COUNT(*)`.as("cnt") }).from(facilities);
     const count = row?.cnt || 0;
     if (count > 0) {
-      console.log(`[FacilityService] Facility DB has ${count} records — skipping seed`);
+      logger.info(`[FacilityService] Facility DB has ${count} records — skipping seed`);
       return;
     }
-    console.log("[FacilityService] Facility DB is EMPTY — auto-seeding from EIA...");
+    logger.info("[FacilityService] Facility DB is EMPTY — auto-seeding from EIA...");
     const result = await seedFacilityDatabase();
-    console.log(`[FacilityService] Auto-seed complete: ${result.terminals.inserted} terminals, ${result.refineries.inserted} refineries`);
+    logger.info(`[FacilityService] Auto-seed complete: ${result.terminals.inserted} terminals, ${result.refineries.inserted} refineries`);
   } catch (e) {
-    console.error("[FacilityService] Auto-seed failed:", e);
+    logger.error("[FacilityService] Auto-seed failed:", e);
   }
 }
 
@@ -702,12 +703,12 @@ export async function seedFacilityDatabase(): Promise<{
   refineries: { inserted: number; errors: number };
   pipelineStations?: { inserted: number; errors: number };
 }> {
-  console.log("[FacilityService] Starting full seed...");
+  logger.info("[FacilityService] Starting full seed...");
   const t = await importCuratedTerminals();
   const r = await importEiaRefineries();
   const p = await importPipelineStations();
   // Create FULLTEXT index after data is seeded
-  try { await ensureFulltextIndex(); } catch (e) { console.warn("[FacilityService] FULLTEXT index post-seed:", e); }
-  console.log(`[FacilityService] Seed complete — ${t.inserted} terminals, ${r.inserted} refineries, ${p.inserted} pipeline stations`);
+  try { await ensureFulltextIndex(); } catch (e) { logger.warn("[FacilityService] FULLTEXT index post-seed:", e); }
+  logger.info(`[FacilityService] Seed complete — ${t.inserted} terminals, ${r.inserted} refineries, ${p.inserted} pipeline stations`);
   return { terminals: t, refineries: r, pipelineStations: p };
 }

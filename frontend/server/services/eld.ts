@@ -12,6 +12,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import { eq, and, sql } from "drizzle-orm";
 
 // ============================================================================
@@ -317,7 +318,7 @@ class ELDService {
 
       this.companyLoadCache.set(companyId, Date.now());
     } catch (e) {
-      console.error("[ELD] loadProvidersForCompany error:", e);
+      logger.error("[ELD] loadProvidersForCompany error:", e);
     }
 
     return this.providers.size > 0;
@@ -407,14 +408,14 @@ class ELDService {
       );
 
       if (!resp.ok) {
-        console.warn(`[ELD/GPS] API error ${resp.status} for ${providerConfig.name}`);
+        logger.warn(`[ELD/GPS] API error ${resp.status} for ${providerConfig.name}`);
         return [];
       }
 
       const raw = await resp.json();
       return this.normalizeLocations(raw, providerConfig.name);
     } catch (err) {
-      console.warn(`[ELD/GPS] ${providerConfig.name} fetch error:`, (err as Error).message);
+      logger.warn(`[ELD/GPS] ${providerConfig.name} fetch error:`, (err as Error).message);
       return [];
     }
   }
@@ -624,7 +625,7 @@ class ELDService {
         dutyStatus: v.dutyStatus || v.duty_status || undefined,
       }));
     } catch (e) {
-      console.error(`[ELD/GPS] normalizeLocations error for ${providerName}:`, e);
+      logger.error(`[ELD/GPS] normalizeLocations error for ${providerName}:`, e);
       return [];
     }
   }
@@ -674,14 +675,14 @@ class ELDService {
       });
 
       if (!response.ok) {
-        console.warn(`[ELD/HOS] ${providerConfig.name} API error: ${response.status}`);
+        logger.warn(`[ELD/HOS] ${providerConfig.name} API error: ${response.status}`);
         return null;
       }
 
       const raw = await response.json();
       return this.normalizeHOS(raw, providerConfig.name, driverId);
     } catch (error) {
-      console.warn(`[ELD/HOS] ${providerConfig.name} fetch error:`, (error as Error).message);
+      logger.warn(`[ELD/HOS] ${providerConfig.name} fetch error:`, (error as Error).message);
       return null;
     }
   }
@@ -719,8 +720,8 @@ class ELDService {
             cycle: clk?.cycleRemainingMs ? clk.cycleRemainingMs / 60000 : clk?.cycleRemaining || 4200,
             breakRemaining: clk?.breakRemainingMs ? clk.breakRemainingMs / 60000 : clk?.breakRemaining || 30,
           },
-          violations: (d?.violations || []).map((v: any) => ({
-            id: v.id || String(Math.random()), type: "drive_time" as const,
+          violations: (d?.violations || []).map((v: any, vi: number) => ({
+            id: v.id || `viol_${Date.now()}_${vi}`, type: "drive_time" as const,
             severity: (v.severity === "warning" ? "warning" : "violation") as "warning" | "violation",
             description: v.description || v.regulationDescription || "HOS violation",
             occurredAt: v.startTime || now, resolved: v.resolved || false,
@@ -872,7 +873,7 @@ class ELDService {
 
       return base;
     } catch (e) {
-      console.error(`[ELD/HOS] normalizeHOS error for ${providerName}:`, e);
+      logger.error(`[ELD/HOS] normalizeHOS error for ${providerName}:`, e);
       return null;
     }
   }
@@ -927,14 +928,14 @@ class ELDService {
       });
 
       if (!response.ok) {
-        console.warn(`[ELD/Logs] ${providerConfig.name} API error: ${response.status}`);
+        logger.warn(`[ELD/Logs] ${providerConfig.name} API error: ${response.status}`);
         return [];
       }
 
       const raw = await response.json();
       const entries = raw?.data || raw?.logs || raw?.result || raw?.entries || (Array.isArray(raw) ? raw : []);
-      return entries.map((e: any) => ({
-        id: e.id || String(Math.random()),
+      return entries.map((e: any, ei: number) => ({
+        id: e.id || `eld_${Date.now()}_${ei}`,
         status: this.mapDutyStatus(e.status || e.dutyStatus || e.duty_status) as DutyStatus,
         startTime: e.startTime || e.start_time || e.startDate || "",
         endTime: e.endTime || e.end_time || e.endDate || null,
@@ -945,7 +946,7 @@ class ELDService {
         certified: e.certified || e.isCertified || e.driverCertified || false,
       }));
     } catch (err) {
-      console.warn(`[ELD/Logs] ${providerConfig.name} fetch error:`, (err as Error).message);
+      logger.warn(`[ELD/Logs] ${providerConfig.name} fetch error:`, (err as Error).message);
       return [];
     }
   }
@@ -977,7 +978,7 @@ class ELDService {
       );
 
       if (!response.ok) {
-        console.warn(`[ELD/Vehicle] ${providerConfig.name} API error: ${response.status}`);
+        logger.warn(`[ELD/Vehicle] ${providerConfig.name} API error: ${response.status}`);
         return null;
       }
 
@@ -1005,7 +1006,7 @@ class ELDService {
         },
       };
     } catch (err) {
-      console.warn(`[ELD/Vehicle] ${providerConfig.name} fetch error:`, (err as Error).message);
+      logger.warn(`[ELD/Vehicle] ${providerConfig.name} fetch error:`, (err as Error).message);
       return null;
     }
   }

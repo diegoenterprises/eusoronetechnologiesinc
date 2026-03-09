@@ -11,6 +11,7 @@
 
 import { Server as SocketIOServer } from "socket.io";
 import type { Server as HTTPServer } from "http";
+import { logger } from "../_core/logger";
 
 let io: SocketIOServer | null = null;
 
@@ -37,13 +38,13 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
   io.on("connection", (socket) => {
     const userId = socket.handshake.auth?.userId;
     const userRole = socket.handshake.auth?.role;
-    console.log(`[WS] Connected: ${socket.id} (user=${userId}, role=${userRole})`);
+    logger.info(`[WS] Connected: ${socket.id} (user=${userId}, role=${userRole})`);
 
     // ── Join load room ──
     socket.on("load:join", (loadId: string) => {
       const room = `load:${loadId}`;
       socket.join(room);
-      console.log(`[WS] ${socket.id} joined ${room}`);
+      logger.info(`[WS] ${socket.id} joined ${room}`);
     });
 
     // ── Leave load room ──
@@ -79,11 +80,11 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
     });
 
     socket.on("disconnect", (reason) => {
-      console.log(`[WS] Disconnected: ${socket.id} (${reason})`);
+      logger.info(`[WS] Disconnected: ${socket.id} (${reason})`);
     });
   });
 
-  console.log("[WS] Socket.io initialized on /ws");
+  logger.info("[WS] Socket.io initialized on /ws");
   return io;
 }
 
@@ -146,7 +147,7 @@ export function emitLoadStateChange(event: LoadStateChangeEvent): void {
   io.to("role:admin").emit("load:stateChange", event);
   io.to("role:super_admin").emit("load:stateChange", event);
 
-  console.log(`[WS] load:stateChange ${event.previousState} → ${event.newState} (load=${event.loadId})`);
+  logger.info(`[WS] load:stateChange ${event.previousState} → ${event.newState} (load=${event.loadId})`);
 }
 
 /**

@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, count } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { companies, loads, bids, incidents, insurancePolicies, users } from "../../drizzle/schema";
 import { getCarrierSafetyIntel } from "../services/fmcsaBulkLookup";
@@ -124,7 +125,7 @@ export const carrierTierRouter = router({
           mcNumber: company.mcNumber,
         };
       } catch (e) {
-        console.error("[CarrierTier] getCarrierTier error:", e);
+        logger.error("[CarrierTier] getCarrierTier error:", e);
         return null;
       }
     }),
@@ -334,7 +335,7 @@ export const carrierTierRouter = router({
 
         return results;
       } catch (e) {
-        console.error("[CarrierTier] listAllCarrierTiers error:", e);
+        logger.error("[CarrierTier] listAllCarrierTiers error:", e);
         return [];
       }
     }),
@@ -363,7 +364,7 @@ export const carrierTierRouter = router({
           await db.execute(sql`UPDATE companies SET tier_override = ${input.tier} WHERE id = ${input.carrierId}`);
           return { success: true, carrierId: input.carrierId, tier: input.tier };
         } catch (e2) {
-          console.error("[CarrierTier] overrideTier error:", e2);
+          logger.error("[CarrierTier] overrideTier error:", e2);
           return { success: false, error: "Failed to override tier" };
         }
       }
@@ -435,7 +436,7 @@ export const carrierTierRouter = router({
 
         return distribution;
       } catch (e) {
-        console.error("[CarrierTier] getTierDistribution error:", e);
+        logger.error("[CarrierTier] getTierDistribution error:", e);
         return { gold: 0, silver: 0, bronze: 0, standard: 0, total: 0 };
       }
     }),

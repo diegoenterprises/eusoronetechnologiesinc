@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte, or } from "drizzle-orm";
 import { router, isolatedProcedure as protectedProcedure, publicProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   facilities, facilityRatings, facilityRequirements, facilityStatsCache,
@@ -479,7 +480,7 @@ export const facilityIntelligenceRouter = router({
         approaching.sort((a, b) => a.distanceMiles - b.distanceMiles);
         return approaching;
       } catch (e) {
-        console.error("[FIL] getApproachingTrucks error:", e);
+        logger.error("[FIL] getApproachingTrucks error:", e);
         return [];
       }
     }),

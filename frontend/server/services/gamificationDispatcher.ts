@@ -10,6 +10,7 @@
  */
 
 import { rewardsEngine, type MissionEvent } from "./rewardsEngine";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   missionProgress,
@@ -139,7 +140,7 @@ const MAX_ACTIVE_MISSIONS_PER_USER = 10;
 export function fireGamificationEvent(event: GamificationEvent): void {
   // Fire and forget — don't await, don't block the caller
   _processEvent(event).catch(err => {
-    console.error(`[GamificationDispatcher] Error processing ${event.type} for user ${event.userId}:`, err);
+    logger.error(`[GamificationDispatcher] Error processing ${event.type} for user ${event.userId}:`, err);
   });
 }
 
@@ -150,7 +151,7 @@ async function _processEvent(event: GamificationEvent): Promise<void> {
   const { userId, type, value = 1, metadata } = event;
   if (!userId) return;
 
-  console.log(`[GamificationDispatcher] ${type} user=${userId} value=${value}`);
+  logger.info(`[GamificationDispatcher] ${type} user=${userId} value=${value}`);
 
   const validCategories = EVENT_TO_CATEGORIES[type] || [];
   const validTargetTypes = EVENT_TO_TARGET_TYPES[type] || [];
@@ -213,9 +214,9 @@ async function _processEvent(event: GamificationEvent): Promise<void> {
       completedMissions.push(um.missionName || "Mission");
       totalXpEarned += um.missionXpReward || 0;
 
-      console.log(`[GamificationDispatcher] ✅ Mission "${um.missionName}" COMPLETED for user ${userId}`);
+      logger.info(`[GamificationDispatcher] ✅ Mission "${um.missionName}" COMPLETED for user ${userId}`);
     } else {
-      console.log(`[GamificationDispatcher] 📊 Mission "${um.missionName}" progress: ${newProgress}/${target} for user ${userId}`);
+      logger.info(`[GamificationDispatcher] 📊 Mission "${um.missionName}" progress: ${newProgress}/${target} for user ${userId}`);
     }
   }
 
@@ -319,10 +320,10 @@ export async function ensureGamificationProfile(userId: number): Promise<void> {
         onTimeRate: 0,
       },
     });
-    console.log(`[GamificationDispatcher] Profile created for user ${userId}`);
+    logger.info(`[GamificationDispatcher] Profile created for user ${userId}`);
   } catch (err: any) {
     if (!err?.message?.includes("Duplicate")) {
-      console.error(`[GamificationDispatcher] ensureProfile error for user ${userId}:`, err);
+      logger.error(`[GamificationDispatcher] ensureProfile error for user ${userId}:`, err);
     }
   }
 }
@@ -345,9 +346,9 @@ export async function cleanupDeletedUser(userId: number): Promise<void> {
     await db.execute(sql`DELETE FROM gamification_profiles WHERE userId = ${userId}`);
     await db.execute(sql`DELETE FROM leaderboards WHERE userId = ${userId}`);
 
-    console.log(`[GamificationDispatcher] Cleaned up gamification data for user ${userId}`);
+    logger.info(`[GamificationDispatcher] Cleaned up gamification data for user ${userId}`);
   } catch (err) {
-    console.error(`[GamificationDispatcher] Cleanup error for user ${userId}:`, err);
+    logger.error(`[GamificationDispatcher] Cleanup error for user ${userId}:`, err);
   }
 }
 
@@ -379,9 +380,9 @@ export async function enforceActiveMissionCap(userId: number): Promise<void> {
         .where(eq(missionProgress.id, m.id));
     }
 
-    console.log(`[GamificationDispatcher] Expired ${toExpire.length} excess missions for user ${userId}`);
+    logger.info(`[GamificationDispatcher] Expired ${toExpire.length} excess missions for user ${userId}`);
   } catch (err) {
-    console.error(`[GamificationDispatcher] Cap enforcement error for user ${userId}:`, err);
+    logger.error(`[GamificationDispatcher] Cap enforcement error for user ${userId}:`, err);
   }
 }
 
@@ -465,9 +466,9 @@ export async function syncGamificationSystem(): Promise<{ expired: number; orpha
       await enforceActiveMissionCap(row.userId);
     }
 
-    console.log(`[GamificationSync] expired=${expired} orphaned=${orphaned} profilesCreated=${profilesCreated}`);
+    logger.info(`[GamificationSync] expired=${expired} orphaned=${orphaned} profilesCreated=${profilesCreated}`);
   } catch (err) {
-    console.error("[GamificationSync] Error:", err);
+    logger.error("[GamificationSync] Error:", err);
   }
 
   return { expired, orphaned, profilesCreated };
@@ -479,10 +480,10 @@ let _syncTimer: ReturnType<typeof setInterval> | null = null;
 
 export function startGamificationSync(): void {
   // Run initial sync after 30 seconds (let app boot first)
-  setTimeout(() => syncGamificationSystem().catch(console.error), 30000);
+  setTimeout(() => syncGamificationSystem().catch(logger.error), 30000);
   // Then every 6 hours
-  _syncTimer = setInterval(() => syncGamificationSystem().catch(console.error), 6 * 60 * 60 * 1000);
-  console.log("[GamificationSync] Scheduler started (runs every 6 hours)");
+  _syncTimer = setInterval(() => syncGamificationSystem().catch(logger.error), 6 * 60 * 60 * 1000);
+  logger.info("[GamificationSync] Scheduler started (runs every 6 hours)");
 }
 
 export function stopGamificationSync(): void {

@@ -17,6 +17,7 @@
  */
 
 import { eq, and, desc, sql, gte } from "drizzle-orm";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, drivers, loads } from "../../drizzle/schema";
 
@@ -395,7 +396,7 @@ export async function changeDutyStatusWithELD(userId: number, newStatus: DutySta
         // (status changes happen on the ELD device itself). This is a
         // future hook for bidirectional sync when providers support it.
         if (hasELD) {
-          console.log(`[HOS] Duty status ${newStatus} for user ${userId} — ELD connected, local state updated`);
+          logger.info(`[HOS] Duty status ${newStatus} for user ${userId} — ELD connected, local state updated`);
         }
       }
     }
@@ -577,7 +578,7 @@ export async function getMatchingMissionsForLoad(userId: number, loadId: number)
 
     return matches;
   } catch (err) {
-    console.error("[HOSEngine] getMatchingMissionsForLoad error:", err);
+    logger.error("[HOSEngine] getMatchingMissionsForLoad error:", err);
     return [];
   }
 }

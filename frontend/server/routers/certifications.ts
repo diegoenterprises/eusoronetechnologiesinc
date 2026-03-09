@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { documents, drivers, users, certifications } from "../../drizzle/schema";
 
@@ -80,7 +81,7 @@ export const certificationsRouter = router({
           };
         });
       } catch (error) {
-        console.error('[Certifications] list error:', error);
+        logger.error('[Certifications] list error:', error);
         return [];
       }
     }),
@@ -108,7 +109,7 @@ export const certificationsRouter = router({
           total: total?.count || 0,
         };
       } catch (error) {
-        console.error('[Certifications] getSummary error:', error);
+        logger.error('[Certifications] getSummary error:', error);
         return { active: 0, expiringSoon: 0, expired: 0, total: 0 };
       }
     }),

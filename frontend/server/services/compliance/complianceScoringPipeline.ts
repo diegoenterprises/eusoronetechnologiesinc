@@ -14,6 +14,7 @@
  * Output: 0–100 score per entity, stored in `compliance_scores` table.
  */
 
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { companies, documents, drivers, certifications, inspections, users } from "../../../drizzle/schema";
 import { eq, and, sql, gte, count, isNotNull } from "drizzle-orm";
@@ -230,7 +231,7 @@ export async function runComplianceScoringPipeline(): Promise<{
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  console.log("[CompliancePipeline] Starting automated compliance scoring...");
+  logger.info("[CompliancePipeline] Starting automated compliance scoring...");
 
   // Ensure scores table exists
   await db.execute(sql`
@@ -271,7 +272,7 @@ export async function runComplianceScoringPipeline(): Promise<{
       companyTotal++;
       companySum += result.overallScore;
     } catch (e: any) {
-      console.warn(`[CompliancePipeline] Failed scoring company ${row.id}:`, e?.message?.slice(0, 80));
+      logger.warn(`[CompliancePipeline] Failed scoring company ${row.id}:`, e?.message?.slice(0, 80));
     }
   }
 
@@ -294,12 +295,12 @@ export async function runComplianceScoringPipeline(): Promise<{
       driverTotal++;
       driverSum += result.overallScore;
     } catch (e: any) {
-      console.warn(`[CompliancePipeline] Failed scoring driver ${row.id}:`, e?.message?.slice(0, 80));
+      logger.warn(`[CompliancePipeline] Failed scoring driver ${row.id}:`, e?.message?.slice(0, 80));
     }
   }
 
   const duration = Date.now() - start;
-  console.log(`[CompliancePipeline] Done — ${companyTotal} companies, ${driverTotal} drivers in ${duration}ms`);
+  logger.info(`[CompliancePipeline] Done — ${companyTotal} companies, ${driverTotal} drivers in ${duration}ms`);
 
   return {
     companiesScored: companyTotal,

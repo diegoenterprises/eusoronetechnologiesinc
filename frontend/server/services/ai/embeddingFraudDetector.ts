@@ -19,6 +19,7 @@
  * Reference: pplx-embed Contrastive Training (arXiv:2602.11151)
  */
 
+import { logger } from "../../_core/logger";
 import { embeddingService, EmbeddingService } from "../embeddings/embeddingService";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -106,7 +107,7 @@ async function ensureCluster(
     cluster.initialized = true;
     return true;
   } catch (err: any) {
-    console.warn("[EmbeddingFraud] Cluster init failed:", err.message);
+    logger.warn("[EmbeddingFraud] Cluster init failed:", err.message);
     return false;
   }
 }
@@ -227,7 +228,7 @@ export async function screenLoad(loadText: string): Promise<EmbeddingFraudResult
       clusterDistances: { legitimateAvg, suspiciousAvg },
     };
   } catch (err: any) {
-    console.error("[EmbeddingFraud] Load screening error:", err.message);
+    logger.error("[EmbeddingFraud] Load screening error:", err.message);
     return { anomalyScore: 0, riskLevel: "NONE", signals: [], clusterDistances: { legitimateAvg: 0, suspiciousAvg: 0 } };
   }
 }
@@ -272,7 +273,7 @@ export async function screenBid(bidText: string): Promise<EmbeddingFraudResult> 
       clusterDistances: { legitimateAvg, suspiciousAvg },
     };
   } catch (err: any) {
-    console.error("[EmbeddingFraud] Bid screening error:", err.message);
+    logger.error("[EmbeddingFraud] Bid screening error:", err.message);
     return { anomalyScore: 0, riskLevel: "NONE", signals: [], clusterDistances: { legitimateAvg: 0, suspiciousAvg: 0 } };
   }
 }
@@ -311,7 +312,7 @@ export async function screenRegistration(registrationText: string): Promise<Embe
       clusterDistances: { legitimateAvg: 0, suspiciousAvg: Math.round(susAvg * 1000) / 1000 },
     };
   } catch (err: any) {
-    console.error("[EmbeddingFraud] Registration screening error:", err.message);
+    logger.error("[EmbeddingFraud] Registration screening error:", err.message);
     return { anomalyScore: 0, riskLevel: "NONE", signals: [], clusterDistances: { legitimateAvg: 0, suspiciousAvg: 0 } };
   }
 }

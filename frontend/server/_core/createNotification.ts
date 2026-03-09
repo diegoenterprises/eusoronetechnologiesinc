@@ -5,6 +5,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "./logger";
 import { notifications } from "../../drizzle/schema";
 
 type NotificationType =
@@ -28,7 +29,7 @@ interface CreateNotificationParams {
 
 /**
  * Insert a notification row for a specific user.
- * Safe to call from any router — fails silently with console.warn.
+ * Safe to call from any router — fails silently with logger.warn.
  */
 export async function createNotification(params: CreateNotificationParams): Promise<void> {
   try {
@@ -44,6 +45,6 @@ export async function createNotification(params: CreateNotificationParams): Prom
       isRead: false,
     });
   } catch (err) {
-    console.warn("[Notifications] Failed to create notification:", err);
+    logger.warn("[Notifications] Failed to create notification:", err);
   }
 }

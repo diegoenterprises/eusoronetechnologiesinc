@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, vehicles } from "../../drizzle/schema";
 
@@ -55,7 +56,7 @@ export const lanesRouter = router({
           trend: l.count > 5 ? 'up' : 'stable',
         }));
         return { lanes, total: laneMap.size, marketTrend: 'stable' };
-      } catch (e) { console.error('[Lanes] search error:', e); return { lanes: [], total: 0, marketTrend: 'stable' }; }
+      } catch (e) { logger.error('[Lanes] search error:', e); return { lanes: [], total: 0, marketTrend: 'stable' }; }
     }),
 
   /**
@@ -155,7 +156,7 @@ export const lanesRouter = router({
             specialInstructions: input.notes || null,
           } as any).$returningId();
           return { id: String(result.id), status: 'active', postedBy: ctx.user?.id, postedAt: new Date().toISOString(), expiresAt: input.availableUntil || new Date(Date.now() + 7 * 86400000).toISOString() };
-        } catch (e) { console.error('[Lanes] postCapacity error:', e); }
+        } catch (e) { logger.error('[Lanes] postCapacity error:', e); }
       }
       return { id: `cap_${Date.now()}`, status: 'active', postedBy: ctx.user?.id, postedAt: new Date().toISOString(), expiresAt: input.availableUntil || new Date(Date.now() + 7 * 86400000).toISOString() };
     }),

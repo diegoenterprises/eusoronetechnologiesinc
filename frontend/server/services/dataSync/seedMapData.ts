@@ -3,6 +3,7 @@
  * Uses real government data sources or known reference data when APIs are unavailable
  */
 import { getDb } from "../../db";
+import { logger } from "../../_core/logger";
 import { sql } from "drizzle-orm";
 
 // Current national average diesel prices by PADD region (Feb 2026, $/gal)
@@ -78,7 +79,7 @@ export async function seedMapData(): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
-  console.log("[SeedData] Starting nationwide map data seeding...");
+  logger.info("[SeedData] Starting nationwide map data seeding...");
 
   // 1. Seed fuel prices for all 50 states
   try {
@@ -87,8 +88,9 @@ export async function seedMapData(): Promise<void> {
       let fuelCount = 0;
       const reportDate = new Date().toISOString().split("T")[0];
       for (const [padd, { diesel, states }] of Object.entries(PADD_PRICES)) {
-        for (const st of states) {
-          const variation = (Math.random() - 0.5) * 0.15;
+        for (let si = 0; si < states.length; si++) {
+          const st = states[si];
+          const variation = ((si % 10) - 5) * 0.015;
           const price = (diesel + variation).toFixed(3);
           try {
             await db.execute(sql`INSERT INTO hz_fuel_prices (id, state_code, padd_region, diesel_retail, source, report_date, fetched_at)
@@ -98,9 +100,9 @@ export async function seedMapData(): Promise<void> {
           } catch {}
         }
       }
-      console.log(`[SeedData] Fuel prices: ${fuelCount} states seeded`);
+      logger.info(`[SeedData] Fuel prices: ${fuelCount} states seeded`);
     }
-  } catch (e) { console.error("[SeedData] Fuel error:", e); }
+  } catch (e) { logger.error("[SeedData] Fuel error:", e); }
 
   // 2. Seed USACE lock locations
   try {
@@ -115,9 +117,9 @@ export async function seedMapData(): Promise<void> {
           lockCount++;
         } catch {}
       }
-      console.log(`[SeedData] Locks: ${lockCount} locks seeded`);
+      logger.info(`[SeedData] Locks: ${lockCount} locks seeded`);
     }
-  } catch (e) { console.error("[SeedData] Locks error:", e); }
+  } catch (e) { logger.error("[SeedData] Locks error:", e); }
 
   // 3. Seed hazmat incidents (distributed across all states)
   try {
@@ -130,29 +132,29 @@ export async function seedMapData(): Promise<void> {
       
       for (const [st, { lat, lng }] of Object.entries(STATE_CENTROIDS)) {
         if (st === "AK" || st === "HI") continue;
-        const incidentCount = Math.floor(Math.random() * 5) + 2;
+        const incidentCount = 2 + (hazCount % 4);
         for (let i = 0; i < incidentCount; i++) {
-          const dlat = (Math.random() - 0.5) * 3;
-          const dlng = (Math.random() - 0.5) * 4;
-          const daysAgo = Math.floor(Math.random() * 365);
+          const dlat = ((i * 7 + hazCount) % 30 - 15) * 0.1;
+          const dlng = ((i * 11 + hazCount) % 40 - 20) * 0.1;
+          const daysAgo = (hazCount * 17 + i * 53) % 365;
           const incDate = new Date(Date.now() - daysAgo * 86400000).toISOString().split("T")[0];
           const reportNum = `HM-${st}-${Date.now()}-${i}`.slice(0, 20);
           try {
             await db.execute(sql`INSERT INTO hz_hazmat_incidents 
               (report_number, state_code, latitude, longitude, incident_date, mode, hazmat_class, hazmat_name, fatalities, injuries)
               VALUES (${reportNum}, ${st}, ${String(lat + dlat)}, ${String(lng + dlng)}, ${incDate}, 
-                ${modes[Math.floor(Math.random() * modes.length)]},
-                ${hazClasses[Math.floor(Math.random() * hazClasses.length)]},
-                ${hazNames[Math.floor(Math.random() * hazNames.length)]},
+                ${modes[(hazCount + i) % modes.length]},
+                ${hazClasses[(hazCount + i * 3) % hazClasses.length]},
+                ${hazNames[(hazCount + i * 7) % hazNames.length]},
                 0, 0)
               ON DUPLICATE KEY UPDATE fetched_at=NOW()`);
             hazCount++;
           } catch {}
         }
       }
-      console.log(`[SeedData] Hazmat incidents: ${hazCount} incidents seeded`);
+      logger.info(`[SeedData] Hazmat incidents: ${hazCount} incidents seeded`);
     }
-  } catch (e) { console.error("[SeedData] Hazmat error:", e); }
+  } catch (e) { logger.error("[SeedData] Hazmat error:", e); }
 
   // 4. Seed RCRA handlers (waste facilities across all states)
   try {
@@ -164,28 +166,28 @@ export async function seedMapData(): Promise<void> {
       
       for (const [st, { lat, lng }] of Object.entries(STATE_CENTROIDS)) {
         if (st === "AK" || st === "HI") continue;
-        const facilityCount = Math.floor(Math.random() * 4) + 2;
+        const facilityCount = 2 + (rcraCount % 3);
         for (let i = 0; i < facilityCount; i++) {
-          const dlat = (Math.random() - 0.5) * 2.5;
-          const dlng = (Math.random() - 0.5) * 3.5;
+          const dlat = ((i * 5 + rcraCount) % 25 - 12) * 0.1;
+          const dlng = ((i * 9 + rcraCount) % 35 - 17) * 0.1;
           const handlerId = `${st}D00${(rcraCount + i).toString().padStart(7, "0")}`.slice(0, 20);
           try {
             await db.execute(sql`INSERT INTO hz_rcra_handlers 
               (handler_id, handler_name, state_code, latitude, longitude, handler_type, compliance_status, violations_count, industry_sector)
               VALUES (${handlerId}, ${`${sectors[i % sectors.length]} - ${st}`}, ${st}, 
                 ${String(lat + dlat)}, ${String(lng + dlng)},
-                ${types[Math.floor(Math.random() * types.length)]},
-                ${Math.random() > 0.7 ? "Violation" : "In Compliance"},
-                ${Math.floor(Math.random() * 5)},
-                ${sectors[Math.floor(Math.random() * sectors.length)]})
+                ${types[(rcraCount + i) % types.length]},
+                ${(rcraCount + i) % 4 === 0 ? "Violation" : "In Compliance"},
+                ${(rcraCount + i) % 5},
+                ${sectors[(rcraCount + i) % sectors.length]})
               ON DUPLICATE KEY UPDATE fetched_at=NOW()`);
             rcraCount++;
           } catch {}
         }
       }
-      console.log(`[SeedData] RCRA handlers: ${rcraCount} facilities seeded`);
+      logger.info(`[SeedData] RCRA handlers: ${rcraCount} facilities seeded`);
     }
-  } catch (e) { console.error("[SeedData] RCRA error:", e); }
+  } catch (e) { logger.error("[SeedData] RCRA error:", e); }
 
   // 5. Seed carrier safety data (by state aggregation)
   try {
@@ -194,27 +196,27 @@ export async function seedMapData(): Promise<void> {
       let carrierCount = 0;
       for (const [st] of Object.entries(STATE_CENTROIDS)) {
         if (st === "AK" || st === "HI" || st === "DC") continue;
-        const numCarriers = Math.floor(Math.random() * 3) + 1;
+        const numCarriers = 1 + (carrierCount % 3);
         for (let i = 0; i < numCarriers; i++) {
-          const dotNum = `${Math.floor(Math.random() * 9000000) + 1000000}`.slice(0, 10);
+          const dotNum = `${1000000 + carrierCount * 100 + i}`.slice(0, 10);
           try {
             await db.execute(sql`INSERT INTO hz_carrier_safety 
               (dot_number, legal_name, physical_state, physical_city, safety_rating, 
                unsafe_driving_score, total_inspections, total_crashes, hazmat_authority)
               VALUES (${dotNum}, ${`Carrier ${st}-${i}`}, ${st}, ${`City-${st}`},
-                ${["Satisfactory", "Conditional", "Satisfactory", "Satisfactory"][Math.floor(Math.random() * 4)]},
-                ${String((Math.random() * 80 + 10).toFixed(2))},
-                ${Math.floor(Math.random() * 50) + 5},
-                ${Math.floor(Math.random() * 5)},
-                ${Math.random() > 0.6 ? 1 : 0})
+                ${["Satisfactory", "Conditional", "Satisfactory", "Satisfactory"][(carrierCount + i) % 4]},
+                ${String((10 + ((carrierCount * 7 + i * 13) % 80)).toFixed(2))},
+                ${5 + ((carrierCount + i * 3) % 50)},
+                ${(carrierCount + i) % 5},
+                ${(carrierCount + i) % 3 === 0 ? 1 : 0})
               ON DUPLICATE KEY UPDATE fetched_at=NOW()`);
             carrierCount++;
           } catch {}
         }
       }
-      console.log(`[SeedData] Carriers: ${carrierCount} carriers seeded`);
+      logger.info(`[SeedData] Carriers: ${carrierCount} carriers seeded`);
     }
-  } catch (e) { console.error("[SeedData] Carriers error:", e); }
+  } catch (e) { logger.error("[SeedData] Carriers error:", e); }
 
-  console.log("[SeedData] Nationwide map data seeding complete");
+  logger.info("[SeedData] Nationwide map data seeding complete");
 }

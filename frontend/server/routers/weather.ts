@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { sql, eq, and, desc } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 
@@ -78,7 +79,7 @@ export const weatherRouter = router({
           updatedAt: p.timestamp || new Date().toISOString(),
         };
       } catch (e) {
-        console.warn("[Weather] getCurrent NWS error:", e);
+        logger.warn("[Weather] getCurrent NWS error:", e);
         return null;
       }
     }),
@@ -137,7 +138,7 @@ export const weatherRouter = router({
 
         return { location: `${city}, ${state}`, forecasts, days: forecasts, numDays, avgWindSpeed: Math.round(avgWind) };
       } catch (e) {
-        console.warn("[Weather] getForecast NWS error:", e);
+        logger.warn("[Weather] getForecast NWS error:", e);
         return { location: `${city}, ${state}`, forecasts: [], days: [], numDays, avgWindSpeed: null };
       }
     }),
@@ -182,7 +183,7 @@ export const weatherRouter = router({
           advisories,
         };
       } catch (e) {
-        console.warn("[Weather] getRouteConditions error:", e);
+        logger.warn("[Weather] getRouteConditions error:", e);
         return { origin: input.origin, destination: input.destination, overallRisk: "unknown", segments: [], advisories: [] };
       }
     }),
@@ -226,7 +227,7 @@ export const weatherRouter = router({
           expiresAt: a.expiresAt?.toISOString() || null,
         }));
       } catch (e) {
-        console.warn("[Weather] getAlerts error:", e);
+        logger.warn("[Weather] getAlerts error:", e);
         return [];
       }
     }),
@@ -275,7 +276,7 @@ export const weatherRouter = router({
           lastUpdated: new Date().toISOString(),
         };
       } catch (e) {
-        console.warn("[Weather] getHazardousOutlook error:", e);
+        logger.warn("[Weather] getHazardousOutlook error:", e);
         return { outlook: "Weather data temporarily unavailable", risks: [], lastUpdated: new Date().toISOString() };
       }
     }),

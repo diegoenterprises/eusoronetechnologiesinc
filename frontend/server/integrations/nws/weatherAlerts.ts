@@ -62,7 +62,7 @@ export async function fetchWeatherAlerts(): Promise<void> {
       await db
         .insert(hzWeatherAlerts)
         .values({
-          id: feature.id || `nws-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          id: feature.id || `nws-${Date.now()}-${features.indexOf(feature)}`,
           stateCodes: JSON.stringify(stateCodes),
           zoneIds: JSON.stringify(alert.geocode?.UGC || []),
           affectedCounties: JSON.stringify(alert.areaDesc?.split(";").map((s: string) => s.trim()) || []),

@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { terminalProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { terminals, appointments, users, loads } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
@@ -119,7 +120,7 @@ export const terminalsRouter = router({
           avgLoadTime: 0,
         };
       } catch (error) {
-        console.error('[Terminals] getSummary error:', error);
+        logger.error('[Terminals] getSummary error:', error);
         return { todayAppointments: 0, trucksCheckedIn: 0, checkedIn: 0, currentlyLoading: 0, loading: 0, rackUtilization: 0, totalInventory: 0, avgLoadTime: 0 };
       }
     }),
@@ -190,7 +191,7 @@ export const terminalsRouter = router({
           };
         }));
       } catch (error) {
-        console.error('[Terminals] getTodayAppointments error:', error);
+        logger.error('[Terminals] getTodayAppointments error:', error);
         return [];
       }
     }),
@@ -242,7 +243,7 @@ export const terminalsRouter = router({
           status: t.status || 'active',
         }));
       } catch (error) {
-        console.error('[Terminals] getTerminals error:', error);
+        logger.error('[Terminals] getTerminals error:', error);
         return [];
       }
     }),
@@ -293,7 +294,7 @@ export const terminalsRouter = router({
           checkedIn: checkedIn?.count || 0,
         };
       } catch (error) {
-        console.error('[Terminals] getAppointmentStats error:', error);
+        logger.error('[Terminals] getAppointmentStats error:', error);
         return { total: 0, completed: 0, inProgress: 0, scheduled: 0, cancelled: 0, confirmed: 0, pending: 0, checkedIn: 0 };
       }
     }),
@@ -384,14 +385,14 @@ export const terminalsRouter = router({
                 preClearanceData.preClearedGate = clearance.preClearedGate;
                 if (!clearance.authorized) preClearanceData.issues = [...(preClearanceData.issues || []), ...clearance.issues];
               }
-            } catch (e) { console.warn('[TAS] Driver pre-clearance check failed (non-fatal):', e); }
+            } catch (e) { logger.warn('[TAS] Driver pre-clearance check failed (non-fatal):', e); }
           }
 
           // Determine final status
           const issues = preClearanceData.issues || [];
           preClearanceStatus = issues.length === 0 ? "cleared" : "denied";
         } catch (e) {
-          console.warn('[TAS] Pre-clearance checks failed (non-fatal), proceeding:', e);
+          logger.warn('[TAS] Pre-clearance checks failed (non-fatal), proceeding:', e);
           preClearanceStatus = "bypassed";
           preClearanceData.error = "TAS validation unavailable";
         }
@@ -431,7 +432,7 @@ export const terminalsRouter = router({
           preClearanceData,
         };
       } catch (e) {
-        console.error('[Terminals] bookAppointment insert error:', e);
+        logger.error('[Terminals] bookAppointment insert error:', e);
         throw new Error("Failed to create appointment");
       }
     }),
@@ -527,7 +528,7 @@ export const terminalsRouter = router({
           const scheduledAt = new Date(`${input.scheduledDate}T${input.scheduledTime}:00`);
           const [result] = await db.insert(appointments).values({ terminalId, driverId, loadId, scheduledAt, type: 'loading', status: 'scheduled', dockNumber: null } as any).$returningId();
           return { id: `apt_${result.id}`, confirmationNumber: `CONF-${String(result.id).padStart(6, '0')}`, status: 'scheduled', createdAt: new Date().toISOString() };
-        } catch (e) { console.error('[Terminals] createAppointment error:', e); }
+        } catch (e) { logger.error('[Terminals] createAppointment error:', e); }
       }
       return { id: `apt_${Date.now()}`, confirmationNumber: `CONF-${Date.now().toString().slice(-6)}`, status: 'scheduled', createdAt: new Date().toISOString() };
     }),
@@ -580,11 +581,11 @@ export const terminalsRouter = router({
                     detentionMinutes = Math.max(0, actualMinutes - estDuration);
                     detentionExceeded = detentionMinutes > 0;
                     if (detentionExceeded) {
-                      console.log(`[Detention] Appointment ${id}: ${detentionMinutes}min over ${estDuration}min free time (actual: ${actualMinutes}min)`);
+                      logger.info(`[Detention] Appointment ${id}: ${detentionMinutes}min over ${estDuration}min free time (actual: ${actualMinutes}min)`);
                     }
                   }
                 }
-              } catch (e) { console.warn('[Detention] Tracking failed (non-fatal):', e); }
+              } catch (e) { logger.warn('[Detention] Tracking failed (non-fatal):', e); }
             }
 
             // TAS notifications (fire-and-forget, skip if DTN not configured)
@@ -609,9 +610,9 @@ export const terminalsRouter = router({
                   }
                 }
               }
-            } catch (e) { console.warn('[TAS] Status notification failed (non-fatal):', e); }
+            } catch (e) { logger.warn('[TAS] Status notification failed (non-fatal):', e); }
           }
-        } catch (e) { console.error('[Terminals] updateAppointmentStatus error:', e); }
+        } catch (e) { logger.error('[Terminals] updateAppointmentStatus error:', e); }
       }
       return {
         success: true, appointmentId: input.appointmentId, newStatus: input.status,
@@ -636,7 +637,7 @@ export const terminalsRouter = router({
         try {
           const id = parseInt(input.appointmentId.replace('apt_', ''), 10);
           if (id) await db.update(appointments).set({ status: 'checked_in' as any }).where(eq(appointments.id, id));
-        } catch (e) { console.error('[Terminals] checkInTruck error:', e); }
+        } catch (e) { logger.error('[Terminals] checkInTruck error:', e); }
       }
       return { success: true, appointmentId: input.appointmentId, checkInTime: new Date().toISOString(), assignedRack: 'Rack 1', estimatedLoadTime: 45 };
     }),
@@ -838,7 +839,7 @@ export const terminalsRouter = router({
             const { loads: loadsTable } = await import('../../drizzle/schema');
             await db.update(loadsTable).set({ status: 'loading' as any }).where(eq(loadsTable.id, loadIdNum));
           }
-        } catch (e) { console.error('[Terminals] startLoading error:', e); }
+        } catch (e) { logger.error('[Terminals] startLoading error:', e); }
       }
       return { success: true, bayId: input.bayId, startedAt: new Date().toISOString(), startedBy: ctx.user?.id };
     }),
@@ -977,7 +978,7 @@ export const terminalsRouter = router({
           result = result.filter(s => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || s.assignedZone.toLowerCase().includes(q));
         }
         return result;
-      } catch (e) { console.error("[Terminals] getStaff error:", e); return []; }
+      } catch (e) { logger.error("[Terminals] getStaff error:", e); return []; }
     }),
 
   /**
@@ -999,7 +1000,7 @@ export const terminalsRouter = router({
         const d = onDuty?.count || 0;
         const b = onBreak?.count || 0;
         return { total: t, onDuty: d, offDuty: t - d - b, onBreak: b, supervisors: supervisors?.count || 0 };
-      } catch (e) { console.error("[Terminals] getStaffStats error:", e); return { total: 0, onDuty: 0, offDuty: 0, onBreak: 0, supervisors: 0 }; }
+      } catch (e) { logger.error("[Terminals] getStaffStats error:", e); return { total: 0, onDuty: 0, offDuty: 0, onBreak: 0, supervisors: 0 }; }
     }),
 
   /**
@@ -1230,7 +1231,7 @@ export const terminalsRouter = router({
             text: `EusoTrip Access Link\n\nHello ${staff.name},\n\nOpen this link to validate arriving drivers:\n${accessUrl}\n\nYour access code: ${link.accessCode}\n\nExpires: ${expiresLabel} CT`,
           });
           emailSent = true;
-        } catch (e) { console.error("[sendAccessLink] email error:", e); }
+        } catch (e) { logger.error("[sendAccessLink] email error:", e); }
       }
 
       // Send SMS if staff has phone
@@ -1246,7 +1247,7 @@ export const terminalsRouter = router({
           if (!smsSent) smsError = `SMS status: ${smsResult?.status || "unknown"}`;
         } catch (e: any) {
           smsError = e?.message || "SMS send failed";
-          console.error("[sendAccessLink] sms error:", e);
+          logger.error("[sendAccessLink] sms error:", e);
         }
       }
 
@@ -1276,7 +1277,7 @@ export const terminalsRouter = router({
         try {
           const id = parseInt(input.appointmentId.replace('apt_', ''), 10);
           if (id) await db.update(appointments).set({ status: 'cancelled' as any }).where(eq(appointments.id, id));
-        } catch (e) { console.error('[Terminals] cancelAppointment error:', e); }
+        } catch (e) { logger.error('[Terminals] cancelAppointment error:', e); }
       }
       return { success: true, appointmentId: input.appointmentId, cancelledAt: new Date().toISOString() };
     }),
@@ -1520,7 +1521,7 @@ export const terminalsRouter = router({
           completionRate: apptStats?.total ? Math.round(((apptStats?.completed || 0) / apptStats.total) * 100) : 0,
         },
       };
-    } catch (e) { console.error('[Terminals] getTerminalProfile error:', e); return null; }
+    } catch (e) { logger.error('[Terminals] getTerminalProfile error:', e); return null; }
   }),
 
   /**
@@ -1614,7 +1615,7 @@ export const terminalsRouter = router({
         safetyIncidents: 0,
       };
     } catch (error) {
-      console.error('[Terminals] getStats error:', error);
+      logger.error('[Terminals] getStats error:', error);
       return { activeShipments: 0, incomingToday: 0, outgoingToday: 0, availableBays: 0, totalBays: 0, staffOnDuty: 0, safetyIncidents: 0 };
     }
   }),
@@ -1643,7 +1644,7 @@ export const terminalsRouter = router({
           bay: a.dockNumber ? `Bay ${a.dockNumber}` : undefined,
         }));
       } catch (error) {
-        console.error('[Terminals] getShipments error:', error);
+        logger.error('[Terminals] getShipments error:', error);
         return [];
       }
     }),
@@ -1686,7 +1687,7 @@ export const terminalsRouter = router({
         }
         return { found: false };
       } catch (e: any) {
-        console.warn("[Terminals] FMCSA lookup failed:", e?.message?.substring(0, 100));
+        logger.warn("[Terminals] FMCSA lookup failed:", e?.message?.substring(0, 100));
         return { found: false, error: e?.message || "FMCSA lookup failed" };
       }
     }),
@@ -1711,7 +1712,7 @@ export const terminalsRouter = router({
         await svc.initialize(opis.id);
         const prices = await svc.getRackPrices({ limit: 50 });
         return prices;
-      } catch (e) { console.warn('[Terminals] OPIS fetch failed:', e); return null; }
+      } catch (e) { logger.warn('[Terminals] OPIS fetch failed:', e); return null; }
     }),
 
   /**
@@ -1738,7 +1739,7 @@ export const terminalsRouter = router({
           svc.getRefineryStatus().catch(() => []),
         ]);
         return { storage, pipelines, refineries };
-      } catch (e) { console.warn('[Terminals] Genscape fetch failed:', e); return null; }
+      } catch (e) { logger.warn('[Terminals] Genscape fetch failed:', e); return null; }
     }),
 
   /**
@@ -1763,7 +1764,7 @@ export const terminalsRouter = router({
           svc.getPipelineFlows({ limit: 20 }).catch(() => []),
         ]);
         return { crudePrices, pipelineFlows };
-      } catch (e) { console.warn('[Terminals] Enverus fetch failed:', e); return null; }
+      } catch (e) { logger.warn('[Terminals] Enverus fetch failed:', e); return null; }
     }),
 
   /**
@@ -1984,7 +1985,7 @@ export const terminalsRouter = router({
 
         return { success: true, terminalId: input.terminalId };
       } catch (e: any) {
-        console.error("[Terminals] setOperatingHours error:", e?.message?.slice(0, 100));
+        logger.error("[Terminals] setOperatingHours error:", e?.message?.slice(0, 100));
         throw new Error("Failed to save operating hours");
       }
     }),

@@ -6,7 +6,9 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
+import { randomInt } from "crypto";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { drugTests, drivers, users } from "../../drizzle/schema";
 
@@ -74,7 +76,7 @@ export const drugTestingRouter = router({
           total: countRow?.count || 0,
         };
       } catch (err) {
-        console.error("[drugTesting.list] Error:", err);
+        logger.error("[drugTesting.list] Error:", err);
         return { tests: [], total: 0 };
       }
     }),
@@ -240,7 +242,10 @@ export const drugTestingRouter = router({
       const companyId = await resolveCompanyId(ctx.user);
       // Select random drivers from company
       const allDrivers = await db.select({ id: drivers.id, userId: drivers.userId }).from(drivers).where(eq(drivers.companyId, companyId));
-      const shuffled = allDrivers.sort(() => Math.random() - 0.5).slice(0, input.count);
+      // Fisher-Yates shuffle with crypto.randomInt for DOT-compliant random selection
+      const arr = [...allDrivers];
+      for (let i = arr.length - 1; i > 0; i--) { const j = randomInt(0, i + 1); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+      const shuffled = arr.slice(0, input.count);
       return {
         selectionId: `sel_${Date.now()}`,
         selectedDrivers: shuffled.map(d => ({ driverId: String(d.id) })),
@@ -286,7 +291,7 @@ export const drugTestingRouter = router({
         if (!query) return { queryId: null, driverId: input.driverId, queryType: input.queryType, status: "api_error", result: null, submittedBy: ctx.user?.id, submittedAt: new Date().toISOString(), error: "Clearinghouse API returned no result" };
         return { queryId: query.queryId, driverId: input.driverId, queryType: input.queryType, status: query.status, result: query.result, submittedBy: ctx.user?.id, submittedAt: query.requestedAt };
       } catch (e: any) {
-        console.error("[DrugTesting] queryClearinghouse error:", e);
+        logger.error("[DrugTesting] queryClearinghouse error:", e);
         return { queryId: null, driverId: input.driverId, queryType: input.queryType, status: "error", result: null, submittedBy: ctx.user?.id, submittedAt: new Date().toISOString(), error: e?.message };
       }
     }),
@@ -312,7 +317,7 @@ export const drugTestingRouter = router({
         // No specific driver — return empty (bulk query not yet supported)
         return { queries: [], annualQueriesRequired: 0, annualQueriesCompleted: 0, dueForAnnualQuery: [], configured: true };
       } catch (e) {
-        console.error("[DrugTesting] getClearinghouseResults error:", e);
+        logger.error("[DrugTesting] getClearinghouseResults error:", e);
         return { queries: [], annualQueriesRequired: 0, annualQueriesCompleted: 0, dueForAnnualQuery: [], configured: false };
       }
     }),

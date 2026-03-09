@@ -15,6 +15,7 @@
  * Used by: Registration (all roles), Login enrichment, Admin audit, Compliance engine
  */
 
+import { logger } from "../_core/logger";
 import { getPool } from "../db";
 
 // ============================================================================
@@ -1050,7 +1051,7 @@ export async function getInstantVerification(dotNumber: string): Promise<Instant
       dataSource: "fmcsa_bulk_9.8M",
     };
   } catch (e) {
-    console.error("[InstantVerification] Error:", (e as Error).message?.slice(0, 200));
+    logger.error("[InstantVerification] Error:", (e as Error).message?.slice(0, 200));
     return null;
   }
 }
@@ -1398,7 +1399,7 @@ export async function auditPlatformCompanies(limit = 100): Promise<{
 
     return { audited: results.length, enriched, flagged, results };
   } catch (e) {
-    console.error("[InstantVerification] Audit error:", (e as Error).message?.slice(0, 200));
+    logger.error("[InstantVerification] Audit error:", (e as Error).message?.slice(0, 200));
     return { audited: 0, enriched: 0, flagged: 0, results: [] };
   }
 }
@@ -1438,7 +1439,7 @@ export async function storeVerificationEvent(
       ]
     );
   } catch (e) {
-    console.warn("[InstantVerification] Could not store ML event:", (e as Error).message?.slice(0, 100));
+    logger.warn("[InstantVerification] Could not store ML event:", (e as Error).message?.slice(0, 100));
   }
 }
 

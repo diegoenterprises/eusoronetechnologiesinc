@@ -12,6 +12,8 @@
  * Env: AI_SIDECAR_URL (default http://localhost:8091)
  */
 
+import { logger } from "../_core/logger";
+
 const SIDECAR_URL = process.env.AI_SIDECAR_URL || "http://localhost:8091";
 const TIMEOUT_MS = 30_000;
 
@@ -31,13 +33,13 @@ async function sidecarPost<T>(path: string, body: unknown): Promise<T | null> {
     });
     clearTimeout(timer);
     if (!res.ok) {
-      console.warn(`[AISidecar] ${path} returned ${res.status}`);
+      logger.warn(`[AISidecar] ${path} returned ${res.status}`);
       return null;
     }
     return (await res.json()) as T;
   } catch (err: any) {
     if (err?.name !== "AbortError") {
-      console.warn(`[AISidecar] ${path} unavailable:`, err?.message || err);
+      logger.warn(`[AISidecar] ${path} unavailable:`, err?.message || err);
     }
     return null;
   }

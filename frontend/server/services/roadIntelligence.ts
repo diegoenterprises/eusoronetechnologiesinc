@@ -15,6 +15,7 @@
  *   5. HotZoneMap reads road_segments + road_live_pings for rendering
  */
 
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { sql, desc, gt } from "drizzle-orm";
 
@@ -220,9 +221,9 @@ export async function aggregateBreadcrumbsToSegments(): Promise<{ processed: num
     const pingCutoff = new Date(Date.now() - 5 * 60 * 1000);
     await db.execute(sql`DELETE FROM road_live_pings WHERE pingAt < ${pingCutoff}`).catch(() => {});
 
-    console.log(`[RoadIntel] Processed ${processed} breadcrumbs → ${created} new segments, ${updated} updated`);
+    logger.info(`[RoadIntel] Processed ${processed} breadcrumbs → ${created} new segments, ${updated} updated`);
   } catch (e) {
-    console.error("[RoadIntel] aggregation error:", e);
+    logger.error("[RoadIntel] aggregation error:", e);
   }
 
   return { processed, segmentsCreated: created, segmentsUpdated: updated };
@@ -311,7 +312,7 @@ export async function getRoadCoverageStats(): Promise<{
       })),
     };
   } catch (e) {
-    console.error("[RoadIntel] stats error:", e);
+    logger.error("[RoadIntel] stats error:", e);
     return { totalSegments: 0, totalMilesMapped: 0, totalTraversals: 0, uniqueDriversContributed: 0, topRoads: [], coverageByState: [] };
   }
 }

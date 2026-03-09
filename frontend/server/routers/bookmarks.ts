@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 
@@ -29,7 +30,7 @@ export const bookmarksRouter = router({
         createdAt: l.createdAt?.toISOString().split('T')[0] || '',
       }));
     } catch (error) {
-      console.error('[Bookmarks] list error:', error);
+      logger.error('[Bookmarks] list error:', error);
       return [];
     }
   }),
@@ -42,7 +43,7 @@ export const bookmarksRouter = router({
       const [loadCount] = await db.select({ count: sql<number>`count(*)` }).from(loads);
       return [];
     } catch (error) {
-      console.error('[Bookmarks] getFolders error:', error);
+      logger.error('[Bookmarks] getFolders error:', error);
       return [];
     }
   }),

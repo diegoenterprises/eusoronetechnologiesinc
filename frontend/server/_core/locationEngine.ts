@@ -1,3 +1,4 @@
+import { logger } from "./logger";
 /**
  * EUSOTRIP LOCATION INTELLIGENCE ENGINE
  * Complete GPS, Navigation, Geofencing & Location Intelligence System
@@ -579,7 +580,7 @@ export function reportSignalLoss(driverId: number, loadId?: number): void {
   const existing = signalLossMap.get(driverId);
   if (existing && !existing.signalLostAt) {
     existing.signalLostAt = new Date();
-    console.log(`[LocationEngine] Signal lost for driver ${driverId} at ${existing.lastKnownLat},${existing.lastKnownLng} (was inside geofence: ${existing.wasInsideGeofence})`);
+    logger.info(`[LocationEngine] Signal lost for driver ${driverId} at ${existing.lastKnownLat},${existing.lastKnownLng} (was inside geofence: ${existing.wasInsideGeofence})`);
   }
 }
 
@@ -609,7 +610,7 @@ export function shouldSuppressGeofenceExit(driverId: number, geofenceId: number)
 
   const lostDurationSec = (Date.now() - state.signalLostAt.getTime()) / 1000;
   if (lostDurationSec <= SIGNAL_LOSS_GRACE_SECONDS) {
-    console.log(`[LocationEngine] Suppressing EXIT for driver ${driverId} — signal lost ${Math.round(lostDurationSec)}s ago, within ${SIGNAL_LOSS_GRACE_SECONDS}s grace`);
+    logger.info(`[LocationEngine] Suppressing EXIT for driver ${driverId} — signal lost ${Math.round(lostDurationSec)}s ago, within ${SIGNAL_LOSS_GRACE_SECONDS}s grace`);
     return true;
   }
   return false;
@@ -853,7 +854,7 @@ export async function processGeofenceEvent(event: GeofenceEventData): Promise<Tr
             }
           }
         } catch (e) {
-          console.error("[LocationEngine] Interstate compliance check failed:", e);
+          logger.error("[LocationEngine] Interstate compliance check failed:", e);
         }
       }
       break;
@@ -919,7 +920,7 @@ async function transitionLoadStatus(loadId: number, newStatus: string): Promise<
 
   const allowed = VALID_TRANSITIONS[current] || [];
   if (!allowed.includes(newStatus)) {
-    console.warn(`[LoadStateMachine] Invalid transition: ${current} → ${newStatus} for load ${loadId}`);
+    logger.warn(`[LoadStateMachine] Invalid transition: ${current} → ${newStatus} for load ${loadId}`);
     return false;
   }
 

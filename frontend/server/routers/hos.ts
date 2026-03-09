@@ -14,6 +14,7 @@
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { drivers, users } from "../../drizzle/schema";
 import {
@@ -276,7 +277,7 @@ export const hosRouter = router({
         }));
         return results;
       } catch (e) {
-        console.error("[HOS] getFleetHOS error:", e);
+        logger.error("[HOS] getFleetHOS error:", e);
         return [];
       }
     }),

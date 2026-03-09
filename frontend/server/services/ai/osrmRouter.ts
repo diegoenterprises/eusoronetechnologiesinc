@@ -7,6 +7,8 @@
  * Provides: ETA calculation, mileage, turn-by-turn, distance matrices, trip optimization
  */
 
+import { logger } from "../../_core/logger";
+
 const OSRM_BASE = process.env.OSRM_URL || "https://router.project-osrm.org";
 const ORS_BASE = "https://api.openrouteservice.org";
 const ORS_KEY = process.env.ORS_API_KEY || "";
@@ -156,7 +158,7 @@ export async function getRoute(
       return result;
     }
   } catch (e) {
-    console.warn("[OSRM] Route API failed, using haversine fallback:", (e as Error).message?.slice(0, 80));
+    logger.warn("[OSRM] Route API failed, using haversine fallback:", (e as Error).message?.slice(0, 80));
   }
 
   // Haversine fallback
@@ -204,7 +206,7 @@ export async function getDistanceMatrix(
       };
     }
   } catch (e) {
-    console.warn("[OSRM] Matrix API failed, using haversine fallback:", (e as Error).message?.slice(0, 80));
+    logger.warn("[OSRM] Matrix API failed, using haversine fallback:", (e as Error).message?.slice(0, 80));
   }
 
   // Haversine fallback
@@ -273,7 +275,7 @@ export async function optimizeTrip(
       };
     }
   } catch (e) {
-    console.warn("[OSRM] Trip optimization failed:", (e as Error).message?.slice(0, 80));
+    logger.warn("[OSRM] Trip optimization failed:", (e as Error).message?.slice(0, 80));
   }
 
   // Fallback — greedy nearest neighbor

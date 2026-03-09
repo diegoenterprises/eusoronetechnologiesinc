@@ -12,6 +12,7 @@
  * Model: perplexity-ai/pplx-embed-v1-0.6b (1024-dim, INT8, 32K context)
  */
 
+import { logger } from "../../_core/logger";
 import { ENV } from "../../_core/env";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -143,7 +144,7 @@ export class EmbeddingService {
 
   constructor() {
     this.baseUrl = ENV.embeddingServiceUrl || "http://localhost:8090";
-    console.log(`[EmbeddingService] Configured → ${this.baseUrl}`);
+    logger.info(`[EmbeddingService] Configured → ${this.baseUrl}`);
   }
 
   // ── Health Check ─────────────────────────────────────────────────────────
@@ -296,7 +297,7 @@ export class EmbeddingService {
 
       if (!resp.ok) {
         const errText = await resp.text().catch(() => "unknown");
-        console.error(`[EmbeddingService] API error ${resp.status}: ${errText}`);
+        logger.error(`[EmbeddingService] API error ${resp.status}: ${errText}`);
         throw new Error(`TEI API error: ${resp.status}`);
       }
 
@@ -331,7 +332,7 @@ export class EmbeddingService {
           },
         }));
       } catch (nativeErr) {
-        console.error("[EmbeddingService] Both endpoints failed:", openaiErr, nativeErr);
+        logger.error("[EmbeddingService] Both endpoints failed:", openaiErr, nativeErr);
         throw openaiErr;
       }
     }

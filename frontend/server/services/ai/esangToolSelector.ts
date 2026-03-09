@@ -12,6 +12,7 @@
  * Reference: pplx-embed ToolRet benchmark (44.45% nDCG@10)
  */
 
+import { logger } from "../../_core/logger";
 import { embeddingService, EmbeddingService } from "../embeddings/embeddingService";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -75,7 +76,7 @@ async function initializeEmbeddings(): Promise<void> {
   initPromise = (async () => {
     const healthy = await embeddingService.isHealthy();
     if (!healthy) {
-      console.warn("[ToolSelector] Embedding service unavailable — falling back to keyword matching");
+      logger.warn("[ToolSelector] Embedding service unavailable — falling back to keyword matching");
       actionEmbeddings = ACTION_CATALOG.map(a => ({ ...a, embedding: null }));
       return;
     }
@@ -91,9 +92,9 @@ async function initializeEmbeddings(): Promise<void> {
       }));
 
       embeddingsInitialized = true;
-      console.log(`[ToolSelector] Embedded ${actionEmbeddings.length} actions`);
+      logger.info(`[ToolSelector] Embedded ${actionEmbeddings.length} actions`);
     } catch (err: any) {
-      console.error("[ToolSelector] Failed to embed actions:", err.message);
+      logger.error("[ToolSelector] Failed to embed actions:", err.message);
       actionEmbeddings = ACTION_CATALOG.map(a => ({ ...a, embedding: null }));
     }
   })();
@@ -196,7 +197,7 @@ export async function selectActions(
 
     return results;
   } catch (err: any) {
-    console.error("[ToolSelector] Embedding search failed, falling back to keywords:", err.message);
+    logger.error("[ToolSelector] Embedding search failed, falling back to keywords:", err.message);
     return keywordMatch(query);
   }
 }

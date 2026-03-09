@@ -13,6 +13,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import { smsMessages, smsOptOuts } from "../../drizzle/schema";
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
 
@@ -25,17 +26,17 @@ let smsInitPromise: Promise<void> | null = null;
 
 async function initSmsClient() {
   if (!ACS_CONNECTION_STRING || !ACS_SMS_FROM) {
-    if (!ACS_SMS_FROM) console.warn("[EusoSMS] ACS_SMS_FROM_NUMBER not set — SMS will be logged only");
-    if (!ACS_CONNECTION_STRING) console.warn("[EusoSMS] AZURE_EMAIL_CONNECTION_STRING not set — SMS will be logged only");
+    if (!ACS_SMS_FROM) logger.warn("[EusoSMS] ACS_SMS_FROM_NUMBER not set — SMS will be logged only");
+    if (!ACS_CONNECTION_STRING) logger.warn("[EusoSMS] AZURE_EMAIL_CONNECTION_STRING not set — SMS will be logged only");
     return;
   }
   try {
     const { SmsClient } = await import("@azure/communication-sms");
     smsClient = new SmsClient(ACS_CONNECTION_STRING);
     smsConfigured = true;
-    console.log("[EusoSMS] Azure Communication Services SMS configured, from:", ACS_SMS_FROM);
+    logger.info("[EusoSMS] Azure Communication Services SMS configured, from:", ACS_SMS_FROM);
   } catch (err) {
-    console.warn("[EusoSMS] @azure/communication-sms not available — SMS will be logged only");
+    logger.warn("[EusoSMS] @azure/communication-sms not available — SMS will be logged only");
   }
 }
 
@@ -109,23 +110,23 @@ export async function sendSms(params: SendSmsParams): Promise<{ id: number; stat
       const sr = sendResults[0];
       if (sr?.successful) {
         await db.update(smsMessages).set({ status: "SENT", sentAt: new Date() }).where(eq(smsMessages.id, result.id));
-        console.log("[EusoSMS] Sent to:", cleanNumber, "MessageId:", sr.messageId);
+        logger.info("[EusoSMS] Sent to:", cleanNumber, "MessageId:", sr.messageId);
         return { id: result.id, status: "SENT" };
       } else {
         const errMsg = sr?.errorMessage || "Unknown ACS error";
         await db.update(smsMessages).set({ status: "FAILED", errorMessage: errMsg }).where(eq(smsMessages.id, result.id));
-        console.error("[EusoSMS] Failed to send to:", cleanNumber, "Error:", errMsg);
+        logger.error("[EusoSMS] Failed to send to:", cleanNumber, "Error:", errMsg);
         return { id: result.id, status: "FAILED" };
       }
     } catch (err: any) {
       const errMsg = err?.message || "ACS SMS exception";
       await db.update(smsMessages).set({ status: "FAILED", errorMessage: errMsg }).where(eq(smsMessages.id, result.id));
-      console.error("[EusoSMS] Exception sending to:", cleanNumber, err);
+      logger.error("[EusoSMS] Exception sending to:", cleanNumber, err);
       return { id: result.id, status: "FAILED" };
     }
   } else {
     // Not configured — queue for retry when gateway becomes available
-    console.warn("[EusoSMS] SMS not configured. Queued for retry to:", cleanNumber);
+    logger.warn("[EusoSMS] SMS not configured. Queued for retry to:", cleanNumber);
     await db.update(smsMessages).set({ status: "QUEUED", errorMessage: "SMS gateway not configured — queued for retry" }).where(eq(smsMessages.id, result.id));
     return { id: result.id, status: "QUEUED" };
   }
@@ -157,7 +158,7 @@ export async function processRetryQueue(maxRetries: number = 3, batchSize: numbe
     const messages = rows || [];
     if (messages.length === 0) return { retried: 0, succeeded: 0, failed: 0 };
 
-    console.log(`[EusoSMS] Processing retry queue: ${messages.length} messages`);
+    logger.info(`[EusoSMS] Processing retry queue: ${messages.length} messages`);
 
     for (const msg of messages) {
       retried++;
@@ -191,9 +192,9 @@ export async function processRetryQueue(maxRetries: number = 3, batchSize: numbe
       }
     }
 
-    console.log(`[EusoSMS] Retry queue processed: ${succeeded} sent, ${failed} failed of ${retried} total`);
+    logger.info(`[EusoSMS] Retry queue processed: ${succeeded} sent, ${failed} failed of ${retried} total`);
   } catch (e) {
-    console.error("[EusoSMS] Retry queue error:", e);
+    logger.error("[EusoSMS] Retry queue error:", e);
   }
 
   return { retried, succeeded, failed };

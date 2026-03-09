@@ -14,8 +14,10 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
-import { isolatedApprovedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { router, isolatedApprovedProcedure as protectedProcedure, publicProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, companies, vehicles, bids, drivers, users, loadBids, bidAutoAcceptRules, negotiations, negotiationMessages, laneContracts, agreements, loadStops } from "../../drizzle/schema";
 import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
@@ -84,7 +86,7 @@ async function resolveUserProfile(ctxUser: any): Promise<UserProfile> {
           }
         }
       }
-    } catch (e) { console.warn('[LoadBoard] resolveUserProfile failed:', e); }
+    } catch (e) { logger.warn('[LoadBoard] resolveUserProfile failed:', e); }
   }
 
   return { userId, role, isAdmin: admin, companyId, driverId, hasHazmatEndorsement, hazmatExpired, carrierHazmatAuth, carrierInsuranceAmount };
@@ -700,7 +702,7 @@ export const loadBoardRouter = router({
           total: stats?.count || 0,
           marketStats: { avgRate: Math.round(stats?.avgRate || 0), totalLoads: stats?.count || 0, loadToTruckRatio: 0 },
         };
-      } catch (e) { console.error('[LoadBoard] search error:', e); return { loads: [], total: 0, marketStats: { avgRate: 0, totalLoads: 0, loadToTruckRatio: 0 } }; }
+      } catch (e) { logger.error('[LoadBoard] search error:', e); return { loads: [], total: 0, marketStats: { avgRate: 0, totalLoads: 0, loadToTruckRatio: 0 } }; }
     }),
 
   /**
@@ -721,7 +723,7 @@ export const loadBoardRouter = router({
           shipperName = co?.name || '';
         }
         return { id: String(load.id), loadNumber: load.loadNumber, status: load.status, shipper: { name: shipperName }, origin: { city: pickup.city || '', state: pickup.state || '', address: pickup.address || '' }, destination: { city: delivery.city || '', state: delivery.state || '', address: delivery.address || '' }, distance: load.distance ? parseFloat(String(load.distance)) : 0, pricing: { rate: load.rate ? parseFloat(String(load.rate)) : 0 }, postedAt: load.createdAt?.toISOString() || '', postedBy: String(load.shipperId || '') };
-      } catch (e) { console.error('[LoadBoard] getById error:', e); return null; }
+      } catch (e) { logger.error('[LoadBoard] getById error:', e); return null; }
     }),
 
   /**
@@ -784,7 +786,7 @@ export const loadBoardRouter = router({
       const isHazmat = input.hazmat || !!input.hazmatClass;
       if (isHazmat && input.hazmatClass) {
         const classReqs = HAZMAT_CLASS_REQUIREMENTS[input.hazmatClass];
-        if (!classReqs) console.warn(`[LoadBoard] Unknown hazmat class: ${input.hazmatClass}`);
+        if (!classReqs) logger.warn(`[LoadBoard] Unknown hazmat class: ${input.hazmatClass}`);
       }
 
       // WS-P0-020R: Double-brokering prevention
@@ -807,7 +809,7 @@ export const loadBoardRouter = router({
           }
         } catch (dbErr: any) {
           if (dbErr?.message?.includes('Double-brokering')) throw dbErr;
-          console.warn('[LoadBoard] Double-broker check warning:', dbErr?.message);
+          logger.warn('[LoadBoard] Double-broker check warning:', dbErr?.message);
         }
       }
 
@@ -889,7 +891,7 @@ export const loadBoardRouter = router({
         }));
         await db.insert(loadStops).values(stopValues as any);
       } catch (stopErr) {
-        console.warn('[LoadBoard] Failed to insert load stops:', stopErr);
+        logger.warn('[LoadBoard] Failed to insert load stops:', stopErr);
       }
 
       return {
@@ -945,7 +947,7 @@ export const loadBoardRouter = router({
                 hazmatWarnings.push(`Driver's medical certificate expired on ${driver.medicalCardExpiry.toISOString().split('T')[0]}`);
               }
             }
-          } catch (e) { console.warn('[LoadBoard] Driver endorsement check failed:', e); }
+          } catch (e) { logger.warn('[LoadBoard] Driver endorsement check failed:', e); }
         }
         // 2. Verify vehicle/trailer compatibility
         if (input.vehicleId && classReqs) {
@@ -959,7 +961,7 @@ export const loadBoardRouter = router({
                 hazmatWarnings.push(`Vehicle trailer type '${vType}' may not be authorized for Hazmat Class ${load.hazmatClass}. Allowed: ${allowed.join(', ')}`);
               }
             }
-          } catch (e) { console.warn('[LoadBoard] Vehicle compat check failed:', e); }
+          } catch (e) { logger.warn('[LoadBoard] Vehicle compat check failed:', e); }
         }
         // If blocking warnings exist, return them instead of booking
         if (hazmatWarnings.length > 0) {
@@ -1228,7 +1230,7 @@ export const loadBoardRouter = router({
             maxRate = Math.round(stats.max * 100) / 100 || 3.50;
             totalLoads = stats.count || 0;
           }
-        } catch (e) { console.error('[LoadBoard] getMarketRates error:', e); }
+        } catch (e) { logger.error('[LoadBoard] getMarketRates error:', e); }
       }
       return {
         lane: `${input.origin.city}, ${input.origin.state} to ${input.destination.city}, ${input.destination.state}`,
@@ -1443,7 +1445,7 @@ export const loadBoardRouter = router({
           },
         };
       } catch (e) {
-        console.error('[LoadBoard] matchLoadsToCarrier error:', e);
+        logger.error('[LoadBoard] matchLoadsToCarrier error:', e);
         return { matches: [], total: 0, matchCriteria: {} };
       }
     }),
@@ -1549,7 +1551,7 @@ export const loadBoardRouter = router({
         carriers.sort((a, b) => b.score - a.score);
         return { carriers: carriers.slice(0, 50), total: carriers.length };
       } catch (e) {
-        console.error('[LoadBoard] getMatchingCarriers error:', e);
+        logger.error('[LoadBoard] getMatchingCarriers error:', e);
         return { carriers: [], total: 0 };
       }
     }),
@@ -1618,7 +1620,7 @@ export const loadBoardRouter = router({
           avgRate: Math.round((l.avgRate || 0) * 100) / 100,
         })),
       };
-    } catch (e) { console.error('[LoadBoard] getStats error:', e); return empty; }
+    } catch (e) { logger.error('[LoadBoard] getStats error:', e); return empty; }
   }),
 
   /**
@@ -1663,7 +1665,7 @@ export const loadBoardRouter = router({
             timestamp: (l.updatedAt || l.createdAt)?.toISOString() || '',
           };
         });
-      } catch (e) { console.error('[LoadBoard] getRecentActivity error:', e); return []; }
+      } catch (e) { logger.error('[LoadBoard] getRecentActivity error:', e); return []; }
     }),
 
   /**
@@ -1742,7 +1744,7 @@ export const loadBoardRouter = router({
           total: rows.length,
           classSummary,
         };
-      } catch (e) { console.error('[LoadBoard] getHazmatLoads error:', e); return { loads: [], total: 0, classSummary: {} }; }
+      } catch (e) { logger.error('[LoadBoard] getHazmatLoads error:', e); return { loads: [], total: 0, classSummary: {} }; }
     }),
 
   /**
@@ -2128,7 +2130,7 @@ export const loadBoardRouter = router({
             break;
           }
         }
-      } catch (e) { console.warn('[LoadBoard] Auto-accept check failed:', e); }
+      } catch (e) { logger.warn('[LoadBoard] Auto-accept check failed:', e); }
 
       return {
         bidId: result.id,
@@ -2204,7 +2206,7 @@ export const loadBoardRouter = router({
         }));
 
         return { bids: enriched, total: enriched.length };
-      } catch (e) { console.error('[LoadBoard] getBidsForLoad error:', e); return { bids: [], total: 0 }; }
+      } catch (e) { logger.error('[LoadBoard] getBidsForLoad error:', e); return { bids: [], total: 0 }; }
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2348,7 +2350,7 @@ export const loadBoardRouter = router({
           })),
           createdAt: neg.createdAt?.toISOString() || '',
         };
-      } catch (e) { console.error('[LoadBoard] getNegotiationThread error:', e); return null; }
+      } catch (e) { logger.error('[LoadBoard] getNegotiationThread error:', e); return null; }
     }),
 
   /**
@@ -2533,7 +2535,7 @@ export const loadBoardRouter = router({
           })),
           total: rows.length,
         };
-      } catch (e) { console.error('[LoadBoard] getLaneContractRates error:', e); return { contracts: [], total: 0 }; }
+      } catch (e) { logger.error('[LoadBoard] getLaneContractRates error:', e); return { contracts: [], total: 0 }; }
     }),
 
   /**
@@ -2633,7 +2635,7 @@ export const loadBoardRouter = router({
               if (m.partyAId) activeMSAShipperIds.push(m.partyAId);
               if (m.partyBId) activeMSAShipperIds.push(m.partyBId);
             }
-          } catch (e) { console.warn('[LoadBoard] MSA lookup failed:', e); }
+          } catch (e) { logger.warn('[LoadBoard] MSA lookup failed:', e); }
         }
 
         // 4. Fetch available loads
@@ -2762,7 +2764,7 @@ export const loadBoardRouter = router({
           activeMSAs: activeMSAShipperIds.length,
         };
       } catch (e) {
-        console.error('[LoadBoard] enhancedMatchLoadsToCarrier error:', e);
+        logger.error('[LoadBoard] enhancedMatchLoadsToCarrier error:', e);
         return { matches: [], total: 0, matchCriteria: {}, contractedLanes: 0, activeMSAs: 0 };
       }
     }),

@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, users, geofences, geofenceEvents, locationHistory, gpsTracking } from "../../drizzle/schema";
 
@@ -36,7 +37,7 @@ export const geolocationRouter = router({
             lastUpdate: v.lastGPSUpdate?.toISOString() || null,
           };
         });
-      } catch (e) { console.error('[Geolocation] getFleetLocations error:', e); return []; }
+      } catch (e) { logger.error('[Geolocation] getFleetLocations error:', e); return []; }
     }),
 
   /**
@@ -74,7 +75,7 @@ export const geolocationRouter = router({
           vehicleId: input.vehicleId, points,
           summary: { totalMiles: 0, movingTime: 0, stoppedTime: 0, avgSpeed, maxSpeed },
         };
-      } catch (e) { console.error('[Geolocation] getLocationHistory error:', e); return { vehicleId: input.vehicleId, points: [], summary: { totalMiles: 0, movingTime: 0, stoppedTime: 0, avgSpeed: 0, maxSpeed: 0 } }; }
+      } catch (e) { logger.error('[Geolocation] getLocationHistory error:', e); return { vehicleId: input.vehicleId, points: [], summary: { totalMiles: 0, movingTime: 0, stoppedTime: 0, avgSpeed: 0, maxSpeed: 0 } }; }
     }),
 
   /**
@@ -108,7 +109,7 @@ export const geolocationRouter = router({
           timestamp: now,
         });
         return { success: true, vehicleId: input.vehicleId, timestamp: now.toISOString() };
-      } catch (e) { console.error('[Geolocation] updateLocation error:', e); return { success: false, vehicleId: input.vehicleId, timestamp: new Date().toISOString() }; }
+      } catch (e) { logger.error('[Geolocation] updateLocation error:', e); return { success: false, vehicleId: input.vehicleId, timestamp: new Date().toISOString() }; }
     }),
 
   /**
@@ -136,7 +137,7 @@ export const geolocationRouter = router({
             createdAt: g.createdAt?.toISOString() || '',
           };
         });
-      } catch (e) { console.error('[Geolocation] getGeofences error:', e); return []; }
+      } catch (e) { logger.error('[Geolocation] getGeofences error:', e); return []; }
     }),
 
   /**
@@ -206,7 +207,7 @@ export const geolocationRouter = router({
           dwellSeconds: r.dwellSeconds || 0,
           timestamp: r.eventTimestamp?.toISOString() || '',
         }));
-      } catch (e) { console.error('[Geolocation] getGeofenceEvents error:', e); return []; }
+      } catch (e) { logger.error('[Geolocation] getGeofenceEvents error:', e); return []; }
     }),
 
   /**
@@ -246,7 +247,7 @@ export const geolocationRouter = router({
           lastUpdate: vehicle.lastGPSUpdate?.toISOString() || null,
           confidence: vehicle.lastGPSUpdate && (Date.now() - vehicle.lastGPSUpdate.getTime()) < 600000 ? 0.9 : 0.6,
         };
-      } catch (e) { console.error('[Geolocation] getETA error:', e); return null; }
+      } catch (e) { logger.error('[Geolocation] getETA error:', e); return null; }
     }),
 
   /**
@@ -309,7 +310,7 @@ export const geolocationRouter = router({
           return { vehicleId: String(v.id), vehicleType: v.vehicleType, make: v.make, model: v.model, licensePlate: v.licensePlate, status: v.status, location: loc, distanceMiles: Math.round(dist * 10) / 10, lastUpdate: v.lastGPSUpdate?.toISOString() || null };
         }).filter(Boolean);
         return results.sort((a: any, b: any) => a.distanceMiles - b.distanceMiles).slice(0, 20);
-      } catch (e) { console.error('[Geolocation] findNearestTrucks error:', e); return []; }
+      } catch (e) { logger.error('[Geolocation] findNearestTrucks error:', e); return []; }
     }),
 
   /**
@@ -336,7 +337,7 @@ export const geolocationRouter = router({
 
         return { success: true, lat: input.lat, lng: input.lng, timestamp: new Date().toISOString() };
       } catch (err) {
-        console.error("[Geo] updateMyLocation error:", err);
+        logger.error("[Geo] updateMyLocation error:", err);
         return { success: true, lat: input.lat, lng: input.lng, timestamp: new Date().toISOString() };
       }
     }),

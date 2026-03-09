@@ -4,6 +4,7 @@
  */
 import cron from "node-cron";
 import { getDb } from "../../db";
+import { logger } from "../../_core/logger";
 import { emitDispatchEvent } from "../../_core/websocket";
 import { loads, drivers, companies } from "../../../drizzle/schema";
 import { eq, and, sql, inArray } from "drizzle-orm";
@@ -42,7 +43,7 @@ async function runSync(sourceName: string, syncFn: () => Promise<void>): Promise
   const startedAt = new Date();
 
   try {
-    console.log(`[DataSync] Starting ${sourceName}...`);
+    logger.info(`[DataSync] Starting ${sourceName}...`);
 
     await logSync({
       id: syncId,
@@ -63,9 +64,9 @@ async function runSync(sourceName: string, syncFn: () => Promise<void>): Promise
       status: "SUCCESS",
     });
 
-    console.log(`[DataSync] Completed ${sourceName} in ${Date.now() - startedAt.getTime()}ms`);
+    logger.info(`[DataSync] Completed ${sourceName} in ${Date.now() - startedAt.getTime()}ms`);
   } catch (error) {
-    console.error(`[DataSync] Failed ${sourceName}:`, error);
+    logger.error(`[DataSync] Failed ${sourceName}:`, error);
 
     await logSync({
       id: syncId,
@@ -80,7 +81,7 @@ async function runSync(sourceName: string, syncFn: () => Promise<void>): Promise
 }
 
 export function initializeDataSyncScheduler(): void {
-  console.log("[DataSync] Initializing scheduler...");
+  logger.info("[DataSync] Initializing scheduler...");
 
   // ═══ CRITICAL: Real-time data (1-5 minute intervals) ═══
 
@@ -109,7 +110,7 @@ export function initializeDataSyncScheduler(): void {
     try {
       const { aggregateBreadcrumbsToSegments } = await import("../../services/roadIntelligence");
       await runSync("ROAD_SEGMENT_AGGREGATION", async () => { await aggregateBreadcrumbsToSegments(); });
-    } catch (e) { console.error("[Scheduler] Road segment aggregation error:", e); }
+    } catch (e) { logger.error("[Scheduler] Road segment aggregation error:", e); }
   });
 
   // ═══ HIGH PRIORITY: Operational data (15-60 minute intervals) ═══
@@ -243,7 +244,7 @@ export function initializeDataSyncScheduler(): void {
     await runSync("DISPATCH_CHECK_CALL_DUE", scanCheckCallsDue);
   });
 
-  console.log("[DataSync] Scheduler v3.5 initialized — 30 data sources, 27+ cron jobs (incl. dispatch check calls)");
+  logger.info("[DataSync] Scheduler v3.5 initialized — 30 data sources, 27+ cron jobs (incl. dispatch check calls)");
 }
 
 /**
@@ -303,9 +304,9 @@ async function scanCheckCallsDue(): Promise<void> {
       }
     }
 
-    console.log(`[Dispatch] Check call scan: ${activeLoads.length} in-transit loads, ${totalEmitted} check calls due`);
+    logger.info(`[Dispatch] Check call scan: ${activeLoads.length} in-transit loads, ${totalEmitted} check calls due`);
   } catch (err: any) {
-    console.error('[Dispatch] Check call scan error:', err?.message?.slice(0, 200));
+    logger.error('[Dispatch] Check call scan error:', err?.message?.slice(0, 200));
   }
 }
 
@@ -314,7 +315,7 @@ async function scanCheckCallsDue(): Promise<void> {
  * Fetches critical data first (weather, earthquakes, fuel)
  */
 export async function runInitialSync(): Promise<void> {
-  console.log("[DataSync] Running initial data sync — ALL 25 sources...");
+  logger.info("[DataSync] Running initial data sync — ALL 25 sources...");
 
   // Wave 0: Seed baseline data for tables that have broken/unavailable APIs
   await runSync("SEED_MAP_DATA", seedMapData);
@@ -365,5 +366,5 @@ export async function runInitialSync(): Promise<void> {
   // Wave 5: Insurance compliance check
   await runSync("INSURANCE_COMPLIANCE_INIT", monitorInsuranceExpirations);
 
-  console.log("[DataSync] Initial data sync complete — ALL 28 sources loaded (incl. insurance compliance engine)");
+  logger.info("[DataSync] Initial data sync complete — ALL 28 sources loaded (incl. insurance compliance engine)");
 }

@@ -9,6 +9,7 @@ import { getDb } from "../db";
 // @ts-ignore - Schema import
 import { users, companies } from "../../drizzle/schema";
 import { eq, desc, sql, and, like, or, gte } from "drizzle-orm";
+import { randomBytes } from "crypto";
 
 export const superAdminRouter = router({
   create: protectedProcedure
@@ -31,7 +32,7 @@ export const superAdminRouter = router({
         }).$returningId();
         return { success: true, id: result.id, entityType: "company" };
       }
-      const openId = `sa_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const openId = `sa_${Date.now()}_${randomBytes(4).toString('hex')}`;
       const [result] = await db.insert(users).values({
         openId,
         name: input.name,

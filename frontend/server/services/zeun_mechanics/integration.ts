@@ -4,6 +4,7 @@
  */
 
 import { z } from "zod";
+import { logger } from "../../_core/logger";
 import {
   ZeunMechanicsUltimateCore,
   BreakdownReportSchema,
@@ -350,7 +351,7 @@ export class ZeunNotificationService {
     message: string,
     priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
   ) {
-    console.log(`[ZEUN NOTIFICATION] Driver ${driverId}: ${title} - ${message}`);
+    logger.error(`[ZEUN NOTIFICATION] Driver ${driverId}: ${title} - ${message}`);
     return {
       notificationId: `notif-${Date.now()}`,
       status: "SENT",
@@ -364,7 +365,7 @@ export class ZeunNotificationService {
     message: string,
     vehicleVin: string
   ) {
-    console.log(`[ZEUN NOTIFICATION] Fleet ${fleetId}: ${title} - ${message}`);
+    logger.info(`[ZEUN NOTIFICATION] Fleet ${fleetId}: ${title} - ${message}`);
     return {
       notificationId: `notif-${Date.now()}`,
       status: "SENT",
@@ -377,7 +378,7 @@ export class ZeunNotificationService {
     breakdownReportId: string,
     vehicleInfo: any
   ) {
-    console.log(`[ZEUN NOTIFICATION] Provider ${providerId}: New breakdown report ${breakdownReportId}`);
+    logger.error(`[ZEUN NOTIFICATION] Provider ${providerId}: New breakdown report ${breakdownReportId}`);
     return {
       notificationId: `notif-${Date.now()}`,
       status: "SENT",
@@ -398,7 +399,7 @@ export class ZeunDocumentStorageService {
   ) {
     // In production, upload to S3
     const photoUrl = `https://zeun-storage.s3.amazonaws.com/${reportId}/${photoType}-${Date.now()}.jpg`;
-    console.log(`[ZEUN STORAGE] Uploaded photo: ${photoUrl}`);
+    logger.info(`[ZEUN STORAGE] Uploaded photo: ${photoUrl}`);
     return {
       photoUrl,
       photoId: `photo-${Date.now()}`,
@@ -409,7 +410,7 @@ export class ZeunDocumentStorageService {
   async uploadBreakdownVideo(reportId: string, videoData: Buffer) {
     // In production, upload to S3
     const videoUrl = `https://zeun-storage.s3.amazonaws.com/${reportId}/video-${Date.now()}.mp4`;
-    console.log(`[ZEUN STORAGE] Uploaded video: ${videoUrl}`);
+    logger.info(`[ZEUN STORAGE] Uploaded video: ${videoUrl}`);
     return {
       videoUrl,
       videoId: `video-${Date.now()}`,
@@ -437,12 +438,12 @@ export class ZeunMechanicsWebSocketHandler {
 
   registerConnection(driverId: string, connection: any) {
     this.connections.set(driverId, connection);
-    console.log(`[ZEUN WS] Driver ${driverId} connected`);
+    logger.info(`[ZEUN WS] Driver ${driverId} connected`);
   }
 
   unregisterConnection(driverId: string) {
     this.connections.delete(driverId);
-    console.log(`[ZEUN WS] Driver ${driverId} disconnected`);
+    logger.info(`[ZEUN WS] Driver ${driverId} disconnected`);
   }
 
   broadcastBreakdownUpdate(reportId: string, update: any) {

@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { eq, and, sql, gte, lte, desc } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { payments, users } from "../../drizzle/schema";
 
@@ -71,7 +72,7 @@ export const taxReportingRouter = router({
           qualifyingCount: contractors.filter((c: any) => c.meetsThreshold).length,
         };
       } catch (e: any) {
-        console.error("[TaxReporting] getContractorSummary error:", e?.message?.slice(0, 200));
+        logger.error("[TaxReporting] getContractorSummary error:", e?.message?.slice(0, 200));
         return { contractors: [], totalPaid: 0, qualifyingCount: 0, taxYear: input.taxYear };
       }
     }),
@@ -137,7 +138,7 @@ export const taxReportingRouter = router({
             amount: parseFloat(contractor.totalPaid || "0"),
           });
         } catch (e: any) {
-          console.warn("[TaxReporting] generate1099 skip for payee", contractor.payeeId, e?.message?.slice(0, 80));
+          logger.warn("[TaxReporting] generate1099 skip for payee", contractor.payeeId, e?.message?.slice(0, 80));
         }
       }
 
@@ -196,7 +197,7 @@ export const taxReportingRouter = router({
 
         return { records, total: Number(total) };
       } catch (e: any) {
-        console.error("[TaxReporting] list1099s error:", e?.message?.slice(0, 200));
+        logger.error("[TaxReporting] list1099s error:", e?.message?.slice(0, 200));
         return { records: [], total: 0 };
       }
     }),
@@ -341,7 +342,7 @@ export const taxReportingRouter = router({
           deadline: `${input.taxYear + 1}-01-31`,
         };
       } catch (e: any) {
-        console.error("[TaxReporting] getDashboard error:", e?.message?.slice(0, 200));
+        logger.error("[TaxReporting] getDashboard error:", e?.message?.slice(0, 200));
         return {
           taxYear: input.taxYear, totalContractors: 0, qualifying1099: 0,
           totalPaid: 0, generated: 0, filed: 0, pendingReview: 0,

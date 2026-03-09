@@ -19,6 +19,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, users, companies, documents, hzFuelPrices } from "../../drizzle/schema";
 import { digitizeRateSheet } from "../services/rateSheetDigitizer";
@@ -476,7 +477,7 @@ export const rateSheetRouter = router({
             status: "active",
             fileUrl: "",
           } as any);
-        } catch (e) { console.error("[RateSheet] create error:", e); }
+        } catch (e) { logger.error("[RateSheet] create error:", e); }
       }
 
       // Auto-index rate sheet for AI semantic search (fire-and-forget)
@@ -568,7 +569,7 @@ export const rateSheetRouter = router({
 
         return { price: 3.75, padd: targetPadd, state: targetState, reportDate: null, source: "default" as const, change1w: null, change1m: null };
       } catch (e) {
-        console.error("[RateSheet] getCurrentDiesel error:", e);
+        logger.error("[RateSheet] getCurrentDiesel error:", e);
         return { price: 3.75, padd: "PADD3", state: null, reportDate: null, source: "default" as const, change1w: null, change1m: null };
       }
     }),
@@ -713,7 +714,7 @@ export const rateSheetRouter = router({
           lastUpdated: new Date().toISOString(),
         };
       } catch (e) {
-        console.error("[RateSheet] getPlatformRateIntelligence error:", e);
+        logger.error("[RateSheet] getPlatformRateIntelligence error:", e);
         return { bands: [], totalLoads: 0, avgRatePerMile: 0, states: [], lastUpdated: null };
       }
     }),
@@ -883,7 +884,7 @@ export const rateSheetRouter = router({
             status: "active",
             fileUrl: "",
           } as any);
-        } catch (e) { console.error("[Reconciliation] save error:", e); }
+        } catch (e) { logger.error("[Reconciliation] save error:", e); }
       }
 
       return {
@@ -1268,7 +1269,7 @@ export const rateSheetRouter = router({
 
         return { matched, unmatched, summary };
       } catch (error) {
-        console.error("[Reconciliation] reconcileTickets error:", error);
+        logger.error("[Reconciliation] reconcileTickets error:", error);
         return { matched: [], unmatched: [], summary: { total: 0, matched: 0, discrepancies: 0, warnings: 0, clean: 0, unmatched: 0, unmatchedTickets: 0, unmatchedBOLs: 0, volumeVariance: 0, financialVariance: 0, reconciliationScore: 0 } };
       }
     }),
@@ -1326,7 +1327,7 @@ export const rateSheetRouter = router({
         const insertId = result?.[0]?.id || 0;
         return { success: true, id: insertId, name: input.name, tierCount: input.rateTiers.length };
       } catch (e: any) {
-        console.error("[RateSheet] saveRateSheet error:", e);
+        logger.error("[RateSheet] saveRateSheet error:", e);
         throw new Error("Failed to save rate sheet");
       }
     }),
@@ -1369,7 +1370,7 @@ export const rateSheetRouter = router({
           notes: meta.notes || null,
           version: meta.version || 1,
         };
-      } catch (e) { console.error("[RateSheet] getRateSheet error:", e); return null; }
+      } catch (e) { logger.error("[RateSheet] getRateSheet error:", e); return null; }
     }),
 
   /**
@@ -1424,7 +1425,7 @@ export const rateSheetRouter = router({
               snapshotBy: ctx.user?.id,
             }),
           } as any);
-        } catch (snapErr) { console.error("[RateSheet] snapshot save error:", snapErr); }
+        } catch (snapErr) { logger.error("[RateSheet] snapshot save error:", snapErr); }
 
         // Merge updates
         const updated = {
@@ -1458,7 +1459,7 @@ export const rateSheetRouter = router({
 
         return { success: true, id: input.id, version: updated.version };
       } catch (e: any) {
-        console.error("[RateSheet] updateRateSheet error:", e);
+        logger.error("[RateSheet] updateRateSheet error:", e);
         throw new Error(e.message || "Failed to update rate sheet");
       }
     }),
@@ -1520,7 +1521,7 @@ export const rateSheetRouter = router({
           })
           .filter(Boolean)
           .sort((a: any, b: any) => b.version - a.version);
-      } catch (e) { console.error("[RateSheet] getVersionHistory error:", e); return []; }
+      } catch (e) { logger.error("[RateSheet] getVersionHistory error:", e); return []; }
     }),
 
   /**
@@ -1567,7 +1568,7 @@ export const rateSheetRouter = router({
             version: meta.version || 1,
           };
         });
-      } catch (e) { console.error("[RateSheet] listMyRateSheets error:", e); return []; }
+      } catch (e) { logger.error("[RateSheet] listMyRateSheets error:", e); return []; }
     }),
 
   /**

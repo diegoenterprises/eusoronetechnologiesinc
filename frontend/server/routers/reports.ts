@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, vehicles, users, payments, incidents } from "../../drizzle/schema";
 // vehicles used in getDashboardMetrics for fleet stats
@@ -49,7 +50,7 @@ export const reportsRouter = router({
         const [loadCount] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, ctx.user?.id || 0));
         return { total: 0, scheduled: 0, recentRuns: loadCount?.count || 0, avgRunTime: 0, generatedThisMonth: 0, templates: 0 };
       } catch (error) {
-        console.error('[Reports] getReportStats error:', error);
+        logger.error('[Reports] getReportStats error:', error);
         return { total: 0, scheduled: 0, recentRuns: 0, avgRunTime: 0, generatedThisMonth: 0, templates: 0 };
       }
     }),
@@ -304,7 +305,7 @@ export const reportsRouter = router({
       const delivered = loadStats?.delivered || 0;
       const onTimeRate = totalLoads > 0 ? Math.round((delivered / totalLoads) * 100) : 0;
       return { ...fallback, revenue: loadStats?.revenue || 0, loads: totalLoads, loadsCompleted: delivered, drivers: driverCount?.count || 0, onTimeRate };
-    } catch (e) { console.error('[Reports] getPerformanceMetrics error:', e); return fallback; }
+    } catch (e) { logger.error('[Reports] getPerformanceMetrics error:', e); return fallback; }
   }),
   getTopPerformers: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
     const db = await getDb(); if (!db) return [];

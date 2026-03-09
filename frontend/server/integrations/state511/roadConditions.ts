@@ -5,6 +5,7 @@
  * Refresh: Every 30 minutes
  * Data: Road closures, construction, incidents, weather-related restrictions
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { sql } from "drizzle-orm";
 
@@ -32,7 +33,7 @@ async function fetchTexasConditions(db: any): Promise<number> {
 
     for (const item of conditions.slice(0, 100)) {
       const props = item.properties || item;
-      const id = `road-TX-${props.id || props.conditionId || Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const id = `road-TX-${props.id || props.conditionId || Date.now()}-${count}`;
       const route = props.roadName || props.route || "Unknown";
       const description = props.description || props.condition || "";
       const severity = props.severity || (description.toLowerCase().includes("closed") ? "HIGH" : "MODERATE");
@@ -47,7 +48,7 @@ async function fetchTexasConditions(db: any): Promise<number> {
       count++;
     }
   } catch (e) {
-    console.error("[511-TX] Failed:", e);
+    logger.error("[511-TX] Failed:", e);
   }
   return count;
 }
@@ -68,7 +69,7 @@ async function fetchColoradoConditions(db: any): Promise<number> {
     for (const seg of segments.slice(0, 50)) {
       if (!seg.closureDescription && !seg.restrictionDescription) continue;
 
-      const id = `road-CO-${seg.segmentId || Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const id = `road-CO-${seg.segmentId || Date.now()}-${count}`;
       const desc = seg.closureDescription || seg.restrictionDescription || "";
 
       await db.execute(
@@ -81,7 +82,7 @@ async function fetchColoradoConditions(db: any): Promise<number> {
       count++;
     }
   } catch (e) {
-    console.error("[511-CO] Failed:", e);
+    logger.error("[511-CO] Failed:", e);
   }
   return count;
 }
@@ -98,5 +99,5 @@ export async function fetchRoadConditions(): Promise<void> {
   const total = (txCount.status === "fulfilled" ? txCount.value : 0) +
                 (coCount.status === "fulfilled" ? coCount.value : 0);
 
-  console.log(`[511] Updated ${total} road conditions`);
+  logger.info(`[511] Updated ${total} road conditions`);
 }

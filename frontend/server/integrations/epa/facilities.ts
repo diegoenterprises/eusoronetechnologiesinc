@@ -4,6 +4,7 @@
  * Auth: Optional API key (EPA_API_KEY)
  * Refresh: Daily at 4 AM
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzEpaFacilities } from "../../../drizzle/schema";
 import { sql, eq } from "drizzle-orm";
@@ -41,7 +42,7 @@ export async function fetchTRIFacilities(stateCode: string): Promise<void> {
   let inserted = 0;
   for (const f of facilities.slice(0, 200)) {
     try {
-      const id = f.tri_facility_id || f.TRI_FACILITY_ID || `epa-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const id = f.tri_facility_id || f.TRI_FACILITY_ID || `epa-${Date.now()}-${inserted}`;
       const name = f.facility_name || f.FACILITY_NAME || "Unknown";
       const lat = f.latitude ?? f.LATITUDE;
       const lng = f.longitude ?? f.LONGITUDE;
@@ -72,10 +73,10 @@ export async function fetchTRIFacilities(stateCode: string): Promise<void> {
         });
       inserted++;
     } catch (e) {
-      console.error(`[EPA-TRI] Insert error:`, e instanceof Error ? e.message : e);
+      logger.error(`[EPA-TRI] Insert error:`, e instanceof Error ? e.message : e);
     }
   }
-  console.log(`[EPA-TRI] ${stateCode}: ${inserted}/${facilities.length} facilities inserted`);
+  logger.info(`[EPA-TRI] ${stateCode}: ${inserted}/${facilities.length} facilities inserted`);
 }
 
 export async function fetchECHOCompliance(stateCode: string): Promise<void> {

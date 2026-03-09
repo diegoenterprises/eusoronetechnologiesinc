@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedApprovedProcedure, isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { payments, loads, users, vehicles, companies, detentionClaims, factoringInvoices, wallets, walletTransactions } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
@@ -19,7 +20,7 @@ const transactionTypeSchema = z.enum(["payment", "receipt", "refund", "fee", "wi
 async function safeStripe<T>(fn: () => Promise<T>): Promise<T | null> {
   try { return await fn(); } catch (err: any) {
     if (err.message?.includes("STRIPE_SECRET_KEY")) return null;
-    console.warn("[billing] Stripe error:", err.message);
+    logger.warn("[billing] Stripe error:", err.message);
     return null;
   }
 }
@@ -532,7 +533,7 @@ export const billingRouter = router({
           createdAt: c.createdAt?.toISOString(),
         }));
       } catch (err) {
-        console.error("[billing] getDetentions error:", err);
+        logger.error("[billing] getDetentions error:", err);
         return [];
       }
     }),
@@ -725,7 +726,7 @@ export const billingRouter = router({
           createdAt: i.createdAt?.toISOString(),
         }));
       } catch (err) {
-        console.error("[billing] getFactoringInvoices error:", err);
+        logger.error("[billing] getFactoringInvoices error:", err);
         return [];
       }
     }),
@@ -785,7 +786,8 @@ export const billingRouter = router({
       const feeAmount = Math.round(input.invoiceAmount * (input.feePercent / 100) * 100) / 100;
       const advanceAmount = Math.round((input.invoiceAmount - feeAmount) * 100) / 100;
       const reserveAmount = Math.round(input.invoiceAmount * 0.03 * 100) / 100;
-      const invoiceNumber = `FI-${new Date().getFullYear()}-${Math.floor(Math.random() * 99999).toString().padStart(5, "0")}`;
+      const { randomInt: _ri } = require("crypto");
+      const invoiceNumber = `FI-${new Date().getFullYear()}-${_ri(0, 100000).toString().padStart(5, "0")}`;
 
       const [result] = await db.insert(factoringInvoices).values({
         loadId: input.loadId,

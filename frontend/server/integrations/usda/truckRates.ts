@@ -4,6 +4,7 @@
  * Auth: None
  * Refresh: Daily at 6 AM
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzRateIndices } from "../../../drizzle/schema";
 
@@ -82,7 +83,7 @@ export async function fetchUSDATruckRates(): Promise<void> {
 
       await new Promise((r) => setTimeout(r, 300));
     } catch (e) {
-      console.error(`[USDA] Failed to fetch ${region}:`, e);
+      logger.error(`[USDA] Failed to fetch ${region}:`, e);
     }
   }
 }

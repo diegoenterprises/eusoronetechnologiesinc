@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { complianceProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { drivers, documents, certifications, drugTests, trainingRecords, inspections, users, companies, vehicles } from "../../drizzle/schema";
 import { eq, and, desc, asc, sql, gte, lte, or, isNotNull, count } from "drizzle-orm";
@@ -139,7 +140,7 @@ export const complianceRouter = router({
           };
         }, 300); // 5min TTL
       } catch (error) {
-        console.error('[Compliance] getDashboardStats error:', error);
+        logger.error('[Compliance] getDashboardStats error:', error);
         return fallback;
       }
     }),
@@ -192,7 +193,7 @@ export const complianceRouter = router({
           };
         });
       } catch (error) {
-        console.error('[Compliance] getExpiringItems error:', error);
+        logger.error('[Compliance] getExpiringItems error:', error);
         return [];
       }
     }),
@@ -234,7 +235,7 @@ export const complianceRouter = router({
           };
         }));
       } catch (error) {
-        console.error('[Compliance] getRecentViolations error:', error);
+        logger.error('[Compliance] getRecentViolations error:', error);
         return [];
       }
     }),
@@ -274,7 +275,7 @@ export const complianceRouter = router({
         }
         return result;
       } catch (error) {
-        console.error('[Compliance] getHOSDrivers error:', error);
+        logger.error('[Compliance] getHOSDrivers error:', error);
         return [];
       }
     }),
@@ -300,7 +301,7 @@ export const complianceRouter = router({
           complianceRate: 100,
         };
       } catch (error) {
-        console.error('[Compliance] getHOSStats error:', error);
+        logger.error('[Compliance] getHOSStats error:', error);
         return { totalDrivers: 0, compliant: 0, warnings: 0, violations: 0, complianceRate: 0 };
       }
     }),
@@ -366,7 +367,7 @@ export const complianceRouter = router({
         }
         return result;
       } catch (error) {
-        console.error('[Compliance] getHazmatDrivers error:', error);
+        logger.error('[Compliance] getHazmatDrivers error:', error);
         return [];
       }
     }),
@@ -400,7 +401,7 @@ export const complianceRouter = router({
           trainingDue: 0,
         };
       } catch (error) {
-        console.error('[Compliance] getHazmatStats error:', error);
+        logger.error('[Compliance] getHazmatStats error:', error);
         return { totalCertified: 0, valid: 0, expiringSoon: 0, expiring: 0, expired: 0, trainingDue: 0 };
       }
     }),
@@ -448,7 +449,7 @@ export const complianceRouter = router({
           };
         }));
       } catch (error) {
-        console.error('[Compliance] getExpiringHazmat error:', error);
+        logger.error('[Compliance] getExpiringHazmat error:', error);
         return [];
       }
     }),
@@ -498,7 +499,7 @@ export const complianceRouter = router({
         }
         return result;
       } catch (error) {
-        console.error('[Compliance] getMedicalCerts error:', error);
+        logger.error('[Compliance] getMedicalCerts error:', error);
         return [];
       }
     }),
@@ -537,7 +538,7 @@ export const complianceRouter = router({
           complianceRate,
         };
       } catch (error) {
-        console.error('[Compliance] getMedicalCertStats error:', error);
+        logger.error('[Compliance] getMedicalCertStats error:', error);
         return { totalDrivers: 0, valid: 0, expiringSoon: 0, expired: 0, complianceRate: 0, total: 0, expiring: 0 };
       }
     }),
@@ -624,7 +625,7 @@ export const complianceRouter = router({
 
         return { overall, categories };
       } catch (error) {
-        console.error('[Compliance] getComplianceScores error:', error);
+        logger.error('[Compliance] getComplianceScores error:', error);
         return { overall: 0, categories: [] };
       }
     }),
@@ -710,7 +711,7 @@ export const complianceRouter = router({
           recentViolations: violations?.count || 0,
         };
       } catch (error) {
-        console.error('[Compliance] getDashboardSummary error:', error);
+        logger.error('[Compliance] getDashboardSummary error:', error);
         return empty;
       }
     }),
@@ -741,7 +742,7 @@ export const complianceRouter = router({
           results = results.filter(p => p.type.includes(q) || p.name.toLowerCase().includes(q));
         }
         return results;
-      } catch (error) { console.error('[Compliance] getPermits error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getPermits error:', error); return []; }
     }),
 
   /**
@@ -764,7 +765,7 @@ export const complianceRouter = router({
         const t = total?.count || 0; const ex = expired?.count || 0; const eg = expiring?.count || 0;
         const active = Math.max(0, t - ex);
         return { totalPermits: t, activePermits: active, expiringPermits: eg, expiredPermits: ex, total: t, active, expiring: eg, states: 0 };
-      } catch (error) { console.error('[Compliance] getPermitStats error:', error); return { totalPermits: 0, activePermits: 0, expiringPermits: 0, expiredPermits: 0, total: 0, active: 0, expiring: 0, states: 0 }; }
+      } catch (error) { logger.error('[Compliance] getPermitStats error:', error); return { totalPermits: 0, activePermits: 0, expiringPermits: 0, expiredPermits: 0, total: 0, active: 0, expiring: 0, states: 0 }; }
     }),
 
   /**
@@ -831,7 +832,7 @@ export const complianceRouter = router({
 
         return { drivers: filtered, summary };
       } catch (error) {
-        console.error('[Compliance] getDQFileStatus error:', error);
+        logger.error('[Compliance] getDQFileStatus error:', error);
         return { drivers: [], summary: { total: 0, valid: 0, expiringSoon: 0, expired: 0 } };
       }
     }),
@@ -881,7 +882,7 @@ export const complianceRouter = router({
           };
         }));
       } catch (error) {
-        console.error('[Compliance] getExpiringDocuments error:', error);
+        logger.error('[Compliance] getExpiringDocuments error:', error);
         return [];
       }
     }),
@@ -922,7 +923,7 @@ export const complianceRouter = router({
           notes: i.status === 'passed' ? 'No violations found' : `${i.defectsFound || 0} defect(s) found`,
         }));
       } catch (error) {
-        console.error('[Compliance] getAuditHistory error:', error);
+        logger.error('[Compliance] getAuditHistory error:', error);
         return [];
       }
     }),
@@ -967,7 +968,7 @@ export const complianceRouter = router({
           },
         };
       } catch (error) {
-        console.error('[Compliance] getFMCSAData error:', error);
+        logger.error('[Compliance] getFMCSAData error:', error);
         return empty;
       }
     }),
@@ -1115,7 +1116,7 @@ export const complianceRouter = router({
 
         return complianceKnowledge.length > 0 ? { violations: filtered, complianceKnowledge } : filtered;
       } catch (error) {
-        console.error('[Compliance] getViolations error:', error);
+        logger.error('[Compliance] getViolations error:', error);
         return [];
       }
     }),
@@ -1151,7 +1152,7 @@ export const complianceRouter = router({
           avgResolutionDays: 0,
         };
       } catch (error) {
-        console.error('[Compliance] getViolationStats error:', error);
+        logger.error('[Compliance] getViolationStats error:', error);
         return { open: 0, critical: 0, inProgress: 0, resolved: 0, totalFines: 0, avgResolutionDays: 0 };
       }
     }),
@@ -1223,7 +1224,7 @@ export const complianceRouter = router({
           results = results.filter(a => a.name.toLowerCase().includes(s) || a.location.toLowerCase().includes(s));
         }
         return results;
-      } catch (error) { console.error('[Compliance] getAudits error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getAudits error:', error); return []; }
     }),
 
   getAuditStats: protectedProcedure
@@ -1238,7 +1239,7 @@ export const complianceRouter = router({
         const [pending] = await db.select({ count: sql<number>`count(*)` }).from(inspections).where(and(eq(inspections.companyId, companyId), eq(inspections.status, 'pending')));
         const t = total?.count || 0; const p = passed?.count || 0; const f = failed?.count || 0;
         return { scheduled: pending?.count || 0, inProgress: 0, passed: p, failed: f, passRate: t > 0 ? Math.round((p / t) * 100) : 0, upcomingThisMonth: pending?.count || 0 };
-      } catch (error) { console.error('[Compliance] getAuditStats error:', error); return { scheduled: 0, inProgress: 0, passed: 0, failed: 0, passRate: 0, upcomingThisMonth: 0 }; }
+      } catch (error) { logger.error('[Compliance] getAuditStats error:', error); return { scheduled: 0, inProgress: 0, passed: 0, failed: 0, passRate: 0, upcomingThisMonth: 0 }; }
     }),
 
   /**
@@ -1323,7 +1324,7 @@ export const complianceRouter = router({
         const overdue = records.filter(r => r.status === 'overdue' || r.status === 'expired').length;
         const upcoming = records.filter(r => r.status === 'assigned').length;
         return { records, summary: { completed, inProgress, overdue, upcoming } };
-      } catch (error) { console.error('[Compliance] getTrainingRecords error:', error); return { records: [], summary: { completed: 0, inProgress: 0, overdue: 0, upcoming: 0 } }; }
+      } catch (error) { logger.error('[Compliance] getTrainingRecords error:', error); return { records: [], summary: { completed: 0, inProgress: 0, overdue: 0, upcoming: 0 } }; }
     }),
 
   /**
@@ -1393,7 +1394,7 @@ export const complianceRouter = router({
         if (input.status) results = results.filter(r => r.status === input.status);
         if (input.search) { const s = input.search.toLowerCase(); results = results.filter(r => r.driverName.toLowerCase().includes(s) || r.cdlNumber.toLowerCase().includes(s)); }
         return results;
-      } catch (error) { console.error('[Compliance] getBackgroundChecks error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getBackgroundChecks error:', error); return []; }
     }),
 
   getBackgroundCheckStats: protectedProcedure.query(async ({ ctx }) => {
@@ -1411,7 +1412,7 @@ export const complianceRouter = router({
       const pending = bgDocs.filter(d => d.status === 'pending').length;
       const expired = bgDocs.filter(d => d.status === 'expired').length;
       return { total, pending, completed: clear + expired, failed: expired, clear, review: total - clear - pending - expired };
-    } catch (error) { console.error('[Compliance] getBackgroundCheckStats error:', error); return { total: 0, pending: 0, completed: 0, failed: 0, clear: 0, review: 0 }; }
+    } catch (error) { logger.error('[Compliance] getBackgroundCheckStats error:', error); return { total: 0, pending: 0, completed: 0, failed: 0, clear: 0, review: 0 }; }
   }),
 
   initiateBackgroundCheck: protectedProcedure
@@ -1482,7 +1483,7 @@ export const complianceRouter = router({
         }
 
         return events.sort((a, b) => a.date.localeCompare(b.date));
-      } catch (error) { console.error('[Compliance] getCalendarEvents error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getCalendarEvents error:', error); return []; }
     }),
 
   getCalendarSummary: protectedProcedure.query(async ({ ctx }) => {
@@ -1507,7 +1508,7 @@ export const complianceRouter = router({
       const nm = nextMonthDocs?.count || 0;
       const od = overdueDocs?.count || 0;
       return { thisMonth: tm, nextMonth: nm, overdue: od, totalEvents: tm + nm + od, upcoming: tm + nm, completed: 0 };
-    } catch (error) { console.error('[Compliance] getCalendarSummary error:', error); return { thisMonth: 0, nextMonth: 0, overdue: 0, totalEvents: 0, upcoming: 0, completed: 0 }; }
+    } catch (error) { logger.error('[Compliance] getCalendarSummary error:', error); return { thisMonth: 0, nextMonth: 0, overdue: 0, totalEvents: 0, upcoming: 0, completed: 0 }; }
   }),
 
   // Clearinghouse — 49 CFR 382 Subpart G
@@ -1555,7 +1556,7 @@ export const complianceRouter = router({
           results = results.filter(r => r.driverName.toLowerCase().includes(s) || r.cdlNumber.toLowerCase().includes(s));
         }
         return results;
-      } catch (error) { console.error('[Compliance] getClearinghouseQueries error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getClearinghouseQueries error:', error); return []; }
     }),
 
   getClearinghouseStats: protectedProcedure
@@ -1590,7 +1591,7 @@ export const complianceRouter = router({
           pending: pendingTests?.count || 0,
           total,
         };
-      } catch (error) { console.error('[Compliance] getClearinghouseStats error:', error); return { totalDrivers: 0, compliant: 0, pendingQueries: 0, clearDrivers: 0, violations: 0, totalQueries: 0, thisMonth: 0, clear: 0, pending: 0, total: 0 }; }
+      } catch (error) { logger.error('[Compliance] getClearinghouseStats error:', error); return { totalDrivers: 0, compliant: 0, pendingQueries: 0, clearDrivers: 0, violations: 0, totalQueries: 0, thisMonth: 0, clear: 0, pending: 0, total: 0 }; }
     }),
 
   getClearinghouseDrivers: protectedProcedure
@@ -1630,7 +1631,7 @@ export const complianceRouter = router({
 
         if (input?.status) results = results.filter(d => d.clearinghouseStatus === input.status);
         return results;
-      } catch (error) { console.error('[Compliance] getClearinghouseDrivers error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getClearinghouseDrivers error:', error); return []; }
     }),
 
   // DQ File — 49 CFR 391.51
@@ -1671,7 +1672,7 @@ export const complianceRouter = router({
         if (input.status) results = results.filter(d => d.dqStatus === input.status);
         if (input.search) { const q = input.search.toLowerCase(); results = results.filter(d => d.name.toLowerCase().includes(q) || d.cdlNumber.toLowerCase().includes(q)); }
         return results;
-      } catch (error) { console.error('[Compliance] getDQDrivers error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getDQDrivers error:', error); return []; }
     }),
 
   getDQStats: protectedProcedure.query(async ({ ctx }) => {
@@ -1697,7 +1698,7 @@ export const complianceRouter = router({
       const expiringCount = expiring?.count || 0;
       const completeCount = Math.max(0, totalCount - expiredCount - expiringCount);
       return { total: totalCount, complete: completeCount, incomplete: expiredCount, missing: 0, expiringSoon: expiringCount, totalDrivers: totalCount };
-    } catch (error) { console.error('[Compliance] getDQStats error:', error); return { total: 0, complete: 0, incomplete: 0, missing: 0, expiringSoon: 0, totalDrivers: 0 }; }
+    } catch (error) { logger.error('[Compliance] getDQStats error:', error); return { total: 0, complete: 0, incomplete: 0, missing: 0, expiringSoon: 0, totalDrivers: 0 }; }
   }),
 
   getDriverDQFile: protectedProcedure
@@ -1738,7 +1739,7 @@ export const complianceRouter = router({
           hazmatExpiry: driver.hazmatExpiry?.toISOString().split('T')[0] || '',
           documents: allDocs,
         };
-      } catch (error) { console.error('[Compliance] getDriverDQFile error:', error); return empty; }
+      } catch (error) { logger.error('[Compliance] getDriverDQFile error:', error); return empty; }
     }),
 
   getDQFiles: protectedProcedure
@@ -1761,7 +1762,7 @@ export const complianceRouter = router({
         if (input.status) results = results.filter(f => f.status === input.status);
         if (input.search) { const q = input.search.toLowerCase(); results = results.filter(f => f.driverName.toLowerCase().includes(q)); }
         return results;
-      } catch (error) { console.error('[Compliance] getDQFiles error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getDQFiles error:', error); return []; }
     }),
 
   // Drug & Alcohol — 49 CFR 382
@@ -1801,7 +1802,7 @@ export const complianceRouter = router({
           results = results.filter(r => r.driverName.toLowerCase().includes(s));
         }
         return results;
-      } catch (error) { console.error('[Compliance] getDrugAlcoholTests error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getDrugAlcoholTests error:', error); return []; }
     }),
 
   getDrugAlcoholStats: protectedProcedure.query(async ({ ctx }) => {
@@ -1819,7 +1820,7 @@ export const complianceRouter = router({
         totalTests: total?.count || 0, negative: neg?.count || 0, positive: pos?.count || 0,
         pending: pend?.count || 0, scheduled: 0, totalYTD: ytd?.count || 0,
       };
-    } catch (error) { console.error('[Compliance] getDrugAlcoholStats error:', error); return { totalTests: 0, negative: 0, positive: 0, pending: 0, scheduled: 0, totalYTD: 0 }; }
+    } catch (error) { logger.error('[Compliance] getDrugAlcoholStats error:', error); return { totalTests: 0, negative: 0, positive: 0, pending: 0, scheduled: 0, totalYTD: 0 }; }
   }),
 
   getUpcomingTests: protectedProcedure
@@ -1847,7 +1848,7 @@ export const complianceRouter = router({
           }
           return { id: `dt_${t.id}`, driverId: String(t.driverId), driverName, type: t.type, testDate: t.testDate?.toISOString().split('T')[0] || '' };
         }));
-      } catch (error) { console.error('[Compliance] getUpcomingTests error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getUpcomingTests error:', error); return []; }
     }),
 
   scheduleTest: protectedProcedure
@@ -1888,7 +1889,7 @@ export const complianceRouter = router({
         if (input?.driverId) results = results.filter(r => r.driverId === input.driverId);
         if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(r => r.driverName.toLowerCase().includes(q)); }
         return results;
-      } catch (error) { console.error('[Compliance] getEmploymentHistory error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getEmploymentHistory error:', error); return []; }
     }),
 
   getEmploymentHistoryStats: protectedProcedure.query(async ({ ctx }) => {
@@ -1905,7 +1906,7 @@ export const complianceRouter = router({
       const verified = ehDocs.filter(d => d.status === 'active').length;
       const pending = ehDocs.filter(d => d.status === 'pending').length;
       return { verified, pending, unverifiable: ehDocs.length - verified - pending, total: ehDocs.length, drivers: totalDrivers?.count || 0 };
-    } catch (error) { console.error('[Compliance] getEmploymentHistoryStats error:', error); return { verified: 0, pending: 0, unverifiable: 0, total: 0, drivers: 0 }; }
+    } catch (error) { logger.error('[Compliance] getEmploymentHistoryStats error:', error); return { verified: 0, pending: 0, unverifiable: 0, total: 0, drivers: 0 }; }
   }),
 
   // Licenses — CDL License Tracking (49 CFR 383)
@@ -1944,7 +1945,7 @@ export const complianceRouter = router({
         if (input.status) results = results.filter(r => r.status === input.status);
         if (input.search) { const q = input.search.toLowerCase(); results = results.filter(r => r.name.toLowerCase().includes(q) || r.licenseNumber.toLowerCase().includes(q)); }
         return results;
-      } catch (error) { console.error('[Compliance] getLicenses error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getLicenses error:', error); return []; }
     }),
 
   getLicenseStats: protectedProcedure.query(async ({ ctx }) => {
@@ -1961,7 +1962,7 @@ export const complianceRouter = router({
         .where(and(eq(drivers.companyId, companyId), sql`${drivers.licenseExpiry} IS NOT NULL`, gte(drivers.licenseExpiry, now), lte(drivers.licenseExpiry, thirtyDays)));
       const t = total?.count || 0; const ex = expired?.count || 0; const eg = expiring?.count || 0;
       return { total: t, valid: Math.max(0, t - ex - eg), expiring: eg, expired: ex };
-    } catch (error) { console.error('[Compliance] getLicenseStats error:', error); return { total: 0, valid: 0, expiring: 0, expired: 0 }; }
+    } catch (error) { logger.error('[Compliance] getLicenseStats error:', error); return { total: 0, valid: 0, expiring: 0, expired: 0 }; }
   }),
 
   // MVR Reports — 49 CFR 391.25
@@ -1997,7 +1998,7 @@ export const complianceRouter = router({
         if (input.driverId) results = results.filter(r => r.driverId === input.driverId);
         if (input.search) { const q = input.search.toLowerCase(); results = results.filter(r => r.driverName.toLowerCase().includes(q) || r.cdlNumber.toLowerCase().includes(q)); }
         return results;
-      } catch (error) { console.error('[Compliance] getMVRReports error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getMVRReports error:', error); return []; }
     }),
 
   getMVRStats: protectedProcedure.query(async ({ ctx }) => {
@@ -2014,7 +2015,7 @@ export const complianceRouter = router({
       const clean = mvrDocs.filter(d => d.status === 'active').length;
       const viols = mvrDocs.filter(d => d.status === 'expired').length;
       return { total: totalDrivers?.count || 0, clean, violations: viols, clear: clean, dueForRenewal: Math.max(0, (totalDrivers?.count || 0) - mvrDocs.length) };
-    } catch (error) { console.error('[Compliance] getMVRStats error:', error); return { total: 0, clean: 0, violations: 0, clear: 0, dueForRenewal: 0 }; }
+    } catch (error) { logger.error('[Compliance] getMVRStats error:', error); return { total: 0, clean: 0, violations: 0, clear: 0, dueForRenewal: 0 }; }
   }),
 
   requestMVR: protectedProcedure.input(z.object({ driverId: z.string() })).mutation(async ({ ctx, input }) => ({
@@ -2051,7 +2052,7 @@ export const complianceRouter = router({
         if (input?.driverId) results = results.filter(r => r.driverId === input.driverId);
         if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(r => r.driverName.toLowerCase().includes(q)); }
         return results;
-      } catch (error) { console.error('[Compliance] getPSPReports error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getPSPReports error:', error); return []; }
     }),
 
   getPSPStats: protectedProcedure.query(async ({ ctx }) => {
@@ -2072,7 +2073,7 @@ export const complianceRouter = router({
         issues: pspDocs.filter(d => d.status === 'expired').length,
         thisMonth: pspDocs.filter(d => d.createdAt && new Date(d.createdAt) >= monthStart).length,
       };
-    } catch (error) { console.error('[Compliance] getPSPStats error:', error); return { total: 0, requested: 0, pending: 0, clear: 0, issues: 0, thisMonth: 0 }; }
+    } catch (error) { logger.error('[Compliance] getPSPStats error:', error); return { total: 0, requested: 0, pending: 0, clear: 0, issues: 0, thisMonth: 0 }; }
   }),
 
   requestPSP: protectedProcedure.input(z.object({ driverId: z.string() })).mutation(async ({ ctx, input }) => ({
@@ -2109,7 +2110,7 @@ export const complianceRouter = router({
         if (input.status) results = results.filter(r => r.status === input.status);
         if (input.search) { const q = input.search.toLowerCase(); results = results.filter(r => r.driverName.toLowerCase().includes(q)); }
         return results;
-      } catch (error) { console.error('[Compliance] getRoadTests error:', error); return []; }
+      } catch (error) { logger.error('[Compliance] getRoadTests error:', error); return []; }
     }),
 
   getRoadTestStats: protectedProcedure.query(async ({ ctx }) => {
@@ -2127,7 +2128,7 @@ export const complianceRouter = router({
         failed: rtDocs.filter(d => d.status === 'expired').length,
         scheduled: rtDocs.filter(d => d.status === 'pending').length,
       };
-    } catch (error) { console.error('[Compliance] getRoadTestStats error:', error); return { total: 0, passed: 0, failed: 0, scheduled: 0 }; }
+    } catch (error) { logger.error('[Compliance] getRoadTestStats error:', error); return { total: 0, passed: 0, failed: 0, scheduled: 0 }; }
   }),
 
   // SAFER Lookup — Wire to FMCSA service
@@ -2147,7 +2148,7 @@ export const complianceRouter = router({
         }
         return { dotNumber: '', legalName: '', status: 'not_found', safetyRating: '' };
       } catch (error) {
-        console.error('[Compliance] saferLookup error:', error);
+        logger.error('[Compliance] saferLookup error:', error);
         return { dotNumber: input.dotNumber || '', legalName: '', status: 'error', safetyRating: '' };
       }
     }),
@@ -2198,7 +2199,7 @@ export const complianceRouter = router({
           expiringSoon: permits.filter(p => p.status === 'expiring').length,
           expired: permits.filter(p => p.status === 'expired').length,
         };
-      } catch (error) { console.error('[Compliance] getStatePermits error:', error); return { permits: [], total: 0, valid: 0, expiringSoon: 0, expired: 0 }; }
+      } catch (error) { logger.error('[Compliance] getStatePermits error:', error); return { permits: [], total: 0, valid: 0, expiringSoon: 0, expired: 0 }; }
     }),
 
   // Fleet Compliance for Compliance Officer
@@ -2219,7 +2220,7 @@ export const complianceRouter = router({
       const t = total?.count || 0; const ex = expired?.count || 0; const eg = expiring?.count || 0; const o = oos?.count || 0;
       const compliant = Math.max(0, t - ex - o);
       return { totalVehicles: t, compliant, expiringSoon: eg, outOfCompliance: ex + o, overallScore: t > 0 ? Math.round((compliant / t) * 100) : 100 };
-    } catch (error) { console.error('[Compliance] getFleetCompliance error:', error); return { totalVehicles: 0, compliant: 0, expiringSoon: 0, outOfCompliance: 0, overallScore: 0 }; }
+    } catch (error) { logger.error('[Compliance] getFleetCompliance error:', error); return { totalVehicles: 0, compliant: 0, expiringSoon: 0, outOfCompliance: 0, overallScore: 0 }; }
   }),
 
   getVehicleComplianceList: protectedProcedure
@@ -2253,7 +2254,7 @@ export const complianceRouter = router({
             };
           }),
         };
-      } catch (error) { console.error('[Compliance] getVehicleComplianceList error:', error); return { vehicles: [] }; }
+      } catch (error) { logger.error('[Compliance] getVehicleComplianceList error:', error); return { vehicles: [] }; }
     }),
 
   // Driver Compliance for Compliance Officer
@@ -2278,7 +2279,7 @@ export const complianceRouter = router({
       const expSoon = Math.min(t - outOfComp, (licExpiring?.count || 0) + (medExpiring?.count || 0));
       const compliant = Math.max(0, t - outOfComp - expSoon);
       return { totalDrivers: t, compliant, expiringSoon: expSoon, outOfCompliance: outOfComp, overallScore: t > 0 ? Math.round((compliant / t) * 100) : 100 };
-    } catch (error) { console.error('[Compliance] getDriverCompliance error:', error); return { totalDrivers: 0, compliant: 0, expiringSoon: 0, outOfCompliance: 0, overallScore: 0 }; }
+    } catch (error) { logger.error('[Compliance] getDriverCompliance error:', error); return { totalDrivers: 0, compliant: 0, expiringSoon: 0, outOfCompliance: 0, overallScore: 0 }; }
   }),
 
   getDriverComplianceList: protectedProcedure
@@ -2312,7 +2313,7 @@ export const complianceRouter = router({
             };
           }),
         };
-      } catch (error) { console.error('[Compliance] getDriverComplianceList error:', error); return { drivers: [] }; }
+      } catch (error) { logger.error('[Compliance] getDriverComplianceList error:', error); return { drivers: [] }; }
     }),
 
   /**
@@ -2367,7 +2368,7 @@ export const complianceRouter = router({
         safetyRating: co.complianceStatus === 'compliant' ? 'Satisfactory' : co.complianceStatus === 'non_compliant' ? 'Unsatisfactory' : 'Conditional',
         csaScore: 0,
       };
-    } catch (error) { console.error('[Compliance] getCatalystCompliance error:', error); return { score: 0, mcAuthority: '', dotNumber: '', ucr: '', ifta: '', irp: '', liabilityInsurance: { status: '', coverage: 0, expires: '' }, cargoInsurance: { status: '', coverage: 0, expires: '' }, safetyRating: '', csaScore: 0 }; }
+    } catch (error) { logger.error('[Compliance] getCatalystCompliance error:', error); return { score: 0, mcAuthority: '', dotNumber: '', ucr: '', ifta: '', irp: '', liabilityInsurance: { status: '', coverage: 0, expires: '' }, cargoInsurance: { status: '', coverage: 0, expires: '' }, safetyRating: '', csaScore: 0 }; }
   }),
 
   getCatalystDocuments: protectedProcedure.query(async ({ ctx }) => {
@@ -2383,7 +2384,7 @@ export const complianceRouter = router({
         status: d.expiryDate && new Date(d.expiryDate) < now ? 'expired' : d.status || 'active',
         expiresAt: d.expiryDate?.toISOString().split('T')[0] || '', fileUrl: d.fileUrl || '',
       }));
-    } catch (error) { console.error('[Compliance] getCatalystDocuments error:', error); return []; }
+    } catch (error) { logger.error('[Compliance] getCatalystDocuments error:', error); return []; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2410,7 +2411,7 @@ export const complianceRouter = router({
         contingentCargo: { status: insStatus, coverage: 100000, expires: co.insuranceExpiry?.toISOString().split('T')[0] || '' },
         generalLiability: { status: insStatus, coverage: 1000000, expires: co.insuranceExpiry?.toISOString().split('T')[0] || '' },
       };
-    } catch (error) { console.error('[Compliance] getBrokerCompliance error:', error); return { score: 0, brokerAuthority: '', mcNumber: '', suretyBond: { status: '', amount: 0, provider: '', expires: '' }, contingentCargo: { status: '', coverage: 0, expires: '' }, generalLiability: { status: '', coverage: 0, expires: '' } }; }
+    } catch (error) { logger.error('[Compliance] getBrokerCompliance error:', error); return { score: 0, brokerAuthority: '', mcNumber: '', suretyBond: { status: '', amount: 0, provider: '', expires: '' }, contingentCargo: { status: '', coverage: 0, expires: '' }, generalLiability: { status: '', coverage: 0, expires: '' } }; }
   }),
 
   getBrokerDocuments: protectedProcedure.query(async ({ ctx }) => {
@@ -2422,7 +2423,7 @@ export const complianceRouter = router({
         .from(documents).where(eq(documents.companyId, companyId)).orderBy(desc(documents.createdAt)).limit(50);
       const now = new Date();
       return docs.map(d => ({ id: String(d.id), name: d.name, type: d.type, status: d.expiryDate && new Date(d.expiryDate) < now ? 'expired' : d.status || 'active', expiresAt: d.expiryDate?.toISOString().split('T')[0] || '', fileUrl: d.fileUrl || '' }));
-    } catch (error) { console.error('[Compliance] getBrokerDocuments error:', error); return []; }
+    } catch (error) { logger.error('[Compliance] getBrokerDocuments error:', error); return []; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2449,7 +2450,7 @@ export const complianceRouter = router({
         creditLimit: 50000, availableCredit: 50000, paymentTerms: 'Net 30', creditRating: businessVerified ? 'A' : 'Pending',
         generalLiability: { status: insStatus, coverage: 1000000, expires: co.insuranceExpiry?.toISOString().split('T')[0] || '' },
       };
-    } catch (error) { console.error('[Compliance] getShipperCompliance error:', error); return { score: 0, businessVerified: false, creditApproved: false, creditLimit: 0, availableCredit: 0, paymentTerms: '', creditRating: '', generalLiability: { status: '', coverage: 0, expires: '' } }; }
+    } catch (error) { logger.error('[Compliance] getShipperCompliance error:', error); return { score: 0, businessVerified: false, creditApproved: false, creditLimit: 0, availableCredit: 0, paymentTerms: '', creditRating: '', generalLiability: { status: '', coverage: 0, expires: '' } }; }
   }),
 
   getShipperDocuments: protectedProcedure.query(async ({ ctx }) => {
@@ -2461,7 +2462,7 @@ export const complianceRouter = router({
         .from(documents).where(eq(documents.companyId, companyId)).orderBy(desc(documents.createdAt)).limit(50);
       const now = new Date();
       return docs.map(d => ({ id: String(d.id), name: d.name, type: d.type, status: d.expiryDate && new Date(d.expiryDate) < now ? 'expired' : d.status || 'active', expiresAt: d.expiryDate?.toISOString().split('T')[0] || '', fileUrl: d.fileUrl || '' }));
-    } catch (error) { console.error('[Compliance] getShipperDocuments error:', error); return []; }
+    } catch (error) { logger.error('[Compliance] getShipperDocuments error:', error); return []; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2513,7 +2514,7 @@ export const complianceRouter = router({
           }
         }
         return { userType: input.userType, score: Math.min(100, score), status: score >= 80 ? 'compliant' : score >= 50 ? 'action_required' : 'non_compliant' };
-      } catch (error) { console.error('[Compliance] getComplianceByUserType error:', error); return { userType: input.userType, score: 0, status: 'unknown' }; }
+      } catch (error) { logger.error('[Compliance] getComplianceByUserType error:', error); return { userType: input.userType, score: 0, status: 'unknown' }; }
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2539,7 +2540,7 @@ export const complianceRouter = router({
         const result = await fmcsaService.verifyCatalyst(dotNumber);
         return { success: true, verification: result, checkedAt: new Date().toISOString(), source: "FMCSA SAFER", regulation: "49 CFR 385" };
       } catch (error) {
-        console.error("[Compliance] verifyCatalystFMCSA error:", error);
+        logger.error("[Compliance] verifyCatalystFMCSA error:", error);
         return { success: false, verification: null, checkedAt: new Date().toISOString(), source: "FMCSA SAFER", regulation: "49 CFR 385", error: "Unable to reach FMCSA" };
       }
     }),
@@ -2551,7 +2552,7 @@ export const complianceRouter = router({
         const rating = await fmcsaService.getSafetyRating(input.dotNumber);
         return { success: true, rating, checkedAt: new Date().toISOString(), regulation: "49 CFR 385.7" };
       } catch (error) {
-        console.error("[Compliance] getCarrierSafetyRating error:", error);
+        logger.error("[Compliance] getCarrierSafetyRating error:", error);
         return { success: false, rating: null, checkedAt: new Date().toISOString(), regulation: "49 CFR 385.7" };
       }
     }),
@@ -2563,7 +2564,7 @@ export const complianceRouter = router({
         const authority = await fmcsaService.getAuthorities(input.dotNumber);
         return { success: true, authority, checkedAt: new Date().toISOString(), regulation: "49 CFR 365" };
       } catch (error) {
-        console.error("[Compliance] getAuthorityStatus error:", error);
+        logger.error("[Compliance] getAuthorityStatus error:", error);
         return { success: false, authority: null, checkedAt: new Date().toISOString(), regulation: "49 CFR 365" };
       }
     }),
@@ -2578,7 +2579,7 @@ export const complianceRouter = router({
           minimums: { generalFreight: 750000, householdGoods: 750000, hazmat: 5000000, oilHazmat: 1000000, passengerSmall: 1500000, passengerLarge: 5000000 },
         };
       } catch (error) {
-        console.error("[Compliance] getInsuranceFiling error:", error);
+        logger.error("[Compliance] getInsuranceFiling error:", error);
         return { success: false, insurance: null, checkedAt: new Date().toISOString(), regulation: "49 CFR 387", minimums: null };
       }
     }),
@@ -2605,7 +2606,7 @@ export const complianceRouter = router({
           },
           checkedAt: new Date().toISOString(), regulation: "49 CFR 385.401",
         };
-      } catch (error) { console.error("[Compliance] getHMSPStatus error:", error); return { success: false, hmsp: null, regulation: "49 CFR 385.401", error: "Unable to verify HMSP" }; }
+      } catch (error) { logger.error("[Compliance] getHMSPStatus error:", error); return { success: false, hmsp: null, regulation: "49 CFR 385.401", error: "Unable to verify HMSP" }; }
     }),
 
   verifyHMSP: protectedProcedure
@@ -2616,7 +2617,7 @@ export const complianceRouter = router({
         if (!carrier) return { valid: false, reason: "Carrier not found", regulation: "49 CFR 385.403" };
         if (carrier.hmFlag !== "Y") return { valid: false, reason: "No hazmat authority", regulation: "49 CFR 385.403" };
         return { valid: true, dotNumber: input.dotNumber, legalName: carrier.legalName || "", authorizedClasses: [] as string[], verifiedAt: new Date().toISOString(), regulation: "49 CFR 385.403" };
-      } catch (error) { console.error("[Compliance] verifyHMSP error:", error); return { valid: false, reason: "Verification unavailable", regulation: "49 CFR 385.403" }; }
+      } catch (error) { logger.error("[Compliance] verifyHMSP error:", error); return { valid: false, reason: "Verification unavailable", regulation: "49 CFR 385.403" }; }
     }),
 
   getHMSPRequirements: protectedProcedure.query(async () => ({
@@ -2711,7 +2712,7 @@ export const complianceRouter = router({
           totalFees: Math.round(stats?.totalFees || 0),
         };
       } catch (e) {
-        console.error("[Compliance] getIRPStatus error:", e);
+        logger.error("[Compliance] getIRPStatus error:", e);
         return { cabCardStatus: "unknown", registeredStates: 0, renewalDue: null, totalFees: 0 };
       }
     }),
@@ -2743,7 +2744,7 @@ export const complianceRouter = router({
           expirationDate: r.expirationDate?.toISOString() || null,
         }));
       } catch (e) {
-        console.error("[Compliance] getIRPRegistrations error:", e);
+        logger.error("[Compliance] getIRPRegistrations error:", e);
         return [];
       }
     }),

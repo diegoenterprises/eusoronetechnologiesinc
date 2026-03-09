@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { sql, eq, desc, gte, and } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, vehicles } from "../../drizzle/schema";
 
@@ -30,7 +31,7 @@ export const marketRouter = router({
         const rateChange = prevRate > 0 ? Math.round(((curRate - prevRate) / prevRate) * 100 * 10) / 10 : 0;
         const trucks = availableTrucks?.count || 1;
         return { avgRate: curRate, rateChange, volume: curVol, volumeChange: volChange, capacityIndex: trucks, demandIndex: curVol, avgSpotRate: curRate, loadToTruckRatio: trucks > 0 ? Math.round((curVol / trucks) * 10) / 10 : 0, totalLoads: totalLoads?.count || 0 };
-      } catch (e) { console.error('[Market] getIntelligence error:', e); return { avgRate: 0, rateChange: 0, volume: 0, volumeChange: 0, capacityIndex: 0, demandIndex: 0, avgSpotRate: 0, loadToTruckRatio: 0, totalLoads: 0 }; }
+      } catch (e) { logger.error('[Market] getIntelligence error:', e); return { avgRate: 0, rateChange: 0, volume: 0, volumeChange: 0, capacityIndex: 0, demandIndex: 0, avgSpotRate: 0, loadToTruckRatio: 0, totalLoads: 0 }; }
     }),
 
   /**

@@ -23,7 +23,7 @@ export const contextualPricingRouter = router({
       equipmentType: z.string().optional(),
     }))
     .query(async ({ input }) => {
-      const baseRate = input.baseRate || Math.round((2.10 + Math.random() * 0.80) * input.distance);
+      const baseRate = input.baseRate || Math.round(2.50 * input.distance);
       return getContextualPrice(input.originState, input.destState, baseRate, input.distance);
     }),
 
@@ -69,7 +69,7 @@ export const contextualPricingRouter = router({
       const lanes: { lane: string; adjustment: number; signals: number; marketPhase: string; spotRate: number }[] = [];
       for (let i = 0; i < states.length; i++) {
         for (let j = i + 1; j < states.length; j++) {
-          const dist = 500 + Math.random() * 1500;
+          const dist = 500 + ((i * 7 + j * 3) % 15) * 100;
           const base = Math.round(2.20 * dist);
           const result = getContextualPrice(states[i], states[j], base, dist);
           if (result.signals.length > 0) {

@@ -23,6 +23,7 @@
 
 import { z } from "zod";
 import { router, isolatedApprovedProcedure as protectedProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { feeCalculator } from "../services/feeCalculator";
 import { getDb } from "../db";
 import { loads, vehicles, escortAssignments, settlements, settlementDocuments, wallets, walletTransactions } from "../../drizzle/schema";
@@ -534,7 +535,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
     default:
       // In production, unknown guards warn but pass (to avoid blocking on new guards)
       if (IS_PROD) {
-        console.warn(`[Guard] Unknown guard check: ${guard.check} — passing by default`);
+        logger.warn(`[Guard] Unknown guard check: ${guard.check} — passing by default`);
       }
       return null;
   }
@@ -594,7 +595,7 @@ async function geotagTransition(
       },
     });
   } catch (e) {
-    console.warn(`[LoadLifecycle] Geotag error for ${transitionId}:`, (e as Error).message);
+    logger.warn(`[LoadLifecycle] Geotag error for ${transitionId}:`, (e as Error).message);
     return null;
   }
 }
@@ -828,9 +829,9 @@ async function captureComplianceSnapshot(loadId: number, load: any) {
       ) WHERE id = ${loadId}
     `);
 
-    console.log(`[LoadLifecycle] Compliance snapshot captured for load ${loadId}: ${profile.isInterstate ? "INTERSTATE" : "INTRASTATE"}, cargo=${profile.cargoType}`);
+    logger.info(`[LoadLifecycle] Compliance snapshot captured for load ${loadId}: ${profile.isInterstate ? "INTERSTATE" : "INTRASTATE"}, cargo=${profile.cargoType}`);
   } catch (e) {
-    console.warn(`[LoadLifecycle] Compliance snapshot error for load ${loadId}:`, (e as Error).message);
+    logger.warn(`[LoadLifecycle] Compliance snapshot error for load ${loadId}:`, (e as Error).message);
   }
 }
 
@@ -919,7 +920,7 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
           });
           if (feeResult.finalFee > 0) {
             await feeCalculator.recordFeeCollection(loadId, "load_completion", (load as any).shipperId || 0, loadAmount, feeResult);
-            console.log(`[LoadLifecycle] ${action}: $${feeResult.finalFee.toFixed(2)} for load ${loadId}`);
+            logger.info(`[LoadLifecycle] ${action}: $${feeResult.finalFee.toFixed(2)} for load ${loadId}`);
           }
         }
         break;
@@ -937,7 +938,7 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
 
         // Pre-award: no financial impact
         if (["draft", "posted", "bidding"].includes(cancelStatus)) {
-          console.log(`[Cancellation] Load ${loadId} cancelled pre-award — no financial impact`);
+          logger.info(`[Cancellation] Load ${loadId} cancelled pre-award — no financial impact`);
           break;
         }
 
@@ -961,8 +962,8 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
                   VALUES (${wallet.id}, 'earnings', ${tonuAmount.toFixed(2)}, '0.00', ${tonuAmount.toFixed(2)}, 'USD', 'completed', ${`TONU — Load #${loadId} cancelled`}, ${loadId}, NOW())
                 `);
               }
-              console.log(`[Cancellation] Load ${loadId} TONU: $${tonuAmount.toFixed(2)} credited to carrier ${cancelCarrierId}`);
-            } catch (tonuErr: any) { console.warn(`[Cancellation] TONU error:`, tonuErr?.message); }
+              logger.info(`[Cancellation] Load ${loadId} TONU: $${tonuAmount.toFixed(2)} credited to carrier ${cancelCarrierId}`);
+            } catch (tonuErr: any) { logger.warn(`[Cancellation] TONU error:`, tonuErr?.message); }
           }
           break;
         }
@@ -987,8 +988,8 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
                   VALUES (${wallet.id}, 'earnings', ${totalTonu.toFixed(2)}, '0.00', ${totalTonu.toFixed(2)}, 'USD', 'completed', ${`TONU+Deadhead — Load #${loadId} cancelled`}, ${loadId}, NOW())
                 `);
               }
-              console.log(`[Cancellation] Load ${loadId} TONU+Deadhead: $${totalTonu.toFixed(2)} credited to carrier ${cancelCarrierId}`);
-            } catch (tonuErr: any) { console.warn(`[Cancellation] TONU error:`, tonuErr?.message); }
+              logger.info(`[Cancellation] Load ${loadId} TONU+Deadhead: $${totalTonu.toFixed(2)} credited to carrier ${cancelCarrierId}`);
+            } catch (tonuErr: any) { logger.warn(`[Cancellation] TONU error:`, tonuErr?.message); }
           }
           break;
         }
@@ -1014,12 +1015,12 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
                   VALUES (${wallet.id}, 'earnings', ${netPay.toFixed(2)}, ${(partialRate * 0.05).toFixed(2)}, ${netPay.toFixed(2)}, 'USD', 'completed', ${`Partial settlement (${Math.round(partialPercent * 100)}%) — Load #${loadId} cancelled in transit`}, ${loadId}, NOW())
                 `);
               }
-              console.log(`[Cancellation] Load ${loadId} partial rate (${Math.round(partialPercent * 100)}%): $${netPay.toFixed(2)} credited to carrier ${cancelCarrierId}`);
-            } catch (partErr: any) { console.warn(`[Cancellation] Partial rate error:`, partErr?.message); }
+              logger.info(`[Cancellation] Load ${loadId} partial rate (${Math.round(partialPercent * 100)}%): $${netPay.toFixed(2)} credited to carrier ${cancelCarrierId}`);
+            } catch (partErr: any) { logger.warn(`[Cancellation] Partial rate error:`, partErr?.message); }
           }
           break;
         }
-        console.log(`[Cancellation] Load ${loadId} cancelled at status ${cancelStatus} — no additional penalty logic`);
+        logger.info(`[Cancellation] Load ${loadId} cancelled at status ${cancelStatus} — no additional penalty logic`);
         break;
       }
       case "release_escrow": {
@@ -1039,20 +1040,20 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
             }
           }
           if ((escRows || []).length > 0) {
-            console.log(`[Escrow] Released ${(escRows || []).length} escrow hold(s) for load ${loadId}`);
+            logger.info(`[Escrow] Released ${(escRows || []).length} escrow hold(s) for load ${loadId}`);
           }
-        } catch (escErr: any) { console.warn(`[Escrow] Release error:`, escErr?.message); }
+        } catch (escErr: any) { logger.warn(`[Escrow] Release error:`, escErr?.message); }
         break;
       }
       case "start_tracking":
       case "create_rate_confirmation":
-        console.log(`[LoadLifecycle] Financial effect: ${action} for load ${loadId}`);
+        logger.info(`[LoadLifecycle] Financial effect: ${action} for load ${loadId}`);
         break;
       default:
         break;
     }
   } catch (e) {
-    console.warn(`[LoadLifecycle] Financial effect error (${action}):`, (e as Error).message);
+    logger.warn(`[LoadLifecycle] Financial effect error (${action}):`, (e as Error).message);
   }
 }
 
@@ -1099,9 +1100,9 @@ async function generateRouteReport(loadId: number, userId: number) {
               0,
               ${startTime.toISOString()}, ${endTime.toISOString()})
     `);
-    console.log(`[LoadLifecycle] Route report: ${pts.length} GPS points, ${dist.toFixed(1)}mi for load ${loadId}`);
+    logger.info(`[LoadLifecycle] Route report: ${pts.length} GPS points, ${dist.toFixed(1)}mi for load ${loadId}`);
   } catch (e) {
-    console.warn(`[LoadLifecycle] Route report error for load ${loadId}:`, (e as Error).message);
+    logger.warn(`[LoadLifecycle] Route report error for load ${loadId}:`, (e as Error).message);
   }
 }
 
@@ -1129,7 +1130,7 @@ async function logTransition(
          ${JSON.stringify(metadata || {})}, ${success}, ${errorMessage || null})
     `);
   } catch (e) {
-    console.warn(`[LoadLifecycle] Audit log error:`, (e as Error).message);
+    logger.warn(`[LoadLifecycle] Audit log error:`, (e as Error).message);
   }
 }
 
@@ -1360,7 +1361,7 @@ export const loadLifecycleRouter = router({
           }
           effectsExecuted.push(`${effect.type}:${effect.action}`);
         } catch (effErr) {
-          console.warn(`[LoadLifecycle] Effect error (${effect.action}):`, (effErr as Error).message);
+          logger.warn(`[LoadLifecycle] Effect error (${effect.action}):`, (effErr as Error).message);
           effectsExecuted.push(`${effect.type}:${effect.action}:FAILED`);
         }
       }
@@ -1478,13 +1479,13 @@ export const loadLifecycleRouter = router({
                   status: "FINALIZED",
                   finalizedAt: new Date(),
                 });
-              } catch (docErr: any) { console.warn('[SettlementDoc] Persist error:', docErr?.message); }
+              } catch (docErr: any) { logger.warn('[SettlementDoc] Persist error:', docErr?.message); }
 
-              console.log(`[Settlement] Load ${numericLoadId} settled: rate=$${loadRate}, accessorials=$${accessorialTotal.toFixed(2)}, hazmat=$${hazmatSurcharge.toFixed(2)}, total=$${totalShipperCharge.toFixed(2)}, fee=$${platformFee.toFixed(2)}, carrier=$${carrierPay.toFixed(2)}`);
+              logger.info(`[Settlement] Load ${numericLoadId} settled: rate=$${loadRate}, accessorials=$${accessorialTotal.toFixed(2)}, hazmat=$${hazmatSurcharge.toFixed(2)}, total=$${totalShipperCharge.toFixed(2)}, fee=$${platformFee.toFixed(2)}, carrier=$${carrierPay.toFixed(2)}`);
             }
           }
         } catch (settleErr: any) {
-          console.warn(`[Settlement] Auto-settle error for load ${numericLoadId}:`, settleErr?.message);
+          logger.warn(`[Settlement] Auto-settle error for load ${numericLoadId}:`, settleErr?.message);
         }
 
         // WS-E2E-005: Fire gamification events on DELIVERED
@@ -1526,7 +1527,7 @@ export const loadLifecycleRouter = router({
           if (carrierId && carrierId !== driverId) {
             fireGamificationEvent({ userId: carrierId, type: "load_completed", value: 1 });
           }
-        } catch (gamErr: any) { console.warn('[Gamification] DELIVERED event error:', gamErr?.message); }
+        } catch (gamErr: any) { logger.warn('[Gamification] DELIVERED event error:', gamErr?.message); }
       }
 
       // Convoy sync — check if this state change satisfies a sync point
@@ -1547,7 +1548,7 @@ export const loadLifecycleRouter = router({
       // Audit log
       await logTransition(numericLoadId, currentState, transition.to, transition, ctx.user?.id || 0, userRole, guardsPassed, effectsExecuted, { ...input.metadata, geotagId }, true);
 
-      console.log(`[LoadLifecycle] ${currentState} → ${transition.to} (${input.transitionId}) for load ${input.loadId}`);
+      logger.info(`[LoadLifecycle] ${currentState} → ${transition.to} (${input.transitionId}) for load ${input.loadId}`);
 
       // ── Real-time broadcast via Socket.io ──
       try {

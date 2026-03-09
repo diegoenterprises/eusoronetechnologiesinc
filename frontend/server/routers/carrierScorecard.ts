@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, count } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { companies, loads, bids, drivers, users, vehicles, incidents, insurancePolicies } from "../../drizzle/schema";
 import { getCarrierSafetyIntel, batchSafetyScores, batchCrashCounts, batchOOSStatus } from "../services/fmcsaBulkLookup";
@@ -199,7 +200,7 @@ export const carrierScorecardRouter = router({
           hazmatAuthorized: !!(fmcsaIntel?.census?.hmFlag || company.hazmatLicense),
           lastUpdated: new Date().toISOString(),
         };
-      } catch (e) { console.error("[CarrierScorecard] getScorecard error:", e); return null; }
+      } catch (e) { logger.error("[CarrierScorecard] getScorecard error:", e); return null; }
     }),
 
   /**
@@ -282,7 +283,7 @@ export const carrierScorecardRouter = router({
         }
 
         return results.sort((a, b) => b.overallScore - a.overallScore);
-      } catch (e) { console.error("[CarrierScorecard] compareScorecards error:", e); return []; }
+      } catch (e) { logger.error("[CarrierScorecard] compareScorecards error:", e); return []; }
     }),
 
   /**
@@ -315,7 +316,7 @@ export const carrierScorecardRouter = router({
           revenue: Math.round(r.revenue || 0),
           hazmatLoads: r.hazmatLoads || 0,
         }));
-      } catch (e) { console.error("[CarrierScorecard] getTrends error:", e); return []; }
+      } catch (e) { logger.error("[CarrierScorecard] getTrends error:", e); return []; }
     }),
 
   /**
@@ -398,7 +399,7 @@ export const carrierScorecardRouter = router({
         }
 
         return scored.sort((a, b) => b.score - a.score).slice(0, input.limit);
-      } catch (e) { console.error("[CarrierScorecard] getTopCarriers error:", e); return []; }
+      } catch (e) { logger.error("[CarrierScorecard] getTopCarriers error:", e); return []; }
     }),
 
   /**
@@ -502,6 +503,6 @@ export const carrierScorecardRouter = router({
             classesHandled: qualifiedClasses,
           },
         };
-      } catch (e) { console.error("[CarrierScorecard] getHazmatQualification error:", e); return null; }
+      } catch (e) { logger.error("[CarrierScorecard] getHazmatQualification error:", e); return null; }
     }),
 });

@@ -14,6 +14,7 @@ import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 import type { Express, Request, Response } from "express";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   loads, users, companies, detentionClaims, platformFeeConfigs,
@@ -1860,7 +1861,7 @@ export function mountMcpServer(app: Express): void {
     try {
       await handleMcpRequest(req, res, req.body);
     } catch (e: any) {
-      console.error("[MCP] POST error:", e?.message);
+      logger.error("[MCP] POST error:", e?.message);
       if (!res.headersSent) res.status(500).json({ error: "MCP server error" });
     }
   });
@@ -1869,7 +1870,7 @@ export function mountMcpServer(app: Express): void {
     try {
       await handleMcpRequest(req, res);
     } catch (e: any) {
-      console.error("[MCP] GET error:", e?.message);
+      logger.error("[MCP] GET error:", e?.message);
       if (!res.headersSent) res.status(500).json({ error: "MCP server error" });
     }
   });
@@ -1878,5 +1879,5 @@ export function mountMcpServer(app: Express): void {
     res.status(405).json({ error: "Session termination not supported in stateless mode" });
   });
 
-  console.log("[MCP] EusoTrip MCP server mounted at /api/mcp");
+  logger.info("[MCP] EusoTrip MCP server mounted at /api/mcp");
 }

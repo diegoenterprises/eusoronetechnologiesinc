@@ -17,6 +17,7 @@
  */
 
 import { getPool } from "../../db";
+import { logger } from "../../_core/logger";
 
 // ============================================================================
 // TABLE CREATION
@@ -365,7 +366,7 @@ export async function refreshMaterializedView(): Promise<RefreshResult> {
   if (!pool) return { success: false, rowCount: 0, durationMs: 0, error: "No database pool" };
 
   const start = Date.now();
-  console.log("[LIGHTSPEED MV] Starting materialized view refresh...");
+  logger.info("[LIGHTSPEED MV] Starting materialized view refresh...");
 
   try {
     // Step 0: Check if source tables exist
@@ -383,13 +384,13 @@ export async function refreshMaterializedView(): Promise<RefreshResult> {
 
     // Step 2: Create staging table
     await pool.query(CREATE_MV_SQL(MV_TABLE_NEW));
-    console.log("[LIGHTSPEED MV] Staging table created");
+    logger.info("[LIGHTSPEED MV] Staging table created");
 
     // Step 3: Populate from 7-table JOIN
-    console.log("[LIGHTSPEED MV] Populating from 7-table JOIN (this takes 3-5 minutes)...");
+    logger.info("[LIGHTSPEED MV] Populating from 7-table JOIN (this takes 3-5 minutes)...");
     const [insertResult]: any = await pool.query(POPULATE_SQL(MV_TABLE_NEW));
     const rowCount = insertResult?.affectedRows || 0;
-    console.log(`[LIGHTSPEED MV] Populated ${rowCount.toLocaleString()} carriers`);
+    logger.info(`[LIGHTSPEED MV] Populated ${rowCount.toLocaleString()} carriers`);
 
     // Step 3.5: Clean up blocked_reasons JSON — remove trailing commas
     await pool.query(`UPDATE \`${MV_TABLE_NEW}\` SET blocked_reasons = REPLACE(blocked_reasons, ',]', ']') WHERE blocked_reasons LIKE '%,]%'`);
@@ -404,24 +405,24 @@ export async function refreshMaterializedView(): Promise<RefreshResult> {
     if (mvExists[0]?.cnt === 0) {
       // First run — just rename staging to production
       await pool.query(`RENAME TABLE \`${MV_TABLE_NEW}\` TO \`${MV_TABLE}\``);
-      console.log("[LIGHTSPEED MV] Initial table created (first run)");
+      logger.info("[LIGHTSPEED MV] Initial table created (first run)");
     } else {
       // SWAP: rename current → old, staging → current, drop old
       await pool.query(
         `RENAME TABLE \`${MV_TABLE}\` TO \`${MV_TABLE_OLD}\`, \`${MV_TABLE_NEW}\` TO \`${MV_TABLE}\``
       );
       await pool.query(`DROP TABLE IF EXISTS \`${MV_TABLE_OLD}\``);
-      console.log("[LIGHTSPEED MV] Zero-downtime SWAP complete");
+      logger.info("[LIGHTSPEED MV] Zero-downtime SWAP complete");
     }
 
     const durationMs = Date.now() - start;
-    console.log(`[LIGHTSPEED MV] ✓ Refresh complete: ${rowCount.toLocaleString()} carriers in ${(durationMs / 1000).toFixed(1)}s`);
+    logger.info(`[LIGHTSPEED MV] ✓ Refresh complete: ${rowCount.toLocaleString()} carriers in ${(durationMs / 1000).toFixed(1)}s`);
 
     return { success: true, rowCount, durationMs };
 
   } catch (err: any) {
     const durationMs = Date.now() - start;
-    console.error(`[LIGHTSPEED MV] ✗ Refresh failed after ${(durationMs / 1000).toFixed(1)}s:`, err.message);
+    logger.error(`[LIGHTSPEED MV] ✗ Refresh failed after ${(durationMs / 1000).toFixed(1)}s:`, err.message);
 
     // Cleanup on failure
     try { await pool.query(`DROP TABLE IF EXISTS \`${MV_TABLE_NEW}\``); } catch {}
@@ -518,7 +519,7 @@ export async function getCarrierFromMV(dotNumber: string): Promise<CarrierMV | n
   } catch (err: any) {
     // Table might not exist yet — fall through to legacy queries
     if (err.message?.includes("doesn't exist")) return null;
-    console.warn("[LIGHTSPEED MV] Query error:", err.message?.slice(0, 100));
+    logger.warn("[LIGHTSPEED MV] Query error:", err.message?.slice(0, 100));
     return null;
   }
 }
@@ -585,7 +586,7 @@ export async function searchMV(
     return (rows || []).map(mapRowToCarrierMV);
   } catch (err: any) {
     if (err.message?.includes("doesn't exist")) return [];
-    console.warn("[LIGHTSPEED MV] Search error:", err.message?.slice(0, 100));
+    logger.warn("[LIGHTSPEED MV] Search error:", err.message?.slice(0, 100));
     return [];
   }
 }

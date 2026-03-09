@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { shipperProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, bids, users, companies } from "../../drizzle/schema";
 
@@ -97,7 +98,7 @@ export const shippersRouter = router({
           totalSpendThisMonth: monthSpend?.total || 0,
         };
       } catch (error) {
-        console.error('[Shippers] getDashboardStats error:', error);
+        logger.error('[Shippers] getDashboardStats error:', error);
         return { activeLoads: 0, pendingBids: 0, deliveredThisWeek: 0, ratePerMile: 0, onTimeRate: 0, totalSpendThisMonth: 0 };
       }
     }),
@@ -135,7 +136,7 @@ export const shippersRouter = router({
           };
         });
       } catch (error) {
-        console.error('[Shippers] getActiveLoads error:', error);
+        logger.error('[Shippers] getActiveLoads error:', error);
         return [];
       }
     }),
@@ -179,7 +180,7 @@ export const shippersRouter = router({
 
         return alerts;
       } catch (error) {
-        console.error('[Shippers] getLoadsRequiringAttention error:', error);
+        logger.error('[Shippers] getLoadsRequiringAttention error:', error);
         return [];
       }
     }),
@@ -211,7 +212,7 @@ export const shippersRouter = router({
           };
         });
       } catch (error) {
-        console.error('[Shippers] getRecentLoads error:', error);
+        logger.error('[Shippers] getRecentLoads error:', error);
         return [];
       }
     }),
@@ -243,7 +244,7 @@ export const shippersRouter = router({
           totalSpendThisMonth: monthSpend?.total || 0,
         };
       } catch (error) {
-        console.error('[Shippers] getDashboardSummary error:', error);
+        logger.error('[Shippers] getDashboardSummary error:', error);
         return { activeLoads: 0, pendingBids: 0, deliveredThisWeek: 0, ratePerMile: 0, onTimeRate: 0, totalSpendThisMonth: 0 };
       }
     }),
@@ -304,7 +305,7 @@ export const shippersRouter = router({
           total: totalResult?.count || 0,
         };
       } catch (error) {
-        console.error('[Shippers] getMyLoads error:', error);
+        logger.error('[Shippers] getMyLoads error:', error);
         return { loads: [], total: 0 };
       }
     }),
@@ -346,7 +347,7 @@ export const shippersRouter = router({
 
         return alerts;
       } catch (error) {
-        console.error('[Shippers] getLoadsAttentionDetails error:', error);
+        logger.error('[Shippers] getLoadsAttentionDetails error:', error);
         return [];
       }
     }),
@@ -380,7 +381,7 @@ export const shippersRouter = router({
           };
         }));
       } catch (error) {
-        console.error('[Shippers] getBidsForLoad error:', error);
+        logger.error('[Shippers] getBidsForLoad error:', error);
         return [];
       }
     }),

@@ -15,6 +15,7 @@ import { validateEncryption } from "./encryption";
 import { pciRequestGuard } from "./pciCompliance";
 import { recordAuditEvent, AuditCategory, AuditAction } from "./auditService";
 import { apiRateLimiter, authRateLimiter } from "./rateLimiting";
+import { logger } from "./logger";
 
 // FMCSA risk level calculator for AccessValidation carrier safety
 function getRiskLevel(cached: any): "low" | "moderate" | "elevated" | "high" | "unknown" {
@@ -163,15 +164,15 @@ async function startServer() {
       if (webhookSecret && sig) {
         event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
       } else if (process.env.NODE_ENV === "production") {
-        console.error("[Stripe Webhook] REJECTED — STRIPE_WEBHOOK_SECRET not configured in production");
+        logger.error("[Stripe Webhook] REJECTED — STRIPE_WEBHOOK_SECRET not configured in production");
         return res.status(400).json({ error: "Webhook secret not configured" });
       } else {
         // Development only: parse unverified events
         event = JSON.parse(req.body.toString());
-        console.warn("[Stripe Webhook] DEV MODE — accepting unverified event");
+        logger.warn("[Stripe Webhook] DEV MODE — accepting unverified event");
       }
 
-      console.log(`[Stripe Webhook] ${event.type}`);
+      logger.info(`[Stripe Webhook] ${event.type}`);
 
       // ── Wallet balance helpers ──
       const { getDb: _getDb } = await import("../db");
@@ -184,10 +185,10 @@ async function startServer() {
         if (!_db || !connectId || amountCents <= 0) return;
         const amt = (amountCents / 100).toFixed(2);
         const [wallet] = await _db.select().from(_walletsT).where(_eq(_walletsT.stripeConnectId, connectId)).limit(1);
-        if (!wallet) { console.warn(`[Wallet] No wallet for Connect ${connectId}`); return; }
+        if (!wallet) { logger.warn(`[Wallet] No wallet for Connect ${connectId}`); return; }
         await _db.execute(_sql`UPDATE wallets SET availableBalance = availableBalance + ${amt}, totalReceived = totalReceived + ${amt} WHERE id = ${wallet.id}`);
         await _db.insert(_wtT).values({ walletId: wallet.id, type, amount: amt, fee: "0", netAmount: amt, currency: "USD", status: "completed", description: desc, stripeTransferId: stripeId, completedAt: new Date() });
-        console.log(`[Wallet] Credited $${amt} to wallet ${wallet.id} (${connectId})`);
+        logger.info(`[Wallet] Credited $${amt} to wallet ${wallet.id} (${connectId})`);
       };
 
       /** Credit a wallet by userId */
@@ -203,7 +204,7 @@ async function startServer() {
         if (!wallet) return;
         await _db.execute(_sql`UPDATE wallets SET availableBalance = availableBalance + ${amt}, totalReceived = totalReceived + ${amt} WHERE id = ${wallet.id}`);
         await _db.insert(_wtT).values({ walletId: wallet.id, type, amount: amt, fee: "0", netAmount: amt, currency: "USD", status: "completed", description: desc, stripePaymentId: stripeId, loadId: loadId || null, loadNumber: loadNumber || null, completedAt: new Date() });
-        console.log(`[Wallet] Credited $${amt} to wallet ${wallet.id} (user ${userId})`);
+        logger.info(`[Wallet] Credited $${amt} to wallet ${wallet.id} (user ${userId})`);
       };
 
       /** Debit a wallet by stripeConnectId — subtracts from availableBalance, increases totalSpent, records payout transaction */
@@ -215,7 +216,7 @@ async function startServer() {
         if (!wallet) return;
         await _db.execute(_sql`UPDATE wallets SET availableBalance = GREATEST(availableBalance - ${amt}, 0), totalSpent = totalSpent + ${amt}, lastWithdrawalAt = NOW() WHERE id = ${wallet.id}`);
         await _db.insert(_wtT).values({ walletId: wallet.id, type: "payout", amount: amt, fee: "0", netAmount: amt, currency: "USD", status: "completed", description: desc, stripeTransferId: stripeId, completedAt: new Date() });
-        console.log(`[Wallet] Debited $${amt} from wallet ${wallet.id} (${connectId})`);
+        logger.info(`[Wallet] Debited $${amt} from wallet ${wallet.id} (${connectId})`);
       };
 
       /** Reverse a failed debit — re-credit the wallet */
@@ -226,14 +227,14 @@ async function startServer() {
         const [wallet] = await _db.select().from(_walletsT).where(_eq(_walletsT.stripeConnectId, connectId)).limit(1);
         if (!wallet) return;
         await _db.execute(_sql`UPDATE wallets SET availableBalance = availableBalance + ${amt}, totalSpent = GREATEST(totalSpent - ${amt}, 0) WHERE id = ${wallet.id}`);
-        console.log(`[Wallet] Reversed debit $${amt} on wallet ${wallet.id} (${connectId})`);
+        logger.info(`[Wallet] Reversed debit $${amt} on wallet ${wallet.id} (${connectId})`);
       };
 
       switch (event.type) {
         case "checkout.session.completed": {
           const session = event.data.object;
           const amountCents = session.amount_total || 0;
-          console.log(`[Stripe Webhook] Checkout completed: ${session.id}, payment: ${session.payment_status}, amount: $${amountCents / 100}`);
+          logger.info(`[Stripe Webhook] Checkout completed: ${session.id}, payment: ${session.payment_status}, amount: $${amountCents / 100}`);
           const _db1 = await _getDb();
           if (_db1 && session.metadata?.loadId) {
             try {
@@ -247,7 +248,7 @@ async function startServer() {
                 _sql`INSERT INTO payments (payer_id, amount, currency, payment_type, status, stripe_payment_id, load_id, created_at)
                      VALUES (${_payerId}, ${_amount}, ${_currency}, ${_paymentType}, 'succeeded', ${_stripeId}, ${_loadId}, NOW())`
               );
-            } catch (e) { console.error("[Stripe Webhook] DB insert error:", e); }
+            } catch (e) { logger.error("[Stripe Webhook] DB insert error:", e); }
           }
           // Credit recipient wallet if metadata contains recipientUserId
           if (session.metadata?.recipientUserId && amountCents > 0) {
@@ -259,7 +260,7 @@ async function startServer() {
                 session.metadata.loadId ? Number(session.metadata.loadId) : undefined,
                 session.metadata.loadNumber || undefined
               );
-            } catch (e) { console.warn("[Stripe Webhook] Checkout wallet credit error:", e); }
+            } catch (e) { logger.warn("[Stripe Webhook] Checkout wallet credit error:", e); }
           }
           break;
         }
@@ -269,7 +270,7 @@ async function startServer() {
           const piAmount = pi.amount || 0;
           const piTransfer = (pi as any).transfer_data?.destination;
           const piFee = (pi as any).application_fee_amount || 0;
-          console.log(`[Stripe Webhook] PaymentIntent succeeded: ${pi.id}, amount: $${piAmount / 100}, destination: ${piTransfer || 'none'}, fee: $${piFee / 100}`);
+          logger.info(`[Stripe Webhook] PaymentIntent succeeded: ${pi.id}, amount: $${piAmount / 100}, destination: ${piTransfer || 'none'}, fee: $${piFee / 100}`);
 
           const _dbPI = await _getDb();
           let paymentRecordId: number | null = null;
@@ -298,13 +299,13 @@ async function startServer() {
                 stripeChargeId: pi.latest_charge || null,
               });
               paymentRecordId = (insertResult as any)?.[0]?.insertId || null;
-              console.log(`[Stripe Webhook] Payment record created: id=${paymentRecordId}, load=${loadIdNum}`);
+              logger.info(`[Stripe Webhook] Payment record created: id=${paymentRecordId}, load=${loadIdNum}`);
 
               // ── Update load status to "paid" ──
               try {
                 await _dbPI.update(_loadsT).set({ status: "paid" }).where(_eq(_loadsT.id, loadIdNum));
-                console.log(`[Stripe Webhook] Load ${loadIdNum} status → paid`);
-              } catch (e: any) { console.warn("[Stripe Webhook] Load status update error:", e?.message); }
+                logger.info(`[Stripe Webhook] Load ${loadIdNum} status → paid`);
+              } catch (e: any) { logger.warn("[Stripe Webhook] Load status update error:", e?.message); }
 
               // ── Calculate platform fee & record in platform_revenue ──
               try {
@@ -318,10 +319,10 @@ async function startServer() {
                 });
                 if (feeResult.finalFee > 0 && paymentRecordId) {
                   await feeCalculator.recordFeeCollection(paymentRecordId, "load_completion", payerIdNum, piAmount / 100, feeResult);
-                  console.log(`[Stripe Webhook] Platform fee recorded: $${feeResult.finalFee.toFixed(2)} (load ${loadIdNum})`);
+                  logger.info(`[Stripe Webhook] Platform fee recorded: $${feeResult.finalFee.toFixed(2)} (load ${loadIdNum})`);
                 }
-              } catch (e: any) { console.warn("[Stripe Webhook] Fee calculation error:", e?.message); }
-            } catch (e) { console.warn("[Stripe Webhook] PI payment record error:", e); }
+              } catch (e: any) { logger.warn("[Stripe Webhook] Fee calculation error:", e?.message); }
+            } catch (e) { logger.warn("[Stripe Webhook] PI payment record error:", e); }
           }
 
           // Credit recipient wallet (destination connected account gets funds via transfer)
@@ -329,7 +330,7 @@ async function startServer() {
             const netCents = piAmount - piFee;
             try {
               await creditWalletByConnect(piTransfer, netCents, `Payment received — ${pi.description || pi.id}`, pi.id, "earnings");
-            } catch (e) { console.warn("[Stripe Webhook] PI wallet credit error:", e); }
+            } catch (e) { logger.warn("[Stripe Webhook] PI wallet credit error:", e); }
           }
           // Also credit by userId if present in metadata
           if (!piTransfer && pi.metadata?.recipientUserId && piAmount > 0) {
@@ -341,18 +342,18 @@ async function startServer() {
                 pi.metadata.loadId ? Number(pi.metadata.loadId) : undefined,
                 pi.metadata.loadNumber || undefined
               );
-            } catch (e) { console.warn("[Stripe Webhook] PI wallet credit (user) error:", e); }
+            } catch (e) { logger.warn("[Stripe Webhook] PI wallet credit (user) error:", e); }
           }
           break;
         }
         case "payment_intent.payment_failed": {
           const piFail = event.data.object;
-          console.error(`[Stripe Webhook] PaymentIntent failed: ${piFail.id}, error: ${(piFail as any).last_payment_error?.message}`);
+          logger.error(`[Stripe Webhook] PaymentIntent failed: ${piFail.id}, error: ${(piFail as any).last_payment_error?.message}`);
           break;
         }
         case "invoice.paid": {
           const invoice = event.data.object;
-          console.log(`[Stripe Webhook] Invoice paid: ${invoice.id}, amount: ${invoice.amount_paid}`);
+          logger.info(`[Stripe Webhook] Invoice paid: ${invoice.id}, amount: ${invoice.amount_paid}`);
           // WS-E2E-005: Fire invoice_paid gamification event
           try {
             const { fireGamificationEvent } = await import("../services/gamificationDispatcher");
@@ -364,26 +365,26 @@ async function startServer() {
         }
         case "invoice.payment_failed": {
           const invoice = event.data.object;
-          console.error(`[Stripe Webhook] Invoice payment failed: ${invoice.id}`);
+          logger.error(`[Stripe Webhook] Invoice payment failed: ${invoice.id}`);
           break;
         }
         case "customer.subscription.created":
         case "customer.subscription.updated":
         case "customer.subscription.deleted": {
           const subscription = event.data.object;
-          console.log(`[Stripe Webhook] Subscription ${event.type}: ${subscription.id}, status: ${subscription.status}`);
+          logger.info(`[Stripe Webhook] Subscription ${event.type}: ${subscription.id}, status: ${subscription.status}`);
           break;
         }
         case "account.updated": {
           // Stripe Connect account updated — sync status to wallets table + notify user
           const account = event.data.object;
-          console.log(`[Stripe Webhook] Connect account updated: ${account.id}, charges_enabled: ${account.charges_enabled}, payouts_enabled: ${account.payouts_enabled}`);
+          logger.info(`[Stripe Webhook] Connect account updated: ${account.id}, charges_enabled: ${account.charges_enabled}, payouts_enabled: ${account.payouts_enabled}`);
           try {
             const db2 = await _getDb();
             if (db2) {
               const status = account.charges_enabled && account.payouts_enabled ? "active" : account.details_submitted ? "pending" : "restricted";
               await db2.update(_walletsT).set({ stripeAccountStatus: status }).where(_eq(_walletsT.stripeConnectId, account.id));
-              console.log(`[Stripe Webhook] Synced Connect status '${status}' for ${account.id} (charges: ${account.charges_enabled}, payouts: ${account.payouts_enabled})`);
+              logger.info(`[Stripe Webhook] Synced Connect status '${status}' for ${account.id} (charges: ${account.charges_enabled}, payouts: ${account.payouts_enabled})`);
 
               // Notify user when their account becomes fully active (charges + payouts enabled)
               if (account.charges_enabled && account.payouts_enabled) {
@@ -392,24 +393,24 @@ async function startServer() {
                   if (connUser) {
                     const { lookupAndNotify } = await import("../services/notifications");
                     try { lookupAndNotify(connUser.id, { type: "payment_received", amount: 0, loadNumber: "Your EusoWallet payout account is now active! You can receive payments and request payouts." } as any); } catch {}
-                    console.log(`[Stripe Webhook] Notified user ${connUser.id} — Connect account fully active`);
+                    logger.info(`[Stripe Webhook] Notified user ${connUser.id} — Connect account fully active`);
                   }
                 } catch {}
               }
             }
-          } catch (e) { console.warn("[Stripe Webhook] Connect sync error:", e); }
+          } catch (e) { logger.warn("[Stripe Webhook] Connect sync error:", e); }
           break;
         }
         case "transfer.created": {
           // Money transferred to a connected account — credit their wallet
           const transfer = event.data.object;
           const transferAmt = transfer.amount || 0;
-          console.log(`[Stripe Webhook] Transfer created: ${transfer.id}, amount: $${transferAmt / 100}, destination: ${transfer.destination}`);
+          logger.info(`[Stripe Webhook] Transfer created: ${transfer.id}, amount: $${transferAmt / 100}, destination: ${transfer.destination}`);
           if (transfer.destination && transferAmt > 0) {
             try {
               const desc = transfer.description || `Platform transfer ${transfer.id}`;
               await creditWalletByConnect(transfer.destination, transferAmt, desc, transfer.id, "earnings");
-            } catch (e) { console.warn("[Stripe Webhook] Transfer wallet credit error:", e); }
+            } catch (e) { logger.warn("[Stripe Webhook] Transfer wallet credit error:", e); }
           }
           break;
         }
@@ -418,16 +419,16 @@ async function startServer() {
           const payout = event.data.object;
           const payoutAmt = payout.amount || 0;
           const payoutAccount = payout.destination?.account || event.account || "";
-          console.log(`[Stripe Webhook] Payout completed: ${payout.id}, amount: $${payoutAmt / 100}, account: ${payoutAccount}`);
+          logger.info(`[Stripe Webhook] Payout completed: ${payout.id}, amount: $${payoutAmt / 100}, account: ${payoutAccount}`);
           try {
             const db3 = await _getDb();
             if (db3 && payout.id) {
               await db3.execute(_sql`UPDATE wallet_transactions SET status = 'completed', completed_at = NOW() WHERE description LIKE ${'%' + payout.id + '%'} AND status = 'processing'`);
             }
-          } catch (e) { console.warn("[Stripe Webhook] Payout tx sync error:", e); }
+          } catch (e) { logger.warn("[Stripe Webhook] Payout tx sync error:", e); }
           // Debit wallet balance
           if (payoutAccount && payoutAmt > 0) {
-            try { await debitWalletByConnect(payoutAccount, payoutAmt, `Bank payout — ${payout.id}`, payout.id); } catch (e) { console.warn("[Stripe Webhook] Payout wallet debit error:", e); }
+            try { await debitWalletByConnect(payoutAccount, payoutAmt, `Bank payout — ${payout.id}`, payout.id); } catch (e) { logger.warn("[Stripe Webhook] Payout wallet debit error:", e); }
           }
           break;
         }
@@ -435,70 +436,70 @@ async function startServer() {
           const payout = event.data.object;
           const failedAmt = payout.amount || 0;
           const failedAccount = payout.destination?.account || event.account || "";
-          console.error(`[Stripe Webhook] Payout failed: ${payout.id}, reason: ${payout.failure_message}`);
+          logger.error(`[Stripe Webhook] Payout failed: ${payout.id}, reason: ${payout.failure_message}`);
           try {
             const db4 = await _getDb();
             if (db4 && payout.id) {
               await db4.execute(_sql`UPDATE wallet_transactions SET status = 'failed' WHERE description LIKE ${'%' + payout.id + '%'} AND status = 'processing'`);
             }
-          } catch (e) { console.warn("[Stripe Webhook] Payout fail sync error:", e); }
+          } catch (e) { logger.warn("[Stripe Webhook] Payout fail sync error:", e); }
           // Reverse the debit — money stays in the connected account
           if (failedAccount && failedAmt > 0) {
-            try { await reverseDebitByConnect(failedAccount, failedAmt, `Payout reversed — ${payout.id}`); } catch (e) { console.warn("[Stripe Webhook] Payout reversal error:", e); }
+            try { await reverseDebitByConnect(failedAccount, failedAmt, `Payout reversed — ${payout.id}`); } catch (e) { logger.warn("[Stripe Webhook] Payout reversal error:", e); }
           }
           break;
         }
         case "issuing_card.created":
         case "issuing_card.updated": {
           const card = event.data.object;
-          console.log(`[Stripe Webhook] Issuing card ${event.type}: ${card.id}, last4: ${card.last4}, status: ${card.status}`);
+          logger.info(`[Stripe Webhook] Issuing card ${event.type}: ${card.id}, last4: ${card.last4}, status: ${card.status}`);
           break;
         }
         case "issuing_authorization.request": {
           const auth = event.data.object;
-          console.log(`[Stripe Webhook] Issuing auth request: ${auth.id}, amount: $${(auth.amount || 0) / 100}, merchant: ${auth.merchant_data?.name}`);
+          logger.info(`[Stripe Webhook] Issuing auth request: ${auth.id}, amount: $${(auth.amount || 0) / 100}, merchant: ${auth.merchant_data?.name}`);
           break;
         }
         case "financial_connections.account.created": {
           const fcAccount = event.data.object;
-          console.log(`[Stripe Webhook] Financial Connections account linked: ${fcAccount.id}, institution: ${fcAccount.institution_name}`);
+          logger.info(`[Stripe Webhook] Financial Connections account linked: ${fcAccount.id}, institution: ${fcAccount.institution_name}`);
           break;
         }
         // Treasury events — escrow fund movements
         case "treasury.inbound_transfer.succeeded": {
           const inbound = event.data.object;
           const inboundAmt = inbound.amount || 0;
-          console.log(`[Stripe Webhook] Treasury inbound transfer succeeded: ${inbound.id}, amount: $${inboundAmt / 100}, FA: ${inbound.financial_account}`);
+          logger.info(`[Stripe Webhook] Treasury inbound transfer succeeded: ${inbound.id}, amount: $${inboundAmt / 100}, FA: ${inbound.financial_account}`);
           // Credit the wallet associated with this financial account
           if (inbound.financial_account && inboundAmt > 0) {
-            try { await creditWalletByConnect(inbound.financial_account, inboundAmt, `Bank deposit — ${inbound.id}`, inbound.id, "deposit"); } catch (e) { console.warn("[Stripe Webhook] Treasury inbound wallet credit error:", e); }
+            try { await creditWalletByConnect(inbound.financial_account, inboundAmt, `Bank deposit — ${inbound.id}`, inbound.id, "deposit"); } catch (e) { logger.warn("[Stripe Webhook] Treasury inbound wallet credit error:", e); }
           }
           break;
         }
         case "treasury.inbound_transfer.failed": {
           const inbound = event.data.object;
-          console.error(`[Stripe Webhook] Treasury inbound transfer failed: ${inbound.id}, reason: ${inbound.failure_details?.code}`);
+          logger.error(`[Stripe Webhook] Treasury inbound transfer failed: ${inbound.id}, reason: ${inbound.failure_details?.code}`);
           try {
             const dbTi = await _getDb();
             if (dbTi && inbound.id) {
               await dbTi.execute(_sql`UPDATE wallet_transactions SET status = 'failed' WHERE description LIKE ${'%' + inbound.id + '%'} AND status = 'pending'`);
             }
-          } catch (e) { console.warn("[Stripe Webhook] Treasury inbound fail sync error:", e); }
+          } catch (e) { logger.warn("[Stripe Webhook] Treasury inbound fail sync error:", e); }
           break;
         }
         case "treasury.outbound_transfer.posted": {
           const outbound = event.data.object;
           const outAmt = outbound.amount || 0;
-          console.log(`[Stripe Webhook] Treasury outbound transfer posted: ${outbound.id}, amount: $${outAmt / 100}`);
+          logger.info(`[Stripe Webhook] Treasury outbound transfer posted: ${outbound.id}, amount: $${outAmt / 100}`);
           try {
             const dbTo = await _getDb();
             if (dbTo && outbound.id) {
               await dbTo.execute(_sql`UPDATE wallet_transactions SET status = 'completed', completed_at = NOW() WHERE description LIKE ${'%' + outbound.id + '%'} AND status = 'pending'`);
             }
-          } catch (e) { console.warn("[Stripe Webhook] Treasury outbound sync error:", e); }
+          } catch (e) { logger.warn("[Stripe Webhook] Treasury outbound sync error:", e); }
           // Debit wallet — money left the platform to bank
           if (outbound.financial_account && outAmt > 0) {
-            try { await debitWalletByConnect(outbound.financial_account, outAmt, `Bank withdrawal — ${outbound.id}`, outbound.id); } catch (e) { console.warn("[Stripe Webhook] Treasury outbound wallet debit error:", e); }
+            try { await debitWalletByConnect(outbound.financial_account, outAmt, `Bank withdrawal — ${outbound.id}`, outbound.id); } catch (e) { logger.warn("[Stripe Webhook] Treasury outbound wallet debit error:", e); }
           }
           break;
         }
@@ -506,31 +507,31 @@ async function startServer() {
         case "treasury.outbound_transfer.returned": {
           const outbound = event.data.object;
           const failAmt = outbound.amount || 0;
-          console.error(`[Stripe Webhook] Treasury outbound transfer ${event.type}: ${outbound.id}, amount: $${failAmt / 100}`);
+          logger.error(`[Stripe Webhook] Treasury outbound transfer ${event.type}: ${outbound.id}, amount: $${failAmt / 100}`);
           try {
             const dbTof = await _getDb();
             if (dbTof && outbound.id) {
               await dbTof.execute(_sql`UPDATE wallet_transactions SET status = 'failed' WHERE description LIKE ${'%' + outbound.id + '%'} AND status IN ('pending', 'processing')`);
             }
-          } catch (e) { console.warn("[Stripe Webhook] Treasury outbound fail sync error:", e); }
+          } catch (e) { logger.warn("[Stripe Webhook] Treasury outbound fail sync error:", e); }
           // Reverse the debit — money stays in the account
           if (outbound.financial_account && failAmt > 0) {
-            try { await reverseDebitByConnect(outbound.financial_account, failAmt, `Withdrawal reversed — ${outbound.id}`); } catch (e) { console.warn("[Stripe Webhook] Treasury outbound reversal error:", e); }
+            try { await reverseDebitByConnect(outbound.financial_account, failAmt, `Withdrawal reversed — ${outbound.id}`); } catch (e) { logger.warn("[Stripe Webhook] Treasury outbound reversal error:", e); }
           }
           break;
         }
         case "treasury.financial_account.features_status_updated": {
           const fa = event.data.object;
-          console.log(`[Stripe Webhook] Treasury FA features updated: ${fa.id}, active: ${JSON.stringify(fa.active_features)}`);
+          logger.info(`[Stripe Webhook] Treasury FA features updated: ${fa.id}, active: ${JSON.stringify(fa.active_features)}`);
           break;
         }
         case "treasury.received_credit.succeeded": {
           const credit = event.data.object;
           const creditAmt = credit.amount || 0;
-          console.log(`[Stripe Webhook] Treasury received credit: ${credit.id}, amount: $${creditAmt / 100}, FA: ${credit.financial_account}`);
+          logger.info(`[Stripe Webhook] Treasury received credit: ${credit.id}, amount: $${creditAmt / 100}, FA: ${credit.financial_account}`);
           // Credit wallet — external funds received
           if (credit.financial_account && creditAmt > 0) {
-            try { await creditWalletByConnect(credit.financial_account, creditAmt, `Received credit — ${credit.id}`, credit.id, "deposit"); } catch (e) { console.warn("[Stripe Webhook] Treasury credit wallet error:", e); }
+            try { await creditWalletByConnect(credit.financial_account, creditAmt, `Received credit — ${credit.id}`, credit.id, "deposit"); } catch (e) { logger.warn("[Stripe Webhook] Treasury credit wallet error:", e); }
           }
           break;
         }
@@ -540,7 +541,7 @@ async function startServer() {
           const refundAmountCents = charge.amount_refunded || 0;
           const chargeId = charge.id;
           const piId = charge.payment_intent;
-          console.log(`[Stripe Webhook] Charge refunded: ${chargeId}, refund amount: $${refundAmountCents / 100}, PI: ${piId}`);
+          logger.info(`[Stripe Webhook] Charge refunded: ${chargeId}, refund amount: $${refundAmountCents / 100}, PI: ${piId}`);
 
           try {
             const dbRefund = await _getDb();
@@ -560,7 +561,7 @@ async function startServer() {
               // Update payment status to refunded
               if (originalPayment) {
                 await dbRefund.update(_paymentsT2).set({ status: "refunded" }).where(_eq(_paymentsT2.id, originalPayment.id));
-                console.log(`[Stripe Webhook] Payment ${originalPayment.id} → refunded`);
+                logger.info(`[Stripe Webhook] Payment ${originalPayment.id} → refunded`);
 
                 // Debit wallet — remove the credited amount
                 if (originalPayment.payeeId) {
@@ -572,7 +573,7 @@ async function startServer() {
                       fee: "0", netAmount: `-${refundAmt}`, currency: "USD", status: "completed",
                       description: `Refund — Payment #${originalPayment.id}`, stripePaymentId: chargeId, completedAt: new Date(),
                     });
-                    console.log(`[Stripe Webhook] Wallet ${payeeWallet.id} debited $${refundAmt} (refund)`);
+                    logger.info(`[Stripe Webhook] Wallet ${payeeWallet.id} debited $${refundAmt} (refund)`);
 
                     // Emit real-time refund notification
                     try {
@@ -607,29 +608,29 @@ async function startServer() {
                       metadata: { originalRevenueId: revenueEntry.id, chargeId },
                       processedAt: new Date(),
                     });
-                    console.log(`[Stripe Webhook] Platform revenue reversed for payment ${originalPayment.id}`);
+                    logger.info(`[Stripe Webhook] Platform revenue reversed for payment ${originalPayment.id}`);
                   }
-                } catch (e: any) { console.warn("[Stripe Webhook] Revenue reversal error:", e?.message); }
+                } catch (e: any) { logger.warn("[Stripe Webhook] Revenue reversal error:", e?.message); }
 
                 // If load-related, update load status back from 'paid'
                 if (originalPayment.loadId) {
                   try {
                     await dbRefund.update(_loadsT2).set({ status: "delivered" }).where(_eq(_loadsT2.id, originalPayment.loadId));
-                    console.log(`[Stripe Webhook] Load ${originalPayment.loadId} status reverted → delivered (refund)`);
-                  } catch (e: any) { console.warn("[Stripe Webhook] Load status revert error:", e?.message); }
+                    logger.info(`[Stripe Webhook] Load ${originalPayment.loadId} status reverted → delivered (refund)`);
+                  } catch (e: any) { logger.warn("[Stripe Webhook] Load status revert error:", e?.message); }
                 }
               }
             }
-          } catch (e: any) { console.error("[Stripe Webhook] Refund processing error:", e?.message); }
+          } catch (e: any) { logger.error("[Stripe Webhook] Refund processing error:", e?.message); }
           break;
         }
         default:
-          console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
+          logger.info(`[Stripe Webhook] Unhandled event type: ${event.type}`);
       }
 
       res.json({ received: true });
     } catch (err: any) {
-      console.error(`[Stripe Webhook] Error: ${err.message}`);
+      logger.error(`[Stripe Webhook] Error: ${err.message}`);
       res.status(400).json({ error: `Webhook Error: ${err.message}` });
     }
   });
@@ -717,7 +718,7 @@ async function startServer() {
         expiresAt: tokenRow.expiresAt?.toISOString(),
       });
     } catch (err: any) {
-      console.error("[AccessValidation] validate error:", err);
+      logger.error("[AccessValidation] validate error:", err);
       res.status(500).json({ error: "Validation failed" });
     }
   });
@@ -769,7 +770,7 @@ async function startServer() {
 
       res.json({ success: true, codeVerifiedAt: now.toISOString() });
     } catch (err: any) {
-      console.error("[AccessValidation] verify-code error:", err);
+      logger.error("[AccessValidation] verify-code error:", err);
       res.status(500).json({ error: "Code verification failed" });
     }
   });
@@ -874,7 +875,7 @@ async function startServer() {
                   };
                 }
               } catch (safetyErr) {
-                console.warn("[AccessValidation] FMCSA cache lookup failed:", (safetyErr as any)?.message?.substring(0, 80));
+                logger.warn("[AccessValidation] FMCSA cache lookup failed:", (safetyErr as any)?.message?.substring(0, 80));
               }
             }
 
@@ -894,12 +895,12 @@ async function startServer() {
           }
         }
       } catch (carrierErr) {
-        console.warn("[AccessValidation] Carrier safety enrichment failed:", (carrierErr as any)?.message?.substring(0, 80));
+        logger.warn("[AccessValidation] Carrier safety enrichment failed:", (carrierErr as any)?.message?.substring(0, 80));
       }
 
       res.json({ load, driver: driverInfo, shipper: shipperInfo, carrierSafety });
     } catch (err: any) {
-      console.error("[AccessValidation] lookup error:", err);
+      logger.error("[AccessValidation] lookup error:", err);
       res.status(500).json({ error: "Lookup failed" });
     }
   });
@@ -954,7 +955,7 @@ async function startServer() {
 
       res.json({ success: true, validationId: result.id, decision, timestamp: now.toISOString() });
     } catch (err: any) {
-      console.error("[AccessValidation] decide error:", err);
+      logger.error("[AccessValidation] decide error:", err);
       res.status(500).json({ error: "Decision recording failed" });
     }
   });
@@ -964,7 +965,7 @@ async function startServer() {
   // =========================================================================
   const encryptionOk = validateEncryption();
   if (!encryptionOk && process.env.NODE_ENV === "production") {
-    console.error("[FATAL] AES-256 encryption self-test failed. Refusing to start in production.");
+    logger.error("[FATAL] AES-256 encryption self-test failed. Refusing to start in production.");
     process.exit(1);
   }
 
@@ -1017,7 +1018,7 @@ async function startServer() {
       }
       res.send(buffer);
     } catch (err: any) {
-      console.error("[Documents] file endpoint error:", err?.message);
+      logger.error("[Documents] file endpoint error:", err?.message);
       res.status(500).json({ error: "Server error" });
     }
   });
@@ -1029,7 +1030,7 @@ async function startServer() {
     const { mountMcpServer } = await import("../services/mcpServer");
     mountMcpServer(app);
   } catch (e: any) {
-    console.warn("[MCP] Failed to mount MCP server:", e?.message?.slice(0, 100));
+    logger.warn("[MCP] Failed to mount MCP server:", e?.message?.slice(0, 100));
   }
 
   // OAuth callback under /api/oauth/callback
@@ -1041,9 +1042,9 @@ async function startServer() {
   try {
     const { lightspeedResponseCache } = await import("../middleware/lightspeedExpressCache");
     app.use("/api/trpc", lightspeedResponseCache());
-    console.log("[LIGHTSPEED] ⚡ Express response cache active on /api/trpc");
+    logger.info("[LIGHTSPEED] Express response cache active on /api/trpc");
   } catch (e: any) {
-    console.warn("[LIGHTSPEED] Cache middleware failed to load:", e?.message?.slice(0, 100));
+    logger.warn("[LIGHTSPEED] Cache middleware failed to load:", e?.message?.slice(0, 100));
   }
 
   // tRPC API (protected by RBAC middleware in trpc.ts)
@@ -1064,7 +1065,7 @@ async function startServer() {
     // Inline serveStatic to avoid importing vite.ts (which depends on the vite package)
     const distPath = path.resolve(import.meta.dirname, "public");
     if (!fs.existsSync(distPath)) {
-      console.error(`Could not find the build directory: ${distPath}, make sure to build the client first`);
+      logger.error(`Could not find the build directory: ${distPath}, make sure to build the client first`);
     }
     app.use("/assets", express.static(path.resolve(distPath, "assets"), { maxAge: "1y", immutable: true }));
     app.use(express.static(distPath, {
@@ -1088,18 +1089,18 @@ async function startServer() {
     : await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+    logger.info(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
   // Graceful shutdown: close DB pool + HTTP server on process exit
   const gracefulShutdown = async (signal: string) => {
-    console.log(`\n[Shutdown] ${signal} received. Closing connections...`);
+    logger.info(`[Shutdown] ${signal} received. Closing connections...`);
     try {
       const { closeDb } = await import("../db");
       await closeDb();
     } catch {}
     server.close(() => {
-      console.log("[Shutdown] Server closed cleanly");
+      logger.info("[Shutdown] Server closed cleanly");
       process.exit(0);
     });
     // Force exit after 10s if graceful shutdown hangs
@@ -1109,13 +1110,13 @@ async function startServer() {
   process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
   server.listen(port, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${port}/`);
-    console.log(`[SECURITY] TLS 1.3 enforcement: ${process.env.NODE_ENV === "production" ? "ACTIVE" : "DEV_MODE (handled by Azure in prod)"}`);
-    console.log(`[SECURITY] AES-256-GCM encryption: ${encryptionOk ? "ACTIVE" : "FAILED"}`);
-    console.log(`[SECURITY] RBAC role-based access: ACTIVE`);
-    console.log(`[SECURITY] SOC 2 audit logging: ACTIVE`);
-    console.log(`[SECURITY] PCI-DSS card data guard: ACTIVE`);
-    console.log(`[SECURITY] Security headers (HSTS, CSP, XSS, Frame): ACTIVE`);
+    logger.info(`Server running on http://localhost:${port}/`);
+    logger.info(`[SECURITY] TLS 1.3 enforcement: ${process.env.NODE_ENV === "production" ? "ACTIVE" : "DEV_MODE (handled by Azure in prod)"}`);    
+    logger.info(`[SECURITY] AES-256-GCM encryption: ${encryptionOk ? "ACTIVE" : "FAILED"}`);
+    logger.info(`[SECURITY] RBAC role-based access: ACTIVE`);
+    logger.info(`[SECURITY] SOC 2 audit logging: ACTIVE`);
+    logger.info(`[SECURITY] PCI-DSS card data guard: ACTIVE`);
+    logger.info(`[SECURITY] Security headers (HSTS, CSP, XSS, Frame): ACTIVE`);
 
     // Defer RSS pre-warm until after server is listening (so health probe succeeds)
     setTimeout(async () => {
@@ -1147,10 +1148,10 @@ async function startServer() {
             for (const cfg of defaults) {
               await _seedDb.insert(_pfc).values({ ...cfg, isActive: true, platformShare: "100.00", processorShare: "0.00" });
             }
-            console.log("[PlatformFees] Auto-seeded 8 default fee configurations");
+            logger.info("[PlatformFees] Auto-seeded 8 default fee configurations");
           }
         }
-      } catch (e: any) { console.warn("[PlatformFees] Auto-seed error:", e?.message); }
+      } catch (e: any) { logger.warn("[PlatformFees] Auto-seed error:", e?.message); }
     }, 10000);
 
     // Clean orphaned wallet records (WS-P0-010)
@@ -1158,7 +1159,7 @@ async function startServer() {
       try {
         const { cleanOrphanedWalletsOnStartup } = await import("../routers/wallet");
         await cleanOrphanedWalletsOnStartup();
-      } catch (e: any) { console.warn("[Wallet] Orphan cleanup error:", e?.message); }
+      } catch (e: any) { logger.warn("[Wallet] Orphan cleanup error:", e?.message); }
     }, 12000);
 
     // Auto-seed test accounts for all 11 roles (WS-P0-011)
@@ -1188,14 +1189,15 @@ async function startServer() {
             for (const acct of testAccounts) {
               const [existing] = await _seedDb.select({ id: _u.id }).from(_u).where(_eq(_u.email, acct.email)).limit(1);
               if (existing) continue;
-              const openId = `test_${acct.role.toLowerCase()}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+              const { randomBytes: _seedRb } = require("crypto");
+              const openId = `test_${acct.role.toLowerCase()}_${Date.now()}_${_seedRb(3).toString('hex')}`;
               await _seedDb.insert(_u).values({ openId, name: acct.name, email: acct.email, role: acct.role as any, isActive: true, isVerified: true });
               created++;
             }
-            if (created > 0) console.log(`[TestAccounts] Auto-seeded ${created} missing test accounts`);
+            if (created > 0) logger.info(`[TestAccounts] Auto-seeded ${created} missing test accounts`);
           }
         }
-      } catch (e: any) { console.warn("[TestAccounts] Auto-seed error:", e?.message); }
+      } catch (e: any) { logger.warn("[TestAccounts] Auto-seed error:", e?.message); }
     }, 14000);
 
     // Auto-seed carrier company + assign users + test vehicles (WS-P0-012/013)
@@ -1220,7 +1222,7 @@ async function startServer() {
           const coId = (res as any)?.[0]?.insertId;
           if (coId) {
             carrierCo = { id: coId };
-            console.log(`[P0-012] Auto-seeded carrier company id=${coId}, DOT=2233825`);
+            logger.info(`[P0-012] Auto-seeded carrier company id=${coId}, DOT=2233825`);
           }
         }
         if (carrierCo) {
@@ -1243,10 +1245,10 @@ async function startServer() {
             for (const v of testVehicles) {
               try { await _seedDb.insert(_v).values(v); vc++; } catch {}
             }
-            if (vc > 0) console.log(`[P0-013] Auto-seeded ${vc} test vehicles for carrier company ${carrierCo.id}`);
+            if (vc > 0) logger.info(`[P0-013] Auto-seeded ${vc} test vehicles for carrier company ${carrierCo.id}`);
           }
         }
-      } catch (e: any) { console.warn("[P0-012/013] Auto-seed error:", e?.message); }
+      } catch (e: any) { logger.warn("[P0-012/013] Auto-seed error:", e?.message); }
     }, 16000);
 
     // Auto-fix load data integrity (WS-P0-014)
@@ -1262,8 +1264,8 @@ async function startServer() {
           _sql014`UPDATE loads SET deliveryDate = DATE_ADD(pickupDate, INTERVAL 1 DAY) WHERE deliveryDate IS NOT NULL AND pickupDate IS NOT NULL AND deliveryDate < pickupDate`
         );
         const affectedRows = (fixed as any)?.[0]?.affectedRows || 0;
-        if (affectedRows > 0) console.log(`[P0-014] Fixed ${affectedRows} load(s) with deliveryDate < pickupDate`);
-      } catch (e: any) { console.warn("[P0-014] Data integrity fix error:", e?.message); }
+        if (affectedRows > 0) logger.info(`[P0-014] Fixed ${affectedRows} load(s) with deliveryDate < pickupDate`);
+      } catch (e: any) { logger.warn("[P0-014] Data integrity fix error:", e?.message); }
     }, 18000);
 
     // Run pending DB migrations (audit hash chain columns)
@@ -1271,7 +1273,7 @@ async function startServer() {
       try {
         const { runAuditHashChainMigration } = await import("../migrations/run0011_audit_hash_chain");
         await runAuditHashChainMigration();
-      } catch (e) { console.warn("[Migration] Audit hash chain deferred:", (e as any)?.message); }
+      } catch (e) { logger.warn("[Migration] Audit hash chain deferred:", (e as any)?.message); }
     }, 8000);
 
     // ML Engine — self-training models (rate prediction, carrier match, ETA, demand, anomaly, etc.)
@@ -1279,8 +1281,8 @@ async function startServer() {
       try {
         const { mlEngine } = await import("../services/mlEngine");
         await mlEngine.initialize();
-        console.log("[MLEngine] Self-training ML engine initialized");
-      } catch (e) { console.warn("[MLEngine] Init deferred:", (e as any)?.message); }
+        logger.info("[MLEngine] Self-training ML engine initialized");
+      } catch (e) { logger.warn("[MLEngine] Init deferred:", (e as any)?.message); }
     }, 15000);
 
     // Auto-seed Document Center types & requirements on startup
@@ -1294,7 +1296,7 @@ async function startServer() {
           const { documentRequirementsSeed } = await import("../seeds/documentRequirementsSeed");
 
           // Always upsert document types so download/source URLs stay current
-          console.log("[DocumentCenter] Upserting document types...");
+          logger.info("[DocumentCenter] Upserting document types...");
           let tc = 0;
           for (const seed of documentTypesSeed) {
             try {
@@ -1319,12 +1321,12 @@ async function startServer() {
               tc++;
             } catch {}
           }
-          console.log(`[DocumentCenter] Upserted ${tc} document types`);
+          logger.info(`[DocumentCenter] Upserted ${tc} document types`);
 
           // Truncate and re-seed requirements (idempotent: clean slate every startup)
           const { sql: rawSql } = await import("drizzle-orm");
           try { await db.execute(rawSql`DELETE FROM document_requirements`); } catch {}
-          console.log("[DocumentCenter] Seeding document requirements...");
+          logger.info("[DocumentCenter] Seeding document requirements...");
           let rc = 0;
           for (const seed of documentRequirementsSeed) {
             try {
@@ -1343,12 +1345,12 @@ async function startServer() {
               rc++;
             } catch {}
           }
-          console.log(`[DocumentCenter] Seeded ${rc} document requirements`);
+          logger.info(`[DocumentCenter] Seeded ${rc} document requirements`);
 
           // Auto-seed state-specific requirements (CDL portals, IFTA, weight-distance, CARB, oversize)
           const { stateDocRequirements } = await import("../../drizzle/schema");
           const { stateRequirementsSeed } = await import("../seeds/stateRequirementsSeed");
-          console.log("[DocumentCenter] Seeding state requirements...");
+          logger.info("[DocumentCenter] Seeding state requirements...");
           let sc = 0;
           for (const seed of stateRequirementsSeed) {
             try {
@@ -1385,10 +1387,10 @@ async function startServer() {
               sc++;
             } catch {}
           }
-          console.log(`[DocumentCenter] Seeded ${sc} state requirements`);
+          logger.info(`[DocumentCenter] Seeded ${sc} state requirements`);
         }
       } catch (err) {
-        console.error("[DocumentCenter] Auto-seed failed:", err);
+        logger.error("[DocumentCenter] Auto-seed failed:", err);
       }
     }, 3000);
 
@@ -1398,7 +1400,7 @@ async function startServer() {
         const { startMissionScheduler } = await import("../services/missionGenerator");
         startMissionScheduler();
       } catch (err) {
-        console.error("[MissionGenerator] Failed to start:", err);
+        logger.error("[MissionGenerator] Failed to start:", err);
       }
     }, 8000);
 
@@ -1408,7 +1410,7 @@ async function startServer() {
         const { startGamificationSync } = await import("../services/gamificationDispatcher");
         startGamificationSync();
       } catch (err) {
-        console.error("[GamificationSync] Failed to start:", err);
+        logger.error("[GamificationSync] Failed to start:", err);
       }
     }, 12000);
 
@@ -1418,7 +1420,7 @@ async function startServer() {
         const { autoSeedIfEmpty } = await import("../services/facilities/facilityService");
         await autoSeedIfEmpty();
       } catch (err) {
-        console.error("[FacilityService] Auto-seed startup error:", err);
+        logger.error("[FacilityService] Auto-seed startup error:", err);
       }
     }, 20000);
 
@@ -1427,26 +1429,26 @@ async function startServer() {
       try {
         const { seedKnowledgeBase } = await import("../services/embeddings/ragRetriever");
         const result = await seedKnowledgeBase();
-        console.log(`[AITurbo] Knowledge base seeded: ${result.indexed} indexed, ${result.errors} errors`);
-      } catch (err) { console.warn("[AITurbo] Knowledge seeding deferred:", (err as any)?.message?.slice(0, 80)); }
+        logger.info(`[AITurbo] Knowledge base seeded: ${result.indexed} indexed, ${result.errors} errors`);
+      } catch (err) { logger.warn("[AITurbo] Knowledge seeding deferred:", (err as any)?.message?.slice(0, 80)); }
     }, 25000);
 
     // WS-P1-011: Validate FMCSA API key on startup
     setTimeout(async () => {
       const fmcsaKey = process.env.FMCSA_API_KEY;
       if (!fmcsaKey) {
-        console.warn("[STARTUP] ⚠️  FMCSA_API_KEY not set — carrier safety lookups will fail");
+        logger.warn("[STARTUP] FMCSA_API_KEY not set — carrier safety lookups will fail");
       } else {
         try {
           const testUrl = `https://mobile.fmcsa.dot.gov/qc/services/carriers/2233825?webKey=${fmcsaKey}`;
           const resp = await fetch(testUrl);
           if (resp.ok) {
-            console.log("[STARTUP] ✅ FMCSA API key validated successfully");
+            logger.info("[STARTUP] FMCSA API key validated successfully");
           } else {
-            console.warn(`[STARTUP] ⚠️  FMCSA API key validation failed — HTTP ${resp.status}`);
+            logger.warn(`[STARTUP] FMCSA API key validation failed — HTTP ${resp.status}`);
           }
         } catch (err: any) {
-          console.warn("[STARTUP] ⚠️  FMCSA API key validation failed:", err.message);
+          logger.warn("[STARTUP] FMCSA API key validation failed:", err.message);
         }
       }
     }, 5000);
@@ -1458,10 +1460,10 @@ async function startServer() {
           const { startFmcsaCron } = await import("../etl/fmcsaCron");
           await startFmcsaCron();
         } else {
-          console.log("[FMCSA Cron] FMCSA ETL disabled (FMCSA_ENABLE_DAILY_ETL=false)");
+          logger.info("[FMCSA Cron] FMCSA ETL disabled (FMCSA_ENABLE_DAILY_ETL=false)");
         }
       } catch (err) {
-        console.error("[FMCSA Cron] Failed to start ETL scheduler:", err);
+        logger.error("[FMCSA Cron] Failed to start ETL scheduler:", err);
       }
     }, 30000);
 
@@ -1470,7 +1472,7 @@ async function startServer() {
       try {
         const { getDb } = await import("../db");
         const { sql } = await import("drizzle-orm");
-        console.log("[QPilotOS/WS-QP-001] HRRN scheduler started (60s interval)");
+        logger.info("[QPilotOS/WS-QP-001] HRRN scheduler started (60s interval)");
         setInterval(async () => {
           try {
             const db = await getDb();
@@ -1484,7 +1486,7 @@ async function startServer() {
           } catch {}
         }, 60000);
       } catch (err) {
-        console.warn("[QPilotOS/WS-QP-001] HRRN scheduler failed to start:", (err as any)?.message);
+        logger.warn("[QPilotOS/WS-QP-001] HRRN scheduler failed to start:", (err as any)?.message);
       }
     }, 10000);
 
@@ -1496,7 +1498,7 @@ async function startServer() {
           await connectMongo();
         }
       } catch (err) {
-        console.warn("[QPilotOS/WS-QP-004] MongoDB connect deferred:", (err as any)?.message);
+        logger.warn("[QPilotOS/WS-QP-004] MongoDB connect deferred:", (err as any)?.message);
       }
     }, 12000);
 
@@ -1508,7 +1510,7 @@ async function startServer() {
         const db = await getDb();
         if (db) {
           await updateLaneCache(db);
-          console.log("[QPilotOS/WS-QP-006] Lane cache initial refresh done");
+          logger.info("[QPilotOS/WS-QP-006] Lane cache initial refresh done");
         }
         // Daily refresh at 4 AM
         setInterval(async () => {
@@ -1518,7 +1520,7 @@ async function startServer() {
           } catch {}
         }, 24 * 60 * 60000);
       } catch (err) {
-        console.warn("[QPilotOS/WS-QP-006] Lane cache init deferred:", (err as any)?.message);
+        logger.warn("[QPilotOS/WS-QP-006] Lane cache init deferred:", (err as any)?.message);
       }
     }, 18000);
 
@@ -1534,22 +1536,22 @@ async function startServer() {
           const { syncOrchestrator } = await import("../services/sync/syncOrchestrator");
           registerAllSyncJobs();
           syncOrchestrator.initialize();
-          console.log("[HotZones] Sync orchestrator v5.0 initialized (22 jobs)");
+          logger.info("[HotZones] Sync orchestrator v5.0 initialized (22 jobs)");
 
           // Also start the legacy scheduler for backward compatibility
           const { initializeDataSyncScheduler, runInitialSync } = await import("../services/dataSync/scheduler");
           initializeDataSyncScheduler();
 
           // Non-blocking initial sync
-          runInitialSync().catch((err) => console.error("[HotZones] Initial sync error:", err));
+          runInitialSync().catch((err) => logger.error("[HotZones] Initial sync error:", err));
         } else {
-          console.log("[HotZones] Data sync disabled (SYNC_ENABLED=false)");
+          logger.info("[HotZones] Data sync disabled (SYNC_ENABLED=false)");
         }
       } catch (err) {
-        console.error("[HotZones] Failed to start data sync:", err);
+        logger.error("[HotZones] Failed to start data sync:", err);
       }
     }, 15000);
   });
 }
 
-startServer().catch(console.error);
+startServer().catch((e) => logger.error("Server startup failed:", e));

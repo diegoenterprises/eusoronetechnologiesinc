@@ -300,10 +300,10 @@ export function generateSampleBidResponses(rfpId: string, lanes: RFPLane[]): Car
     status: "submitted" as LaneBidStatus,
     laneBids: lanes.map(lane => ({
       laneId: lane.id,
-      bidRate: (lane.targetRate || 3000) * (0.9 + Math.random() * 0.25),
+      bidRate: (lane.targetRate || 3000) * (0.95 + ci * 0.03),
       rateType: lane.rateType,
-      transitDays: Math.ceil(lane.estimatedDistance / 500) + Math.floor(Math.random() * 2),
-      capacityPerWeek: Math.max(1, lane.frequencyPerWeek - Math.floor(Math.random() * 3)),
+      transitDays: Math.ceil(lane.estimatedDistance / 500) + (ci % 2),
+      capacityPerWeek: Math.max(1, lane.frequencyPerWeek - (ci % 3)),
       equipmentOffered: lane.equipmentRequired,
       notes: ci === 0 ? "Dedicated fleet available" : "",
     })),

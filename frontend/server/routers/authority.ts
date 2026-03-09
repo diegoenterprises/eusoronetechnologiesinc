@@ -14,6 +14,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, or, gte } from "drizzle-orm";
 import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, companies, leaseAgreements, vehicles } from "../../drizzle/schema";
 
@@ -113,7 +114,7 @@ export const authorityRouter = router({
 
       return { ownAuthority, activeLeasesAsLessee, activeLeasesAsLessor, complianceScore };
     } catch (error) {
-      console.error("[Authority] getMyAuthority error:", error);
+      logger.error("[Authority] getMyAuthority error:", error);
       return { ownAuthority: null, activeLeasesAsLessee: [], activeLeasesAsLessor: [], complianceScore: 0 };
     }
   }),
@@ -175,7 +176,7 @@ export const authorityRouter = router({
 
         return results;
       } catch (error) {
-        console.error("[Authority] getMyLeases error:", error);
+        logger.error("[Authority] getMyLeases error:", error);
         return [];
       }
     }),
@@ -207,7 +208,7 @@ export const authorityRouter = router({
         asLessee: rows.filter(r => r.lesseeUserId === userId).length,
       };
     } catch (error) {
-      console.error("[Authority] getLeaseStats error:", error);
+      logger.error("[Authority] getLeaseStats error:", error);
       return { active: 0, pending: 0, expired: 0, total: 0, asLessor: 0, asLessee: 0 };
     }
   }),
@@ -397,7 +398,7 @@ export const authorityRouter = router({
 
         return results;
       } catch (error) {
-        console.error("[Authority] browseAuthorities error:", error);
+        logger.error("[Authority] browseAuthorities error:", error);
         return [];
       }
     }),
@@ -443,7 +444,7 @@ export const authorityRouter = router({
         };
       });
     } catch (error) {
-      console.error("[Authority] getEquipmentAuthority error:", error);
+      logger.error("[Authority] getEquipmentAuthority error:", error);
       return [];
     }
   }),
@@ -677,7 +678,7 @@ export const authorityRouter = router({
           query: q,
         };
       } catch (err: any) {
-        console.error("[Authority] FMCSA search error:", err.message);
+        logger.error("[Authority] FMCSA search error:", err.message);
         return { results: [], error: err.message, searchType, query: q };
       }
     }),

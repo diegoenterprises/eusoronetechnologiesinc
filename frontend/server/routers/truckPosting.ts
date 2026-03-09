@@ -9,6 +9,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, like, inArray } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, drivers, users, companies, loads } from "../../drizzle/schema";
 
@@ -161,7 +162,7 @@ export const truckPostingRouter = router({
         }
 
         return { trucks: enriched, total: enriched.length };
-      } catch (e) { console.error("[TruckPosting] searchTrucks error:", e); return { trucks: [], total: 0 }; }
+      } catch (e) { logger.error("[TruckPosting] searchTrucks error:", e); return { trucks: [], total: 0 }; }
     }),
 
   /**
@@ -306,7 +307,7 @@ export const truckPostingRouter = router({
         return matches
           .sort((a, b) => b.matchScore - a.matchScore)
           .slice(0, input.limit);
-      } catch (e) { console.error("[TruckPosting] getMatchSuggestions error:", e); return []; }
+      } catch (e) { logger.error("[TruckPosting] getMatchSuggestions error:", e); return []; }
     }),
 
   /**
@@ -359,6 +360,6 @@ export const truckPostingRouter = router({
           hazmatLoads: hazmatLoadCount?.count || 0,
           hazmatRatio: hazmatTruckCount > 0 ? Math.round(((hazmatLoadCount?.count || 0) / hazmatTruckCount) * 100) / 100 : 0,
         };
-      } catch (e) { console.error("[TruckPosting] getCapacityStats error:", e); return { availableTrucks: 0, postedLoads: 0, ratio: 0, hazmatTrucks: 0, hazmatLoads: 0 }; }
+      } catch (e) { logger.error("[TruckPosting] getCapacityStats error:", e); return { availableTrucks: 0, postedLoads: 0, ratio: 0, hazmatTrucks: 0, hazmatLoads: 0 }; }
     }),
 });

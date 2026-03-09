@@ -2,17 +2,18 @@
  * Run migration 0008: Load Lifecycle State Machine
  * Usage: DATABASE_URL=<prod-url> npx tsx server/migrations/run0008.ts
  */
+import { logger } from "../_core/logger";
 import mysql2 from "mysql2/promise";
 
 async function run() {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
-    console.error("DATABASE_URL is required");
+    logger.error("DATABASE_URL is required");
     process.exit(1);
   }
 
   const conn = await mysql2.createConnection(dbUrl);
-  console.log("Connected to database");
+  logger.info("Connected to database");
 
   const statements = [
     // 1. Expand loads.status enum to 32 states
@@ -106,21 +107,21 @@ async function run() {
   for (let i = 0; i < statements.length; i++) {
     try {
       await conn.query(statements[i]);
-      console.log(`  [${i + 1}/${statements.length}] OK`);
+      logger.info(`  [${i + 1}/${statements.length}] OK`);
     } catch (e: any) {
       if (e.code === "ER_TABLE_EXISTS_ERROR" || e.code === "ER_DUP_FIELDNAME") {
-        console.log(`  [${i + 1}/${statements.length}] Already exists, skipping`);
+        logger.info(`  [${i + 1}/${statements.length}] Already exists, skipping`);
       } else {
-        console.error(`  [${i + 1}/${statements.length}] ERROR:`, e.message?.slice(0, 300));
+        logger.error(`  [${i + 1}/${statements.length}] ERROR:`, e.message?.slice(0, 300));
       }
     }
   }
 
   await conn.end();
-  console.log("\nMigration 0008 complete");
+  logger.info("\nMigration 0008 complete");
 }
 
 run().catch((e) => {
-  console.error("Migration failed:", e);
+  logger.error("Migration failed:", e);
   process.exit(1);
 });

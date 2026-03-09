@@ -7,6 +7,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "./logger";
 import { crudeOilSpecs as crudeOilSpecsTable } from "../../drizzle/schema";
 import { eq, like, sql } from "drizzle-orm";
 import {
@@ -64,10 +65,10 @@ async function loadSpecs(): Promise<CrudeOilSpec[]> {
       characteristics: r.characteristics as any || [],
     }));
     _cacheLoadedAt = Date.now();
-    console.log(`[SpectraMatch] Loaded ${_cachedSpecs.length} crude specs from DB`);
+    logger.info(`[SpectraMatch] Loaded ${_cachedSpecs.length} crude specs from DB`);
     return _cachedSpecs;
   } catch (err) {
-    console.warn("[SpectraMatch] DB load failed, using static data:", (err as Error).message);
+    logger.warn("[SpectraMatch] DB load failed, using static data:", (err as Error).message);
     _cachedSpecs = CRUDE_OIL_SPECS;
     _cacheLoadedAt = Date.now();
     return _cachedSpecs;

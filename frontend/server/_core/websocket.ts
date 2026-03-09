@@ -6,6 +6,7 @@
  */
 
 import { Server as HTTPServer } from "http";
+import { logger } from "./logger";
 import { IncomingMessage } from "http";
 import {
   WS_EVENTS,
@@ -74,7 +75,7 @@ class WebSocketService {
       const WebSocketServer = ws.WebSocketServer || ws.Server;
       this.wss = new WebSocketServer({ server, path: "/ws" });
     } catch {
-      console.warn("[WebSocket] ws module not available - WebSocket features disabled");
+      logger.warn("[WebSocket] ws module not available - WebSocket features disabled");
       return;
     }
 
@@ -82,7 +83,7 @@ class WebSocketService {
     
     this.wss.on("connection", (wsConn: WSConnection, request: IncomingMessage) => {
       const clientId = this.generateClientId();
-      console.log(`[WebSocket] Client connected: ${clientId}`);
+      logger.info(`[WebSocket] Client connected: ${clientId}`);
 
       const client: WSClient = {
         ws: wsConn,
@@ -98,7 +99,7 @@ class WebSocketService {
           const message: WSMessage = JSON.parse(data.toString());
           this.handleMessage(clientId, message);
         } catch (error) {
-          console.error("[WebSocket] Failed to parse message:", error);
+          logger.error("[WebSocket] Failed to parse message:", error);
         }
       });
 
@@ -107,7 +108,7 @@ class WebSocketService {
       });
 
       wsConn.on("error", (error: Error) => {
-        console.error(`[WebSocket] Client ${clientId} error:`, error);
+        logger.error(`[WebSocket] Client ${clientId} error:`, error);
       });
 
       // Send welcome message
@@ -118,7 +119,7 @@ class WebSocketService {
       });
     });
 
-    console.log("[WebSocket] Server initialized on /ws");
+    logger.info("[WebSocket] Server initialized on /ws");
   }
 
   /**
@@ -150,7 +151,7 @@ class WebSocketService {
         break;
 
       default:
-        console.log(`[WebSocket] Unknown message type: ${message.type}`);
+        logger.info(`[WebSocket] Unknown message type: ${message.type}`);
     }
   }
 
@@ -262,7 +263,7 @@ class WebSocketService {
     });
 
     this.clients.delete(clientId);
-    console.log(`[WebSocket] Client disconnected: ${clientId}`);
+    logger.info(`[WebSocket] Client disconnected: ${clientId}`);
   }
 
   /**
@@ -275,7 +276,7 @@ class WebSocketService {
     try {
       client.ws.send(JSON.stringify(message));
     } catch (error) {
-      console.error(`[WebSocket] Failed to send to client ${clientId}:`, error);
+      logger.error(`[WebSocket] Failed to send to client ${clientId}:`, error);
     }
   }
 
@@ -387,7 +388,8 @@ class WebSocketService {
    * Generate unique client ID
    */
   private generateClientId(): string {
-    return `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const { randomBytes } = require("crypto");
+    return `client_${Date.now()}_${randomBytes(5).toString('hex')}`;
   }
 
   /**

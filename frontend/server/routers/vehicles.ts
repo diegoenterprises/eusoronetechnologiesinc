@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, lte, gte, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, users, inspections, documents, drivers } from "../../drizzle/schema";
 
@@ -46,7 +47,7 @@ export const vehiclesRouter = router({
         nextInspectionDate: v.nextInspectionDate?.toISOString().split("T")[0] || null,
         createdAt: v.createdAt.toISOString(),
       }));
-    } catch (e) { console.error("[vehicles.list]", e); return []; }
+    } catch (e) { logger.error("[vehicles.list]", e); return []; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -74,7 +75,7 @@ export const vehiclesRouter = router({
         nextInspectionDate: v.nextInspectionDate?.toISOString().split("T")[0] || null,
         createdAt: v.createdAt.toISOString(), updatedAt: v.updatedAt.toISOString(),
       };
-    } catch (e) { console.error("[vehicles.get]", e); return null; }
+    } catch (e) { logger.error("[vehicles.get]", e); return null; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -103,7 +104,7 @@ export const vehiclesRouter = router({
       return { success: true, id: String(result[0].insertId) };
     } catch (e: any) {
       if (e?.code === "ER_DUP_ENTRY") return { success: false, error: "VIN already exists" };
-      console.error("[vehicles.create]", e); return { success: false, error: "Failed to create vehicle" };
+      logger.error("[vehicles.create]", e); return { success: false, error: "Failed to create vehicle" };
     }
   }),
 
@@ -138,7 +139,7 @@ export const vehiclesRouter = router({
       if (Object.keys(updates).length === 0) return { success: true };
       await db.update(vehicles).set(updates).where(and(eq(vehicles.id, vid), eq(vehicles.companyId, companyId)));
       return { success: true };
-    } catch (e) { console.error("[vehicles.update]", e); return { success: false }; }
+    } catch (e) { logger.error("[vehicles.update]", e); return { success: false }; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -152,7 +153,7 @@ export const vehiclesRouter = router({
       const vid = parseInt(input.id, 10);
       await db.update(vehicles).set({ isActive: false, deletedAt: new Date() }).where(and(eq(vehicles.id, vid), eq(vehicles.companyId, companyId)));
       return { success: true };
-    } catch (e) { console.error("[vehicles.delete]", e); return { success: false }; }
+    } catch (e) { logger.error("[vehicles.delete]", e); return { success: false }; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -169,7 +170,7 @@ export const vehiclesRouter = router({
       const vid = parseInt(input.id, 10);
       await db.update(vehicles).set({ status: input.status }).where(and(eq(vehicles.id, vid), eq(vehicles.companyId, companyId)));
       return { success: true };
-    } catch (e) { console.error("[vehicles.updateStatus]", e); return { success: false }; }
+    } catch (e) { logger.error("[vehicles.updateStatus]", e); return { success: false }; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -190,7 +191,7 @@ export const vehiclesRouter = router({
       if (!d || d.companyId !== companyId) return { success: false, error: "Driver not found or different company" };
       await db.update(vehicles).set({ currentDriverId: did, status: "in_use" }).where(and(eq(vehicles.id, vid), eq(vehicles.companyId, companyId)));
       return { success: true };
-    } catch (e) { console.error("[vehicles.assignDriver]", e); return { success: false }; }
+    } catch (e) { logger.error("[vehicles.assignDriver]", e); return { success: false }; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -206,7 +207,7 @@ export const vehiclesRouter = router({
       const vid = parseInt(input.vehicleId, 10);
       await db.update(vehicles).set({ currentDriverId: null, status: "available" }).where(and(eq(vehicles.id, vid), eq(vehicles.companyId, companyId)));
       return { success: true };
-    } catch (e) { console.error("[vehicles.unassignDriver]", e); return { success: false }; }
+    } catch (e) { logger.error("[vehicles.unassignDriver]", e); return { success: false }; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -225,7 +226,7 @@ export const vehiclesRouter = router({
         location: i.location || "", completedAt: i.completedAt?.toISOString().split("T")[0] || "",
         createdAt: i.createdAt.toISOString(),
       }));
-    } catch (e) { console.error("[vehicles.getInspections]", e); return []; }
+    } catch (e) { logger.error("[vehicles.getInspections]", e); return []; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -255,7 +256,7 @@ export const vehiclesRouter = router({
         completedAt: input.status !== "pending" ? new Date() : null,
       });
       return { success: true, id: String(result[0].insertId) };
-    } catch (e) { console.error("[vehicles.addInspection]", e); return { success: false }; }
+    } catch (e) { logger.error("[vehicles.addInspection]", e); return { success: false }; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -276,7 +277,7 @@ export const vehiclesRouter = router({
         expiresAt: d.expiryDate?.toISOString().split("T")[0] || "",
         fileUrl: d.fileUrl || "", createdAt: d.createdAt.toISOString(),
       }));
-    } catch (e) { console.error("[vehicles.getDocuments]", e); return []; }
+    } catch (e) { logger.error("[vehicles.getDocuments]", e); return []; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -292,7 +293,7 @@ export const vehiclesRouter = router({
         .from(vehicles).where(and(eq(vehicles.id, vid), eq(vehicles.companyId, companyId))).limit(1);
       if (!v) return null;
       return { location: v.currentLocation, lastUpdate: v.lastGPSUpdate?.toISOString() || null, status: v.status };
-    } catch (e) { console.error("[vehicles.getLocation]", e); return null; }
+    } catch (e) { logger.error("[vehicles.getLocation]", e); return null; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -332,7 +333,7 @@ export const vehiclesRouter = router({
         dueDate: v.nextMaintenanceDate?.toISOString().split("T")[0] || "",
         overdue: v.nextMaintenanceDate ? new Date(v.nextMaintenanceDate) < now : false,
       }));
-    } catch (e) { console.error("[vehicles.getMaintenanceDue]", e); return []; }
+    } catch (e) { logger.error("[vehicles.getMaintenanceDue]", e); return []; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -354,7 +355,7 @@ export const vehiclesRouter = router({
         dueDate: v.nextInspectionDate?.toISOString().split("T")[0] || "",
         overdue: v.nextInspectionDate ? new Date(v.nextInspectionDate) < now : false,
       }));
-    } catch (e) { console.error("[vehicles.getInspectionsDue]", e); return []; }
+    } catch (e) { logger.error("[vehicles.getInspectionsDue]", e); return []; }
   }),
 
   updateLocation: protectedProcedure

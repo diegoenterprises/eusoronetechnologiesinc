@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, payments, users } from "../../drizzle/schema";
 
@@ -79,7 +80,7 @@ export const earningsRouter = router({
           comparison: { previousPeriod: prevTotal, percentChange, trend: percentChange >= 0 ? "up" as const : "down" as const },
         };
       } catch (error) {
-        console.error('[Earnings] getSummary error:', error);
+        logger.error('[Earnings] getSummary error:', error);
         return { period: input.period, totalEarnings: 0, totalLoads: 0, totalMiles: 0, avgPerMile: 0, avgPerLoad: 0, pendingAmount: 0, approvedAmount: 0, paidAmount: 0, bonuses: 0, total: 0, paid: 0, change: 0, pending: 0, loadsCompleted: 0, comparison: { previousPeriod: 0, percentChange: 0, trend: "stable" as const } };
       }
     }),
@@ -120,7 +121,7 @@ export const earningsRouter = router({
           };
         });
       } catch (error) {
-        console.error('[Earnings] getEarnings error:', error);
+        logger.error('[Earnings] getEarnings error:', error);
         return [];
       }
     }),
@@ -162,7 +163,7 @@ export const earningsRouter = router({
           avgPerLoad: count > 0 ? total / count : 0,
         };
       } catch (error) {
-        console.error('[Earnings] getWeeklySummary error:', error);
+        logger.error('[Earnings] getWeeklySummary error:', error);
         return { weekStart: "", weekEnd: "", totalEarnings: 0, totalMiles: 0, totalLoads: 0, avgPerMile: 0, avgPerLoad: 0 };
       }
     }),
@@ -278,7 +279,7 @@ export const earningsRouter = router({
     try {
       const { generateAndStoreSettlementPDF } = await import("../services/settlementPDF");
       await generateAndStoreSettlementPDF(sid);
-    } catch (e: any) { console.error('[Earnings] PDF generation failed:', e?.message?.slice(0, 100)); }
+    } catch (e: any) { logger.error('[Earnings] PDF generation failed:', e?.message?.slice(0, 100)); }
     // Audit log
     try {
       const { auditLogs } = await import("../../drizzle/schema");

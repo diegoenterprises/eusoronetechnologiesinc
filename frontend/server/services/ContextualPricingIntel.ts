@@ -104,17 +104,16 @@ function generateCapacitySignals(originState: string, destState: string): Contex
   // Simulated truck-to-load ratios by region
   const tightMarkets = new Set(["CA", "TX", "FL", "NJ", "OH"]);
   if (tightMarkets.has(originState)) {
-    const ratio = 1.5 + Math.random() * 2;
-    if (ratio < 2.5) {
-      signals.push({
-        id: `cap-tight-${originState}`, category: "capacity", name: `Tight Capacity — ${originState}`,
-        description: `Truck-to-load ratio in ${originState} is ${ratio.toFixed(1)}:1 (below 2.5 threshold)`,
-        impact: Math.round((2.5 - ratio) * 8), strength: ratio < 2.0 ? "high" : "medium",
-        confidence: 70, source: "DAT/Truckstop Market Data",
-        expiresAt: new Date(now.getTime() + 24 * 3600000).toISOString(),
-        affectedLanes: [`${originState}-${destState}`],
-      });
-    }
+    // Real implementation: query DAT/Truckstop API for live ratios
+    const ratio = 2.0; // Default estimate for tight markets
+    signals.push({
+      id: `cap-tight-${originState}`, category: "capacity", name: `Tight Capacity — ${originState}`,
+      description: `Truck-to-load ratio in ${originState} estimated at ${ratio.toFixed(1)}:1 (connect market data feed for live data)`,
+      impact: Math.round((2.5 - ratio) * 8), strength: ratio < 2.0 ? "high" : "medium",
+      confidence: 50, source: "Estimated — connect DAT/Truckstop for live data",
+      expiresAt: new Date(now.getTime() + 24 * 3600000).toISOString(),
+      affectedLanes: [`${originState}-${destState}`],
+    });
   }
 
   return signals;
@@ -204,18 +203,7 @@ function generateRegulatorySignals(originState: string, destState: string): Cont
 }
 
 function generateFuelSignals(): ContextSignal[] {
-  const now = new Date();
-  const volatility = Math.random() * 10;
-  if (volatility > 5) {
-    return [{
-      id: "fuel-volatility", category: "fuel", name: "Fuel Price Volatility",
-      description: `Diesel prices showing ${volatility.toFixed(1)}% weekly volatility — surcharges may fluctuate`,
-      impact: Math.round(volatility * 0.5), strength: volatility > 7 ? "high" : "medium",
-      confidence: 80, source: "EIA Weekly Diesel",
-      expiresAt: new Date(now.getTime() + 7 * 86400000).toISOString(),
-      affectedLanes: ["ALL"],
-    }];
-  }
+  // Real implementation: query EIA API for diesel price volatility
   return [];
 }
 
@@ -310,7 +298,7 @@ export function getLaneIntelligence(
   distance: number,
 ): LaneIntelligence {
   const lane = `${originState}-${destState}`;
-  const baseRPM = 2.10 + Math.random() * 0.80;
+  const baseRPM = 2.50; // National average dry van RPM baseline
   const spotRate = Math.round(baseRPM * distance);
   const signals = [
     ...generateWeatherSignals(originState, destState),
@@ -318,9 +306,10 @@ export function getLaneIntelligence(
     ...generateEventSignals(originState, destState),
   ];
 
-  const truckToLoad = 1.5 + Math.random() * 3;
-  const volatility = Math.round(Math.random() * 100) / 10;
-  const weekChange = Math.round((Math.random() - 0.45) * 10 * 100) / 100;
+  // Real implementation: query market data APIs for live metrics
+  const truckToLoad = 2.5; // National average
+  const volatility = 0;
+  const weekChange = 0;
 
   return {
     lane,

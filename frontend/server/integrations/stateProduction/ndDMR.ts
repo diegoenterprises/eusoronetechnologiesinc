@@ -5,6 +5,7 @@
  * Refresh: Weekly (Monday)
  * Data: Bakken/Three Forks production, rig counts, flaring data
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { sql } from "drizzle-orm";
 
@@ -58,8 +59,8 @@ export async function fetchNDProduction(): Promise<void> {
       );
     }
 
-    console.log("[ND-DMR] Updated Bakken production metrics");
+    logger.info("[ND-DMR] Updated Bakken production metrics");
   } catch (e) {
-    console.error("[ND-DMR] Failed:", e);
+    logger.error("[ND-DMR] Failed:", e);
   }
 }

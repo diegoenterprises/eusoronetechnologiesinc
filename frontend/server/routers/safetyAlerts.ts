@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { eq, desc, and } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { safetyAlerts, speedEvents, users } from "../../drizzle/schema";
 
@@ -101,7 +102,7 @@ export const safetyAlertsRouter = router({
         }
       }
     } catch (e) {
-      console.error("[SOS] Notification dispatch error:", e);
+      logger.error("[SOS] Notification dispatch error:", e);
     }
 
     // 4. Notify user's personal emergency contact (SMS + branded email)
@@ -130,12 +131,12 @@ export const safetyAlertsRouter = router({
         await db.update(safetyAlerts)
           .set({ message: `${input.message || "SOS - Emergency assistance requested"} — Alerted ${ec.name}` })
           .where(eq(safetyAlerts.id, alert.id));
-        console.log(`[SOS] Emergency contact ${ec.name} (${ec.phone}) notified for user ${driverName}`);
+        logger.info(`[SOS] Emergency contact ${ec.name} (${ec.phone}) notified for user ${driverName}`);
       } else {
-        console.log(`[SOS] No emergency contact on file for user ${driverName} (userId=${userId})`);
+        logger.info(`[SOS] No emergency contact on file for user ${driverName} (userId=${userId})`);
       }
     } catch (e) {
-      console.error("[SOS] Emergency contact notification error:", e);
+      logger.error("[SOS] Emergency contact notification error:", e);
     }
 
     // 5. WebSocket broadcast — real-time alert to all safety/dispatch channels
@@ -151,10 +152,10 @@ export const safetyAlertsRouter = router({
         timestamp: new Date().toISOString(),
       });
     } catch (e) {
-      console.error("[SOS] WebSocket broadcast error:", e);
+      logger.error("[SOS] WebSocket broadcast error:", e);
     }
 
-    console.log(`[SOS] Alert #${alert.id} from ${driverName} (userId=${userId}) at ${coordsStr} — ${notifiedUserIds.size} people notified, emergencyContact=${emergencyContactNotified}`);
+    logger.info(`[SOS] Alert #${alert.id} from ${driverName} (userId=${userId}) at ${coordsStr} — ${notifiedUserIds.size} people notified, emergencyContact=${emergencyContactNotified}`);
 
     return {
       success: true,

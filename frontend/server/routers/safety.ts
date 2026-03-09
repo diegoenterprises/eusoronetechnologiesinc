@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { safetyProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { drivers, incidents, drugTests, inspections, users } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -126,7 +127,7 @@ export const safetyRouter = router({
           trendPercent: 0,
         };
       } catch (error) {
-        console.error('[Safety] getDashboardStats error:', error);
+        logger.error('[Safety] getDashboardStats error:', error);
         return { safetyScore: 0, activeDrivers: 0, openIncidents: 0, overdueItems: 0, pendingDrugTests: 0, pendingTests: 0, csaAlert: false, csaAlerts: 0, trend: "stable", trendPercent: 0 };
       }
     }),
@@ -178,7 +179,7 @@ export const safetyRouter = router({
           };
         }));
       } catch (error) {
-        console.error('[Safety] getRecentIncidents error:', error);
+        logger.error('[Safety] getRecentIncidents error:', error);
         return [];
       }
     }),
@@ -213,7 +214,7 @@ export const safetyRouter = router({
           inspections: 0,
         }));
       } catch (error) {
-        console.error('[Safety] getTopDrivers error:', error);
+        logger.error('[Safety] getTopDrivers error:', error);
         return [];
       }
     }),
@@ -251,7 +252,7 @@ export const safetyRouter = router({
           critical: critical?.count || 0,
         };
       } catch (error) {
-        console.error('[Safety] getIncidentSummary error:', error);
+        logger.error('[Safety] getIncidentSummary error:', error);
         return { total: 0, open: 0, investigating: 0, resolved: 0, thisMonth: 0, severity: { high: 0, medium: 0, low: 0 }, severe: 0, closed: 0, critical: 0 };
       }
     }),
@@ -285,7 +286,7 @@ export const safetyRouter = router({
           },
         };
       } catch (error) {
-        console.error('[Safety] getDashboardSummary error:', error);
+        logger.error('[Safety] getDashboardSummary error:', error);
         return { overallScore: 0, activeDrivers: 0, openIncidents: 0, overdueItems: 0, pendingDrugTests: 0, csaAlert: false, trends: { score: { current: 0, previous: 0, change: 0 }, incidents: { current: 0, previous: 0, change: 0 } } };
       }
     }),
@@ -446,7 +447,7 @@ export const safetyRouter = router({
             injuries: input.injuries ? 1 : 0, fatalities: 0, status: 'reported',
           } as any).$returningId();
           return { id: `i_${result.id}`, incidentNumber: `INC-${result.id}`, status: 'reported', reportedBy: ctx.user?.id, reportedAt: new Date().toISOString() };
-        } catch (e) { console.error('[Safety] reportIncident error:', e); }
+        } catch (e) { logger.error('[Safety] reportIncident error:', e); }
       }
       return { id: `i_${Date.now()}`, incidentNumber: `INC-2026-${String(Date.now()).slice(-4)}`, status: 'reported', reportedBy: ctx.user?.id, reportedAt: new Date().toISOString() };
     }),
@@ -464,7 +465,7 @@ export const safetyRouter = router({
       const db = await getDb();
       const iid = parseInt(input.id.replace('i_', '').replace('inc_', ''), 10);
       if (db && iid) {
-        try { await db.update(incidents).set({ status: input.status as any }).where(eq(incidents.id, iid)); } catch (e) { console.error('[Safety] updateIncidentStatus error:', e); }
+        try { await db.update(incidents).set({ status: input.status as any }).where(eq(incidents.id, iid)); } catch (e) { logger.error('[Safety] updateIncidentStatus error:', e); }
       }
       return { success: true, id: input.id, newStatus: input.status, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
@@ -565,7 +566,7 @@ export const safetyRouter = router({
       const db = await getDb();
       const iid = parseInt(input.id.replace('i_', '').replace('inc_', ''), 10);
       if (db && iid) {
-        try { await db.update(incidents).set({ status: 'resolved' as any }).where(eq(incidents.id, iid)); } catch (e) { console.error('[Safety] closeIncident error:', e); }
+        try { await db.update(incidents).set({ status: 'resolved' as any }).where(eq(incidents.id, iid)); } catch (e) { logger.error('[Safety] closeIncident error:', e); }
       }
       return { success: true, id: input.id, closedAt: new Date().toISOString(), closedBy: ctx.user?.id };
     }),
@@ -637,7 +638,7 @@ export const safetyRouter = router({
         const companyId = ctx.user?.companyId || 0;
         const rows = await db.select().from(inspections).where(eq(inspections.companyId, companyId)).orderBy(desc(inspections.createdAt)).limit(50);
         return rows.map(r => ({ id: String(r.id), vehicleId: String(r.vehicleId || ''), type: r.type || '', status: r.status || '', date: r.completedAt?.toISOString() || r.createdAt?.toISOString() || '', defectsFound: r.defectsFound || 0 }));
-      } catch (e) { console.error('[Safety] getVehicleInspections error:', e); return []; }
+      } catch (e) { logger.error('[Safety] getVehicleInspections error:', e); return []; }
     }),
 
   /**
@@ -670,7 +671,7 @@ export const safetyRouter = router({
             notes: input.notes || null, completedAt: new Date(),
           } as any).$returningId();
           return { success: true, id: `vi_${result.id}`, vehicleId: input.vehicleId, status: input.passed ? 'passed' : 'failed', submittedAt: new Date().toISOString(), submittedBy: ctx.user?.id };
-        } catch (e) { console.error('[Safety] submitInspection error:', e); }
+        } catch (e) { logger.error('[Safety] submitInspection error:', e); }
       }
       return { success: true, id: `vi_${Date.now()}`, vehicleId: input.vehicleId, status: input.passed ? 'passed' : 'failed', submittedAt: new Date().toISOString(), submittedBy: ctx.user?.id };
     }),
@@ -682,7 +683,7 @@ export const safetyRouter = router({
       const companyId = ctx.user?.companyId || 0;
       const rows = await db.select().from(incidents).where(eq(incidents.companyId, companyId)).orderBy(desc(incidents.createdAt)).limit(50);
       return rows.map(r => ({ id: String(r.id), type: r.type || 'accident', severity: r.severity || 'minor', status: r.status || 'reported', description: r.description || '', driverId: String(r.driverId || ''), date: r.occurredAt?.toISOString() || r.createdAt?.toISOString() || '', location: r.location || '' }));
-    } catch (e) { console.error('[Safety] getAccidentReports error:', e); return []; }
+    } catch (e) { logger.error('[Safety] getAccidentReports error:', e); return []; }
   }),
   getAccidentSummary: protectedProcedure.query(async ({ ctx }) => {
     const fallback = { total: 0, totalReports: 0, thisYear: 0, investigating: 0, closed: 0, open: 0, openReports: 0, daysSinceLastIncident: 0, avgResolutionDays: 0, severe: 0, resolved: 0, thisMonth: 0, bySeverity: { critical: 0, major: 0, minor: 0, nearMiss: 0 }, severity: { high: 0, medium: 0, low: 0 } };
@@ -694,7 +695,7 @@ export const safetyRouter = router({
       const resolved = stats?.resolved || 0;
       const open = total - resolved;
       return { ...fallback, total, totalReports: total, investigating: stats?.investigating || 0, closed: resolved, open, openReports: open, severe: stats?.critical || 0, resolved, bySeverity: { critical: stats?.critical || 0, major: stats?.major || 0, minor: stats?.minor || 0, nearMiss: 0 }, severity: { high: stats?.critical || 0, medium: stats?.major || 0, low: stats?.minor || 0 } };
-    } catch (e) { console.error('[Safety] getAccidentSummary error:', e); return fallback; }
+    } catch (e) { logger.error('[Safety] getAccidentSummary error:', e); return fallback; }
   }),
   submitAccidentReport: protectedProcedure.input(z.object({ driverId: z.string().optional(), date: z.string().optional(), description: z.string().optional(), severity: z.string().optional() }).optional()).mutation(async ({ ctx, input }) => {
     const db = await getDb(); if (!db) throw new Error('Database unavailable');
@@ -705,7 +706,7 @@ export const safetyRouter = router({
       // Auto-index safety report for AI semantic search (fire-and-forget)
       try { const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge"); indexComplianceRecord({ id: reportId, type: "accident_report", description: input?.description || "", status: "reported", severity: input?.severity || "minor" }); } catch {}
       return { success: true, reportId: String(reportId) };
-    } catch (e) { console.error('[Safety] submitAccidentReport error:', e); throw new Error('Failed to submit report'); }
+    } catch (e) { logger.error('[Safety] submitAccidentReport error:', e); throw new Error('Failed to submit report'); }
   }),
   updateReportStatus: protectedProcedure.input(z.object({ reportId: z.string(), status: z.string() })).mutation(async ({ input }) => {
     const db = await getDb(); if (!db) throw new Error('Database unavailable');

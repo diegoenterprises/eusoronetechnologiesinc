@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { trainingModules, userTraining, trainingRecords, users, drivers } from "../../drizzle/schema";
 
@@ -374,7 +375,7 @@ export const trainingRouter = router({
             metadata: { courseRegId: input.courseRegId, courseTitle: input.courseTitle, driverId: targetUserId },
           });
         } catch (e) {
-          console.error("[Training] Revenue recording error:", e);
+          logger.error("[Training] Revenue recording error:", e);
         }
 
         // Debit EusoWallet
@@ -395,7 +396,7 @@ export const trainingRouter = router({
             });
           }
         } catch (e) {
-          console.error("[Training] wallet debit error:", e);
+          logger.error("[Training] wallet debit error:", e);
         }
       }
 
@@ -491,7 +492,7 @@ export const trainingRouter = router({
           compliancePercent: gaps.length > 0 ? Math.round((compliantCount / gaps.length) * 100) : 100,
         };
       } catch (e) {
-        console.error("[Training] getComplianceGap error:", e);
+        logger.error("[Training] getComplianceGap error:", e);
         return { gaps: [], completedCount: 0, totalRequired: 0, compliancePercent: 0 };
       }
     }),
@@ -542,7 +543,7 @@ export const trainingRouter = router({
           topCourses,
         };
       } catch (e) {
-        console.error("[Training] getRevenueStats error:", e);
+        logger.error("[Training] getRevenueStats error:", e);
         return empty;
       }
     }),

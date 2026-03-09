@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { dispatchProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, users, companies, vehicles, drivers } from "../../drizzle/schema";
 
@@ -111,7 +112,7 @@ export const dispatchRoleRouter = router({
           return true;
         });
       } catch (error) {
-        console.error('[Dispatch] getMatchedLoads error:', error);
+        logger.error('[Dispatch] getMatchedLoads error:', error);
         return [];
       }
     }),
@@ -141,7 +142,7 @@ export const dispatchRoleRouter = router({
           acceptRate: total > 0 ? Math.round(((assignedLoads?.count || 0) / total) * 100) : 0,
         };
       } catch (error) {
-        console.error('[Dispatch] getMatchStats error:', error);
+        logger.error('[Dispatch] getMatchStats error:', error);
         return { totalMatches: 0, highScore: 0, mediumScore: 0, lowScore: 0, avgMatchScore: 0, matched: 0, highMatch: 0, avgRate: 0, acceptRate: 0 };
       }
     }),
@@ -192,7 +193,7 @@ export const dispatchRoleRouter = router({
           avgLoadTime: 0,
         };
       } catch (e) {
-        console.error('[Dispatch] getDashboardSummary error:', e);
+        logger.error('[Dispatch] getDashboardSummary error:', e);
         return { activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0, inTransit: 0, issues: 0, fleetUtilization: 0, avgLoadTime: 0 };
       }
     }),
@@ -233,7 +234,7 @@ export const dispatchRoleRouter = router({
           summary: { total: mapped.length, byStatus: { unassigned: unassigned?.count || 0, inTransit: inTransit?.count || 0, loading: loadingC?.count || 0, issue: 0 } },
         };
       } catch (e) {
-        console.error('[Dispatch] getDispatchBoard error:', e);
+        logger.error('[Dispatch] getDispatchBoard error:', e);
         return { loads: [], summary: { total: 0, byStatus: { unassigned: 0, inTransit: 0, loading: 0, issue: 0 } } };
       }
     }),
@@ -642,7 +643,7 @@ export const dispatchRoleRouter = router({
         const delivery = l.deliveryLocation as any;
         const route = [pickup?.city, pickup?.state, '→', delivery?.city, delivery?.state].filter(Boolean).join(' ') || 'N/A';
         const wasOnTime = l.actualDeliveryDate && l.deliveryDate ? l.actualDeliveryDate <= l.deliveryDate : true;
-        const rating = wasOnTime ? 4.5 + Math.random() * 0.5 : 3.5 + Math.random();
+        const rating = wasOnTime ? 4.8 : 3.8;
         return {
           id: String(l.id), loadNumber: l.loadNumber || `LD-${l.id}`,
           route, date: l.actualDeliveryDate?.toISOString().split('T')[0] || '',

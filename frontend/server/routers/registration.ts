@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
 import { router, auditedPublicProcedure, auditedProtectedProcedure, sensitiveData } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb, getPool } from "../db";
 import { users, companies, documents, userOperatingStates } from "../../drizzle/schema";
 import bcrypt from "bcryptjs";
@@ -90,7 +91,7 @@ async function storeRegistrationMetadata(db: any, userId: number, data: {
       try {
         await db.execute(sql`ALTER TABLE users ADD COLUMN metadata TEXT`);
         await db.update(users).set({ metadata: JSON.stringify(metadata) }).where(eq(users.id, userId));
-      } catch { console.warn("[Registration] Could not store metadata:", e); }
+      } catch { logger.warn("[Registration] Could not store metadata:", e); }
     }
   }
 
@@ -108,7 +109,7 @@ async function storeRegistrationMetadata(db: any, userId: number, data: {
       if (Object.keys(updates).length > 0) {
         await db.update(companies).set(updates).where(eq(companies.id, data.companyId));
       }
-    } catch (e) { console.warn("[Registration] Could not store insurance on company:", e); }
+    } catch (e) { logger.warn("[Registration] Could not store insurance on company:", e); }
   }
 }
 
@@ -141,7 +142,7 @@ async function seedUserOperatingStates(db: any, userId: number, homeState: strin
       } catch {}
     }
   } catch (e) {
-    console.warn("[Registration] Could not seed userOperatingStates:", e);
+    logger.warn("[Registration] Could not seed userOperatingStates:", e);
   }
 }
 
@@ -175,7 +176,7 @@ async function sendPostRegistrationNotifications(db: any, params: {
       verificationToken: verification.token,
     });
   } catch (e) {
-    console.error("[Registration] Failed to send notifications:", e);
+    logger.error("[Registration] Failed to send notifications:", e);
   }
 }
 
@@ -293,9 +294,9 @@ async function autoCreateProductProfiles(userId: number, companyId: number | nul
         ]
       );
     }
-    console.log(`[Registration] Auto-created ${products.length} product profiles for user ${userId}`);
+    logger.info(`[Registration] Auto-created ${products.length} product profiles for user ${userId}`);
   } catch (e: any) {
-    console.warn("[Registration] product_profiles auto-create skip:", e?.message?.slice(0, 120));
+    logger.warn("[Registration] product_profiles auto-create skip:", e?.message?.slice(0, 120));
   }
 }
 
@@ -1530,7 +1531,7 @@ export const registrationRouter = router({
 
       // In production: send email with verification link containing user.openId
       // For now: log the token for manual verification
-      console.log(`[Registration] Verification token for ${input.email}: ${user.openId}`);
+      logger.info(`[Registration] Verification token for ${input.email}: ${user.openId}`);
 
       return { success: true, message: "If an account exists, a verification email has been sent" };
     }),
@@ -1776,7 +1777,7 @@ export const registrationRouter = router({
           ].filter(Boolean),
         };
       } catch (error) {
-        console.error("[Registration] FMCSA prefill error:", error);
+        logger.error("[Registration] FMCSA prefill error:", error);
         return { found: false, error: "FMCSA lookup failed" };
       }
     }),
@@ -1982,14 +1983,14 @@ async function verifyUSDOT(usdotNumber: string): Promise<{
           };
         }
       } catch (bulkErr) {
-        console.warn("[Registration] Bulk data lookup failed, falling back to live API:", (bulkErr as any)?.message?.slice(0, 100));
+        logger.warn("[Registration] Bulk data lookup failed, falling back to live API:", (bulkErr as any)?.message?.slice(0, 100));
       }
     }
 
     // ── Step 2: Fall back to live FMCSA QCMobile API ──
     const webKey = process.env.FMCSA_WEB_KEY || process.env.FMCSA_WEBKEY;
     if (!webKey) {
-      console.warn("FMCSA_WEB_KEY not configured, skipping verification");
+      logger.warn("FMCSA_WEB_KEY not configured, skipping verification");
       return { verified: false, error: "FMCSA verification not configured" };
     }
 
@@ -2019,7 +2020,7 @@ async function verifyUSDOT(usdotNumber: string): Promise<{
       outOfService: catalyst.oosDate ? true : false,
     };
   } catch (error) {
-    console.error("FMCSA verification error:", error);
+    logger.error("FMCSA verification error:", error);
     return { verified: false, error: "Verification service unavailable" };
   }
 }

@@ -5,6 +5,7 @@
  * Refresh: Weekly (Monday)
  * Data: Texas crude oil production by district, permits, completions
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { sql } from "drizzle-orm";
 
@@ -66,5 +67,5 @@ export async function fetchTexasProduction(): Promise<void> {
     }
   }
 
-  console.log(`[TX-RRC] Updated ${Object.keys(districtProduction).length} district production records`);
+  logger.info(`[TX-RRC] Updated ${Object.keys(districtProduction).length} district production records`);
 }

@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { auditLogs, users } from "../../drizzle/schema";
 
@@ -42,7 +43,7 @@ export const activityRouter = router({
           metadata: log.changes || {},
         }));
       } catch (error) {
-        console.error('[Activity] getTimeline error:', error);
+        logger.error('[Activity] getTimeline error:', error);
         return [];
       }
     }),

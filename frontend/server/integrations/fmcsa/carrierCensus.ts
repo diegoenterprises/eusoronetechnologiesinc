@@ -5,6 +5,7 @@
  * Refresh: On-demand (lookup by DOT# or MC#)
  * Data: Full carrier profile, fleet size, authority status
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzCarrierSafety } from "../../../drizzle/schema";
 import { sql } from "drizzle-orm";
@@ -29,7 +30,7 @@ export interface CarrierProfile {
 export async function lookupCarrier(dotNumber: string): Promise<CarrierProfile | null> {
   const apiKey = process.env.FMCSA_WEBSERVICE_KEY;
   if (!apiKey) {
-    console.warn("[FMCSA-Census] No FMCSA_WEBSERVICE_KEY set");
+    logger.warn("[FMCSA-Census] No FMCSA_WEBSERVICE_KEY set");
     return null;
   }
 
@@ -59,7 +60,7 @@ export async function lookupCarrier(dotNumber: string): Promise<CarrierProfile |
       brokerAuthorityStatus: c.brokerAuthorityStatus || undefined,
     };
   } catch (e) {
-    console.error(`[FMCSA-Census] Failed to lookup DOT# ${dotNumber}:`, e);
+    logger.error(`[FMCSA-Census] Failed to lookup DOT# ${dotNumber}:`, e);
     return null;
   }
 }

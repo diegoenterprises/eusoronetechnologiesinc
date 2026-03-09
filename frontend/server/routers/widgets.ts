@@ -9,6 +9,7 @@
 
 import { z } from "zod";
 import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { dashboardWidgets, dashboardLayouts, widgetConfigurations } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -30,7 +31,7 @@ export const widgetsRouter = router({
       });
       return { items: filtered };
     } catch (e) {
-      console.error('[Widgets] getWidgetCatalog error:', e);
+      logger.error('[Widgets] getWidgetCatalog error:', e);
       return { items: [] };
     }
   }),
@@ -56,7 +57,7 @@ export const widgetsRouter = router({
         name: saved?.name || null,
       };
     } catch (e) {
-      console.error('[Widgets] getMyLayout error:', e);
+      logger.error('[Widgets] getMyLayout error:', e);
       return { layout: null, role };
     }
   }),
@@ -104,7 +105,7 @@ export const widgetsRouter = router({
         }
         return { success: true };
       } catch (e) {
-        console.error('[Widgets] saveLayout error:', e);
+        logger.error('[Widgets] saveLayout error:', e);
         return { success: false, error: String(e) };
       }
     }),
@@ -124,7 +125,7 @@ export const widgetsRouter = router({
           .where(and(eq(dashboardLayouts.userId, userId), eq(dashboardLayouts.role, role)));
         return { success: true };
       } catch (e) {
-        console.error('[Widgets] resetLayout error:', e);
+        logger.error('[Widgets] resetLayout error:', e);
         return { success: false };
       }
     }),
@@ -151,7 +152,7 @@ export const widgetsRouter = router({
           .where(eq(widgetConfigurations.userId, userId));
         return { configs };
       } catch (e) {
-        console.error('[Widgets] getWidgetConfig error:', e);
+        logger.error('[Widgets] getWidgetConfig error:', e);
         return { configs: [] };
       }
     }),
@@ -195,7 +196,7 @@ export const widgetsRouter = router({
         }
         return { success: true };
       } catch (e) {
-        console.error('[Widgets] saveWidgetConfig error:', e);
+        logger.error('[Widgets] saveWidgetConfig error:', e);
         return { success: false };
       }
     }),

@@ -8,6 +8,7 @@
  * TPIMS is a FHWA-funded system deployed in 8+ states along I-corridors.
  * Each state provides its own API endpoint.
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { sql } from "drizzle-orm";
 
@@ -62,9 +63,9 @@ export async function fetchTruckParking(): Promise<void> {
 
       await new Promise((r) => setTimeout(r, 300));
     } catch (e) {
-      console.error(`[TPIMS] Failed for ${endpoint.state}:`, e);
+      logger.error(`[TPIMS] Failed for ${endpoint.state}:`, e);
     }
   }
 
-  console.log(`[TPIMS] Updated ${totalSites} truck parking sites`);
+  logger.info(`[TPIMS] Updated ${totalSites} truck parking sites`);
 }

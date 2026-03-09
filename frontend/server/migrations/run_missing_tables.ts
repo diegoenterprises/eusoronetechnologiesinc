@@ -2,14 +2,15 @@
  * Create all 19 missing tables in production DB
  * Usage: DATABASE_URL=<url> npx tsx server/migrations/run_missing_tables.ts
  */
+import { logger } from "../_core/logger";
 import mysql2 from "mysql2/promise";
 
 async function run() {
   const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) { console.error("DATABASE_URL required"); process.exit(1); }
+  if (!dbUrl) { logger.error("DATABASE_URL required"); process.exit(1); }
 
   const conn = await mysql2.createConnection(dbUrl);
-  console.log("Connected to database\n");
+  logger.info("Connected to database\n");
 
   const tables: [string, string][] = [
     ["catalyst_risk_scores", `CREATE TABLE IF NOT EXISTS catalyst_risk_scores (
@@ -505,24 +506,24 @@ async function run() {
   for (const [name, sql] of tables) {
     try {
       await conn.query(sql);
-      console.log(`  [CREATE] ${name}`);
+      logger.info(`  [CREATE] ${name}`);
       ok++;
     } catch (e: any) {
       if (e.code === "ER_TABLE_EXISTS_ERROR") {
-        console.log(`  [EXISTS] ${name}`);
+        logger.info(`  [EXISTS] ${name}`);
         skip++;
       } else {
-        console.error(`  [ERROR]  ${name}: ${e.message?.slice(0, 200)}`);
+        logger.error(`  [ERROR]  ${name}: ${e.message?.slice(0, 200)}`);
         err++;
       }
     }
   }
 
   await conn.end();
-  console.log(`\nDone: ${ok} created, ${skip} existed, ${err} errors`);
+  logger.info(`\nDone: ${ok} created, ${skip} existed, ${err} errors`);
 }
 
 run().catch((e) => {
-  console.error("Migration failed:", e);
+  logger.error("Migration failed:", e);
   process.exit(1);
 });

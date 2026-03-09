@@ -7,9 +7,11 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, bids, users, companies, terminals, loadStops } from "../../drizzle/schema";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import {
   emitLoadStatusChange,
   emitBidReceived,
@@ -40,7 +42,7 @@ async function resolveUserId(ctxUser: any): Promise<number> {
       const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
       if (row) return row.id;
     } catch (err) {
-      console.warn("[resolveUserId] email lookup failed:", err);
+      logger.warn("[resolveUserId] email lookup failed:", err);
     }
   }
 
@@ -60,7 +62,7 @@ async function resolveUserId(ctxUser: any): Promise<number> {
       const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
       if (insertedId) return insertedId;
     } catch (insertErr: any) {
-      console.warn("[resolveUserId] insert with openId failed, retrying without:", insertErr?.message);
+      logger.warn("[resolveUserId] insert with openId failed, retrying without:", insertErr?.message);
       delete insertData.openId;
       const result = await db.insert(users).values(insertData as any);
       const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
@@ -73,7 +75,7 @@ async function resolveUserId(ctxUser: any): Promise<number> {
     }
     return 0;
   } catch (err: any) {
-    console.error("[resolveUserId] Insert failed:", err);
+    logger.error("[resolveUserId] Insert failed:", err);
     if (email) {
       try {
         const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
@@ -163,7 +165,7 @@ export const loadsRouter = router({
       // If a duplicate key collision occurs, retry with a new number (up to 3 times)
       const generateLoadNumber = () => {
         const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-        const rand = Math.random().toString(36).substring(2, 10).toUpperCase();
+        const rand = randomBytes(5).toString('hex').toUpperCase();
         return `LD-${dateStr}-${rand}`;
       };
       let loadNumber = generateLoadNumber();
@@ -309,7 +311,7 @@ export const loadsRouter = router({
             },
           ] as any);
         } catch (stopErr) {
-          console.warn('[Loads] Failed to auto-create load stops:', stopErr);
+          logger.warn('[Loads] Failed to auto-create load stops:', stopErr);
         }
       }
 
@@ -322,7 +324,7 @@ export const loadsRouter = router({
             updatedAt: new Date(),
           } as any).where(eq(loads.id, insertedId));
         } catch (e) {
-          console.error('[Loads] Auto-assign catalyst error:', e);
+          logger.error('[Loads] Auto-assign catalyst error:', e);
         }
       }
 
@@ -370,7 +372,7 @@ export const loadsRouter = router({
               }
             }
           } catch (err) {
-            console.error("[Loads] Terminal notification error:", err);
+            logger.error("[Loads] Terminal notification error:", err);
           }
         })();
       }
@@ -503,7 +505,7 @@ export const loadsRouter = router({
 
         return result;
       } catch (error) {
-        console.error('[Loads] getTrackedLoads error:', error);
+        logger.error('[Loads] getTrackedLoads error:', error);
         return [];
       }
     }),
@@ -537,7 +539,7 @@ export const loadsRouter = router({
           totalSpend: totalSpend?.sum || 0,
         };
       } catch (error) {
-        console.error('[Loads] getShipperSummary error:', error);
+        logger.error('[Loads] getShipperSummary error:', error);
         return { totalLoads: 0, activeLoads: 0, inTransit: 0, delivered: 0, pendingBids: 0, pending: 0, totalSpend: 0 };
       }
     }),
@@ -605,7 +607,7 @@ export const loadsRouter = router({
           history: history.reverse(),
         };
       } catch (error) {
-        console.error('[Loads] trackLoad error:', error);
+        logger.error('[Loads] trackLoad error:', error);
         return null;
       }
     }),
@@ -643,10 +645,10 @@ export const loadsRouter = router({
       // Otherwise scope by user role so each user only sees THEIR loads
       if (!input.marketplace) {
         const role = await resolveUserRole(ctx.user);
-        console.log(`[loads.list] user=${ctx.user?.email} role=${role} id=${(ctx.user as any)?.id}`);
+        logger.info(`[loads.list] user=${ctx.user?.email} role=${role} id=${(ctx.user as any)?.id}`);
         if (isAdminRole(role)) {
           // Admins see all — no filter needed, skip resolveUserId entirely
-          console.log(`[loads.list] Admin bypass — no user scoping applied`);
+          logger.info(`[loads.list] Admin bypass — no user scoping applied`);
         } else {
           const dbUserId = await resolveUserId(ctx.user);
           if (role === 'CATALYST' || role === 'DISPATCH') {
@@ -678,7 +680,7 @@ export const loadsRouter = router({
         )`);
       }
 
-      console.log(`[loads.list] filters=${filters.length} date=${input.date || 'none'} marketplace=${!!input.marketplace}`);
+      logger.info(`[loads.list] filters=${filters.length} date=${input.date || 'none'} marketplace=${!!input.marketplace}`);
 
       const results = await db
         .select()
@@ -688,7 +690,7 @@ export const loadsRouter = router({
         .limit(input.limit)
         .offset(input.offset);
 
-      console.log(`[loads.list] Returned ${results.length} rows`);
+      logger.info(`[loads.list] Returned ${results.length} rows`);
 
       // Batch-fetch shipper, catalyst, driver profiles and company logos
       const shipperIds = Array.from(new Set(results.map((r: any) => r.shipperId).filter(Boolean)));
@@ -719,7 +721,7 @@ export const loadsRouter = router({
             }
           }
         } catch (err) {
-          console.warn("[loads.list] Failed to fetch user/company profiles:", err);
+          logger.warn("[loads.list] Failed to fetch user/company profiles:", err);
         }
       }
 
@@ -907,7 +909,7 @@ export const loadsRouter = router({
       const dbUserId = await resolveUserId(ctx.user);
 
       // Generate unique load number
-      const loadNumber = `LOAD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      const loadNumber = `LOAD-${Date.now()}-${randomBytes(5).toString('hex').toUpperCase()}`;
 
       const result = await db.insert(loads).values({
         shipperId: dbUserId,
@@ -1540,7 +1542,7 @@ export const loadsRouter = router({
               nlpDest = nlp.parsed.destination?.toLowerCase();
               nlpEquipment = nlp.parsed.equipment;
               nlpMaxRate = nlp.parsed.max_rate;
-              console.log(`[Loads] NLP parsed: origin=${nlpOrigin}, dest=${nlpDest}, equip=${nlpEquipment}, maxRate=${nlpMaxRate}`);
+              logger.info(`[Loads] NLP parsed: origin=${nlpOrigin}, dest=${nlpDest}, equip=${nlpEquipment}, maxRate=${nlpMaxRate}`);
             }
           } catch { /* AI sidecar unavailable — fall back to text search */ }
 
@@ -1670,7 +1672,7 @@ export const loadsRouter = router({
       expiresInHours: z.number().default(72),
     }))
     .mutation(async ({ input }) => {
-      const shareToken = `share_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      const shareToken = `share_${Date.now().toString(36)}_${randomBytes(4).toString('hex')}`;
       const shareUrl = `https://eusotrip.com/loads/shared/${shareToken}`;
       return { success: true, shareUrl, shareToken, expiresAt: new Date(Date.now() + input.expiresInHours * 3600000).toISOString() };
     }),
@@ -1905,7 +1907,7 @@ export const bidsRouter = router({
                 </div>
               `,
               text: `New bid of $${input.amount.toLocaleString()} received on load ${load.loadNumber}`,
-            }).catch(err => console.warn("[loads.submitBid] Email failed:", err));
+            }).catch(err => logger.warn("[loads.submitBid] Email failed:", err));
           }
         } catch {}
       }
@@ -2229,7 +2231,7 @@ export const bidsRouter = router({
         };
       }));
       return results;
-    } catch (e) { console.error('[Bids] getRecentAnalysis error:', e); return []; }
+    } catch (e) { logger.error('[Bids] getRecentAnalysis error:', e); return []; }
   }),
   submit: protectedProcedure
     .input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional(), driverId: z.string().optional(), vehicleId: z.string().optional(), estimatedPickup: z.string().optional(), estimatedDelivery: z.string().optional() }))
@@ -2477,11 +2479,11 @@ export const bidsRouter = router({
           });
           if (feeResult.finalFee > 0) {
             await feeCalculator.recordFeeCollection(loadIdNum, 'load_completion', load.shipperId || userId, loadRate, feeResult);
-            console.log(`[Loads] Completion fee: $${feeResult.finalFee.toFixed(2)} for load ${load.loadNumber}`);
+            logger.info(`[Loads] Completion fee: $${feeResult.finalFee.toFixed(2)} for load ${load.loadNumber}`);
           }
         }
       } catch (feeErr) {
-        console.warn('[Loads] Load completion fee error:', (feeErr as Error).message);
+        logger.warn('[Loads] Load completion fee error:', (feeErr as Error).message);
       }
     }
     return { success: true, loadId: input.loadId, status: input.status };
@@ -2543,7 +2545,7 @@ export const bidsRouter = router({
           };
         });
       } catch (error) {
-        console.error('[Loads] getMarketplaceLoads error:', error);
+        logger.error('[Loads] getMarketplaceLoads error:', error);
         return [];
       }
     }),
@@ -2733,7 +2735,7 @@ export const bidsRouter = router({
 
         return { success: true };
       } catch (error) {
-        console.error('[Loads] placeBid error:', error);
+        logger.error('[Loads] placeBid error:', error);
         throw new Error("Failed to place bid");
       }
     }),
@@ -2958,7 +2960,7 @@ export const bidsRouter = router({
 
         return { format: "json", rowCount: exportRows.length, data: exportRows, exportedAt: new Date().toISOString() };
       } catch (error) {
-        console.error("[Loads] exportHistory error:", error);
+        logger.error("[Loads] exportHistory error:", error);
         throw new Error("Failed to export load history");
       }
     }),

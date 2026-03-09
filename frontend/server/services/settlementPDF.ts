@@ -6,6 +6,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import { sql } from "drizzle-orm";
 import { eq } from "drizzle-orm";
 import { payments, users } from "../../drizzle/schema";
@@ -21,7 +22,7 @@ async function archiveToBlobStorage(localFilePath: string, blobName: string): Pr
   const containerName = process.env.SETTLEMENT_BLOB_CONTAINER || "settlements";
 
   if (!connectionString) {
-    console.warn("[SettlementPDF] Azure Blob Storage not configured — file stays local only");
+    logger.warn("[SettlementPDF] Azure Blob Storage not configured — file stays local only");
     return null;
   }
 
@@ -64,15 +65,15 @@ async function archiveToBlobStorage(localFilePath: string, blobName: string): Pr
         expiresOn: sasExpiry,
       }, sharedKeyCredential).toString();
       const sasUrl = `${blockBlobClient.url}?${sasToken}`;
-      console.log(`[SettlementPDF] Archived to Azure Blob: ${blockBlobClient.name}`);
+      logger.info(`[SettlementPDF] Archived to Azure Blob: ${blockBlobClient.name}`);
       return sasUrl;
     }
 
     // Fallback: return blob URL without SAS (requires public access or managed identity)
-    console.log(`[SettlementPDF] Archived to Azure Blob (no SAS): ${blockBlobClient.name}`);
+    logger.info(`[SettlementPDF] Archived to Azure Blob (no SAS): ${blockBlobClient.name}`);
     return blockBlobClient.url;
   } catch (err: any) {
-    console.warn("[SettlementPDF] Azure Blob upload failed (file stays local):", err?.message?.slice(0, 120));
+    logger.warn("[SettlementPDF] Azure Blob upload failed (file stays local):", err?.message?.slice(0, 120));
     return null;
   }
 }
@@ -226,7 +227,7 @@ export async function generateSettlementPDF(data: SettlementData): Promise<strin
       stream.on("error", reject);
     });
 
-    console.log(`[SettlementPDF] Generated locally: ${filePath}`);
+    logger.info(`[SettlementPDF] Generated locally: ${filePath}`);
 
     // Archive to Azure Blob Storage for long-term persistence
     const blobUrl = await archiveToBlobStorage(filePath, filename);
@@ -236,7 +237,7 @@ export async function generateSettlementPDF(data: SettlementData): Promise<strin
 
   } catch (err: any) {
     // If pdfkit not available, generate a text-based receipt as fallback
-    console.warn("[SettlementPDF] pdfkit not available, using text fallback:", err?.message?.slice(0, 80));
+    logger.warn("[SettlementPDF] pdfkit not available, using text fallback:", err?.message?.slice(0, 80));
 
     const textContent = [
       "═══════════════════════════════════════════",
@@ -271,7 +272,7 @@ export async function generateSettlementPDF(data: SettlementData): Promise<strin
     const txtFilename = `settlement_${data.settlementId}_${Date.now()}.txt`;
     const txtPath = path.join(outputDir, txtFilename);
     fs.writeFileSync(txtPath, textContent, "utf-8");
-    console.log(`[SettlementPDF] Text fallback generated: ${txtPath}`);
+    logger.info(`[SettlementPDF] Text fallback generated: ${txtPath}`);
     return `/settlements/${txtFilename}`;
   }
 }
@@ -328,7 +329,7 @@ export async function generateAndStoreSettlementPDF(settlementId: number): Promi
 
     return documentUrl;
   } catch (err: any) {
-    console.error("[SettlementPDF] Generate+Store error:", err?.message?.slice(0, 200));
+    logger.error("[SettlementPDF] Generate+Store error:", err?.message?.slice(0, 200));
     return null;
   }
 }

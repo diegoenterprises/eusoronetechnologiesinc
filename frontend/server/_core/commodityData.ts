@@ -1,3 +1,4 @@
+import { logger } from "./logger";
 /**
  * COMMODITY DATA SERVICE — Real-time market data from FRED & EIA APIs
  *
@@ -12,6 +13,7 @@
  * Caching: 1-hour TTL to avoid rate limits and keep latency low.
  * Fallback: If APIs fail, use last known values or static defaults.
  */
+
 
 const FRED_API_KEY = process.env.FRED_API_KEY || "";
 const EIA_API_KEY = process.env.EIA_API_KEY || "";
@@ -48,7 +50,7 @@ async function fetchFRED(seriesId: string): Promise<number | null> {
     const url = `${FRED_BASE}?series_id=${seriesId}&api_key=${FRED_API_KEY}&file_type=json&sort_order=desc&limit=5`;
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) {
-      console.warn(`[CommodityData] FRED ${seriesId} HTTP ${res.status}`);
+      logger.warn(`[CommodityData] FRED ${seriesId} HTTP ${res.status}`);
       return null;
     }
     const data = await res.json();
@@ -64,7 +66,7 @@ async function fetchFRED(seriesId: string): Promise<number | null> {
     }
     return null;
   } catch (err: any) {
-    console.warn(`[CommodityData] FRED ${seriesId} error:`, err?.message?.slice(0, 100));
+    logger.warn(`[CommodityData] FRED ${seriesId} error:`, err?.message?.slice(0, 100));
     return null;
   }
 }
@@ -78,7 +80,7 @@ async function fetchEIA(route: string, params: Record<string, string> = {}): Pro
     const url = `${EIA_BASE}/${route}?${queryParts.join("&")}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) {
-      console.warn(`[CommodityData] EIA ${route} HTTP ${res.status}`);
+      logger.warn(`[CommodityData] EIA ${route} HTTP ${res.status}`);
       return null;
     }
     const data = await res.json();
@@ -89,7 +91,7 @@ async function fetchEIA(route: string, params: Record<string, string> = {}): Pro
     const val = parseFloat(rows[0]?.value);
     return isNaN(val) ? null : val;
   } catch (err: any) {
-    console.warn(`[CommodityData] EIA ${route} error:`, err?.message?.slice(0, 100));
+    logger.warn(`[CommodityData] EIA ${route} error:`, err?.message?.slice(0, 100));
     return null;
   }
 }

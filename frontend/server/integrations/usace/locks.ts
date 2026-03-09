@@ -4,6 +4,7 @@
  * Auth: None
  * Refresh: Every 30 minutes
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzLockStatus } from "../../../drizzle/schema";
 import { XMLParser } from "fast-xml-parser";
@@ -74,7 +75,7 @@ export async function fetchLockStatus(): Promise<void> {
           },
         });
     } catch (err) {
-      console.error(`[USACE] Failed to fetch lock ${lockId}:`, err);
+      logger.error(`[USACE] Failed to fetch lock ${lockId}:`, err);
     }
   }
 }

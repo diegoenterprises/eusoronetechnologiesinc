@@ -9,7 +9,10 @@
  * - Haversine formula: Accurate distance calculation
  */
 
+import { logger } from "../_core/logger";
+
 // ── Haversine Distance (miles) ──────────────────────────────────────────
+
 export function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 3958.8; // Earth radius in miles
   const toRad = (deg: number) => deg * Math.PI / 180;
@@ -190,7 +193,7 @@ const FALLBACK_HISTORY: { date: string; price: number }[] = (() => {
   for (let i = 29; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const variance = Math.sin(i * 0.3) * 0.08 + (Math.random() - 0.5) * 0.03;
+    const variance = Math.sin(i * 0.3) * 0.08;
     days.push({
       date: d.toISOString().slice(0, 10),
       price: parseFloat((base + variance).toFixed(3)),
@@ -207,7 +210,7 @@ async function fetchEIAData(): Promise<EIACache> {
 
   const apiKey = process.env.EIA_API_KEY;
   if (!apiKey) {
-    console.log("[FuelPrice] No EIA_API_KEY set — using fallback prices");
+    logger.info("[FuelPrice] No EIA_API_KEY set — using fallback prices");
     return buildFallbackCache();
   }
 
@@ -289,10 +292,10 @@ async function fetchEIAData(): Promise<EIACache> {
       updatedAt: Date.now(),
     };
 
-    console.log(`[FuelPrice] EIA data refreshed: national=$${national.toFixed(3)}`);
+    logger.info(`[FuelPrice] EIA data refreshed: national=$${national.toFixed(3)}`);
     return eiaCache;
   } catch (err) {
-    console.error("[FuelPrice] EIA API error, using fallback:", err);
+    logger.error("[FuelPrice] EIA API error, using fallback:", err);
     return buildFallbackCache();
   }
 }

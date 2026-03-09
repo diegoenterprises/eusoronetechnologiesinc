@@ -14,6 +14,7 @@
  *   STAFF  — access codes (already wired in terminals router)
  */
 
+import { logger } from "../_core/logger";
 import { emailService } from "../_core/email";
 import { sendSms } from "./eusosms";
 
@@ -22,7 +23,7 @@ const LOGO_URL = `${APP_URL}/eusotrip-logo.png`;
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 function safe(fn: () => Promise<any>) {
-  return fn().catch((e: any) => console.error("[Notifications]", e?.message || e));
+  return fn().catch((e: any) => logger.error("[Notifications]", e?.message || e));
 }
 
 /**
@@ -1053,7 +1054,7 @@ async function persistNotification(userId: number, event: NotifyEvent): Promise<
       isRead: false,
     });
   } catch (e) {
-    console.error("[persistNotification]", e);
+    logger.error("[persistNotification]", e);
   }
 }
 
@@ -1176,7 +1177,7 @@ export function lookupAndNotify(userId: number, event: NotifyEvent): void {
       case "insurance_compliant":
         return notifyInsuranceCompliant({ ...base, companyName: event.companyName });
     }
-  }).catch(e => console.error("[lookupAndNotify]", e));
+  }).catch(e => logger.error("[lookupAndNotify]", e));
 }
 
 // ─── Insurance Compliance Notifications ──────────────────────────────

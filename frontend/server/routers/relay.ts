@@ -13,6 +13,7 @@
 import { z } from "zod";
 import { eq, and, asc, desc, sql, count } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loadRelayLegs, loads, users } from "../../drizzle/schema";
 
@@ -106,7 +107,7 @@ export const relayRouter = router({
           destLng: r.destLng ? parseFloat(r.destLng) : null,
         }));
       } catch (error) {
-        console.error("[Relay] getLegs error:", error);
+        logger.error("[Relay] getLegs error:", error);
         return [];
       }
     }),
@@ -162,7 +163,7 @@ export const relayRouter = router({
         insertedIds.push(result.id);
       }
 
-      console.log(`[Relay] Created ${input.legs.length}-leg relay plan for load ${load.loadNumber}`);
+      logger.info(`[Relay] Created ${input.legs.length}-leg relay plan for load ${load.loadNumber}`);
       return { success: true, loadId: input.loadId, legCount: input.legs.length, legIds: insertedIds };
     }),
 
@@ -328,7 +329,7 @@ export const relayRouter = router({
           legRate: r.legRate ? parseFloat(r.legRate) : null,
         }));
       } catch (error) {
-        console.error("[Relay] getMyLegs error:", error);
+        logger.error("[Relay] getMyLegs error:", error);
         return [];
       }
     }),
@@ -373,7 +374,7 @@ export const relayRouter = router({
           totalRevenue: Math.round(totalRevenue * 100) / 100,
         };
       } catch (error) {
-        console.error("[Relay] getStats error:", error);
+        logger.error("[Relay] getStats error:", error);
         return empty;
       }
     }),

@@ -3,6 +3,7 @@
  * Factory for creating provider-specific integration services
  */
 
+import { logger } from "../../_core/logger";
 import { BaseIntegrationService } from "./BaseIntegrationService";
 import { CanopyConnectService } from "./CanopyConnectService";
 import { ISNetworldService } from "./ISNetworldService";
@@ -36,7 +37,7 @@ const serviceRegistry: Record<string, new () => BaseIntegrationService> = {
 export function getIntegrationService(providerSlug: string): BaseIntegrationService | null {
   const ServiceClass = serviceRegistry[providerSlug];
   if (!ServiceClass) {
-    console.warn(`[Integrations] No service implementation for provider: ${providerSlug}`);
+    logger.warn(`[Integrations] No service implementation for provider: ${providerSlug}`);
     return null;
   }
   return new ServiceClass();

@@ -15,6 +15,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gt, lt } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   locationBreadcrumbs, geotags, loadRoutes, detentionRecords, stateCrossings,
@@ -92,7 +93,7 @@ const telemetrySubRouter = router({
           })),
         });
       } catch (wsErr) {
-        console.warn("[Location] GPS tracking event emit failed:", (wsErr as any)?.message);
+        logger.warn("[Location] GPS tracking event emit failed:", (wsErr as any)?.message);
       }
 
       return result;

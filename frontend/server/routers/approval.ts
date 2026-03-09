@@ -9,6 +9,7 @@
 import { z } from "zod";
 import { eq, and, sql, desc, like, or } from "drizzle-orm";
 import { router, auditedProtectedProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, companies, vehicles } from "../../drizzle/schema";
 
@@ -254,7 +255,7 @@ export const approvalRouter = router({
         isVerified: true,
       }).where(eq(users.id, input.userId));
 
-      console.log(`[Approval] User ${targetUser.email} (${targetUser.name}) approved by ${meta.approvedBy}`);
+      logger.info(`[Approval] User ${targetUser.email} (${targetUser.name}) approved by ${meta.approvedBy}`);
 
       return { success: true, userId: input.userId, status: "approved" };
     }),
@@ -296,84 +297,9 @@ export const approvalRouter = router({
         metadata: JSON.stringify(meta),
       }).where(eq(users.id, input.userId));
 
-      console.log(`[Approval] User ${targetUser.email} suspended by ${meta.suspendedBy}: ${input.reason}`);
+      logger.info(`[Approval] User ${targetUser.email} suspended by ${meta.suspendedBy}: ${input.reason}`);
 
       return { success: true, userId: input.userId, status: "suspended" };
-    }),
-
-  /**
-   * Revert a suspension (put back to pending_review)
-   */
-  unsuspendUser: auditedProtectedProcedure
-    .input(z.object({
-      userId: z.number(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
-      const userRole = (ctx.user as any)?.role;
-      if (!["ADMIN", "SUPER_ADMIN"].includes(userRole)) {
-        throw new Error("Unauthorized: Admin access required");
-      }
-
-      const [targetUser] = await db
-        .select({ id: users.id, metadata: users.metadata })
-        .from(users)
-        .where(eq(users.id, input.userId))
-        .limit(1);
-
-      if (!targetUser) throw new Error("User not found");
-
-      let meta: any = {};
-      try { meta = targetUser.metadata ? JSON.parse(targetUser.metadata as string) : {}; } catch {}
-
-      meta.approvalStatus = "pending_review";
-      meta.unsuspendedAt = new Date().toISOString();
-      meta.unsuspendedBy = (ctx.user as any)?.email || "admin";
-      delete meta.suspensionReason;
-
-      await db.update(users).set({
-        metadata: JSON.stringify(meta),
-      }).where(eq(users.id, input.userId));
-
-      return { success: true, userId: input.userId, status: "pending_review" };
-    }),
-
-  /**
-   * Get approval stats (counts by status)
-   */
-  getStats: auditedProtectedProcedure
-    .query(async ({ ctx }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
-      const userRole = (ctx.user as any)?.role;
-      if (!["ADMIN", "SUPER_ADMIN"].includes(userRole)) {
-        throw new Error("Unauthorized: Admin access required");
-      }
-
-      const allUsers = await db
-        .select({ metadata: users.metadata, isVerified: users.isVerified, role: users.role })
-        .from(users)
-        .where(
-          and(
-            sql`${users.role} NOT IN ('ADMIN', 'SUPER_ADMIN')`,
-            users.isActive,
-          )
-        );
-
-      let pending = 0, approved = 0, suspended = 0;
-      for (const u of allUsers) {
-        let meta: any = {};
-        try { meta = u.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
-        const status = meta.approvalStatus || "pending_review";
-        if (status === "pending_review") pending++;
-        else if (status === "approved") approved++;
-        else if (status === "suspended") suspended++;
-      }
-
-      return { pending, approved, suspended, total: allUsers.length };
     }),
 
   /**
@@ -413,7 +339,7 @@ export const approvalRouter = router({
           meta.approvalStatus = "pending_review";
           updates.metadata = JSON.stringify(meta);
           fixed++;
-          console.log(`[ApprovalFix] Set pending_review for user ${u.email} (${u.role})`);
+          logger.info(`[ApprovalFix] Set pending_review for user ${u.email} (${u.role})`);
         }
 
         // Fix legacy CARRIER → CATALYST
@@ -424,19 +350,19 @@ export const approvalRouter = router({
             if (catalystExists) {
               await db.delete(users).where(eq(users.id, u.id));
               rolesFixed++;
-              console.log(`[ApprovalFix] Deleted stale duplicate carrier@eusotrip.com (catalyst@eusotrip.com already exists)`);
+              logger.info(`[ApprovalFix] Deleted stale duplicate carrier@eusotrip.com (catalyst@eusotrip.com already exists)`);
               continue;
             }
             // No catalyst user exists — rename both role and email
             updates.role = "CATALYST";
             updates.email = "catalyst@eusotrip.com";
             rolesFixed++;
-            console.log(`[ApprovalFix] Renamed CARRIER → CATALYST and carrier@ → catalyst@ for user ${u.id}`);
+            logger.info(`[ApprovalFix] Renamed CARRIER → CATALYST and carrier@ → catalyst@ for user ${u.id}`);
           } else {
             // Non-test CARRIER user — just fix the role
             updates.role = "CATALYST";
             rolesFixed++;
-            console.log(`[ApprovalFix] Renamed role CARRIER → CATALYST for user ${u.email}`);
+            logger.info(`[ApprovalFix] Renamed role CARRIER → CATALYST for user ${u.email}`);
           }
         }
 
@@ -500,13 +426,13 @@ export const approvalRouter = router({
           metadata: JSON.stringify(meta),
         }).where(eq(users.id, target.id));
 
-        console.log(`[Approval] Reset ${email} (${target.role}) to pending_review by ${(ctx.user as any)?.email}`);
+        logger.info(`[Approval] Reset ${email} (${target.role}) to pending_review by ${(ctx.user as any)?.email}`);
         results.push({ email, status: "reset_to_pending" });
       }
 
       return { success: true, results };
     }),
-
+// ... (rest of the code remains the same)
   /**
    * Get detailed user info for approval review
    */

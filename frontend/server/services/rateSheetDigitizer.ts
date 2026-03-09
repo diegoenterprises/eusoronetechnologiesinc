@@ -17,6 +17,7 @@
  *           ready to save as a platform rate sheet with zero transformation.
  */
 
+import { logger } from "../_core/logger";
 import { parse as csvParse } from "csv-parse/sync";
 import * as XLSX from "xlsx";
 import { esangAI } from "../_core/esangAI";
@@ -504,7 +505,7 @@ async function parsePDF(buffer: Buffer): Promise<DigitizeResult> {
         const textSurcharges = extractSurchargesFromText(sidecarResult.raw_text || "");
         const sidecarSurcharges = { ...textSurcharges, ...sidecarResult.surcharges };
         warnings.push("Digitized by Docling AI (open-source) — review tiers for accuracy");
-        console.log(`[RateSheetDigitizer] Docling extracted ${rateTiers.length} tiers`);
+        logger.info(`[RateSheetDigitizer] Docling extracted ${rateTiers.length} tiers`);
         return {
           rateTiers,
           surcharges: mergeSurcharges(sidecarSurcharges),
@@ -532,7 +533,7 @@ async function parsePDF(buffer: Buffer): Promise<DigitizeResult> {
 
   const prompt = buildDigitizePrompt(textContent);
 
-  console.log(`[RateSheetDigitizer] PDF text extracted: ${textContent.length} chars, sending to ESANG AI`);
+  logger.info(`[RateSheetDigitizer] PDF text extracted: ${textContent.length} chars, sending to ESANG AI`);
 
   try {
     const response = await esangAI.chat("system-digitizer", prompt, { role: "SYSTEM" });
@@ -549,7 +550,7 @@ async function parsePDF(buffer: Buffer): Promise<DigitizeResult> {
     }
 
     if (!jsonStr) {
-      console.error("[RateSheetDigitizer] AI response (no JSON):", responseText.slice(0, 500));
+      logger.error("[RateSheetDigitizer] AI response (no JSON):", responseText.slice(0, 500));
       throw new Error("ESANG AI did not return valid JSON — the PDF may be image-based or encrypted");
     }
 
@@ -615,7 +616,7 @@ async function parsePDF(buffer: Buffer): Promise<DigitizeResult> {
     const validUnits = ["per_barrel", "per_mile", "per_cwt", "flat_rate", "per_ton", "per_gallon", "per_pallet"];
     const finalRateUnit = validUnits.includes(rateUnit) ? rateUnit : "per_barrel";
 
-    console.log(`[RateSheetDigitizer] ESANG AI extracted ${rateTiers.length} tiers, product=${parsed.productType}, region=${parsed.region}`);
+    logger.info(`[RateSheetDigitizer] ESANG AI extracted ${rateTiers.length} tiers, product=${parsed.productType}, region=${parsed.region}`);
 
     warnings.push("Digitized by ESANG AI — review tiers and surcharges for accuracy");
 
@@ -633,7 +634,7 @@ async function parsePDF(buffer: Buffer): Promise<DigitizeResult> {
       source: "pdf",
     };
   } catch (e: any) {
-    console.error("[RateSheetDigitizer] PDF extraction error:", e.message);
+    logger.error("[RateSheetDigitizer] PDF extraction error:", e.message);
     if (e.message.includes("ESANG AI") || e.message.includes("AI")) throw e;
     throw new Error(`PDF extraction failed: ${e.message}`);
   }
@@ -710,7 +711,7 @@ function extractTextFromPDFBuffer(buffer: Buffer): string {
   });
 
   const text = unique.join(" ").slice(0, 12000);
-  console.log(`[RateSheetDigitizer] PDF text extraction: ${unique.length} chunks, ${text.length} chars`);
+  logger.info(`[RateSheetDigitizer] PDF text extraction: ${unique.length} chunks, ${text.length} chars`);
   return text || "";
 }
 

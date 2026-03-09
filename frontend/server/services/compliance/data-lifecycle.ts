@@ -12,6 +12,7 @@
  */
 
 import { sql } from "drizzle-orm";
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { recordAuditEvent, AuditAction, AuditCategory } from "../../_core/auditService";
 
@@ -150,7 +151,7 @@ export async function scheduleAccountDeletion(
             WHERE id = ${userId}`
       );
     } catch (err) {
-      console.error("[DataLifecycle] Failed to schedule deletion:", err);
+      logger.error("[DataLifecycle] Failed to schedule deletion:", err);
       return { success: false, deletionDate };
     }
   }
@@ -243,11 +244,11 @@ export async function executeScheduledDeletions(): Promise<number> {
 
         deletedCount++;
       } catch (err) {
-        console.error(`[DataLifecycle] Failed to delete user ${uid}:`, err);
+        logger.error(`[DataLifecycle] Failed to delete user ${uid}:`, err);
       }
     }
   } catch (err) {
-    console.error("[DataLifecycle] Scheduled deletion query failed:", err);
+    logger.error("[DataLifecycle] Scheduled deletion query failed:", err);
   }
 
   return deletedCount;

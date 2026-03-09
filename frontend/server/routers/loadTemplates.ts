@@ -5,7 +5,9 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, like } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loadTemplates, loads, loadStops } from "../../drizzle/schema";
 import { requireAccess } from "../services/security/rbac/access-check";
@@ -255,7 +257,7 @@ export const loadTemplatesRouter = router({
       const [tmpl] = await db.select().from(loadTemplates).where(eq(loadTemplates.id, input.templateId)).limit(1);
       if (!tmpl) throw new Error("Template not found");
 
-      const loadNumber = `LD-${new Date().toISOString().slice(2, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+      const loadNumber = `LD-${new Date().toISOString().slice(2, 10).replace(/-/g, "")}-${randomBytes(5).toString('hex').toUpperCase()}`;
 
       const [result] = await db.insert(loads).values({
         shipperId: userId,
@@ -299,7 +301,7 @@ export const loadTemplatesRouter = router({
           }));
           await db.insert(loadStops).values(stopValues as any);
         } catch (e) {
-          console.warn("[LoadTemplates] Failed to insert stops from template:", e);
+          logger.warn("[LoadTemplates] Failed to insert stops from template:", e);
         }
       } else {
         // Auto-create pickup/delivery stops from origin/destination
@@ -313,7 +315,7 @@ export const loadTemplatesRouter = router({
             ] as any);
           }
         } catch (e) {
-          console.warn("[LoadTemplates] Failed to auto-create stops:", e);
+          logger.warn("[LoadTemplates] Failed to auto-create stops:", e);
         }
       }
 

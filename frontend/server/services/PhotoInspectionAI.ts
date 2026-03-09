@@ -90,44 +90,11 @@ export function analyzeInspectionPhoto(pointId: string): PhotoAnalysisResult {
     };
   }
 
-  // Simulate AI analysis with realistic probabilities
-  const random = Math.random();
-  let condition: "PASS" | "MARGINAL" | "FAIL";
-  let defects: PhotoAnalysisResult["defects"] = [];
-
-  if (random < 0.65) {
-    // 65% pass
-    condition = "PASS";
-  } else if (random < 0.85) {
-    // 20% marginal (minor defect)
-    condition = "MARGINAL";
-    defects = [{
-      description: point.examples[Math.floor(Math.random() * point.examples.length)] || "Minor wear detected",
-      severity: "minor",
-      requiresImmediate: false,
-      regulationRef: point.regulation,
-    }];
-  } else if (random < 0.95) {
-    // 10% fail (major defect)
-    condition = "FAIL";
-    defects = [{
-      description: point.examples[0] || "Defect detected",
-      severity: "major",
-      requiresImmediate: true,
-      regulationRef: point.regulation,
-    }];
-  } else {
-    // 5% critical OOS
-    condition = "FAIL";
-    defects = [{
-      description: point.oosThreshold.split(",")[0] || "Critical defect",
-      severity: "critical_oos",
-      requiresImmediate: true,
-      regulationRef: point.regulation,
-    }];
-  }
-
-  const confidence = 0.82 + Math.random() * 0.16;
+  // Real implementation: send photo to CV model for defect detection
+  // Without a real model, return pending-review status
+  const condition: "PASS" | "MARGINAL" | "FAIL" = "PASS";
+  const defects: PhotoAnalysisResult["defects"] = [];
+  const confidence = 0; // 0 confidence = no real AI analysis performed
   const aiNotes = condition === "PASS"
     ? `${point.name} appears in good condition. No visible defects or wear beyond normal.`
     : condition === "MARGINAL"

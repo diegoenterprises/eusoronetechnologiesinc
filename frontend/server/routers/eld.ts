@@ -13,6 +13,7 @@
 import { z } from "zod";
 import { eq, desc, sql, and } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { drivers, vehicles, companies } from "../../drizzle/schema";
 import { getSafetyScores, getCrashSummary, getOOSStatus } from "../services/fmcsaBulkLookup";
@@ -62,12 +63,12 @@ async function samsaraFetch<T>(endpoint: string, options?: RequestInit): Promise
       signal: AbortSignal.timeout(15000),
     });
     if (!resp.ok) {
-      console.warn(`[ELD/Samsara] API error ${resp.status}: ${resp.statusText} for ${endpoint}`);
+      logger.warn(`[ELD/Samsara] API error ${resp.status}: ${resp.statusText} for ${endpoint}`);
       return null;
     }
     return await resp.json() as T;
   } catch (err) {
-    console.warn(`[ELD/Samsara] Fetch error for ${endpoint}:`, (err as Error).message);
+    logger.warn(`[ELD/Samsara] Fetch error for ${endpoint}:`, (err as Error).message);
     return null;
   }
 }
@@ -108,7 +109,7 @@ export const eldRouter = router({
         complianceRate: (vCount?.count || 0) > 0 ? Math.round(((activeV?.count || 0) / (vCount?.count || 1)) * 100) : 0,
         provider: SAMSARA_TOKEN ? "samsara_offline" : "database",
       };
-    } catch (e) { console.error("[ELD] getSummary error:", e); return base; }
+    } catch (e) { logger.error("[ELD] getSummary error:", e); return base; }
   }),
 
   // 2. getStats — HOS compliance statistics
@@ -154,7 +155,7 @@ export const eldRouter = router({
         // DB fallback
         const activeCount = dCount?.count || 0;
         return { ...base, totalDrivers: activeCount, offDuty: activeCount, complianceScore: 96, complianceRate: 96, provider: "database" };
-      } catch (e) { console.error("[ELD] getStats error:", e); return base; }
+      } catch (e) { logger.error("[ELD] getStats error:", e); return base; }
     }),
 
   // 3. getLogs — Fetch HOS daily logs for a specific driver
@@ -522,7 +523,7 @@ export const eldRouter = router({
         svc.clearCache?.();
         return { success: true, providerSlug: input.providerSlug };
       } catch (e: any) {
-        console.error("[ELD] connectProvider error:", e);
+        logger.error("[ELD] connectProvider error:", e);
         throw new Error(`Failed to save connection: ${e.message}`);
       }
     }),
@@ -698,7 +699,7 @@ export const eldRouter = router({
 
       return { synced, total: locations.length, provider: svc.getProviders()[0] || "eld" };
     } catch (e) {
-      console.error("[ELD] syncFleetLocations error:", e);
+      logger.error("[ELD] syncFleetLocations error:", e);
       return { synced: 0, provider: "error" };
     }
   }),
@@ -813,7 +814,7 @@ export const eldRouter = router({
           lastTraversed: r.lastTraversedAt?.toISOString?.() || r.lastTraversedAt,
         };
       } catch (e) {
-        console.error("[EusoRoads] getSegmentLiDAR error:", e);
+        logger.error("[EusoRoads] getSegmentLiDAR error:", e);
         return null;
       }
     }),
@@ -1009,7 +1010,7 @@ export const eldRouter = router({
       } catch { /* non-critical */ }
 
     } catch (e) {
-      console.error("[ELD] getFleetHealthDashboard error:", e);
+      logger.error("[ELD] getFleetHealthDashboard error:", e);
     }
     return result;
   }),
@@ -1072,7 +1073,7 @@ export const eldRouter = router({
       if (base.totalDevicesConnected > 10) base.benefitsUnlocked.push("Cross-Fleet Road Quality Sharing");
 
     } catch (e) {
-      console.error("[ELD] getELDNetworkStats error:", e);
+      logger.error("[ELD] getELDNetworkStats error:", e);
     }
     return base;
   }),

@@ -2,6 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { logger } from "./_core/logger";
 import { z } from "zod";
 import { aggregateAllFeeds, getAllCategories, RSS_FEEDS } from "./services/rssAggregator";
 import { loadsRouter, bidsRouter } from "./routers/loads";
@@ -288,7 +289,8 @@ export const appRouter = router({
             // 2FA is enabled — check if code was provided
             if (!input.twoFactorCode) {
               // Generate and send 2FA code
-              const code = String(Math.floor(100000 + Math.random() * 900000));
+              const { randomInt: _ri } = require("crypto");
+              const code = String(_ri(100000, 1000000));
               meta.twoFactorCode = code;
               meta.twoFactorCodeExpiry = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
               meta.twoFactorCodeAttempts = 0;
@@ -794,7 +796,7 @@ export const appRouter = router({
             await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
           }
         } catch (e) {
-          console.error('[auth] revokeAllSessions error:', e);
+          logger.error('[auth] revokeAllSessions error:', e);
         }
       }
 

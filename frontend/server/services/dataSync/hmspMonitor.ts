@@ -9,6 +9,7 @@
 
 import { eq, and, sql, isNotNull } from "drizzle-orm";
 import { getDb } from "../../db";
+import { logger } from "../../_core/logger";
 import { companies, notifications, insuranceAlerts, auditLogs } from "../../../drizzle/schema";
 
 const FMCSA_WEBKEY = process.env.FMCSA_WEBSERVICE_KEY || process.env.FMCSA_API_KEY || "891b0bbf613e9937bd584968467527aa1f29aec2";
@@ -122,11 +123,11 @@ async function checkCarrierHMSP(dotNumber: string): Promise<{
 export async function monitorHMSPPermits(): Promise<void> {
   const db = await getDb();
   if (!db) {
-    console.warn("[HMSP Monitor] Database unavailable — skipping");
+    logger.warn("[HMSP Monitor] Database unavailable — skipping");
     return;
   }
 
-  console.log("[HMSP Monitor] Starting daily HMSP permit verification...");
+  logger.info("[HMSP Monitor] Starting daily HMSP permit verification...");
 
   try {
     // Get all active companies with DOT numbers (catalysts/carriers)
@@ -148,11 +149,11 @@ export async function monitorHMSPPermits(): Promise<void> {
       .limit(200); // Rate limit: max 200 carriers per daily check
 
     if (carriers.length === 0) {
-      console.log("[HMSP Monitor] No active carriers with DOT numbers found");
+      logger.info("[HMSP Monitor] No active carriers with DOT numbers found");
       return;
     }
 
-    console.log(`[HMSP Monitor] Checking ${carriers.length} carriers...`);
+    logger.info(`[HMSP Monitor] Checking ${carriers.length} carriers...`);
 
     let checked = 0;
     let alerts = 0;
@@ -169,7 +170,7 @@ export async function monitorHMSPPermits(): Promise<void> {
 
       if (result.error) {
         errors++;
-        console.warn(
+        logger.warn(
           `[HMSP Monitor] Error checking DOT# ${carrier.dotNumber}: ${result.error}`
         );
         continue;
@@ -252,7 +253,7 @@ export async function monitorHMSPPermits(): Promise<void> {
 
           alerts++;
         } catch (insertErr) {
-          console.warn(
+          logger.warn(
             `[HMSP Monitor] Failed to create alert for DOT# ${carrier.dotNumber}:`,
             insertErr
           );
@@ -260,10 +261,10 @@ export async function monitorHMSPPermits(): Promise<void> {
       }
     }
 
-    console.log(
+    logger.info(
       `[HMSP Monitor] Complete — checked: ${checked}, alerts: ${alerts}, errors: ${errors}`
     );
   } catch (err) {
-    console.error("[HMSP Monitor] Fatal error:", err);
+    logger.error("[HMSP Monitor] Fatal error:", err);
   }
 }

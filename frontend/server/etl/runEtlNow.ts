@@ -3,6 +3,7 @@
  * Usage: npx tsx server/etl/runEtlNow.ts [all|daily|census|authority|...]
  */
 import "dotenv/config";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   runCensusEtl,
@@ -20,8 +21,8 @@ import { runFullEtl, runDailyEtl, runMonthlyEtl } from "./fmcsaEtl";
 
 async function main() {
   const dataset = process.argv[2] || "all";
-  console.log(`[ETL Runner] Starting dataset: ${dataset}`);
-  console.log(`[ETL Runner] DATABASE_URL set: ${!!process.env.DATABASE_URL}`);
+  logger.info(`[ETL Runner] Starting dataset: ${dataset}`);
+  logger.info(`[ETL Runner] DATABASE_URL set: ${!!process.env.DATABASE_URL}`);
 
   // Initialize DB connection
   await getDb();
@@ -41,14 +42,14 @@ async function main() {
     case "boc3":     await runBoc3Etl(); break;
     case "revocations": await runRevocationsEtl(); break;
     default:
-      console.log(`Unknown dataset: ${dataset}. Use: all, daily, monthly, census, authority, insurance, crashes, inspections, violations, sms, oos, boc3, revocations`);
+      logger.info(`Unknown dataset: ${dataset}. Use: all, daily, monthly, census, authority, insurance, crashes, inspections, violations, sms, oos, boc3, revocations`);
   }
 
-  console.log("[ETL Runner] Done.");
+  logger.info("[ETL Runner] Done.");
   process.exit(0);
 }
 
 main().catch(err => {
-  console.error("[ETL Runner] Fatal:", err);
+  logger.error("[ETL Runner] Fatal:", err);
   process.exit(1);
 });

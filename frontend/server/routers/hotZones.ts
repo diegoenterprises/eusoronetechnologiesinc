@@ -6,6 +6,7 @@
  */
 import { z } from "zod";
 import { router, isolatedProcedure as protectedProcedure, isolatedAdminProcedure as adminProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { sql, count } from "drizzle-orm";
 import { loads, hzZoneIntelligence, hzWeatherAlerts, hzFuelPrices, hzDataSyncLog, hzSeismicEvents, hzWildfires, hzHazmatIncidents, hzEpaFacilities, hzFemaDisasters, hzLockStatus, hzEmissions, hzRcraHandlers, hzCarrierSafety } from "../../drizzle/schema";
@@ -30,7 +31,7 @@ async function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
   if (now - (extCache.lastRefresh[key] || 0) < (TTL[key] || 300000)) return (extCache as any)[key];
   try {
     const d = await fn(); (extCache as any)[key] = d; extCache.lastRefresh[key] = now; return d;
-  } catch (e) { console.error(`[HotZones] ${key}:`, e); return (extCache as any)[key]; }
+  } catch (e) { logger.error(`[HotZones] ${key}:`, e); return (extCache as any)[key]; }
 }
 
 const PADD_TO_STATES: Record<string, string[]> = {
@@ -1356,7 +1357,7 @@ export const hotZonesRouter = router({
 
       const elapsed = Date.now() - t0;
       const counts = Object.entries(result).filter(([k]) => k !== "timestamp").map(([k, v]) => `${k}:${Array.isArray(v) ? v.length : "?"}`);
-      console.log(`[MapIntel] PARALLEL ${elapsed}ms — ${counts.join(", ")}`);
+      logger.info(`[MapIntel] PARALLEL ${elapsed}ms — ${counts.join(", ")}`);
 
       // Cache for 60s
       setInCache(cacheKey, result, "SEISMIC_EVENTS");
@@ -1420,7 +1421,7 @@ export const hotZonesRouter = router({
       const csRows = rows(csR) || [];
       const carrierSafety = csRows.map((r: any) => ({ state: r.state, total: Number(r.total), violations: Number(r.violations), hazmatCarriers: Number(r.hazmat_carriers) }));
 
-      console.log(`[RouteIntel] PARALLEL ${Date.now() - t0}ms — ${states[0]}→${states[1]}`);
+      logger.info(`[RouteIntel] PARALLEL ${Date.now() - t0}ms — ${states[0]}→${states[1]}`);
 
       return {
         weatherAlerts,
@@ -1488,7 +1489,7 @@ export const hotZonesRouter = router({
         })),
       };
 
-      console.log(`[TerminalIntel] PARALLEL ${Date.now() - t0}ms`);
+      logger.info(`[TerminalIntel] PARALLEL ${Date.now() - t0}ms`);
       setInCache(CACHE_KEY, result, "ZONE_INTELLIGENCE");
       return result;
     }),
@@ -1581,7 +1582,7 @@ export const hotZonesRouter = router({
         }));
 
         const st = (rowsOf(statsR) || [])[0] || {};
-        console.log(`[RoadIntel] PARALLEL ${Date.now() - t0}ms — ${segments.length} segs, ${livePings.length} pings`);
+        logger.info(`[RoadIntel] PARALLEL ${Date.now() - t0}ms — ${segments.length} segs, ${livePings.length} pings`);
 
         return {
           segments,
@@ -1595,7 +1596,7 @@ export const hotZonesRouter = router({
           },
         };
       } catch (e) {
-        console.error("[HotZones] getRoadIntelligence error:", e);
+        logger.error("[HotZones] getRoadIntelligence error:", e);
         return { segments: [], livePings: [], stats: { totalSegments: 0, totalMiles: 0, liveDrivers: 0 } };
       }
     }),
@@ -1695,7 +1696,7 @@ export const hotZonesRouter = router({
         violations: Number(firstRow(cntViolR)?.cnt || 0),
       };
 
-      console.log(`[FMCSAIntel] PARALLEL ${Date.now() - t0}ms`);
+      logger.info(`[FMCSAIntel] PARALLEL ${Date.now() - t0}ms`);
       setInCache(CACHE_KEY, result, "FMCSA_INTEL");
       return result;
     }),

@@ -1,4 +1,5 @@
 import { getDb } from '../../db';
+import { logger } from '../../_core/logger';
 import { loads, locationBreadcrumbs } from '../../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
@@ -92,7 +93,7 @@ class SyncProcessorService {
 
         // Mark as processed (for deduplication)
         processedClientIds.add(action.clientId);
-        console.log(`[SyncProcessor] Processed action ${action.clientId} (${action.type})`);
+        logger.info(`[SyncProcessor] Processed action ${action.clientId} (${action.type})`);
         processed.push(action.clientId);
 
       } catch (error: any) {
@@ -105,7 +106,7 @@ class SyncProcessorService {
             resolution: error.resolution,
           });
         } else {
-          console.error(`[SyncProcessor] Failed to process action ${action.clientId}:`, error);
+          logger.error(`[SyncProcessor] Failed to process action ${action.clientId}:`, error);
           failed.push(action.clientId);
         }
       }
@@ -151,7 +152,7 @@ class SyncProcessorService {
         break;
 
       default:
-        console.warn(`[SyncProcessor] Unknown action type: ${action.type}`);
+        logger.warn(`[SyncProcessor] Unknown action type: ${action.type}`);
     }
   }
 
@@ -187,7 +188,7 @@ class SyncProcessorService {
       }
     }
 
-    console.log(`[SyncProcessor] Ingested ${points.length} GPS breadcrumbs for load ${loadId}`);
+    logger.info(`[SyncProcessor] Ingested ${points.length} GPS breadcrumbs for load ${loadId}`);
   }
 
   /**
@@ -198,7 +199,7 @@ class SyncProcessorService {
     payload: any,
     _clientTime: Date
   ): Promise<void> {
-    console.log(`[SyncProcessor] Geofence event: ${payload.eventType} at ${payload.geofenceType} for load ${payload.loadId}`);
+    logger.info(`[SyncProcessor] Geofence event: ${payload.eventType} at ${payload.geofenceType} for load ${payload.loadId}`);
   }
 
   /**
@@ -241,7 +242,7 @@ class SyncProcessorService {
       .set({ status: toState, updatedAt: clientActionTime } as any)
       .where(eq(loads.id, parseInt(loadId)));
 
-    console.log(`[SyncProcessor] State transition: ${fromState} → ${toState} for load ${loadId}`);
+    logger.info(`[SyncProcessor] State transition: ${fromState} → ${toState} for load ${loadId}`);
   }
 
   /**
@@ -253,7 +254,7 @@ class SyncProcessorService {
     payload: any,
     _clientTime: Date
   ): Promise<void> {
-    console.log(`[SyncProcessor] Document captured offline: ${payload.documentType} for load ${payload.loadId}`);
+    logger.info(`[SyncProcessor] Document captured offline: ${payload.documentType} for load ${payload.loadId}`);
   }
 
   /**
@@ -265,7 +266,7 @@ class SyncProcessorService {
     payload: any,
     _clientTime: Date
   ): Promise<void> {
-    console.log(`[SyncProcessor] Inspection synced: ${payload.inspectionType} for vehicle ${payload.vehicleId}`);
+    logger.info(`[SyncProcessor] Inspection synced: ${payload.inspectionType} for vehicle ${payload.vehicleId}`);
   }
 
   /**
@@ -276,7 +277,7 @@ class SyncProcessorService {
     payload: any,
     _clientTime: Date
   ): Promise<void> {
-    console.log(`[SyncProcessor] Facility check-in synced: ${payload.facilityType} at ${payload.facilityId}`);
+    logger.info(`[SyncProcessor] Facility check-in synced: ${payload.facilityType} at ${payload.facilityId}`);
   }
 }
 

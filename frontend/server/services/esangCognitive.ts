@@ -18,6 +18,7 @@
  * using the existing pplx-embed-v1-0.6b (1024-dim) embedding service.
  */
 
+import { logger } from "../_core/logger";
 import { embeddingService } from "./embeddings/embeddingService";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -225,10 +226,10 @@ export async function remember(
     });
 
     invalidateHotCache(userId);
-    console.log(`[CognitiveEngine] Stored fact for user ${userId}: "${content.slice(0, 60)}..." (${options.critical ? "CRITICAL" : "normal"}, ${options.category || "context"})`);
+    logger.info(`[CognitiveEngine] Stored fact for user ${userId}: "${content.slice(0, 60)}..." (${options.critical ? "CRITICAL" : "normal"}, ${options.category || "context"})`);
     return (result as any).insertId || null;
   } catch (err) {
-    console.error("[CognitiveEngine] remember() error:", err);
+    logger.error("[CognitiveEngine] remember() error:", err);
     return null;
   }
 }
@@ -354,7 +355,7 @@ export async function recall(
       contextString,
     };
   } catch (err) {
-    console.error("[CognitiveEngine] recall() error:", err);
+    logger.error("[CognitiveEngine] recall() error:", err);
     return empty;
   }
 }
@@ -415,10 +416,10 @@ export async function learnFromConversation(
     }
 
     if (stored > 0) {
-      console.log(`[CognitiveEngine] Extracted ${stored} facts from conversation for user ${userId}`);
+      logger.info(`[CognitiveEngine] Extracted ${stored} facts from conversation for user ${userId}`);
     }
   } catch (err) {
-    console.error("[CognitiveEngine] learnFromConversation() error:", err);
+    logger.error("[CognitiveEngine] learnFromConversation() error:", err);
   }
 
   return stored;
@@ -464,7 +465,7 @@ export async function getStats(userId: string): Promise<CognitiveStats> {
 
     return { totalFacts: rows.length, criticalFacts, categories, oldestFact: oldest, newestFact: newest, totalTokens };
   } catch (err) {
-    console.error("[CognitiveEngine] getStats() error:", err);
+    logger.error("[CognitiveEngine] getStats() error:", err);
     return { totalFacts: 0, criticalFacts: 0, categories: {}, oldestFact: null, newestFact: null, totalTokens: 0 };
   }
 }
@@ -486,7 +487,7 @@ export async function forget(userId: string, factId?: number): Promise<boolean> 
     invalidateHotCache(userId);
     return true;
   } catch (err) {
-    console.error("[CognitiveEngine] forget() error:", err);
+    logger.error("[CognitiveEngine] forget() error:", err);
     return false;
   }
 }

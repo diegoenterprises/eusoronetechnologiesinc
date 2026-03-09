@@ -4,6 +4,7 @@
  */
 
 import { Router, Request, Response } from "express";
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { integrationProviders, integrationConnections } from "../../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
@@ -25,16 +26,16 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
   const { provider } = req.params;
   const { code, state, error, error_description } = req.query;
 
-  console.log(`[OAuth] Callback received for provider: ${provider}`);
+  logger.info(`[OAuth] Callback received for provider: ${provider}`);
 
   // Handle OAuth errors
   if (error) {
-    console.error(`[OAuth] Error from provider: ${error} - ${error_description}`);
+    logger.error(`[OAuth] Error from provider: ${error} - ${error_description}`);
     return res.redirect(`/settings/integrations?error=${encodeURIComponent(String(error_description || error))}`);
   }
 
   if (!code || !state) {
-    console.error("[OAuth] Missing code or state parameter");
+    logger.error("[OAuth] Missing code or state parameter");
     return res.redirect("/settings/integrations?error=missing_parameters");
   }
 
@@ -49,7 +50,7 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
       .where(eq(integrationProviders.slug, providerSlug));
 
     if (!providerConfig) {
-      console.error(`[OAuth] Provider not found: ${providerSlug}`);
+      logger.error(`[OAuth] Provider not found: ${providerSlug}`);
       return res.redirect("/settings/integrations?error=provider_not_found");
     }
 
@@ -57,7 +58,7 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
     const tokenResponse = await exchangeCodeForTokens(providerConfig, String(code));
 
     if (!tokenResponse.access_token) {
-      console.error("[OAuth] Failed to get access token");
+      logger.error("[OAuth] Failed to get access token");
       return res.redirect("/settings/integrations?error=token_exchange_failed");
     }
 
@@ -100,11 +101,11 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
       } as any);
     }
 
-    console.log(`[OAuth] Successfully connected ${providerSlug} for company ${companyId}`);
+    logger.info(`[OAuth] Successfully connected ${providerSlug} for company ${companyId}`);
     return res.redirect(returnUrl || "/settings/integrations?success=connected");
 
   } catch (error) {
-    console.error("[OAuth] Callback error:", error);
+    logger.error("[OAuth] Callback error:", error);
     return res.redirect("/settings/integrations?error=callback_failed");
   }
 });
@@ -146,11 +147,11 @@ router.get("/initiate/:provider", async (req: Request, res: Response) => {
     // Build OAuth URL
     const authUrl = buildOAuthUrl(providerConfig, encodedState);
 
-    console.log(`[OAuth] Initiating flow for ${provider}`);
+    logger.info(`[OAuth] Initiating flow for ${provider}`);
     return res.redirect(authUrl);
 
   } catch (error) {
-    console.error("[OAuth] Initiate error:", error);
+    logger.error("[OAuth] Initiate error:", error);
     return res.status(500).json({ error: "Failed to initiate OAuth flow" });
   }
 });
@@ -185,7 +186,7 @@ async function exchangeCodeForTokens(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`[OAuth] Token exchange failed: ${errorText}`);
+    logger.error(`[OAuth] Token exchange failed: ${errorText}`);
     throw new Error("Token exchange failed");
   }
 

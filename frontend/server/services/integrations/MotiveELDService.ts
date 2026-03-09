@@ -4,6 +4,7 @@
  */
 
 import { BaseIntegrationService, SyncResult, MappedRecord } from "./BaseIntegrationService";
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { 
   vehicles,
@@ -113,7 +114,7 @@ export class MotiveELDService extends BaseIntegrationService {
       await this.makeRequest("/users/me");
       return true;
     } catch (error) {
-      console.error("[Motive] Connection test failed:", error);
+      logger.error("[Motive] Connection test failed:", error);
       return false;
     }
   }
@@ -185,10 +186,10 @@ export class MotiveELDService extends BaseIntegrationService {
       const response = await this.makeRequest<{ drivers: MotiveDriver[] }>("/drivers");
       stats.fetched = response.drivers.length;
       // TODO: Store in database when schema is updated with external ID columns
-      console.log(`[Motive] Fetched ${stats.fetched} drivers`);
+      logger.info(`[Motive] Fetched ${stats.fetched} drivers`);
       stats.created = stats.fetched;
     } catch (error) {
-      console.error("[Motive] Failed to fetch drivers:", error);
+      logger.error("[Motive] Failed to fetch drivers:", error);
       throw error;
     }
 
@@ -201,10 +202,10 @@ export class MotiveELDService extends BaseIntegrationService {
       const response = await this.makeRequest<{ vehicles: MotiveVehicle[] }>("/vehicles");
       stats.fetched = response.vehicles.length;
       // TODO: Store in database when schema is updated with external ID columns
-      console.log(`[Motive] Fetched ${stats.fetched} vehicles`);
+      logger.info(`[Motive] Fetched ${stats.fetched} vehicles`);
       stats.created = stats.fetched;
     } catch (error) {
-      console.error("[Motive] Failed to fetch vehicles:", error);
+      logger.error("[Motive] Failed to fetch vehicles:", error);
       throw error;
     }
     return stats;
@@ -220,10 +221,10 @@ export class MotiveELDService extends BaseIntegrationService {
       );
       stats.fetched = response.hos_logs.length;
       // TODO: Store in database when schema is updated
-      console.log(`[Motive] Fetched ${stats.fetched} HOS logs`);
+      logger.info(`[Motive] Fetched ${stats.fetched} HOS logs`);
       stats.created = stats.fetched;
     } catch (error) {
-      console.error("[Motive] Failed to fetch HOS logs:", error);
+      logger.error("[Motive] Failed to fetch HOS logs:", error);
       throw error;
     }
     return stats;
@@ -239,10 +240,10 @@ export class MotiveELDService extends BaseIntegrationService {
       );
       stats.fetched = response.dvirs.length;
       // TODO: Store in database when schema is updated
-      console.log(`[Motive] Fetched ${stats.fetched} DVIRs`);
+      logger.info(`[Motive] Fetched ${stats.fetched} DVIRs`);
       stats.created = stats.fetched;
     } catch (error) {
-      console.error("[Motive] Failed to fetch DVIRs:", error);
+      logger.error("[Motive] Failed to fetch DVIRs:", error);
       throw error;
     }
     return stats;
@@ -254,10 +255,10 @@ export class MotiveELDService extends BaseIntegrationService {
       const response = await this.makeRequest<{ locations: MotiveLocation[] }>("/vehicle_locations");
       stats.fetched = response.locations.length;
       // TODO: Store in database when schema is updated
-      console.log(`[Motive] Fetched ${stats.fetched} vehicle locations`);
+      logger.info(`[Motive] Fetched ${stats.fetched} vehicle locations`);
       stats.updated = stats.fetched;
     } catch (error) {
-      console.error("[Motive] Failed to fetch locations:", error);
+      logger.error("[Motive] Failed to fetch locations:", error);
       throw error;
     }
     return stats;

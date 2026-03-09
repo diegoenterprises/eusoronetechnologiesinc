@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { adminProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { factoringInvoices, loads, users, companies, hzCarrierSafety } from "../../drizzle/schema";
 import { like } from "drizzle-orm";
@@ -645,7 +646,7 @@ export const factoringRouter = router({
           metadata: { type: "quick_pay", loadId: input.loadId, invoiceNumber },
         });
       } catch (e) {
-        console.error("[Factoring] QuickPay revenue recording error:", e);
+        logger.error("[Factoring] QuickPay revenue recording error:", e);
       }
 
       return {
@@ -702,7 +703,7 @@ export const factoringRouter = router({
           avgFeeRate: totalVolume > 0 ? Math.round((totalFees / totalVolume) * 10000) / 100 : 0,
         };
       } catch (e) {
-        console.error("[Factoring] getRevenueStats error:", e);
+        logger.error("[Factoring] getRevenueStats error:", e);
         return empty;
       }
     }),
@@ -764,7 +765,7 @@ export const factoringRouter = router({
           trend: d.trend || "stable",
         }));
       } catch (e) {
-        console.error("[Factoring] getDebtors error:", e);
+        logger.error("[Factoring] getDebtors error:", e);
         return [];
       }
     }),
@@ -796,7 +797,7 @@ export const factoringRouter = router({
           totalDebtors: stats?.total || 0,
         };
       } catch (e) {
-        console.error("[Factoring] getDebtorStats error:", e);
+        logger.error("[Factoring] getDebtorStats error:", e);
         return { outstanding: 0, factored: 0, avgDays: 0, highRisk: 0, totalDebtors: 0 };
       }
     }),
@@ -875,7 +876,7 @@ export const factoringRouter = router({
           checkedAt: r.createdAt?.toISOString() || '',
         }));
       } catch (e) {
-        console.error("[Factoring] getCreditCheckHistory error:", e);
+        logger.error("[Factoring] getCreditCheckHistory error:", e);
         return [];
       }
     }),

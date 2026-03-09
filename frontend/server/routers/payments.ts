@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { payments, loads, users } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
@@ -16,7 +17,7 @@ import { requireAccess } from "../services/security/rbac/access-check";
 async function safeStripe<T>(fn: () => Promise<T>): Promise<T | null> {
   try { return await fn(); } catch (err: any) {
     if (err.message?.includes("STRIPE_SECRET_KEY")) return null;
-    console.warn("[payments] Stripe error:", err.message);
+    logger.warn("[payments] Stripe error:", err.message);
     return null;
   }
 }
@@ -191,7 +192,7 @@ export const paymentsRouter = router({
           const [monthPaid] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(amount AS DECIMAL(10,2))), 0)`, cnt: sql<number>`COUNT(*)` }).from(payments)
             .where(and(eq(payments.payeeId, userId), eq(payments.status, "succeeded"), gte(payments.createdAt, monthStart)));
           paidThisMonth = monthPaid?.total || 0; paidThisMonthCount = monthPaid?.cnt || 0;
-        } catch (e) { console.warn("[payments.getSummary] DB error:", e); }
+        } catch (e) { logger.warn("[payments.getSummary] DB error:", e); }
       }
 
       // Stripe invoices for outstanding/overdue/receivables

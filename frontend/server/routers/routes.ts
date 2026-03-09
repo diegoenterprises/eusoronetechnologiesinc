@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { routes as routesTable, loads } from "../../drizzle/schema";
 
@@ -53,7 +54,7 @@ export const routesRouter = router({
             distance: 0, duration: 0, estimatedFuel: 0, tollCost: 0,
             segments: [], warnings: [], fuelStops: [], restAreas: [],
           };
-        } catch (e) { console.error('[Routes] plan error:', e); }
+        } catch (e) { logger.error('[Routes] plan error:', e); }
       }
       return { routeId: `route_${Date.now()}`, distance: 0, duration: 0, estimatedFuel: 0, tollCost: 0, segments: [], warnings: [], fuelStops: [], restAreas: [] };
     }),

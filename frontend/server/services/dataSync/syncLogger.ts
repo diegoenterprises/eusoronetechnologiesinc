@@ -1,6 +1,7 @@
 /**
  * Data Sync Logger — Logs sync operations to hz_data_sync_log table
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzDataSyncLog } from "../../../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -49,7 +50,7 @@ export async function logSync(entry: SyncLogEntry): Promise<void> {
     }
   } catch (e) {
     // Sync logging should never crash the sync itself
-    console.error("[SyncLogger] Failed to log sync:", e);
+    logger.error("[SyncLogger] Failed to log sync:", e);
   }
 }
 

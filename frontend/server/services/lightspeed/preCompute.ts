@@ -17,6 +17,7 @@
  * Part of Project LIGHTSPEED — Phase 1
  */
 
+import { logger } from "../../_core/logger";
 import { getPool } from "../../db";
 import { cacheSet, cacheMSet, cacheInvalidate, publishInvalidation, getCacheStats } from "../cache/redisCache";
 import { refreshMaterializedView, isMVReady } from "./materializedViews";
@@ -48,15 +49,15 @@ let _lastRun: PipelineResult | null = null;
  */
 export async function runPreComputePipeline(): Promise<PipelineResult> {
   if (_pipelineRunning) {
-    console.log("[LIGHTSPEED Pipeline] Already running, skipping");
+    logger.info("[LIGHTSPEED Pipeline] Already running, skipping");
     return { success: false, steps: [], totalDurationMs: 0 };
   }
 
   _pipelineRunning = true;
   const pipelineStart = Date.now();
   const steps: StepResult[] = [];
-  console.log("[LIGHTSPEED Pipeline] ═══════════════════════════════════════");
-  console.log("[LIGHTSPEED Pipeline] Starting post-ETL pre-computation...");
+  logger.info("[LIGHTSPEED Pipeline] ═══════════════════════════════════════");
+  logger.info("[LIGHTSPEED Pipeline] Starting post-ETL pre-computation...");
 
   try {
     // Step 1: Refresh materialized view
@@ -115,8 +116,8 @@ export async function runPreComputePipeline(): Promise<PipelineResult> {
   const result: PipelineResult = { success: successCount === steps.length, steps, totalDurationMs };
   _lastRun = result;
 
-  console.log(`[LIGHTSPEED Pipeline] ✓ Complete: ${successCount}/${steps.length} steps in ${(totalDurationMs / 1000).toFixed(1)}s`);
-  console.log("[LIGHTSPEED Pipeline] ═══════════════════════════════════════");
+  logger.info(`[LIGHTSPEED Pipeline] ✓ Complete: ${successCount}/${steps.length} steps in ${(totalDurationMs / 1000).toFixed(1)}s`);
+  logger.info("[LIGHTSPEED Pipeline] ═══════════════════════════════════════");
 
   return result;
 }
@@ -141,11 +142,11 @@ async function runStep(name: string, fn: () => Promise<string>): Promise<StepRes
   try {
     const detail = await fn();
     const durationMs = Date.now() - start;
-    console.log(`[LIGHTSPEED Pipeline] ✓ ${name}: ${detail} (${(durationMs / 1000).toFixed(1)}s)`);
+    logger.info(`[LIGHTSPEED Pipeline] ✓ ${name}: ${detail} (${(durationMs / 1000).toFixed(1)}s)`);
     return { name, success: true, durationMs, detail };
   } catch (err: any) {
     const durationMs = Date.now() - start;
-    console.error(`[LIGHTSPEED Pipeline] ✗ ${name}: ${err.message?.slice(0, 150)}`);
+    logger.error(`[LIGHTSPEED Pipeline] ✗ ${name}: ${err.message?.slice(0, 150)}`);
     return { name, success: false, durationMs, detail: err.message?.slice(0, 150) };
   }
 }

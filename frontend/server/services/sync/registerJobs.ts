@@ -2,6 +2,7 @@
  * Register all sync jobs with the orchestrator
  * Called once at startup before orchestrator.initialize()
  */
+import { logger } from "../../_core/logger";
 import { syncOrchestrator } from "./syncOrchestrator";
 import { fetchWeatherAlerts } from "../../integrations/nws/weatherAlerts";
 import { fetchRecentEarthquakes } from "../../integrations/usgs/earthquakes";
@@ -296,5 +297,5 @@ export function registerAllSyncJobs(): void {
     maxConsecutiveFailures: 3,
   });
 
-  console.log("[SyncOrchestrator] Registered 26 sync jobs");
+  logger.info("[SyncOrchestrator] Registered 26 sync jobs");
 }

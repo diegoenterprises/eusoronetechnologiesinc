@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { escortProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, users, escortAssignments, convoys, locationHistory } from "../../drizzle/schema";
 import { eq, and, desc, asc, sql, gte, or, ne } from "drizzle-orm";
@@ -131,7 +132,7 @@ export const escortsRouter = router({
         rating: 0, upcoming: upcoming?.count || 0, completed: completed?.count || 0,
         earnings: parseFloat(earnings?.total || '0'),
       };
-    } catch (e) { console.error('[Escorts] getDashboardStats:', e); return empty; }
+    } catch (e) { logger.error('[Escorts] getDashboardStats:', e); return empty; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -167,7 +168,7 @@ export const escortsRouter = router({
           pickupDate: r.pickupDate?.toISOString() || '',
         };
       });
-    } catch (e) { console.error('[Escorts] getActiveJobs:', e); return []; }
+    } catch (e) { logger.error('[Escorts] getActiveJobs:', e); return []; }
   }),
 
   getUpcomingJobs: protectedProcedure
@@ -278,7 +279,7 @@ export const escortsRouter = router({
             postedAt: r.createdAt?.toISOString() || '',
           };
         });
-      } catch (e) { console.error('[Escorts] getAvailableJobs:', e); return []; }
+      } catch (e) { logger.error('[Escorts] getAvailableJobs:', e); return []; }
     }),
 
   getMarketplaceStats: protectedProcedure.query(async ({ ctx }) => {
@@ -382,7 +383,7 @@ export const escortsRouter = router({
             origin: `${o.city}, ${o.state}`, destination: `${d.city}, ${d.state}`,
           };
         });
-      } catch (e) { console.error('[Escorts] getActiveConvoys:', e); return []; }
+      } catch (e) { logger.error('[Escorts] getActiveConvoys:', e); return []; }
     }),
 
   getConvoyStats: protectedProcedure.query(async ({ ctx }) => {
@@ -452,7 +453,7 @@ export const escortsRouter = router({
           }),
           total: countResult?.count || 0,
         };
-      } catch (e) { console.error('[Escorts] getAvailableJobsDetailed:', e); return { jobs: [], total: 0 }; }
+      } catch (e) { logger.error('[Escorts] getAvailableJobsDetailed:', e); return { jobs: [], total: 0 }; }
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -490,7 +491,7 @@ export const escortsRouter = router({
             pickupDate: r.pickupDate?.toISOString() || '',
           };
         });
-      } catch (e) { console.error('[Escorts] getMyJobs:', e); return []; }
+      } catch (e) { logger.error('[Escorts] getMyJobs:', e); return []; }
     }),
 
   applyForJobDetailed: protectedProcedure
@@ -600,7 +601,7 @@ export const escortsRouter = router({
           specialInstructions: row.specialInstructions || '',
           position: assignment?.position || 'lead', rateType: assignment?.rateType || 'flat',
         };
-      } catch (e) { console.error('[Escorts] getJobDetails:', e); return null; }
+      } catch (e) { logger.error('[Escorts] getJobDetails:', e); return null; }
     }),
 
   submitLocationUpdate: protectedProcedure
@@ -756,7 +757,7 @@ export const escortsRouter = router({
       }
 
       return results;
-    } catch (e) { console.error('[Escorts] getMyTeam:', e); return []; }
+    } catch (e) { logger.error('[Escorts] getMyTeam:', e); return []; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1094,7 +1095,7 @@ export const escortsRouter = router({
         driver: driverInfo, shipper: shipperInfo,
         notes: assignment.notes || '',
       };
-    } catch (e) { console.error('[Escorts] getActiveTrip:', e); return null; }
+    } catch (e) { logger.error('[Escorts] getActiveTrip:', e); return null; }
   }),
 
   updateTripStatus: protectedProcedure
@@ -1206,7 +1207,7 @@ export const escortsRouter = router({
         convoyMaxSpeed: convoy.maxSpeedMph || 45,
         convoyStatus: convoy.status,
       };
-    } catch (e) { console.error('[Escorts] getConvoyProximity:', e); return null; }
+    } catch (e) { logger.error('[Escorts] getConvoyProximity:', e); return null; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1322,7 +1323,7 @@ export const escortsRouter = router({
         restrictions,
         specialInstructions: load.specialInstructions || '',
       };
-    } catch (e) { console.error('[Escorts] getRouteRestrictions:', e); return null; }
+    } catch (e) { logger.error('[Escorts] getRouteRestrictions:', e); return null; }
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1433,7 +1434,7 @@ export const escortsRouter = router({
           // Certifications (from metadata until dedicated table)
           stateCertifications: escortProfile.stateCertifications || [],
         };
-      } catch (e) { console.error('[Escorts] getProfile:', e); return null; }
+      } catch (e) { logger.error('[Escorts] getProfile:', e); return null; }
     }),
 
   updateProfile: protectedProcedure

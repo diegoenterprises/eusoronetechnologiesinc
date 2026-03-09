@@ -16,6 +16,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte, inArray, count } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   detentionClaims,
@@ -282,7 +283,7 @@ export const accessorialRouter = router({
           total: totalRow?.count || 0,
         };
       } catch (error) {
-        console.error("[Accessorial] getClaims error:", error);
+        logger.error("[Accessorial] getClaims error:", error);
         return { claims: [], total: 0 };
       }
     }),
@@ -356,7 +357,7 @@ export const accessorialRouter = router({
               metadata: { type: "accessorial", claimId: input.claimId, action: input.action },
             });
           } catch (e) {
-            console.error("[Accessorial] Revenue recording error:", e);
+            logger.error("[Accessorial] Revenue recording error:", e);
           }
 
           // WS-P1-015: Credit carrier wallet on payment
@@ -387,12 +388,12 @@ export const accessorialRouter = router({
                   completedAt: new Date(),
                   metadata: { claimId: claim.id, type: "accessorial_payment" },
                 });
-                console.log(`[Accessorial] Credited $${netToCarrier.toFixed(2)} to wallet ${wallet.id} for claim ${claim.id}`);
+                logger.info(`[Accessorial] Credited $${netToCarrier.toFixed(2)} to wallet ${wallet.id} for claim ${claim.id}`);
               } else {
-                console.warn(`[Accessorial] No wallet found for user ${claim.claimedByUserId} — cannot credit`);
+                logger.warn(`[Accessorial] No wallet found for user ${claim.claimedByUserId} — cannot credit`);
               }
             } catch (walletErr) {
-              console.error("[Accessorial] Wallet credit error:", walletErr);
+              logger.error("[Accessorial] Wallet credit error:", walletErr);
             }
           }
         }
@@ -480,7 +481,7 @@ export const accessorialRouter = router({
           })),
         };
       } catch (error) {
-        console.error("[Accessorial] getDashboardStats error:", error);
+        logger.error("[Accessorial] getDashboardStats error:", error);
         return empty;
       }
     }),
@@ -533,7 +534,7 @@ export const accessorialRouter = router({
           accessorialType: claim.notes?.startsWith("[") ? claim.notes.split("]")[0].replace("[", "").toLowerCase() : "detention",
         };
       } catch (error) {
-        console.error("[Accessorial] getClaimById error:", error);
+        logger.error("[Accessorial] getClaimById error:", error);
         return null;
       }
     }),
@@ -599,7 +600,7 @@ export const accessorialRouter = router({
           createdAt: c.createdAt,
         }));
       } catch (error) {
-        console.error("[Accessorial] getLoadExpenses error:", error);
+        logger.error("[Accessorial] getLoadExpenses error:", error);
         return [];
       }
     }),

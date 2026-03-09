@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, desc, sql, and } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, loads, fuelTransactions, users } from "../../drizzle/schema";
 import { findNearbyStations, getRegionalPrices, getNationalAverages, getPriceTrends } from "../services/fuelPriceService";
@@ -40,7 +41,7 @@ export const fuelRouter = router({
           avgPricePerGallon: parseFloat(String(totals?.avgPrice || 0)).toFixed(2),
         };
       } catch (error) {
-        console.error('[Fuel] getSummary error:', error);
+        logger.error('[Fuel] getSummary error:', error);
         return { totalGallons: 0, totalSpent: 0, avgPrice: 0, thisMonthGallons: 0, thisMonthSpent: 0, mpgAvg: 0, avgMpg: 0, avgPricePerGallon: 0 };
       }
     }),
@@ -191,7 +192,7 @@ export const fuelRouter = router({
       try {
         return await getRegionalPrices();
       } catch (e) {
-        console.error('[Fuel] getPrices error:', e);
+        logger.error('[Fuel] getPrices error:', e);
         return { national: 3.52, regions: [] };
       }
     }),
@@ -279,7 +280,7 @@ export const fuelRouter = router({
       try {
         return await getNationalAverages();
       } catch (e) {
-        console.error('[Fuel] getAverages error:', e);
+        logger.error('[Fuel] getAverages error:', e);
         return { national: 3.52, lowest: 3.25, highest: 4.32, weekChange: 0.1 };
       }
     }),
@@ -290,7 +291,7 @@ export const fuelRouter = router({
       try {
         return await getPriceTrends(input?.days || 30);
       } catch (e) {
-        console.error('[Fuel] getTrends error:', e);
+        logger.error('[Fuel] getTrends error:', e);
         return [{ date: new Date().toISOString().slice(0, 10), price: 3.52 }];
       }
     }),
@@ -312,7 +313,7 @@ export const fuelRouter = router({
         const limit = input.limit ?? 20;
         return await findNearbyStations(lat, lng, radius, limit, input.fuelType || "diesel");
       } catch (e) {
-        console.error('[Fuel] getNearbyStations error:', e);
+        logger.error('[Fuel] getNearbyStations error:', e);
         return [];
       }
     }),

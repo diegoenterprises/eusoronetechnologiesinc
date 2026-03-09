@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { incidents, loads, users } from "../../drizzle/schema";
 
@@ -64,7 +65,7 @@ export const claimsRouter = router({
           total: total?.count || 0,
         };
       } catch (error) {
-        console.error('[Claims] list error:', error);
+        logger.error('[Claims] list error:', error);
         return { claims: [], total: 0 };
       }
     }),
@@ -89,7 +90,7 @@ export const claimsRouter = router({
           pending: (total?.count || 0) - (resolved?.count || 0) - (investigating?.count || 0),
         };
       } catch (error) {
-        console.error('[Claims] getSummary error:', error);
+        logger.error('[Claims] getSummary error:', error);
         return { total: 0, open: 0, resolved: 0, pending: 0 };
       }
     }),

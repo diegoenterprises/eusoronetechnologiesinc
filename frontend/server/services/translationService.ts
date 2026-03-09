@@ -4,6 +4,7 @@
  * to user's preferred language automatically
  */
 
+import { logger } from "../_core/logger";
 import { invokeLLM } from "../_core/llm";
 
 interface TranslationCache {
@@ -88,7 +89,7 @@ export async function translateText(
 
     return translated;
   } catch (error) {
-    console.error("Translation error:", error);
+    logger.error("Translation error:", error);
     // Return original text if translation fails
     return text;
   }
@@ -122,7 +123,7 @@ export async function translateFeedItem(
       content: translatedContent,
     };
   } catch (error) {
-    console.error("Feed item translation error:", error);
+    logger.error("Feed item translation error:", error);
     return item;
   }
 }

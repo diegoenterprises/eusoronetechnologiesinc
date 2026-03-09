@@ -10,6 +10,7 @@
  * - Receivables management
  */
 
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { factoringInvoices } from "../../drizzle/schema";
 import { eq, sql } from "drizzle-orm";
@@ -507,7 +508,7 @@ class FactoringService {
         } catch {}
       }
     } catch (e) {
-      console.warn("[Factoring] Credit check multi-source lookup failed:", e);
+      logger.warn("[Factoring] Credit check multi-source lookup failed:", e);
     }
 
     // Compute composite score (weighted average of available sources)
@@ -596,7 +597,7 @@ class FactoringService {
         rejectionRate: stats?.total ? Math.round(((stats?.rejected || 0) / stats.total) * 100) : 0,
       };
     } catch (e) {
-      console.error("[Factoring] getStats error:", e);
+      logger.error("[Factoring] getStats error:", e);
       return { totalInvoicesSubmitted: 0, totalAmountFactored: 0, pendingInvoices: 0, pendingAmount: 0, fundedThisMonth: 0, outstandingReceivables: 0, averageFactoringFee: 0, averageDaysToFund: 0, rejectionRate: 0 };
     }
   }

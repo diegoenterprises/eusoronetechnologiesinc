@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { conversations, messages, users } from "../../drizzle/schema";
 
@@ -355,7 +356,7 @@ export const messagingRouter = router({
 
         return { conversation: lobby, messages: recentMessages.reverse() };
       } catch (error) {
-        console.error('[Messaging] getLobby error:', error);
+        logger.error('[Messaging] getLobby error:', error);
         return { conversation: null, messages: [] };
       }
     }),

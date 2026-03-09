@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
@@ -96,7 +97,7 @@ export const zeunRouter = router({
           lastCheck: vehicle.updatedAt || new Date(),
         };
       } catch (error) {
-        console.error('[Zeun] getVehicleStatus error:', error);
+        logger.error('[Zeun] getVehicleStatus error:', error);
         return { id: '', vin: input.vin, make: '', model: '', year: 0, mileage: 0, status: 'healthy', lastCheck: new Date() };
       }
     }),
@@ -188,7 +189,7 @@ export const zeunRouter = router({
         averageScore: total > 0 ? Math.round((healthy / total) * 100) : 100,
       };
     } catch (error) {
-      console.error('[Zeun] getFleetHealth error:', error);
+      logger.error('[Zeun] getFleetHealth error:', error);
       return { totalVehicles: 0, healthy: 0, warning: 0, critical: 0, averageScore: 0 };
     }
   }),

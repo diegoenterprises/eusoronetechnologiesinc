@@ -6,7 +6,9 @@
 
 import { z } from "zod";
 import { eq, and, desc, gte, lte, sql, count } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import { adminProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { 
   insurancePolicies, 
@@ -115,7 +117,7 @@ export const insuranceRouter = router({
         
         return policies;
       } catch (error) {
-        console.error("[Insurance] getPolicies error:", error);
+        logger.error("[Insurance] getPolicies error:", error);
         return [];
       }
     }),
@@ -139,7 +141,7 @@ export const insuranceRouter = router({
         
         return policy || null;
       } catch (error) {
-        console.error("[Insurance] getPolicyById error:", error);
+        logger.error("[Insurance] getPolicyById error:", error);
         return null;
       }
     }),
@@ -204,7 +206,7 @@ export const insuranceRouter = router({
         
         return policies;
       } catch (error) {
-        console.error("[Insurance] getExpiringPolicies error:", error);
+        logger.error("[Insurance] getExpiringPolicies error:", error);
         return [];
       }
     }),
@@ -259,7 +261,7 @@ export const insuranceRouter = router({
           annualPremium,
         };
       } catch (error) {
-        console.error("[Insurance] getSummary error:", error);
+        logger.error("[Insurance] getSummary error:", error);
         return { total: 0, active: 0, expiringSoon: 0, expired: 0, totalCoverage: 0, annualPremium: 0 };
       }
     }),
@@ -326,7 +328,7 @@ export const insuranceRouter = router({
         
         return claims;
       } catch (error) {
-        console.error("[Insurance] getClaims error:", error);
+        logger.error("[Insurance] getClaims error:", error);
         return [];
       }
     }),
@@ -365,7 +367,7 @@ export const insuranceRouter = router({
           approvalRate: claims.length > 0 ? Math.round((approved / claims.length) * 100) : 0,
         };
       } catch (error) {
-        console.error("[Insurance] getClaimStats error:", error);
+        logger.error("[Insurance] getClaimStats error:", error);
         return { total: 0, open: 0, openClaims: 0, approved: 0, pending: 0, totalPaid: 0, totalAmount: 0, avgResolutionDays: 0, approvalRate: 0 };
       }
     }),
@@ -453,7 +455,7 @@ export const insuranceRouter = router({
         
         return await query;
       } catch (error) {
-        console.error("[Insurance] getCertificates error:", error);
+        logger.error("[Insurance] getCertificates error:", error);
         return [];
       }
     }),
@@ -519,7 +521,7 @@ export const insuranceRouter = router({
         
         return quotes;
       } catch (error) {
-        console.error("[Insurance] getQuotes error:", error);
+        logger.error("[Insurance] getQuotes error:", error);
         return [];
       }
     }),
@@ -597,7 +599,7 @@ export const insuranceRouter = router({
         
         return score || null;
       } catch (error) {
-        console.error("[Insurance] getRiskScore error:", error);
+        logger.error("[Insurance] getRiskScore error:", error);
         return null;
       }
     }),
@@ -628,7 +630,7 @@ export const insuranceRouter = router({
         
         return alerts;
       } catch (error) {
-        console.error("[Insurance] getAlerts error:", error);
+        logger.error("[Insurance] getAlerts error:", error);
         return [];
       }
     }),
@@ -731,7 +733,7 @@ export const insuranceRouter = router({
           coverageType: hasAutoPolicy ? activePolicies.find(p => p.policyType === "auto_liability")?.policyType || "auto_liability" : "none",
         }));
       } catch (error) {
-        console.error("[Insurance] getInsuredVehicles error:", error);
+        logger.error("[Insurance] getInsuredVehicles error:", error);
         return [];
       }
     }),
@@ -837,7 +839,7 @@ export const insuranceRouter = router({
           verifiedAt: new Date().toISOString(),
         };
       } catch (error) {
-        console.error("[Insurance] verifyCarrierCoverage error:", error);
+        logger.error("[Insurance] verifyCarrierCoverage error:", error);
         return { verified: false, errors: ["Verification failed"], warnings: [], policies: [], companyName: "" };
       }
     }),
@@ -946,7 +948,7 @@ export const insuranceRouter = router({
 
       const userId = Number(ctx.user?.id) || 0;
       const companyId = Number(ctx.user?.companyId) || 0;
-      const policyNumber = `EUS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const policyNumber = `EUS-${Date.now().toString(36).toUpperCase()}-${randomBytes(3).toString('hex').toUpperCase()}`;
 
       const [result] = await db.insert(perLoadInsurancePolicies).values({
         policyNumber,
@@ -988,7 +990,7 @@ export const insuranceRouter = router({
           });
         }
       } catch (e) {
-        console.error("[Insurance] wallet debit error:", e);
+        logger.error("[Insurance] wallet debit error:", e);
       }
 
       // Record platform revenue — 15% commission on insurance premiums
@@ -1009,7 +1011,7 @@ export const insuranceRouter = router({
           metadata: { policyNumber, commodityType: input.commodityType, loadId: input.loadId, commissionRate: INSURANCE_COMMISSION_RATE },
         });
       } catch (e) {
-        console.error("[Insurance] Revenue recording error:", e);
+        logger.error("[Insurance] Revenue recording error:", e);
       }
 
       return { success: true, policyNumber, platformCommission };
@@ -1048,7 +1050,7 @@ export const insuranceRouter = router({
           expiresAt: r.expiresAt?.toISOString() || null,
         }));
       } catch (e) {
-        console.error("[Insurance] getMyPerLoadPolicies error:", e);
+        logger.error("[Insurance] getMyPerLoadPolicies error:", e);
         return [];
       }
     }),
@@ -1096,7 +1098,7 @@ export const insuranceRouter = router({
           extraction,
         };
       } catch (error: any) {
-        console.error("[Insurance] scanDocument error:", error);
+        logger.error("[Insurance] scanDocument error:", error);
         return {
           success: false,
           error: error?.message || "Document scanning failed",
@@ -1321,7 +1323,7 @@ export const insuranceRouter = router({
           },
         };
       } catch (error: any) {
-        console.error("[Insurance] verifyWithFMCSA error:", error);
+        logger.error("[Insurance] verifyWithFMCSA error:", error);
         return {
           success: false,
           error: error?.message || "FMCSA verification failed",
@@ -1383,7 +1385,7 @@ export const insuranceRouter = router({
           totalPolicies: policies.length,
         };
       } catch (error: any) {
-        console.error("[Insurance] checkLoadCompliance error:", error);
+        logger.error("[Insurance] checkLoadCompliance error:", error);
         return { compliant: false, deficiencies: [error?.message || "Check failed"], requiredLiability: 0, currentLiability: 0 };
       }
     }),

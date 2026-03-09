@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 
 // Valid CDL endorsements
@@ -68,7 +69,7 @@ export async function checkCDLForLoadInternal(driverId: number, loadId: number):
     }
 
   } catch (err: any) {
-    console.error("[CDL] Check error:", err?.message?.slice(0, 100));
+    logger.error("[CDL] Check error:", err?.message?.slice(0, 100));
     // Fail open on DB error — don't block dispatch for infra issues
     return { eligible: true, reasons: [] };
   }

@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, sql } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { drivers } from "../../drizzle/schema";
 
@@ -27,7 +28,7 @@ export const fuelCardsRouter = router({
         lastUsedAt: r.lastUsedAt?.toISOString?.() || null,
         createdAt: r.createdAt?.toISOString?.() || '',
       }));
-    } catch (e) { console.error('[FuelCards] list error:', e); return []; }
+    } catch (e) { logger.error('[FuelCards] list error:', e); return []; }
   }),
 
   getSummary: protectedProcedure.query(async ({ ctx }) => {

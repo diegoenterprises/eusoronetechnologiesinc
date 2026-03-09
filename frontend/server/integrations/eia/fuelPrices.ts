@@ -4,6 +4,7 @@
  * Auth: API Key required (EIA_API_KEY)
  * Refresh: Every 1 hour
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzFuelPrices } from "../../../drizzle/schema";
 import { sql } from "drizzle-orm";
@@ -33,7 +34,7 @@ const PADD_STATES: Record<string, string[]> = {
 export async function fetchEIAFuelPrices(): Promise<void> {
   const apiKey = process.env.EIA_API_KEY;
   if (!apiKey) {
-    console.warn("[EIA] No EIA_API_KEY set, skipping fuel price sync");
+    logger.warn("[EIA] No EIA_API_KEY set, skipping fuel price sync");
     return;
   }
 
@@ -91,7 +92,7 @@ export async function fetchEIAFuelPrices(): Promise<void> {
       // Rate limit: small delay between PADD requests
       await new Promise((r) => setTimeout(r, 200));
     } catch (e) {
-      console.error(`[EIA] Failed to fetch ${padd}:`, e);
+      logger.error(`[EIA] Failed to fetch ${padd}:`, e);
     }
   }
 }

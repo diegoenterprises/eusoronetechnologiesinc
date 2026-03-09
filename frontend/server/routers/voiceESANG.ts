@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import {
   classifyVoiceIntent,
   buildVoiceResponse,
@@ -67,7 +68,7 @@ export const voiceESANGRouter = router({
         const response = buildVoiceResponse(fullText, intent);
         return response;
       } catch (e) {
-        console.error("[VoiceESANG] processVoiceCommand error:", e);
+        logger.error("[VoiceESANG] processVoiceCommand error:", e);
         return {
           text: "Sorry, I didn't catch that. Could you try again?",
           spokenText: "Sorry, I didn't catch that. Could you try again?",

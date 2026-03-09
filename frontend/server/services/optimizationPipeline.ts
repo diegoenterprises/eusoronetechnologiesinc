@@ -14,6 +14,7 @@
  */
 
 import { eq, and, sql } from "drizzle-orm";
+import { logger } from "../_core/logger";
 import { loads, drivers, users, optimizationRuns, optimizationPassResults, lanePerformanceCache } from "../../drizzle/schema";
 
 interface OptimizationContext {
@@ -334,6 +335,6 @@ export async function updateLaneCache(db: any): Promise<void> {
         lastUpdated = NOW()
     `);
   } catch (err: any) {
-    console.warn("[QPilotOS/WS-QP-006] Lane cache update failed:", err.message);
+    logger.warn("[QPilotOS/WS-QP-006] Lane cache update failed:", err.message);
   }
 }

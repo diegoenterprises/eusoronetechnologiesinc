@@ -4,12 +4,13 @@
  * Usage: DATABASE_URL=<url> npx tsx server/migrations/run_fix_tables.ts
  */
 import mysql2 from "mysql2/promise";
+import { logger } from "../_core/logger";
 
 async function run() {
   const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) { console.error("DATABASE_URL required"); process.exit(1); }
+  if (!dbUrl) { logger.error("DATABASE_URL required"); process.exit(1); }
   const conn = await mysql2.createConnection(dbUrl);
-  console.log("Connected\n");
+  logger.info("Connected\n");
 
   // First verify all tables are empty
   const tablesToDrop = [
@@ -23,17 +24,17 @@ async function run() {
   for (const t of tablesToDrop) {
     const [rows]: any = await conn.query(`SELECT COUNT(*) as c FROM \`${t}\``);
     if (rows[0].c > 0) {
-      console.error(`ABORT: ${t} has ${rows[0].c} rows — not safe to drop`);
+      logger.error(`ABORT: ${t} has ${rows[0].c} rows — not safe to drop`);
       await conn.end();
       process.exit(1);
     }
   }
-  console.log("All 18 tables confirmed empty — safe to drop & recreate\n");
+  logger.info("All 18 tables confirmed empty — safe to drop & recreate\n");
 
   // Drop all
   for (const t of tablesToDrop) {
     await conn.query(`DROP TABLE IF EXISTS \`${t}\``);
-    console.log(`  Dropped ${t}`);
+    logger.info(`  Dropped ${t}`);
   }
 
   // Recreate with exact Drizzle schema
@@ -498,16 +499,16 @@ async function run() {
   for (const [name, sql] of creates) {
     try {
       await conn.query(sql);
-      console.log(`  [OK] ${name}`);
+      logger.info(`  [OK] ${name}`);
       ok++;
     } catch (e: any) {
-      console.error(`  [ERR] ${name}: ${e.message?.slice(0, 200)}`);
+      logger.error(`  [ERR] ${name}: ${e.message?.slice(0, 200)}`);
       err++;
     }
   }
 
   await conn.end();
-  console.log(`\nDone: ${ok} recreated, ${err} errors`);
+  logger.info(`\nDone: ${ok} recreated, ${err} errors`);
 }
 
-run().catch((e) => { console.error("Failed:", e); process.exit(1); });
+run().catch((e) => { logger.error("Failed:", e); process.exit(1); });

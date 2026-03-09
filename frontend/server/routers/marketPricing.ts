@@ -13,6 +13,7 @@
 
 import { z } from "zod";
 import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 import { desc, sql, eq, and, gte, lte } from "drizzle-orm";
@@ -115,7 +116,7 @@ async function getRealFreightRates(): Promise<Record<string, { rate: number; pre
     }
     return result;
   } catch (err) {
-    console.warn("[MarketPricing] DB freight rate query failed:", err);
+    logger.warn("[MarketPricing] DB freight rate query failed:", err);
     return {};
   }
 }
@@ -352,7 +353,7 @@ export const marketPricingRouter = router({
           isLive: false,
         };
       } catch (err) {
-        console.error("Market intelligence fetch error:", err);
+        logger.error("Market intelligence fetch error:", err);
         return {
           snapshot: null,
           liveOverrides: {},

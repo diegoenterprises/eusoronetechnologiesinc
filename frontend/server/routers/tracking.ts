@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, vehicles, users, companies, gpsTracking, geofences, geofenceEvents, safetyAlerts } from "../../drizzle/schema";
 import { emitGPSUpdate, wsService, WS_CHANNELS } from "../_core/websocket";
@@ -89,7 +90,7 @@ export const trackingRouter = router({
           ],
         };
       } catch (error) {
-        console.error('[Tracking] trackShipment error:', error);
+        logger.error('[Tracking] trackShipment error:', error);
         return null;
       }
     }),
@@ -144,7 +145,7 @@ export const trackingRouter = router({
           engineStatus: vehicle.status === 'in_use' ? 'running' : 'off',
         };
       } catch (error) {
-        console.error('[Tracking] getVehicleLocation error:', error);
+        logger.error('[Tracking] getVehicleLocation error:', error);
         return null;
       }
     }),
@@ -209,7 +210,7 @@ export const trackingRouter = router({
 
         return { vehicles: mappedVehicles, lastUpdated: new Date().toISOString() };
       } catch (error) {
-        console.error('[Tracking] getFleetMap error:', error);
+        logger.error('[Tracking] getFleetMap error:', error);
         return { vehicles: [], lastUpdated: new Date().toISOString() };
       }
     }),
@@ -257,7 +258,7 @@ export const trackingRouter = router({
         const avgSpeed = speeds.length > 0 ? Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length * 10) / 10 : 0;
         const durationHrs = path.length >= 2 ? (new Date(path[path.length - 1].timestamp).getTime() - new Date(path[0].timestamp).getTime()) / 3600000 : 0;
         return { vehicleId: input.vehicleId, path, stops, totalDistance: 0, totalDuration: Math.round(durationHrs * 10) / 10, avgSpeed };
-      } catch (e) { console.error('[Tracking] getLocationHistory error:', e); return { vehicleId: input.vehicleId, path: [], stops: [], totalDistance: 0, totalDuration: 0, avgSpeed: 0 }; }
+      } catch (e) { logger.error('[Tracking] getLocationHistory error:', e); return { vehicleId: input.vehicleId, path: [], stops: [], totalDistance: 0, totalDuration: 0, avgSpeed: 0 }; }
     }),
 
   /**
@@ -273,8 +274,9 @@ export const trackingRouter = router({
     .mutation(async ({ ctx, input }) => {
       // WebSocket subscriptions are handled in-memory via wsService
       // Store subscription metadata for audit
-      const subId = `sub_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      console.log(`[Tracking] Subscription ${subId} created by user ${ctx.user?.id} for ${input.events.join(',')}`);
+      const { randomBytes: _rb } = require("crypto");
+      const subId = `sub_${Date.now()}_${_rb(4).toString('hex')}`;
+      logger.info(`[Tracking] Subscription ${subId} created by user ${ctx.user?.id} for ${input.events.join(',')}`);
       return {
         subscriptionId: subId,
         webhookUrl: input.webhookUrl,
@@ -341,7 +343,7 @@ export const trackingRouter = router({
             active: g.isActive, createdAt: g.createdAt?.toISOString() || '',
           };
         });
-      } catch (e) { console.error('[Tracking] getGeofences error:', e); return []; }
+      } catch (e) { logger.error('[Tracking] getGeofences error:', e); return []; }
     }),
 
   /**
@@ -373,7 +375,7 @@ export const trackingRouter = router({
           eventType: r.eventType, location: { lat: parseFloat(String(r.lat)), lng: parseFloat(String(r.lng)) },
           dwellSeconds: r.dwellSeconds || 0, timestamp: r.eventTimestamp?.toISOString() || '',
         }));
-      } catch (e) { console.error('[Tracking] getGeofenceEvents error:', e); return []; }
+      } catch (e) { logger.error('[Tracking] getGeofenceEvents error:', e); return []; }
     }),
 
   /**
@@ -404,7 +406,7 @@ export const trackingRouter = router({
           timestamp: a.eventTimestamp?.toISOString() || '',
           acknowledgedAt: a.acknowledgedAt?.toISOString() || null,
         }));
-      } catch (e) { console.error('[Tracking] getAlerts error:', e); return []; }
+      } catch (e) { logger.error('[Tracking] getAlerts error:', e); return []; }
     }),
 
   /**
@@ -442,7 +444,8 @@ export const trackingRouter = router({
         const [load] = await db.select({ id: loads.id }).from(loads).where(eq(loads.loadNumber, input.loadNumber)).limit(1);
         if (!load) throw new Error('Load not found');
       }
-      const accessCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const { randomBytes: _rb2 } = require("crypto");
+      const accessCode = _rb2(5).toString('hex').toUpperCase();
       return {
         trackingUrl: `https://eusotrip.com/track/${input.loadNumber}?code=${accessCode}`,
         accessCode,
@@ -621,7 +624,7 @@ export const trackingRouter = router({
           totalCount: locations.length,
         };
       } catch (error) {
-        console.error('[Tracking] getRoleMapLocations error:', error);
+        logger.error('[Tracking] getRoleMapLocations error:', error);
         // Return seed data on error so map is never dead
         const seedLocations = getSeedMapLocations(userRole);
         return {
@@ -684,7 +687,7 @@ export const trackingRouter = router({
 
         return { positions, timestamp: new Date().toISOString() };
       } catch (error) {
-        console.error('[Tracking] getRealtimePositions error:', error);
+        logger.error('[Tracking] getRealtimePositions error:', error);
         return { positions: [], error: 'Failed to fetch positions' };
       }
     }),

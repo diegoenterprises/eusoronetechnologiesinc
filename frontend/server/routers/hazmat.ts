@@ -8,7 +8,9 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte, inArray, isNotNull } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, drivers, companies, incidents, vehicles } from "../../drizzle/schema";
 import { searchMaterials, getGuide, getFullERGInfo, EMERGENCY_CONTACTS } from "../_core/ergDatabaseDB";
@@ -342,7 +344,7 @@ export const hazmatRouter = router({
       agenciesNotified: z.array(z.string()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const reportId = `INC-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      const reportId = `INC-${Date.now()}-${randomBytes(3).toString('hex').toUpperCase()}`;
       const dot5800Required = input.severity === "major" || input.severity === "catastrophic" || input.fatalities > 0 || input.injuries > 0 || input.evacuationRequired;
       const nrcRequired = input.severity === "catastrophic" || input.fatalities > 0;
       const notifications = [
@@ -854,7 +856,7 @@ export const hazmatRouter = router({
             }
           }
         } catch (err) {
-          console.warn("[Hazmat] Google Maps route fetch error:", (err as Error).message);
+          logger.warn("[Hazmat] Google Maps route fetch error:", (err as Error).message);
         }
       }
 

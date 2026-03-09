@@ -5,6 +5,7 @@
  * Refresh: Daily at 7 AM
  * Data: New DOT, PHMSA, FMCSA rules, notices, and proposed rules
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { sql } from "drizzle-orm";
 
@@ -71,9 +72,9 @@ export async function fetchNewRegulations(): Promise<void> {
 
       await new Promise((r) => setTimeout(r, 500));
     } catch (e) {
-      console.error(`[FedRegister] Failed for ${agency}:`, e);
+      logger.error(`[FedRegister] Failed for ${agency}:`, e);
     }
   }
 
-  console.log(`[FedRegister] Processed ${totalDocs} regulatory documents`);
+  logger.info(`[FedRegister] Processed ${totalDocs} regulatory documents`);
 }

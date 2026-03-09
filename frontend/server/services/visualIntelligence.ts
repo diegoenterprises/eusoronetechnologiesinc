@@ -18,6 +18,7 @@
  * Reference: arXiv:2601.11109 (Vision-as-Inverse-Graphics Agent via Interleaved Multimodal Reasoning)
  */
 
+import { logger } from "../_core/logger";
 import { ENV } from "../_core/env";
 
 const GEMINI_VISION_URL =
@@ -547,7 +548,7 @@ export async function analyzeImage(
       break;
   }
 
-  console.log(`[VIGA] Starting ${analysisType} analysis...`);
+  logger.info(`[VIGA] Starting ${analysisType} analysis...`);
   const startTime = Date.now();
 
   const rawJson = await callGeminiVision(request.imageBase64, mimeType, prompt);
@@ -566,7 +567,7 @@ export async function analyzeImage(
   }
 
   const elapsed = Date.now() - startTime;
-  console.log(`[VIGA] ${analysisType} complete in ${elapsed}ms (confidence: ${parsed.confidence || "N/A"})`);
+  logger.info(`[VIGA] ${analysisType} complete in ${elapsed}ms (confidence: ${parsed.confidence || "N/A"})`);
 
   return { type: analysisType, data: parsed } as VisualAnalysisResult;
 }
@@ -586,7 +587,7 @@ export async function analyzeImageMultiPass(
       const result = await analyzeImage({ ...request, analysisType });
       results.push(result);
     } catch (err: any) {
-      console.error(`[VIGA] Pass ${analysisType} failed:`, err.message);
+      logger.error(`[VIGA] Pass ${analysisType} failed:`, err.message);
     }
   }
 

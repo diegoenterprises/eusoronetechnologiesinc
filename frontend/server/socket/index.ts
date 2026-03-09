@@ -11,6 +11,7 @@
  */
 
 import { Server as HttpServer } from "http";
+import { logger } from "../_core/logger";
 
 // Placeholder types until socket.io is installed
 type SocketIO = unknown;
@@ -36,14 +37,14 @@ export function initializeSocket(httpServer: HttpServer): void {
       pingInterval: 25000,
     });
 
-    console.log("[Socket] Socket.io server initialized");
+    logger.info("[Socket] Socket.io server initialized");
 
     // LIGHTSPEED 1.4.1: Attach Redis adapter for horizontal scaling
     attachRedisAdapter(io);
 
     setupSocketHandlers(io);
   } catch {
-    console.warn("[Socket] socket.io not installed, real-time features disabled");
+    logger.error("[Socket] socket.io not installed, real-time features disabled");
   }
 }
 
@@ -55,7 +56,7 @@ async function attachRedisAdapter(server: SocketIO): Promise<void> {
   try {
     const redisUrl = process.env.AZURE_REDIS_URL || process.env.REDIS_URL;
     if (!redisUrl) {
-      console.log("[Socket] No REDIS_URL — running single-instance mode");
+      logger.info("[Socket] No REDIS_URL — running single-instance mode");
       return;
     }
 
@@ -70,9 +71,9 @@ async function attachRedisAdapter(server: SocketIO): Promise<void> {
     await Promise.all([pubClient.connect(), subClient.connect()]);
     (server as any).adapter(createAdapter(pubClient, subClient));
     redisAdapterActive = true;
-    console.log("[Socket] Redis adapter attached — multi-instance scaling active");
+    logger.info("[Socket] Redis adapter attached — multi-instance scaling active");
   } catch (err: any) {
-    console.warn("[Socket] Redis adapter unavailable, falling back to in-memory:", err?.message?.slice(0, 80));
+    logger.error("[Socket] Redis adapter unavailable, falling back to in-memory:", err?.message?.slice(0, 80));
   }
 }
 
@@ -106,7 +107,7 @@ function setupSocketHandlers(server: SocketIO): void {
     };
 
     const userId = sock.handshake.auth.userId ? Number(sock.handshake.auth.userId) : undefined;
-    console.log(`[Socket] User ${userId} connected (${sock.id})`);
+    logger.info(`[Socket] User ${userId} connected (${sock.id})`);
 
     if (userId) {
       if (!connectedUsers.has(userId)) {
@@ -173,7 +174,7 @@ function setupSocketHandlers(server: SocketIO): void {
         gps?: { lat: number; lng: number; accuracy?: number };
         timestamp?: string;
       };
-      console.log(`[Socket] EMERGENCY from driver ${p.driverId}: ${p.emergencyType}`);
+      logger.info(`[Socket] EMERGENCY from driver ${p.driverId}: ${p.emergencyType}`);
       // Broadcast to company dispatch room
       if (companyId) {
         s.to(`company:${companyId}`).emit("emergency:alert", {
@@ -287,7 +288,7 @@ function setupSocketHandlers(server: SocketIO): void {
     }
 
     sock.on("disconnect", () => {
-      console.log(`[Socket] User ${userId} disconnected (${sock.id})`);
+      logger.info(`[Socket] User ${userId} disconnected (${sock.id})`);
       if (userId) {
         connectedUsers.get(userId)?.delete(sock.id);
         if (connectedUsers.get(userId)?.size === 0) {

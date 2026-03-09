@@ -95,13 +95,15 @@ const CITIES: { city: string; state: string }[] = [
 function generateDrivers(): DriverMission[] {
   return DRIVER_NAMES.map((name, i) => {
     const loc = CITIES[i % CITIES.length];
-    const hoursUsed = 2 + Math.random() * 8;
-    const loads = Math.floor(Math.random() * 5) + 1;
-    const loadedMiles = loads * (200 + Math.random() * 600);
-    const deadhead = loadedMiles * (0.05 + Math.random() * 0.25);
-    const revenue = loadedMiles * (2.0 + Math.random() * 1.0);
+    // Deterministic values based on driver index (no Math.random)
+    const seed = ((i * 7 + 3) % 11);
+    const hoursUsed = 2 + (seed / 11) * 8;
+    const loads = 1 + (seed % 5);
+    const loadedMiles = loads * (200 + (seed / 11) * 600);
+    const deadhead = loadedMiles * (0.05 + (seed / 11) * 0.25);
+    const revenue = loadedMiles * (2.0 + (seed / 11) * 1.0);
     const utilization = Math.min(100, (hoursUsed / 11) * 100);
-    const fatigue = Math.min(100, hoursUsed * 8 + loads * 5 + (Math.random() * 15));
+    const fatigue = Math.min(100, hoursUsed * 8 + loads * 5 + seed);
 
     return {
       driverId: `DRV-${100 + i}`,
@@ -122,28 +124,30 @@ function generateDrivers(): DriverMission[] {
 }
 
 function generatePendingLoads(): LoadCandidate[] {
+  // Real implementation: query unassigned loads from database
   return Array.from({ length: 8 }, (_, i) => {
-    const orig = CITIES[Math.floor(Math.random() * CITIES.length)];
-    let dest = CITIES[Math.floor(Math.random() * CITIES.length)];
-    while (dest.state === orig.state) dest = CITIES[Math.floor(Math.random() * CITIES.length)];
-    const dist = 200 + Math.random() * 1500;
+    const origIdx = (i * 3) % CITIES.length;
+    const destIdx = (i * 3 + 5) % CITIES.length;
+    const orig = CITIES[origIdx];
+    const dest = origIdx === destIdx ? CITIES[(destIdx + 1) % CITIES.length] : CITIES[destIdx];
+    const dist = 200 + ((i * 137 + 51) % 15) * 100;
     return {
       loadId: `LD-${50000 + i}`,
       origin: orig,
       destination: dest,
       distance: Math.round(dist),
-      rate: Math.round(dist * (2.0 + Math.random() * 1.2)),
-      pickupTime: new Date(Date.now() + (1 + Math.random() * 48) * 3600000).toISOString(),
+      rate: Math.round(dist * 2.50),
+      pickupTime: new Date(Date.now() + (1 + i * 6) * 3600000).toISOString(),
       equipmentRequired: i % 3 === 0 ? "reefer" : i % 3 === 1 ? "flatbed" : "dry_van",
-      weight: Math.round(20000 + Math.random() * 25000),
+      weight: 30000 + (i * 2500),
       priority: i < 2 ? "critical" : i < 4 ? "hot" : "standard",
     };
   });
 }
 
 function estimateDeadhead(driverLoc: { state: string }, loadOrigin: { state: string }): number {
-  if (driverLoc.state === loadOrigin.state) return Math.round(30 + Math.random() * 70);
-  return Math.round(100 + Math.random() * 400);
+  if (driverLoc.state === loadOrigin.state) return 65; // avg intra-state deadhead
+  return 250; // avg inter-state deadhead
 }
 
 function generateAssignments(drivers: DriverMission[], loads: LoadCandidate[]): MissionAssignment[] {
@@ -269,8 +273,8 @@ export function getMissionDashboard(): MissionDashboard {
     optimizationSummary: {
       estimatedDeadheadSaved: Math.max(0, naiveDH - optimizedDH),
       estimatedRevenueLift: Math.round(suggestedAssignments.reduce((s, a) => s + a.estimatedRevenue, 0) * 0.03),
-      driverBalanceImprovement: Math.round(Math.random() * 15 + 5),
-      hosUtilizationGain: Math.round(Math.random() * 8 + 2),
+      driverBalanceImprovement: 10,
+      hosUtilizationGain: 5,
     },
   };
 }

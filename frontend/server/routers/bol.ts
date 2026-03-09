@@ -9,7 +9,9 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
+import { randomInt } from "crypto";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { loads, documents, companies, users, drivers, vehicles } from "../../drizzle/schema";
@@ -233,7 +235,7 @@ function generateBOLNumber(): string {
   const y = date.getFullYear().toString().slice(-2);
   const m = (date.getMonth() + 1).toString().padStart(2, "0");
   const d = date.getDate().toString().padStart(2, "0");
-  const seq = Math.floor(Math.random() * 9000 + 1000);
+  const seq = randomInt(1000, 10000);
   return `BOL-${y}${m}${d}-${seq}`;
 }
 
@@ -242,7 +244,7 @@ function generateTicketNumber(): string {
   const y = date.getFullYear().toString().slice(-2);
   const m = (date.getMonth() + 1).toString().padStart(2, "0");
   const d = date.getDate().toString().padStart(2, "0");
-  const seq = Math.floor(Math.random() * 9000 + 1000);
+  const seq = randomInt(1000, 10000);
   return `ET-${y}${m}${d}-${seq}`;
 }
 
@@ -332,7 +334,7 @@ export const bolRouter = router({
           };
         });
       } catch (error) {
-        console.error('[BOL] list error:', error);
+        logger.error('[BOL] list error:', error);
         return [];
       }
     }),
@@ -359,7 +361,7 @@ export const bolRouter = router({
           issues: 0,
         };
       } catch (error) {
-        console.error('[BOL] getSummary error:', error);
+        logger.error('[BOL] getSummary error:', error);
         return { total: 0, pending: 0, inTransit: 0, completed: 0, thisWeek: 0, issues: 0 };
       }
     }),
@@ -470,7 +472,7 @@ export const bolRouter = router({
             }
           }
         } catch (e) {
-          console.error("[BOL] AI enhancement error:", e);
+          logger.error("[BOL] AI enhancement error:", e);
         }
       }
       
@@ -521,7 +523,7 @@ export const bolRouter = router({
             fileUrl: JSON.stringify(bolDoc),
           });
         } catch (e) {
-          console.error("[BOL] DB insert error:", e);
+          logger.error("[BOL] DB insert error:", e);
         }
       }
       
@@ -597,7 +599,7 @@ export const bolRouter = router({
           };
         });
       } catch (error) {
-        console.error('[RunTicket] list error:', error);
+        logger.error('[RunTicket] list error:', error);
         return [];
       }
     }),
@@ -774,7 +776,7 @@ export const bolRouter = router({
             fileUrl: JSON.stringify(ticket),
           });
         } catch (e) {
-          console.error("[RunTicket] DB insert error:", e);
+          logger.error("[RunTicket] DB insert error:", e);
         }
       }
       
@@ -1045,7 +1047,7 @@ export const bolRouter = router({
           fileUrl: JSON.stringify(ticket),
         } as any);
       } catch (e) {
-        console.error("[CompletionTicket] DB insert error:", e);
+        logger.error("[CompletionTicket] DB insert error:", e);
       }
 
       return {
@@ -1150,7 +1152,7 @@ export const bolRouter = router({
           fileUrl: JSON.stringify(bolDoc),
         } as any);
       } catch (e) {
-        console.error("[BOL] auto-generate from load error:", e);
+        logger.error("[BOL] auto-generate from load error:", e);
       }
 
       // WS-P0-019R: Hash auto-generated BOL content

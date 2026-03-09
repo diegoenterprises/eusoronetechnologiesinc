@@ -5,6 +5,7 @@
 
 import { Router, Request, Response } from "express";
 import crypto from "crypto";
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { 
   integrationWebhooks, 
@@ -26,7 +27,7 @@ router.post("/:provider", async (req: Request, res: Response) => {
   const signature = req.headers["x-webhook-signature"] || req.headers["x-hub-signature-256"];
   const webhookId = req.headers["x-webhook-id"] || `wh_${Date.now()}`;
   
-  console.log(`[Webhook] Received from ${provider}: ${webhookId}`);
+  logger.info(`[Webhook] Received from ${provider}: ${webhookId}`);
 
   try {
     const db = await getDb(); if (!db) return res.status(500).json({ error: "Database unavailable" });
@@ -38,7 +39,7 @@ router.post("/:provider", async (req: Request, res: Response) => {
     // Verify signature if configured (TODO: add secret column to schema)
     if (signature) {
       // Signature verification pending schema update
-      console.log(`[Webhook] Signature provided for ${provider}, verification pending`);
+      logger.info(`[Webhook] Signature provided for ${provider}, verification pending`);
       
       }
 
@@ -53,11 +54,11 @@ router.post("/:provider", async (req: Request, res: Response) => {
       // Webhook already logged via insert, no additional update needed
     }
 
-    console.log(`[Webhook] Processed ${provider}:${eventType} successfully`);
+    logger.info(`[Webhook] Processed ${provider}:${eventType} successfully`);
     return res.status(200).json({ received: true, processed: result.processed });
 
   } catch (error) {
-    console.error(`[Webhook] Error processing ${provider}:`, error);
+    logger.error(`[Webhook] Error processing ${provider}:`, error);
     return res.status(500).json({ error: "Webhook processing failed" });
   }
 });
@@ -69,7 +70,7 @@ router.post("/:provider", async (req: Request, res: Response) => {
 router.post("/canopy", async (req: Request, res: Response) => {
   const { event, data } = req.body;
   
-  console.log(`[Webhook:Canopy] Event: ${event}`);
+  logger.info(`[Webhook:Canopy] Event: ${event}`);
 
   try {
     const db = await getDb(); if (!db) return res.status(500).json({ error: "Database unavailable" });
@@ -98,22 +99,22 @@ router.post("/canopy", async (req: Request, res: Response) => {
 
       case "certificate.generated":
         // Handle new certificate
-        console.log(`[Webhook:Canopy] Certificate generated: ${data.certificate_id}`);
+        logger.info(`[Webhook:Canopy] Certificate generated: ${data.certificate_id}`);
         break;
 
       case "claim.updated":
         // Handle claim update
-        console.log(`[Webhook:Canopy] Claim updated: ${data.claim_id}`);
+        logger.info(`[Webhook:Canopy] Claim updated: ${data.claim_id}`);
         break;
 
       default:
-        console.log(`[Webhook:Canopy] Unhandled event: ${event}`);
+        logger.info(`[Webhook:Canopy] Unhandled event: ${event}`);
     }
 
     return res.status(200).json({ received: true });
 
   } catch (error) {
-    console.error("[Webhook:Canopy] Error:", error);
+    logger.error("[Webhook:Canopy] Error:", error);
     return res.status(500).json({ error: "Processing failed" });
   }
 });
@@ -125,7 +126,7 @@ router.post("/canopy", async (req: Request, res: Response) => {
 router.post("/motive", async (req: Request, res: Response) => {
   const { event_type, data, company_id } = req.body;
   
-  console.log(`[Webhook:Motive] Event: ${event_type}`);
+  logger.info(`[Webhook:Motive] Event: ${event_type}`);
 
   try {
     const db = await getDb(); if (!db) return res.status(500).json({ error: "Database unavailable" });
@@ -138,13 +139,13 @@ router.post("/motive", async (req: Request, res: Response) => {
       ));
 
     if (!connection) {
-      console.warn(`[Webhook:Motive] No connection found for company ${company_id}`);
+      logger.warn(`[Webhook:Motive] No connection found for company ${company_id}`);
       return res.status(200).json({ received: true, processed: false });
     }
 
     // TODO: Store webhook data in integrationSyncedRecords after schema alignment
     // For now, just log the event type
-    console.log(`[Webhook:Motive] Received event: ${event_type}, data ID: ${data?.id || "unknown"}`);
+    logger.info(`[Webhook:Motive] Received event: ${event_type}, data ID: ${data?.id || "unknown"}`);
     
     // Event types: driver.created, driver.updated, vehicle.created, vehicle.updated,
     // hos_log.certified, dvir.submitted, location.updated
@@ -152,7 +153,7 @@ router.post("/motive", async (req: Request, res: Response) => {
     return res.status(200).json({ received: true });
 
   } catch (error) {
-    console.error("[Webhook:Motive] Error:", error);
+    logger.error("[Webhook:Motive] Error:", error);
     return res.status(500).json({ error: "Processing failed" });
   }
 });
@@ -164,7 +165,7 @@ router.post("/motive", async (req: Request, res: Response) => {
 router.post("/isnetworld", async (req: Request, res: Response) => {
   const { notification_type, contractor_id, data } = req.body;
   
-  console.log(`[Webhook:ISNetworld] Event: ${notification_type}`);
+  logger.info(`[Webhook:ISNetworld] Event: ${notification_type}`);
 
   try {
     const db = await getDb(); if (!db) return res.status(500).json({ error: "Database unavailable" });
@@ -190,21 +191,21 @@ router.post("/isnetworld", async (req: Request, res: Response) => {
         break;
 
       case "grade_updated":
-        console.log(`[Webhook:ISNetworld] Grade updated for contractor ${contractor_id}`);
+        logger.info(`[Webhook:ISNetworld] Grade updated for contractor ${contractor_id}`);
         break;
 
       case "document_reviewed":
-        console.log(`[Webhook:ISNetworld] Document reviewed: ${data.document_id}`);
+        logger.info(`[Webhook:ISNetworld] Document reviewed: ${data.document_id}`);
         break;
 
       default:
-        console.log(`[Webhook:ISNetworld] Unhandled event: ${notification_type}`);
+        logger.info(`[Webhook:ISNetworld] Unhandled event: ${notification_type}`);
     }
 
     return res.status(200).json({ received: true });
 
   } catch (error) {
-    console.error("[Webhook:ISNetworld] Error:", error);
+    logger.error("[Webhook:ISNetworld] Error:", error);
     return res.status(500).json({ error: "Processing failed" });
   }
 });
@@ -227,7 +228,7 @@ function verifyWebhookSignature(payload: string, signature: string, secret: stri
       Buffer.from(actualSignature)
     );
   } catch (error) {
-    console.error("[Webhook] Signature verification error:", error);
+    logger.error("[Webhook] Signature verification error:", error);
     return false;
   }
 }
@@ -275,7 +276,7 @@ async function processWebhook(
   const service = getIntegrationService(provider);
   
   if (!service) {
-    console.warn(`[Webhook] No service for provider: ${provider}`);
+    logger.warn(`[Webhook] No service for provider: ${provider}`);
     return { processed: false };
   }
 
@@ -296,7 +297,7 @@ async function processWebhook(
   const dataTypes = dataTypeMap[eventType];
   if (dataTypes) {
     // Would trigger targeted sync here
-    console.log(`[Webhook] Would sync ${dataTypes.join(", ")} for ${provider}`);
+    logger.info(`[Webhook] Would sync ${dataTypes.join(", ")} for ${provider}`);
   }
 
   return { processed: true };

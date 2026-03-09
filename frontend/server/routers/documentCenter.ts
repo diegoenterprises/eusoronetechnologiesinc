@@ -8,6 +8,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, and, desc, sql, isNull, inArray } from "drizzle-orm";
 import { auditedProtectedProcedure, auditedAdminProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   documentTypes,
@@ -141,7 +142,7 @@ async function calculateDocumentAwareness(userId: number, userRole: string): Pro
       }
     }
   } catch (e) {
-    console.warn("[DocumentCenter] Could not parse user metadata:", e);
+    logger.warn("[DocumentCenter] Could not parse user metadata:", e);
   }
 
   // Also read from userOperatingStates table
@@ -153,7 +154,7 @@ async function calculateDocumentAwareness(userId: number, userRole: string): Pro
       if (os.isHomeState && !cdlState) cdlState = os.stateCode;
     }
   } catch (e) {
-    console.warn("[DocumentCenter] Could not query userOperatingStates:", e);
+    logger.warn("[DocumentCenter] Could not query userOperatingStates:", e);
   }
 
   // The home/registered state is always an operating state
@@ -170,7 +171,7 @@ async function calculateDocumentAwareness(userId: number, userRole: string): Pro
         .from(stateDocRequirements)
         .where(inArray(stateDocRequirements.stateCode, allStateCodes));
     } catch (e) {
-      console.warn("[DocumentCenter] Could not query stateDocRequirements:", e);
+      logger.warn("[DocumentCenter] Could not query stateDocRequirements:", e);
     }
   }
 
@@ -495,7 +496,7 @@ async function calculateDocumentAwareness(userId: number, userRole: string): Pro
       });
     }
   } catch (e) {
-    console.error("[DocumentCenter] Failed to cache compliance status:", e);
+    logger.error("[DocumentCenter] Failed to cache compliance status:", e);
   }
 
   return awareness;
@@ -807,7 +808,7 @@ export const documentCenterRouter = router({
         const result = await storagePut(blobPath, fileBuffer, input.mimeType);
         blobUrl = result.url;
       } catch (e: any) {
-        console.error("[DocumentCenter] Upload failed:", e.message);
+        logger.error("[DocumentCenter] Upload failed:", e.message);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "File upload failed" });
       }
 
@@ -1453,7 +1454,7 @@ export const documentCenterRouter = router({
             const hits = await searchDocuments(input.search, 5);
             // Add AI-found document IDs as hints (won't expand template list, but logged for future use)
             if (hits.length > 0) {
-              console.log(`[DocCenter] Semantic search found ${hits.length} related docs for "${input.search}"`);
+              logger.info(`[DocCenter] Semantic search found ${hits.length} related docs for "${input.search}"`);
             }
           } catch { /* embedding service unavailable */ }
         }
@@ -1694,7 +1695,7 @@ export const documentCenterRouter = router({
         });
         inserted++;
       } catch (e: any) {
-        console.error(`[Seed] Failed to insert document type ${seed.id}:`, e.message);
+        logger.error(`[Seed] Failed to insert document type ${seed.id}:`, e.message);
       }
     }
 
@@ -1722,7 +1723,7 @@ export const documentCenterRouter = router({
         });
         inserted++;
       } catch (e: any) {
-        console.error(`[Seed] Failed to insert doc requirement ${seed.documentTypeId}/${seed.requiredForRole}:`, e.message);
+        logger.error(`[Seed] Failed to insert doc requirement ${seed.documentTypeId}/${seed.requiredForRole}:`, e.message);
       }
     }
 
@@ -1759,7 +1760,7 @@ export const documentCenterRouter = router({
         inserted++;
       } catch (e: any) {
         if (e.message?.includes("Duplicate")) continue;
-        console.error(`[Seed] Failed to insert state req ${seed.stateCode}/${seed.documentTypeId}:`, e.message);
+        logger.error(`[Seed] Failed to insert state req ${seed.stateCode}/${seed.documentTypeId}:`, e.message);
       }
     }
 

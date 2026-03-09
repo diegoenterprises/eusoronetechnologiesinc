@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, desc, sql, gte, lte, and } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { appointments, loads, users, companies } from "../../drizzle/schema";
 
@@ -67,7 +68,7 @@ export const appointmentsRouter = router({
           })),
           total: countRow?.count || 0,
         };
-      } catch (err) { console.error("[appointments.list]", err); return { appointments: [], total: 0 }; }
+      } catch (err) { logger.error("[appointments.list]", err); return { appointments: [], total: 0 }; }
     }),
 
   /**
@@ -417,7 +418,7 @@ export const appointmentsRouter = router({
           await db.update(appointments).set({
             dockNumber: input.bayId,
           }).where(eq(appointments.id, parseInt(input.appointmentId, 10)));
-        } catch (e) { console.warn("[Appointments] Bay assignment DB update failed:", e); }
+        } catch (e) { logger.warn("[Appointments] Bay assignment DB update failed:", e); }
       }
 
       return {

@@ -3,6 +3,7 @@
  * Centralizes embedding-powered search + auto-indexing across all EusoTrip features.
  */
 
+import { logger } from "../../_core/logger";
 import { embeddingService, EmbeddingService } from "./embeddingService";
 
 type EntityType = "load" | "document" | "knowledge" | "carrier" | "rate_sheet" | "agreement" | "erg_guide" | "zone_intelligence" | "support_ticket" | "message" | "compliance_record";
@@ -58,7 +59,7 @@ export async function indexEntity(req: IndexRequest): Promise<boolean> {
     }
     return true;
   } catch (err) {
-    console.error(`[AITurbo] indexEntity(${req.entityType}:${req.entityId}) error:`, err);
+    logger.error(`[AITurbo] indexEntity(${req.entityType}:${req.entityId}) error:`, err);
     return false;
   }
 }
@@ -115,8 +116,8 @@ async function loadCandidates(entityTypes?: EntityType[]): Promise<CandidateRow[
       sourceText: c.sourceText, metadata: c.metadata,
     }));
     _candidateCacheTs = now;
-    console.log(`[AITurbo] Candidate cache refreshed: ${_candidateCache.length} embeddings`);
-  } catch (err) { console.error("[AITurbo] loadCandidates error:", err); }
+    logger.info(`[AITurbo] Candidate cache refreshed: ${_candidateCache.length} embeddings`);
+  } catch (err) { logger.error("[AITurbo] loadCandidates error:", err); }
   _candidateCacheLoading = false;
   if (!entityTypes?.length) return _candidateCache;
   const set = new Set(entityTypes as string[]);
@@ -150,7 +151,7 @@ export async function semanticSearch(
       entityType: r.entityType || "", entityId: r.entityId || "",
       text: r.text || "", score: Math.round(r.score * 10000) / 10000, metadata: r.metadata,
     }));
-  } catch (err) { console.error("[AITurbo] semanticSearch error:", err); return []; }
+  } catch (err) { logger.error("[AITurbo] semanticSearch error:", err); return []; }
 }
 
 // ── Core: Remove Entity ──────────────────────────────────────────────────────
@@ -164,7 +165,7 @@ export async function removeEntity(entityType: EntityType, entityId: string): Pr
     await db.delete(embeddings).where(and(eq(embeddings.entityType, entityType), eq(embeddings.entityId, entityId)));
     invalidateCandidateCache();
     return true;
-  } catch (err) { console.error(`[AITurbo] removeEntity error:`, err); return false; }
+  } catch (err) { logger.error(`[AITurbo] removeEntity error:`, err); return false; }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

@@ -22,6 +22,7 @@
 
 import * as cron from "node-cron";
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import {
   runDailyEtl,
   runMonthlyEtl,
@@ -48,14 +49,14 @@ const ENABLE_ALERTS = process.env.FMCSA_ENABLE_ALERTS !== "false";
 
 async function withErrorHandling(jobName: string, fn: () => Promise<any>): Promise<void> {
   const startTime = Date.now();
-  console.log(`[FMCSA Cron] Starting job: ${jobName}`);
+  logger.info(`[FMCSA Cron] Starting job: ${jobName}`);
   
   try {
     await fn();
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`[FMCSA Cron] Completed job: ${jobName} in ${duration}s`);
+    logger.info(`[FMCSA Cron] Completed job: ${jobName} in ${duration}s`);
   } catch (err: any) {
-    console.error(`[FMCSA Cron] Job failed: ${jobName}`, err.message);
+    logger.error(`[FMCSA Cron] Job failed: ${jobName}`, err.message);
     // TODO: Send alert to Slack/PagerDuty
   }
 }
@@ -66,7 +67,7 @@ async function withErrorHandling(jobName: string, fn: () => Promise<any>): Promi
 
 function scheduleDailyEtl(): void {
   if (!ENABLE_DAILY_ETL) {
-    console.log("[FMCSA Cron] Daily ETL disabled");
+    logger.info("[FMCSA Cron] Daily ETL disabled");
     return;
   }
   
@@ -79,12 +80,12 @@ function scheduleDailyEtl(): void {
     await withErrorHandling("LIGHTSPEED Post-ETL Pipeline", runPreComputePipeline);
   });
   
-  console.log("[FMCSA Cron] ✓ Scheduled: Daily ETL at 12:00 PM CT (18:00 UTC) — all 9 daily datasets");
+  logger.info("[FMCSA Cron] Scheduled: Daily ETL at 12:00 PM CT (18:00 UTC) — all 9 daily datasets");
 }
 
 function scheduleMonthlyEtl(): void {
   if (!ENABLE_MONTHLY_ETL) {
-    console.log("[FMCSA Cron] Monthly ETL disabled");
+    logger.info("[FMCSA Cron] Monthly ETL disabled");
     return;
   }
   
@@ -96,12 +97,12 @@ function scheduleMonthlyEtl(): void {
     await withErrorHandling("LIGHTSPEED Post-SMS Pipeline", runPreComputePipeline);
   });
   
-  console.log("[FMCSA Cron] ✓ Scheduled: Monthly ETL on 16th at 12:30 PM CT (18:30 UTC) — SMS scores");
+  logger.info("[FMCSA Cron] Scheduled: Monthly ETL on 16th at 12:30 PM CT (18:30 UTC) — SMS scores");
 }
 
 function scheduleMonitoringJob(): void {
   if (!ENABLE_MONITORING) {
-    console.log("[FMCSA Cron] Carrier monitoring disabled");
+    logger.info("[FMCSA Cron] Carrier monitoring disabled");
     return;
   }
   
@@ -110,12 +111,12 @@ function scheduleMonitoringJob(): void {
     await withErrorHandling("Carrier Monitoring", runMonitoringJob);
   });
   
-  console.log("[FMCSA Cron] ✓ Scheduled: Carrier Monitoring every 15 minutes");
+  logger.info("[FMCSA Cron] Scheduled: Carrier Monitoring every 15 minutes");
 }
 
 function scheduleAlertDelivery(): void {
   if (!ENABLE_ALERTS) {
-    console.log("[FMCSA Cron] Alert delivery disabled");
+    logger.info("[FMCSA Cron] Alert delivery disabled");
     return;
   }
   
@@ -124,12 +125,12 @@ function scheduleAlertDelivery(): void {
     await withErrorHandling("Alert Delivery", async () => {
       const sent = await sendPendingAlerts();
       if (sent > 0) {
-        console.log(`[FMCSA Cron] Sent ${sent} alerts`);
+        logger.info(`[FMCSA Cron] Sent ${sent} alerts`);
       }
     });
   });
   
-  console.log("[FMCSA Cron] ✓ Scheduled: Alert Delivery every 5 minutes");
+  logger.info("[FMCSA Cron] Scheduled: Alert Delivery every 5 minutes");
 }
 
 // ============================================================================
@@ -160,32 +161,32 @@ let cronStarted = false;
 
 export async function startFmcsaCron(): Promise<void> {
   if (cronStarted) {
-    console.log("[FMCSA Cron] Already running, skipping duplicate start");
+    logger.info("[FMCSA Cron] Already running, skipping duplicate start");
     return;
   }
   cronStarted = true;
   
-  console.log("[FMCSA Cron] ═══════════════════════════════════════════════════");
-  console.log("[FMCSA Cron] Starting FMCSA ETL Scheduler");
-  console.log("[FMCSA Cron] Daily scrape: 12:00 PM CT (18:00 UTC)");
-  console.log("[FMCSA Cron] Monthly SMS:  16th at 12:30 PM CT (18:30 UTC)");
-  console.log("[FMCSA Cron] Monitoring:   Every 15 minutes");
-  console.log("[FMCSA Cron] Alerts:       Every 5 minutes");
-  console.log("[FMCSA Cron] ═══════════════════════════════════════════════════\n");
+  logger.info("[FMCSA Cron] ═══════════════════════════════════════════════════");
+  logger.info("[FMCSA Cron] Starting FMCSA ETL Scheduler");
+  logger.info("[FMCSA Cron] Daily scrape: 12:00 PM CT (18:00 UTC)");
+  logger.info("[FMCSA Cron] Monthly SMS:  16th at 12:30 PM CT (18:30 UTC)");
+  logger.info("[FMCSA Cron] Monitoring:   Every 15 minutes");
+  logger.info("[FMCSA Cron] Alerts:       Every 5 minutes");
+  logger.info("[FMCSA Cron] ═══════════════════════════════════════════════════");
   
   scheduleDailyEtl();
   scheduleMonthlyEtl();
   scheduleMonitoringJob();
   scheduleAlertDelivery();
   
-  console.log("\n[FMCSA Cron] All jobs scheduled and running.");
+  logger.info("[FMCSA Cron] All jobs scheduled and running.");
   
   // Missed-run catch-up: if server was down during today's 12PM run, catch up now
   setTimeout(async () => {
     try {
       await checkAndCatchUpMissedRuns();
     } catch (err) {
-      console.error("[FMCSA Cron] Missed-run check failed:", err);
+      logger.error("[FMCSA Cron] Missed-run check failed:", err);
     }
   }, 5000);
 }
@@ -208,8 +209,8 @@ async function checkAndCatchUpMissedRuns(): Promise<void> {
     
     if (censusCount === 0) {
       // NEVER loaded — trigger immediate full initial load regardless of time
-      console.log("[FMCSA Cron] ⚠ FMCSA TABLES ARE EMPTY — triggering initial data load NOW!");
-      console.log("[FMCSA Cron] This is the first-ever ETL run. Downloading all FMCSA datasets...");
+      logger.info("[FMCSA Cron] FMCSA TABLES ARE EMPTY — triggering initial data load NOW!");
+      logger.info("[FMCSA Cron] This is the first-ever ETL run. Downloading all FMCSA datasets...");
       await withErrorHandling("Initial Data Load (first boot)", runDailyEtl);
       return;
     }
@@ -235,22 +236,22 @@ async function checkAndCatchUpMissedRuns(): Promise<void> {
       
       if (hourUtc >= 18) {
         // Past noon CT and no run today — server was down during scheduled run
-        console.log("[FMCSA Cron] ⚠ MISSED TODAY'S 12PM RUN — catching up now!");
+        logger.info("[FMCSA Cron] MISSED TODAY'S 12PM RUN — catching up now!");
         await withErrorHandling("Catch-Up Daily ETL", runDailyEtl);
       } else {
-        console.log(`[FMCSA Cron] ✓ Data loaded (${censusCount.toLocaleString()} carriers). Next run at 12:00 PM CT (18:00 UTC)`);
+        logger.info(`[FMCSA Cron] Data loaded (${censusCount.toLocaleString()} carriers). Next run at 12:00 PM CT (18:00 UTC)`);
       }
     } else {
-      console.log(`[FMCSA Cron] ✓ Today's daily ETL already completed at ${lastSuccess} (${censusCount.toLocaleString()} carriers)`);
+      logger.info(`[FMCSA Cron] Today's daily ETL already completed at ${lastSuccess} (${censusCount.toLocaleString()} carriers)`);
     }
   } catch (err: any) {
-    console.error("[FMCSA Cron] Missed-run check error:", err.message);
+    logger.error("[FMCSA Cron] Missed-run check error:", err.message);
     // If anything fails, try loading data anyway — better to have data than not
     try {
-      console.log("[FMCSA Cron] Attempting data load despite check error...");
+      logger.info("[FMCSA Cron] Attempting data load despite check error...");
       await withErrorHandling("Fallback Data Load", runDailyEtl);
     } catch {
-      console.error("[FMCSA Cron] Fallback data load also failed. Will retry at next scheduled run.");
+      logger.error("[FMCSA Cron] Fallback data load also failed. Will retry at next scheduled run.");
     }
   }
 }
@@ -286,7 +287,7 @@ async function main(): Promise<void> {
   
   // Keep process alive
   process.on("SIGINT", () => {
-    console.log("\n[FMCSA Cron] Shutting down...");
+    logger.info("[FMCSA Cron] Shutting down...");
     process.exit(0);
   });
 }
@@ -295,7 +296,7 @@ async function main(): Promise<void> {
 try {
   if (require.main === module) {
     main().catch(err => {
-      console.error("[FMCSA Cron] Fatal error:", err);
+      logger.error("[FMCSA Cron] Fatal error:", err);
       process.exit(1);
     });
   }

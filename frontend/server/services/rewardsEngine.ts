@@ -478,7 +478,8 @@ export class RewardsEngine {
       mythic: 0.0005,    // 0.05%
     };
 
-    const random = Math.random();
+    const { randomInt: _ri } = require("crypto");
+    const random = _ri(0, 10000) / 10000;
     let cumulative = 0;
 
     for (const [crateType, chance] of Object.entries(dropChances)) {

@@ -16,6 +16,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, or, like, isNull, inArray } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { messages, messageAttachments, users, conversations, conversationParticipants, wallets, walletTransactions } from "../../drizzle/schema";
 import { lookupAndNotify } from "../services/notifications";
@@ -174,7 +175,7 @@ export const messagesRouter = router({
           return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
         });
       } catch (error) {
-        console.error("[Messages] getConversations error:", error);
+        logger.error("[Messages] getConversations error:", error);
         return [];
       }
     }),
@@ -267,7 +268,7 @@ export const messagesRouter = router({
           };
         });
       } catch (error) {
-        console.error("[Messages] getMessages error:", error);
+        logger.error("[Messages] getMessages error:", error);
         return [];
       }
     }),
@@ -561,7 +562,7 @@ export const messagesRouter = router({
 
         return { success: true, conversationId: input.conversationId, markedCount: 1 };
       } catch (error) {
-        console.error("[Messages] markAsRead error:", error);
+        logger.error("[Messages] markAsRead error:", error);
         return { success: false, conversationId: input.conversationId, markedCount: 0 };
       }
     }),
@@ -598,7 +599,7 @@ export const messagesRouter = router({
 
         return { total, byConversation };
       } catch (error) {
-        console.error("[Messages] getUnreadCount error:", error);
+        logger.error("[Messages] getUnreadCount error:", error);
         return { total: 0, byConversation: {} };
       }
     }),
@@ -662,7 +663,7 @@ export const messagesRouter = router({
           total: results.length,
         };
       } catch (error) {
-        console.error("[Messages] search error:", error);
+        logger.error("[Messages] search error:", error);
         return { results: [], total: 0 };
       }
     }),
@@ -788,7 +789,7 @@ export const messagesRouter = router({
           phone: u.phone,
         }));
       } catch (error) {
-        console.error("[Messages] searchUsers error:", error);
+        logger.error("[Messages] searchUsers error:", error);
         return [];
       }
     }),
@@ -835,7 +836,7 @@ export const messagesRouter = router({
           })),
         };
       } catch (error) {
-        console.error("[Messages] getConversation error:", error);
+        logger.error("[Messages] getConversation error:", error);
         return null;
       }
     }),
@@ -1245,7 +1246,7 @@ export const messagesRouter = router({
           });
         }
       } catch (stripeErr) {
-        console.warn("[Stripe] Connect transfer skipped:", stripeErr);
+        logger.warn("[Stripe] Connect transfer skipped:", stripeErr);
       }
 
       // Update the original request message status to "completed"

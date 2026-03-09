@@ -11,6 +11,7 @@
 
 import crypto from "crypto";
 import { sql } from "drizzle-orm";
+import { logger } from "../../../_core/logger";
 import { getDb } from "../../../db";
 import { recordAuditEvent, AuditAction, AuditCategory } from "../../../_core/auditService";
 
@@ -56,7 +57,7 @@ export async function storeRefreshToken(
           VALUES (${tokenHash}, ${userId}, ${family}, ${expiresAt.toISOString()}, NOW())`
     );
   } catch (err) {
-    console.warn("[RefreshTokens] Failed to store:", err);
+    logger.warn("[RefreshTokens] Failed to store:", err);
   }
 
   return family;
@@ -134,7 +135,7 @@ export async function rotateRefreshToken(
 
     return { valid: true, newTokenHash: newHash, familyId: record.family_id, reuseDetected: false };
   } catch (err) {
-    console.warn("[RefreshTokens] Rotation error:", err);
+    logger.warn("[RefreshTokens] Rotation error:", err);
     return { valid: false, newTokenHash: null, familyId: null, reuseDetected: false };
   }
 }
@@ -161,7 +162,7 @@ export async function revokeAllRefreshTokens(userId: number, reason?: string): P
       severity: "MEDIUM",
     }).catch(() => {});
   } catch (err) {
-    console.warn("[RefreshTokens] Failed to revoke all:", err);
+    logger.warn("[RefreshTokens] Failed to revoke all:", err);
   }
 }
 

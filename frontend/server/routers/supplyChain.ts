@@ -29,6 +29,7 @@ const supplyChainReadProcedure = isolatedRoleProcedure(
   ROLES.TERMINAL_MANAGER, ROLES.SHIPPER, ROLES.BROKER, ROLES.CATALYST, ROLES.DISPATCH
 );
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import {
   terminals,
   terminalPartners,
@@ -131,7 +132,7 @@ export const supplyChainRouter = router({
           isMarketer: p.supplyChainRole === "MARKETER" || p.partnerType === "marketer",
         }));
       } catch (error) {
-        console.error("[SupplyChain] getTerminalPartners error:", error);
+        logger.error("[SupplyChain] getTerminalPartners error:", error);
         return [];
       }
     }),
@@ -196,7 +197,7 @@ export const supplyChainRouter = router({
         pendingVolume: 0,
       };
     } catch (error) {
-      console.error("[SupplyChain] getPartnerStats error:", error);
+      logger.error("[SupplyChain] getPartnerStats error:", error);
       return { total: 0, active: 0, shippers: 0, marketers: 0, brokers: 0, transporters: 0, pendingVolume: 0 };
     }
   }),
@@ -290,7 +291,7 @@ export const supplyChainRouter = router({
 
       return company || null;
     } catch (error) {
-      console.error("[SupplyChain] getCompanyClassification error:", error);
+      logger.error("[SupplyChain] getCompanyClassification error:", error);
       return null;
     }
   }),
@@ -377,7 +378,7 @@ export const supplyChainRouter = router({
         throughputCapacity: t.throughputCapacity ? Number(t.throughputCapacity) : null,
       }));
     } catch (error) {
-      console.error("[SupplyChain] getMyTerminals error:", error);
+      logger.error("[SupplyChain] getMyTerminals error:", error);
       return [];
     }
   }),
@@ -447,7 +448,7 @@ export const supplyChainRouter = router({
 
       return combined;
     } catch (error) {
-      console.error("[SupplyChain] getTerminalsForLoadCreation error:", error);
+      logger.error("[SupplyChain] getTerminalsForLoadCreation error:", error);
       return [];
     }
   }),
@@ -498,7 +499,7 @@ export const supplyChainRouter = router({
         monthlyVolume: 0,
       };
     } catch (error) {
-      console.error("[SupplyChain] getTerminalFlowSummary error:", error);
+      logger.error("[SupplyChain] getTerminalFlowSummary error:", error);
       return { inbound: 0, outbound: 0, activePartners: 0, monthlyVolume: 0 };
     }
   }),
@@ -561,7 +562,7 @@ export const supplyChainRouter = router({
             if (c.dotNumber) seenDots.add(c.dotNumber);
           }
         } catch (error) {
-          console.error("[SupplyChain] searchCompanies DB error:", error);
+          logger.error("[SupplyChain] searchCompanies DB error:", error);
         }
       }
 
@@ -618,7 +619,7 @@ export const supplyChainRouter = router({
             });
           }
         } catch (error) {
-          console.error("[SupplyChain] searchCompanies FMCSA error:", error);
+          logger.error("[SupplyChain] searchCompanies FMCSA error:", error);
         }
       }
 
@@ -657,7 +658,7 @@ export const supplyChainRouter = router({
           const result = await sendSms({ to: input.contact, message, userId: ctx.user?.id });
           return { success: result.status !== "FAILED", method: "sms", messageId: result.id };
         } catch (err: any) {
-          console.error("[SupplyChain] invitePartner SMS error:", err);
+          logger.error("[SupplyChain] invitePartner SMS error:", err);
           return { success: false, method: "sms", error: err?.message || "SMS failed" };
         }
       } else {
@@ -679,7 +680,7 @@ export const supplyChainRouter = router({
           });
           return { success: sent, method: "email" };
         } catch (err: any) {
-          console.error("[SupplyChain] invitePartner email error:", err);
+          logger.error("[SupplyChain] invitePartner email error:", err);
           return { success: false, method: "email", error: err?.message || "Email failed" };
         }
       }
@@ -930,7 +931,7 @@ export const supplyChainRouter = router({
               }
             }
           } catch (e) {
-            console.error("[SupplyChain] Agreement enrichment error:", e);
+            logger.error("[SupplyChain] Agreement enrichment error:", e);
           }
         }
 
@@ -939,7 +940,7 @@ export const supplyChainRouter = router({
           agreementStatus: (p.partnerCompanyId && agreementMap[p.partnerCompanyId]) || null,
         }));
       } catch (error) {
-        console.error("[SupplyChain] getMyPartners error:", error);
+        logger.error("[SupplyChain] getMyPartners error:", error);
         return [];
       }
     }),
@@ -976,7 +977,7 @@ export const supplyChainRouter = router({
       }
       return { total, active, pending, byRole };
     } catch (error) {
-      console.error("[SupplyChain] getPartnershipStats error:", error);
+      logger.error("[SupplyChain] getPartnershipStats error:", error);
       return { total: 0, active: 0, pending: 0, byRole: {} };
     }
   }),

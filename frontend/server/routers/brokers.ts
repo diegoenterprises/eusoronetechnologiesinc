@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { brokerProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, users, companies } from "../../drizzle/schema";
 import { getCarrierSafetyIntel, batchSafetyScores, batchOOSStatus, getSafetyScores, getOOSStatus } from "../services/fmcsaBulkLookup";
@@ -105,7 +106,7 @@ export const brokersRouter = router({
           loadToCatalystRatio: 3.2,
         };
       } catch (error) {
-        console.error('[Brokers] getDashboardStats error:', error);
+        logger.error('[Brokers] getDashboardStats error:', error);
         return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, marginAverage: 0, loadToCatalystRatio: 0 };
       }
     }),
@@ -136,7 +137,7 @@ export const brokersRouter = router({
           loadToCatalystRatio: 3.2,
         };
       } catch (error) {
-        console.error('[Brokers] getDashboardSummary error:', error);
+        logger.error('[Brokers] getDashboardSummary error:', error);
         return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, avgMargin: 0, loadToCatalystRatio: 0 };
       }
     }),
@@ -184,7 +185,7 @@ export const brokersRouter = router({
           };
         }));
       } catch (error) {
-        console.error('[Brokers] getShipperLoads error:', error);
+        logger.error('[Brokers] getShipperLoads error:', error);
         return [];
       }
     }),
@@ -227,7 +228,7 @@ export const brokersRouter = router({
           topLanes: [],
         };
       } catch (error) {
-        console.error('[Brokers] getAnalytics error:', error);
+        logger.error('[Brokers] getAnalytics error:', error);
         return { totalLoads: 0, loadsBrokered: 0, totalRevenue: 0, totalCommission: 0, avgMargin: 0, avgMarginPercent: 0, commissionTrend: 0, loadsTrend: 0, revenueTrend: 0, topCatalysts: [], avgMarginDollars: 0, activeCatalysts: 0, newCatalysts: 0, topLanes: [] };
       }
     }),
@@ -262,7 +263,7 @@ export const brokersRouter = router({
           breakdown: [],
         };
       } catch (error) {
-        console.error('[Brokers] getCommissionSummary error:', error);
+        logger.error('[Brokers] getCommissionSummary error:', error);
         return { total: 0, pending: 0, paid: 0, avgPerLoad: 0, totalCommission: 0, loadsMatched: 0, avgMargin: 0, breakdown: [] };
       }
     }),
@@ -299,7 +300,7 @@ export const brokersRouter = router({
           };
         }));
       } catch (error) {
-        console.error('[Brokers] getCommissions error:', error);
+        logger.error('[Brokers] getCommissions error:', error);
         return [];
       }
     }),
@@ -340,7 +341,7 @@ export const brokersRouter = router({
           breakdown: [],
         };
       } catch (error) {
-        console.error('[Brokers] getCommissionStats error:', error);
+        logger.error('[Brokers] getCommissionStats error:', error);
         return { total: 0, totalEarned: 0, totalCommission: 0, pending: 0, paid: 0, avgPerLoad: 0, loadsMatched: 0, avgMargin: 0, loadsThisPeriod: 0, trend: 'stable', trendPercent: 0, loadsCompleted: 0, breakdown: [] };
       }
     }),
@@ -432,7 +433,7 @@ export const brokersRouter = router({
 
         return results;
       } catch (error) {
-        console.error('[Brokers] getCatalystCapacity error:', error);
+        logger.error('[Brokers] getCatalystCapacity error:', error);
         return [];
       }
     }),
@@ -725,7 +726,7 @@ export const brokersRouter = router({
         }
         return filtered;
       } catch (error) {
-        console.error('[Brokers] getMarketplaceLoads error:', error);
+        logger.error('[Brokers] getMarketplaceLoads error:', error);
         return [];
       }
     }),
@@ -1031,7 +1032,7 @@ export const brokersRouter = router({
           lastActivity: c.updatedAt?.toISOString() || new Date().toISOString(),
         }));
       } catch (error) {
-        console.error('[Brokers] getShippers error:', error);
+        logger.error('[Brokers] getShippers error:', error);
         return [];
       }
     }),

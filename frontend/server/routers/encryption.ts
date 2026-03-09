@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, channelMembers, groupChannels } from "../../drizzle/schema";
 import { eq, and, inArray, sql } from "drizzle-orm";
@@ -79,7 +80,7 @@ export const encryptionRouter = router({
           publicKey: r.publicKey,
         }));
       } catch (error) {
-        console.error("[Encryption] getPublicKeys error:", error);
+        logger.error("[Encryption] getPublicKeys error:", error);
         return [];
       }
     }),

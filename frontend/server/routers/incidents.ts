@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { incidents, users } from "../../drizzle/schema";
 
@@ -70,7 +71,7 @@ export const incidentsRouter = router({
           total: countRow?.count || 0,
           summary: { total: countRow?.count || 0, open: openCount?.count || 0, critical: critCount?.count || 0, thisMonth: monthCount?.count || 0 },
         };
-      } catch (err) { console.error("[incidents.list]", err); return { incidents: [], total: 0, summary: { total: 0, open: 0, critical: 0, thisMonth: 0 } }; }
+      } catch (err) { logger.error("[incidents.list]", err); return { incidents: [], total: 0, summary: { total: 0, open: 0, critical: 0, thisMonth: 0 } }; }
     }),
 
   /**
@@ -185,7 +186,7 @@ export const incidentsRouter = router({
             }
           }
         } catch (err: any) {
-          console.warn("[incidents.report] Safety alert failed:", err?.message?.slice(0, 80));
+          logger.warn("[incidents.report] Safety alert failed:", err?.message?.slice(0, 80));
         }
       }
 

@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { catalystProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { companies, users, vehicles, loads, bids, documents } from "../../drizzle/schema";
 import { eq, and, desc, sql, count, gte, or } from "drizzle-orm";
@@ -151,7 +152,7 @@ export const catalystsRouter = router({
 
         return result.filter(r => r.available > 0);
       } catch (error) {
-        console.error('[Catalysts] getAvailableCapacity error:', error);
+        logger.error('[Catalysts] getAvailableCapacity error:', error);
         return [];
       }
     }),
@@ -189,7 +190,7 @@ export const catalystsRouter = router({
           avgRating: 0,
         };
       } catch (error) {
-        console.error('[Catalysts] getCapacitySummary error:', error);
+        logger.error('[Catalysts] getCapacitySummary error:', error);
         return { totalAvailable: 0, totalCapacity: 0, tankers: 0, tanker: 0, dryVans: 0, dryVan: 0, flatbeds: 0, flatbed: 0, reefers: 0, reefer: 0, available: 0, booked: 0, verified: 0, avgRating: 0 };
       }
     }),
@@ -231,7 +232,7 @@ export const catalystsRouter = router({
 
       return result.filter(Boolean);
     } catch (error) {
-      console.error('[Catalysts] searchCapacity error:', error);
+      logger.error('[Catalysts] searchCapacity error:', error);
       return [];
     }
   }),
@@ -292,7 +293,7 @@ export const catalystsRouter = router({
           onTimeRate: 0,
         };
       } catch (error) {
-        console.error('[Catalysts] getDashboardStats error:', error);
+        logger.error('[Catalysts] getDashboardStats error:', error);
         return { activeLoads: 0, availableCapacity: 0, weeklyRevenue: 0, fleetUtilization: 0, safetyScore: 0, onTimeRate: 0 };
       }
     }),
@@ -339,7 +340,7 @@ export const catalystsRouter = router({
           };
         }));
       } catch (error) {
-        console.error('[Catalysts] getMyDrivers error:', error);
+        logger.error('[Catalysts] getMyDrivers error:', error);
         return [];
       }
     }),
@@ -381,7 +382,7 @@ export const catalystsRouter = router({
           };
         });
       } catch (error) {
-        console.error('[Catalysts] getActiveLoads error:', error);
+        logger.error('[Catalysts] getActiveLoads error:', error);
         return [];
       }
     }),
@@ -441,7 +442,7 @@ export const catalystsRouter = router({
 
         return alerts;
       } catch (error) {
-        console.error('[Catalysts] getAlerts error:', error);
+        logger.error('[Catalysts] getAlerts error:', error);
         return [];
       }
     }),
@@ -517,7 +518,7 @@ export const catalystsRouter = router({
 
         return filtered;
       } catch (error) {
-        console.error('[Catalysts] list error:', error);
+        logger.error('[Catalysts] list error:', error);
         return [];
       }
     }),
@@ -621,7 +622,7 @@ export const catalystsRouter = router({
           serviceAreas: [company.state || 'TX'],
         };
       } catch (error) {
-        console.error('[Catalysts] getById error:', error);
+        logger.error('[Catalysts] getById error:', error);
         return null;
       }
     }),
@@ -690,7 +691,7 @@ export const catalystsRouter = router({
           preferredLanes: [],
         };
       } catch (error) {
-        console.error('[Catalysts] getCapacity error:', error);
+        logger.error('[Catalysts] getCapacity error:', error);
         return { catalystId: input.catalystId, availableTrucks: 0, availableDrivers: 0, equipment: [], preferredLanes: [] };
       }
     }),
@@ -738,7 +739,7 @@ export const catalystsRouter = router({
           };
         }));
       } catch (error) {
-        console.error('[Catalysts] getBids error:', error);
+        logger.error('[Catalysts] getBids error:', error);
         return [];
       }
     }),
@@ -777,7 +778,7 @@ export const catalystsRouter = router({
           avgBid: Math.round(avgBid?.avg || 0),
         };
       } catch (error) {
-        console.error('[Catalysts] getBidStats error:', error);
+        logger.error('[Catalysts] getBidStats error:', error);
         return { activeBids: 0, wonThisWeek: 0, winRate: 0, avgBidAmount: 0, pending: 0, accepted: 0, avgBid: 0 };
       }
     }),
@@ -813,7 +814,7 @@ export const catalystsRouter = router({
           };
         });
       } catch (error) {
-        console.error('[Catalysts] getAvailableLoads error:', error);
+        logger.error('[Catalysts] getAvailableLoads error:', error);
         return [];
       }
     }),
@@ -960,7 +961,7 @@ export const catalystsRouter = router({
           uploadedDate: d.createdAt?.toISOString().split('T')[0] || null,
         }));
       } catch (error) {
-        console.error('[Catalysts] getDocuments error:', error);
+        logger.error('[Catalysts] getDocuments error:', error);
         return [];
       }
     }),
@@ -991,7 +992,7 @@ export const catalystsRouter = router({
         const first = history[0]?.loads || 0; const last = history[history.length - 1]?.loads || 0;
         const change = first > 0 ? Math.round(((last - first) / first) * 100 * 10) / 10 : 0;
         return { catalystId: input.catalystId, period: input.period, history, trends: { loads: { change, direction: change > 0 ? 'up' : change < 0 ? 'down' : 'flat' }, onTimeRate: { change: 0, direction: 'flat' }, rating: { change: 0, direction: 'flat' } } };
-      } catch (e) { console.error('[Catalysts] getPerformanceHistory error:', e); return { catalystId: input.catalystId, period: input.period, history: [], trends: { loads: { change: 0, direction: 'flat' }, onTimeRate: { change: 0, direction: 'flat' }, rating: { change: 0, direction: 'flat' } } }; }
+      } catch (e) { logger.error('[Catalysts] getPerformanceHistory error:', e); return { catalystId: input.catalystId, period: input.period, history: [], trends: { loads: { change: 0, direction: 'flat' }, onTimeRate: { change: 0, direction: 'flat' }, rating: { change: 0, direction: 'flat' } } }; }
     }),
 
   /**
@@ -1010,7 +1011,7 @@ export const catalystsRouter = router({
           const companyId = parseInt(input.catalystId, 10);
           const statusMap: Record<string, string> = { active: 'compliant', pending: 'pending', suspended: 'non_compliant', inactive: 'expired' };
           await db.update(companies).set({ complianceStatus: (statusMap[input.status] || 'pending') as any, isActive: input.status === 'active' }).where(eq(companies.id, companyId));
-        } catch (e) { console.error('[Catalysts] updateStatus error:', e); }
+        } catch (e) { logger.error('[Catalysts] updateStatus error:', e); }
       }
       return { success: true, catalystId: input.catalystId, newStatus: input.status, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
@@ -1078,7 +1079,7 @@ export const catalystsRouter = router({
         }
         return result;
       } catch (error) {
-        console.error('[Catalysts] getDirectory error:', error);
+        logger.error('[Catalysts] getDirectory error:', error);
         return [];
       }
     }),
@@ -1110,7 +1111,7 @@ export const catalystsRouter = router({
           totalTrucks: totalTrucks?.count || 0,
         };
       } catch (error) {
-        console.error('[Catalysts] getDirectoryStats error:', error);
+        logger.error('[Catalysts] getDirectoryStats error:', error);
         return { total: 0, verified: 0, active: 0, newThisMonth: 0, avgRating: 0, totalTrucks: 0 };
       }
     }),
@@ -1175,7 +1176,7 @@ export const catalystsRouter = router({
           } : null,
         };
       } catch (error) {
-        console.error('[Catalysts] getProfile error:', error);
+        logger.error('[Catalysts] getProfile error:', error);
         return null;
       }
     }),
@@ -1232,7 +1233,7 @@ export const catalystsRouter = router({
           fmcsaSafety: fmcsaData,
         };
       } catch (error) {
-        console.error('[Catalysts] getStats error:', error);
+        logger.error('[Catalysts] getStats error:', error);
         return { totalLoads: 0, totalRevenue: 0, avgRatePerMile: 0, onTimeDeliveryRate: 0, safetyScore: 0, avgPaymentReceived: 0, loadsCompleted: 0, onTimeRate: 0 };
       }
     }),
@@ -1269,7 +1270,7 @@ export const catalystsRouter = router({
           utilization,
         };
       } catch (error) {
-        console.error('[Catalysts] getFleetSummary error:', error);
+        logger.error('[Catalysts] getFleetSummary error:', error);
         return { totalTrucks: 0, activeTrucks: 0, inMaintenance: 0, available: 0, drivers: 0, activeDrivers: 0, totalDrivers: 0, utilization: 0 };
       }
     }),
@@ -1311,12 +1312,12 @@ export const catalystsRouter = router({
   // Additional catalyst procedures
   approve: protectedProcedure.input(z.object({ catalystId: z.string() })).mutation(async ({ input }) => {
     const db = await getDb();
-    if (db) { try { const id = parseInt(input.catalystId, 10); await db.update(companies).set({ complianceStatus: 'compliant' as any, isActive: true }).where(eq(companies.id, id)); } catch (e) { console.error('[Catalysts] approve error:', e); } }
+    if (db) { try { const id = parseInt(input.catalystId, 10); await db.update(companies).set({ complianceStatus: 'compliant' as any, isActive: true }).where(eq(companies.id, id)); } catch (e) { logger.error('[Catalysts] approve error:', e); } }
     return { success: true, catalystId: input.catalystId };
   }),
   reject: protectedProcedure.input(z.object({ catalystId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
-    if (db) { try { const id = parseInt(input.catalystId, 10); await db.update(companies).set({ complianceStatus: 'non_compliant' as any }).where(eq(companies.id, id)); } catch (e) { console.error('[Catalysts] reject error:', e); } }
+    if (db) { try { const id = parseInt(input.catalystId, 10); await db.update(companies).set({ complianceStatus: 'non_compliant' as any }).where(eq(companies.id, id)); } catch (e) { logger.error('[Catalysts] reject error:', e); } }
     return { success: true, catalystId: input.catalystId };
   }),
   getDrivers: protectedProcedure.input(z.object({ catalystId: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
@@ -1454,7 +1455,7 @@ export const catalystsRouter = router({
           }
         };
       } catch (error) {
-        console.error('[Catalysts] getAnalytics error:', error);
+        logger.error('[Catalysts] getAnalytics error:', error);
         return {
           revenue: { current: 0, previous: 0, change: 0 },
           loads: { completed: 0, inProgress: 0, total: 0 },
@@ -1491,7 +1492,7 @@ export const catalystsRouter = router({
           date: l.updatedAt?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
         }));
       } catch (error) {
-        console.error('[Catalysts] getRecentCompletedLoads error:', error);
+        logger.error('[Catalysts] getRecentCompletedLoads error:', error);
         return [];
       }
     }),

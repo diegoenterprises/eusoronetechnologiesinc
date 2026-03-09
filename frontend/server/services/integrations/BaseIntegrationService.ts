@@ -3,6 +3,7 @@
  * Abstract base class for all integration providers
  */
 
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { 
   integrationConnections, 
@@ -61,7 +62,7 @@ export abstract class BaseIntegrationService {
       .where(eq(integrationConnections.id, connectionId));
     
     if (!connection) {
-      console.error(`[${this.providerSlug}] Connection not found: ${connectionId}`);
+      logger.error(`[${this.providerSlug}] Connection not found: ${connectionId}`);
       return false;
     }
     
@@ -90,7 +91,7 @@ export abstract class BaseIntegrationService {
    * Refresh OAuth token - must be implemented by OAuth-based providers
    */
   protected async refreshToken(): Promise<boolean> {
-    console.warn(`[${this.providerSlug}] Token refresh not implemented`);
+    logger.warn(`[${this.providerSlug}] Token refresh not implemented`);
     return false;
   }
 
@@ -139,7 +140,7 @@ export abstract class BaseIntegrationService {
 
       return response.json();
     } catch (error) {
-      console.error(`[${this.providerSlug}] Request failed:`, error);
+      logger.error(`[${this.providerSlug}] Request failed:`, error);
       throw error;
     }
   }

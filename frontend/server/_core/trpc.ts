@@ -1,4 +1,5 @@
 import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
+import { logger } from "./logger";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
@@ -192,7 +193,7 @@ const requireApproval = t.middleware(async opts => {
     }
   } catch (e) {
     // If DB lookup fails, default to pending (safe side)
-    console.warn("[ApprovalGate] DB lookup failed, defaulting to pending:", e);
+    logger.warn("[ApprovalGate] DB lookup failed, defaulting to pending:", e);
   }
 
   if (approvalStatus !== "approved") {
@@ -395,7 +396,7 @@ export function getLightspeedMiddleware() {
       const { buildLightspeedCacheMiddleware } = require("../middleware/lightspeedCache");
       _lightspeedMiddleware = buildLightspeedCacheMiddleware(t);
     } catch (e) {
-      console.warn("[LIGHTSPEED] Cache middleware failed to load:", e);
+      logger.warn("[LIGHTSPEED] Cache middleware failed to load:", e);
       // Passthrough middleware — no caching
       _lightspeedMiddleware = t.middleware(async (opts: any) => opts.next());
     }

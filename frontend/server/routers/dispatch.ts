@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { drivers, loads, users, escortAssignments, convoys, companies, vehicles, documents } from "../../drizzle/schema";
@@ -131,7 +132,7 @@ export const dispatchRouter = router({
           fmcsaSafety,
         };
       } catch (error) {
-        console.error('[Dispatch] getDashboardStats error:', error);
+        logger.error('[Dispatch] getDashboardStats error:', error);
         return { active: 0, activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0, inTransit: 0, issues: 0, completedToday: 0, totalDrivers: 0, availableDrivers: 0 };
       }
     }),
@@ -178,7 +179,7 @@ export const dispatchRouter = router({
           hoursRemaining: 11,
         }));
       } catch (error) {
-        console.error('[Dispatch] getDriverStatuses error:', error);
+        logger.error('[Dispatch] getDriverStatuses error:', error);
         return [];
       }
     }),
@@ -212,7 +213,7 @@ export const dispatchRouter = router({
           description: i.description || '',
         }));
       } catch (error) {
-        console.error('[Dispatch] getActiveIssues error:', error);
+        logger.error('[Dispatch] getActiveIssues error:', error);
         return [];
       }
     }),
@@ -250,7 +251,7 @@ export const dispatchRouter = router({
           };
         });
       } catch (error) {
-        console.error('[Dispatch] getUnassignedLoads error:', error);
+        logger.error('[Dispatch] getUnassignedLoads error:', error);
         return [];
       }
     }),
@@ -317,7 +318,7 @@ export const dispatchRouter = router({
         };
         return { loads: boardLoads, summary };
       } catch (error) {
-        console.error('[Dispatch] getBoard error:', error);
+        logger.error('[Dispatch] getBoard error:', error);
         return { loads: [], summary: { total: 0, unassigned: 0, assigned: 0, inTransit: 0, delivered: 0 } };
       }
     }),
@@ -410,7 +411,7 @@ export const dispatchRouter = router({
 
         return results;
       } catch (error) {
-        console.error('[Dispatch] getAvailableDrivers error:', error);
+        logger.error('[Dispatch] getAvailableDrivers error:', error);
         return [];
       }
     }),
@@ -457,7 +458,7 @@ export const dispatchRouter = router({
               }
             } catch (oosErr: any) {
               if (oosErr?.message?.includes('Out-of-Service')) throw oosErr;
-              console.warn('[Dispatch] OOS check warning:', oosErr?.message);
+              logger.warn('[Dispatch] OOS check warning:', oosErr?.message);
             }
 
             // Insurance check for hazmat loads
@@ -475,7 +476,7 @@ export const dispatchRouter = router({
                 }
               } catch (insErr: any) {
                 if (insErr?.message?.includes('Insufficient')) throw insErr;
-                console.warn('[Dispatch] Insurance check warning:', insErr?.message);
+                logger.warn('[Dispatch] Insurance check warning:', insErr?.message);
               }
             }
           }
@@ -521,7 +522,7 @@ export const dispatchRouter = router({
           }
         } catch (cdlErr: any) {
           if (cdlErr?.message?.includes('CDL check failed')) throw cdlErr;
-          console.warn('[Dispatch] CDL records check warning:', cdlErr?.message);
+          logger.warn('[Dispatch] CDL records check warning:', cdlErr?.message);
         }
 
         // TWIC card required for port/terminal loads
@@ -542,7 +543,7 @@ export const dispatchRouter = router({
           }
         }
 
-        console.log(`[Dispatch] Compliance gate PASSED: load=${loadIdNum}, driver=${driverUserId}`);
+        logger.info(`[Dispatch] Compliance gate PASSED: load=${loadIdNum}, driver=${driverUserId}`);
 
         // WS-P1-012: Record compliance decision in hash-chain for audit immutability
         try {
@@ -553,7 +554,7 @@ export const dispatchRouter = router({
           const entryHash = computeEntryHash(prevHash, ts, String(ctx.user?.id || 0), 'compliance_gate', 'LOAD_ASSIGNMENT', String(loadIdNum), metadata);
           await db.execute(sql`INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata, previous_hash, entry_hash, created_at)
             VALUES (${ctx.user?.id || 0}, 'compliance_gate', 'LOAD_ASSIGNMENT', ${String(loadIdNum)}, ${metadata}, ${prevHash}, ${entryHash}, NOW())`);
-        } catch (chainErr) { console.warn('[HashChain] Could not record compliance decision:', (chainErr as any)?.message); }
+        } catch (chainErr) { logger.warn('[HashChain] Could not record compliance decision:', (chainErr as any)?.message); }
 
       } catch (complianceErr: any) {
         // WS-P1-012: Record FAILED compliance decision in hash-chain
@@ -565,9 +566,9 @@ export const dispatchRouter = router({
           const entryHash = computeEntryHash(prevHash, ts, String(ctx.user?.id || 0), 'compliance_gate_failed', 'LOAD_ASSIGNMENT', String(loadIdNum), metadata);
           await db.execute(sql`INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata, previous_hash, entry_hash, created_at)
             VALUES (${ctx.user?.id || 0}, 'compliance_gate_failed', 'LOAD_ASSIGNMENT', ${String(loadIdNum)}, ${metadata}, ${prevHash}, ${entryHash}, NOW())`);
-        } catch (chainErr) { console.warn('[HashChain] Could not record failed compliance decision:', (chainErr as any)?.message); }
+        } catch (chainErr) { logger.warn('[HashChain] Could not record failed compliance decision:', (chainErr as any)?.message); }
 
-        console.warn(`[Dispatch] Compliance gate FAILED: ${complianceErr?.message}`);
+        logger.warn(`[Dispatch] Compliance gate FAILED: ${complianceErr?.message}`);
         throw new Error(`Compliance: ${complianceErr?.message}`);
       }
       // === END COMPLIANCE GATE ===
@@ -811,7 +812,7 @@ export const dispatchRouter = router({
           };
         });
       } catch (error) {
-        console.error('[Dispatch] getFleetLocations error:', error);
+        logger.error('[Dispatch] getFleetLocations error:', error);
         return [];
       }
     }),
@@ -961,7 +962,7 @@ export const dispatchRouter = router({
         return (sev[a.severity as keyof typeof sev] ?? 2) - (sev[b.severity as keyof typeof sev] ?? 2);
       });
     } catch (err: any) {
-      console.error('[Dispatch] getExceptions error:', err?.message?.slice(0, 200));
+      logger.error('[Dispatch] getExceptions error:', err?.message?.slice(0, 200));
       return [];
     }
   }),
@@ -1011,7 +1012,7 @@ export const dispatchRouter = router({
         resolvedToday: 0,
       };
     } catch (err: any) {
-      console.error('[Dispatch] getExceptionStats error:', err?.message?.slice(0, 200));
+      logger.error('[Dispatch] getExceptionStats error:', err?.message?.slice(0, 200));
       return { open: 0, investigating: 0, resolved: 0, critical: 0, inProgress: 0, resolvedToday: 0 };
     }
   }),
@@ -1090,7 +1091,7 @@ export const dispatchRouter = router({
 
         return scored.sort((a, b) => b.matchScore - a.matchScore).slice(0, 5);
       } catch (error) {
-        console.error('[Dispatch] getRecommendations error:', error);
+        logger.error('[Dispatch] getRecommendations error:', error);
         return [];
       }
     }),
@@ -1269,7 +1270,7 @@ export const dispatchRouter = router({
           },
         };
       } catch (error) {
-        console.error('[Dispatch] getCommandCenterData error:', error);
+        logger.error('[Dispatch] getCommandCenterData error:', error);
         return { stats: null };
       }
     }),
@@ -1330,7 +1331,7 @@ export const dispatchRouter = router({
 
         return result;
       } catch (error) {
-        console.error("[Dispatch] getLoadsNeedingEscort error:", error);
+        logger.error("[Dispatch] getLoadsNeedingEscort error:", error);
         return [];
       }
     }),
@@ -1379,7 +1380,7 @@ export const dispatchRouter = router({
           completedTrips: statsMap.get(u.id) || 0,
         }));
       } catch (error) {
-        console.error("[Dispatch] getAvailableEscorts error:", error);
+        logger.error("[Dispatch] getAvailableEscorts error:", error);
         return [];
       }
     }),
@@ -1576,7 +1577,7 @@ export const dispatchRouter = router({
           completedAt: r.completedAt?.toISOString() || null,
         }));
       } catch (error) {
-        console.error("[Dispatch] getEscortAssignments error:", error);
+        logger.error("[Dispatch] getEscortAssignments error:", error);
         return [];
       }
     }),

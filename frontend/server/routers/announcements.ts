@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { notifications } from "../../drizzle/schema";
 
@@ -37,7 +38,7 @@ export const announcementsRouter = router({
           read: a.isRead || false,
         }));
       } catch (error) {
-        console.error('[Announcements] list error:', error);
+        logger.error('[Announcements] list error:', error);
         return [];
       }
     }),
@@ -58,7 +59,7 @@ export const announcementsRouter = router({
 
         return { count: unread?.count || 0 };
       } catch (error) {
-        console.error('[Announcements] getUnreadCount error:', error);
+        logger.error('[Announcements] getUnreadCount error:', error);
         return { count: 0 };
       }
     }),

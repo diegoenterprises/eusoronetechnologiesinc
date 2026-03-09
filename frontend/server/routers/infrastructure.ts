@@ -36,7 +36,7 @@ const backupRouter = router({
           id: `SNAP-${Date.now() - i * 3600000}`,
           provider: i % 2 === 0 ? "aws" : "azure",
           timestamp: new Date(Date.now() - i * 3600000).toISOString(),
-          size: `${(42 + Math.random()).toFixed(1)} GB`,
+          size: `${(42 + i * 0.1).toFixed(1)} GB`,
           type: i % 24 === 0 ? "full" : "incremental",
           encrypted: true,
           checksumVerified: true,
@@ -87,7 +87,7 @@ const uptimeRouter = router({
     .query(({ input }) => {
       const trend = [];
       for (let i = input.days; i >= 0; i--) {
-        trend.push({ date: new Date(Date.now() - i * 86400000).toISOString().slice(0, 10), uptime: Math.min(100, Math.max(97, 99.5 + (Math.random() - 0.5) * 2)), healthchecks: 288, failed: Math.floor(Math.random() * 3) });
+        trend.push({ date: new Date(Date.now() - i * 86400000).toISOString().slice(0, 10), uptime: 99.95, healthchecks: 288, failed: 0 });
       }
       return trend;
     }),

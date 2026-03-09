@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { groupChannels, channelMembers, messages, users, messageAttachments } from "../../drizzle/schema";
 import { sql, eq, desc, and, count, inArray } from "drizzle-orm";
@@ -87,7 +88,7 @@ export const channelsRouter = router({
             unreadCount: 0,
           }));
       } catch (error) {
-        console.error('[Channels] list error:', error);
+        logger.error('[Channels] list error:', error);
         return [];
       }
     }),
@@ -139,7 +140,7 @@ export const channelsRouter = router({
           reactions: {},
         }));
       } catch (error) {
-        console.error('[Channels] getMessages error:', error);
+        logger.error('[Channels] getMessages error:', error);
         return [];
       }
     }),
@@ -253,7 +254,7 @@ export const channelsRouter = router({
           createdAt: ch.createdAt?.toISOString() || new Date().toISOString(),
         };
       } catch (error) {
-        console.error('[Channels] getById error:', error);
+        logger.error('[Channels] getById error:', error);
         return null;
       }
     }),
@@ -283,7 +284,7 @@ export const channelsRouter = router({
           isOnline: false,
         }));
       } catch (error) {
-        console.error('[Channels] getMembers error:', error);
+        logger.error('[Channels] getMembers error:', error);
         return [];
       }
     }),
@@ -313,7 +314,7 @@ export const channelsRouter = router({
           activeMembers: Number(userCount?.cnt) || 0,
         };
       } catch (error) {
-        console.error('[Channels] getSummary error:', error);
+        logger.error('[Channels] getSummary error:', error);
         return { totalChannels: 0, unreadCount: 0, activeMembers: 0 };
       }
     }),
@@ -397,7 +398,7 @@ export const channelsRouter = router({
           return { success: true, muted: false };
         }
       } catch (error) {
-        console.error('[Channels] toggleMute error:', error);
+        logger.error('[Channels] toggleMute error:', error);
         throw new Error("Failed to toggle notifications");
       }
     }),

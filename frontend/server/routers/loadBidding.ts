@@ -9,6 +9,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, and, desc, sql, or, gte, lte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { getInsuranceStatus } from "../services/fmcsaBulkLookup";
@@ -406,10 +407,10 @@ export const loadBiddingRouter = router({
         if (verification.authorities?.length > 0 && !activeAuth) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Carrier operating authority is not active' });
         }
-        console.log(`[Bidding] Compliance gate PASSED: DOT#${bidderCompany.dotNumber}, safety=${verification.safetyRating?.rating || 'N/A'}`);
+        logger.info(`[Bidding] Compliance gate PASSED: DOT#${bidderCompany.dotNumber}, safety=${verification.safetyRating?.rating || 'N/A'}`);
       } catch (fmcsaErr: any) {
         if (fmcsaErr?.code === 'FORBIDDEN') throw fmcsaErr;
-        console.warn('[Bidding] FMCSA check warning (non-blocking):', fmcsaErr?.message);
+        logger.warn('[Bidding] FMCSA check warning (non-blocking):', fmcsaErr?.message);
       }
 
       // Log compliance decision
@@ -483,10 +484,10 @@ export const loadBiddingRouter = router({
           }
         }
 
-        console.log(`[Bidding] Insurance gate PASSED: ${activePolicies.length} active policies, maxCoverage=$${maxCoverage.toLocaleString()}`);
+        logger.info(`[Bidding] Insurance gate PASSED: ${activePolicies.length} active policies, maxCoverage=$${maxCoverage.toLocaleString()}`);
       } catch (insErr: any) {
         if (insErr?.code === 'FORBIDDEN') throw insErr;
-        console.warn('[Bidding] Insurance check warning:', insErr?.message);
+        logger.warn('[Bidding] Insurance check warning:', insErr?.message);
       }
       // === END INSURANCE GATE ===
 

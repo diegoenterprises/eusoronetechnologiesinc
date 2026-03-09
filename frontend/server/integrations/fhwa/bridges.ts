@@ -8,6 +8,7 @@
  * The NBI is a massive dataset. We extract key restriction data
  * for hazmat routing intelligence (weight-limited bridges on major corridors).
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { sql } from "drizzle-orm";
 
@@ -52,5 +53,5 @@ export async function fetchBridgeRestrictions(): Promise<void> {
     }
   }
 
-  console.log(`[FHWA] Loaded ${RESTRICTED_CORRIDORS.length} bridge restrictions`);
+  logger.info(`[FHWA] Loaded ${RESTRICTED_CORRIDORS.length} bridge restrictions`);
 }

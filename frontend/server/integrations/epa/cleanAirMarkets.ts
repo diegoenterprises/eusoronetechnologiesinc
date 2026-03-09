@@ -11,6 +11,7 @@
  * - Emission density per zone = industrial activity indicator
  * - Compliance data helps safety/compliance officers assess route risk
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzEmissions } from "../../../drizzle/schema";
 import { sql } from "drizzle-orm";
@@ -32,7 +33,7 @@ function getApiKey(): string {
 export async function fetchAnnualEmissions(stateCode: string, year?: number): Promise<void> {
   const apiKey = getApiKey();
   if (!apiKey) {
-    console.warn("[CAMPD] No CAMPD_API_KEY set, skipping emissions fetch");
+    logger.warn("[CAMPD] No CAMPD_API_KEY set, skipping emissions fetch");
     return;
   }
 
@@ -57,10 +58,10 @@ export async function fetchAnnualEmissions(stateCode: string, year?: number): Pr
 
   if (!response.ok) {
     if (response.status === 429) {
-      console.warn(`[CAMPD] Rate limited for ${stateCode}, will retry next cycle`);
+      logger.warn(`[CAMPD] Rate limited for ${stateCode}, will retry next cycle`);
       return;
     }
-    console.error(`[CAMPD] API error ${response.status} for ${stateCode}`);
+    logger.error(`[CAMPD] API error ${response.status} for ${stateCode}`);
     return;
   }
 
@@ -119,7 +120,7 @@ export async function fetchAnnualEmissions(stateCode: string, year?: number): Pr
     }
   }
 
-  console.log(`[CAMPD] ${stateCode} ${reportYear}: ${inserted}/${records.length} emission records`);
+  logger.info(`[CAMPD] ${stateCode} ${reportYear}: ${inserted}/${records.length} emission records`);
 }
 
 /**
@@ -176,7 +177,7 @@ export async function fetchCAMPDFacilities(stateCode: string): Promise<void> {
  * Called daily at 5:30 AM.
  */
 export async function syncCleanAirMarkets(): Promise<void> {
-  console.log("[CAMPD] Starting Clean Air Markets sync...");
+  logger.info("[CAMPD] Starting Clean Air Markets sync...");
 
   for (const state of TARGET_STATES) {
     try {
@@ -184,7 +185,7 @@ export async function syncCleanAirMarkets(): Promise<void> {
       // Rate limit between states
       await new Promise((r) => setTimeout(r, 1000));
     } catch (err) {
-      console.error(`[CAMPD] Error syncing ${state}:`, err);
+      logger.error(`[CAMPD] Error syncing ${state}:`, err);
     }
   }
 
@@ -205,5 +206,5 @@ export async function syncCleanAirMarkets(): Promise<void> {
     } catch {}
   }
 
-  console.log("[CAMPD] Clean Air Markets sync complete");
+  logger.info("[CAMPD] Clean Air Markets sync complete");
 }

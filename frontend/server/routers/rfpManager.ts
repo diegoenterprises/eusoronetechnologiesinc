@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { companies } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -32,7 +33,7 @@ export const rfpManagerRouter = router({
       }
       return generateSampleRFPs(shipperId, shipperName);
     } catch (e) {
-      console.error("[RFP] getRFPs error:", e);
+      logger.error("[RFP] getRFPs error:", e);
       return [];
     }
   }),

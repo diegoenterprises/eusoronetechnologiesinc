@@ -1,4 +1,5 @@
 // GAP-444: Blockchain Audit Trail — Immutable transaction log for compliance
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
 import crypto from "crypto";
@@ -25,7 +26,7 @@ export class BlockchainService {
             VALUES (${loadId}, ${eventType}, ${JSON.stringify(eventData)}, ${blockHash}, ${previousHash})`
       );
     } catch (err) {
-      console.error("[BlockchainService] logEvent error:", err);
+      logger.error("[BlockchainService] logEvent error:", err);
     }
   }
 

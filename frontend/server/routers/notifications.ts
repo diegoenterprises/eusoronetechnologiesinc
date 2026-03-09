@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { notifications, users } from "../../drizzle/schema";
 
@@ -37,7 +38,7 @@ export const notificationsRouter = router({
           byCategory: { loads: 0, compliance: 0, safety: 0, billing: 0, system: 0 },
         };
       } catch (error) {
-        console.error('[Notifications] getSummary error:', error);
+        logger.error('[Notifications] getSummary error:', error);
         return { total: 0, unread: 0, read: 0, alerts: 0, byCategory: { loads: 0, compliance: 0, safety: 0, billing: 0, system: 0 } };
       }
     }),
@@ -127,7 +128,7 @@ export const notificationsRouter = router({
           hasMore,
         };
       } catch (error) {
-        console.error('[Notifications] list error:', error);
+        logger.error('[Notifications] list error:', error);
         return { notifications: [], total: 0, hasMore: false };
       }
     }),
@@ -156,7 +157,7 @@ export const notificationsRouter = router({
         }
         return counts;
       } catch (e) {
-        console.error('[Notifications] getCategoryCounts error:', e);
+        logger.error('[Notifications] getCategoryCounts error:', e);
         return {};
       }
     }),
@@ -184,7 +185,7 @@ export const notificationsRouter = router({
           ));
         return { success: true, id: notificationId };
       } catch (error) {
-        console.error('[Notifications] markAsRead error:', error);
+        logger.error('[Notifications] markAsRead error:', error);
         return { success: false, id: notificationId, error: 'Failed to mark as read' };
       }
     }),
@@ -212,7 +213,7 @@ export const notificationsRouter = router({
           ));
         return { success: true, count: result[0]?.affectedRows || 0 };
       } catch (error) {
-        console.error('[Notifications] markAllAsRead error:', error);
+        logger.error('[Notifications] markAllAsRead error:', error);
         return { success: false, count: 0, error: 'Failed to mark all as read' };
       }
     }),
@@ -238,7 +239,7 @@ export const notificationsRouter = router({
           ));
         return { success: true, id: input.id };
       } catch (error) {
-        console.error('[Notifications] archive error:', error);
+        logger.error('[Notifications] archive error:', error);
         return { success: false, id: input.id, error: 'Failed to archive' };
       }
     }),
@@ -264,7 +265,7 @@ export const notificationsRouter = router({
           ));
         return { success: true, id: input.id };
       } catch (error) {
-        console.error('[Notifications] delete error:', error);
+        logger.error('[Notifications] delete error:', error);
         return { success: false, id: input.id, error: 'Failed to delete' };
       }
     }),
@@ -350,7 +351,7 @@ export const notificationsRouter = router({
       if (!meta.notificationPreferences) meta.notificationPreferences = {};
       meta.notificationPreferences[settingKey] = input.value;
       await db.update(users).set({ metadata: JSON.stringify(meta) } as any).where(eq((users as any).id, userId));
-    } catch (e) { console.error("[Notifications] updateSetting error:", e); }
+    } catch (e) { logger.error("[Notifications] updateSetting error:", e); }
     return { success: true, key: settingKey };
   }),
   getUnreadCount: protectedProcedure.query(async ({ ctx }) => {
@@ -404,7 +405,7 @@ export const notificationsRouter = router({
         message: input.body || input.message || "",
         priority: "normal",
       });
-    } catch (e) { console.error("[Notifications] sendPush error:", e); }
+    } catch (e) { logger.error("[Notifications] sendPush error:", e); }
     return { success: true, messageId: `msg_${Date.now()}` };
   }),
 

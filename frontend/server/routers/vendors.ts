@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { companies, loads } from "../../drizzle/schema";
 
@@ -41,7 +42,7 @@ export const vendorsRouter = router({
           })),
           total: countRow?.count || 0,
         };
-      } catch (e) { console.error('[Vendors] list error:', e); return { vendors: [], total: 0 }; }
+      } catch (e) { logger.error('[Vendors] list error:', e); return { vendors: [], total: 0 }; }
     }),
 
   /**
@@ -255,7 +256,7 @@ export const vendorsRouter = router({
     }))
     .query(async ({ input }) => {
       // No dedicated vendor contracts table; return empty for now
-      console.log(`[Vendors] getExpiring called with daysAhead=${input.daysAhead}`);
+      logger.info(`[Vendors] getExpiring called with daysAhead=${input.daysAhead}`);
       return [];
     }),
 });

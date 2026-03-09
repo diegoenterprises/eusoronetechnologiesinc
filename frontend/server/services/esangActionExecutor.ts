@@ -14,6 +14,7 @@
  */
 
 import { z } from "zod";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, bids, users } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -121,7 +122,8 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
 
       const p = params as z.infer<typeof ACTION_REGISTRY.create_load.schema>;
       const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, "");
-      const rand = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const { randomBytes: _rb } = require("crypto");
+      const rand = _rb(5).toString('hex').toUpperCase();
       const loadNumber = `LD-${dateStr}-${rand}`;
 
       const result = await db.insert(loads).values({
@@ -965,7 +967,7 @@ function logAudit(userId: number, action: string, success: boolean, message: str
   auditLog.push(entry);
   // Keep last 500 entries in memory
   if (auditLog.length > 500) auditLog.shift();
-  console.log(`[ESANG Action] ${success ? "✅" : "❌"} user=${userId} action=${action}: ${message}`);
+  logger.info(`[ESANG Action] ${success ? "✅" : "❌"} user=${userId} action=${action}: ${message}`);
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────

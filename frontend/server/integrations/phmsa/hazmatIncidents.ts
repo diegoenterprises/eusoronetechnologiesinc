@@ -4,6 +4,7 @@
  * Auth: None (CSV download)
  * Refresh: Daily at 3 AM
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzHazmatIncidents } from "../../../drizzle/schema";
 import { sql } from "drizzle-orm";
@@ -38,14 +39,14 @@ export async function syncPHMSAIncidents(): Promise<void> {
   }
 
   if (!csvText || csvText.length < 100) {
-    console.warn("[PHMSA] CSV download unavailable, seeding from NRC recent spill feed as fallback");
+    logger.warn("[PHMSA] CSV download unavailable, seeding from NRC recent spill feed as fallback");
     // Fallback: seed some data from a simpler API
     try {
       const nrcRes = await fetch("https://nrc.uscg.mil/FOIAFiles/CurrentCSV.csv", { signal: AbortSignal.timeout(30000) });
       if (nrcRes.ok) csvText = await nrcRes.text();
     } catch { /* no fallback available */ }
     if (!csvText || csvText.length < 100) {
-      console.warn("[PHMSA] No hazmat incident data source available");
+      logger.warn("[PHMSA] No hazmat incident data source available");
       return;
     }
     // Parse NRC CSV as fallback
@@ -74,10 +75,10 @@ export async function syncPHMSAIncidents(): Promise<void> {
           inserted++;
         } catch { /* skip */ }
       }
-      console.log(`[PHMSA] Seeded ${inserted} incidents from NRC spill feed`);
+      logger.info(`[PHMSA] Seeded ${inserted} incidents from NRC spill feed`);
       return;
     } catch (e) {
-      console.error("[PHMSA] NRC fallback parse failed:", e);
+      logger.error("[PHMSA] NRC fallback parse failed:", e);
       return;
     }
   }
@@ -86,7 +87,7 @@ export async function syncPHMSAIncidents(): Promise<void> {
   try {
     records = parse(csvText, { columns: true, skip_empty_lines: true, trim: true, relax_column_count: true });
   } catch (e) {
-    console.error("[PHMSA] Failed to parse CSV:", e);
+    logger.error("[PHMSA] Failed to parse CSV:", e);
     return;
   }
 
@@ -144,5 +145,5 @@ export async function syncPHMSAIncidents(): Promise<void> {
     }
   }
 
-  console.log(`[PHMSA] Processed ${inserted} hazmat incidents`);
+  logger.info(`[PHMSA] Processed ${inserted} hazmat incidents`);
 }

@@ -5,6 +5,7 @@
  */
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, users } from "../../drizzle/schema";
 import { eq, or, desc, sql, and, isNotNull } from "drizzle-orm";
@@ -114,7 +115,7 @@ export const marketIntelligenceRouter = router({
         loadCount: userLoads.length,
       };
     } catch (e) {
-      console.error("[getMyLaneDefaults]", e);
+      logger.error("[getMyLaneDefaults]", e);
       return null;
     }
   }),

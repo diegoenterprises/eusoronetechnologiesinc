@@ -9,6 +9,7 @@
  * Integrates with: convoy.ts router, loadLifecycle router, eusotrack GPS
  */
 
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { sql, eq } from "drizzle-orm";
 import { convoys, escortAssignments } from "../../../drizzle/schema";
@@ -162,7 +163,7 @@ export async function checkSyncPoints(
     }
     return null;
   } catch (e) {
-    console.error(`[ConvoySync] checkSyncPoints error:`, (e as Error).message);
+    logger.error(`[ConvoySync] checkSyncPoints error:`, (e as Error).message);
     return null;
   }
 }
@@ -274,10 +275,10 @@ export async function executeSyncPoint(
       });
     }
 
-    console.log(`[ConvoySync] Sync point ${syncPoint.id} executed for convoy ${convoyId}`);
+    logger.info(`[ConvoySync] Sync point ${syncPoint.id} executed for convoy ${convoyId}`);
     return { success: true, effects: executedEffects };
   } catch (e) {
-    console.error(`[ConvoySync] executeSyncPoint error:`, (e as Error).message);
+    logger.error(`[ConvoySync] executeSyncPoint error:`, (e as Error).message);
     return { success: false, effects: executedEffects };
   }
 }
@@ -305,7 +306,7 @@ export async function checkSeparation(convoyId: number): Promise<{
     const rearAlert = rearDist !== null && rearDist > SEPARATION_CONFIG.maxRearDistanceMeters;
 
     if (leadAlert || rearAlert) {
-      console.log(`[ConvoySync] Separation alert convoy ${convoyId}: lead=${leadDist}m rear=${rearDist}m`);
+      logger.info(`[ConvoySync] Separation alert convoy ${convoyId}: lead=${leadDist}m rear=${rearDist}m`);
 
       // Build alert message
       const alerts: string[] = [];
@@ -351,7 +352,7 @@ export async function checkSeparation(convoyId: number): Promise<{
 
     return { leadDistance: leadDist, rearDistance: rearDist, leadAlert, rearAlert };
   } catch (e) {
-    console.error(`[ConvoySync] checkSeparation error:`, (e as Error).message);
+    logger.error(`[ConvoySync] checkSeparation error:`, (e as Error).message);
     return { leadDistance: null, rearDistance: null, leadAlert: false, rearAlert: false };
   }
 }
@@ -380,7 +381,7 @@ export async function onLoadStateChange(
 
     // Cargo exception states pause convoy — place escort on ESCORT_HOLD
     if (CARGO_EXCEPTION_STATES.has(upperState)) {
-      console.log(`[ConvoySync] Primary load ${loadId} entered ${upperState}, placing convoy ${convoy.id} on ESCORT_HOLD`);
+      logger.info(`[ConvoySync] Primary load ${loadId} entered ${upperState}, placing convoy ${convoy.id} on ESCORT_HOLD`);
       await db.update(convoys).set({ status: "escort_hold" as any }).where(eq(convoys.id, convoy.id));
 
       // Fetch convoy participants and notify them
@@ -425,6 +426,6 @@ export async function onLoadStateChange(
       await executeSyncPoint(convoy.id, syncPoint);
     }
   } catch (e) {
-    console.warn(`[ConvoySync] onLoadStateChange error:`, (e as Error).message);
+    logger.warn(`[ConvoySync] onLoadStateChange error:`, (e as Error).message);
   }
 }

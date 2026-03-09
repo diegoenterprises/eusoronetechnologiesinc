@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, sql, gte, lte, and, desc } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { drivers, documents, users, certifications } from "../../drizzle/schema";
 
@@ -260,7 +261,7 @@ export const driverQualificationRouter = router({
           items.push({ driverId: c.userId, type: `Certification: ${c.type}`, expiresAt: c.expiryDate?.toISOString().split('T')[0] || '', daysRemaining: days });
         }
         return items.sort((a, b) => a.daysRemaining - b.daysRemaining);
-      } catch (e) { console.error('[DQ] getExpiringItems error:', e); return []; }
+      } catch (e) { logger.error('[DQ] getExpiringItems error:', e); return []; }
     }),
 
   /**

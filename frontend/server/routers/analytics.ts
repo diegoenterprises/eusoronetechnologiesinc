@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, payments, users, vehicles, companies, drivers, inspections, certifications, bids, insurancePolicies } from "../../drizzle/schema";
 
@@ -46,7 +47,7 @@ export const analyticsRouter = router({
 
         return { total, change: growth, growth, avgPerLoad, topCustomer: "", margin: 0 };
       } catch (error) {
-        console.error('[Analytics] getRevenue error:', error);
+        logger.error('[Analytics] getRevenue error:', error);
         return { total: 0, change: 0, growth: 0, avgPerLoad: 0, topCustomer: "", margin: 0 };
       }
     }),
@@ -90,7 +91,7 @@ export const analyticsRouter = router({
           byCategory: byCargo.map(c => ({ category: c.cargoType || 'general', revenue: Math.round(c.total || 0), loads: c.count || 0 })),
           topSources: topSourcesWithNames,
         };
-      } catch (e) { console.error('[Analytics] getRevenueBreakdown error:', e); return { byCategory: [], topSources: [] }; }
+      } catch (e) { logger.error('[Analytics] getRevenueBreakdown error:', e); return { byCategory: [], topSources: [] }; }
     }),
 
   /**
@@ -389,7 +390,7 @@ export const analyticsRouter = router({
           companyName,
         };
       } catch (error) {
-        console.error('[Analytics] getSummary error:', error);
+        logger.error('[Analytics] getSummary error:', error);
         return empty;
       }
     }),
@@ -462,7 +463,7 @@ export const analyticsRouter = router({
           performance: { safetyScore: 0, customerRating: 0, claimsRatio: 0 },
           topLanes,
         };
-      } catch (e) { console.error('[Analytics] getCatalystAnalytics error:', e); return { period: input.period, revenue: { total: 0, change: 0, trend: "stable" as const }, loads: { total: 0, completed: 0, inProgress: 0, change: 0 }, efficiency: { onTimeRate: 0, avgLoadTime: 0, utilizationRate: 0 }, performance: { safetyScore: 0, customerRating: 0, claimsRatio: 0 }, topLanes: [] }; }
+      } catch (e) { logger.error('[Analytics] getCatalystAnalytics error:', e); return { period: input.period, revenue: { total: 0, change: 0, trend: "stable" as const }, loads: { total: 0, completed: 0, inProgress: 0, change: 0 }, efficiency: { onTimeRate: 0, avgLoadTime: 0, utilizationRate: 0 }, performance: { safetyScore: 0, customerRating: 0, claimsRatio: 0 }, topLanes: [] }; }
     }),
 
   /**
@@ -496,7 +497,7 @@ export const analyticsRouter = router({
           catalystPerformance: { avgDeliveryTime: 0, onTimeRate, avgRating: 0 },
           topCatalysts,
         };
-      } catch (e) { console.error('[Analytics] getShipperAnalytics error:', e); return empty; }
+      } catch (e) { logger.error('[Analytics] getShipperAnalytics error:', e); return empty; }
     }),
 
   /**
@@ -525,7 +526,7 @@ export const analyticsRouter = router({
           performance: { matchRate: 0, avgTimeToMatch: 0, catalystRetention: 0 },
           topShippers,
         };
-      } catch (e) { console.error('[Analytics] getBrokerAnalytics error:', e); return empty; }
+      } catch (e) { logger.error('[Analytics] getBrokerAnalytics error:', e); return empty; }
     }),
 
   /**
@@ -555,7 +556,7 @@ export const analyticsRouter = router({
           revenue: { gmv, platformFees: Math.round(gmv * 0.05), change: 0 },
           engagement: { dailyActiveUsers: 0, avgSessionDuration: 0, loadPostToBookRatio: 0 },
         };
-      } catch (e) { console.error('[Analytics] getPlatformAnalytics error:', e); return empty; }
+      } catch (e) { logger.error('[Analytics] getPlatformAnalytics error:', e); return empty; }
     }),
 
   /**
@@ -627,7 +628,7 @@ export const analyticsRouter = router({
           csaScores: { unsafeDriving: 0, hos: 0, vehicleMaintenance: 0, hazmat: 0 },
           topConcerns: [],
         };
-      } catch (e) { console.error('[Analytics] getSafetyAnalytics error:', e); return empty; }
+      } catch (e) { logger.error('[Analytics] getSafetyAnalytics error:', e); return empty; }
     }),
 
   /**
@@ -665,7 +666,7 @@ export const analyticsRouter = router({
           },
           expiringDocuments: 0, auditsCompleted: passedInsp?.count || 0, auditsPending: 0,
         };
-      } catch (e) { console.error('[Analytics] getComplianceAnalytics error:', e); return empty; }
+      } catch (e) { logger.error('[Analytics] getComplianceAnalytics error:', e); return empty; }
     }),
 
   /**

@@ -21,6 +21,7 @@
  */
 
 import { getDb, getPool } from "../db";
+import { logger } from "../_core/logger";
 
 // ============================================================================
 // CONFIGURATION
@@ -209,7 +210,7 @@ async function ensureFmcsaTables(): Promise<void> {
   const pool = getPool();
   if (!pool) return;
   
-  console.log("[FMCSA ETL] Ensuring all FMCSA bulk data tables exist...");
+  logger.info("[FMCSA ETL] Ensuring all FMCSA bulk data tables exist...");
   
   const migrations = [
     `CREATE TABLE IF NOT EXISTS fmcsa_census (
@@ -521,12 +522,12 @@ async function ensureFmcsaTables(): Promise<void> {
     try {
       await pool.query(ddl);
     } catch (err: any) {
-      console.error(`[FMCSA ETL] Table creation error: ${err.message}`);
+      logger.error(`[FMCSA ETL] Table creation error: ${err.message}`);
     }
   }
   
   tablesEnsured = true;
-  console.log("[FMCSA ETL] ✓ All 13 FMCSA tables verified/created");
+  logger.info("[FMCSA ETL] All 13 FMCSA tables verified/created");
 }
 
 // ============================================================================
@@ -628,11 +629,11 @@ async function* fetchSodaPages(datasetId: string): AsyncGenerator<Record<string,
       } catch (err: any) {
         if (attempt === MAX_DOWNLOAD_RETRIES) {
           // Don't throw — preserve partial data already inserted
-          console.error(`[FMCSA ETL] SODA fetch failed after ${MAX_DOWNLOAD_RETRIES} attempts for ${datasetId} offset=${offset}: ${err.message}. Keeping ${totalFetched} records already loaded.`);
+          logger.error(`[FMCSA ETL] SODA fetch failed after ${MAX_DOWNLOAD_RETRIES} attempts for ${datasetId} offset=${offset}: ${err.message}. Keeping ${totalFetched} records already loaded.`);
           return; // Exit generator, partial data preserved
         }
         const backoffMs = Math.min(2000 * Math.pow(2, attempt), 60000);
-        console.warn(`[FMCSA ETL] SODA page fetch failed (attempt ${attempt}/${MAX_DOWNLOAD_RETRIES}): ${err.message}. Retrying in ${backoffMs / 1000}s...`);
+        logger.warn(`[FMCSA ETL] SODA page fetch failed (attempt ${attempt}/${MAX_DOWNLOAD_RETRIES}): ${err.message}. Retrying in ${backoffMs / 1000}s...`);
         await new Promise(r => setTimeout(r, backoffMs));
       }
     }
@@ -644,7 +645,7 @@ async function* fetchSodaPages(datasetId: string): AsyncGenerator<Record<string,
     totalFetched += page.length;
     
     if (totalFetched % 100000 === 0 || page.length < SODA_PAGE_SIZE) {
-      console.log(`[FMCSA ETL] ${datasetId}: ${totalFetched.toLocaleString()} records fetched so far...`);
+      logger.info(`[FMCSA ETL] ${datasetId}: ${totalFetched.toLocaleString()} records fetched so far...`);
     }
     
     yield page;
@@ -659,7 +660,7 @@ async function* fetchSodaPages(datasetId: string): AsyncGenerator<Record<string,
     await new Promise(r => setTimeout(r, 1500));
   }
   
-  console.log(`[FMCSA ETL] ${datasetId}: Completed — ${totalFetched.toLocaleString()} total records`);
+  logger.info(`[FMCSA ETL] ${datasetId}: Completed \u2014 ${totalFetched.toLocaleString()} total records`);
 }
 
 // ============================================================================
@@ -953,7 +954,7 @@ async function _batchUpsertWithRetry(
       return { inserted, updated: result.changedRows || 0 };
     } catch (err: any) {
       if (attempt < MAX_INSERT_RETRIES) {
-        console.warn(`[FMCSA ETL] Insert retry ${attempt} for ${table} (${records.length} records): ${err.message}`);
+        logger.warn(`[FMCSA ETL] Insert retry ${attempt} for ${table} (${records.length} records): ${err.message}`);
         await new Promise(r => setTimeout(r, 1000 * attempt));
         continue;
       }
@@ -962,7 +963,7 @@ async function _batchUpsertWithRetry(
       const smallerSize = INSERT_RETRY_BATCH_SIZES.find(s => s < currentBatchSize);
       
       if (smallerSize && records.length > 1) {
-        console.warn(`[FMCSA ETL] Splitting ${table} batch: ${records.length} → chunks of ${smallerSize}`);
+        logger.warn(`[FMCSA ETL] Splitting ${table} batch: ${records.length} → chunks of ${smallerSize}`);
         let totalInserted = 0;
         let totalUpdated = 0;
         let skippedRecords = 0;
@@ -976,19 +977,19 @@ async function _batchUpsertWithRetry(
           } catch (chunkErr: any) {
             // Even the smallest chunk failed — log and skip (never lose the whole dataset)
             skippedRecords += chunk.length;
-            console.error(`[FMCSA ETL] Skipping ${chunk.length} bad records in ${table}: ${chunkErr.message}`);
+            logger.error(`[FMCSA ETL] Skipping ${chunk.length} bad records in ${table}: ${chunkErr.message}`);
           }
         }
         
         if (skippedRecords > 0) {
-          console.warn(`[FMCSA ETL] ${table}: ${skippedRecords} records skipped due to errors (${records.length - skippedRecords} succeeded)`);
+          logger.warn(`[FMCSA ETL] ${table}: ${skippedRecords} records skipped due to errors (${records.length - skippedRecords} succeeded)`);
         }
         
         return { inserted: totalInserted, updated: totalUpdated };
       }
       
       // Single record that still fails — skip it, don't kill the pipeline
-      console.error(`[FMCSA ETL] Skipping 1 unfixable record in ${table}: ${err.message}`);
+      logger.error(`[FMCSA ETL] Skipping 1 unfixable record in ${table}: ${err.message}`);
       return { inserted: 0, updated: 0 };
     }
   }
@@ -1038,7 +1039,7 @@ async function runCensusEtl(full: boolean = true): Promise<EtlLogEntry> {
     }
     
     await logEtlComplete(logId, { completedAt: new Date(), ...stats, recordsDeleted: 0, status: "SUCCESS" });
-    console.log(`[FMCSA ETL] Census complete: ${stats.recordsFetched.toLocaleString()} fetched, ${stats.recordsInserted.toLocaleString()} inserted, ${stats.recordsUpdated.toLocaleString()} updated`);
+    logger.info(`[FMCSA ETL] Census complete: ${stats.recordsFetched.toLocaleString()} fetched, ${stats.recordsInserted.toLocaleString()} inserted, ${stats.recordsUpdated.toLocaleString()} updated`);
     return { datasetName: dataset.name, syncType: full ? "FULL" : "DELTA", startedAt, ...stats, recordsDeleted: 0, status: "SUCCESS", sourceUrl: "" };
     
   } catch (err: any) {
@@ -1082,7 +1083,7 @@ async function runAuthorityEtl(full: boolean = true): Promise<EtlLogEntry> {
     }
     
     await logEtlComplete(logId, { completedAt: new Date(), ...stats, recordsDeleted: 0, status: "SUCCESS" });
-    console.log(`[FMCSA ETL] Authority complete: ${stats.recordsFetched.toLocaleString()} records`);
+    logger.info(`[FMCSA ETL] Authority complete: ${stats.recordsFetched.toLocaleString()} records`);
     return { datasetName: dataset.name, syncType: full ? "FULL" : "DELTA", startedAt, ...stats, recordsDeleted: 0, status: "SUCCESS", sourceUrl: "" };
     
   } catch (err: any) {
@@ -1126,7 +1127,7 @@ async function runInsuranceEtl(full: boolean = true): Promise<EtlLogEntry> {
     }
     
     await logEtlComplete(logId, { completedAt: new Date(), ...stats, recordsDeleted: 0, status: "SUCCESS" });
-    console.log(`[FMCSA ETL] Insurance complete: ${stats.recordsFetched.toLocaleString()} records`);
+    logger.info(`[FMCSA ETL] Insurance complete: ${stats.recordsFetched.toLocaleString()} records`);
     return { datasetName: dataset.name, syncType: full ? "FULL" : "DELTA", startedAt, ...stats, recordsDeleted: 0, status: "SUCCESS", sourceUrl: "" };
     
   } catch (err: any) {
@@ -1170,7 +1171,7 @@ async function runCrashEtl(): Promise<EtlLogEntry> {
     }
     
     await logEtlComplete(logId, { completedAt: new Date(), ...stats, recordsDeleted: 0, status: "SUCCESS" });
-    console.log(`[FMCSA ETL] Crashes complete: ${stats.recordsFetched.toLocaleString()} records`);
+    logger.info(`[FMCSA ETL] Crashes complete: ${stats.recordsFetched.toLocaleString()} records`);
     return { datasetName: dataset.name, syncType: "FULL", startedAt, ...stats, recordsDeleted: 0, status: "SUCCESS", sourceUrl: "" };
     
   } catch (err: any) {
@@ -1214,7 +1215,7 @@ async function runInspectionEtl(): Promise<EtlLogEntry> {
     }
     
     await logEtlComplete(logId, { completedAt: new Date(), ...stats, recordsDeleted: 0, status: "SUCCESS" });
-    console.log(`[FMCSA ETL] Inspections complete: ${stats.recordsFetched.toLocaleString()} records`);
+    logger.info(`[FMCSA ETL] Inspections complete: ${stats.recordsFetched.toLocaleString()} records`);
     return { datasetName: dataset.name, syncType: "FULL", startedAt, ...stats, recordsDeleted: 0, status: "SUCCESS", sourceUrl: "" };
     
   } catch (err: any) {
@@ -1258,7 +1259,7 @@ async function runViolationEtl(): Promise<EtlLogEntry> {
     }
     
     await logEtlComplete(logId, { completedAt: new Date(), ...stats, recordsDeleted: 0, status: "SUCCESS" });
-    console.log(`[FMCSA ETL] Violations complete: ${stats.recordsFetched.toLocaleString()} records`);
+    logger.info(`[FMCSA ETL] Violations complete: ${stats.recordsFetched.toLocaleString()} records`);
     return { datasetName: dataset.name, syncType: "FULL", startedAt, ...stats, recordsDeleted: 0, status: "SUCCESS", sourceUrl: "" };
     
   } catch (err: any) {
@@ -1302,7 +1303,7 @@ async function runSmsScoresEtl(): Promise<EtlLogEntry> {
     }
     
     await logEtlComplete(logId, { completedAt: new Date(), ...stats, recordsDeleted: 0, status: "SUCCESS" });
-    console.log(`[FMCSA ETL] SMS Scores complete: ${stats.recordsFetched.toLocaleString()} records`);
+    logger.info(`[FMCSA ETL] SMS Scores complete: ${stats.recordsFetched.toLocaleString()} records`);
     return { datasetName: dataset.name, syncType: "FULL", startedAt, ...stats, recordsDeleted: 0, status: "SUCCESS", sourceUrl: "" };
     
   } catch (err: any) {
@@ -1346,7 +1347,7 @@ async function runOosEtl(): Promise<EtlLogEntry> {
     }
     
     await logEtlComplete(logId, { completedAt: new Date(), ...stats, recordsDeleted: 0, status: "SUCCESS" });
-    console.log(`[FMCSA ETL] OOS Orders complete: ${stats.recordsFetched.toLocaleString()} records`);
+    logger.info(`[FMCSA ETL] OOS Orders complete: ${stats.recordsFetched.toLocaleString()} records`);
     return { datasetName: dataset.name, syncType: "FULL", startedAt, ...stats, recordsDeleted: 0, status: "SUCCESS", sourceUrl: "" };
     
   } catch (err: any) {
@@ -1390,7 +1391,7 @@ async function runBoc3Etl(): Promise<EtlLogEntry> {
     }
     
     await logEtlComplete(logId, { completedAt: new Date(), ...stats, recordsDeleted: 0, status: "SUCCESS" });
-    console.log(`[FMCSA ETL] BOC3 complete: ${stats.recordsFetched.toLocaleString()} records`);
+    logger.info(`[FMCSA ETL] BOC3 complete: ${stats.recordsFetched.toLocaleString()} records`);
     return { datasetName: dataset.name, syncType: "FULL", startedAt, ...stats, recordsDeleted: 0, status: "SUCCESS", sourceUrl: "" };
     
   } catch (err: any) {
@@ -1434,7 +1435,7 @@ async function runRevocationsEtl(): Promise<EtlLogEntry> {
     }
     
     await logEtlComplete(logId, { completedAt: new Date(), ...stats, recordsDeleted: 0, status: "SUCCESS" });
-    console.log(`[FMCSA ETL] Revocations complete: ${stats.recordsFetched.toLocaleString()} records`);
+    logger.info(`[FMCSA ETL] Revocations complete: ${stats.recordsFetched.toLocaleString()} records`);
     return { datasetName: dataset.name, syncType: "FULL", startedAt, ...stats, recordsDeleted: 0, status: "SUCCESS", sourceUrl: "" };
     
   } catch (err: any) {
@@ -1453,7 +1454,7 @@ async function safeRun(name: string, fn: () => Promise<any>): Promise<{ name: st
     await fn();
     return { name, ok: true };
   } catch (err: any) {
-    console.error(`[FMCSA ETL] ✗ FAILED: ${name} — ${err.message}`);
+    logger.error(`[FMCSA ETL] FAILED: ${name} — ${err.message}`);
     return { name, ok: false, error: err.message };
   }
 }
@@ -1463,26 +1464,26 @@ function printEtlSummary(label: string, results: { name: string; ok: boolean; er
   const succeeded = results.filter(r => r.ok).length;
   const failed = results.filter(r => !r.ok);
   
-  console.log(`\n[FMCSA ETL] ═══════════════════════════════════════════════════`);
-  console.log(`[FMCSA ETL] ${label} complete in ${elapsed} minutes`);
-  console.log(`[FMCSA ETL] ✓ ${succeeded}/${results.length} datasets succeeded`);
+  logger.info(`[FMCSA ETL] ═══════════════════════════════════════════════════`);
+  logger.info(`[FMCSA ETL] ${label} complete in ${elapsed} minutes`);
+  logger.info(`[FMCSA ETL] ${succeeded}/${results.length} datasets succeeded`);
   
   if (failed.length > 0) {
-    console.error(`[FMCSA ETL] ✗ ${failed.length} datasets failed:`);
+    logger.error(`[FMCSA ETL] ${failed.length} datasets failed:`);
     for (const f of failed) {
-      console.error(`[FMCSA ETL]   - ${f.name}: ${f.error}`);
+      logger.error(`[FMCSA ETL]   - ${f.name}: ${f.error}`);
     }
   } else {
-    console.log(`[FMCSA ETL] ALL datasets refreshed — zero failures`);
+    logger.info(`[FMCSA ETL] ALL datasets refreshed — zero failures`);
   }
   
-  console.log(`[FMCSA ETL] ═══════════════════════════════════════════════════`);
+  logger.info(`[FMCSA ETL] ═══════════════════════════════════════════════════`);
 }
 
 export async function runFullEtl(): Promise<void> {
-  console.log("[FMCSA ETL] ═══════════════════════════════════════════════════");
-  console.log("[FMCSA ETL] Starting FULL ETL run — ALL datasets");
-  console.log("[FMCSA ETL] ═══════════════════════════════════════════════════\n");
+  logger.info("[FMCSA ETL] ═══════════════════════════════════════════════════");
+  logger.info("[FMCSA ETL] Starting FULL ETL run — ALL datasets");
+  logger.info("[FMCSA ETL] ═══════════════════════════════════════════════════");
   await ensureFmcsaTables();
   const start = Date.now();
   
@@ -1503,9 +1504,9 @@ export async function runFullEtl(): Promise<void> {
 }
 
 export async function runDailyEtl(): Promise<void> {
-  console.log("[FMCSA ETL] ═══════════════════════════════════════════════════");
-  console.log("[FMCSA ETL] Starting DAILY ETL — all daily-frequency datasets");
-  console.log("[FMCSA ETL] ═══════════════════════════════════════════════════\n");
+  logger.info("[FMCSA ETL] ═══════════════════════════════════════════════════");
+  logger.info("[FMCSA ETL] Starting DAILY ETL — all daily-frequency datasets");
+  logger.info("[FMCSA ETL] ═══════════════════════════════════════════════════");
   await ensureFmcsaTables();
   const start = Date.now();
   
@@ -1528,9 +1529,9 @@ export async function runDailyEtl(): Promise<void> {
   // If any datasets failed, schedule an automatic retry in 30 minutes
   const failed = results.filter(r => !r.ok);
   if (failed.length > 0) {
-    console.log(`[FMCSA ETL] Scheduling automatic retry for ${failed.length} failed datasets in 30 minutes...`);
+    logger.info(`[FMCSA ETL] Scheduling automatic retry for ${failed.length} failed datasets in 30 minutes...`);
     setTimeout(async () => {
-      console.log(`[FMCSA ETL] ═══ RETRY RUN for ${failed.length} failed datasets ═══`);
+      logger.info(`[FMCSA ETL] ═══ RETRY RUN for ${failed.length} failed datasets ═══`);
       const retryResults: { name: string; ok: boolean; error?: string }[] = [];
       
       for (const f of failed) {
@@ -1553,18 +1554,18 @@ export async function runDailyEtl(): Promise<void> {
       
       const stillFailed = retryResults.filter(r => !r.ok);
       if (stillFailed.length > 0) {
-        console.error(`[FMCSA ETL] ${stillFailed.length} datasets still failing after retry — will try again tomorrow`);
+        logger.error(`[FMCSA ETL] ${stillFailed.length} datasets still failing after retry — will try again tomorrow`);
       } else {
-        console.log(`[FMCSA ETL] ✓ All retry datasets succeeded — data is now complete`);
+        logger.info(`[FMCSA ETL] All retry datasets succeeded — data is now complete`);
       }
     }, 30 * 60 * 1000);
   }
 }
 
 export async function runMonthlyEtl(): Promise<void> {
-  console.log("[FMCSA ETL] ═══════════════════════════════════════════════════");
-  console.log("[FMCSA ETL] Starting MONTHLY ETL — SMS BASIC scores");
-  console.log("[FMCSA ETL] ═══════════════════════════════════════════════════\n");
+  logger.info("[FMCSA ETL] ═══════════════════════════════════════════════════");
+  logger.info("[FMCSA ETL] Starting MONTHLY ETL — SMS BASIC scores");
+  logger.info("[FMCSA ETL] ═══════════════════════════════════════════════════");
   await ensureFmcsaTables();
   const start = Date.now();
   
@@ -1629,7 +1630,7 @@ async function main() {
       await runRevocationsEtl();
       break;
     default:
-      console.log(`
+      logger.info(`
 FMCSA ETL — EusoTrip Carrier Data Pipeline
 ═══════════════════════════════════════════
 
@@ -1668,7 +1669,7 @@ Schedule:      Daily at 12:00 PM CT (18:00 UTC) via fmcsaCron.ts
 try {
   if (require.main === module) {
     main().catch(err => {
-      console.error("[FMCSA ETL] Fatal error:", err);
+      logger.error("[FMCSA ETL] Fatal error:", err);
       process.exit(1);
     });
   }

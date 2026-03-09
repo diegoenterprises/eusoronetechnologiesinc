@@ -6,6 +6,7 @@
 
 import crypto from "crypto";
 import { eq, and, desc } from "drizzle-orm";
+import { logger } from "../../../_core/logger";
 import { getDb } from "../../../db";
 import { documentHashes } from "../../../../drizzle/schema";
 
@@ -66,7 +67,7 @@ export async function addDocumentHash(params: {
     });
     return { contentHash, version };
   } catch (err) {
-    console.error("[DocumentHash] Failed to record hash:", (err as Error).message);
+    logger.error("[DocumentHash] Failed to record hash:", (err as Error).message);
     return null;
   }
 }

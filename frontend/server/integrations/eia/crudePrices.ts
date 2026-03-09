@@ -5,6 +5,7 @@
  * Refresh: Every 1 hour
  * Data: WTI spot, Brent spot, Cushing OK stocks, Henry Hub nat gas
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzCrudePrices } from "../../../drizzle/schema";
 import { sql } from "drizzle-orm";
@@ -21,7 +22,7 @@ const CRUDE_SERIES: { code: string; name: string; unit: string }[] = [
 export async function fetchCrudePrices(): Promise<void> {
   const apiKey = process.env.EIA_API_KEY;
   if (!apiKey) {
-    console.warn("[EIA-Crude] No EIA_API_KEY set, skipping crude price sync");
+    logger.warn("[EIA-Crude] No EIA_API_KEY set, skipping crude price sync");
     return;
   }
 
@@ -73,7 +74,7 @@ export async function fetchCrudePrices(): Promise<void> {
 
       await new Promise((r) => setTimeout(r, 200));
     } catch (e) {
-      console.error(`[EIA-Crude] Failed to fetch ${series.code}:`, e);
+      logger.error(`[EIA-Crude] Failed to fetch ${series.code}:`, e);
     }
   }
 }

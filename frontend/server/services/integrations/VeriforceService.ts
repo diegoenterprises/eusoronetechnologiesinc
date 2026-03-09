@@ -4,6 +4,7 @@
  */
 
 import { BaseIntegrationService, SyncResult, MappedRecord } from "./BaseIntegrationService";
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { 
   certifications,
@@ -61,7 +62,7 @@ export class VeriforceService extends BaseIntegrationService {
       await this.makeRequest("/account/verify");
       return true;
     } catch (error) {
-      console.error("[Veriforce] Connection test failed:", error);
+      logger.error("[Veriforce] Connection test failed:", error);
       return false;
     }
   }
@@ -116,10 +117,10 @@ export class VeriforceService extends BaseIntegrationService {
       const response = await this.makeRequest<{ qualifications: VeriforceOQRecord[] }>("/oq/qualifications");
       stats.fetched = response.qualifications.length;
       // TODO: Store in database when schema is updated
-      console.log(`[Veriforce] Fetched ${stats.fetched} OQ records`);
+      logger.info(`[Veriforce] Fetched ${stats.fetched} OQ records`);
       stats.created = stats.fetched;
     } catch (error) {
-      console.error("[Veriforce] Failed to fetch OQ records:", error);
+      logger.error("[Veriforce] Failed to fetch OQ records:", error);
       throw error;
     }
     return stats;
@@ -131,10 +132,10 @@ export class VeriforceService extends BaseIntegrationService {
       const response = await this.makeRequest<{ tests: VeriforceDARecord[] }>("/da/tests");
       stats.fetched = response.tests.length;
       // TODO: Store in database when schema is updated
-      console.log(`[Veriforce] Fetched ${stats.fetched} D&A test records`);
+      logger.info(`[Veriforce] Fetched ${stats.fetched} D&A test records`);
       stats.created = stats.fetched;
     } catch (error) {
-      console.error("[Veriforce] Failed to fetch DA records:", error);
+      logger.error("[Veriforce] Failed to fetch DA records:", error);
       throw error;
     }
     return stats;
@@ -146,10 +147,10 @@ export class VeriforceService extends BaseIntegrationService {
       const response = await this.makeRequest<{ trainings: VeriforceTraining[] }>("/training/completions");
       stats.fetched = response.trainings.length;
       // TODO: Store in database when schema is updated
-      console.log(`[Veriforce] Fetched ${stats.fetched} training records`);
+      logger.info(`[Veriforce] Fetched ${stats.fetched} training records`);
       stats.created = stats.fetched;
     } catch (error) {
-      console.error("[Veriforce] Failed to fetch training records:", error);
+      logger.error("[Veriforce] Failed to fetch training records:", error);
       throw error;
     }
 

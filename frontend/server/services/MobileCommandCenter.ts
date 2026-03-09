@@ -96,49 +96,22 @@ export interface MobileCommandData {
 // ── Data Generation ──
 
 function generateActiveMission(): ActiveMission | null {
-  if (Math.random() > 0.2) {
-    const total = 400 + Math.round(Math.random() * 800);
-    const completed = Math.round(total * (0.2 + Math.random() * 0.6));
-    return {
-      loadId: `LD-${40000 + Math.floor(Math.random() * 9999)}`,
-      status: completed > total * 0.8 ? "approaching_delivery" : completed > total * 0.3 ? "in_transit" : "en_route_pickup",
-      origin: { city: "Houston", state: "TX" },
-      destination: { city: "Dallas", state: "TX" },
-      currentStop: { name: "I-45 Rest Area", city: "Corsicana", state: "TX", type: "rest" },
-      nextStop: {
-        name: "Dallas Distribution Center",
-        city: "Dallas", state: "TX",
-        eta: new Date(Date.now() + 3 * 3600000).toISOString(),
-        milesRemaining: total - completed,
-      },
-      commodity: "Electronics",
-      weight: 32000,
-      hazmat: false,
-      rate: Math.round(total * 2.65),
-      pickupTime: new Date(Date.now() - 4 * 3600000).toISOString(),
-      estimatedDelivery: new Date(Date.now() + 3 * 3600000).toISOString(),
-      milesTotal: total,
-      milesCompleted: completed,
-      progressPct: Math.round((completed / total) * 100),
-    };
-  }
+  // Real implementation: query active loads assigned to driver
   return null;
 }
 
 function generateHOS(): HOSSummary {
-  const drivingLeft = 3 + Math.random() * 8;
-  const onDutyLeft = drivingLeft + 1 + Math.random() * 2;
-  const cycleUsed = 30 + Math.random() * 30;
+  // Real implementation: query ELD/hos_logs for current driver
   return {
-    drivingHoursLeft: Math.round(drivingLeft * 10) / 10,
-    onDutyHoursLeft: Math.round(onDutyLeft * 10) / 10,
-    nextBreakDue: new Date(Date.now() + (2 + Math.random() * 3) * 3600000).toISOString(),
-    breakMinutesLeft: Math.round(30 - Math.random() * 15),
-    cycleHoursUsed: Math.round(cycleUsed * 10) / 10,
+    drivingHoursLeft: 11,
+    onDutyHoursLeft: 14,
+    nextBreakDue: "",
+    breakMinutesLeft: 30,
+    cycleHoursUsed: 0,
     cycleLimit: 70,
-    restartAvailable: cycleUsed > 50,
-    status: Math.random() > 0.3 ? "driving" : "on_duty",
-    violations: Math.random() > 0.85 ? 1 : 0,
+    restartAvailable: false,
+    status: "off_duty",
+    violations: 0,
   };
 }
 
@@ -153,8 +126,8 @@ function generateDocuments(): DocumentChecklist {
     { id: "dvir-post", name: "Post-Trip DVIR", required: true, category: "delivery" as const },
   ].map(item => ({
     ...item,
-    completed: Math.random() > 0.4,
-    completedAt: Math.random() > 0.4 ? new Date(Date.now() - Math.random() * 8 * 3600000).toISOString() : null,
+    completed: false,
+    completedAt: null,
   }));
 
   const reqItems = items.filter(i => i.required);
@@ -164,21 +137,12 @@ function generateDocuments(): DocumentChecklist {
 }
 
 function generateEarnings(): EarningsTracker {
-  const todayLoads = Math.floor(Math.random() * 2) + 1;
-  const weekLoads = todayLoads + Math.floor(Math.random() * 8);
-  const todayMiles = todayLoads * (200 + Math.random() * 400);
-  const weekMiles = weekLoads * (200 + Math.random() * 400);
-  const rpm = 2.40 + Math.random() * 0.80;
+  // Real implementation: query payments/settlements for current driver
   return {
-    today: Math.round(todayMiles * rpm),
-    thisWeek: Math.round(weekMiles * rpm),
-    thisMonth: Math.round(weekMiles * rpm * 3.5),
-    loadsToday: todayLoads,
-    loadsThisWeek: weekLoads,
-    milesToday: Math.round(todayMiles),
-    milesThisWeek: Math.round(weekMiles),
-    rpmAvg: Math.round(rpm * 100) / 100,
-    pendingSettlement: Math.round(weekMiles * rpm * 0.4),
+    today: 0, thisWeek: 0, thisMonth: 0,
+    loadsToday: 0, loadsThisWeek: 0,
+    milesToday: 0, milesThisWeek: 0,
+    rpmAvg: 0, pendingSettlement: 0,
   };
 }
 
@@ -188,15 +152,8 @@ function generateUpcoming(): UpcomingAssignment[] {
     { o: { city: "Memphis", state: "TN" }, d: { city: "Atlanta", state: "GA" }, dist: 390 },
     { o: { city: "Atlanta", state: "GA" }, d: { city: "Charlotte", state: "NC" }, dist: 245 },
   ];
-  return lanes.slice(0, 1 + Math.floor(Math.random() * 2)).map((lane, i) => ({
-    loadId: `LD-${70000 + i}`,
-    origin: lane.o,
-    destination: lane.d,
-    pickupTime: new Date(Date.now() + (24 + i * 24) * 3600000).toISOString(),
-    rate: Math.round(lane.dist * (2.30 + Math.random() * 0.80)),
-    distance: lane.dist,
-    commodity: ["Dry Goods", "Auto Parts", "Food Products"][i] || "General",
-  }));
+  // Real implementation: query upcoming assigned loads for driver
+  return [];
 }
 
 // ── Main API ──

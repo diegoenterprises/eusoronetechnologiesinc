@@ -13,6 +13,7 @@
  *   - Redis connection strings
  */
 
+import { logger } from "../../_core/logger";
 import crypto from "crypto";
 
 // Azure Key Vault configuration
@@ -65,7 +66,7 @@ export async function getSecret(secretName: string): Promise<string | null> {
         return secret.value;
       }
     } catch (err) {
-      console.error(`[KeyVault] Failed to get secret '${secretName}':`, err);
+      logger.error(`[KeyVault] Failed to get secret '${secretName}':`, err);
     }
   }
 

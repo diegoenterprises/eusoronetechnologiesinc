@@ -6,6 +6,7 @@
  */
 
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { sql, eq, and, count } from "drizzle-orm";
 import { loads, bids, notifications } from "../../drizzle/schema";
@@ -136,7 +137,7 @@ export const sidebarRouter = router({
       } catch {}
 
     } catch (error) {
-      console.error('[Sidebar] getBadgeCounts error:', error);
+      logger.error('[Sidebar] getBadgeCounts error:', error);
     }
 
     return badges;

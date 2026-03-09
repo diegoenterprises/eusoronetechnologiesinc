@@ -1,3 +1,4 @@
+import { logger } from "./logger";
 /**
  * SOC 2 AUDIT EVENT SERVICE
  * Comprehensive security event recording for SOC 2 Type II compliance.
@@ -161,7 +162,7 @@ export async function recordAuditEvent(event: AuditEvent, req?: Request): Promis
   try {
     const db = await getDb();
     if (!db) {
-      console.log(`[AUDIT] ${event.category}/${event.action} | entity=${event.entityType}:${event.entityId || "N/A"} | user=${event.userId || "anonymous"} | severity=${event.severity || "LOW"}`);
+      logger.info(`[AUDIT] ${event.category}/${event.action} | entity=${event.entityType}:${event.entityId || "N/A"} | user=${event.userId || "anonymous"} | severity=${event.severity || "LOW"}`);
       return;
     }
 
@@ -203,7 +204,7 @@ export async function recordAuditEvent(event: AuditEvent, req?: Request): Promis
       } catch (colErr: any) {
         if (colErr?.cause?.code === "ER_BAD_FIELD_ERROR" || colErr?.message?.includes("Unknown column")) {
           _columnsLimited = true; // remember: don't try extended columns again
-          console.warn("[AUDIT] Extended columns missing — falling back to base insert. Run migration 0011.");
+          logger.warn("[AUDIT] Extended columns missing — falling back to base insert. Run migration 0011.");
         } else {
           throw colErr;
         }
@@ -214,7 +215,7 @@ export async function recordAuditEvent(event: AuditEvent, req?: Request): Promis
     await db.insert(auditLogs).values(baseValues as any);
   } catch (error) {
     // Audit logging must never crash the application
-    console.error(`[AUDIT] Failed to record event ${event.category}:${event.action}:`, error);
+    logger.error(`[AUDIT] Failed to record event ${event.category}:${event.action}:`, error);
   }
 }
 

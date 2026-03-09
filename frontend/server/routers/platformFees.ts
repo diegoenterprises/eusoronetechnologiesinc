@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, gte, lte, sql, isNull, or } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, adminProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   platformFeeConfigs,
@@ -74,7 +75,7 @@ export const platformFeesRouter = router({
           createdAt: c.createdAt?.toISOString(),
         }));
       } catch (error) {
-        console.error("[PlatformFees] getFeeConfigs error:", error);
+        logger.error("[PlatformFees] getFeeConfigs error:", error);
         return [];
       }
     }),
@@ -738,7 +739,7 @@ export const platformFeesRouter = router({
     for (const cfg of defaults) {
       await db.insert(platformFeeConfigs).values({ ...cfg, isActive: true, platformShare: "100.00", processorShare: "0.00" });
     }
-    console.log("[PlatformFees] Seeded 8 default fee configurations");
+    logger.info("[PlatformFees] Seeded 8 default fee configurations");
     return { seeded: true, count: defaults.length };
   }),
 });

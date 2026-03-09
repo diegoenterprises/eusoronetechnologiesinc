@@ -209,11 +209,11 @@ export function generateTankReading(
   const temperatureF = Math.round(baseTemp + tempVariation + tankNumber * 0.5);
 
   const apiGravity = PRODUCT_API_GRAVITY[product] || 35;
-  const bswPercent = Math.round(Math.random() * 0.5 * 100) / 100;
+  const bswPercent = Math.round((tankNumber * 0.07 % 0.5) * 100) / 100;
   const waterBottomInches = Math.round(bswPercent * 3 * 10) / 10;
 
   // Change rate simulation
-  const changeRateGPH = Math.round((-50 + Math.random() * 30) * consumptionMultiplier);
+  const changeRateGPH = Math.round((-50 + (tankNumber % 10) * 3) * consumptionMultiplier);
 
   const usableVolume = Math.max(0, currentLevel - (capacity * 0.02)); // 2% heel
   const ullage = capacity - currentLevel;

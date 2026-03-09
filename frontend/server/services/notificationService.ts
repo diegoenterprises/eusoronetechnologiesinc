@@ -4,6 +4,7 @@
  */
 
 import { eq, and, desc, gte, isNull } from "drizzle-orm";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   notifications,
@@ -488,7 +489,7 @@ export class NotificationService {
       if (admin.default.apps.length === 0) {
         const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
         if (!serviceAccountJson) {
-          console.warn("[Push] FIREBASE_SERVICE_ACCOUNT env var not set — skipping FCM");
+          logger.warn("[Push] FIREBASE_SERVICE_ACCOUNT env var not set — skipping FCM");
           return false;
         }
         const serviceAccount = JSON.parse(serviceAccountJson);
@@ -498,7 +499,7 @@ export class NotificationService {
       }
       firebaseApp = admin.default;
     } catch (initErr) {
-      console.warn("[Push] Firebase init failed:", (initErr as any)?.message);
+      logger.warn("[Push] Firebase init failed:", (initErr as any)?.message);
       return false;
     }
 
@@ -555,9 +556,9 @@ export class NotificationService {
         // Deactivate invalid/unregistered tokens
         if (errorCode.includes("not-registered") || errorCode.includes("invalid-argument") || errorCode.includes("invalid-registration-token")) {
           invalidTokenIds.push(tokenRecord.id);
-          console.warn(`[Push] Token ${tokenRecord.id} invalid — deactivating`);
+          logger.warn(`[Push] Token ${tokenRecord.id} invalid — deactivating`);
         } else {
-          console.warn(`[Push] Send failed for token ${tokenRecord.id}:`, sendErr?.message);
+          logger.warn(`[Push] Send failed for token ${tokenRecord.id}:`, sendErr?.message);
         }
       }
     }
@@ -569,7 +570,7 @@ export class NotificationService {
       }
     }
 
-    console.log(`[Push] Sent ${sentCount}/${tokens.length} for user ${payload.userId}: ${payload.title}`);
+    logger.info(`[Push] Sent ${sentCount}/${tokens.length} for user ${payload.userId}: ${payload.title}`);
     return sentCount > 0;
   }
 
@@ -594,7 +595,7 @@ export class NotificationService {
       });
       return sent;
     } catch (err) {
-      console.error(`[NotificationService] Email send failed for user ${payload.userId}:`, err);
+      logger.error(`[NotificationService] Email send failed for user ${payload.userId}:`, err);
       return false;
     }
   }
@@ -619,7 +620,7 @@ export class NotificationService {
       });
       return result.status !== "FAILED";
     } catch (err) {
-      console.error(`[NotificationService] SMS send failed for user ${payload.userId}:`, err);
+      logger.error(`[NotificationService] SMS send failed for user ${payload.userId}:`, err);
       return false;
     }
   }

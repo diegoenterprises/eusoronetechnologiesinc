@@ -10,6 +10,7 @@
 import { z } from "zod";
 import { eq, like, sql, or, and, desc } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, drivers, users, documents, companies } from "../../drizzle/schema";
 
@@ -66,7 +67,7 @@ export const searchRouter = router({
             cargoType: loads.cargoType, commodityName: loads.commodityName,
             pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
           }).from(loads).where(loadWhere!).limit(10);
-        } catch (e) { console.error("[search.global] loads query error:", e); }
+        } catch (e) { logger.error("[search.global] loads query error:", e); }
       }
 
       for (const l of loadResults) {
@@ -93,7 +94,7 @@ export const searchRouter = router({
       try {
         userResults = await db.select({ id: users.id, name: users.name, role: users.role, email: users.email })
           .from(users).where(userWhere!).limit(8);
-      } catch (e) { console.error("[search.global] users query error:", e); }
+      } catch (e) { logger.error("[search.global] users query error:", e); }
 
       for (const u of userResults) {
         const type = u.role === "DRIVER" ? "driver" : u.role === "CATALYST" ? "catalyst" : "user";
@@ -171,7 +172,7 @@ export const searchRouter = router({
         },
         results,
       };
-    } catch (err) { console.error("[search.global]", err); return empty; }
+    } catch (err) { logger.error("[search.global]", err); return empty; }
   }),
 
   getRecent: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {

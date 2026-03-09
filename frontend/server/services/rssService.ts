@@ -44,6 +44,7 @@ export interface FeedHealth {
 // FEED SOURCES
 // ---------------------------------------------------------------------------
 // 200 comprehensive industry feeds imported from data file
+import { logger } from "../_core/logger";
 import { ALL_200_FEEDS } from "./rssFeedData";
 export const DEFAULT_RSS_FEEDS: RSSFeedSource[] = ALL_200_FEEDS;
 
@@ -251,7 +252,7 @@ export async function fetchAllFeeds(): Promise<RSSArticle[]> {
     cacheGeneration++;
 
     const elapsed = Date.now() - startMs;
-    console.log(
+    logger.info(
       `[RSS] Refresh #${cacheGeneration}: ${successCount}/${enabledFeeds.length} feeds OK, ${skipped} skipped, ${cachedArticles.length} total articles in ${elapsed}ms`
     );
 
@@ -432,12 +433,12 @@ export async function refreshCache(): Promise<{
 /** Start the background auto-refresh interval */
 export function startAutoRefresh(): void {
   if (refreshTimer) return; // already running
-  console.log(
+  logger.info(
     `[RSS] Starting background auto-refresh every ${REFRESH_INTERVAL_MS / 1000}s`
   );
   refreshTimer = setInterval(() => {
     fetchAllFeeds().catch((err) =>
-      console.warn("[RSS] Background refresh error:", err)
+      logger.error("[RSS] Background refresh error:", err)
     );
   }, REFRESH_INTERVAL_MS);
 }
@@ -447,20 +448,20 @@ export function stopAutoRefresh(): void {
   if (refreshTimer) {
     clearInterval(refreshTimer);
     refreshTimer = null;
-    console.log("[RSS] Background auto-refresh stopped");
+    logger.info("[RSS] Background auto-refresh stopped");
   }
 }
 
 /** Pre-warm + start auto-refresh loop */
 export function preWarmCache(): void {
-  console.log("[RSS] Pre-warming news cache...");
+  logger.info("[RSS] Pre-warming news cache...");
   fetchAllFeeds()
     .then((articles) => {
-      console.log(`[RSS] Cache warmed with ${articles.length} articles`);
+      logger.info(`[RSS] Cache warmed with ${articles.length} articles`);
       startAutoRefresh();
     })
     .catch((err) => {
-      console.warn("[RSS] Pre-warm failed:", err);
+      logger.error("[RSS] Pre-warm failed:", err);
       // Start auto-refresh anyway so it retries
       startAutoRefresh();
     });

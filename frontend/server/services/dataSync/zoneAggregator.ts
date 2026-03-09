@@ -3,6 +3,7 @@
  * Computes per-zone metrics from all 22+ data sources
  * Runs every 5 minutes, writes to hz_zone_intelligence
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import {
   hzZoneIntelligence,
@@ -73,7 +74,7 @@ export async function computeZoneIntelligence(): Promise<void> {
           },
         });
     } catch (e) {
-      console.error(`[ZoneAggregator] Failed to compute ${zoneId}:`, e);
+      logger.error(`[ZoneAggregator] Failed to compute ${zoneId}:`, e);
     }
   }
 

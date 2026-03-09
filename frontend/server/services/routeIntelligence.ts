@@ -10,6 +10,7 @@
  * Runs as scheduled sync job every 5 minutes.
  */
 
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { locationHistory } from "../../drizzle/schema";
 import { sql, and, gte, desc } from "drizzle-orm";
@@ -74,9 +75,9 @@ export async function computeGridHeat(): Promise<void> {
       `);
     }
 
-    console.log(`[RouteIntelligence] Grid heat: ${cells.size} cells from ${pings.length} pings`);
+    logger.info(`[RouteIntelligence] Grid heat: ${cells.size} cells from ${pings.length} pings`);
   } catch (err) {
-    console.error("[RouteIntelligence] Grid heat error:", err);
+    logger.error("[RouteIntelligence] Grid heat error:", err);
   }
 }
 
@@ -157,9 +158,9 @@ export async function computeLaneLearning(): Promise<void> {
       `);
     }
 
-    console.log(`[RouteIntelligence] Lane learning: ${lanes.size} lanes from ${rows.length} deliveries`);
+    logger.info(`[RouteIntelligence] Lane learning: ${lanes.size} lanes from ${rows.length} deliveries`);
   } catch (err) {
-    console.error("[RouteIntelligence] Lane learning error:", err);
+    logger.error("[RouteIntelligence] Lane learning error:", err);
   }
 }
 
@@ -292,9 +293,9 @@ export async function optimizeMultiStopRoute(
  * MASTER AGGREGATION — called by scheduler every 5 minutes
  */
 export async function computeRouteIntelligence(): Promise<void> {
-  console.log("[RouteIntelligence] Starting crowd-sourced intelligence aggregation...");
+  logger.info("[RouteIntelligence] Starting crowd-sourced intelligence aggregation...");
   const start = Date.now();
   await computeGridHeat();
   await computeLaneLearning();
-  console.log(`[RouteIntelligence] Complete in ${Date.now() - start}ms`);
+  logger.info(`[RouteIntelligence] Complete in ${Date.now() - start}ms`);
 }

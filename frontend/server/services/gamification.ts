@@ -3,6 +3,7 @@
  * Points, badges, leaderboards, achievements, and tier management
  */
 
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { gamificationProfiles, userBadges, badges as badgesTable, rewards, users } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -333,7 +334,7 @@ export async function awardPoints(
 
     return { success: true, newTotal, tierUp: oldTier !== newTier };
   } catch (e) {
-    console.error("[Gamification] awardPoints error:", e);
+    logger.error("[Gamification] awardPoints error:", e);
     return { success: false, newTotal: 0, tierUp: false };
   }
 }
@@ -377,7 +378,7 @@ export async function checkBadgeEligibility(
 
     return { eligible: true, awarded: true };
   } catch (e) {
-    console.error("[Gamification] checkBadgeEligibility error:", e);
+    logger.error("[Gamification] checkBadgeEligibility error:", e);
     return { eligible: false, awarded: false };
   }
 }
@@ -437,7 +438,7 @@ export async function getLeaderboard(
       tier: calculateTier(Number(r.points) || 0),
     }));
   } catch (e) {
-    console.error("[Gamification] getLeaderboard error:", e);
+    logger.error("[Gamification] getLeaderboard error:", e);
     return [];
   }
 }
@@ -468,7 +469,7 @@ export async function getUserAchievements(userId: number, db: any): Promise<Achi
       completed: true,
     }));
   } catch (e) {
-    console.error("[Gamification] getUserAchievements error:", e);
+    logger.error("[Gamification] getUserAchievements error:", e);
     return [];
   }
 }
@@ -490,7 +491,7 @@ export async function getUserRank(userId: number, db: any, role?: string): Promi
 
     return (countResult?.count || 0) + 1;
   } catch (e) {
-    console.error("[Gamification] getUserRank error:", e);
+    logger.error("[Gamification] getUserRank error:", e);
     return 0;
   }
 }

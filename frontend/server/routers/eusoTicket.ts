@@ -14,7 +14,9 @@
 
 import { z } from "zod";
 import { eq, sql, desc, and } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import { router, isolatedApprovedProcedure as protectedProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, documents, users, vehicles, runTickets } from "../../drizzle/schema";
 
@@ -121,7 +123,7 @@ export const eusoTicketRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const ticketNumber = `RT-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+      const ticketNumber = `RT-${Date.now()}-${randomBytes(4).toString('hex').toUpperCase()}`;
       const driverIdNum = parseInt(input.driverId) || 0;
       const companyId = Number(ctx.user?.companyId) || 0;
       const loadIdNum = parseInt(input.loadId) || undefined;
@@ -225,7 +227,7 @@ export const eusoTicketRouter = router({
           createdAt: load.createdAt?.toISOString() || new Date().toISOString(),
         };
       } catch (error) {
-        console.error('[EusoTicket] getRunTicket error:', error);
+        logger.error('[EusoTicket] getRunTicket error:', error);
         throw error;
       }
     }),
@@ -269,7 +271,7 @@ export const eusoTicketRouter = router({
           total: loadsList.length,
         };
       } catch (error) {
-        console.error('[EusoTicket] listRunTickets error:', error);
+        logger.error('[EusoTicket] listRunTickets error:', error);
         return { tickets: [], total: 0 };
       }
     }),
@@ -278,7 +280,7 @@ export const eusoTicketRouter = router({
   generateBOL: protectedProcedure
     .input(bolSchema)
     .mutation(async ({ input, ctx }) => {
-      const bolNumber = `BOL-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+      const bolNumber = `BOL-${Date.now()}-${randomBytes(4).toString('hex').toUpperCase()}`;
       
       return {
         success: true,

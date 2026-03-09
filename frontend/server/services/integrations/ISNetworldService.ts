@@ -4,6 +4,7 @@
  */
 
 import { BaseIntegrationService, SyncResult, MappedRecord } from "./BaseIntegrationService";
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { 
   documents,
@@ -78,7 +79,7 @@ export class ISNetworldService extends BaseIntegrationService {
       await this.makeRequest("/contractor/profile");
       return true;
     } catch (error) {
-      console.error("[ISNetworld] Connection test failed:", error);
+      logger.error("[ISNetworld] Connection test failed:", error);
       return false;
     }
   }
@@ -133,10 +134,10 @@ export class ISNetworldService extends BaseIntegrationService {
       const response = await this.makeRequest<{ requirements: ISNComplianceRecord[] }>("/contractor/requirements");
       stats.fetched = response.requirements.length;
       // TODO: Store in database when schema is updated
-      console.log(`[ISNetworld] Fetched ${stats.fetched} compliance records`);
+      logger.info(`[ISNetworld] Fetched ${stats.fetched} compliance records`);
       stats.created = stats.fetched;
     } catch (error) {
-      console.error("[ISNetworld] Failed to fetch compliance records:", error);
+      logger.error("[ISNetworld] Failed to fetch compliance records:", error);
       throw error;
     }
     return stats;
@@ -148,10 +149,10 @@ export class ISNetworldService extends BaseIntegrationService {
       const response = await this.makeRequest<{ safetyRecords: ISNSafetyRecord[] }>("/contractor/safety-records");
       stats.fetched = response.safetyRecords.length;
       // TODO: Store in database when schema is updated
-      console.log(`[ISNetworld] Fetched ${stats.fetched} safety records`);
+      logger.info(`[ISNetworld] Fetched ${stats.fetched} safety records`);
       stats.created = stats.fetched;
     } catch (error) {
-      console.error("[ISNetworld] Failed to fetch safety records:", error);
+      logger.error("[ISNetworld] Failed to fetch safety records:", error);
       throw error;
     }
     return stats;
@@ -163,10 +164,10 @@ export class ISNetworldService extends BaseIntegrationService {
       const response = await this.makeRequest<{ employees: ISNEmployee[] }>("/contractor/employees");
       stats.fetched = response.employees.length;
       // TODO: Store in database when schema is updated
-      console.log(`[ISNetworld] Fetched ${stats.fetched} employee records`);
+      logger.info(`[ISNetworld] Fetched ${stats.fetched} employee records`);
       stats.created = stats.fetched;
     } catch (error) {
-      console.error("[ISNetworld] Failed to fetch employee records:", error);
+      logger.error("[ISNetworld] Failed to fetch employee records:", error);
       throw error;
     }
     return stats;

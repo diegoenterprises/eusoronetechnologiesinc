@@ -24,6 +24,7 @@
  * Phase 1: Scan + email/SMS alerts. Phase 2: ML-predicted renewal lag.
  */
 
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { drivers, documents, certifications, users } from "../../../drizzle/schema";
 import { eq, and, gte, lte, sql, isNotNull } from "drizzle-orm";
@@ -123,7 +124,7 @@ export async function scanDocumentExpiry(
     const warning = deduped.filter(a => a.severity === "warning").length;
     const info = deduped.filter(a => a.severity === "info").length;
 
-    console.log(`[DocExpiry] Scan complete: ${deduped.length} alerts (${critical} critical, ${warning} warning, ${info} info). Emails: ${emailsSent}, SMS: ${smsSent}`);
+    logger.info(`[DocExpiry] Scan complete: ${deduped.length} alerts (${critical} critical, ${warning} warning, ${info} info). Emails: ${emailsSent}, SMS: ${smsSent}`);
 
     return {
       scannedAt: new Date().toISOString(),
@@ -138,7 +139,7 @@ export async function scanDocumentExpiry(
       durationMs: Date.now() - start,
     };
   } catch (err: any) {
-    console.error("[DocExpiry] Scan error:", err?.message?.slice(0, 200));
+    logger.error("[DocExpiry] Scan error:", err?.message?.slice(0, 200));
     return emptyResult(start);
   }
 }
@@ -204,7 +205,7 @@ async function scanDriverFields(
       }
     }
   } catch (err: any) {
-    console.warn("[DocExpiry] Driver field scan error:", err?.message?.slice(0, 100));
+    logger.warn("[DocExpiry] Driver field scan error:", err?.message?.slice(0, 100));
   }
   return alerts;
 }
@@ -254,7 +255,7 @@ async function scanDocuments(
       });
     }
   } catch (err: any) {
-    console.warn("[DocExpiry] Document scan error:", err?.message?.slice(0, 100));
+    logger.warn("[DocExpiry] Document scan error:", err?.message?.slice(0, 100));
   }
   return alerts;
 }
@@ -304,7 +305,7 @@ async function scanCertifications(
       });
     }
   } catch (err: any) {
-    console.warn("[DocExpiry] Certification scan error:", err?.message?.slice(0, 100));
+    logger.warn("[DocExpiry] Certification scan error:", err?.message?.slice(0, 100));
   }
   return alerts;
 }
@@ -347,7 +348,7 @@ async function dispatchAlerts(alerts: ExpiryAlert[]): Promise<{
       });
       emailsSent++;
     } catch (err: any) {
-      console.warn(`[DocExpiry] Email failed for user ${userId}:`, err?.message?.slice(0, 80));
+      logger.warn(`[DocExpiry] Email failed for user ${userId}:`, err?.message?.slice(0, 80));
     }
 
     // SMS for critical items only

@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { eq, desc, sql, and } from "drizzle-orm";
 import { adminProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { locationHistory, geofences, geofenceEvents, routes, routeWaypoints, convoys, etaHistory, speedEvents, safetyAlerts, users } from "../../drizzle/schema";
 
@@ -256,7 +257,7 @@ export const telemetryRouter = router({
       `);
       return { success: true };
     } catch (err) {
-      console.error("[Telemetry] Route report error:", err);
+      logger.error("[Telemetry] Route report error:", err);
       return { success: false };
     }
   }),

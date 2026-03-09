@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, sql, and } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { terminals } from "../../drizzle/schema";
 import {
@@ -60,7 +61,7 @@ export const tankMonitorRouter = router({
         const summary = generateTerminalSummary(input.terminalId, terminal.name, readings);
         return { readings, summary };
       } catch (e) {
-        console.error("[TankMonitor] getTankReadings error:", e);
+        logger.error("[TankMonitor] getTankReadings error:", e);
         return { readings: [], summary: null };
       }
     }),
@@ -107,7 +108,7 @@ export const tankMonitorRouter = router({
         }
         return allAlerts;
       } catch (e) {
-        console.error("[TankMonitor] getTankAlerts error:", e);
+        logger.error("[TankMonitor] getTankAlerts error:", e);
         return [];
       }
     }),
@@ -137,7 +138,7 @@ export const tankMonitorRouter = router({
 
         return { reading, trend };
       } catch (e) {
-        console.error("[TankMonitor] getTankTrend error:", e);
+        logger.error("[TankMonitor] getTankTrend error:", e);
         return null;
       }
     }),
@@ -169,7 +170,7 @@ export const tankMonitorRouter = router({
 
         return forecasts;
       } catch (e) {
-        console.error("[TankMonitor] getTankForecasts error:", e);
+        logger.error("[TankMonitor] getTankForecasts error:", e);
         return [];
       }
     }),
@@ -233,7 +234,7 @@ export const tankMonitorRouter = router({
           },
         };
       } catch (e) {
-        console.error("[TankMonitor] getMultiTerminalOverview error:", e);
+        logger.error("[TankMonitor] getMultiTerminalOverview error:", e);
         return { terminals: [], totals: { totalTanks: 0, totalCapacity: 0, totalInventory: 0, overallUtilization: 0, alerts: { critical: 0, warning: 0, info: 0 } } };
       }
     }),

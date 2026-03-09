@@ -2,6 +2,7 @@
  * Hot Zones Cache Layer — NodeCache with TTLs per data type
  */
 import NodeCache from "node-cache";
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzZoneIntelligence, hzWeatherAlerts, hzFuelPrices } from "../../../drizzle/schema";
 import { sql } from "drizzle-orm";
@@ -51,7 +52,7 @@ export function getCacheStats(): { keys: number; hits: number; misses: number } 
 }
 
 export async function warmCache(): Promise<void> {
-  console.log("[Cache] Warming cache...");
+  logger.info("[Cache] Warming cache...");
 
   try {
     const db = await getDb();
@@ -77,8 +78,8 @@ export async function warmCache(): Promise<void> {
       .orderBy(sql`report_date DESC`);
     setInCache("fuel:current", fuel, "FUEL_PRICES");
 
-    console.log(`[Cache] Warmed with ${memoryCache.keys().length} keys`);
+    logger.info(`[Cache] Warmed with ${memoryCache.keys().length} keys`);
   } catch (e) {
-    console.error("[Cache] Failed to warm cache:", e);
+    logger.error("[Cache] Failed to warm cache:", e);
   }
 }

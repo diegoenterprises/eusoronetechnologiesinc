@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, like, gte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { companies, loads, payments } from "../../drizzle/schema";
 
@@ -37,7 +38,7 @@ export const customersRouter = router({
           avgRating: 0,
         };
       } catch (error) {
-        console.error('[Customers] getSummary error:', error);
+        logger.error('[Customers] getSummary error:', error);
         return { total: 0, active: 0, pending: 0, blocked: 0, totalRevenue: 0, activeCustomers: 0, avgRating: 0 };
       }
     }),

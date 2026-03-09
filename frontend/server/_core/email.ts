@@ -5,6 +5,7 @@
  */
 
 import { v4 as uuidv4 } from "uuid";
+import { logger } from "./logger";
 
 const ACS_CONNECTION_STRING = process.env.AZURE_EMAIL_CONNECTION_STRING || "";
 const FROM_EMAIL = process.env.FROM_EMAIL || "DoNotReply@eusotrip.com";
@@ -35,7 +36,7 @@ class EmailService {
       // Lazy init — don't block server startup
       this.initPromise = this.initClient();
     } else {
-      console.warn("[Email] AZURE_EMAIL_CONNECTION_STRING not set - emails will be logged only");
+      logger.warn("[Email] AZURE_EMAIL_CONNECTION_STRING not set - emails will be logged only");
     }
   }
 
@@ -43,9 +44,9 @@ class EmailService {
     try {
       const { EmailClient } = await import("@azure/communication-email");
       this.client = new EmailClient(ACS_CONNECTION_STRING);
-      console.log("[Email] Azure Communication Services Email configured");
+      logger.info("[Email] Azure Communication Services Email configured");
     } catch (err) {
-      console.warn("[Email] @azure/communication-email not available — emails will be logged only");
+      logger.warn("[Email] @azure/communication-email not available — emails will be logged only");
       this.configured = false;
     }
   }
@@ -58,7 +59,7 @@ class EmailService {
     if (this.initPromise) await this.initPromise;
 
     if (!this.configured || !this.client) {
-      console.log("[Email] Would send email:", {
+      logger.info("[Email] Would send email:", {
         to: options.to,
         subject: options.subject,
       });
@@ -80,10 +81,10 @@ class EmailService {
 
       const poller = await this.client.beginSend(message);
       const result = await poller.pollUntilDone();
-      console.log("[Email] Sent to:", options.to, "Status:", result.status);
+      logger.info("[Email] Sent to:", options.to, "Status:", result.status);
       return result.status === "Succeeded";
     } catch (error) {
-      console.error("[Email] Failed to send:", error);
+      logger.error("[Email] Failed to send:", error);
       return false;
     }
   }

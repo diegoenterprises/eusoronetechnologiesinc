@@ -3,6 +3,9 @@
  * Handles Stripe Connect, payment processing, and wallet operations
  */
 
+
+import { logger } from "./logger";
+
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 
@@ -35,7 +38,7 @@ class StripeService {
   constructor() {
     this.apiKey = STRIPE_SECRET_KEY;
     if (!this.apiKey) {
-      console.warn("[Stripe] STRIPE_SECRET_KEY not configured");
+      logger.warn("[Stripe] STRIPE_SECRET_KEY not configured");
     }
   }
 
@@ -221,7 +224,7 @@ class StripeService {
    */
   verifyWebhookSignature(payload: string | Buffer, signature: string): any | null {
     if (!STRIPE_WEBHOOK_SECRET) {
-      console.warn("[Stripe] Webhook secret not configured");
+      logger.warn("[Stripe] Webhook secret not configured");
       return null;
     }
     try {
@@ -257,7 +260,7 @@ class StripeService {
       }
       return JSON.parse(payloadStr);
     } catch (err: any) {
-      console.error("[Stripe] Webhook signature verification failed:", err.message);
+      logger.error("[Stripe] Webhook signature verification failed:", err.message);
       return null;
     }
   }

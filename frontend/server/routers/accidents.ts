@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { incidents, users, vehicles, drivers, companies } from "../../drizzle/schema";
 import { getCrashSummary, getInspectionSummary, getSafetyScores } from "../services/fmcsaBulkLookup";
@@ -119,7 +120,7 @@ export const accidentsRouter = router({
           fmcsaCrashContext,
         };
       } catch (error) {
-        console.error('[Accidents] list error:', error);
+        logger.error('[Accidents] list error:', error);
         return { accidents: [], total: 0, summary: { totalYTD: 0, dotReportable: 0, openInvestigations: 0 } };
       }
     }),

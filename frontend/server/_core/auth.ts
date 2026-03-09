@@ -10,6 +10,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getDb } from "../db";
 import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "./logger";
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === "production" ? "" : "eusotrip-dev-secret-key-change-in-production");
 if (!JWT_SECRET) {
@@ -133,7 +134,7 @@ export const authService = {
             const testOverride = testUsers[email];
             const effectiveRole = testOverride ? testOverride.role : (dbUser.role || "SHIPPER");
             if (testOverride && dbUser.role !== testOverride.role) {
-              console.log(`[auth] DB login role override for test user ${email}: ${dbUser.role} -> ${testOverride.role}`);
+              logger.info(`[auth] DB login role override for test user ${email}: ${dbUser.role} -> ${testOverride.role}`);
               // Also sync DB role to prevent future mismatches
               try { await db.update(users).set({ role: testOverride.role } as any).where(eq(users.id, dbUser.id)); } catch {}
             }
@@ -144,14 +145,14 @@ export const authService = {
               name: dbUser.name || "User",
               companyId: dbUser.companyId ? String(dbUser.companyId) : undefined,
             };
-            console.log(`[auth] DB login: ${email} role=${effectiveRole} dbId=${dbUser.id}`);
+            logger.info(`[auth] DB login: ${email} role=${effectiveRole} dbId=${dbUser.id}`);
             const token = this.createSessionToken(authUser);
             return { user: authUser, token };
           }
         }
       }
     } catch (err) {
-      console.warn("[auth] DB login check failed, falling back to test users:", err);
+      logger.warn("[auth] DB login check failed, falling back to test users:", err);
     }
 
     // 2. Fall back to test users (DEVELOPMENT ONLY)
@@ -214,10 +215,10 @@ export const authService = {
                 const updates: any = { metadata: JSON.stringify(meta), isVerified: true };
                 if (needsRoleSync) {
                   updates.role = testUser.role;
-                  console.log(`[auth] Syncing test user ${testUser.email} role: ${dbRow.role} -> ${testUser.role}`);
+                  logger.info(`[auth] Syncing test user ${testUser.email} role: ${dbRow.role} -> ${testUser.role}`);
                 }
                 await db.update(users).set(updates).where(eq(users.id, dbRow.id));
-                if (needsApproval) console.log(`[auth] Auto-approved test user ${testUser.email}`);
+                if (needsApproval) logger.info(`[auth] Auto-approved test user ${testUser.email}`);
               }
             } catch {}
           }
@@ -231,11 +232,11 @@ export const authService = {
               name: dbRow.name || testUser.name,
               companyId: dbRow.companyId ? String(dbRow.companyId) : undefined,
             };
-            console.log(`[auth] Test user resolved: ${testUser.email} role=${testUser.role} dbId=${dbRow.id}`);
+            logger.info(`[auth] Test user resolved: ${testUser.email} role=${testUser.role} dbId=${dbRow.id}`);
           }
         }
       } catch (err) {
-        console.warn("[auth] Could not resolve test user to DB record:", err);
+        logger.warn("[auth] Could not resolve test user to DB record:", err);
       }
 
       const token = this.createSessionToken(resolvedUser);

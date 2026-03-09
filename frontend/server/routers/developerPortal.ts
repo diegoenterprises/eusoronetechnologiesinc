@@ -3,6 +3,7 @@
  * MCP Write Tools, API Key Management, Usage Analytics, Webhook Config
  */
 import { z } from "zod";
+import { randomBytes } from "crypto";
 import { protectedProcedure, router } from "../_core/trpc";
 
 const apiKeys: any[] = [];
@@ -44,7 +45,7 @@ const apiKeyRouter = router({
   create: protectedProcedure
     .input(z.object({ name: z.string(), scopes: z.array(z.string()), expiresInDays: z.number().default(365) }))
     .mutation(({ input }) => {
-      const key = `euso_${Array.from({ length: 32 }, () => "abcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 36)]).join("")}`;
+      const key = `euso_${randomBytes(16).toString('hex')}`;
       const entry = { id: `AK-${Date.now()}`, name: input.name, key, scopes: input.scopes, createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + input.expiresInDays * 86400000).toISOString(), lastUsed: null, requestCount: 0, status: "active" };
       apiKeys.push(entry);
       return { success: true, apiKey: key, id: entry.id, expiresAt: entry.expiresAt, warning: "Store this key securely — it will not be shown again." };
@@ -61,7 +62,7 @@ const apiKeyRouter = router({
     .query(({ input }) => {
       const trend = [];
       for (let i = input.days; i >= 0; i--) {
-        trend.push({ date: new Date(Date.now() - i * 86400000).toISOString().slice(0, 10), requests: Math.floor(Math.random() * 500), errors: Math.floor(Math.random() * 5), latencyP50: Math.floor(Math.random() * 100 + 50), latencyP99: Math.floor(Math.random() * 300 + 150) });
+        trend.push({ date: new Date(Date.now() - i * 86400000).toISOString().slice(0, 10), requests: 0, errors: 0, latencyP50: 0, latencyP99: 0 });
       }
       return { keyId: input.keyId, trend, totalRequests: trend.reduce((s, t) => s + t.requests, 0), totalErrors: trend.reduce((s, t) => s + t.errors, 0) };
     }),

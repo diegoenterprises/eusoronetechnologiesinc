@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { eq, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { companies, vehicles, users } from "../../drizzle/schema";
 import { getInstantVerification } from "../services/instantVerification";
@@ -51,7 +52,7 @@ async function ensureCompanyForUser(ctxUser: any): Promise<number> {
     }
     return companyId;
   } catch (err) {
-    console.error("[ensureCompanyForUser] Failed:", err);
+    logger.error("[ensureCompanyForUser] Failed:", err);
     return 0;
   }
 }
@@ -334,7 +335,7 @@ export const companiesRouter = router({
           documents: [],
         }));
       } catch (error) {
-        console.error('[Companies] list error:', error);
+        logger.error('[Companies] list error:', error);
         return [];
       }
     }),

@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, gte, lte, sql, isNull, or } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, adminProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { emitGamificationEvent, emitNotification } from "../_core/websocket";
 import { WS_EVENTS } from "@shared/websocket-events";
@@ -280,7 +281,7 @@ export const gamificationRouter = router({
           totalPoints: earned.reduce((sum, a) => sum + a.points, 0),
         };
       } catch (err) {
-        console.error("[TheHaul] getAchievements error:", err);
+        logger.error("[TheHaul] getAchievements error:", err);
         return { earned: [], locked: [], totalEarned: 0, totalAvailable: 0, totalPoints: 0 };
       }
     }),
@@ -363,7 +364,7 @@ export const gamificationRouter = router({
           totalParticipants: filteredProfiles.length,
         };
       } catch (err) {
-        console.error("[TheHaul] getLeaderboard error:", err);
+        logger.error("[TheHaul] getLeaderboard error:", err);
         return { period: input.period, category: input.category, role: myRole, leaders: [], myRank: 0, totalParticipants: 0 };
       }
     }),
@@ -465,7 +466,7 @@ export const gamificationRouter = router({
           summary: { earnedThisMonth, redeemedThisMonth, netThisMonth: earnedThisMonth - redeemedThisMonth },
         };
       } catch (err) {
-        console.error("[TheHaul] getPointsHistory error:", err);
+        logger.error("[TheHaul] getPointsHistory error:", err);
         return empty;
       }
     }),
@@ -513,7 +514,7 @@ export const gamificationRouter = router({
 
         return { displayBadges, allBadges };
       } catch (err) {
-        console.error("[TheHaul] getBadges error:", err);
+        logger.error("[TheHaul] getBadges error:", err);
         return { displayBadges: [], allBadges: [] };
       }
     }),
@@ -645,9 +646,9 @@ export const gamificationRouter = router({
       // Ensure weekly missions are seeded (idempotent)
       try {
         const seeded = await generateWeeklyMissions();
-        if (seeded > 0) console.log(`[getMissions] Seeded ${seeded} weekly missions`);
+        if (seeded > 0) logger.info(`[getMissions] Seeded ${seeded} weekly missions`);
       } catch (err) {
-        console.error("[getMissions] generateWeeklyMissions failed:", err);
+        logger.error("[getMissions] generateWeeklyMissions failed:", err);
       }
 
       // Get all active missions
@@ -658,7 +659,7 @@ export const gamificationRouter = router({
           .where(eq(missions.isActive, true))
           .orderBy(missions.sortOrder);
       } catch (err) {
-        console.error("[getMissions] DB select failed:", err);
+        logger.error("[getMissions] DB select failed:", err);
       }
 
       // Filter by user role — only show missions applicable to this role
@@ -689,7 +690,7 @@ export const gamificationRouter = router({
           .from(missionProgress)
           .where(eq(missionProgress.userId, userId));
       } catch (err) {
-        console.error("[getMissions] missionProgress select failed:", err);
+        logger.error("[getMissions] missionProgress select failed:", err);
       }
 
       const progressMap = new Map(userProgress.map((p: any) => [p.missionId, p]));
@@ -737,7 +738,7 @@ export const gamificationRouter = router({
 
       // If DB returned no available missions, fall back to template-generated missions
       if (available.length === 0 && active.length === 0) {
-        console.log(`[getMissions] No DB missions for ${userRole}, using template fallback`);
+        logger.info(`[getMissions] No DB missions for ${userRole}, using template fallback`);
         return { active, completed, available: templateFallback(userRole, input) };
       }
 
@@ -1265,7 +1266,7 @@ export const gamificationRouter = router({
           total: messages.length,
         };
       } catch (err) {
-        console.error("[TheHaul] getLobbyMessages error:", err);
+        logger.error("[TheHaul] getLobbyMessages error:", err);
         return { messages: [], total: 0 };
       }
     }),
@@ -1354,7 +1355,7 @@ export const gamificationRouter = router({
 
         return { success: true };
       } catch (err) {
-        console.error("[TheHaul] postLobbyMessage error:", err);
+        logger.error("[TheHaul] postLobbyMessage error:", err);
         throw new Error("Failed to post message");
       }
     }),
@@ -1374,7 +1375,7 @@ export const gamificationRouter = router({
 
       try {
         // Ensure weekly missions are seeded (idempotent — skips if already created)
-        try { await generateWeeklyMissions(); } catch (err) { console.error("[getAIMissions] seed failed:", err); }
+        try { await generateWeeklyMissions(); } catch (err) { logger.error("[getAIMissions] seed failed:", err); }
 
         // Get platform stats for contextual mission descriptions
         let availableLoads = 0;
@@ -1440,7 +1441,7 @@ export const gamificationRouter = router({
           };
         });
       } catch (err) {
-        console.error("[TheHaul] getAIMissions error:", err);
+        logger.error("[TheHaul] getAIMissions error:", err);
         // Fallback to templates so user always sees missions
         return templateFallback(userRole.toUpperCase()).map(m => ({ ...m, source: "esang_ai", hosCompliant: true }));
       }
@@ -1549,7 +1550,7 @@ export const gamificationRouter = router({
         const created = await forceRotateMissions(userRole);
         return { success: true, created, message: `${created} new missions rotated in` };
       } catch (err: any) {
-        console.error("[refreshMissions] Error:", err);
+        logger.error("[refreshMissions] Error:", err);
         return { success: false, created: 0, message: "Failed to rotate missions" };
       }
     }),

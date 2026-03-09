@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, auditLogs } from "../../drizzle/schema";
 
@@ -260,7 +261,7 @@ export const securityRouter = router({
           }
         }
       } catch (err) {
-        console.error("[Security] forgotPassword error:", err);
+        logger.error("[Security] forgotPassword error:", err);
       }
 
       // Always return success to avoid user enumeration

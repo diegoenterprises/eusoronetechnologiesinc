@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, like, or, gte } from "drizzle-orm";
 import { router, auditedAdminProcedure, auditedSuperAdminProcedure, sensitiveData } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, companies, auditLogs, adminVerificationCodes } from "../../drizzle/schema";
 import { cleanupDeletedUser } from "../services/gamificationDispatcher";
@@ -26,7 +27,8 @@ export const adminRouter = router({
     }))
     .mutation(async ({ input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
-      const openId = `admin_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const { randomBytes: _rb } = require("crypto");
+      const openId = `admin_${Date.now()}_${_rb(4).toString('hex')}`;
       const [result] = await db.insert(users).values({
         openId,
         name: input.name,
@@ -131,7 +133,7 @@ export const adminRouter = router({
 
         return filtered;
       } catch (error) {
-        console.error('[Admin] getUsers error:', error);
+        logger.error('[Admin] getUsers error:', error);
         return [];
       }
     }),
@@ -165,7 +167,7 @@ export const adminRouter = router({
           newThisMonth: newThisMonth?.count || 0,
         };
       } catch (error) {
-        console.error('[Admin] getUserStats error:', error);
+        logger.error('[Admin] getUserStats error:', error);
         return { total: 0, active: 0, pending: 0, suspended: 0, admins: 0, newThisMonth: 0 };
       }
     }),
@@ -438,7 +440,7 @@ export const adminRouter = router({
           queriesPerSec: qps, avgQueryTime: 0, dbSize: `${dbSizeGB} GB`, tables: [],
         };
       } catch (e: any) {
-        console.error("[Admin] getDatabaseHealth error:", e.message);
+        logger.error("[Admin] getDatabaseHealth error:", e.message);
         return { status: "error", uptime: "", version: "", connections: { active: 0, max: 0, available: 0 }, storage: { used: "0 GB", total: "0 GB", percentage: 0 }, performance: { avgQueryTime: 0, slowQueries: 0, indexHitRate: 0 }, queriesPerSec: 0, avgQueryTime: 0, dbSize: "0 GB", tables: [] };
       }
     }),
@@ -782,7 +784,7 @@ export const adminRouter = router({
           }),
         };
       } catch (error) {
-        console.error('[Admin] getDashboardSummary error:', error);
+        logger.error('[Admin] getDashboardSummary error:', error);
         return {
           users: { total: 0, active: 0, pending: 0, suspended: 0 },
           companies: { total: 0, catalysts: 0, shippers: 0, brokers: 0, other: 0 },
@@ -820,7 +822,7 @@ export const adminRouter = router({
         if (input.status) mapped = mapped.filter(u => u.status === input.status);
         const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(users);
         return { users: mapped, total: countRow?.count || 0 };
-      } catch (e) { console.error('[Admin] listUsers error:', e); return { users: [], total: 0 }; }
+      } catch (e) { logger.error('[Admin] listUsers error:', e); return { users: [], total: 0 }; }
     }),
 
   /**
@@ -860,7 +862,7 @@ export const adminRouter = router({
           const isVerified = input.status === 'active';
           await db.update(users).set({ isActive, isVerified }).where(eq(users.id, uid));
           await db.insert(auditLogs).values({ userId: uid, action: `user_status_${input.status}`, entityType: 'user', entityId: uid, changes: JSON.stringify({ status: input.status, reason: input.reason }) }).catch(() => {});
-        } catch (e) { console.error('[Admin] updateUserStatus error:', e); }
+        } catch (e) { logger.error('[Admin] updateUserStatus error:', e); }
       }
       return { success: true, userId: input.userId || input.id, newStatus: input.status, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
@@ -908,7 +910,7 @@ export const adminRouter = router({
             await db.update(users).set({ isVerified: false, isActive: false }).where(eq(users.id, uid));
           }
           await db.insert(auditLogs).values({ userId: ctx.user?.id || 0, action: `verification_${input.decision}`, entityType: 'user', entityId: uid, changes: JSON.stringify({ decision: input.decision, notes: input.notes }) }).catch(() => {});
-        } catch (e) { console.error('[Admin] processVerification error:', e); }
+        } catch (e) { logger.error('[Admin] processVerification error:', e); }
       }
       return { success: true, verificationId: input.verificationId, decision: input.decision, processedBy: ctx.user?.id, processedAt: new Date().toISOString() };
     }),
@@ -1053,7 +1055,7 @@ export const adminRouter = router({
       const db = await getDb();
       const uid = parseInt(input.userId, 10);
       if (db && uid) {
-        try { await db.update(users).set({ isVerified: true, isActive: true }).where(eq(users.id, uid)); } catch (e) { console.error('[Admin] approveUser error:', e); }
+        try { await db.update(users).set({ isVerified: true, isActive: true }).where(eq(users.id, uid)); } catch (e) { logger.error('[Admin] approveUser error:', e); }
       }
       return { success: true, userId: input.userId, status: 'approved', approvedAt: new Date().toISOString() };
     }),
@@ -1067,7 +1069,7 @@ export const adminRouter = router({
       const db = await getDb();
       const uid = parseInt(input.userId, 10);
       if (db && uid) {
-        try { await db.update(users).set({ isActive: false }).where(eq(users.id, uid)); } catch (e) { console.error('[Admin] rejectUser error:', e); }
+        try { await db.update(users).set({ isActive: false }).where(eq(users.id, uid)); } catch (e) { logger.error('[Admin] rejectUser error:', e); }
       }
       return { success: true, userId: input.userId, status: 'rejected' };
     }),
@@ -1141,7 +1143,7 @@ export const adminRouter = router({
       }
       return results;
     } catch (error) {
-      console.error('[Admin] getAuditLogs error:', error);
+      logger.error('[Admin] getAuditLogs error:', error);
       return [];
     }
   }),
@@ -1162,7 +1164,7 @@ export const adminRouter = router({
         topActions: [],
       };
     } catch (error) {
-      console.error('[Admin] getAuditStats error:', error);
+      logger.error('[Admin] getAuditStats error:', error);
       return { totalLogs: 0, todayLogs: 0, uniqueUsers: 0, topActions: [], total: 0, today: 0, criticalActions: 0 };
     }
   }),
@@ -1182,7 +1184,7 @@ export const adminRouter = router({
       if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(c => c.name.toLowerCase().includes(q) || c.dotNumber.includes(q)); }
       if (input?.status && input.status !== 'all') results = results.filter(c => c.status === input.status);
       return results;
-    } catch (e) { console.error('[Admin] getCompanies error:', e); return []; }
+    } catch (e) { logger.error('[Admin] getCompanies error:', e); return []; }
   }),
   getCompanyStats: auditedAdminProcedure.query(async () => {
     const db = await getDb(); if (!db) return { total: 0, active: 0, pending: 0, suspended: 0, verified: 0 };
@@ -1324,7 +1326,7 @@ export const adminRouter = router({
       // Soft-delete the user
       await db.update(users).set({ isActive: false, deletedAt: new Date() }).where(eq(users.id, uid));
       // Clean up all gamification data
-      cleanupDeletedUser(uid).catch(err => console.error('[Admin] deleteUser gamification cleanup error:', err));
+      cleanupDeletedUser(uid).catch(err => logger.error('[Admin] deleteUser gamification cleanup error:', err));
     }
     return { success: true, userId: input.userId };
   }),
@@ -1484,7 +1486,7 @@ export const adminRouter = router({
           counts: { loads: loadCount, bids: bidCount, agreements: agreementCount, claims: claimCount, support: 0, users: recentUsers.length, zeun: 0 },
         };
       } catch (error) {
-        console.error('[Admin] getPlatformActivity error:', error);
+        logger.error('[Admin] getPlatformActivity error:', error);
         return { events, counts: { loads: 0, bids: 0, agreements: 0, claims: 0, support: 0, users: 0, zeun: 0 } };
       }
     }),
@@ -1608,7 +1610,7 @@ export const adminRouter = router({
 
         return stats;
       } catch (error) {
-        console.error("[Admin] getComprehensivePlatformStats error:", error);
+        logger.error("[Admin] getComprehensivePlatformStats error:", error);
         return stats;
       }
     }),
@@ -1696,7 +1698,7 @@ export const adminRouter = router({
 
         return { activities, byRole };
       } catch (error) {
-        console.error("[Admin] getAllRoleActivity error:", error);
+        logger.error("[Admin] getAllRoleActivity error:", error);
         return { activities, byRole: {} };
       }
     }),
@@ -1816,7 +1818,7 @@ export const adminRouter = router({
           },
         };
       } catch (error) {
-        console.error("[Admin] getActivityByRole error:", error);
+        logger.error("[Admin] getActivityByRole error:", error);
         return { activities: [], stats: {} };
       }
     }),
@@ -1850,7 +1852,8 @@ export const adminRouter = router({
           skipped.push(acct.email);
           continue;
         }
-        const openId = `test_${acct.role.toLowerCase()}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+        const { randomBytes: _rb2 } = require("crypto");
+        const openId = `test_${acct.role.toLowerCase()}_${Date.now()}_${_rb2(3).toString('hex')}`;
         await db.insert(users).values({
           openId,
           name: acct.name,
@@ -1862,7 +1865,7 @@ export const adminRouter = router({
         created.push(acct.email);
       }
 
-      console.log(`[Admin] Seeded test accounts: ${created.length} created, ${skipped.length} skipped`);
+      logger.info(`[Admin] Seeded test accounts: ${created.length} created, ${skipped.length} skipped`);
       return { created, skipped, total: testAccounts.length };
     }),
 
@@ -1925,7 +1928,7 @@ export const adminRouter = router({
         if (co1) await db.update(users).set({ companyId: 1 }).where(eq(users.id, broker.id));
       }
 
-      console.log(`[Admin] Created carrier company (id=${carrierCompanyId}, DOT=2233825), assigned ${assigned} users`);
+      logger.info(`[Admin] Created carrier company (id=${carrierCompanyId}, DOT=2233825), assigned ${assigned} users`);
       return { companyId: carrierCompanyId, created: true, usersAssigned: assigned };
     }),
 
@@ -1969,7 +1972,7 @@ export const adminRouter = router({
         created.push(v.vin);
       }
 
-      console.log(`[Admin] Seeded vehicles: ${created.length} created, ${skipped.length} skipped`);
+      logger.info(`[Admin] Seeded vehicles: ${created.length} created, ${skipped.length} skipped`);
       return { created, skipped, companyId: cid };
     }),
 
@@ -2070,7 +2073,7 @@ export const adminRouter = router({
         }
       }
 
-      console.log(`[Admin] Load data integrity: ${fixes.length} fixes applied`);
+      logger.info(`[Admin] Load data integrity: ${fixes.length} fixes applied`);
       return { fixes, count: fixes.length };
     }),
 
@@ -2139,7 +2142,7 @@ export const adminRouter = router({
       const passed = checks.filter(c => c.pass).length;
       const failed = checks.filter(c => !c.pass).length;
       const status = failed === 0 ? "ALL CHECKS PASSED ✓" : `${failed} CHECKS FAILED`;
-      console.log(`[SmokeTest] ${status}: ${passed}/${checks.length} passed`);
+      logger.info(`[SmokeTest] ${status}: ${passed}/${checks.length} passed`);
       return { status, passed, failed, total: checks.length, checks };
     }),
 
@@ -2152,7 +2155,7 @@ export const adminRouter = router({
       const code = randomBytes(4).toString("hex").toUpperCase(); // 8-char alphanumeric
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
       await db.insert(adminVerificationCodes).values({ code, generatedBy: adminId, expiresAt });
-      console.log(`[AdminReg] Verification code generated by admin ${adminId}`);
+      logger.info(`[AdminReg] Verification code generated by admin ${adminId}`);
       return { code, expiresAt: expiresAt.toISOString() };
     }),
 
@@ -2213,7 +2216,7 @@ export const adminRouter = router({
         .set({ usedBy: result.id, usedAt: new Date() })
         .where(eq(adminVerificationCodes.id, validCode.id));
 
-      console.log(`[AdminReg] New admin created: ${input.email} (id=${result.id}) by admin ${ctx.user?.id}`);
+      logger.info(`[AdminReg] New admin created: ${input.email} (id=${result.id}) by admin ${ctx.user?.id}`);
       return { success: true, adminId: result.id, email: input.email };
     }),
 });

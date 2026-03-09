@@ -5,7 +5,9 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, companies } from "../../drizzle/schema";
 
@@ -32,7 +34,7 @@ export const teamRouter = router({
           avatar: u.profilePicture || '', lastActive: u.lastSignedIn?.toISOString() || '',
           joinedAt: u.createdAt?.toISOString() || '',
         }));
-      } catch (e) { console.error('[Team] getMembers error:', e); return []; }
+      } catch (e) { logger.error('[Team] getMembers error:', e); return []; }
     }),
 
   /**
@@ -79,7 +81,7 @@ export const teamRouter = router({
       // Check if user already exists
       const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing) throw new Error('User with this email already exists');
-      const openId = `invite_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const openId = `invite_${Date.now()}_${randomBytes(4).toString('hex')}`;
       const [result] = await db.insert(users).values({
         openId, email: input.email, role: input.role as any,
         companyId, isActive: true, isVerified: false,

@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, or, like, gte, lte, inArray } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
 import {
@@ -123,9 +124,9 @@ async function fileAgreementToDocuments(agreementId: number, status: string) {
       });
     }
 
-    console.log(`[Agreements] Filed agreement ${agreementId} (${status}) to Documents for ${partyIds.length} parties`);
+    logger.info(`[Agreements] Filed agreement ${agreementId} (${status}) to Documents for ${partyIds.length} parties`);
   } catch (err: any) {
-    console.error(`[Agreements] fileAgreementToDocuments error:`, err?.message?.slice(0, 200));
+    logger.error(`[Agreements] fileAgreementToDocuments error:`, err?.message?.slice(0, 200));
   }
 }
 
@@ -152,7 +153,8 @@ function generateAgreementNumber(type: string): string {
     custom: "CUS",
   }[type] || "AGR";
   const year = new Date().getFullYear();
-  const seq = Math.floor(Math.random() * 99999).toString().padStart(5, "0");
+  const { randomInt: _ri } = require("crypto");
+  const seq = _ri(0, 100000).toString().padStart(5, "0");
   return `${prefix}-${year}-${seq}`;
 }
 
@@ -652,7 +654,7 @@ export const agreementsRouter = router({
       // ── COMPLIANCE GUARDRAILS ──
       // 1) Block if catalyst has Unsatisfactory safety rating or no operating authority
       if (fmcsaVerification.blockers.length > 0) {
-        console.warn(`[EUSOCONTRACT] FMCSA blockers: ${fmcsaVerification.blockers.join("; ")}`);
+        logger.warn(`[EUSOCONTRACT] FMCSA blockers: ${fmcsaVerification.blockers.join("; ")}`);
         // Don't hard-block — include as risk flags so the user is fully informed
         // Hard-block only for truly dangerous situations
         const hardBlock = fmcsaVerification.blockers.some(b =>
@@ -734,7 +736,7 @@ export const agreementsRouter = router({
         }
       }
 
-      console.log(`[EUSOCONTRACT] FMCSA verification complete — verified: ${fmcsaVerification.verified}, warnings: ${fmcsaVerification.warnings.length}, blockers: ${fmcsaVerification.blockers.length}`);
+      logger.info(`[EUSOCONTRACT] FMCSA verification complete — verified: ${fmcsaVerification.verified}, warnings: ${fmcsaVerification.warnings.length}, blockers: ${fmcsaVerification.blockers.length}`);
 
       // ── ESANG AI™ EusoContract — Intelligent Agreement Generation ──
       // Build the AI request with all strategic inputs for context-aware generation
@@ -800,9 +802,9 @@ export const agreementsRouter = router({
       let aiResult: { content: string; enhancedClauses: any[]; complianceNotes: string[]; riskFlags: string[] };
       try {
         aiResult = await esangAI.generateAgreementContent(aiRequest);
-        console.log(`[EUSOCONTRACT] AI generated ${aiResult.enhancedClauses.length} clauses, ${aiResult.complianceNotes.length} notes, ${aiResult.riskFlags.length} flags`);
+        logger.info(`[EUSOCONTRACT] AI generated ${aiResult.enhancedClauses.length} clauses, ${aiResult.complianceNotes.length} notes, ${aiResult.riskFlags.length} flags`);
       } catch (aiErr: any) {
-        console.warn("[EUSOCONTRACT] AI generation failed, using static fallback:", aiErr?.message?.slice(0, 200));
+        logger.warn("[EUSOCONTRACT] AI generation failed, using static fallback:", aiErr?.message?.slice(0, 200));
         // Static fallback
         const content = generateContractContent(input.agreementType, input.strategicInputs, templateClauses);
         aiResult = { content, enhancedClauses: templateClauses, complianceNotes: [], riskFlags: [] };
@@ -843,9 +845,9 @@ export const agreementsRouter = router({
       // Pre-flight: verify agreements table exists
       try {
         const [tableCheck] = await db.execute(sql`SELECT 1 FROM agreements LIMIT 1`);
-        console.log("[EUSOCONTRACT] agreements table accessible");
+        logger.info("[EUSOCONTRACT] agreements table accessible");
       } catch (tableErr: any) {
-        console.error("[EUSOCONTRACT] TABLE CHECK FAILED:", tableErr?.message);
+        logger.error("[EUSOCONTRACT] TABLE CHECK FAILED:", tableErr?.message);
         // Try to create the table via raw SQL as a last resort
         try {
           await db.execute(sql`CREATE TABLE IF NOT EXISTS agreements (
@@ -905,9 +907,9 @@ export const agreementsRouter = router({
             updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             deletedAt TIMESTAMP NULL
           )`);
-          console.log("[EUSOCONTRACT] Created agreements table via raw SQL");
+          logger.info("[EUSOCONTRACT] Created agreements table via raw SQL");
         } catch (createErr: any) {
-          console.error("[EUSOCONTRACT] CREATE TABLE also failed:", createErr?.message);
+          logger.error("[EUSOCONTRACT] CREATE TABLE also failed:", createErr?.message);
         }
       }
 
@@ -947,13 +949,13 @@ export const agreementsRouter = router({
           )`);
         const insertId = (insertResult as any)?.insertId;
         result = [{ id: insertId ? Number(insertId) : null }];
-        console.log("[EUSOCONTRACT] Agreement inserted successfully, id:", result[0]?.id);
+        logger.info("[EUSOCONTRACT] Agreement inserted successfully, id:", result[0]?.id);
       } catch (insertErr: any) {
         const sqlMsg = insertErr?.sqlMessage || insertErr?.cause?.sqlMessage || "";
         const errCode = insertErr?.code || insertErr?.cause?.code || "";
         const errNo = insertErr?.errno || insertErr?.cause?.errno || "";
-        console.error("[EUSOCONTRACT] RAW INSERT ERROR:", errCode, errNo, sqlMsg);
-        console.error("[EUSOCONTRACT] Full:", (insertErr?.message || "").slice(0, 500));
+        logger.error("[EUSOCONTRACT] RAW INSERT ERROR:", errCode, errNo, sqlMsg);
+        logger.error("[EUSOCONTRACT] Full:", (insertErr?.message || "").slice(0, 500));
         throw new Error(`DB ${errCode}(${errNo}): ${sqlMsg || (insertErr?.message || "").slice(-150)}`);
       }
 
@@ -1370,7 +1372,7 @@ export const agreementsRouter = router({
           .where(eq(documents.id, input.rateSheetDocumentId)),
       ]);
 
-      console.log(`[EUSOCONTRACT] Linked rate sheet #${input.rateSheetDocumentId} to agreement #${input.agreementId}`);
+      logger.info(`[EUSOCONTRACT] Linked rate sheet #${input.rateSheetDocumentId} to agreement #${input.agreementId}`);
       return { success: true, agreementId: input.agreementId, rateSheetDocumentId: input.rateSheetDocumentId };
     }),
 
@@ -1442,7 +1444,7 @@ export const agreementsRouter = router({
           notes: meta.notes || null,
           version: meta.version || 1,
         };
-      } catch (e) { console.error("[EUSOCONTRACT] getLinkedRateSheet error:", e); return null; }
+      } catch (e) { logger.error("[EUSOCONTRACT] getLinkedRateSheet error:", e); return null; }
     }),
 });
 

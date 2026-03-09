@@ -10,6 +10,7 @@
  * This integration processes the downloaded CSV if placed in the data directory.
  * In production, this would be automated via a scheduled download script.
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzCarrierSafety } from "../../../drizzle/schema";
 import { sql } from "drizzle-orm";
@@ -24,8 +25,8 @@ export async function processMCMISBulkCensus(): Promise<void> {
 
   const csvPath = path.join(DATA_DIR, "CENSUS.csv");
   if (!fs.existsSync(csvPath)) {
-    console.warn("[MCMIS] No bulk census file found at", csvPath);
-    console.warn("[MCMIS] Download from: https://www.fmcsa.dot.gov/mission/information-systems/mcmis-data-dissemination");
+    logger.warn("[MCMIS] No bulk census file found at", csvPath);
+    logger.warn("[MCMIS] Download from: https://www.fmcsa.dot.gov/mission/information-systems/mcmis-data-dissemination");
     return;
   }
 
@@ -73,5 +74,5 @@ export async function processMCMISBulkCensus(): Promise<void> {
     }
   }
 
-  console.log(`[MCMIS] Processed ${processed} carrier records from bulk census`);
+  logger.info(`[MCMIS] Processed ${processed} carrier records from bulk census`);
 }

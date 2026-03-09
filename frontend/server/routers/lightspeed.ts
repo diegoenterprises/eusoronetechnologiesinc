@@ -13,6 +13,7 @@
 
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getPool } from "../db";
 import {
   cacheGet,
@@ -140,7 +141,7 @@ export const lightspeedRouter = router({
         cacheSet("SEARCH", cacheKey, censusPayload, 60).catch(() => {});
         return { ...censusPayload, ms: Date.now() - start };
       } catch (err: any) {
-        console.warn("[LIGHTSPEED] Typeahead fallback error:", err.message?.slice(0, 100));
+        logger.warn("[LIGHTSPEED] Typeahead fallback error:", err.message?.slice(0, 100));
         return { results: [], source: "error" as const, ms: Date.now() - start };
       }
     }),
@@ -271,7 +272,7 @@ export const lightspeedRouter = router({
       return { success: false, message: "Pipeline already running" };
     }
     // Fire-and-forget — pipeline runs in background
-    runPreComputePipeline().catch(console.error);
+    runPreComputePipeline().catch((err) => logger.error("[LIGHTSPEED] PreCompute error:", err));
     return { success: true, message: "Pipeline started" };
   }),
 

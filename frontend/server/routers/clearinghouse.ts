@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { drivers, drugTests, users } from "../../drizzle/schema";
 
@@ -56,7 +57,7 @@ export const clearinghouseRouter = router({
           violations: { activeInOrganization: 0, historicalReported: 0 },
         };
       } catch (error) {
-        console.error('[Clearinghouse] getOverview error:', error);
+        logger.error('[Clearinghouse] getOverview error:', error);
         return {
           companyId: ctx.user?.companyId,
           registrationStatus: "registered",

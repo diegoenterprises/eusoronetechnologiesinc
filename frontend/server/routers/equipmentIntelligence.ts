@@ -10,6 +10,7 @@
 import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
 import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { companies, users, vehicles } from "../../drizzle/schema";
 import {
@@ -386,7 +387,7 @@ Return JSON with this EXACT structure:
         clearTimeout(timer);
 
         if (!resp.ok) {
-          console.error("[ZEUN] Vehicle scan API error:", resp.status);
+          logger.error("[ZEUN] Vehicle scan API error:", resp.status);
           return { error: "AI temporarily unavailable", sections: null };
         }
 
@@ -399,7 +400,7 @@ Return JSON with this EXACT structure:
           return { error: null, sections: { vehicleSummary: text }, vehicleId: vehicle.id, scannedAt: new Date().toISOString() };
         }
       } catch (err: any) {
-        console.error("[ZEUN] Vehicle scan error:", err?.message);
+        logger.error("[ZEUN] Vehicle scan error:", err?.message);
         return { error: "Scan failed", sections: null };
       }
     }),

@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, desc, and, or, like, sql, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { esangAI } from "../_core/esangAI";
 import { getDb } from "../db";
 import {
@@ -147,7 +148,7 @@ async function geocodeLocation(query: string): Promise<{ lat: number; lng: numbe
     if (!data.length) return null;
     return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), displayName: data[0].display_name };
   } catch (e) {
-    console.error("[ZEUN] Geocode error:", e);
+    logger.error("[ZEUN] Geocode error:", e);
     return null;
   }
 }
@@ -178,7 +179,7 @@ async function searchOverpassMechanics(lat: number, lng: number, radiusMeters: n
       headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "EusoTrip/1.0" },
       body: `data=${encodeURIComponent(query)}`,
     });
-    if (!res.ok) { console.warn("[ZEUN] Overpass API error:", res.status); return []; }
+    if (!res.ok) { logger.warn("[ZEUN] Overpass API error:", res.status); return []; }
     const data = await res.json() as { elements: Array<{ lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> }> };
 
     return (data.elements || []).filter(el => el.tags?.name).map(el => {
@@ -214,7 +215,7 @@ async function searchOverpassMechanics(lat: number, lng: number, radiusMeters: n
       };
     });
   } catch (e) {
-    console.error("[ZEUN] Overpass search error:", e);
+    logger.error("[ZEUN] Overpass search error:", e);
     return [];
   }
 }
@@ -502,7 +503,7 @@ export const zeunMechanicsRouter = router({
     // AI FALLBACK: If DB has no providers OR none within search radius, use ESANG AI
     if (scoredProviders.length === 0) {
       const reason = providers.length === 0 ? "no providers in DB" : "no providers within radius";
-      console.log(`[ZEUN] ${reason} — invoking ESANG AI discovery for ${input.latitude.toFixed(4)}, ${input.longitude.toFixed(4)} (${input.radiusMiles}mi)`);
+      logger.info(`[ZEUN] ${reason} — invoking ESANG AI discovery for ${input.latitude.toFixed(4)}, ${input.longitude.toFixed(4)} (${input.radiusMiles}mi)`);
       try {
         const aiProviders = await esangAI.discoverProviders({
           latitude: input.latitude,
@@ -547,17 +548,17 @@ export const zeunMechanicsRouter = router({
               });
               cached++;
             } catch (insertErr) {
-              console.warn("[ZEUN] Failed to cache provider:", (insertErr as Error).message);
+              logger.warn("[ZEUN] Failed to cache provider:", (insertErr as Error).message);
             }
           }
-          console.log(`[ZEUN] Cached ${cached}/${aiProviders.length} AI-generated providers into DB`);
+          logger.info(`[ZEUN] Cached ${cached}/${aiProviders.length} AI-generated providers into DB`);
 
           // Re-query from DB so we get proper IDs
           providers = await db.select().from(zeunRepairProviders).where(and(...conditions)).limit(100);
           scoredProviders = scoreAndFilter(providers);
         }
       } catch (aiErr) {
-        console.error("[ZEUN] AI provider discovery failed:", aiErr);
+        logger.error("[ZEUN] AI provider discovery failed:", aiErr);
       }
     }
 
@@ -648,7 +649,7 @@ export const zeunMechanicsRouter = router({
     const geo = await geocodeLocation(query);
     if (geo) {
       searchLocation = geo;
-      console.log(`[ZEUN] Geocoded "${query}" → ${geo.lat.toFixed(4)}, ${geo.lng.toFixed(4)} (${geo.displayName})`);
+      logger.info(`[ZEUN] Geocoded "${query}" → ${geo.lat.toFixed(4)}, ${geo.lng.toFixed(4)} (${geo.displayName})`);
 
       // Also search DB near the geocoded location
       const allActive = await db.select().from(zeunRepairProviders).where(eq(zeunRepairProviders.isActive, true)).limit(200);
@@ -674,7 +675,7 @@ export const zeunMechanicsRouter = router({
       // 3) SEARCH OVERPASS API for real mechanics near the geocoded location
       const radiusMeters = Math.round(input.radiusMiles * 1609.34);
       const overpassResults = await searchOverpassMechanics(geo.lat, geo.lng, Math.min(radiusMeters, 80000));
-      console.log(`[ZEUN] Overpass returned ${overpassResults.length} real mechanics near "${query}"`);
+      logger.info(`[ZEUN] Overpass returned ${overpassResults.length} real mechanics near "${query}"`);
 
       const VALID_TYPES = ["TRUCK_STOP", "DEALER", "INDEPENDENT", "MOBILE", "TOWING", "TIRE_SHOP"] as const;
       type ValidType = typeof VALID_TYPES[number];
@@ -1053,7 +1054,7 @@ export const zeunMechanicsRouter = router({
           };
         }
       } catch (err) {
-        console.error("[Zeun] DTC lookup DB error:", err);
+        logger.error("[Zeun] DTC lookup DB error:", err);
       }
     }
 

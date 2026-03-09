@@ -15,6 +15,7 @@
  * Branded templates match EusoTrip design system
  */
 
+import { logger } from "../_core/logger";
 import { emailService } from "../_core/email";
 import { sendSms } from "./eusosms";
 
@@ -263,7 +264,7 @@ export async function sendInvite(params: InviteParams): Promise<InviteResult> {
       return { success: sent, method: "email" };
     }
   } catch (err: any) {
-    console.error("[InviteService] Error:", err);
+    logger.error("[InviteService] Error:", err);
     return { success: false, method: params.method, error: err?.message || "Unknown error" };
   }
 }

@@ -7,6 +7,7 @@
  */
 
 import { z } from "zod";
+import { logger } from "../_core/logger";
 
 // Environment configuration
 const FMCSA_API_KEY = process.env.FMCSA_API_KEY || "";
@@ -111,7 +112,7 @@ class FMCSAService {
    */
   async getCatalystByDOT(dotNumber: string): Promise<FMCSACatalystInfo | null> {
     if (!this.isConfigured()) {
-      console.warn("[FMCSA] API key not configured");
+      logger.warn("[FMCSA] API key not configured");
       return null;
     }
 
@@ -127,14 +128,14 @@ class FMCSAService {
       );
 
       if (!response.ok) {
-        console.error(`[FMCSA] API error: ${response.status}`);
+        logger.error(`[FMCSA] API error: ${response.status}`);
         return null;
       }
 
       const data = await response.json();
       return data.content?.[0]?.carrier || data.content?.carrier || data.content?.[0]?.catalyst || data.content?.catalyst || null;
     } catch (error) {
-      console.error("[FMCSA] getCatalystByDOT error:", error);
+      logger.error("[FMCSA] getCatalystByDOT error:", error);
       return null;
     }
   }
@@ -144,7 +145,7 @@ class FMCSAService {
    */
   async getCatalystByMC(mcNumber: string): Promise<FMCSACatalystInfo | null> {
     if (!this.isConfigured()) {
-      console.warn("[FMCSA] API key not configured");
+      logger.warn("[FMCSA] API key not configured");
       return null;
     }
 
@@ -166,7 +167,7 @@ class FMCSAService {
       const data = await response.json();
       return data.content?.[0]?.carrier || data.content?.carrier || data.content?.[0]?.catalyst || data.content?.catalyst || null;
     } catch (error) {
-      console.error("[FMCSA] getCatalystByMC error:", error);
+      logger.error("[FMCSA] getCatalystByMC error:", error);
       return null;
     }
   }
@@ -197,7 +198,7 @@ class FMCSAService {
       const data = await response.json();
       return data.content?.safetyRating || null;
     } catch (error) {
-      console.error("[FMCSA] getSafetyRating error:", error);
+      logger.error("[FMCSA] getSafetyRating error:", error);
       return null;
     }
   }
@@ -228,7 +229,7 @@ class FMCSAService {
       const data = await response.json();
       return data.content?.authorities || [];
     } catch (error) {
-      console.error("[FMCSA] getAuthorities error:", error);
+      logger.error("[FMCSA] getAuthorities error:", error);
       return [];
     }
   }
@@ -259,7 +260,7 @@ class FMCSAService {
       const data = await response.json();
       return data.content?.insurance || [];
     } catch (error) {
-      console.error("[FMCSA] getInsurance error:", error);
+      logger.error("[FMCSA] getInsurance error:", error);
       return [];
     }
   }
@@ -388,7 +389,7 @@ class FMCSAService {
       }
       return content?.carriers || content?.catalysts || [];
     } catch (error) {
-      console.error("[FMCSA] searchCatalysts error:", error);
+      logger.error("[FMCSA] searchCatalysts error:", error);
       return [];
     }
   }

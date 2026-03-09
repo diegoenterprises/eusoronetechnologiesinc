@@ -14,6 +14,7 @@
  * Reference: arXiv:2601.11109v2 (Vision-as-Inverse-Graphics Agent)
  */
 
+import { logger } from "../../_core/logger";
 import { ENV } from "../../_core/env";
 import { getDb } from "../../db";
 import { loads, auditLogs } from "../../../drizzle/schema";
@@ -293,13 +294,13 @@ export async function verifyDocument(
 
       // Phase 4: Convergence check
       if (overallConfidence >= CONFIDENCE_THRESHOLD || discrepancies.length === 0) {
-        console.log(`[DocVerifier] Converged at iteration ${t + 1} (confidence: ${(overallConfidence * 100).toFixed(1)}%)`);
+        logger.info(`[DocVerifier] Converged at iteration ${t + 1} (confidence: ${(overallConfidence * 100).toFixed(1)}%)`);
         break;
       }
 
-      console.log(`[DocVerifier] Iteration ${t + 1}: confidence ${(overallConfidence * 100).toFixed(1)}%, ${discrepancies.length} discrepancies — refining...`);
+      logger.info(`[DocVerifier] Iteration ${t + 1}: confidence ${(overallConfidence * 100).toFixed(1)}%, ${discrepancies.length} discrepancies — refining...`);
     } catch (err: any) {
-      console.error(`[DocVerifier] Iteration ${t + 1} failed:`, err.message);
+      logger.error(`[DocVerifier] Iteration ${t + 1} failed:`, err.message);
       if (t === maxIter - 1) {
         return {
           loadNumber: { extracted: "", expected: loadRecord.loadNumber || "", match: false, confidence: 0 },

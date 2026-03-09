@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { router, auditedOperationsProcedure, auditedAdminProcedure, sensitiveData } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, drivers, loads, vehicles, inspections, documents, certifications, companies } from "../../drizzle/schema";
 import { eq, and, desc, sql, count, avg, gte, or, like } from "drizzle-orm";
@@ -117,7 +118,7 @@ export const driversRouter = router({
           avgSafetyScore: Math.round(avgScore?.avg || 0),
         };
       } catch (error) {
-        console.error('[Drivers] getSummary error:', error);
+        logger.error('[Drivers] getSummary error:', error);
         return { total: 0, available: 0, onLoad: 0, offDuty: 0, driving: 0, avgSafetyScore: 0 };
       }
     }),
@@ -169,7 +170,7 @@ export const driversRouter = router({
           weeklyMiles: 0,
         };
       } catch (error) {
-        console.error('[Drivers] getDashboardStats error:', error);
+        logger.error('[Drivers] getDashboardStats error:', error);
         return { currentStatus: "off_duty", hoursAvailable: 0, milesThisWeek: 0, earningsThisWeek: 0, loadsCompleted: 0, safetyScore: 0, onTimeRate: 0, rating: 0, weeklyEarnings: 0, weeklyMiles: 0 };
       }
     }),
@@ -261,7 +262,7 @@ export const driversRouter = router({
           specialInstructions: load.specialInstructions || null,
         };
       } catch (error) {
-        console.error('[Drivers] getCurrentLoad error:', error);
+        logger.error('[Drivers] getCurrentLoad error:', error);
         return null;
       }
     }),
@@ -364,7 +365,7 @@ export const driversRouter = router({
 
         return Object.assign(result, { total: totalResult?.count || 0, drivers: result });
       } catch (error) {
-        console.error('[Drivers] list error:', error);
+        logger.error('[Drivers] list error:', error);
         return Object.assign([], { total: 0, drivers: [] });
       }
     }),
@@ -465,7 +466,7 @@ export const driversRouter = router({
           milesLogged: parseFloat(driver.totalMiles || '0'),
         };
       } catch (error) {
-        console.error('[Drivers] getById error:', error);
+        logger.error('[Drivers] getById error:', error);
         return null;
       }
     }),
@@ -563,7 +564,7 @@ export const driversRouter = router({
           rankings: { overall: 0, totalDrivers: totalDrivers?.count || 0, safetyRank: 0, productivityRank: 0 },
           trends: { safetyScore: { current: driver.safetyScore || 0, previous: driver.safetyScore || 0, change: 0 }, onTimeRate: { current: onTimeRate, previous: onTimeRate, change: 0 } },
         };
-      } catch (e) { console.error('[Drivers] getPerformanceMetrics error:', e); return { driverId: input.driverId, period: input.period, metrics: { totalMiles: 0, totalLoads: 0, onTimeDeliveryRate: 0, safetyScore: 0, fuelEfficiency: 0, customerRating: 0, hosCompliance: 0, inspectionPassRate: 0 }, rankings: { overall: 0, totalDrivers: 0, safetyRank: 0, productivityRank: 0 }, trends: { safetyScore: { current: 0, previous: 0, change: 0 }, onTimeRate: { current: 0, previous: 0, change: 0 } } }; }
+      } catch (e) { logger.error('[Drivers] getPerformanceMetrics error:', e); return { driverId: input.driverId, period: input.period, metrics: { totalMiles: 0, totalLoads: 0, onTimeDeliveryRate: 0, safetyScore: 0, fuelEfficiency: 0, customerRating: 0, hosCompliance: 0, inspectionPassRate: 0 }, rankings: { overall: 0, totalDrivers: 0, safetyRank: 0, productivityRank: 0 }, trends: { safetyScore: { current: 0, previous: 0, change: 0 }, onTimeRate: { current: 0, previous: 0, change: 0 } } }; }
     }),
 
   /**
@@ -646,7 +647,7 @@ export const driversRouter = router({
           lastUpdated: doc.createdAt?.toISOString().split('T')[0] || null,
         }));
       } catch (error) {
-        console.error('[Drivers] getDocuments error:', error);
+        logger.error('[Drivers] getDocuments error:', error);
         return [];
       }
     }),
@@ -715,7 +716,7 @@ export const driversRouter = router({
           };
         });
       } catch (error) {
-        console.error('[Drivers] getAvailable error:', error);
+        logger.error('[Drivers] getAvailable error:', error);
         return [];
       }
     }),
@@ -784,7 +785,7 @@ export const driversRouter = router({
           dispatchPhone: '',
         };
       } catch (error) {
-        console.error('[Drivers] getCurrentAssignment error:', error);
+        logger.error('[Drivers] getCurrentAssignment error:', error);
         return null;
       }
     }),
@@ -868,15 +869,15 @@ export const driversRouter = router({
               ? `${pickup.city || ""}, ${pickup.state || ""}`.trim().replace(/^,\s*/, "")
               : `${delivery.city || ""}, ${delivery.state || ""}`.trim().replace(/^,\s*/, "");
             await changeDutyStatusWithELD(userId, newDutyStatus, location || `Load ${currentLoad.loadNumber}`);
-            console.log(`[HOS-Organic] ${input.status} → ${newDutyStatus} for user ${userId} (load ${currentLoad.loadNumber})`);
+            logger.info(`[HOS-Organic] ${input.status} → ${newDutyStatus} for user ${userId} (load ${currentLoad.loadNumber})`);
           } catch (hosErr) {
             // HOS update is non-blocking — don't fail the trip status update
-            console.error("[HOS-Organic] duty status sync error:", hosErr);
+            logger.error("[HOS-Organic] duty status sync error:", hosErr);
           }
         }
 
         return { success: true, newStatus: input.status, updatedAt: new Date().toISOString(), updatedBy: ctx.user?.id };
-      } catch (e) { console.error('[Drivers] updateLoadStatus error:', e); throw new Error("Failed to update load status"); }
+      } catch (e) { logger.error('[Drivers] updateLoadStatus error:', e); throw new Error("Failed to update load status"); }
     }),
 
   /**
@@ -899,7 +900,7 @@ export const driversRouter = router({
           odometer: 0, fuelLevel: 0, defLevel: 0, daysToService,
           trailer: null, maintenanceItems: [],
         };
-      } catch (e) { console.error('[Drivers] getAssignedVehicle error:', e); return { id: "", unitNumber: "", status: "", make: "", model: "", year: 0, vin: "", licensePlate: "", equipmentType: "", hazmatCertified: false, odometer: 0, fuelLevel: 0, defLevel: 0, daysToService: 0, trailer: null, maintenanceItems: [] }; }
+      } catch (e) { logger.error('[Drivers] getAssignedVehicle error:', e); return { id: "", unitNumber: "", status: "", make: "", model: "", year: 0, vin: "", licensePlate: "", equipmentType: "", hazmatCertified: false, odometer: 0, fuelLevel: 0, defLevel: 0, daysToService: 0, trailer: null, maintenanceItems: [] }; }
     }),
 
   /**
@@ -918,7 +919,7 @@ export const driversRouter = router({
           type: insp.type || 'pre_trip', passed: insp.status === 'passed',
           defects: insp.defectsFound || 0, inspector: ctx.user?.id, duration: 0,
         };
-      } catch (e) { console.error('[Drivers] getLastInspection error:', e); return { id: "", date: "", type: "", passed: false, defects: 0, inspector: ctx.user?.id, duration: 0 }; }
+      } catch (e) { logger.error('[Drivers] getLastInspection error:', e); return { id: "", date: "", type: "", passed: false, defects: 0, inspector: ctx.user?.id, duration: 0 }; }
     }),
 
   /**
@@ -942,7 +943,7 @@ export const driversRouter = router({
             type: input.type as any, status: 'pending', defectsFound: 0,
           }).$returningId();
           if (result) dvirId = `dvir_${result.id}`;
-        } catch (e) { console.error('[Drivers] startDVIR error:', e); }
+        } catch (e) { logger.error('[Drivers] startDVIR error:', e); }
       }
       return { success: true, dvirId, type: input.type, startedAt: new Date().toISOString(), startedBy: ctx.user?.id };
     }),
@@ -977,7 +978,7 @@ export const driversRouter = router({
               completedAt: new Date(),
             }).where(eq(inspections.id, inspId));
           }
-        } catch (e) { console.error('[Drivers] submitDVIR error:', e); }
+        } catch (e) { logger.error('[Drivers] submitDVIR error:', e); }
       }
       return { success: true, dvirId: input.dvirId, result: input.passed ? "passed" : "failed", submittedAt: new Date().toISOString(), submittedBy: ctx.user?.id };
     }),
@@ -1002,7 +1003,7 @@ export const driversRouter = router({
           fuelStops: [], restAreas: [], alerts: [],
           hazmatRestrictions,
         };
-      } catch (e) { console.error('[Drivers] getRouteInfo error:', e); return { totalMiles: 0, milesRemaining: 0, eta: "", driveTimeRemaining: "", fuelStops: [], restAreas: [], alerts: [], hazmatRestrictions: [] }; }
+      } catch (e) { logger.error('[Drivers] getRouteInfo error:', e); return { totalMiles: 0, milesRemaining: 0, eta: "", driveTimeRemaining: "", fuelStops: [], restAreas: [], alerts: [], hazmatRestrictions: [] }; }
     }),
 
   /**
@@ -1032,7 +1033,7 @@ export const driversRouter = router({
           ratePerMile, bonuses: 0, deductions: 0, netPay: totalEarnings,
           trend: "stable", trendPercent: 0, breakdown: [],
         };
-      } catch (e) { console.error('[Drivers] getEarnings error:', e); return { period: input.period, totalEarnings: 0, total: 0, milesPaid: 0, ratePerMile: 0, bonuses: 0, deductions: 0, netPay: 0, trend: "stable", trendPercent: 0, breakdown: [] }; }
+      } catch (e) { logger.error('[Drivers] getEarnings error:', e); return { period: input.period, totalEarnings: 0, total: 0, milesPaid: 0, ratePerMile: 0, bonuses: 0, deductions: 0, netPay: 0, trend: "stable", trendPercent: 0, breakdown: [] }; }
     }),
 
   /**
@@ -1090,7 +1091,7 @@ export const driversRouter = router({
             date: l.createdAt?.toISOString() || '',
           };
         });
-      } catch (e) { console.error('[Drivers] getRecentLoads error:', e); return []; }
+      } catch (e) { logger.error('[Drivers] getRecentLoads error:', e); return []; }
     }),
 
   // Load acceptance
@@ -1109,7 +1110,7 @@ export const driversRouter = router({
         const loadId = parseInt(input.loadId, 10);
         const userId = ctx.user?.id || 0;
         await db.update(loads).set({ driverId: null, status: 'posted' } as any).where(and(eq(loads.id, loadId), eq(loads.driverId, userId)));
-      } catch (e) { console.error('[Drivers] declineLoad error:', e); }
+      } catch (e) { logger.error('[Drivers] declineLoad error:', e); }
     }
     return { success: true, loadId: input.loadId };
   }),
@@ -1124,7 +1125,7 @@ export const driversRouter = router({
         const delivery = l.deliveryLocation as any || {};
         return { id: String(l.id), loadNumber: l.loadNumber, status: l.status, origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown', destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown', rate: l.rate ? parseFloat(String(l.rate)) : 0, pickupDate: l.pickupDate?.toISOString() || '' };
       });
-    } catch (e) { console.error('[Drivers] getPendingLoads error:', e); return []; }
+    } catch (e) { logger.error('[Drivers] getPendingLoads error:', e); return []; }
   }),
 
   // Driver applications
@@ -1152,13 +1153,13 @@ export const driversRouter = router({
       const approvedCount = approved?.count || 0;
       const pendingCount = pending?.count || 0;
       return { pending: pendingCount, approved: approvedCount, rejected: Math.max(0, totalCount - approvedCount - pendingCount), total: totalCount, thisWeek: thisWeek?.count || 0 };
-    } catch (e) { console.error('[Drivers] getApplicationStats error:', e); return { pending: 0, approved: 0, rejected: 0, total: 0, thisWeek: 0 }; }
+    } catch (e) { logger.error('[Drivers] getApplicationStats error:', e); return { pending: 0, approved: 0, rejected: 0, total: 0, thisWeek: 0 }; }
   }),
   approveApplication: auditedOperationsProcedure.input(z.object({ applicationId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     const userId = parseInt((input.applicationId || input.id || '0'), 10);
     if (db && userId) {
-      try { await db.update(users).set({ isVerified: true }).where(eq(users.id, userId)); } catch (e) { console.error('[Drivers] approveApplication error:', e); }
+      try { await db.update(users).set({ isVerified: true }).where(eq(users.id, userId)); } catch (e) { logger.error('[Drivers] approveApplication error:', e); }
     }
     return { success: true, applicationId: input.applicationId || input.id };
   }),
@@ -1166,7 +1167,7 @@ export const driversRouter = router({
     const db = await getDb();
     const userId = parseInt((input.applicationId || input.id || '0'), 10);
     if (db && userId) {
-      try { await db.update(users).set({ isActive: false }).where(eq(users.id, userId)); } catch (e) { console.error('[Drivers] rejectApplication error:', e); }
+      try { await db.update(users).set({ isActive: false }).where(eq(users.id, userId)); } catch (e) { logger.error('[Drivers] rejectApplication error:', e); }
     }
     return { success: true, applicationId: input.applicationId || input.id };
   }),
@@ -1209,7 +1210,7 @@ export const driversRouter = router({
       const miles = thisWeek?.miles || 0;
       const weekEarnings = thisWeek?.sum || 0;
       return { thisWeek: weekEarnings, lastWeek: lastWeek?.sum || 0, thisMonth: thisMonth?.sum || 0, avgPerLoad: trips > 0 ? Math.round(weekEarnings / trips) : 0, tripsCompleted: trips, milesDriven: miles, perMile: miles > 0 ? Math.round((weekEarnings / miles) * 100) / 100 : 0, hoursWorked: 0 };
-    } catch (e) { console.error('[Drivers] getEarningsStats error:', e); return { thisWeek: 0, lastWeek: 0, thisMonth: 0, avgPerLoad: 0, tripsCompleted: 0, milesDriven: 0, perMile: 0, hoursWorked: 0 }; }
+    } catch (e) { logger.error('[Drivers] getEarningsStats error:', e); return { thisWeek: 0, lastWeek: 0, thisMonth: 0, avgPerLoad: 0, tripsCompleted: 0, milesDriven: 0, perMile: 0, hoursWorked: 0 }; }
   }),
   getCompletedTrips: auditedOperationsProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
     const db = await getDb();
@@ -1222,7 +1223,7 @@ export const driversRouter = router({
         const delivery = l.deliveryLocation as any || {};
         return { id: String(l.id), loadNumber: l.loadNumber, origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown', destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown', rate: l.rate ? parseFloat(String(l.rate)) : 0, miles: l.distance ? parseFloat(String(l.distance)) : 0, completedAt: l.actualDeliveryDate?.toISOString() || l.updatedAt?.toISOString() || '' };
       });
-    } catch (e) { console.error('[Drivers] getCompletedTrips error:', e); return []; }
+    } catch (e) { logger.error('[Drivers] getCompletedTrips error:', e); return []; }
   }),
 
   // HOS — Real tracking via hosEngine (ELD-aware)
@@ -1272,7 +1273,7 @@ export const driversRouter = router({
       const dropped = inactive?.count || 0;
       const total = inProgress + completed + dropped;
       return { step: 0, totalSteps: 5, percentage: total > 0 ? Math.round((completed / total) * 100) : 0, inProgress, completed, dropped, total, stalled: 0, completedSteps: completed, inProgressSteps: inProgress, estimatedTimeRemaining: '', trainingsCompleted: 0 };
-    } catch (e) { console.error('[Drivers] getOnboardingStats error:', e); return { step: 0, totalSteps: 0, percentage: 0, inProgress: 0, completed: 0, dropped: 0, total: 0, stalled: 0, completedSteps: 0, inProgressSteps: 0, estimatedTimeRemaining: '', trainingsCompleted: 0 }; }
+    } catch (e) { logger.error('[Drivers] getOnboardingStats error:', e); return { step: 0, totalSteps: 0, percentage: 0, inProgress: 0, completed: 0, dropped: 0, total: 0, stalled: 0, completedSteps: 0, inProgressSteps: 0, estimatedTimeRemaining: '', trainingsCompleted: 0 }; }
   }),
   getOnboardingDrivers: auditedOperationsProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
     const db = await getDb(); if (!db) return [];
@@ -1354,7 +1355,7 @@ export const driversRouter = router({
       const [totalDrivers] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, driverRecord?.companyId || 0));
       const [userName] = driverId ? await db.select({ name: users.name }).from(users).where(eq(users.id, driverUserId)).limit(1) : [{ name: ctx.user?.name || '' }];
       return { score: safetyScore, overallScore: safetyScore, onTimeRate, safetyScore, customerRating: 0, name: userName?.name || '', rank: 0, totalDrivers: totalDrivers?.count || 0, trend: "stable", achievements: [], stats: { loadsCompleted: totalLoads, milesDriver: stats?.miles || 0, milesThisMonth: stats?.miles || 0, hoursThisWeek: 0, fuelEfficiency: 0, revenue: stats?.revenue || 0, onTimeDeliveries: delivered, incidents: 0 }, metrics: { loadsCompleted: totalLoads, milesDriver: stats?.miles || 0, revenue: stats?.revenue || 0, fuelEfficiency: 0, safety: safetyScore, efficiency: onTimeRate, compliance: 0, onTime: onTimeRate, customerRating: 0 } };
-    } catch (e) { console.error('[Drivers] getPerformance error:', e); return fallback; }
+    } catch (e) { logger.error('[Drivers] getPerformance error:', e); return fallback; }
   }),
   getPerformanceReviews: auditedOperationsProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() }).optional()).query(async ({ ctx }) => {
     const db = await getDb(); if (!db) return [];
@@ -1402,7 +1403,7 @@ export const driversRouter = router({
       const [userName] = driverId ? await db.select({ name: users.name }).from(users).where(eq(users.id, driverUserId)).limit(1) : [{ name: ctx.user?.name || '' }];
       const overallScore = Math.round((safetyScore + onTimeRate) / 2);
       return { safety: safetyScore, efficiency: onTimeRate, compliance: 0, customer: 0, overallScore, driverName: userName?.name || '', rank: 0, totalDrivers: totalDrivers?.count || 0, trend: "stable", metrics: { loadsCompleted: totalLoads, milesDriver: stats?.miles || 0, milesThisMonth: stats?.miles || 0, revenue: stats?.revenue || 0, fuelEfficiency: 0, onTimeDelivery: onTimeRate, customerRating: 0, inspectionScore: inspScore, safetyEvents: 0, hardBraking: 0, speeding: 0, idling: 0, hosViolations: 0 }, achievements: [] };
-    } catch (e) { console.error('[Drivers] getScorecard error:', e); return fallback; }
+    } catch (e) { logger.error('[Drivers] getScorecard error:', e); return fallback; }
   }),
   getLeaderboard: auditedOperationsProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async ({ ctx }) => {
     const db = await getDb();
@@ -1411,7 +1412,7 @@ export const driversRouter = router({
       const companyId = ctx.user?.companyId || 0;
       const driverList = await db.select({ id: drivers.id, userId: drivers.userId, safetyScore: drivers.safetyScore, totalLoads: drivers.totalLoads, totalMiles: drivers.totalMiles, userName: users.name }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).orderBy(desc(drivers.safetyScore)).limit(20);
       return driverList.map((d, idx) => ({ rank: idx + 1, id: String(d.id), name: d.userName || 'Unknown', safetyScore: d.safetyScore || 0, totalLoads: d.totalLoads || 0, totalMiles: parseFloat(d.totalMiles || '0'), onTimeRate: 0 }));
-    } catch (e) { console.error('[Drivers] getLeaderboard error:', e); return []; }
+    } catch (e) { logger.error('[Drivers] getLeaderboard error:', e); return []; }
   }),
 
   // Pre-trip
@@ -1436,7 +1437,7 @@ export const driversRouter = router({
           defectsFound: defectCount, completedAt: new Date(),
         }).$returningId();
         if (result) inspectionId = `insp_${result.id}`;
-      } catch (e) { console.error('[Drivers] submitPreTripInspection error:', e); }
+      } catch (e) { logger.error('[Drivers] submitPreTripInspection error:', e); }
     }
     return { success: true, inspectionId };
   }),
@@ -1458,7 +1459,7 @@ export const driversRouter = router({
       for (const l of recentLoads) events.push({ type: 'load_update', description: `Load ${l.loadNumber} - ${l.status}`, timestamp: l.updatedAt?.toISOString() || '' });
       for (const i of recentInsp) events.push({ type: 'inspection', description: `${i.type} inspection - ${i.status}`, timestamp: i.createdAt?.toISOString() || '' });
       return events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, input?.limit || 10);
-    } catch (e) { console.error('[Drivers] getRecentEvents error:', e); return []; }
+    } catch (e) { logger.error('[Drivers] getRecentEvents error:', e); return []; }
   }),
 
   // Terminations
@@ -1565,7 +1566,7 @@ export const driversRouter = router({
         };
       });
     } catch (error) {
-      console.error('[Drivers] getAll error:', error);
+      logger.error('[Drivers] getAll error:', error);
       return [];
     }
   }),
@@ -2036,7 +2037,7 @@ export const driversRouter = router({
 
       return empty;
     } catch (error) {
-      console.error('[Drivers] getDriverDashboard error:', error);
+      logger.error('[Drivers] getDriverDashboard error:', error);
       return empty;
     }
   }),
@@ -2158,7 +2159,7 @@ export const driversRouter = router({
 
       return { suggestedLanes, totalLoadsAnalyzed: completedLoads.length };
     } catch (e) {
-      console.error("[Drivers] learnLanePreferences error:", e);
+      logger.error("[Drivers] learnLanePreferences error:", e);
       return { suggestedLanes: [], totalLoadsAnalyzed: 0 };
     }
   }),

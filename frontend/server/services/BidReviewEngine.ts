@@ -226,7 +226,7 @@ export function generateBidAnalytics(
   return {
     totalBidsReceived: bids.length,
     uniqueCarriers: new Set(bids.map((_, i) => i)).size,
-    avgResponseTime: 48 + Math.random() * 24,
+    avgResponseTime: 60, // Default 60hr avg response estimate
     avgBidVsTarget: avgTarget > 0 ? Math.round(((avgBid - avgTarget) / avgTarget) * 100) : 0,
     totalAnnualValue,
     projectedSavings,

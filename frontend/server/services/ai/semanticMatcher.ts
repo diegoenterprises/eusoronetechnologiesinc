@@ -13,6 +13,7 @@
  * Reference: arXiv:2602.11151 (pplx-embed)
  */
 
+import { logger } from "../../_core/logger";
 import { embeddingService, EmbeddingService } from "../embeddings/embeddingService";
 import { getDb } from "../../db";
 import { loads } from "../../../drizzle/schema";
@@ -126,7 +127,7 @@ export async function refreshLoadIndex(forceRefresh = false): Promise<number> {
 
   const healthy = await embeddingService.isHealthy();
   if (!healthy) {
-    console.warn("[SemanticMatcher] Embedding service unavailable — skipping index refresh");
+    logger.warn("[SemanticMatcher] Embedding service unavailable — skipping index refresh");
     return loadIndex.size;
   }
 
@@ -183,13 +184,13 @@ export async function refreshLoadIndex(forceRefresh = false): Promise<number> {
         });
       }
 
-      console.log(`[SemanticMatcher] Indexed ${toEmbed.length} new loads (total: ${loadIndex.size})`);
+      logger.info(`[SemanticMatcher] Indexed ${toEmbed.length} new loads (total: ${loadIndex.size})`);
     }
 
     lastIndexRefresh = now;
     return loadIndex.size;
   } catch (err: any) {
-    console.error("[SemanticMatcher] Index refresh error:", err.message);
+    logger.error("[SemanticMatcher] Index refresh error:", err.message);
     return loadIndex.size;
   }
 }
@@ -240,7 +241,7 @@ export async function searchLoads(
       };
     });
   } catch (err: any) {
-    console.error("[SemanticMatcher] Search error:", err.message);
+    logger.error("[SemanticMatcher] Search error:", err.message);
     return [];
   }
 }
@@ -289,7 +290,7 @@ export async function matchLoadsForCarrier(
       };
     });
   } catch (err: any) {
-    console.error("[SemanticMatcher] Carrier match error:", err.message);
+    logger.error("[SemanticMatcher] Carrier match error:", err.message);
     return [];
   }
 }

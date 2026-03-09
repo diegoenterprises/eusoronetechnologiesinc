@@ -3,6 +3,7 @@
  * failure tracking, manual trigger, and admin status reporting
  */
 import cron from "node-cron";
+import { logger } from "../../_core/logger";
 import { logSync, generateSyncId } from "../dataSync/syncLogger";
 import { registerRefreshCallback } from "../cache/smartCache";
 
@@ -89,7 +90,7 @@ class SyncOrchestrator {
     });
 
     this.initialized = true;
-    console.log(`[SyncOrchestrator] Initialized ${this.jobs.size} jobs (${Array.from(this.jobs.values()).filter((j) => j.config.enabled).length} enabled)`);
+    logger.info(`[SyncOrchestrator] Initialized ${this.jobs.size} jobs (${Array.from(this.jobs.values()).filter((j) => j.config.enabled).length} enabled)`);
   }
 
   private startJob(jobId: string): void {
@@ -169,7 +170,7 @@ class SyncOrchestrator {
         state.config.enabled = false;
         state.disabledReason = `Auto-disabled after ${state.consecutiveFailures} consecutive failures. Last: ${errMsg}`;
         if (state.task) state.task.stop();
-        console.error(`[SyncOrchestrator] Job ${jobId} auto-disabled after ${state.consecutiveFailures} failures`);
+        logger.error(`[SyncOrchestrator] Job ${jobId} auto-disabled after ${state.consecutiveFailures} failures`);
       }
 
       return { success: false, error: errMsg };

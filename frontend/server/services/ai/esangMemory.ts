@@ -14,6 +14,7 @@
  * Reference: VIGA Algorithm 1 — TailL Memory (arXiv:2601.11109v2)
  */
 
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { sql } from "drizzle-orm";
 
@@ -104,7 +105,7 @@ async function ensureTable(): Promise<void> {
   } catch (err: any) {
     // Table might already exist with different schema — that's OK
     if (!err.message?.includes("already exists")) {
-      console.warn("[ESANGMemory] Table creation warning:", err.message);
+      logger.warn("[ESANGMemory] Table creation warning:", err.message);
     }
     tableEnsured = true;
   }
@@ -147,7 +148,7 @@ async function loadFromDB(userId: number): Promise<ESANGMemoryEntry[]> {
       timestamp: new Date(r.created_at),
     })).reverse(); // Oldest first for context injection
   } catch (err: any) {
-    console.warn("[ESANGMemory] Load error:", err.message);
+    logger.warn("[ESANGMemory] Load error:", err.message);
     return [];
   }
 }
@@ -190,7 +191,7 @@ async function saveToDB(entry: ESANGMemoryEntry): Promise<void> {
         )
     `);
   } catch (err: any) {
-    console.warn("[ESANGMemory] Save error:", err.message);
+    logger.warn("[ESANGMemory] Save error:", err.message);
   }
 }
 

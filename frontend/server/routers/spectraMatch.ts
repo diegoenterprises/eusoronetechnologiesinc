@@ -14,6 +14,7 @@
 import { z } from "zod";
 import { sql, desc, eq } from "drizzle-orm";
 import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 import { esangAI, type SpectraMatchAIRequest } from "../_core/esangAI";
@@ -99,7 +100,7 @@ export const spectraMatchRouter = router({
       try {
         aiAnalysis = await esangAI.spectraMatchIdentify(aiRequest);
       } catch (err) {
-        console.warn("[SPECTRA-MATCH] ESANG AI analysis failed, using static only", err);
+        logger.warn("[SPECTRA-MATCH] ESANG AI analysis failed, using static only", err);
       }
 
       // Merge: if AI gives higher confidence, prefer AI product name but keep static data structure
@@ -390,7 +391,7 @@ export const spectraMatchRouter = router({
           message: "SpectraMatch identification saved to load",
         };
       } catch (error) {
-        console.error("[SpectraMatch] saveToRunTicket DB error:", error);
+        logger.error("[SpectraMatch] saveToRunTicket DB error:", error);
         throw new Error("Failed to save SpectraMatch result");
       }
     }),
@@ -432,7 +433,7 @@ export const spectraMatchRouter = router({
           total: verified.length,
         };
       } catch (error) {
-        console.error('[SpectraMatch] getHistory error:', error);
+        logger.error('[SpectraMatch] getHistory error:', error);
         return { identifications: [], total: 0 };
       }
     }),
@@ -550,7 +551,7 @@ export const spectraMatchRouter = router({
           providerLabel: provider === "dtn" ? "DTN" : provider === "buckeye_tas" ? "Buckeye TAS" : "Dearman",
         };
       } catch (error) {
-        console.error("[SpectraMatch] getTerminalProductCatalog error:", error);
+        logger.error("[SpectraMatch] getTerminalProductCatalog error:", error);
         return { products: [], source: "none" as const, connected: false };
       }
     }),
@@ -657,7 +658,7 @@ export const spectraMatchRouter = router({
           lastUpdated: new Date().toISOString(),
         };
       } catch (error) {
-        console.error("[SpectraMatch] getProductMarketContext error:", error);
+        logger.error("[SpectraMatch] getProductMarketContext error:", error);
         return null;
       }
     }),

@@ -7,9 +7,12 @@
  * API Documentation: https://clearinghouse.fmcsa.dot.gov/api
  */
 
+import { logger } from "../_core/logger";
+
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
+
 
 export type QueryType = "pre_employment" | "annual" | "reasonable_suspicion" | "post_accident" | "return_to_duty" | "follow_up";
 export type QueryStatus = "pending" | "completed" | "expired" | "cancelled";
@@ -131,13 +134,13 @@ class ClearinghouseService {
       });
 
       if (!response.ok) {
-        console.error(`[Clearinghouse] API error: ${response.status}`);
+        logger.error(`[Clearinghouse] API error: ${response.status}`);
         return null;
       }
 
       return await response.json();
     } catch (error) {
-      console.error("[Clearinghouse] submitPreEmploymentQuery error:", error);
+      logger.error("[Clearinghouse] submitPreEmploymentQuery error:", error);
       return null;
     }
   }
@@ -179,7 +182,7 @@ class ClearinghouseService {
 
       return await response.json();
     } catch (error) {
-      console.error("[Clearinghouse] submitAnnualQuery error:", error);
+      logger.error("[Clearinghouse] submitAnnualQuery error:", error);
       return null;
     }
   }
@@ -205,7 +208,7 @@ class ClearinghouseService {
 
       return await response.json();
     } catch (error) {
-      console.error("[Clearinghouse] getQueryStatus error:", error);
+      logger.error("[Clearinghouse] getQueryStatus error:", error);
       return null;
     }
   }
@@ -278,7 +281,7 @@ class ClearinghouseService {
     };
 
     // No clearinghouse_consents table exists yet — consent returned but not persisted
-    console.warn(`[Clearinghouse] Consent recorded in-memory only for driver ${driverId} — add consent table for persistence`);
+    logger.warn(`[Clearinghouse] Consent recorded in-memory only for driver ${driverId} — add consent table for persistence`);
     return consent;
   }
 
@@ -287,7 +290,7 @@ class ClearinghouseService {
    */
   async revokeConsent(driverId: string): Promise<boolean> {
     // No clearinghouse_consents table exists yet — revocation not persisted
-    console.warn(`[Clearinghouse] Consent revocation for driver ${driverId} not persisted — add consent table`);
+    logger.warn(`[Clearinghouse] Consent revocation for driver ${driverId} not persisted — add consent table`);
     return true;
   }
 

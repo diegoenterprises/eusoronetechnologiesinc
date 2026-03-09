@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, users, inspections } from "../../drizzle/schema";
 
@@ -59,7 +60,7 @@ export const equipmentRouter = router({
           total: countRow?.count || 0,
           summary: { total: countRow?.count || 0, available: avail?.count || 0, inUse: inUse?.count || 0, maintenance: maint?.count || 0 },
         };
-      } catch (err) { console.error("[equipment.list]", err); return { equipment: [], total: 0, summary: { total: 0, available: 0, inUse: 0, maintenance: 0 } }; }
+      } catch (err) { logger.error("[equipment.list]", err); return { equipment: [], total: 0, summary: { total: 0, available: 0, inUse: 0, maintenance: 0 } }; }
     }),
 
   /**

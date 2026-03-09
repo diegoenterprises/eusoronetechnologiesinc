@@ -7,6 +7,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "./logger";
 import {
   ergGuides as ergGuidesTable,
   ergMaterials as ergMaterialsTable,
@@ -52,10 +53,10 @@ async function loadGuides(): Promise<Record<number, ERGGuide>> {
         emergencyResponse: r.emergencyResponse as any,
       };
     }
-    console.log(`[ERG] Loaded ${rows.length} guides from DB`);
+    logger.info(`[ERG] Loaded ${rows.length} guides from DB`);
     return _guidesCache;
   } catch {
-    console.warn("[ERG] DB guides load failed, using static data");
+    logger.warn("[ERG] DB guides load failed, using static data");
     _guidesCache = ERG_GUIDES;
     return _guidesCache;
   }
@@ -80,10 +81,10 @@ async function loadMaterials(): Promise<ERGMaterial[]> {
       alternateNames: (r.alternateNames as string[]) || undefined,
       toxicGasProduced: r.toxicGasProduced || undefined,
     }));
-    console.log(`[ERG] Loaded ${rows.length} materials from DB`);
+    logger.info(`[ERG] Loaded ${rows.length} materials from DB`);
     return _materialsCache;
   } catch {
-    console.warn("[ERG] DB materials load failed, using static data");
+    logger.warn("[ERG] DB materials load failed, using static data");
     _materialsCache = ERG_MATERIALS;
     return _materialsCache;
   }
@@ -103,10 +104,10 @@ async function loadDistances(): Promise<ProtectiveDistance[]> {
       largeSpill: r.largeSpill as any,
       refTable3: r.refTable3 || false,
     }));
-    console.log(`[ERG] Loaded ${rows.length} protective distances from DB`);
+    logger.info(`[ERG] Loaded ${rows.length} protective distances from DB`);
     return _distancesCache;
   } catch {
-    console.warn("[ERG] DB distances load failed, using static data");
+    logger.warn("[ERG] DB distances load failed, using static data");
     _distancesCache = TIH_PROTECTIVE_DISTANCES;
     return _distancesCache;
   }

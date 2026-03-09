@@ -28,6 +28,7 @@
  *     c) On-demand via tRPC endpoint for specific coordinates
  */
 
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
 
@@ -423,7 +424,7 @@ export async function writeLiDAREnrichment(result: LiDAREnrichmentResult): Promi
     `);
     return true;
   } catch (e) {
-    console.error(`[EusoRoads LiDAR] Failed to write enrichment for segment ${result.segmentId}:`, e);
+    logger.error(`[EusoRoads LiDAR] Failed to write enrichment for segment ${result.segmentId}:`, e);
     return false;
   }
 }
@@ -481,10 +482,10 @@ export async function enrichUnprocessedSegments(batchSize = 25): Promise<{
     ) as any;
     const remaining = Number((countRows || [])[0]?.cnt || 0);
 
-    console.log(`[EusoRoads LiDAR] Enriched ${enriched}/${segments.length} segments, ${remaining} remaining`);
+    logger.info(`[EusoRoads LiDAR] Enriched ${enriched}/${segments.length} segments, ${remaining} remaining`);
     return { enriched, failed, remaining };
   } catch (e) {
-    console.error("[EusoRoads LiDAR] batch enrichment error:", e);
+    logger.error("[EusoRoads LiDAR] batch enrichment error:", e);
     return { enriched, failed, remaining: -1 };
   }
 }
@@ -635,7 +636,7 @@ export async function getLiDARCoverageStats(): Promise<{
       sources: (srcRows || []).map((r: any) => ({ source: r.src || "unknown", count: Number(r.cnt) })),
     };
   } catch (e) {
-    console.error("[EusoRoads LiDAR] stats error:", e);
+    logger.error("[EusoRoads LiDAR] stats error:", e);
     return {
       totalSegments: 0, lidarEnriched: 0, coveragePct: 0, avgTruckRisk: 0,
       riskDistribution: { low: 0, moderate: 0, high: 0, critical: 0 },

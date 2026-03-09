@@ -3,6 +3,7 @@
  * Wraps the existing NodeCache with intelligent freshness management
  */
 import NodeCache from "node-cache";
+import { logger } from "../../_core/logger";
 import { CACHE_TYPE_CONFIG, getFreshnessStatus, shouldRefreshAhead } from "./cacheConfig";
 
 interface CacheEntry<T> {
@@ -119,7 +120,7 @@ function triggerBackgroundRefresh(dataType: string): void {
 
   pendingRefreshes.add(dataType);
   callback()
-    .catch((err) => console.error(`[SmartCache] Background refresh failed for ${dataType}:`, err))
+    .catch((err) => logger.error(`[SmartCache] Background refresh failed for ${dataType}:`, err))
     .finally(() => pendingRefreshes.delete(dataType));
 }
 
@@ -134,7 +135,7 @@ export async function smartForceRefresh(dataType: string): Promise<boolean> {
     await callback();
     return true;
   } catch (err) {
-    console.error(`[SmartCache] Force refresh failed for ${dataType}:`, err);
+    logger.error(`[SmartCache] Force refresh failed for ${dataType}:`, err);
     return false;
   }
 }

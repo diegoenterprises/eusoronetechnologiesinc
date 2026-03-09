@@ -9,6 +9,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, and, desc, gte, lte, sql, or } from "drizzle-orm";
 import { router, isolatedApprovedProcedure as auditedProtectedProcedure, isolatedAdminProcedure as auditedAdminProcedure, sensitiveData, pci } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   wallets,
@@ -29,7 +30,7 @@ import { stripe } from "../stripe/service";
 async function safeStripeCall<T>(fn: () => Promise<T>): Promise<T | null> {
   try { return await fn(); } catch (err: any) {
     if (err.message?.includes("STRIPE_SECRET_KEY")) return null;
-    console.warn("[wallet] Stripe call failed:", err.message);
+    logger.warn("[wallet] Stripe call failed:", err.message);
     return null;
   }
 }
@@ -47,7 +48,7 @@ async function ensureWallet(db: NonNullable<Awaited<ReturnType<typeof getDb>>>, 
         currency: "USD",
       });
       [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
-      console.log(`[Wallet] Auto-created wallet for user ${userId}`);
+      logger.info(`[Wallet] Auto-created wallet for user ${userId}`);
     } catch (e: any) {
       // Race condition — another request may have created it
       [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
@@ -73,7 +74,7 @@ async function ensureStripeCustomer(db: NonNullable<Awaited<ReturnType<typeof ge
     if (customer?.id) {
       stripeCustomerId = customer.id;
       await db.update(users).set({ stripeCustomerId: customer.id }).where(eq(users.id, userId));
-      console.log(`[Wallet] Auto-created Stripe customer ${customer.id} for user ${userId}`);
+      logger.info(`[Wallet] Auto-created Stripe customer ${customer.id} for user ${userId}`);
     }
   }
 
@@ -101,7 +102,7 @@ async function storeIdempotency(db: any, key: string, endpoint: string, userId: 
     await db.execute(
       sql`INSERT INTO idempotency_keys (idempotencyKey, endpoint, userId, response, expiresAt) VALUES (${key}, ${endpoint}, ${userId}, ${JSON.stringify(response)}, ${new Date(Date.now() + 24 * 60 * 60 * 1000)}) ON DUPLICATE KEY UPDATE response = ${JSON.stringify(response)}, expiresAt = ${new Date(Date.now() + 24 * 60 * 60 * 1000)}`
     );
-  } catch (e: any) { console.error('[Idempotency] Store error:', e?.message?.slice(0, 100)); }
+  } catch (e: any) { logger.error('[Idempotency] Store error:', e?.message?.slice(0, 100)); }
 }
 
 const transactionTypeSchema = z.enum([
@@ -548,11 +549,11 @@ export const walletRouter = router({
         });
         if (feeResult.finalFee > 0) {
           fee = feeResult.finalFee;
-          console.log(`[Wallet] Withdrawal fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
+          logger.info(`[Wallet] Withdrawal fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
           await feeCalculator.recordFeeCollection(0, "wallet_withdrawal", userId, input.amount, feeResult);
         }
       } catch (feeErr) {
-        console.warn("[Wallet] Withdrawal fee calculator fallback:", (feeErr as Error).message);
+        logger.warn("[Wallet] Withdrawal fee calculator fallback:", (feeErr as Error).message);
       }
       const netAmount = input.amount - fee;
 
@@ -578,7 +579,7 @@ export const walletRouter = router({
         }, { stripeAccount: userRow.stripeConnectId!, idempotencyKey }));
         if (payout) {
           stripePayoutId = payout.id;
-          console.log(`[Wallet] Stripe payout ${payout.id}: $${netAmount} → ${userRow.stripeConnectId} (${input.instant ? 'instant' : 'standard'})`);
+          logger.info(`[Wallet] Stripe payout ${payout.id}: $${netAmount} → ${userRow.stripeConnectId} (${input.instant ? 'instant' : 'standard'})`);
         }
       }
 
@@ -703,7 +704,7 @@ export const walletRouter = router({
           downloadUrl: `/api/tax/1099-nec-${yr}.pdf`,
         }));
       } catch (error) {
-        console.error('[Wallet] getTaxDocuments error:', error);
+        logger.error('[Wallet] getTaxDocuments error:', error);
         return [];
       }
     }),
@@ -735,7 +736,7 @@ export const walletRouter = router({
           reason: eligible ? null : "Minimum balance of $25 required",
         };
       } catch (error) {
-        console.error('[Wallet] getInstantPayoutEligibility error:', error);
+        logger.error('[Wallet] getInstantPayoutEligibility error:', error);
         return { eligible: false, maxAmount: 0, feePercentage: 1.5, minFee: 0.50, availableBalance: 0, reason: "Error checking eligibility" };
       }
     }),
@@ -797,10 +798,10 @@ export const walletRouter = router({
         });
         if (feeResult.finalFee > 0) {
           fee = feeResult.finalFee;
-          console.log(`[Wallet] P2P transfer fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
+          logger.info(`[Wallet] P2P transfer fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
         }
       } catch (feeErr) {
-        console.warn("[Wallet] P2P fee calculator fallback:", (feeErr as Error).message);
+        logger.warn("[Wallet] P2P fee calculator fallback:", (feeErr as Error).message);
       }
       const netAmount = input.amount - fee;
 
@@ -963,10 +964,10 @@ export const walletRouter = router({
         if (feeResult.finalFee > 0) {
           fee = feeResult.finalFee;
           feePercent = feeResult.breakdown.baseRate ?? feePercent;
-          console.log(`[Wallet] Cash advance fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
+          logger.info(`[Wallet] Cash advance fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
         }
       } catch (feeErr) {
-        console.warn("[Wallet] Cash advance fee calculator fallback:", (feeErr as Error).message);
+        logger.warn("[Wallet] Cash advance fee calculator fallback:", (feeErr as Error).message);
       }
       const totalRepayment = input.amount + fee;
 
@@ -1101,10 +1102,10 @@ export const walletRouter = router({
         if (feeResult.finalFee > 0) {
           fee = feeResult.finalFee;
           feePercent = feeResult.breakdown.baseRate ?? feePercent;
-          console.log(`[Wallet] Instant pay fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
+          logger.info(`[Wallet] Instant pay fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
         }
       } catch (feeErr) {
-        console.warn("[Wallet] Instant pay fee calculator fallback:", (feeErr as Error).message);
+        logger.warn("[Wallet] Instant pay fee calculator fallback:", (feeErr as Error).message);
       }
       const netAmount = input.amount - fee;
 
@@ -1659,7 +1660,7 @@ export const walletRouter = router({
 
         return results;
       } catch (err) {
-        console.warn("[Wallet] getEscrowHolds error:", (err as Error).message);
+        logger.warn("[Wallet] getEscrowHolds error:", (err as Error).message);
         return [];
       }
     }),
@@ -1726,7 +1727,7 @@ export const walletRouter = router({
           description: `EusoWallet P2P: ${ctx.user?.email} → ${input.recipientEmail}${input.note ? ` — ${input.note}` : ''}`,
           metadata: { senderUserId: String(userId), recipientUserId: String(recipient.id), type: "p2p_send" },
         }));
-        if (transfer) console.log(`[Wallet] Stripe transfer ${transfer.id}: $${input.amount} → ${recipientStripe.stripeConnectId}`);
+        if (transfer) logger.info(`[Wallet] Stripe transfer ${transfer.id}: $${input.amount} → ${recipientStripe.stripeConnectId}`);
       }
 
       // Debit sender
@@ -1876,7 +1877,7 @@ export const walletRouter = router({
         completedAt: new Date(),
       });
 
-      if (stripeCardId) console.log(`[Wallet] Stripe Issuing card created: ${stripeCardId} for user ${userId}`);
+      if (stripeCardId) logger.info(`[Wallet] Stripe Issuing card created: ${stripeCardId} for user ${userId}`);
 
       return {
         success: true,
@@ -1916,7 +1917,7 @@ export const walletRouter = router({
           return s as { id: string; client_secret: string };
         });
         if (session) {
-          console.log(`[Wallet] Financial Connections session created: ${session.id}`);
+          logger.info(`[Wallet] Financial Connections session created: ${session.id}`);
           return {
             success: true,
             sessionId: session.id,
@@ -2049,7 +2050,7 @@ export const walletRouter = router({
             if (treasuryResult?.id) {
               stripeTransferId = treasuryResult.id;
               usedTreasury = true;
-              console.log(`[Wallet] Escrow released via Treasury OutboundTransfer ${treasuryResult.id}: $${amount}`);
+              logger.info(`[Wallet] Escrow released via Treasury OutboundTransfer ${treasuryResult.id}: $${amount}`);
             }
 
             // Fallback: Connect transfer if Treasury not available
@@ -2063,7 +2064,7 @@ export const walletRouter = router({
               }));
               if (transfer) {
                 stripeTransferId = transfer.id;
-                console.log(`[Wallet] Escrow released via Stripe transfer ${transfer.id}: $${amount} → ${driverRow.stripeConnectId}`);
+                logger.info(`[Wallet] Escrow released via Stripe transfer ${transfer.id}: $${amount} → ${driverRow.stripeConnectId}`);
               }
             }
           }
@@ -2185,7 +2186,7 @@ export const walletRouter = router({
 
       if (treasuryResult?.id) {
         treasuryHoldId = treasuryResult.id;
-        console.log(`[Wallet] Treasury escrow hold created: ${treasuryResult.id} for Load #${input.loadId}, $${input.amount}`);
+        logger.info(`[Wallet] Treasury escrow hold created: ${treasuryResult.id} for Load #${input.loadId}, $${input.amount}`);
       }
 
       // Debit wallet balance
@@ -2281,7 +2282,7 @@ export const walletRouter = router({
         sql`DELETE FROM wallets WHERE id IN (${sql.raw(orphanIds.join(','))})`
       );
       const count = (deleted as any)?.[0]?.affectedRows || orphanIds.length;
-      console.log(`[Wallet] Cleaned ${count} orphaned wallet records`);
+      logger.info(`[Wallet] Cleaned ${count} orphaned wallet records`);
       return { cleaned: count, orphanIds };
     }),
 });
@@ -2297,13 +2298,13 @@ export async function cleanOrphanedWalletsOnStartup() {
     );
     const rows = (orphaned as any)?.[0] || orphaned;
     const orphanIds = Array.isArray(rows) ? rows.map((r: any) => r.id) : [];
-    if (orphanIds.length === 0) { console.log("[Wallet] No orphaned wallets found"); return; }
+    if (orphanIds.length === 0) { logger.info("[Wallet] No orphaned wallets found"); return; }
     for (const wId of orphanIds) {
       await db.delete(walletTransactions).where(eq(walletTransactions.walletId, wId));
     }
     await db.execute(sql`DELETE FROM wallets WHERE id IN (${sql.raw(orphanIds.join(','))})`);
-    console.log(`[Wallet] Startup cleanup: removed ${orphanIds.length} orphaned wallet(s) with userId(s): ${rows.map((r: any) => r.userId).join(', ')}`);
+    logger.info(`[Wallet] Startup cleanup: removed ${orphanIds.length} orphaned wallet(s) with userId(s): ${rows.map((r: any) => r.userId).join(', ')}`);
   } catch (e: any) {
-    console.warn("[Wallet] Orphan cleanup warning:", e?.message);
+    logger.warn("[Wallet] Orphan cleanup warning:", e?.message);
   }
 }

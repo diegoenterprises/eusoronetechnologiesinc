@@ -17,6 +17,7 @@
  */
 
 import { getPool } from "../db";
+import { logger } from "../_core/logger";
 
 // ============================================================================
 // TYPES
@@ -196,7 +197,7 @@ export async function getCensus(dotNumber: string): Promise<FMCSACensus | null> 
       mcs150Mileage: c.mcs150_mileage || 0,
     };
   } catch (e) {
-    console.warn("[FMCSABulk] getCensus error:", (e as Error).message?.slice(0, 100));
+    logger.error("[FMCSABulk] getCensus error:", (e as Error).message?.slice(0, 100));
     return null;
   }
 }
@@ -231,7 +232,7 @@ export async function getAuthority(dotNumber: string): Promise<FMCSAAuthority | 
       cargoInsuranceOnFile: a.cargo_insurance_on_file || 0,
     };
   } catch (e) {
-    console.warn("[FMCSABulk] getAuthority error:", (e as Error).message?.slice(0, 100));
+    logger.error("[FMCSABulk] getAuthority error:", (e as Error).message?.slice(0, 100));
     return null;
   }
 }
@@ -281,7 +282,7 @@ export async function getSafetyScores(dotNumber: string): Promise<FMCSASafetySco
       vehicleOosRate: s.vehicle_oos_rate ?? null,
     };
   } catch (e) {
-    console.warn("[FMCSABulk] getSafetyScores error:", (e as Error).message?.slice(0, 100));
+    logger.error("[FMCSABulk] getSafetyScores error:", (e as Error).message?.slice(0, 100));
     return null;
   }
 }
@@ -327,7 +328,7 @@ export async function getCrashSummary(dotNumber: string, recentLimit = 5): Promi
       })),
     };
   } catch (e) {
-    console.warn("[FMCSABulk] getCrashSummary error:", (e as Error).message?.slice(0, 100));
+    logger.error("[FMCSABulk] getCrashSummary error:", (e as Error).message?.slice(0, 100));
     return null;
   }
 }
@@ -372,7 +373,7 @@ export async function getInspectionSummary(dotNumber: string, recentLimit = 5): 
       })),
     };
   } catch (e) {
-    console.warn("[FMCSABulk] getInspectionSummary error:", (e as Error).message?.slice(0, 100));
+    logger.error("[FMCSABulk] getInspectionSummary error:", (e as Error).message?.slice(0, 100));
     return null;
   }
 }
@@ -429,7 +430,7 @@ export async function getViolationSummary(dotNumber: string, recentLimit = 10): 
       })),
     };
   } catch (e) {
-    console.warn("[FMCSABulk] getViolationSummary error:", (e as Error).message?.slice(0, 100));
+    logger.error("[FMCSABulk] getViolationSummary error:", (e as Error).message?.slice(0, 100));
     return null;
   }
 }
@@ -470,7 +471,7 @@ export async function getInsuranceStatus(dotNumber: string): Promise<FMCSAInsura
       isCompliant: hasLiability && maxBipd >= 750000,
     };
   } catch (e) {
-    console.warn("[FMCSABulk] getInsuranceStatus error:", (e as Error).message?.slice(0, 100));
+    logger.error("[FMCSABulk] getInsuranceStatus error:", (e as Error).message?.slice(0, 100));
     return null;
   }
 }
@@ -636,7 +637,7 @@ export async function batchSafetyScores(dotNumbers: string[]): Promise<Map<strin
       });
     }
   } catch (e) {
-    console.warn("[FMCSABulk] batchSafetyScores error:", (e as Error).message?.slice(0, 100));
+    logger.error("[FMCSABulk] batchSafetyScores error:", (e as Error).message?.slice(0, 100));
   }
   return map;
 }
@@ -659,7 +660,7 @@ export async function batchCrashCounts(dotNumbers: string[]): Promise<Map<string
       map.set(String(r.dot_number), { total: r.total, fatalities: r.fatalities });
     }
   } catch (e) {
-    console.warn("[FMCSABulk] batchCrashCounts error:", (e as Error).message?.slice(0, 100));
+    logger.error("[FMCSABulk] batchCrashCounts error:", (e as Error).message?.slice(0, 100));
   }
   return map;
 }
@@ -683,7 +684,7 @@ export async function batchOOSStatus(dotNumbers: string[]): Promise<Map<string, 
       map.set(String(r.dot_number), true);
     }
   } catch (e) {
-    console.warn("[FMCSABulk] batchOOSStatus error:", (e as Error).message?.slice(0, 100));
+    logger.error("[FMCSABulk] batchOOSStatus error:", (e as Error).message?.slice(0, 100));
   }
   return map;
 }

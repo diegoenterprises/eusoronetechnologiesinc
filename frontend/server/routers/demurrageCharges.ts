@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, sql, and, desc, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, companies } from "../../drizzle/schema";
 import {
@@ -118,7 +119,7 @@ export const demurrageChargesRouter = router({
         const batch = generateDemurrageBatch(charges, dateFrom, dateTo);
         return { charges, batch };
       } catch (e) {
-        console.error("[DemurrageCharges] generateCharges error:", e);
+        logger.error("[DemurrageCharges] generateCharges error:", e);
         return { charges: [], batch: null };
       }
     }),
@@ -196,7 +197,7 @@ export const demurrageChargesRouter = router({
 
         return generateDemurrageAnalytics(charges, period);
       } catch (e) {
-        console.error("[DemurrageCharges] getAnalytics error:", e);
+        logger.error("[DemurrageCharges] getAnalytics error:", e);
         return null;
       }
     }),

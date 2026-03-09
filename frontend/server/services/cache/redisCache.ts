@@ -13,6 +13,7 @@
  * Part of Project LIGHTSPEED — Phase 1
  */
 
+import { logger } from "../../_core/logger";
 import { getPool } from "../../db";
 
 // ============================================================================
@@ -159,14 +160,14 @@ async function getStore(): Promise<{ redis: any | null; mem: InMemoryStore }> {
         });
         await _redis.connect();
         _useRedis = true;
-        console.log("[LIGHTSPEED] ✓ Redis connected — distributed cache active");
+        logger.info("[LIGHTSPEED] ✓ Redis connected — distributed cache active");
       } catch (err: any) {
-        console.warn(`[LIGHTSPEED] Redis unavailable (${err.message?.slice(0, 80)}), using in-memory fallback`);
+        logger.error(`[LIGHTSPEED] Redis unavailable (${err.message?.slice(0, 80)}), using in-memory fallback`);
         _redis = null;
         _useRedis = false;
       }
     } else {
-      console.log("[LIGHTSPEED] No REDIS_URL set — using in-memory cache (50K entry limit)");
+      logger.info("[LIGHTSPEED] No REDIS_URL set — using in-memory cache (50K entry limit)");
     }
   }
 
@@ -229,7 +230,7 @@ export async function cacheSet<T>(tier: CacheTier, key: string, value: T, ttlOve
       await mem.set(fullKey, serialized, ttl);
     }
   } catch (err: any) {
-    console.warn(`[LIGHTSPEED] Cache set error (${tier}:${key}):`, err.message?.slice(0, 80));
+    logger.error(`[LIGHTSPEED] Cache set error (${tier}:${key}):`, err.message?.slice(0, 80));
   }
 }
 
@@ -290,7 +291,7 @@ export async function cacheMSet<T>(
       })));
     }
   } catch (err: any) {
-    console.warn(`[LIGHTSPEED] Cache mset error:`, err.message?.slice(0, 80));
+    logger.error(`[LIGHTSPEED] Cache mset error:`, err.message?.slice(0, 80));
   }
 }
 
@@ -403,7 +404,7 @@ export async function subscribeInvalidations(): Promise<void> {
         }
       } catch {}
     });
-    console.log("[LIGHTSPEED] ✓ Subscribed to cache invalidation channel");
+    logger.info("[LIGHTSPEED] ✓ Subscribed to cache invalidation channel");
   } catch {}
 }
 
@@ -453,5 +454,5 @@ export async function flushAllCache(): Promise<void> {
     if (keys.length > 0) await redis.del(...keys);
   }
   await mem.flush();
-  console.log("[LIGHTSPEED] All caches flushed");
+  logger.info("[LIGHTSPEED] All caches flushed");
 }

@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { terminals } from "../../drizzle/schema";
 
@@ -152,7 +153,7 @@ export const scadaRouter = router({
             INSERT INTO scada_transactions (transactionId, terminalId, rackId, loadId, product, targetGallons, status, startTime, authorizedBy)
             VALUES (${txnId}, ${parseInt(input.terminalId || '0', 10)}, ${input.rackId}, ${input.loadId}, ${input.product}, ${input.targetGallons}, 'loading', NOW(), ${userId})
           `);
-        } catch (e) { console.warn('[SCADA] startLoading insert error:', e); }
+        } catch (e) { logger.warn('[SCADA] startLoading insert error:', e); }
       }
       return {
         transactionId: txnId,
@@ -185,7 +186,7 @@ export const scadaRouter = router({
             WHERE rackId = ${input.rackId} AND status = 'loading'
             ORDER BY createdAt DESC LIMIT 1
           `);
-        } catch (e) { console.warn('[SCADA] stopLoading update error:', e); }
+        } catch (e) { logger.warn('[SCADA] stopLoading update error:', e); }
       }
       return {
         rackId: input.rackId,

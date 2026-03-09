@@ -18,6 +18,7 @@
  * and uses Gemini AI for edge-case analysis and free-form equipment advisory.
  */
 
+import { logger } from "../_core/logger";
 import { ENV } from "../_core/env";
 
 // ─── Gemini AI Config ──────────────────────────────────────────────────────
@@ -2024,7 +2025,7 @@ export async function askEquipmentAdvisor(question: string, context?: {
     );
 
     if (!resp.ok) {
-      console.error("[ZEUN] Gemini API error:", resp.status);
+      logger.error("[ZEUN] Gemini API error:", resp.status);
       return { answer: "Equipment advisor temporarily unavailable.", recommendations: [] };
     }
 
@@ -2040,7 +2041,7 @@ export async function askEquipmentAdvisor(question: string, context?: {
       return { answer: text, recommendations: [] };
     }
   } catch (err) {
-    console.error("[ZEUN] AI advisor error:", err);
+    logger.error("[ZEUN] AI advisor error:", err);
     return { answer: "Equipment advisor temporarily unavailable.", recommendations: [] };
   }
 }

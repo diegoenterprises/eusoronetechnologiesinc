@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import mysql2 from "mysql2";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { logger } from './_core/logger';
 import { ensureGamificationProfile } from "./services/gamificationDispatcher";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -47,7 +48,7 @@ function createPool() {
   pool.on("enqueue", () => {
     _poolStats.totalQueued++;
     if (_poolStats.totalQueued % 50 === 0) {
-      console.warn(`[Database] Pool queue pressure: ${_poolStats.totalQueued} queued requests`);
+      logger.warn(`[Database] Pool queue pressure: ${_poolStats.totalQueued} queued requests`);
     }
   });
 
@@ -68,10 +69,10 @@ function startHealthCheck() {
       await conn.query("SELECT 1");
     } catch (err: any) {
       _poolStats.healthCheckFailures++;
-      console.error(`[Database] Health check failed (${_poolStats.healthCheckFailures}x):`, err.message);
+      logger.error(`[Database] Health check failed (${_poolStats.healthCheckFailures}x):`, err.message);
       // If pool is dead, recreate it
       if (_poolStats.healthCheckFailures >= 3) {
-        console.warn("[Database] Recreating connection pool after 3 consecutive health check failures");
+        logger.warn("[Database] Recreating connection pool after 3 consecutive health check failures");
         try {
           _pool?.end(() => {});
         } catch {}
@@ -93,13 +94,13 @@ async function runStartupCleanup(db: ReturnType<typeof drizzle>) {
     const [catalyst] = await db.select({ id: users.id }).from(users).where(eq(users.email, "catalyst@eusotrip.com")).limit(1);
     if (catalyst) {
       const result = await db.delete(users).where(eq(users.email, "carrier@eusotrip.com"));
-      console.log("[Startup] Cleaned up stale carrier@eusotrip.com (catalyst exists)");
+      logger.info("[Startup] Cleaned up stale carrier@eusotrip.com (catalyst exists)");
     }
     // Fix any remaining CARRIER roles → CATALYST
     await db.update(users).set({ role: "CATALYST" }).where(sql`${users.role} = 'CARRIER'`);
-    console.log("[Startup] Ensured no CARRIER roles remain");
+    logger.info("[Startup] Ensured no CARRIER roles remain");
   } catch (err) {
-    console.warn("[Startup] Cleanup error (non-fatal):", err);
+    logger.warn("[Startup] Cleanup error (non-fatal):", err);
   }
 
   // Schema sync — ensure all Drizzle-defined columns exist in the DB
@@ -122,12 +123,12 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       );
       if (rows.length === 0) {
         await pool!.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${col}\` ${definition}`);
-        console.log(`[SchemaSync] Added ${table}.${col}`);
+        logger.info(`[SchemaSync] Added ${table}.${col}`);
       }
     } catch (err: any) {
       // Ignore — column might already exist or table might not exist
       if (!err?.message?.includes("Duplicate column")) {
-        console.warn(`[SchemaSync] ${table}.${col}: ${err?.message?.slice(0, 120)}`);
+        logger.warn(`[SchemaSync] ${table}.${col}: ${err?.message?.slice(0, 120)}`);
       }
     }
   }
@@ -140,15 +141,15 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       );
       if (rows.length === 0) {
         await pool!.query(createSQL);
-        console.log(`[SchemaSync] Created table ${table}`);
+        logger.info(`[SchemaSync] Created table ${table}`);
       }
     } catch (err: any) {
-      console.warn(`[SchemaSync] Table ${table}: ${err?.message?.slice(0, 120)}`);
+      logger.warn(`[SchemaSync] Table ${table}: ${err?.message?.slice(0, 120)}`);
     }
   }
 
   try {
-    console.log("[SchemaSync] Checking schema alignment...");
+    logger.info("[SchemaSync] Checking schema alignment...");
 
     // --- loads table columns ---
     await addColIfMissing("loads", "vehicleId", "INT DEFAULT NULL");
@@ -219,7 +220,7 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
         ) NOT NULL
       `);
     } catch (e: any) {
-      if (!e?.message?.includes("Duplicate")) console.warn("[SchemaSync] vehicleType enum:", e?.message?.slice(0, 120));
+      if (!e?.message?.includes("Duplicate")) logger.warn("[SchemaSync] vehicleType enum:", e?.message?.slice(0, 120));
     }
 
     // --- zeun_breakdown_reports: extend issueCategory enum with escort categories ---
@@ -231,7 +232,7 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
         ) NOT NULL
       `);
     } catch (e: any) {
-      if (!e?.message?.includes("Duplicate")) console.warn("[SchemaSync] issueCategory enum:", e?.message?.slice(0, 120));
+      if (!e?.message?.includes("Duplicate")) logger.warn("[SchemaSync] issueCategory enum:", e?.message?.slice(0, 120));
     }
 
     // --- audit_logs table ---
@@ -1651,8 +1652,8 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
     try {
       await pool.execute(`INSERT IGNORE INTO platform_fee_configs (feeCode, name, description, transactionType, feeType, baseRate, flatAmount, isActive, effectiveFrom)
         VALUES ('HAZMAT_SURCHARGE', 'Hazmat Surcharge', 'Surcharge applied to all hazmat loads per 49 CFR compliance', 'load_completion', 'percentage', 2.5000, 75.00, 1, NOW())`);
-      console.log("[SchemaSync] platform_fee_configs HAZMAT_SURCHARGE seed ensured.");
-    } catch (seedErr: any) { console.warn("[SchemaSync] HAZMAT_SURCHARGE seed skip:", seedErr?.message?.slice(0, 120)); }
+      logger.info("[SchemaSync] platform_fee_configs HAZMAT_SURCHARGE seed ensured.");
+    } catch (seedErr: any) { logger.warn("[SchemaSync] HAZMAT_SURCHARGE seed skip:", seedErr?.message?.slice(0, 120)); }
 
     // --- Phase 4: Accessorial Charges table ---
     await ensureTable("accessorial_charges", `CREATE TABLE IF NOT EXISTS accessorial_charges (
@@ -2221,9 +2222,9 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX relay_legs_status_idx (status)
     )`);
 
-    console.log("[SchemaSync] Done.");
+    logger.info("[SchemaSync] Done.");
   } catch (err: any) {
-    console.warn("[SchemaSync] Non-fatal error:", err?.message?.slice(0, 200));
+    logger.warn("[SchemaSync] Non-fatal error:", err?.message?.slice(0, 200));
   }
 }
 
@@ -2234,11 +2235,11 @@ export async function getDb() {
       _pool = createPool();
       _db = drizzle(_pool);
       startHealthCheck();
-      console.log("[Database] Connection pool initialized (limit: 30, keepAlive: 15s, healthCheck: 30s)");
+      logger.info("[Database] Connection pool initialized (limit: 30, keepAlive: 15s, healthCheck: 30s)");
       // Run one-time cleanup after pool is ready
       runStartupCleanup(_db).catch(() => {});
     } catch (error) {
-      console.error("[Database] Failed to create connection pool:", error);
+      logger.error("[Database] Failed to create connection pool:", error);
       _pool = null;
       _db = null;
     }
@@ -2280,10 +2281,10 @@ export async function getReadDb() {
         connectTimeout: 15000,
       });
       _readDb = drizzle(_readPool);
-      console.log("[LIGHTSPEED] ✓ Read replica pool initialized (limit: 80)");
+      logger.info("[LIGHTSPEED] Read replica pool initialized (limit: 80)");
       return _readDb;
     } catch (err: any) {
-      console.warn("[LIGHTSPEED] Read replica unavailable, using primary:", err.message?.slice(0, 80));
+      logger.warn("[LIGHTSPEED] Read replica unavailable, using primary:", err.message?.slice(0, 80));
     }
   }
   // Fallback to primary
@@ -2296,7 +2297,7 @@ export async function closeDb(): Promise<void> {
     await new Promise<void>((resolve) => { _readPool!.end(() => resolve()); });
     _readPool = null;
     _readDb = null;
-    console.log("[Database] Read replica pool closed");
+    logger.info("[Database] Read replica pool closed");
   }
   if (_pool) {
     await new Promise<void>((resolve, reject) => {
@@ -2304,7 +2305,7 @@ export async function closeDb(): Promise<void> {
     });
     _pool = null;
     _db = null;
-    console.log("[Database] Connection pool closed");
+    logger.info("[Database] Connection pool closed");
   }
 }
 
@@ -2320,7 +2321,7 @@ export async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promis
       const isRetryable = RETRYABLE_CODES.includes(err?.code) || err?.message?.includes("Connection lost");
       if (!isRetryable || attempt === maxRetries) throw err;
       const delay = Math.min(100 * Math.pow(2, attempt), 2000);
-      console.warn(`[Database] Retryable error (attempt ${attempt}/${maxRetries}): ${err.code || err.message}. Retrying in ${delay}ms...`);
+      logger.warn(`[Database] Retryable error (attempt ${attempt}/${maxRetries}): ${err.code || err.message}. Retrying in ${delay}ms...`);
       await new Promise(r => setTimeout(r, delay));
     }
   }
@@ -2330,7 +2331,7 @@ export async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promis
 export async function upsertUser(user: InsertUser): Promise<void> {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
+    logger.warn("[Database] Cannot upsert user: database not available");
     return;
   }
 
@@ -2383,7 +2384,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       });
     } catch (err: any) {
       if (err?.message?.includes('openId') || err?.message?.includes('open_id') || err?.code === 'ER_BAD_FIELD_ERROR') {
-        console.warn("[Database] openId column issue, retrying upsert without openId");
+        logger.warn("[Database] openId column issue, retrying upsert without openId");
         const { openId: _removed, ...valuesWithoutOpenId } = values;
         const { openId: _removed2, ...updateSetWithoutOpenId } = updateSet;
         if (!valuesWithoutOpenId.email) {
@@ -2397,7 +2398,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       }
     }
   } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
+    logger.error("[Database] Failed to upsert user:", error);
     // Don't throw — failing to upsert shouldn't crash the app
     return;
   }
@@ -2420,7 +2421,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
+    logger.warn("[Database] Cannot get user: database not available");
     return undefined;
   }
 
@@ -2442,7 +2443,7 @@ export async function getUserByOpenId(openId: string) {
     const result = await db.select(safeSelect).from(users).where(eq(users.openId, openId)).limit(1);
     if (result.length > 0) return result[0];
   } catch (err) {
-    console.warn("[Database] openId lookup failed (column may not exist):", err);
+    logger.warn("[Database] openId lookup failed (column may not exist):", err);
   }
 
   // Fallback: try email if openId looks like an email

@@ -9,12 +9,13 @@
  *   - entry_hash (VARCHAR 64)    — SHA-256 hash of this entry (includes previous_hash)
  */
 
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 
 export async function runAuditHashChainMigration() {
   const db = await getDb();
   if (!db) {
-    console.error("[Migration 0011] No DB connection");
+    logger.error("[Migration 0011] No DB connection");
     return;
   }
 
@@ -42,9 +43,9 @@ export async function runAuditHashChainMigration() {
       ) {
         continue;
       }
-      console.error(`[Migration 0011] Error: ${err.message}`);
+      logger.error(`[Migration 0011] Error: ${err.message}`);
     }
   }
 
-  console.log("[Migration 0011] audit_logs hash chain columns — DONE");
+  logger.info("[Migration 0011] audit_logs hash chain columns — DONE");
 }

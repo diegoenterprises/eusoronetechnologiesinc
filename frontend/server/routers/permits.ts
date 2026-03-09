@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { documents } from "../../drizzle/schema";
 
@@ -36,7 +37,7 @@ export const permitsRouter = router({
           createdAt: r.createdAt?.toISOString?.() || '',
         }));
         return Object.assign(permits, { permits, total, filter: permits.filter.bind(permits) });
-      } catch (e) { console.error('[Permits] list error:', e); const r: any[] = []; return Object.assign(r, { permits: r, total: 0, filter: r.filter.bind(r) }); }
+      } catch (e) { logger.error('[Permits] list error:', e); const r: any[] = []; return Object.assign(r, { permits: r, total: 0, filter: r.filter.bind(r) }); }
     }),
 
   /**
@@ -87,7 +88,7 @@ export const permitsRouter = router({
               ${input.commodity}, ${input.loadDescription}, ${JSON.stringify(input.dimensions)},
               ${input.weight}, ${input.requestedStartDate}, ${input.requestedEndDate}, ${input.notes || null})
           `);
-        } catch (e) { console.warn('[Permits] submitApplication error:', e); }
+        } catch (e) { logger.warn('[Permits] submitApplication error:', e); }
       }
       return {
         id: permitNumber, applicationNumber: permitNumber,

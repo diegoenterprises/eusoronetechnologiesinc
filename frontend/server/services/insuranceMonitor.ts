@@ -20,6 +20,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import {
   insurancePolicies,
   insuranceAlerts,
@@ -146,7 +147,7 @@ async function evaluateCompanyCompliance(
 export async function monitorInsuranceExpirations(): Promise<void> {
   const db = await getDb();
   if (!db) {
-    console.warn("[InsuranceMonitor] Database not available, skipping");
+    logger.warn("[InsuranceMonitor] Database not available, skipping");
     return;
   }
 
@@ -154,7 +155,7 @@ export async function monitorInsuranceExpirations(): Promise<void> {
   const sevenDays = new Date(now.getTime() + 7 * 86400000);
   const thirtyDays = new Date(now.getTime() + 30 * 86400000);
 
-  console.log("[InsuranceMonitor] Starting daily compliance scan...");
+  logger.info("[InsuranceMonitor] Starting daily compliance scan...");
 
   let alertsCreated = 0;
   let policiesExpired = 0;
@@ -179,7 +180,7 @@ export async function monitorInsuranceExpirations(): Promise<void> {
 
     policiesExpired = (expiredResult as any)?.[0]?.affectedRows || 0;
     if (policiesExpired > 0) {
-      console.log(`[InsuranceMonitor] Marked ${policiesExpired} policies as expired`);
+      logger.info(`[InsuranceMonitor] Marked ${policiesExpired} policies as expired`);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -345,7 +346,7 @@ export async function monitorInsuranceExpirations(): Promise<void> {
       try {
         const { fmcsaService } = await import("./fmcsa");
         if (!fmcsaService.isConfigured()) {
-          console.log("[InsuranceMonitor] FMCSA not configured, skipping re-checks");
+          logger.info("[InsuranceMonitor] FMCSA not configured, skipping re-checks");
         } else {
           const companyRows = await db
             .select({ id: companies.id, dotNumber: companies.dotNumber, legalName: companies.legalName })
@@ -404,12 +405,12 @@ export async function monitorInsuranceExpirations(): Promise<void> {
                 alertsCreated++;
               }
             } catch (err) {
-              console.error(`[InsuranceMonitor] FMCSA re-check failed for DOT#${company.dotNumber}:`, err);
+              logger.error(`[InsuranceMonitor] FMCSA re-check failed for DOT#${company.dotNumber}:`, err);
             }
           }
         }
       } catch (err) {
-        console.error("[InsuranceMonitor] FMCSA re-check phase failed:", err);
+        logger.error("[InsuranceMonitor] FMCSA re-check phase failed:", err);
       }
     }
 
@@ -509,17 +510,17 @@ export async function monitorInsuranceExpirations(): Promise<void> {
           metadata: { trigger: "daily_monitor", companiesChecked, fmcsaReChecks },
         });
       } catch (err) {
-        console.error(`[InsuranceMonitor] Compliance eval failed for company ${companyId}:`, err);
+        logger.error(`[InsuranceMonitor] Compliance eval failed for company ${companyId}:`, err);
       }
     }
 
-    console.log(
+    logger.info(
       `[InsuranceMonitor] Daily scan complete — ${policiesExpired} expired, ${alertsCreated} alerts, ` +
       `${fmcsaReChecks} FMCSA re-checks, ${companiesChecked} companies checked, ` +
       `${companiesUpdated} status updates, ${usersNotified} users notified`
     );
   } catch (error) {
-    console.error("[InsuranceMonitor] Fatal error:", error);
+    logger.error("[InsuranceMonitor] Fatal error:", error);
     throw error;
   }
 }
@@ -532,11 +533,11 @@ export async function monitorInsuranceExpirations(): Promise<void> {
 export async function deepFMCSAComplianceScan(): Promise<void> {
   const db = await getDb();
   if (!db) {
-    console.warn("[InsuranceDeepScan] Database not available, skipping");
+    logger.warn("[InsuranceDeepScan] Database not available, skipping");
     return;
   }
 
-  console.log("[InsuranceDeepScan] Starting weekly FMCSA deep compliance scan...");
+  logger.info("[InsuranceDeepScan] Starting weekly FMCSA deep compliance scan...");
   const now = new Date();
   let companiesScanned = 0;
   let discrepanciesFound = 0;
@@ -549,11 +550,11 @@ export async function deepFMCSAComplianceScan(): Promise<void> {
       const mod = await import("./fmcsa");
       fmcsaService = mod.fmcsaService;
       if (!fmcsaService?.isConfigured()) {
-        console.log("[InsuranceDeepScan] FMCSA not configured, skipping");
+        logger.info("[InsuranceDeepScan] FMCSA not configured, skipping");
         return;
       }
     } catch {
-      console.log("[InsuranceDeepScan] FMCSA service not available, skipping");
+      logger.info("[InsuranceDeepScan] FMCSA service not available, skipping");
       return;
     }
 
@@ -570,7 +571,7 @@ export async function deepFMCSAComplianceScan(): Promise<void> {
       .from(companies)
       .where(isNotNull(companies.dotNumber));
 
-    console.log(`[InsuranceDeepScan] Scanning ${allCompanies.length} companies with DOT numbers`);
+    logger.info(`[InsuranceDeepScan] Scanning ${allCompanies.length} companies with DOT numbers`);
 
     for (const company of allCompanies) {
       if (!company.dotNumber) continue;
@@ -701,16 +702,16 @@ export async function deepFMCSAComplianceScan(): Promise<void> {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       } catch (err) {
-        console.error(`[InsuranceDeepScan] Failed for DOT#${company.dotNumber}:`, err);
+        logger.error(`[InsuranceDeepScan] Failed for DOT#${company.dotNumber}:`, err);
       }
     }
 
-    console.log(
+    logger.info(
       `[InsuranceDeepScan] Weekly scan complete — ${companiesScanned} companies scanned, ` +
       `${discrepanciesFound} with discrepancies, ${statusUpdates} status updates, ${usersNotified} users notified`
     );
   } catch (error) {
-    console.error("[InsuranceDeepScan] Fatal error:", error);
+    logger.error("[InsuranceDeepScan] Fatal error:", error);
     throw error;
   }
 }

@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, auditedProtectedProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { runTickets, runTicketExpenses, loads } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -48,7 +49,7 @@ export const runTicketsRouter = router({
           totalExpenses: parseFloat(r.totalExpenses?.toString() || '0'),
           driverNotes: r.driverNotes || null,
         }));
-      } catch (e) { console.error('[RunTickets] list error:', e); return []; }
+      } catch (e) { logger.error('[RunTickets] list error:', e); return []; }
     }),
 
   /**
@@ -79,7 +80,7 @@ export const runTicketsRouter = router({
         totalExpenses: Math.round((stats?.totalExpenses || 0) * 100) / 100,
         avgPerTrip: total > 0 ? Math.round(((stats?.totalExpenses || 0) / total) * 100) / 100 : 0,
       };
-    } catch (e) { console.error('[RunTickets] getStats error:', e); return { total: 0, active: 0, completed: 0, pendingReview: 0, totalFuel: 0, totalTolls: 0, totalExpenses: 0, avgPerTrip: 0 }; }
+    } catch (e) { logger.error('[RunTickets] getStats error:', e); return { total: 0, active: 0, completed: 0, pendingReview: 0, totalFuel: 0, totalTolls: 0, totalExpenses: 0, avgPerTrip: 0 }; }
   }),
 
   /**
@@ -130,7 +131,7 @@ export const runTicketsRouter = router({
           destination,
           createdAt: new Date().toISOString(),
         };
-      } catch (e) { console.error('[RunTickets] create error:', e); throw new Error("Failed to create run ticket"); }
+      } catch (e) { logger.error('[RunTickets] create error:', e); throw new Error("Failed to create run ticket"); }
     }),
 
   /**
@@ -179,7 +180,7 @@ export const runTicketsRouter = router({
           description: input.description || '',
           createdAt: new Date().toISOString(),
         };
-      } catch (e) { console.error('[RunTickets] addExpense error:', e); throw new Error("Failed to add expense"); }
+      } catch (e) { logger.error('[RunTickets] addExpense error:', e); throw new Error("Failed to add expense"); }
     }),
 
   /**
@@ -204,7 +205,7 @@ export const runTicketsRouter = router({
           receiptUrl: r.receiptUrl || null,
           createdAt: r.createdAt?.toISOString() || '',
         }));
-      } catch (e) { console.error('[RunTickets] getExpenses error:', e); return []; }
+      } catch (e) { logger.error('[RunTickets] getExpenses error:', e); return []; }
     }),
 
   /**
@@ -230,7 +231,7 @@ export const runTicketsRouter = router({
           ...(input.notes ? { driverNotes: input.notes } : {}),
         }).where(eq(runTickets.id, input.id));
         return { id: input.id, status: "completed", completedAt: now.toISOString() };
-      } catch (e) { console.error('[RunTickets] complete error:', e); throw new Error("Failed to complete run ticket"); }
+      } catch (e) { logger.error('[RunTickets] complete error:', e); throw new Error("Failed to complete run ticket"); }
     }),
 
   /**
@@ -271,7 +272,7 @@ export const runTicketsRouter = router({
             createdAt: e.createdAt?.toISOString() || '',
           })),
         };
-      } catch (e) { console.error('[RunTickets] getById error:', e); throw new Error("Failed to get run ticket"); }
+      } catch (e) { logger.error('[RunTickets] getById error:', e); throw new Error("Failed to get run ticket"); }
     }),
 
   /**

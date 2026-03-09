@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, geofences, users, loads, fuelTransactions, inspections, drivers } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
@@ -52,7 +53,7 @@ export const fleetRouter = router({
 
         return result;
       } catch (error) {
-        console.error('[Fleet] getGeofences error:', error);
+        logger.error('[Fleet] getGeofences error:', error);
         return [];
       }
     }),
@@ -88,7 +89,7 @@ export const fleetRouter = router({
           };
         }, 300); // 5min TTL
       } catch (error) {
-        console.error('[Fleet] getGeofenceStats error:', error);
+        logger.error('[Fleet] getGeofenceStats error:', error);
         return fallback;
       }
     }),
@@ -107,7 +108,7 @@ export const fleetRouter = router({
         const companyId = ctx.user?.companyId || 0;
         await db.update(geofences).set({ isActive: false } as any).where(and(eq(geofences.id, gid), eq(geofences.companyId, companyId)));
         return { success: true, deletedId: input.id };
-      } catch (e) { console.error('[Fleet] deleteGeofence error:', e); return { success: false, deletedId: input.id }; }
+      } catch (e) { logger.error('[Fleet] deleteGeofence error:', e); return { success: false, deletedId: input.id }; }
     }),
 
   /**
@@ -177,7 +178,7 @@ export const fleetRouter = router({
 
         return result;
       } catch (error) {
-        console.error('[Fleet] getVehicles error:', error);
+        logger.error('[Fleet] getVehicles error:', error);
         return [];
       }
     }),
@@ -223,7 +224,7 @@ export const fleetRouter = router({
           avgMpg: 6.8,
         };
       } catch (error) {
-        console.error('[Fleet] getFleetStats error:', error);
+        logger.error('[Fleet] getFleetStats error:', error);
         return { totalVehicles: 0, total: 0, active: 0, inMaintenance: 0, maintenance: 0, outOfService: 0, utilization: 0, inTransit: 0, loading: 0, available: 0, atShipper: 0, atConsignee: 0, offDuty: 0, issues: 0, avgMpg: 0 };
       }
     }),
@@ -261,7 +262,7 @@ export const fleetRouter = router({
           inspectionsDueThisWeek: 0,
         };
       } catch (error) {
-        console.error('[Fleet] getSummary error:', error);
+        logger.error('[Fleet] getSummary error:', error);
         return { totalVehicles: 0, active: 0, inMaintenance: 0, outOfService: 0, utilization: 0, avgAge: 0, maintenanceDueThisWeek: 0, inspectionsDueThisWeek: 0 };
       }
     }),
@@ -314,6 +315,12 @@ export const fleetRouter = router({
           fuelLevel: 0,
           lastInspection: v.nextInspectionDate?.toISOString().split('T')[0] || null,
           nextMaintenanceDue: v.nextMaintenanceDate?.toISOString().split('T')[0] || null,
+          nextServiceIn: 'Unknown',
+          loadsCompleted: 0,
+          capacity: parseFloat(vehicle.capacity?.toString() || '0'),
+          insurance: { provider: '', policyNumber: '', expirationDate: '' },
+          registration: { state: '', expirationDate: '' },
+          specifications: { engine: '', horsepower: 0, transmission: '', fuelCapacity: 0, sleeper: false },
         }));
 
         // Apply filters
@@ -321,7 +328,7 @@ export const fleetRouter = router({
           result = result.filter(v => v.type === input.type);
         }
         if (input.status) {
-          const statusMap: Record<string, string> = { active: 'available', maintenance: 'maintenance', out_of_service: 'out_of_service' };
+          const statusMap: Record<string, string> = { active: 'available', maintenance: 'maintenance', out_of_service: 'out_of_service', retired: 'out_of_service' };
           result = result.filter(v => v.status === input.status || v.status === statusMap[input.status!]);
         }
         if (input.search) {
@@ -338,7 +345,7 @@ export const fleetRouter = router({
           total: totalCount?.count || 0,
         };
       } catch (error) {
-        console.error('[Fleet] list error:', error);
+        logger.error('[Fleet] list error:', error);
         return { vehicles: [], total: 0 };
       }
     }),
@@ -400,7 +407,7 @@ export const fleetRouter = router({
           specifications: { engine: '', horsepower: 0, transmission: '', fuelCapacity: 0, sleeper: false },
         };
       } catch (error) {
-        console.error('[Fleet] getById error:', error);
+        logger.error('[Fleet] getById error:', error);
         return null;
       }
     }),
@@ -434,7 +441,7 @@ export const fleetRouter = router({
         return { id: String(result[0].insertId), ...input, status: 'active', createdAt: new Date().toISOString() };
       } catch (e: any) {
         if (e?.code === 'ER_DUP_ENTRY') return { id: '', success: false, error: 'VIN already exists' };
-        console.error('[Fleet] create error:', e); return { id: '', success: false };
+        logger.error('[Fleet] create error:', e); return { id: '', success: false };
       }
     }),
 
@@ -467,7 +474,7 @@ export const fleetRouter = router({
           await db.update(vehicles).set(updates).where(and(eq(vehicles.id, vid), eq(vehicles.companyId, companyId)));
         }
         return { success: true, id: input.id, updatedAt: new Date().toISOString() };
-      } catch (e) { console.error('[Fleet] update error:', e); return { success: false, id: input.id }; }
+      } catch (e) { logger.error('[Fleet] update error:', e); return { success: false, id: input.id }; }
     }),
 
   /**
@@ -524,7 +531,7 @@ export const fleetRouter = router({
           };
         });
       } catch (error) {
-        console.error('[Fleet] getLocations error:', error);
+        logger.error('[Fleet] getLocations error:', error);
         return [];
       }
     }),
@@ -549,7 +556,7 @@ export const fleetRouter = router({
           scheduledDate: v.nextMaintenanceDate?.toISOString().split('T')[0] || '',
           type: 'scheduled', status: v.nextMaintenanceDate && new Date(v.nextMaintenanceDate) < now ? 'overdue' : 'upcoming',
         }));
-      } catch (e) { console.error('[Fleet] getMaintenanceSchedule error:', e); return []; }
+      } catch (e) { logger.error('[Fleet] getMaintenanceSchedule error:', e); return []; }
     }),
 
   /**
@@ -570,7 +577,7 @@ export const fleetRouter = router({
         try {
           const companyId = ctx.user?.companyId || 0;
           await db.update(vehicles).set({ nextMaintenanceDate: new Date(input.scheduledDate) } as any).where(and(eq(vehicles.id, vid), eq(vehicles.companyId, companyId)));
-        } catch (e) { console.error('[Fleet] scheduleMaintenance error:', e); }
+        } catch (e) { logger.error('[Fleet] scheduleMaintenance error:', e); }
       }
       return { id: `m_${vid || Date.now()}`, ...input, status: "scheduled", createdAt: new Date().toISOString() };
     }),
@@ -601,7 +608,7 @@ export const fleetRouter = router({
           avgMPG: totalGallons > 0 ? Math.round((totalCost / totalGallons) * 10) / 10 : 0,
           entries: rows.map(r => ({ id: String(r.id), date: r.transactionDate?.toISOString().split('T')[0] || '', gallons: parseFloat(r.gallons?.toString() || '0'), cost: parseFloat(r.totalAmount?.toString() || '0'), location: r.stationName || '' })),
         };
-      } catch (e) { console.error('[Fleet] getFuelData error:', e); return { totalGallons: 0, totalCost: 0, avgMPG: 0, entries: [] }; }
+      } catch (e) { logger.error('[Fleet] getFuelData error:', e); return { totalGallons: 0, totalCost: 0, avgMPG: 0, entries: [] }; }
     }),
 
   /**
@@ -616,7 +623,7 @@ export const fleetRouter = router({
         const vid = parseInt(input.vehicleId, 10);
         const rows = await db.select().from(inspections).where(and(eq(inspections.vehicleId, vid), eq(inspections.type, 'annual' as any))).orderBy(desc(inspections.completedAt)).limit(input.limit);
         return rows.map(r => ({ id: String(r.id), type: r.type, status: r.status, date: r.completedAt?.toISOString().split('T')[0] || r.createdAt.toISOString().split('T')[0], defectsFound: r.defectsFound || 0 }));
-      } catch (e) { console.error('[Fleet] getMaintenanceHistory error:', e); return []; }
+      } catch (e) { logger.error('[Fleet] getMaintenanceHistory error:', e); return []; }
     }),
 
   /**
@@ -631,7 +638,7 @@ export const fleetRouter = router({
         const vid = parseInt(input.vehicleId, 10);
         const rows = await db.select().from(inspections).where(eq(inspections.vehicleId, vid)).orderBy(desc(inspections.completedAt)).limit(input.limit);
         return rows.map(r => ({ id: String(r.id), type: r.type, status: r.status, defectsFound: r.defectsFound || 0, oosViolation: !!r.oosViolation, location: r.location || '', date: r.completedAt?.toISOString().split('T')[0] || r.createdAt.toISOString().split('T')[0] }));
-      } catch (e) { console.error('[Fleet] getInspections error:', e); return []; }
+      } catch (e) { logger.error('[Fleet] getInspections error:', e); return []; }
     }),
 
   // Maintenance
@@ -668,7 +675,7 @@ export const fleetRouter = router({
       conds.push(sql`${inspections.type} IN ('pre_trip', 'post_trip')`);
       const rows = await db.select().from(inspections).where(and(...conds)).orderBy(desc(inspections.completedAt)).limit(30);
       return rows.map(r => ({ id: String(r.id), vehicleId: String(r.vehicleId), driverId: String(r.driverId), type: r.type, status: r.status, defectsFound: r.defectsFound || 0, oosViolation: !!r.oosViolation, location: r.location || '', date: r.completedAt?.toISOString().split('T')[0] || r.createdAt.toISOString().split('T')[0] }));
-    } catch (e) { console.error('[Fleet] getDVIRs error:', e); return []; }
+    } catch (e) { logger.error('[Fleet] getDVIRs error:', e); return []; }
   }),
   getDVIRStats: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
@@ -701,7 +708,7 @@ export const fleetRouter = router({
       }));
       if (input?.search) { const s = input.search.toLowerCase(); return results.filter(r => r.name.toLowerCase().includes(s) || r.email.toLowerCase().includes(s)); }
       return results;
-    } catch (e) { console.error('[Fleet] getDrivers error:', e); return []; }
+    } catch (e) { logger.error('[Fleet] getDrivers error:', e); return []; }
   }),
   getDriverStats: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();

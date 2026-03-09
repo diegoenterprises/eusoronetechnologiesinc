@@ -4,6 +4,8 @@
  * Covers: Oil & Gas, Chemicals, Refrigerated Transport, Bulk Logistics, Trucking
  */
 
+import { logger } from "../_core/logger";
+
 export interface RSSFeed {
   id: string;
   name: string;
@@ -113,7 +115,7 @@ export async function fetchRSSFeed(feedUrl: string): Promise<RSSArticle[]> {
     });
 
     if (!response.ok) {
-      console.warn(`Failed to fetch RSS feed: ${feedUrl}`, response.status);
+      logger.warn(`Failed to fetch RSS feed: ${feedUrl}`, response.status);
       return [];
     }
 
@@ -136,7 +138,7 @@ export async function fetchRSSFeed(feedUrl: string): Promise<RSSArticle[]> {
 
       if (titleMatch && linkMatch) {
         articles.push({
-          id: `${feedUrl}-${Date.now()}-${Math.random()}`,
+          id: `${feedUrl}-${Date.now()}-${articles.length}`,
           title: titleMatch[1].replace(/<[^>]*>/g, ''),
           description: descMatch ? descMatch[1].replace(/<[^>]*>/g, '').substring(0, 200) : '',
           link: linkMatch[1],
@@ -149,7 +151,7 @@ export async function fetchRSSFeed(feedUrl: string): Promise<RSSArticle[]> {
 
     return articles;
   } catch (error) {
-    console.error(`Error fetching RSS feed ${feedUrl}:`, error);
+    logger.error(`Error fetching RSS feed ${feedUrl}:`, error);
     return [];
   }
 }

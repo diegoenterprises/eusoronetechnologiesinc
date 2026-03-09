@@ -8,6 +8,7 @@
  * Uses the same API key and fetch helpers as ESANG AI.
  */
 
+import { logger } from "../_core/logger";
 import { ENV } from "../_core/env";
 
 // Use Gemini 2.5 Flash for fast multimodal extraction
@@ -244,7 +245,7 @@ export async function scanInsuranceDocument(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[InsuranceScanner] Gemini API error:", response.status, errorText);
+    logger.error("[InsuranceScanner] Gemini API error:", response.status, errorText);
     throw new Error(`Gemini API error: ${response.status}`);
   }
 
@@ -257,7 +258,7 @@ export async function scanInsuranceDocument(
   // Validate and add warnings
   validateExtraction(extraction);
 
-  console.log(`[InsuranceScanner] Extracted ${extraction.documentType} — confidence: ${extraction.confidence} — ${extraction.coverages.length} coverages, ${extraction.extractionWarnings.length} warnings`);
+  logger.info(`[InsuranceScanner] Extracted ${extraction.documentType} — confidence: ${extraction.confidence} — ${extraction.coverages.length} coverages, ${extraction.extractionWarnings.length} warnings`);
 
   return extraction;
 }
@@ -333,7 +334,7 @@ function parseExtractionResponse(responseText: string): InsuranceExtraction {
       fieldsRequiringReview: parsed.fieldsRequiringReview || [],
     };
   } catch (err) {
-    console.error("[InsuranceScanner] JSON parse error:", err);
+    logger.error("[InsuranceScanner] JSON parse error:", err);
     throw new Error("Failed to parse extraction response");
   }
 }

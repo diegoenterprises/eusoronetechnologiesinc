@@ -11,6 +11,7 @@
  */
 
 import crypto from "crypto";
+import { logger } from "./logger";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12; // 96 bits - NIST recommended for GCM
@@ -166,21 +167,21 @@ export function validateEncryption(): boolean {
     const decrypted = decrypt(encrypted);
 
     if (decrypted !== testValue) {
-      console.error("[ENCRYPTION] Self-test FAILED: decrypted value does not match");
+      logger.error("[ENCRYPTION] Self-test FAILED: decrypted value does not match");
       return false;
     }
 
     // Verify format
     const parts = encrypted.split(SEPARATOR);
     if (parts.length !== 4) {
-      console.error("[ENCRYPTION] Self-test FAILED: invalid ciphertext format");
+      logger.error("[ENCRYPTION] Self-test FAILED: invalid ciphertext format");
       return false;
     }
 
-    console.log("[ENCRYPTION] AES-256-GCM self-test PASSED");
+    logger.info("[ENCRYPTION] AES-256-GCM self-test PASSED");
     return true;
   } catch (error) {
-    console.error("[ENCRYPTION] Self-test FAILED:", error);
+    logger.error("[ENCRYPTION] Self-test FAILED:", error);
     return false;
   }
 }
@@ -222,7 +223,7 @@ export function decryptJSON<T = unknown>(encrypted: string): T | null {
     const json = decrypt(ciphertext);
     return JSON.parse(json);
   } catch (error) {
-    console.error("[ENCRYPTION] Failed to decrypt JSON:", error);
+    logger.error("[ENCRYPTION] Failed to decrypt JSON:", error);
     return null;
   }
 }

@@ -4,6 +4,7 @@
  * Auth: None
  * Refresh: Every 15 minutes
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { hzWildfires } from "../../../drizzle/schema";
 import { sql } from "drizzle-orm";
@@ -43,11 +44,11 @@ export async function fetchActiveWildfires(): Promise<void> {
       url.searchParams.set("resultRecordCount", "500");
 
       const response = await fetch(url.toString(), { signal: AbortSignal.timeout(30000) });
-      if (!response.ok) { console.warn(`[NIFC] ${label} API error: ${response.status}`); continue; }
+      if (!response.ok) { logger.warn(`[NIFC] ${label} API error: ${response.status}`); continue; }
 
       const data = await response.json();
       const features = data.features || [];
-      console.log(`[NIFC] ${label}: ${features.length} features`);
+      logger.info(`[NIFC] ${label}: ${features.length} features`);
 
       for (const feature of features) {
         const props = feature.properties;
@@ -103,13 +104,13 @@ export async function fetchActiveWildfires(): Promise<void> {
             });
           inserted++;
         } catch (e) {
-          console.error(`[NIFC] Insert error for ${incidentId}:`, e instanceof Error ? e.message : e);
+          logger.error(`[NIFC] Insert error for ${incidentId}:`, e instanceof Error ? e.message : e);
         }
       }
     } catch (e) {
-      console.error(`[NIFC] ${label} fetch error:`, e instanceof Error ? e.message : e);
+      logger.error(`[NIFC] ${label} fetch error:`, e instanceof Error ? e.message : e);
     }
   }
 
-  console.log(`[NIFC] Inserted/updated ${inserted} wildfires`);
+  logger.info(`[NIFC] Inserted/updated ${inserted} wildfires`);
 }

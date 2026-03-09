@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, lte, gte, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, inspections, users, drivers, documents } from "../../drizzle/schema";
 
@@ -62,7 +63,7 @@ export const vehicleRouter = router({
           return results.filter(r => r.vehicleUnit.toLowerCase().includes(s) || r.driverName.toLowerCase().includes(s) || r.location.toLowerCase().includes(s));
         }
         return results;
-      } catch (e) { console.error("[vehicle.getInspections]", e); return []; }
+      } catch (e) { logger.error("[vehicle.getInspections]", e); return []; }
     }),
 
   /**
@@ -90,7 +91,7 @@ export const vehicleRouter = router({
           pending: pending?.count || 0, dueThisWeek: dueWeek?.count || 0,
           defectsOpen: openDefects?.total || 0, totalThisMonth: thisMonth?.count || 0,
         };
-      } catch (e) { console.error("[vehicle.getInspectionStats]", e); return { total: 0, passed: 0, failed: 0, pending: 0, dueThisWeek: 0, defectsOpen: 0, totalThisMonth: 0 }; }
+      } catch (e) { logger.error("[vehicle.getInspectionStats]", e); return { total: 0, passed: 0, failed: 0, pending: 0, dueThisWeek: 0, defectsOpen: 0, totalThisMonth: 0 }; }
     }),
 
   /**
@@ -116,7 +117,7 @@ export const vehicleRouter = router({
           dueDate: v.nextInspectionDate?.toISOString().split("T")[0] || "",
           overdue: v.nextInspectionDate ? new Date(v.nextInspectionDate) < now : false,
         }));
-      } catch (e) { console.error("[vehicle.getInspectionsDue]", e); return []; }
+      } catch (e) { logger.error("[vehicle.getInspectionsDue]", e); return []; }
     }),
 
   // Get assigned vehicle for driver
@@ -135,7 +136,7 @@ export const vehicleRouter = router({
         make: v.make || "", model: v.model || "", vin: v.vin,
         licensePlate: v.licensePlate || "", odometer: 0, fuelLevel: 0, status: v.status,
       };
-    } catch (e) { console.error("[vehicle.getAssigned]", e); return empty; }
+    } catch (e) { logger.error("[vehicle.getAssigned]", e); return empty; }
   }),
 
   // Get maintenance history
@@ -156,6 +157,6 @@ export const vehicleRouter = router({
             date: d.createdAt.toISOString().split("T")[0], status: d.status || "completed",
           })),
         };
-      } catch (e) { console.error("[vehicle.getMaintenanceHistory]", e); return { records: [] }; }
+      } catch (e) { logger.error("[vehicle.getMaintenanceHistory]", e); return { records: [] }; }
     }),
 });

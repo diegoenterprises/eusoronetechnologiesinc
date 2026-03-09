@@ -13,6 +13,7 @@
 
 import { getDb } from "../db";
 import { linkedBankAccounts, bankTransactions, achTransfers } from "../../drizzle/schema";
+import { randomInt } from "crypto";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
 import crypto from "crypto";
 
@@ -54,8 +55,8 @@ export async function linkBankAccount(params: LinkBankAccountParams) {
   const accountNumberLast4 = params.accountNumber.slice(-4);
 
   // Generate micro-deposit amounts (between $0.01 and $0.99)
-  const microDeposit1 = (Math.floor(Math.random() * 99) + 1) / 100;
-  const microDeposit2 = (Math.floor(Math.random() * 99) + 1) / 100;
+  const microDeposit1 = (randomInt(1, 100)) / 100;
+  const microDeposit2 = (randomInt(1, 100)) / 100;
 
   // Insert bank account
   const [result] = await db
@@ -476,7 +477,7 @@ function isValidRoutingNumber(routingNumber: string): boolean {
  */
 function generateAchTraceNumber(): string {
   const timestamp = Date.now().toString();
-  const random = Math.floor(Math.random() * 10000)
+  const random = randomInt(0, 10000)
     .toString()
     .padStart(4, "0");
   return timestamp + random;

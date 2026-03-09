@@ -13,6 +13,7 @@
  */
 
 import { getDb } from "../../db";
+import { logger } from "../../_core/logger";
 import { sql } from "drizzle-orm";
 
 // ═══════════════════════════════════════════════════════════════
@@ -125,10 +126,10 @@ export async function startTimer(
          ${cfg.maxChargeHours ?? null}, ${cfg.currency ?? "USD"})
     `);
     const id = (result as any).insertId;
-    console.log(`[FinancialTimer] Started ${type} timer #${id} for load ${loadId} (free time: ${cfg.freeTimeMinutes}min)`);
+    logger.info(`[FinancialTimer] Started ${type} timer #${id} for load ${loadId} (free time: ${cfg.freeTimeMinutes}min)`);
     return { timerId: id };
   } catch (e) {
-    console.error(`[FinancialTimer] startTimer error:`, (e as Error).message);
+    logger.error(`[FinancialTimer] startTimer error:`, (e as Error).message);
     return null;
   }
 }
@@ -172,7 +173,7 @@ export async function stopTimer(timerId: number): Promise<TimerSnapshot | null> 
       WHERE id = ${timerId}
     `);
 
-    console.log(`[FinancialTimer] Stopped timer #${timerId}: ${totalMinutes}min total, ${billableMinutes}min billable, $${totalCharge}`);
+    logger.info(`[FinancialTimer] Stopped timer #${timerId}: ${totalMinutes}min total, ${billableMinutes}min billable, $${totalCharge}`);
 
     return {
       id: timerId,
@@ -187,7 +188,7 @@ export async function stopTimer(timerId: number): Promise<TimerSnapshot | null> 
       currency: timer.currency || "USD",
     };
   } catch (e) {
-    console.error(`[FinancialTimer] stopTimer error:`, (e as Error).message);
+    logger.error(`[FinancialTimer] stopTimer error:`, (e as Error).message);
     return null;
   }
 }
@@ -208,10 +209,10 @@ export async function waiveTimer(
           total_charge = 0
       WHERE id = ${timerId}
     `);
-    console.log(`[FinancialTimer] Waived timer #${timerId} by user ${waivedBy}: ${reason}`);
+    logger.info(`[FinancialTimer] Waived timer #${timerId} by user ${waivedBy}: ${reason}`);
     return true;
   } catch (e) {
-    console.error(`[FinancialTimer] waiveTimer error:`, (e as Error).message);
+    logger.error(`[FinancialTimer] waiveTimer error:`, (e as Error).message);
     return false;
   }
 }
@@ -267,7 +268,7 @@ export async function getActiveTimers(loadId: number): Promise<TimerSnapshot[]> 
       };
     });
   } catch (e) {
-    console.error(`[FinancialTimer] getActiveTimers error:`, (e as Error).message);
+    logger.error(`[FinancialTimer] getActiveTimers error:`, (e as Error).message);
     return [];
   }
 }
@@ -295,7 +296,7 @@ export async function getTimerHistory(loadId: number): Promise<TimerSnapshot[]> 
       currency: t.currency || "USD",
     }));
   } catch (e) {
-    console.error(`[FinancialTimer] getTimerHistory error:`, (e as Error).message);
+    logger.error(`[FinancialTimer] getTimerHistory error:`, (e as Error).message);
     return [];
   }
 }
@@ -316,11 +317,11 @@ export async function promoteFreeTimeTimers(): Promise<number> {
     `);
     const count = (result as any).affectedRows || 0;
     if (count > 0) {
-      console.log(`[FinancialTimer] Promoted ${count} timers from FREE_TIME to BILLING`);
+      logger.info(`[FinancialTimer] Promoted ${count} timers from FREE_TIME to BILLING`);
     }
     return count;
   } catch (e) {
-    console.error(`[FinancialTimer] promoteFreeTimeTimers error:`, (e as Error).message);
+    logger.error(`[FinancialTimer] promoteFreeTimeTimers error:`, (e as Error).message);
     return 0;
   }
 }

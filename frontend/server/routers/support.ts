@@ -7,7 +7,9 @@
 
 import { z } from "zod";
 import { eq, desc, sql, and, like, or } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import { isolatedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb, getPool } from "../db";
 import { users } from "../../drizzle/schema";
 
@@ -26,7 +28,7 @@ function resolveUserId(ctxUser: any): number {
 // Helper: generate ticket number
 function genTicketNumber(): string {
   const ts = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+  const rand = randomBytes(2).toString('hex').toUpperCase();
   return `TKT-${ts}${rand}`.slice(0, 16);
 }
 
@@ -38,7 +40,7 @@ async function rawQuery(sqlStr: string, params: any[] = []): Promise<any[]> {
     const [rows] = await pool.query(sqlStr, params);
     return Array.isArray(rows) ? rows : [];
   } catch (e: any) {
-    console.error("[Support] Query error:", e?.message?.slice(0, 200));
+    logger.error("[Support] Query error:", e?.message?.slice(0, 200));
     return [];
   }
 }
@@ -83,7 +85,7 @@ async function notifyTicketEvent(opts: {
       await sendSms({ to: opts.userPhone, message: `EusoTrip: ${titles[opts.event]} — ${opts.ticketNumber}: ${opts.subject}`.slice(0, 160) });
     }
   } catch (e) {
-    console.error("[Support] Notification error:", e);
+    logger.error("[Support] Notification error:", e);
   }
 }
 
@@ -284,7 +286,7 @@ export const supportRouter = router({
           );
           if (nlpResult?.success && nlpResult.confidence > 0.3 && nlpResult.category !== "general") {
             finalCategory = nlpResult.category;
-            console.log(`[Support] NLP auto-classified ticket as "${finalCategory}" (${(nlpResult.confidence * 100).toFixed(0)}%)`);
+            logger.info(`[Support] NLP auto-classified ticket as "${finalCategory}" (${(nlpResult.confidence * 100).toFixed(0)}%)`);
           }
         } catch { /* AI sidecar unavailable — keep user-provided category */ }
       }

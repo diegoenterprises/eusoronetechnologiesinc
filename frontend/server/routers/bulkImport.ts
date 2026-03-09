@@ -14,6 +14,7 @@
 
 import { z } from "zod";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { bulkImportJobs, bulkImportRows, loads } from "../../drizzle/schema";
@@ -116,7 +117,7 @@ async function aiMapCSV(
 ): Promise<{ mappedRows: Record<string, any>[]; columnMapping: Record<string, string | null>; confidence: number; notes: string } | null> {
   const apiKey = ENV.geminiApiKey;
   if (!apiKey) {
-    console.log("[BulkImport] ESANG AI key not configured, using raw CSV headers");
+    logger.info("[BulkImport] ESANG AI key not configured, using raw CSV headers");
     return null;
   }
 
@@ -142,7 +143,7 @@ async function aiMapCSV(
     });
 
     if (!response.ok) {
-      console.warn(`[BulkImport] ESANG AI error: ${response.status}`);
+      logger.warn(`[BulkImport] ESANG AI error: ${response.status}`);
       return null;
     }
 
@@ -151,7 +152,7 @@ async function aiMapCSV(
     text = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
 
     const parsed = JSON.parse(text);
-    console.log(`[BulkImport] ESANG AI mapped ${parsed.mappedRows?.length || 0} rows, confidence: ${parsed.confidence}%`);
+    logger.info(`[BulkImport] ESANG AI mapped ${parsed.mappedRows?.length || 0} rows, confidence: ${parsed.confidence}%`);
 
     return {
       mappedRows: parsed.mappedRows || rows,
@@ -160,7 +161,7 @@ async function aiMapCSV(
       notes: parsed.notes || "",
     };
   } catch (err) {
-    console.error("[BulkImport] ESANG AI CSV mapping error:", err);
+    logger.error("[BulkImport] ESANG AI CSV mapping error:", err);
     return null;
   }
 }
@@ -198,10 +199,10 @@ export const bulkImportRouter = router({
           aiMapping = aiResult.columnMapping;
           aiConfidence = aiResult.confidence;
           aiNotes = aiResult.notes;
-          console.log(`[BulkImport] AI mapping applied: ${aiConfidence}% confidence. Notes: ${aiNotes}`);
+          logger.info(`[BulkImport] AI mapping applied: ${aiConfidence}% confidence. Notes: ${aiNotes}`);
         }
       } catch (aiErr) {
-        console.warn("[BulkImport] AI mapping failed, using raw CSV:", aiErr);
+        logger.warn("[BulkImport] AI mapping failed, using raw CSV:", aiErr);
       }
 
       // Create job

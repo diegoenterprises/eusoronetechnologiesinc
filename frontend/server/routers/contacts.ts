@@ -6,7 +6,9 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, like } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, companies } from "../../drizzle/schema";
 
@@ -66,7 +68,7 @@ export const contactsRouter = router({
           return true;
         });
       } catch (error) {
-        console.error('[Contacts] list error:', error);
+        logger.error('[Contacts] list error:', error);
         return [];
       }
     }),
@@ -92,7 +94,7 @@ export const contactsRouter = router({
           drivers: drivers?.count || 0,
         };
       } catch (error) {
-        console.error('[Contacts] getSummary error:', error);
+        logger.error('[Contacts] getSummary error:', error);
         return { total: 0, shippers: 0, catalysts: 0, drivers: 0 };
       }
     }),
@@ -141,10 +143,10 @@ export const contactsRouter = router({
       if (db) {
         try {
           const roleMap: Record<string, string> = { shipper: 'SHIPPER', catalyst: 'CATALYST', broker: 'BROKER', driver: 'DRIVER', terminal: 'TERMINAL', vendor: 'CATALYST', other: 'SHIPPER' };
-          const openId = `contact_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+          const openId = `contact_${Date.now()}_${randomBytes(4).toString('hex')}`;
           const [result] = await db.insert(users).values({ openId, name: input.name, email: input.email || `contact_${Date.now()}@noreply.eusotrip.com`, phone: input.phone || null, role: (roleMap[input.type] || 'SHIPPER') as any, isActive: true, isVerified: false }).$returningId();
           return { id: `con_${result.id}`, ...input, createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
-        } catch (e) { console.error('[Contacts] create error:', e); }
+        } catch (e) { logger.error('[Contacts] create error:', e); }
       }
       return { id: `con_${Date.now()}`, ...input, createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
     }),
@@ -176,7 +178,7 @@ export const contactsRouter = router({
           if (Object.keys(updates).length > 0) {
             await db.update(users).set(updates).where(eq(users.id, uid));
           }
-        } catch (e) { console.error('[Contacts] update error:', e); }
+        } catch (e) { logger.error('[Contacts] update error:', e); }
       }
       return { success: true, id: input.id, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
@@ -190,7 +192,7 @@ export const contactsRouter = router({
       const db = await getDb();
       const uid = parseInt(input.id.replace('con_', ''), 10);
       if (db && uid) {
-        try { await db.update(users).set({ isActive: false, deletedAt: new Date() }).where(eq(users.id, uid)); } catch (e) { console.error('[Contacts] delete error:', e); }
+        try { await db.update(users).set({ isActive: false, deletedAt: new Date() }).where(eq(users.id, uid)); } catch (e) { logger.error('[Contacts] delete error:', e); }
       }
       return { success: true, id: input.id, deletedAt: new Date().toISOString() };
     }),

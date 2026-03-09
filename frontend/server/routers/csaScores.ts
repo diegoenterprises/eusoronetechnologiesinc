@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { companies, incidents, drivers, inspections, users } from "../../drizzle/schema";
 import { getSafetyScores, getCrashSummary, getInspectionSummary, getViolationSummary, getOOSStatus } from "../services/fmcsaBulkLookup";
@@ -112,7 +113,7 @@ export const csaScoresRouter = router({
           dataSource: sms ? 'fmcsa_bulk_9.8M' : 'platform_internal',
         };
       } catch (error) {
-        console.error('[CSAScores] getOverview error:', error);
+        logger.error('[CSAScores] getOverview error:', error);
         return { companyId: String(companyId), companyName: 'Unknown', dotNumber: '', mcNumber: '', lastUpdated: new Date().toISOString(), overallStatus: 'satisfactory', alertLevel: 'none', basics: [], saferData: {} };
       }
     }),
@@ -220,7 +221,7 @@ export const csaScoresRouter = router({
         const med = driverList.filter(d => d.riskLevel === 'medium').length;
         const high = driverList.filter(d => d.riskLevel === 'high').length;
         return { drivers: driverList, summary: { totalDrivers: driverList.length, lowRisk: low, mediumRisk: med, highRisk: high } };
-      } catch (e) { console.error('[CSAScores] getDriverScores error:', e); return { drivers: [], summary: { totalDrivers: 0, lowRisk: 0, mediumRisk: 0, highRisk: 0 } }; }
+      } catch (e) { logger.error('[CSAScores] getDriverScores error:', e); return { drivers: [], summary: { totalDrivers: 0, lowRisk: 0, mediumRisk: 0, highRisk: 0 } }; }
     }),
 
   /**
@@ -263,7 +264,7 @@ export const csaScoresRouter = router({
             oosRate: total > 0 ? Math.round(((statsRow?.oos || 0) / total) * 100) : 0,
           },
         };
-      } catch (e) { console.error('[CSAScores] getInspections error:', e); return { inspections: [], total: 0, summary: { level1: 0, level2: 0, level3: 0, passRate: 0, oosRate: 0 } }; }
+      } catch (e) { logger.error('[CSAScores] getInspections error:', e); return { inspections: [], total: 0, summary: { level1: 0, level2: 0, level3: 0, passRate: 0, oosRate: 0 } }; }
     }),
 
   /**

@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { companies, loads, vehicles, drivers, incidents, insurancePolicies } from "../../drizzle/schema";
 import {
@@ -81,7 +82,7 @@ export const carrierCapacityRouter = router({
           weeks: calendar,
         };
       } catch (e) {
-        console.error("[CarrierCapacity] getCapacityCalendar error:", e);
+        logger.error("[CarrierCapacity] getCapacityCalendar error:", e);
         return null;
       }
     }),
@@ -195,7 +196,7 @@ export const carrierCapacityRouter = router({
           .sort((a, b) => b.matchScore - a.matchScore)
           .slice(0, input.limit);
       } catch (e) {
-        console.error("[CarrierCapacity] searchAvailableCarriers error:", e);
+        logger.error("[CarrierCapacity] searchAvailableCarriers error:", e);
         return [];
       }
     }),
@@ -240,7 +241,7 @@ export const carrierCapacityRouter = router({
 
         return { reference: refProfile, similar };
       } catch (e) {
-        console.error("[CarrierCapacity] findSimilarCarriers error:", e);
+        logger.error("[CarrierCapacity] findSimilarCarriers error:", e);
         return { reference: null, similar: [] };
       }
     }),

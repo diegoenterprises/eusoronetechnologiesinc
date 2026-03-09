@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { payments, loads, users, companies, settlementDocuments } from "../../drizzle/schema";
 
@@ -70,7 +71,7 @@ export const accountingRouter = router({
           },
         };
       } catch (error) {
-        console.error('[Accounting] getReceivables error:', error);
+        logger.error('[Accounting] getReceivables error:', error);
         return { invoices: [], total: 0, summary: { totalOutstanding: 0, totalOverdue: 0, avgDaysOutstanding: 0 } };
       }
     }),
@@ -225,7 +226,7 @@ export const accountingRouter = router({
             metadata: { type: input.type, description: input.description, date: input.date, vehicleId: input.vehicleId, driverId: input.driverId },
           } as any).$returningId();
           return { id: String(result.id), recordedBy: ctx.user?.id, recordedAt: new Date().toISOString() };
-        } catch (e) { console.error('[Accounting] recordExpense error:', e); }
+        } catch (e) { logger.error('[Accounting] recordExpense error:', e); }
       }
       return { id: `exp_${Date.now()}`, recordedBy: ctx.user?.id, recordedAt: new Date().toISOString() };
     }),

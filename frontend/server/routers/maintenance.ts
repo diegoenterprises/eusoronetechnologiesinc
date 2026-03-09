@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, zeunMaintenanceSchedules } from "../../drizzle/schema";
 
@@ -54,7 +55,7 @@ export const maintenanceRouter = router({
           };
         });
       } catch (error) {
-        console.error('[Maintenance] getRecords error:', error);
+        logger.error('[Maintenance] getRecords error:', error);
         return [];
       }
     }),
@@ -99,7 +100,7 @@ export const maintenanceRouter = router({
           total: vehicleCount,
         };
       } catch (error) {
-        console.error('[Maintenance] getSummary error:', error);
+        logger.error('[Maintenance] getSummary error:', error);
         return { scheduled: 0, inProgress: 0, completed: 0, overdue: 0, totalCostThisMonth: 0, averageTurnaround: 0, totalVehicles: 0, upToDate: 0, dueSoon: 0, costMTD: 0, healthScore: 100, inspectedThisWeek: 0, avgDaysSinceService: 0, complianceRate: 100, total: 0 };
       }
     }),

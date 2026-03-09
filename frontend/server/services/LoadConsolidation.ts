@@ -88,11 +88,11 @@ function generateShipments(corridor: typeof CORRIDORS[0], count: number): Shipme
   const now = Date.now();
   return Array.from({ length: count }, (_, i) => {
     const shipper = SHIPPERS[i % SHIPPERS.length];
-    const weight = 5000 + Math.round(Math.random() * 20000);
+    const weight = 5000 + ((i * 3571 + 1234) % 20000);
     const pallets = Math.ceil(weight / 2000);
-    const ratePerMile = 2.80 + Math.random() * 1.20;
+    const ratePerMile = 2.80 + (i % 6) * 0.20;
     return {
-      loadId: `LD-${60000 + Math.floor(Math.random() * 9999)}`,
+      loadId: `LD-${60000 + i}`,
       shipperId: shipper.id,
       shipperName: shipper.name,
       origin: corridor.origin,
@@ -176,7 +176,7 @@ function buildConsolidationGroup(corridor: typeof CORRIDORS[0], shipments: Shipm
 
 export function getConsolidationDashboard(): ConsolidationDashboard {
   const groups: ConsolidationGroup[] = CORRIDORS.map((corridor, i) => {
-    const count = 2 + Math.floor(Math.random() * 3);
+    const count = 2 + (i % 3);
     const shipments = generateShipments(corridor, count);
     return buildConsolidationGroup(corridor, shipments, i);
   });

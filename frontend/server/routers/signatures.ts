@@ -9,6 +9,7 @@
  */
 
 import { z } from "zod";
+import { randomBytes } from "crypto";
 import { router, isolatedApprovedProcedure as protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { desc, sql } from "drizzle-orm";
@@ -33,7 +34,7 @@ export const signaturesRouter = router({
       legalText: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const signatureId = `SIG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const signatureId = `SIG-${Date.now()}-${randomBytes(4).toString('hex').toUpperCase()}`;
       
       return {
         signatureId,

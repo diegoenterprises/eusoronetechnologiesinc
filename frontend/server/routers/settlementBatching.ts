@@ -16,6 +16,7 @@
  */
 
 import { z } from "zod";
+import { randomBytes } from "crypto";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
@@ -26,7 +27,7 @@ import { emitDispatchEvent } from "../_core/websocket";
 function generateBatchNumber(type: string): string {
   const prefix = type === "shipper_payable" ? "SP" : type === "carrier_receivable" ? "CR" : "DP";
   const ts = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const rand = randomBytes(3).toString('hex').toUpperCase();
   return `${prefix}-${ts}-${rand}`;
 }
 

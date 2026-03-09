@@ -8,6 +8,7 @@
  * The NRC provides incident reports via their query tool.
  * We fetch recent reports and store them for zone intelligence.
  */
+import { logger } from "../../_core/logger";
 import { getDb } from "../../db";
 import { sql } from "drizzle-orm";
 
@@ -36,7 +37,7 @@ export async function fetchSpillReports(): Promise<void> {
     });
 
     if (!response.ok) {
-      console.warn(`[NRC] API returned ${response.status}, skipping`);
+      logger.warn(`[NRC] API returned ${response.status}, skipping`);
       return;
     }
 
@@ -68,8 +69,8 @@ export async function fetchSpillReports(): Promise<void> {
       }
     }
 
-    console.log(`[NRC] Processed ${processed} spill reports`);
+    logger.info(`[NRC] Processed ${processed} spill reports`);
   } catch (e) {
-    console.error("[NRC] Failed to fetch spill reports:", e);
+    logger.error("[NRC] Failed to fetch spill reports:", e);
   }
 }

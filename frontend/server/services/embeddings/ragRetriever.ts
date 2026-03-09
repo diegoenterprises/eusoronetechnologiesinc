@@ -9,6 +9,7 @@
  *   User question → embed query → cosine search → top-K chunks → inject into Gemini prompt
  */
 
+import { logger } from "../../_core/logger";
 import { embeddingService, EmbeddingService } from "./embeddingService";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -110,7 +111,7 @@ export async function retrieveContext(
       retrievalTimeMs: Date.now() - start,
     };
   } catch (err) {
-    console.error("[RAGRetriever] Error:", err);
+    logger.error("[RAGRetriever] Error:", err);
     return { chunks: [], totalCandidates: 0, retrievalTimeMs: Date.now() - start };
   }
 }
@@ -370,11 +371,11 @@ export async function seedKnowledgeBase(): Promise<{ indexed: number; errors: nu
         }
       }
     } catch (err) {
-      console.error(`[RAGRetriever] Failed to seed "${chunk.entityId}":`, err);
+      logger.error(`[RAGRetriever] Failed to seed "${chunk.entityId}":`, err);
       errors++;
     }
   }
 
-  console.log(`[RAGRetriever] Knowledge base seeded: ${indexed} indexed, ${errors} errors`);
+  logger.info(`[RAGRetriever] Knowledge base seeded: ${indexed} indexed, ${errors} errors`);
   return { indexed, errors };
 }

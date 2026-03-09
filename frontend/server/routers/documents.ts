@@ -8,6 +8,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { auditedProtectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { documents, users } from "../../drizzle/schema";
 import { digitizeDocument } from "../services/documentOCR";
@@ -50,7 +51,7 @@ export const documentsRouter = router({
           return true;
         });
       } catch (error) {
-        console.error('[Documents] getAll error:', error);
+        logger.error('[Documents] getAll error:', error);
         return [];
       }
     }),
@@ -78,7 +79,7 @@ export const documentsRouter = router({
 
         return { total: totalCount, active: totalCount - expiredCount, valid: totalCount - expiredCount, expiring: expiringCount, expired: expiredCount };
       } catch (error) {
-        console.error('[Documents] getStats error:', error);
+        logger.error('[Documents] getStats error:', error);
         return { total: 0, active: 0, valid: 0, expiring: 0, expired: 0 };
       }
     }),
@@ -102,7 +103,7 @@ export const documentsRouter = router({
 
         return result.filter(c => c.count > 0);
       } catch (error) {
-        console.error('[Documents] getCategories error:', error);
+        logger.error('[Documents] getCategories error:', error);
         return [];
       }
     }),
@@ -121,7 +122,7 @@ export const documentsRouter = router({
             await db.delete(documents).where(and(eq(documents.id, numericId), eq(documents.userId, ctx.user?.id || 0)));
           }
         } catch (err) {
-          console.error("[Documents] delete error:", err);
+          logger.error("[Documents] delete error:", err);
         }
       }
       return { success: true, deletedId: input.id };
@@ -186,7 +187,7 @@ export const documentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       const userId = ctx.user?.id || 0;
-      console.log(`[Documents] upload: name=${input.name} fileData.length=${input.fileData.length} startsWithData=${input.fileData.startsWith('data:')}`);
+      logger.info(`[Documents] upload: name=${input.name} fileData.length=${input.fileData.length} startsWithData=${input.fileData.startsWith('data:')}`);
 
       if (db) {
         try {
@@ -198,7 +199,7 @@ export const documentsRouter = router({
             expiryDate: input.expirationDate ? new Date(input.expirationDate) : null,
             status: "active",
           });
-          console.log(`[Documents] upload SUCCESS: insertId=${(result as any).insertId} stored ${input.fileData.length} chars`);
+          logger.info(`[Documents] upload SUCCESS: insertId=${(result as any).insertId} stored ${input.fileData.length} chars`);
           const uid = typeof userId === "number" ? userId : parseInt(String(userId), 10) || 0;
           if (uid) { fireGamificationEvent({ userId: uid, type: "document_uploaded", value: 1 }); fireGamificationEvent({ userId: uid, type: "platform_action", value: 1 }); }
           // Standard load:document_uploaded event
@@ -222,7 +223,7 @@ export const documentsRouter = router({
             status: "active",
           };
         } catch (err: any) {
-          console.error("[Documents] upload insert error:", err?.message?.slice(0, 200));
+          logger.error("[Documents] upload insert error:", err?.message?.slice(0, 200));
         }
       }
 
@@ -247,7 +248,7 @@ export const documentsRouter = router({
       autoSave: z.boolean().default(true),
     }))
     .mutation(async ({ ctx, input }) => {
-      console.log(`[Documents] digitize: filename=${input.filename} fileData.length=${input.fileData.length} startsWithData=${input.fileData.startsWith('data:')}`);
+      logger.info(`[Documents] digitize: filename=${input.filename} fileData.length=${input.fileData.length} startsWithData=${input.fileData.startsWith('data:')}`);
       const result = await digitizeDocument(input.fileData, input.filename);
 
       // Auto-save to DB if requested
@@ -268,14 +269,14 @@ export const documentsRouter = router({
               status: "active",
             });
             savedId = `d${(insertResult as any).insertId}`;
-            console.log(`[Documents] digitize save SUCCESS: id=${savedId} stored ${input.fileData.length} chars`);
+            logger.info(`[Documents] digitize save SUCCESS: id=${savedId} stored ${input.fileData.length} chars`);
             // Auto-index digitized doc for AI semantic search (fire-and-forget)
             try {
               const { indexDocument } = await import("../services/embeddings/aiTurbocharge");
               indexDocument({ id: (insertResult as any).insertId, title: result.classification.documentTitle || input.filename, type: result.classification.category, content: `${result.classification.documentTitle || ""} ${result.classification.category} ${result.ocr.text?.slice(0, 500) || ""}`.trim() });
             } catch {}
           } catch (err: any) {
-            console.error("[Documents] digitize save error:", err?.message?.slice(0, 200));
+            logger.error("[Documents] digitize save error:", err?.message?.slice(0, 200));
           }
         }
       }
@@ -306,10 +307,10 @@ export const documentsRouter = router({
         const [doc] = await db.select().from(documents).where(and(eq(documents.id, numericId), eq(documents.userId, ctx.user?.id || 0))).limit(1);
         if (!doc) return null;
         const fileUrl = doc.fileUrl || '';
-        console.log(`[Documents] getFileData id=${numericId} name=${doc.name} fileUrl.length=${fileUrl.length} startsWithData=${fileUrl.startsWith('data:')}`);
+        logger.info(`[Documents] getFileData id=${numericId} name=${doc.name} fileUrl.length=${fileUrl.length} startsWithData=${fileUrl.startsWith('data:')}`);
         return { id: input.id, name: doc.name, fileUrl, type: doc.type };
       } catch (err) {
-        console.error('[Documents] getFileData error:', err);
+        logger.error('[Documents] getFileData error:', err);
         return null;
       }
     }),

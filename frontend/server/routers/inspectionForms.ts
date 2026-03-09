@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, drivers, inspections } from "../../drizzle/schema";
 
@@ -51,7 +52,7 @@ export const inspectionFormsRouter = router({
           })),
           total: countRow?.count || 0,
         };
-      } catch (e) { console.error('[InspectionForms] list error:', e); return { inspections: [], total: 0 }; }
+      } catch (e) { logger.error('[InspectionForms] list error:', e); return { inspections: [], total: 0 }; }
     }),
 
   /**
@@ -72,7 +73,7 @@ export const inspectionFormsRouter = router({
           certificationStatement: 'I certify that this vehicle has been inspected in accordance with 49 CFR 396.11-396.13',
           result: row.defectsFound && row.defectsFound > 0 ? 'defects_noted' : row.status === 'passed' ? 'satisfactory' : 'pending',
         };
-      } catch (e) { console.error('[InspectionForms] getById error:', e); return null; }
+      } catch (e) { logger.error('[InspectionForms] getById error:', e); return null; }
     }),
 
   /**
@@ -163,7 +164,7 @@ export const inspectionFormsRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       // Log correction via audit trail
-      console.log(`[InspectionForms] Defect ${input.defectId} corrected by user ${ctx.user?.id}: ${input.correctionNotes}`);
+      logger.info(`[InspectionForms] Defect ${input.defectId} corrected by user ${ctx.user?.id}: ${input.correctionNotes}`);
       return {
         success: true, defectId: input.defectId,
         correctedBy: ctx.user?.id, correctedAt: new Date().toISOString(),

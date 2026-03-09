@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { parseNaturalLanguageLoad } from "../services/NaturalLanguageLoadCreator";
 
 export const nlLoadCreatorRouter = router({
@@ -58,7 +59,7 @@ export const nlLoadCreatorRouter = router({
 
         return result;
       } catch (e) {
-        console.error("[NLLoadCreator] parseLoadText error:", e);
+        logger.error("[NLLoadCreator] parseLoadText error:", e);
         return {
           success: false,
           parsed: {
