@@ -25,6 +25,10 @@ import {
   drivers, vehicles, settlements, notifications,
   conversations, messages, documents, inspections,
   agreements,
+  experiments, variantAssignments, metricEvents, experimentResults,
+  tenantBranding, blockchainAuditTrail,
+  adrCompliance, adrDriverCertifications, imdgCompliance,
+  autonomousVehicles, avTelemetry, tenants, tenantDataIsolation,
 } from "../../drizzle/schema";
 import { eq, and, desc, like, sql, count, gte, lte, or, inArray } from "drizzle-orm";
 
@@ -1434,6 +1438,281 @@ Domains: eusotrip.com (primary), eusorone.com (alias). Stack: React + TypeScript
   );
 
   // ══════════════════════════════════════════════════════════════════════════
+  // PHASE 5 TOOLS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // TOOL: list_experiments — Innovation Lab A/B tests
+  mcp.tool(
+    "list_experiments",
+    "List A/B experiments from the Innovation Lab. Filter by status. Shows hypothesis, variants, sample size, and statistical results.",
+    {
+      status: z.string().optional().describe("Filter by status: draft, running, paused, completed, archived"),
+      limit: z.number().optional().default(20),
+    },
+    async ({ status, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const conditions: any[] = [];
+        if (status) conditions.push(eq(experiments.status, status));
+        const rows = await db.select().from(experiments)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(experiments.createdAt))
+          .limit(limit || 20);
+
+        // Get result summaries
+        const enriched = [];
+        for (const exp of rows) {
+          const results = await db.select().from(experimentResults).where(eq(experimentResults.experimentId, exp.id)).limit(5);
+          const [assignCount]: any = await (db as any).execute(sql`SELECT COUNT(*) as cnt FROM variant_assignments WHERE experimentId = ${exp.id}`);
+          const [eventCount]: any = await (db as any).execute(sql`SELECT COUNT(*) as cnt FROM metric_events WHERE experimentId = ${exp.id}`);
+          enriched.push({
+            ...exp,
+            totalAssignments: Array.isArray(assignCount) ? Number(assignCount[0]?.cnt || 0) : 0,
+            totalEvents: Array.isArray(eventCount) ? Number(eventCount[0]?.cnt || 0) : 0,
+            results,
+          });
+        }
+
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: enriched.length, experiments: enriched }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Experiments error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: blockchain_audit — immutable audit trail
+  mcp.tool(
+    "blockchain_audit",
+    "Query the blockchain audit trail. Search by load ID, event type, or actor. Returns SHA-256 hash-chained audit events with verification status.",
+    {
+      loadId: z.number().optional().describe("Filter by load ID"),
+      eventType: z.string().optional().describe("Filter by event type (e.g. load_created, status_changed, payment_processed)"),
+      actorId: z.number().optional().describe("Filter by actor user ID"),
+      limit: z.number().optional().default(30),
+    },
+    async ({ loadId, eventType, actorId, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const conditions: any[] = [];
+        if (loadId) conditions.push(eq(blockchainAuditTrail.loadId, loadId));
+        if (eventType) conditions.push(eq(blockchainAuditTrail.eventType, eventType));
+        if (actorId) conditions.push(eq(blockchainAuditTrail.actorId, actorId));
+
+        const rows = await db.select().from(blockchainAuditTrail)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(blockchainAuditTrail.timestamp))
+          .limit(limit || 30);
+
+        const [total]: any = await (db as any).execute(sql`SELECT COUNT(*) as cnt FROM blockchain_audit_trail`);
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              totalEvents: Array.isArray(total) ? Number(total[0]?.cnt || 0) : 0,
+              returned: rows.length,
+              events: rows,
+            }, null, 2),
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Blockchain audit error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: adr_compliance — EU ADR hazmat compliance records
+  mcp.tool(
+    "adr_compliance",
+    "Query EU ADR (Agreement concerning Dangerous goods by Road) compliance records. Search by load, UN number, or ADR class. Includes tunnel restriction codes and driver certifications.",
+    {
+      loadId: z.number().optional().describe("Filter by load ID"),
+      unNumber: z.string().optional().describe("Filter by UN number (e.g. UN1267)"),
+      adrClass: z.string().optional().describe("Filter by ADR class (e.g. 3, 2.1, 6.1)"),
+      limit: z.number().optional().default(20),
+    },
+    async ({ loadId, unNumber, adrClass, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const conditions: any[] = [];
+        if (loadId) conditions.push(eq(adrCompliance.loadId, loadId));
+        if (unNumber) conditions.push(eq(adrCompliance.unNumber, unNumber));
+        if (adrClass) conditions.push(eq(adrCompliance.adrClass, adrClass));
+
+        const records = await db.select().from(adrCompliance)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(adrCompliance.createdAt))
+          .limit(limit || 20);
+
+        // Get driver certifications
+        const certs = await db.select().from(adrDriverCertifications)
+          .orderBy(desc(adrDriverCertifications.issuedAt))
+          .limit(20);
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({ count: records.length, records, driverCertifications: certs }, null, 2),
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `ADR compliance error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: imdg_compliance — IMDG Code maritime hazmat compliance
+  mcp.tool(
+    "imdg_compliance",
+    "Query IMDG (International Maritime Dangerous Goods) Code compliance records for multi-modal hazmat shipments. Search by load, UN number, or IMDG class.",
+    {
+      loadId: z.number().optional().describe("Filter by load ID"),
+      unNumber: z.string().optional().describe("Filter by UN number"),
+      imdgClass: z.string().optional().describe("Filter by IMDG class"),
+      limit: z.number().optional().default(20),
+    },
+    async ({ loadId, unNumber, imdgClass, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const conditions: any[] = [];
+        if (loadId) conditions.push(eq(imdgCompliance.loadId, loadId));
+        if (unNumber) conditions.push(eq(imdgCompliance.unNumber, unNumber));
+        if (imdgClass) conditions.push(eq(imdgCompliance.imdgClass, imdgClass));
+
+        const records = await db.select().from(imdgCompliance)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(imdgCompliance.createdAt))
+          .limit(limit || 20);
+
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: records.length, records }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `IMDG compliance error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: autonomous_fleet — AV registration, telemetry, and status
+  mcp.tool(
+    "autonomous_fleet",
+    "Query autonomous vehicle fleet. List registered AVs, get telemetry data, check operational status. Supports emergency takeover monitoring.",
+    {
+      avId: z.number().optional().describe("Get details + telemetry for a specific AV ID"),
+      status: z.string().optional().describe("Filter by status: active, idle, emergency_control, offline"),
+      limit: z.number().optional().default(20),
+    },
+    async ({ avId, status, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        if (avId) {
+          const [av] = await db.select().from(autonomousVehicles).where(eq(autonomousVehicles.id, avId)).limit(1);
+          if (!av) return { content: [{ type: "text" as const, text: `AV #${avId} not found` }] };
+          const telemetry = await db.select().from(avTelemetry)
+            .where(eq(avTelemetry.avId, avId))
+            .orderBy(desc(avTelemetry.timestamp))
+            .limit(20);
+          return { content: [{ type: "text" as const, text: JSON.stringify({ vehicle: av, recentTelemetry: telemetry }, null, 2) }] };
+        }
+
+        const conditions: any[] = [];
+        if (status) conditions.push(eq(autonomousVehicles.operationalStatus, status));
+
+        const vehicles = await db.select().from(autonomousVehicles)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(autonomousVehicles.registeredAt))
+          .limit(limit || 20);
+
+        // Fleet summary
+        const [stats]: any = await (db as any).execute(sql`
+          SELECT COUNT(*) as total,
+            SUM(CASE WHEN operationalStatus = 'active' THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN operationalStatus = 'idle' THEN 1 ELSE 0 END) as idle,
+            SUM(CASE WHEN operationalStatus = 'emergency_control' THEN 1 ELSE 0 END) as emergency,
+            SUM(CASE WHEN operationalStatus = 'offline' THEN 1 ELSE 0 END) as offline
+          FROM autonomous_vehicles
+        `);
+        const fleetStats = Array.isArray(stats) ? stats[0] : {};
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({ fleetStats, count: vehicles.length, vehicles }, null, 2),
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `AV fleet error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: list_tenants — PaaS white-label tenant management
+  mcp.tool(
+    "list_tenants",
+    "List PaaS white-label tenants. Shows tenant status, API key preview, custom domain, user/load limits, and data isolation config.",
+    {
+      status: z.string().optional().describe("Filter by status: active, suspended, deactivated"),
+      limit: z.number().optional().default(20),
+    },
+    async ({ status, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const conditions: any[] = [];
+        if (status) conditions.push(eq(tenants.status, status));
+
+        const rows = await db.select().from(tenants)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(tenants.createdAt))
+          .limit(limit || 20);
+
+        // Enrich with branding and isolation
+        const enriched = [];
+        for (const t of rows) {
+          const [branding] = await db.select().from(tenantBranding).where(eq(tenantBranding.tenantId, t.id)).limit(1);
+          const [isolation] = await db.select().from(tenantDataIsolation).where(eq(tenantDataIsolation.tenantId, t.id)).limit(1);
+          enriched.push({
+            ...t,
+            tenantKey: t.tenantKey ? `${t.tenantKey.substring(0, 8)}...` : null,
+            branding: branding || null,
+            dataIsolation: isolation || null,
+          });
+        }
+
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: enriched.length, tenants: enriched }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Tenant list error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: tenant_branding — white-label branding configs
+  mcp.tool(
+    "tenant_branding",
+    "Get white-label branding configurations for tenants. Shows brand name, colors, fonts, logos, and custom domains.",
+    {
+      tenantId: z.number().optional().describe("Get branding for a specific tenant ID"),
+    },
+    async ({ tenantId }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        if (tenantId) {
+          const [brand] = await db.select().from(tenantBranding).where(eq(tenantBranding.tenantId, tenantId)).limit(1);
+          if (!brand) return { content: [{ type: "text" as const, text: `No branding for tenant ${tenantId}` }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ branding: brand }, null, 2) }] };
+        }
+        const brands = await db.select().from(tenantBranding).orderBy(desc(tenantBranding.updatedAt)).limit(50);
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: brands.length, brandings: brands }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Branding error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
   // RESOURCE: platform overview
   // ══════════════════════════════════════════════════════════════════════════
   mcp.resource(
@@ -1481,6 +1760,17 @@ KEY FEATURES:
 - CDL Verification: driver license and endorsement validation
 - Factoring Credit Score: platform-internal 300-850 scoring using FMCSA safety, payment history, company age (AAA-D ratings)
 - EusoSMS: Azure Communication Services SMS gateway with retry queue, opt-out management, delivery tracking (30+ event types)
+
+PHASE 5 — SCALE + POLISH + INNOVATION (GAP-436 → GAP-451):
+- Innovation Lab: A/B testing framework with stratified cohort assignment, t-test/chi-square statistical significance
+- Blockchain Audit Trail: SHA-256 hash-chained immutable event log with chain verification
+- EU ADR Compliance: DOT→ADR class mapping, Annex III tunnel restriction codes, driver certification validation
+- IMDG Code: International Maritime Dangerous Goods compliance for multi-modal hazmat shipments
+- Autonomous Vehicle Integration: AV registration, telemetry ingestion, emergency takeover/release
+- PaaS White-Label Infrastructure: multi-tenant isolation, API key management, custom domains
+- White-Label Branding: per-tenant logos, colors, fonts, custom domains
+- i18n: react-i18next with EN/ES/FR locales, browser language detection
+- Phase 5 Command Center: 8-tab unified admin hub at /super-admin/phase5
 
 AUDIT STATUS: 127/127 PASS (100%) — all P1/P2 security and functionality gaps resolved`,
       }],
