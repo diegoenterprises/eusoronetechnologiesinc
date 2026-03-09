@@ -72,14 +72,15 @@ export const tenantManagerRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const sets: string[] = [];
-      if (input.customDomain !== undefined) sets.push(`customDomain = '${input.customDomain}'`);
-      if (input.maxUsers !== undefined) sets.push(`maxUsers = ${input.maxUsers}`);
-      if (input.maxLoads !== undefined) sets.push(`maxLoads = ${input.maxLoads}`);
-      if (input.status !== undefined) sets.push(`status = '${input.status}'`);
-      if (input.features !== undefined) sets.push(`features = '${JSON.stringify(input.features)}'`);
-      if (sets.length === 0) return { success: true };
-      await db.execute(sql.raw(`UPDATE tenants SET ${sets.join(", ")} WHERE id = ${input.id}`));
+      const setClauses: ReturnType<typeof sql>[] = [];
+      if (input.customDomain !== undefined) setClauses.push(sql`customDomain = ${input.customDomain}`);
+      if (input.maxUsers !== undefined) setClauses.push(sql`maxUsers = ${input.maxUsers}`);
+      if (input.maxLoads !== undefined) setClauses.push(sql`maxLoads = ${input.maxLoads}`);
+      if (input.status !== undefined) setClauses.push(sql`status = ${input.status}`);
+      if (input.features !== undefined) setClauses.push(sql`features = ${JSON.stringify(input.features)}`);
+      if (setClauses.length === 0) return { success: true };
+      const setFragment = sql.join(setClauses, sql`, `);
+      await db.execute(sql`UPDATE tenants SET ${setFragment} WHERE id = ${input.id}`);
       return { success: true };
     }),
 

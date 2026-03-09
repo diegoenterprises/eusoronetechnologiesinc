@@ -1537,24 +1537,25 @@ export const hotZonesRouter = router({
 
       const opts = input as { minLat?: number; maxLat?: number; minLng?: number; maxLng?: number; state?: string; includeLive?: boolean; segmentLimit?: number } || {};
       try {
-        // Build segment filter
-        const filters: string[] = ["1=1"];
+        // Build segment filter using parameterized conditions
+        const conditions: ReturnType<typeof sql>[] = [];
         if (opts.minLat != null && opts.maxLat != null) {
-          filters.push(`startLat BETWEEN ${opts.minLat} AND ${opts.maxLat}`);
+          conditions.push(sql`startLat BETWEEN ${opts.minLat} AND ${opts.maxLat}`);
         }
         if (opts.minLng != null && opts.maxLng != null) {
-          filters.push(`startLng BETWEEN ${opts.minLng} AND ${opts.maxLng}`);
+          conditions.push(sql`startLng BETWEEN ${opts.minLng} AND ${opts.maxLng}`);
         }
         if (opts.state) {
-          filters.push(`state = '${opts.state.replace(/'/g, "")}'`);
+          conditions.push(sql`state = ${opts.state}`);
         }
         const segLimit = opts.segmentLimit || 2000;
         const pingCutoff = new Date(Date.now() - 5 * 60 * 1000);
+        const whereClause = conditions.length > 0 ? sql.join(conditions, sql` AND `) : sql`1=1`;
 
         // ── Fire ALL 3 queries in parallel ──
         const t0 = Date.now();
         const [segR, pingR, statsR] = await Promise.allSettled([
-          db.execute(sql.raw(`SELECT id, startLat, startLng, endLat, endLng, geohash, roadName, roadType, traversalCount, uniqueDrivers, avgSpeedMph, congestionLevel, surfaceQuality, hasHazmatTraffic, lastTraversedAt, lengthMiles, state, encodedPolyline, elevationStartFt, elevationEndFt, gradientPct, maxGradientPct, iriScore, curvatureDeg, minClearanceFt, truckRiskScore, laneWidthFt, laneCount, lidarSource, lidarEnrichedAt FROM road_segments WHERE ${filters.join(" AND ")} ORDER BY lastTraversedAt DESC LIMIT ${segLimit}`)),
+          db.execute(sql`SELECT id, startLat, startLng, endLat, endLng, geohash, roadName, roadType, traversalCount, uniqueDrivers, avgSpeedMph, congestionLevel, surfaceQuality, hasHazmatTraffic, lastTraversedAt, lengthMiles, state, encodedPolyline, elevationStartFt, elevationEndFt, gradientPct, maxGradientPct, iriScore, curvatureDeg, minClearanceFt, truckRiskScore, laneWidthFt, laneCount, lidarSource, lidarEnrichedAt FROM road_segments WHERE ${whereClause} ORDER BY lastTraversedAt DESC LIMIT ${segLimit}`),
           opts.includeLive !== false ? db.execute(sql`SELECT driverId, lat, lng, speed, heading, roadName, pingAt FROM road_live_pings WHERE pingAt > ${pingCutoff} ORDER BY pingAt DESC LIMIT 500`) : Promise.resolve(null),
           db.execute(sql`SELECT COUNT(*) as cnt, SUM(CAST(lengthMiles AS DECIMAL(10,3))) as miles, SUM(CASE WHEN lidarEnrichedAt IS NOT NULL THEN 1 ELSE 0 END) as lidarCnt, AVG(CASE WHEN truckRiskScore IS NOT NULL THEN truckRiskScore END) as avgRisk FROM road_segments`),
         ]);

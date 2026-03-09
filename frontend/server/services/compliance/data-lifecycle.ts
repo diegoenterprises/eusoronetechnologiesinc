@@ -263,9 +263,16 @@ export async function executeRetentionPolicies(): Promise<Record<string, number>
 
   const results: Record<string, number> = {};
 
+  // Whitelist of allowed table names for retention purge
+  const ALLOWED_TABLES = new Set(RETENTION_POLICIES.map(p => p.entityType));
+
   for (const policy of RETENTION_POLICIES) {
     if (policy.action === "delete") {
       try {
+        if (!ALLOWED_TABLES.has(policy.entityType)) {
+          results[policy.entityType] = -1;
+          continue;
+        }
         const cutoff = new Date(Date.now() - policy.retentionDays * 24 * 60 * 60 * 1000);
         const result = await db.execute(
           sql`DELETE FROM ${sql.raw(policy.entityType)} WHERE created_at < ${cutoff.toISOString()} LIMIT 10000`

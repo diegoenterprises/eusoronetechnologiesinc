@@ -19,7 +19,7 @@ async function resolveUserId(ctxUser: any): Promise<number> {
   try {
     const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
     return row?.id || 0;
-  } catch { return 0; }
+  } catch (e) { console.error("[messaging] Failed to resolve user ID from email:", e); return 0; }
 }
 
 export const messagingRouter = router({
@@ -409,7 +409,9 @@ export const messagingRouter = router({
             });
           }
         }
-      } catch {}
+      } catch (e) {
+        console.error("[messaging] Failed to broadcast lobby notification:", e);
+      }
 
       return { messageId: result.id, conversationId: lobby.id };
     }),

@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq, and, desc, gte, lte, sql, or } from "drizzle-orm";
+import { eq, and, desc, gte, lte, sql, or, inArray } from "drizzle-orm";
 import { router, isolatedApprovedProcedure as auditedProtectedProcedure, isolatedAdminProcedure as auditedAdminProcedure, sensitiveData, pci } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
@@ -94,7 +94,9 @@ async function checkIdempotency(db: any, key: string, endpoint: string, userId: 
     if (existing) {
       await db.execute(sql`DELETE FROM idempotency_keys WHERE idempotencyKey = ${key}`);
     }
-  } catch {}
+  } catch (e) {
+    console.error("[wallet] Failed to check idempotency key:", e);
+  }
   return { cached: false };
 }
 async function storeIdempotency(db: any, key: string, endpoint: string, userId: number, response: any): Promise<void> {
@@ -222,7 +224,9 @@ export const walletRouter = router({
             reservedBalance: "0",
             currency: "USD",
           });
-        } catch {}
+        } catch (e) {
+          console.error("[wallet] Failed to create wallet for user:", e);
+        }
 
         return {
           available: 0, pending: 0, reserved: 0, escrow: 0, total: 0, monthVolume: 0,
@@ -253,7 +257,9 @@ export const walletRouter = router({
             };
           }
         }
-      } catch {}
+      } catch (e) {
+        console.error("[wallet] Failed to fetch Stripe Connect balance:", e);
+      }
 
       return {
         available,
@@ -823,7 +829,9 @@ export const walletRouter = router({
         try {
           const feeResult = await feeCalculator.calculateFee({ userId, userRole: ctx.user?.role || "DRIVER", transactionType: "p2p_transfer", amount: input.amount });
           await feeCalculator.recordFeeCollection(result.insertId, "p2p_transfer", userId, input.amount, feeResult);
-        } catch {}
+        } catch (e) {
+          console.error("[wallet] Failed to record p2p_transfer fee collection:", e);
+        }
       }
 
       // Update balances if not scheduled
@@ -999,7 +1007,9 @@ export const walletRouter = router({
       try {
         const feeResult = await feeCalculator.calculateFee({ userId, userRole: ctx.user?.role || "DRIVER", transactionType: "cash_advance", amount: input.amount });
         await feeCalculator.recordFeeCollection(result.insertId, "cash_advance", userId, input.amount, feeResult);
-      } catch {}
+      } catch (e) {
+        console.error("[wallet] Failed to record cash_advance fee collection:", e);
+      }
 
       const advanceResult = {
         id: result.insertId,
@@ -1125,7 +1135,9 @@ export const walletRouter = router({
       try {
         const feeResult = await feeCalculator.calculateFee({ userId, userRole: ctx.user?.role || "DRIVER", transactionType: "instant_pay", amount: input.amount });
         await feeCalculator.recordFeeCollection(result.insertId, "instant_pay", userId, input.amount, feeResult);
-      } catch {}
+      } catch (e) {
+        console.error("[wallet] Failed to record instant_pay fee collection:", e);
+      }
 
       // Deduct from wallet
       await db.update(wallets)
@@ -1503,7 +1515,10 @@ export const walletRouter = router({
           spendingLimit: null,
           createdAt: m.createdAt?.toISOString() || "",
         }));
-      } catch { return []; }
+      } catch (e) {
+        console.error("[wallet] Failed to fetch debit cards from DB:", e);
+        return [];
+      }
     }),
 
   /**
@@ -1570,7 +1585,8 @@ export const walletRouter = router({
           source: "database" as const,
           isDefault: m.isDefault || false,
         }));
-      } catch {
+      } catch (e) {
+        console.error("[wallet] Failed to fetch bank accounts from DB:", e);
         return [];
       }
     }),
@@ -1627,7 +1643,8 @@ export const walletRouter = router({
               createdAt: h.createdAt?.toISOString(),
             });
           }
-        } catch {
+        } catch (e) {
+          console.error("[wallet] Failed to query escrow_holds table:", e);
           // escrow_holds table may not exist yet — fall through
         }
 
@@ -1654,7 +1671,8 @@ export const walletRouter = router({
               createdAt: t.createdAt?.toISOString(),
             });
           }
-        } catch {
+        } catch (e) {
+          console.error("[wallet] Failed to query escrow wallet transactions:", e);
           // wallet_transactions table may not have expected rows — ignore
         }
 
@@ -2278,9 +2296,7 @@ export const walletRouter = router({
       for (const wId of orphanIds) {
         await db.delete(walletTransactions).where(eq(walletTransactions.walletId, wId));
       }
-      const deleted = await db.execute(
-        sql`DELETE FROM wallets WHERE id IN (${sql.raw(orphanIds.join(','))})`
-      );
+      const deleted = await db.delete(wallets).where(inArray(wallets.id, orphanIds));
       const count = (deleted as any)?.[0]?.affectedRows || orphanIds.length;
       logger.info(`[Wallet] Cleaned ${count} orphaned wallet records`);
       return { cleaned: count, orphanIds };
@@ -2302,7 +2318,7 @@ export async function cleanOrphanedWalletsOnStartup() {
     for (const wId of orphanIds) {
       await db.delete(walletTransactions).where(eq(walletTransactions.walletId, wId));
     }
-    await db.execute(sql`DELETE FROM wallets WHERE id IN (${sql.raw(orphanIds.join(','))})`);
+    await db.delete(wallets).where(inArray(wallets.id, orphanIds));
     logger.info(`[Wallet] Startup cleanup: removed ${orphanIds.length} orphaned wallet(s) with userId(s): ${rows.map((r: any) => r.userId).join(', ')}`);
   } catch (e: any) {
     logger.warn("[Wallet] Orphan cleanup warning:", e?.message);

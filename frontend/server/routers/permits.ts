@@ -63,7 +63,7 @@ export const permitsRouter = router({
           issuingAgency: r.issuingAgency, documentUrl: r.documentUrl, notes: r.notes,
           createdAt: r.createdAt?.toISOString?.() || '',
         };
-      } catch { return null; }
+      } catch (e) { console.error("[permits] Failed to fetch permit by ID:", e); return null; }
     }),
 
   /**
@@ -118,7 +118,7 @@ export const permitsRouter = router({
           expirationDate: r.expirationDate, daysRemaining: r.expirationDate ? Math.ceil((new Date(r.expirationDate).getTime() - Date.now()) / 86400000) : 0,
           states: r.states ? JSON.parse(r.states) : [],
         }));
-      } catch { return []; }
+      } catch (e) { console.error("[permits] Failed to fetch expiring permits:", e); return []; }
     }),
 
   /**
@@ -135,7 +135,9 @@ export const permitsRouter = router({
               status = 'pending', notes = CONCAT(COALESCE(notes, ''), '\nRenewal requested: ', ${input.notes || ''})
             WHERE id = ${parseInt(input.permitId, 10)}
           `);
-        } catch {}
+        } catch (e) {
+          console.error("[permits] Failed to update permit for renewal:", e);
+        }
       }
       return {
         success: true, renewalId: `ren_${Date.now()}`, originalPermitId: input.permitId, status: "pending", submittedAt: new Date().toISOString(),
@@ -198,7 +200,7 @@ export const permitsRouter = router({
       const valid = permits.filter((p: any) => !p.expirationDate || new Date(p.expirationDate).getTime() > now).length;
       const expiringSoon = permits.filter((p: any) => p.expirationDate && new Date(p.expirationDate).getTime() - now < 30 * 86400000 && new Date(p.expirationDate).getTime() > now).length;
       return Object.assign(permits, { total: permits.length, valid, expiringSoon, expired: permits.length - valid });
-    } catch { const p: any[] = []; return Object.assign(p, { total: 0, valid: 0, expiringSoon: 0, expired: 0 }); }
+    } catch (e) { console.error("[permits] Failed to fetch active permits:", e); const p: any[] = []; return Object.assign(p, { total: 0, valid: 0, expiringSoon: 0, expired: 0 }); }
   }),
   getSummary: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
@@ -215,7 +217,7 @@ export const permitsRouter = router({
       `) as any;
       const s = (rows || [])[0] || {};
       return { total: Number(s.total) || 0, active: Number(s.active) || 0, expiring: Number(s.expiring) || 0, expired: Number(s.expired) || 0 };
-    } catch { return { total: 0, active: 0, expiring: 0, expired: 0 }; }
+    } catch (e) { console.error("[permits] Failed to fetch permit summary:", e); return { total: 0, active: 0, expiring: 0, expired: 0 }; }
   }),
   getStates: protectedProcedure.query(async () => [
     { code: "TX", name: "Texas", permitsRequired: true }, { code: "OK", name: "Oklahoma", permitsRequired: true },

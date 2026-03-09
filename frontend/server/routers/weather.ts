@@ -160,7 +160,7 @@ export const weatherRouter = router({
         if (db) {
           const { hzWeatherAlerts } = await import("../../drizzle/schema");
           const alerts = await db.select().from(hzWeatherAlerts)
-            .where(sql`JSON_CONTAINS(${hzWeatherAlerts.stateCodes}, '"${sql.raw(states[0])}"') OR JSON_CONTAINS(${hzWeatherAlerts.stateCodes}, '"${sql.raw(states[1])}"')`)
+            .where(sql`JSON_CONTAINS(${hzWeatherAlerts.stateCodes}, ${JSON.stringify(states[0])}) OR JSON_CONTAINS(${hzWeatherAlerts.stateCodes}, ${JSON.stringify(states[1])})`)
             .orderBy(desc(hzWeatherAlerts.fetchedAt)).limit(10);
 
           advisories = alerts.map(a => ({

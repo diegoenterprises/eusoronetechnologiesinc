@@ -190,21 +190,22 @@ export const telemetryRouter = router({
     const db = await getDb();
     if (!db) return [];
     try {
-      const conditions: string[] = ["trip_count >= 1"];
-      if (input.originState) conditions.push(`origin_state = '${input.originState}'`);
-      if (input.destState) conditions.push(`dest_state = '${input.destState}'`);
-      if (input.hazmatOnly) conditions.push("is_hazmat = 1");
-      const rows = await db.execute(sql.raw(`
+      const conditions: ReturnType<typeof sql>[] = [sql`trip_count >= 1`];
+      if (input.originState) conditions.push(sql`origin_state = ${input.originState}`);
+      if (input.destState) conditions.push(sql`dest_state = ${input.destState}`);
+      if (input.hazmatOnly) conditions.push(sql`is_hazmat = 1`);
+      const whereClause = sql.join(conditions, sql` AND `);
+      const rows = await db.execute(sql`
         SELECT origin_city, origin_state, dest_city, dest_state,
                is_hazmat, trip_count, avg_rate_per_mile, avg_total_rate,
                avg_distance_miles, avg_transit_hours, on_time_pct,
                avg_dwell_mins_pickup, avg_dwell_mins_delivery,
                best_day_of_week, best_hour_depart, last_trip_at
         FROM hz_lane_learning
-        WHERE ${conditions.join(" AND ")}
+        WHERE ${whereClause}
         ORDER BY trip_count DESC
         LIMIT ${input.limit}
-      `));
+      `);
       return (rows as any)[0] || [];
     } catch { return []; }
   }),

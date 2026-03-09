@@ -216,7 +216,7 @@ export const ratesRouter = router({
           ...empty, avgRate: Math.round((stats?.avgRate || 0) * 100) / 100, volumeIndex: stats?.count || 0,
           history: history.map(h => ({ date: h.week, rate: Math.round(h.rate * 100) / 100 })),
         };
-      } catch { return empty; }
+      } catch (e) { console.error("[rates] Failed to fetch lane rates:", e); return empty; }
     }),
 
   /**
@@ -249,7 +249,9 @@ export const ratesRouter = router({
             }
           }
         }
-      } catch {}
+      } catch (e) {
+        console.error("[rates] Failed to fetch EIA fuel surcharge data:", e);
+      }
       return {
         currentRate: 0.52, basePrice: 3.50,
         effectiveDate: new Date().toISOString().split('T')[0],
@@ -330,7 +332,7 @@ export const ratesRouter = router({
           const d = l.deliveryLocation as any || {};
           return { id: String(l.id), origin: p.address || '', destination: d.address || '', rate: l.rate ? parseFloat(String(l.rate)) : 0, createdAt: l.createdAt?.toISOString() || '' };
         });
-      } catch { return []; }
+      } catch (e) { console.error("[rates] Failed to fetch quote history:", e); return []; }
     }),
 
   /**
@@ -369,7 +371,7 @@ export const ratesRouter = router({
             { name: 'Seasonality', impact: 'neutral', weight: 0.2 },
           ],
         };
-      } catch { return { period: input.period, currentAvg: 0, previousAvg: 0, changePercent: 0, trend: 'stable' as const, forecast: { nextWeek: 0, nextMonth: 0, confidence: 0 }, factors: [] }; }
+      } catch (e) { console.error("[rates] Failed to fetch rate trends:", e); return { period: input.period, currentAvg: 0, previousAvg: 0, changePercent: 0, trend: 'stable' as const, forecast: { nextWeek: 0, nextMonth: 0, confidence: 0 }, factors: [] }; }
     }),
 
   // Additional rate procedures

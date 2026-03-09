@@ -135,17 +135,18 @@ export const pricebookRouter = router({
         );
       }
 
-      const updates: string[] = [];
-      if (input.rate !== undefined) updates.push(`rate = ${input.rate.toFixed(4)}`);
-      if (input.entryName !== undefined) updates.push(`entryName = '${input.entryName.replace(/'/g, "''")}'`);
-      if (input.fscIncluded !== undefined) updates.push(`fscIncluded = ${input.fscIncluded ? 1 : 0}`);
-      if (input.fscMethod !== undefined) updates.push(`fscMethod = '${input.fscMethod}'`);
-      if (input.fscValue !== undefined) updates.push(`fscValue = ${input.fscValue.toFixed(4)}`);
-      if (input.minimumCharge !== undefined) updates.push(`minimumCharge = ${input.minimumCharge.toFixed(2)}`);
-      if (input.expirationDate !== undefined) updates.push(`expirationDate = '${input.expirationDate}'`);
+      const updateClauses: ReturnType<typeof sql>[] = [];
+      if (input.rate !== undefined) updateClauses.push(sql`rate = ${input.rate.toFixed(4)}`);
+      if (input.entryName !== undefined) updateClauses.push(sql`entryName = ${input.entryName}`);
+      if (input.fscIncluded !== undefined) updateClauses.push(sql`fscIncluded = ${input.fscIncluded ? 1 : 0}`);
+      if (input.fscMethod !== undefined) updateClauses.push(sql`fscMethod = ${input.fscMethod}`);
+      if (input.fscValue !== undefined) updateClauses.push(sql`fscValue = ${input.fscValue.toFixed(4)}`);
+      if (input.minimumCharge !== undefined) updateClauses.push(sql`minimumCharge = ${input.minimumCharge.toFixed(2)}`);
+      if (input.expirationDate !== undefined) updateClauses.push(sql`expirationDate = ${input.expirationDate}`);
 
-      if (updates.length > 0) {
-        await (db as any).execute(sql.raw(`UPDATE pricebook_entries SET ${updates.join(", ")} WHERE id = ${entry.id}`));
+      if (updateClauses.length > 0) {
+        const setFragment = sql.join(updateClauses, sql`, `);
+        await (db as any).execute(sql`UPDATE pricebook_entries SET ${setFragment} WHERE id = ${entry.id}`);
       }
 
       return { id: entry.id, entryName: input.entryName || entry.entryName, rate: input.rate || Number(entry.rate) };
@@ -191,55 +192,56 @@ export const pricebookRouter = router({
 
       const today = new Date().toISOString().split("T")[0];
 
-      // Build cascading queries in priority order
-      const lookups: { label: string; where: string }[] = [];
+      // Build cascading queries in priority order using parameterized fragments
+      const lookups: { label: string; where: ReturnType<typeof sql> }[] = [];
 
       // Level 1: Terminal-specific + customer
       if (input.originTerminalId && input.destinationTerminalId && input.customerCompanyId) {
         lookups.push({
           label: "terminal+customer",
-          where: `originTerminalId = ${input.originTerminalId} AND destinationTerminalId = ${input.destinationTerminalId} AND customerCompanyId = ${input.customerCompanyId}`,
+          where: sql`originTerminalId = ${input.originTerminalId} AND destinationTerminalId = ${input.destinationTerminalId} AND customerCompanyId = ${input.customerCompanyId}`,
         });
       }
       // Level 2: Terminal-specific
       if (input.originTerminalId && input.destinationTerminalId) {
         lookups.push({
           label: "terminal",
-          where: `originTerminalId = ${input.originTerminalId} AND destinationTerminalId = ${input.destinationTerminalId} AND customerCompanyId IS NULL`,
+          where: sql`originTerminalId = ${input.originTerminalId} AND destinationTerminalId = ${input.destinationTerminalId} AND customerCompanyId IS NULL`,
         });
       }
       // Level 3: City + customer
       if (input.originCity && input.destinationCity && input.customerCompanyId) {
         lookups.push({
           label: "city+customer",
-          where: `originCity = '${input.originCity.replace(/'/g, "''")}' AND destinationCity = '${input.destinationCity.replace(/'/g, "''")}' AND customerCompanyId = ${input.customerCompanyId}`,
+          where: sql`originCity = ${input.originCity} AND destinationCity = ${input.destinationCity} AND customerCompanyId = ${input.customerCompanyId}`,
         });
       }
       // Level 4: City
       if (input.originCity && input.destinationCity) {
         lookups.push({
           label: "city",
-          where: `originCity = '${input.originCity.replace(/'/g, "''")}' AND destinationCity = '${input.destinationCity.replace(/'/g, "''")}' AND customerCompanyId IS NULL`,
+          where: sql`originCity = ${input.originCity} AND destinationCity = ${input.destinationCity} AND customerCompanyId IS NULL`,
         });
       }
       // Level 5: State + customer
       if (input.originState && input.destinationState && input.customerCompanyId) {
         lookups.push({
           label: "state+customer",
-          where: `originState = '${input.originState}' AND destinationState = '${input.destinationState}' AND customerCompanyId = ${input.customerCompanyId}`,
+          where: sql`originState = ${input.originState} AND destinationState = ${input.destinationState} AND customerCompanyId = ${input.customerCompanyId}`,
         });
       }
       // Level 6: State
       if (input.originState && input.destinationState) {
         lookups.push({
           label: "state",
-          where: `originState = '${input.originState}' AND destinationState = '${input.destinationState}' AND customerCompanyId IS NULL`,
+          where: sql`originState = ${input.originState} AND destinationState = ${input.destinationState} AND customerCompanyId IS NULL`,
         });
       }
 
+      const cargoType = input.cargoType || "";
       for (const lookup of lookups) {
         const [rows]: any = await (db as any).execute(
-          sql.raw(`SELECT id, rate, fscIncluded, fscValue, minimumCharge, rateType FROM pricebook_entries WHERE companyId = ${companyId} AND isActive = 1 AND cargoType = '${(input.cargoType || "").replace(/'/g, "''")}' AND effectiveDate <= '${today}' AND (expirationDate IS NULL OR expirationDate >= '${today}') AND ${lookup.where} ORDER BY effectiveDate DESC LIMIT 1`)
+          sql`SELECT id, rate, fscIncluded, fscValue, minimumCharge, rateType FROM pricebook_entries WHERE companyId = ${companyId} AND isActive = 1 AND cargoType = ${cargoType} AND effectiveDate <= ${today} AND (expirationDate IS NULL OR expirationDate >= ${today}) AND ${lookup.where} ORDER BY effectiveDate DESC LIMIT 1`
         );
         const match = Array.isArray(rows) ? rows[0] : null;
         if (match) {
