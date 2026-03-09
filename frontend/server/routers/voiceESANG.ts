@@ -60,7 +60,7 @@ export const voiceESANGRouter = router({
             // Update intent confidence if ESANG handled it
             if (intent.intent === "conversational") intent.confidence = 0.8;
           } catch (e) {
-            console.error("[voiceESANG] Failed to get ESANG AI response:", e);
+            logger.error("[voiceESANG] Failed to get ESANG AI response:", e);
             fullText = "I'm having trouble connecting to my AI systems. Please try again.";
           }
         }

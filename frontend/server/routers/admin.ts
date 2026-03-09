@@ -228,7 +228,7 @@ export const adminRouter = router({
 
         return await query;
       } catch (e) {
-        console.error("[admin] Failed to query webhooks:", e);
+        logger.error("[admin] Failed to query webhooks:", e);
         return [];
       }
     }),
@@ -248,7 +248,7 @@ export const adminRouter = router({
         const failed = Number(failedRows[0]?.count ?? 0);
         return { total, active, failed, disabled: 0, triggeredToday: 0, deliveriesToday: 0, failing: failed };
       } catch (e) {
-        console.error("[admin] Failed to query webhook stats:", e);
+        logger.error("[admin] Failed to query webhook stats:", e);
         return { total: 0, active: 0, failed: 0, disabled: 0, triggeredToday: 0, deliveriesToday: 0, failing: 0 };
       }
     }),
@@ -353,7 +353,7 @@ export const adminRouter = router({
           description: r.EVENT_COMMENT || "",
         }));
       } catch (e) {
-        console.error("[admin] Failed to query scheduled tasks:", e);
+        logger.error("[admin] Failed to query scheduled tasks:", e);
         return [];
       }
     }),

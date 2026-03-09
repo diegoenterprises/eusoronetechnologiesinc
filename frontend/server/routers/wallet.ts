@@ -95,7 +95,7 @@ async function checkIdempotency(db: any, key: string, endpoint: string, userId: 
       await db.execute(sql`DELETE FROM idempotency_keys WHERE idempotencyKey = ${key}`);
     }
   } catch (e) {
-    console.error("[wallet] Failed to check idempotency key:", e);
+    logger.error("[wallet] Failed to check idempotency key:", e);
   }
   return { cached: false };
 }
@@ -225,7 +225,7 @@ export const walletRouter = router({
             currency: "USD",
           });
         } catch (e) {
-          console.error("[wallet] Failed to create wallet for user:", e);
+          logger.error("[wallet] Failed to create wallet for user:", e);
         }
 
         return {
@@ -258,7 +258,7 @@ export const walletRouter = router({
           }
         }
       } catch (e) {
-        console.error("[wallet] Failed to fetch Stripe Connect balance:", e);
+        logger.error("[wallet] Failed to fetch Stripe Connect balance:", e);
       }
 
       return {
@@ -830,7 +830,7 @@ export const walletRouter = router({
           const feeResult = await feeCalculator.calculateFee({ userId, userRole: ctx.user?.role || "DRIVER", transactionType: "p2p_transfer", amount: input.amount });
           await feeCalculator.recordFeeCollection(result.insertId, "p2p_transfer", userId, input.amount, feeResult);
         } catch (e) {
-          console.error("[wallet] Failed to record p2p_transfer fee collection:", e);
+          logger.error("[wallet] Failed to record p2p_transfer fee collection:", e);
         }
       }
 
@@ -1008,7 +1008,7 @@ export const walletRouter = router({
         const feeResult = await feeCalculator.calculateFee({ userId, userRole: ctx.user?.role || "DRIVER", transactionType: "cash_advance", amount: input.amount });
         await feeCalculator.recordFeeCollection(result.insertId, "cash_advance", userId, input.amount, feeResult);
       } catch (e) {
-        console.error("[wallet] Failed to record cash_advance fee collection:", e);
+        logger.error("[wallet] Failed to record cash_advance fee collection:", e);
       }
 
       const advanceResult = {
@@ -1136,7 +1136,7 @@ export const walletRouter = router({
         const feeResult = await feeCalculator.calculateFee({ userId, userRole: ctx.user?.role || "DRIVER", transactionType: "instant_pay", amount: input.amount });
         await feeCalculator.recordFeeCollection(result.insertId, "instant_pay", userId, input.amount, feeResult);
       } catch (e) {
-        console.error("[wallet] Failed to record instant_pay fee collection:", e);
+        logger.error("[wallet] Failed to record instant_pay fee collection:", e);
       }
 
       // Deduct from wallet
@@ -1516,7 +1516,7 @@ export const walletRouter = router({
           createdAt: m.createdAt?.toISOString() || "",
         }));
       } catch (e) {
-        console.error("[wallet] Failed to fetch debit cards from DB:", e);
+        logger.error("[wallet] Failed to fetch debit cards from DB:", e);
         return [];
       }
     }),
@@ -1586,7 +1586,7 @@ export const walletRouter = router({
           isDefault: m.isDefault || false,
         }));
       } catch (e) {
-        console.error("[wallet] Failed to fetch bank accounts from DB:", e);
+        logger.error("[wallet] Failed to fetch bank accounts from DB:", e);
         return [];
       }
     }),
@@ -1644,7 +1644,7 @@ export const walletRouter = router({
             });
           }
         } catch (e) {
-          console.error("[wallet] Failed to query escrow_holds table:", e);
+          logger.error("[wallet] Failed to query escrow_holds table:", e);
           // escrow_holds table may not exist yet — fall through
         }
 
@@ -1672,7 +1672,7 @@ export const walletRouter = router({
             });
           }
         } catch (e) {
-          console.error("[wallet] Failed to query escrow wallet transactions:", e);
+          logger.error("[wallet] Failed to query escrow wallet transactions:", e);
           // wallet_transactions table may not have expected rows — ignore
         }
 
