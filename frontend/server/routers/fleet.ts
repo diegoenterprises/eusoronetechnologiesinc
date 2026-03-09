@@ -317,7 +317,7 @@ export const fleetRouter = router({
           nextMaintenanceDue: v.nextMaintenanceDate?.toISOString().split('T')[0] || null,
           nextServiceIn: 'Unknown',
           loadsCompleted: 0,
-          capacity: parseFloat(vehicle.capacity?.toString() || '0'),
+          capacity: parseFloat(v.capacity?.toString() || '0'),
           insurance: { provider: '', policyNumber: '', expirationDate: '' },
           registration: { state: '', expirationDate: '' },
           specifications: { engine: '', horsepower: 0, transmission: '', fuelCapacity: 0, sleeper: false },

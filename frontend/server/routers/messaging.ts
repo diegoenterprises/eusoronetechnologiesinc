@@ -342,7 +342,7 @@ export const messagingRouter = router({
         const recentMessages = await db
           .select({
             id: messages.id,
-            text: messages.text,
+            content: messages.content,
             senderId: messages.senderId,
             senderName: users.name,
             messageType: messages.messageType,
@@ -385,7 +385,7 @@ export const messagingRouter = router({
         conversationId: lobby.id,
         senderId: userId,
         messageType: 'text',
-        text: input.text,
+        content: input.text,
       }).$returningId();
 
       // Update conversation lastMessageAt
@@ -405,6 +405,7 @@ export const messagingRouter = router({
               message: `${ctx.user?.name || 'Team member'}: ${input.text.substring(0, 100)}`,
               priority: 'low',
               data: { conversationId: String(lobby.id) },
+              timestamp: new Date().toISOString(),
             });
           }
         }

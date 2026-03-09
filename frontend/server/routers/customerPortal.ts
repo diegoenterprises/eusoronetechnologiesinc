@@ -59,7 +59,7 @@ export const customerPortalRouter = router({
     .input(z.object({
       customerName: z.string().min(1),
       customerEmail: z.string().email().optional(),
-      permissions: z.record(z.string()).optional(),
+      permissions: z.record(z.string(), z.string()).optional(),
       expiresInDays: z.number().min(1).max(730).optional(),
     }))
     .mutation(async ({ ctx, input }) => {

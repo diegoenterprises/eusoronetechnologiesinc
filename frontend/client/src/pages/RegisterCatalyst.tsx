@@ -22,8 +22,9 @@ import { Button } from "@/components/ui/button";
 import { 
   Truck, Building2, FileText, Shield, CreditCard, 
   Upload, CheckCircle, AlertCircle, User, Mail, Phone,
-  MapPin, Hash, Search, Loader2, Lock, ShieldCheck, Landmark
+  MapPin, Hash, Search, Loader2, Lock, ShieldCheck, Landmark, Layers
 } from "lucide-react";
+import { VerticalSelector } from "@/components/VerticalFieldsPanel";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import DatePicker from "@/components/DatePicker";
@@ -104,6 +105,9 @@ interface CatalystFormData {
   // Step 10: Payment Setup
   businessType: "individual" | "company" | "";
   
+  // Industry Vertical
+  industryVertical: string;
+  
   // Step 11: Terms
   acceptTerms: boolean;
   acceptPrivacy: boolean;
@@ -161,6 +165,7 @@ const initialFormData: CatalystFormData = {
   confirmPassword: "",
   complianceIds: emptyComplianceIds,
   businessType: "",
+  industryVertical: "",
   acceptTerms: false,
   acceptPrivacy: false,
   acceptSafetyPolicy: false,
@@ -333,6 +338,7 @@ export default function RegisterCatalyst() {
         hasBottomLoadCapability: formData.hasBottomLoadCapability || undefined,
         hasVaporRecovery: formData.hasVaporRecovery || undefined,
       },
+      industryVertical: formData.industryVertical || undefined,
     });
 
     // Store business type preference for post-login EusoConnect bank onboarding
@@ -342,6 +348,27 @@ export default function RegisterCatalyst() {
   };
 
   const steps: WizardStep[] = [
+    {
+      id: "industry",
+      title: "Industry Vertical",
+      description: "Select your primary industry to tailor your experience",
+      icon: <Layers className="w-5 h-5" />,
+      component: (
+        <div className="space-y-4">
+          <p className="text-slate-400 text-sm">This helps us customize your dashboard, load matching, compliance requirements, and available features for your fleet.</p>
+          <VerticalSelector
+            selectedVertical={formData.industryVertical}
+            onVerticalChange={(v) => updateFormData({ industryVertical: v })}
+          />
+          {formData.industryVertical && (
+            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+              <span className="text-sm text-green-300">Industry vertical selected — your experience will be tailored accordingly</span>
+            </div>
+          )}
+        </div>
+      ),
+    },
     {
       id: "usdot",
       title: "USDOT Verification",

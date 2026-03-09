@@ -39,8 +39,12 @@ async function computeCreditScore(db: any, entityName: string, mcNumber?: string
     fmcsaData = row || null;
   }
   if (!fmcsaData && mcNumber) {
-    const [row] = await db.select().from(hzCarrierSafety).where(like(hzCarrierSafety.mcNumber, `%${mcNumber.replace(/\D/g, '')}%`)).limit(1);
-    fmcsaData = row || null;
+    // hzCarrierSafety has no mcNumber column; look up DOT via companies table
+    const [comp] = await db.select({ dotNumber: companies.dotNumber }).from(companies).where(like(companies.mcNumber, `%${mcNumber.replace(/\D/g, '')}%`)).limit(1);
+    if (comp?.dotNumber) {
+      const [row] = await db.select().from(hzCarrierSafety).where(eq(hzCarrierSafety.dotNumber, comp.dotNumber)).limit(1);
+      fmcsaData = row || null;
+    }
   }
   if (fmcsaData) {
     const rating = (fmcsaData.safetyRating || '').toLowerCase();

@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import {
   Brain, Activity, Zap, TrendingUp, TrendingDown, AlertTriangle,
   CheckCircle, XCircle, Clock, ToggleLeft, ToggleRight,
-  RefreshCw, Shield, Bell, Truck, DollarSign, BarChart3
+  RefreshCw, Shield, Bell, Truck, DollarSign, BarChart3, Eye
 } from "lucide-react";
 
 type AITab = "decisions" | "performance" | "auto_dispatch" | "auto_approve" | "reminders";

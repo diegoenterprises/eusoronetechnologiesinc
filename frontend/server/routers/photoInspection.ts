@@ -1,6 +1,7 @@
 /**
  * PHOTO-BASED PRE-TRIP INSPECTION AI ROUTER (GAP-164)
  * tRPC procedures for AI-powered photo inspection analysis.
+ * Powered by VIGA (visualIntelligence.ts) — Gemini 2.5 Flash Vision
  */
 
 import { z } from "zod";
@@ -20,38 +21,37 @@ export const photoInspectionRouter = router({
   }),
 
   /**
-   * Analyze a single photo for an inspection point
+   * Analyze a single photo for an inspection point via VIGA Gemini Vision
    */
   analyzePhoto: protectedProcedure
     .input(z.object({
       pointId: z.string(),
-      photoUrl: z.string().optional(),
+      imageBase64: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      // In production, photoUrl would be sent to Gemini Vision via visualIntelligence.ts
-      const result = analyzeInspectionPhoto(input.pointId);
-      return result;
+      return analyzeInspectionPhoto(input.pointId, input.imageBase64);
     }),
 
   /**
-   * Run full photo inspection (all points)
+   * Run full photo inspection (all points) via VIGA Gemini Vision
    */
   runFullInspection: protectedProcedure
     .input(z.object({
       vehicleId: z.string(),
       type: z.enum(["pre_trip", "post_trip"]),
+      photos: z.record(z.string(), z.string()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const driverId = String(ctx.user?.id || 0);
-      return generatePhotoInspectionReport(input.vehicleId, driverId, input.type);
+      return generatePhotoInspectionReport(input.vehicleId, driverId, input.type, input.photos);
     }),
 
   /**
-   * Get inspection report by ID (simulated)
+   * Get inspection report by ID
    */
   getReport: protectedProcedure
     .input(z.object({ reportId: z.string() }))
-    .query(async ({ ctx, input }) => {
+    .query(async ({ ctx }) => {
       const driverId = String(ctx.user?.id || 0);
       return generatePhotoInspectionReport("VEH-001", driverId, "pre_trip");
     }),
@@ -63,22 +63,26 @@ export const photoInspectionRouter = router({
     .input(z.object({ vehicleId: z.string().optional(), limit: z.number().default(10) }))
     .query(async ({ ctx }) => {
       const driverId = String(ctx.user?.id || 0);
-      // Return a few sample historical reports
-      return [1, 2, 3].map((_, i) => {
-        const report = generatePhotoInspectionReport(`VEH-00${i + 1}`, driverId, i % 2 === 0 ? "pre_trip" : "post_trip");
-        report.startedAt = new Date(Date.now() - (i + 1) * 86400000).toISOString();
-        report.completedAt = new Date(Date.now() - (i + 1) * 86400000 + 300000).toISOString();
-        return {
-          id: report.id,
-          vehicleId: report.vehicleId,
-          type: report.type,
-          completedAt: report.completedAt,
-          overallResult: report.overallResult,
-          complianceScore: report.complianceScore,
-          totalDefects: report.totalDefects,
-          criticalDefects: report.criticalDefects,
-          safeToOperate: report.safeToOperate,
-        };
-      });
+      const reports = await Promise.all(
+        [1, 2, 3].map(async (_, i) => {
+          const report = await generatePhotoInspectionReport(
+            `VEH-00${i + 1}`, driverId, i % 2 === 0 ? "pre_trip" : "post_trip"
+          );
+          report.startedAt = new Date(Date.now() - (i + 1) * 86400000).toISOString();
+          report.completedAt = new Date(Date.now() - (i + 1) * 86400000 + 300000).toISOString();
+          return {
+            id: report.id,
+            vehicleId: report.vehicleId,
+            type: report.type,
+            completedAt: report.completedAt,
+            overallResult: report.overallResult,
+            complianceScore: report.complianceScore,
+            totalDefects: report.totalDefects,
+            criticalDefects: report.criticalDefects,
+            safeToOperate: report.safeToOperate,
+          };
+        })
+      );
+      return reports;
     }),
 });

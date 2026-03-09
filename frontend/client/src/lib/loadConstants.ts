@@ -93,6 +93,21 @@ export const TRAILER_COMMODITY_MAP: Record<string, string> = {
   intermodal: 'intermodal',
 };
 
+export const VERTICAL_TRAILER_MAP: Record<string, string[]> = {
+  general_freight:   ["dry_van", "reefer", "flatbed", "step_deck", "conestoga", "curtain_side", "intermodal_chassis"],
+  refrigerated:      ["reefer", "food_grade_tank"],
+  hazardous:         ["liquid_tank", "gas_tank", "cryogenic", "hazmat_van"],
+  tanker:            ["liquid_tank", "gas_tank", "cryogenic", "food_grade_tank", "water_tank", "pneumatic"],
+  flatbed:           ["flatbed", "step_deck", "lowboy", "double_drop", "conestoga"],
+  auto_transport:    ["auto_carrier"],
+  intermodal:        ["intermodal_chassis", "curtain_side"],
+  ltl:               ["dry_van", "reefer", "flatbed", "curtain_side"],
+  heavy_haul:        ["lowboy", "double_drop", "step_deck", "flatbed"],
+  livestock:         ["livestock"],
+  dry_bulk:          ["bulk_hopper", "hopper", "grain_hopper", "pneumatic", "end_dump"],
+  household:         ["dry_van", "curtain_side"],
+};
+
 export const SEGREGATION_TABLE: Record<string, string[]> = {
   '1.1': ['2.1', '2.3', '3', '4.1', '4.2', '4.3', '5.1', '5.2', '6.1', '7', '8'],
   '2.1': ['1.1', '2.3', '3', '5.1', '5.2', '6.1'],

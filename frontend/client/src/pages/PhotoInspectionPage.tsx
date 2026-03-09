@@ -93,7 +93,7 @@ export default function PhotoInspectionPage() {
       {/* ── Inspection Points Tab ── */}
       {tab === "inspect" && (
         <div className="space-y-4">
-          {Object.entries(categories).map(([cat, items]: [string, any[]]) => (
+          {(Object.entries(categories) as [string, any[]][]).map(([cat, items]) => (
             <Card key={cat} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs text-white flex items-center gap-2">

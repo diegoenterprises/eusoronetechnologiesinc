@@ -484,7 +484,7 @@ export const driversRouter = router({
       return {
         driverId: input.driverId,
         currentStatus: summary.status,
-        statusStartTime: summary.todayLog?.[summary.todayLog.length - 1]?.startedAt || new Date().toISOString(),
+        statusStartTime: summary.todayLog?.[summary.todayLog.length - 1]?.startTime || new Date().toISOString(),
         hoursAvailable: summary.hoursAvailable || {
           driving: parseFloat(summary.drivingRemaining) || 0,
           onDuty: parseFloat(summary.onDutyRemaining) || 0,

@@ -114,6 +114,33 @@ function hosLabel(minutes: number): string {
   return `${h}h ${m}m`;
 }
 
+interface SlotLoad {
+  loadNumber: string;
+  pickupLocation: string;
+  deliveryLocation: string;
+  hazmatClass?: string;
+  cargoType?: string;
+  rate?: number | string;
+}
+
+interface SlotRow {
+  slotIndex: number;
+  slotId?: string;
+  loadId?: string;
+  load?: SlotLoad;
+}
+
+interface DriverRow {
+  driverId: number;
+  driverName: string;
+  status: string;
+  hazmatEndorsement?: boolean;
+  hasTwic?: boolean;
+  totalLoads: number;
+  hosRemaining: number;
+  slots: SlotRow[];
+}
+
 export default function DispatchPlanner() {
   const [date, setDate] = useState(() => formatDate(new Date()));
   const [search, setSearch] = useState("");

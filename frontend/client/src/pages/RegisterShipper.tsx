@@ -21,8 +21,9 @@ import { Button } from "@/components/ui/button";
 import { 
   Package, Building2, FileText, Shield, CreditCard, 
   Upload, CheckCircle, AlertCircle, User, Mail, Phone,
-  MapPin, Globe, Hash, Lock, ShieldCheck, Landmark, Truck
+  MapPin, Globe, Hash, Lock, ShieldCheck, Landmark, Truck, Layers
 } from "lucide-react";
+import { VerticalSelector } from "@/components/VerticalFieldsPanel";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import DatePicker from "@/components/DatePicker";
@@ -76,6 +77,9 @@ interface ShipperFormData {
   equipmentTypes: string[];
   products: string[];
   
+  // Industry Vertical
+  industryVertical: string;
+  
   // Step 9: Payment Setup
   businessType: "individual" | "company" | "";
   
@@ -116,6 +120,7 @@ const initialFormData: ShipperFormData = {
   complianceIds: emptyComplianceIds,
   equipmentTypes: [],
   products: [],
+  industryVertical: "",
   businessType: "",
   acceptTerms: false,
   acceptPrivacy: false,
@@ -217,6 +222,7 @@ export default function RegisterShipper() {
       complianceIds: Object.keys(complianceIds).length > 0 ? complianceIds : undefined,
       equipmentTypes: formData.equipmentTypes.length > 0 ? formData.equipmentTypes : undefined,
       products: formData.products.length > 0 ? formData.products : undefined,
+      industryVertical: formData.industryVertical || undefined,
     });
 
     if (formData.businessType) {
@@ -225,6 +231,27 @@ export default function RegisterShipper() {
   };
 
   const steps: WizardStep[] = [
+    {
+      id: "industry",
+      title: "Industry Vertical",
+      description: "Select your primary industry to tailor your experience",
+      icon: <Layers className="w-5 h-5" />,
+      component: (
+        <div className="space-y-4">
+          <p className="text-slate-400 text-sm">This helps us customize your dashboard, compliance requirements, and available features.</p>
+          <VerticalSelector
+            selectedVertical={formData.industryVertical}
+            onVerticalChange={(v) => updateFormData({ industryVertical: v })}
+          />
+          {formData.industryVertical && (
+            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+              <span className="text-sm text-green-300">Industry vertical selected — your experience will be tailored accordingly</span>
+            </div>
+          )}
+        </div>
+      ),
+    },
     {
       id: "company",
       title: "Company Information",

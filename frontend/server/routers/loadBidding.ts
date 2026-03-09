@@ -449,7 +449,7 @@ export const loadBiddingRouter = router({
         }
 
         // For hazmat loads, require hazmat endorsement
-        const isHazmat = load?.[0 as any]?.hazmatClass || load?.hazmatClass;
+        const isHazmat = (load as any)?.[0]?.hazmatClass || (load as any)?.hazmatClass;
         const cargoType = (load as any)?.cargoType?.toLowerCase?.() || '';
         if (isHazmat || cargoType.includes('crude') || cargoType.includes('hazmat')) {
           const hasHazmatIns = activePolicies.some(p =>

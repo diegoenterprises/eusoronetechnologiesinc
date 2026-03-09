@@ -13,7 +13,7 @@ import {
   optimizeMultiStopRoute,
   getGridHeatData,
   getLanePerformance,
-} from "../services/RouteIntelligence";
+} from "../services/routeIntelligence";
 import { haversineDistance } from "../services/fuelPriceService";
 
 // ── Geocoding helpers ────────────────────────────────────────────────────────
@@ -337,11 +337,11 @@ export const routingRouter = router({
     .query(async ({ input }) => {
       // Import fuel price service truck stops
       try {
-        const { getNearbyFuelStops } = await import("../services/fuelPriceService");
+        const { findNearbyStations } = await import("../services/fuelPriceService");
         // Get stops near midpoint as approximation for corridor
         const midLat = (input.originLat + input.destLat) / 2;
         const midLng = (input.originLng + input.destLng) / 2;
-        const stops = await getNearbyFuelStops(midLat, midLng, input.corridorWidthMiles * 2, input.maxResults);
+        const stops = await findNearbyStations(midLat, midLng, input.corridorWidthMiles * 2, input.maxResults);
         return stops;
       } catch {
         return [];

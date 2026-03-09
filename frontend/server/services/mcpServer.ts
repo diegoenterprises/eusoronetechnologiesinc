@@ -514,7 +514,7 @@ Domains: eusotrip.com (primary), eusorone.com (alias). Stack: React + TypeScript
         const conditions = [];
         if (activeOnly !== false) conditions.push(eq(pricebookEntries.isActive, 1));
         if (cargoType) conditions.push(eq(pricebookEntries.cargoType, cargoType));
-        if (rateType) conditions.push(eq(pricebookEntries.rateType, rateType));
+        if (rateType) conditions.push(eq(pricebookEntries.rateType, rateType as any));
         if (origin) conditions.push(or(like(pricebookEntries.originCity, `%${origin}%`), like(pricebookEntries.originState, `%${origin}%`)));
         if (destination) conditions.push(or(like(pricebookEntries.destinationCity, `%${destination}%`), like(pricebookEntries.destinationState, `%${destination}%`)));
 
@@ -1266,7 +1266,7 @@ Domains: eusotrip.com (primary), eusorone.com (alias). Stack: React + TypeScript
 
         const [stats] = await db.select({
           total: sql<number>`COUNT(*)`,
-          totalAmount: sql<number>`COALESCE(SUM(CAST(${settlements.totalAmount} AS DECIMAL)), 0)`,
+          totalAmount: sql<number>`COALESCE(SUM(CAST(${settlements.totalShipperCharge} AS DECIMAL)), 0)`,
         }).from(settlements);
 
         return {
@@ -1501,7 +1501,7 @@ Domains: eusotrip.com (primary), eusorone.com (alias). Stack: React + TypeScript
         const conditions: any[] = [];
         if (loadId) conditions.push(eq(blockchainAuditTrail.loadId, loadId));
         if (eventType) conditions.push(eq(blockchainAuditTrail.eventType, eventType));
-        if (actorId) conditions.push(eq(blockchainAuditTrail.actorId, actorId));
+        // actorId filter not available — blockchainAuditTrail has no actorId column
 
         const rows = await db.select().from(blockchainAuditTrail)
           .where(conditions.length > 0 ? and(...conditions) : undefined)
@@ -1541,7 +1541,7 @@ Domains: eusotrip.com (primary), eusorone.com (alias). Stack: React + TypeScript
       try {
         const conditions: any[] = [];
         if (loadId) conditions.push(eq(adrCompliance.loadId, loadId));
-        if (unNumber) conditions.push(eq(adrCompliance.unNumber, unNumber));
+        if (unNumber) conditions.push(eq(adrCompliance.adrUnNumber, unNumber));
         if (adrClass) conditions.push(eq(adrCompliance.adrClass, adrClass));
 
         const records = await db.select().from(adrCompliance)
@@ -1551,7 +1551,7 @@ Domains: eusotrip.com (primary), eusorone.com (alias). Stack: React + TypeScript
 
         // Get driver certifications
         const certs = await db.select().from(adrDriverCertifications)
-          .orderBy(desc(adrDriverCertifications.issuedAt))
+          .orderBy(desc(adrDriverCertifications.createdAt))
           .limit(20);
 
         return {
@@ -1582,7 +1582,7 @@ Domains: eusotrip.com (primary), eusorone.com (alias). Stack: React + TypeScript
       try {
         const conditions: any[] = [];
         if (loadId) conditions.push(eq(imdgCompliance.loadId, loadId));
-        if (unNumber) conditions.push(eq(imdgCompliance.unNumber, unNumber));
+        // unNumber filter not available — imdgCompliance has no unNumber column
         if (imdgClass) conditions.push(eq(imdgCompliance.imdgClass, imdgClass));
 
         const records = await db.select().from(imdgCompliance)
@@ -1625,7 +1625,7 @@ Domains: eusotrip.com (primary), eusorone.com (alias). Stack: React + TypeScript
 
         const vehicles = await db.select().from(autonomousVehicles)
           .where(conditions.length > 0 ? and(...conditions) : undefined)
-          .orderBy(desc(autonomousVehicles.registeredAt))
+          .orderBy(desc(autonomousVehicles.createdAt))
           .limit(limit || 20);
 
         // Fleet summary
@@ -1770,18 +1770,18 @@ Domains: eusotrip.com (primary), eusorone.com (alias). Stack: React + TypeScript
             totalLoads: sql<number>`COUNT(*)`,
             delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`,
             avgRate: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)`,
-          }).from(loads).where(eq(loads.carrierId, carrierId));
+          }).from(loads).where(eq(loads.catalystId, carrierId));
           return { content: [{ type: "text" as const, text: JSON.stringify({ company, stats }, null, 2) }] };
         }
         // Top carriers by load count
         const topCarriers = await db.select({
-          carrierId: loads.carrierId,
+          carrierId: loads.catalystId,
           totalLoads: sql<number>`COUNT(*)`,
           delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`,
           avgRate: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)`,
         }).from(loads)
-          .where(sql`${loads.carrierId} IS NOT NULL`)
-          .groupBy(loads.carrierId)
+          .where(sql`${loads.catalystId} IS NOT NULL`)
+          .groupBy(loads.catalystId)
           .orderBy(sql`COUNT(*) DESC`)
           .limit(limit || 10);
         return { content: [{ type: "text" as const, text: JSON.stringify({ count: topCarriers.length, topCarriers }, null, 2) }] };
@@ -1870,7 +1870,7 @@ Domains: eusotrip.com (primary), eusorone.com (alias). Stack: React + TypeScript
           const [contract] = await db.select().from(allocationContracts).where(eq(allocationContracts.id, contractId)).limit(1);
           if (!contract) return { content: [{ type: "text" as const, text: `Contract ${contractId} not found` }] };
           const tracking = await db.select().from(allocationDailyTracking)
-            .where(eq(allocationDailyTracking.contractId, contractId))
+            .where(eq(allocationDailyTracking.allocationContractId, contractId))
             .orderBy(desc(allocationDailyTracking.trackingDate))
             .limit(30);
           return { content: [{ type: "text" as const, text: JSON.stringify({ contract, recentTracking: tracking }, null, 2) }] };

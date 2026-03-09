@@ -42,9 +42,10 @@ import {
   TRAILER_TYPES as TRAILER_TYPES_SHARED,
   HAZMAT_CLASSES, getClassesForTrailer,
   COMMODITY_UNITS, TRAILER_COMMODITY_MAP, SEGREGATION_TABLE,
+  VERTICAL_TRAILER_MAP,
 } from "@/lib/loadConstants";
 
-const ALL_STEPS = ["My Products", "Trailer Type", "Product Classification", "SPECTRA-MATCH Verification", "Quantity & Weight", "Origin & Destination", "Catalyst Requirements", "Pricing", "Review"];
+const ALL_STEPS = ["My Products", "Industry & Trailer", "Product Classification", "SPECTRA-MATCH Verification", "Quantity & Weight", "Origin & Destination", "Catalyst Requirements", "Pricing", "Review"];
 
 const TRAILER_TYPES = TRAILER_TYPES_SHARED;
 
@@ -1096,24 +1097,45 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
             </div>
           )}
 
-          {/* STEP 1: Trailer Type Selection */}
+          {/* STEP 1: Select Your Industry Vertical + Trailer Type */}
           {rs === 1 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-              <p className="text-slate-900 dark:text-white font-bold text-lg">Select Your Trailer Type</p>
-              <p className="text-slate-400 text-sm">This determines product options, hazmat classification, and load visualization.</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {TRAILER_TYPES.map((t) => (
-                  <button key={t.id} onClick={() => { updateField("trailerType", t.id); updateField("equipment", t.equipment); updateField("quantityUnit", getDefaultUnit(t.id)); updateField("compartments", 1); updateField("compartmentProducts", undefined); const cType = TRAILER_COMMODITY_MAP[t.id] || 'general'; const cUnits = COMMODITY_UNITS[cType]; if (cUnits) { updateField("volumeUnit", cUnits.volumeUnit); updateField("weightUnit", cUnits.weightUnit); } }}
-                    className={cn("p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02]",
-                      formData.trailerType === t.id ? "bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border-cyan-500/50 ring-2 ring-cyan-500/30" : "bg-slate-50 dark:bg-slate-700/30 border-slate-200 dark:border-slate-600/30 hover:border-slate-400 dark:hover:border-slate-500/50"
-                    )}>
-                    <div className={cn("mb-2", formData.trailerType === t.id ? "text-cyan-400" : "text-slate-400")}>{TRAILER_ICON[t.icon]}</div>
-                    <p className="text-slate-900 dark:text-white text-sm font-bold">{t.name}</p>
-                    <p className="text-slate-500 text-[10px] mt-1 leading-tight">{t.desc}</p>
-                    {t.hazmat && <Badge variant="outline" className="text-[8px] mt-2 border-orange-500/30 text-orange-400">HAZMAT</Badge>}
-                  </button>
-                ))}
+            <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div>
+                <p className="text-slate-900 dark:text-white font-bold text-lg">Select Your Industry Vertical</p>
+                <p className="text-slate-400 text-sm">Choose your industry to see the most relevant trailer types, then pick your equipment.</p>
               </div>
+
+              {/* Industry Vertical Selector */}
+              <VerticalSelector selectedVertical={selectedVertical} onVerticalChange={(v) => { setSelectedVertical(v); updateField("trailerType", ""); }} />
+
+              {/* Trailer Type Grid — filtered by vertical when selected */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-slate-300 text-xs font-medium">
+                    {selectedVertical ? "Recommended Trailers" : "All Trailer Types"}
+                  </p>
+                  {selectedVertical && (
+                    <button onClick={() => setSelectedVertical("")} className="text-[10px] text-slate-500 hover:text-slate-300 underline transition-colors">Show all trailers</button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {(selectedVertical && VERTICAL_TRAILER_MAP[selectedVertical]
+                    ? TRAILER_TYPES.filter(t => VERTICAL_TRAILER_MAP[selectedVertical].includes(t.id))
+                    : TRAILER_TYPES
+                  ).map((t) => (
+                    <button key={t.id} onClick={() => { updateField("trailerType", t.id); updateField("equipment", t.equipment); updateField("quantityUnit", getDefaultUnit(t.id)); updateField("compartments", 1); updateField("compartmentProducts", undefined); const cType = TRAILER_COMMODITY_MAP[t.id] || 'general'; const cUnits = COMMODITY_UNITS[cType]; if (cUnits) { updateField("volumeUnit", cUnits.volumeUnit); updateField("weightUnit", cUnits.weightUnit); } }}
+                      className={cn("p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02]",
+                        formData.trailerType === t.id ? "bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border-cyan-500/50 ring-2 ring-cyan-500/30" : "bg-slate-50 dark:bg-slate-700/30 border-slate-200 dark:border-slate-600/30 hover:border-slate-400 dark:hover:border-slate-500/50"
+                      )}>
+                      <div className={cn("mb-2", formData.trailerType === t.id ? "text-cyan-400" : "text-slate-400")}>{TRAILER_ICON[t.icon]}</div>
+                      <p className="text-slate-900 dark:text-white text-sm font-bold">{t.name}</p>
+                      <p className="text-slate-500 text-[10px] mt-1 leading-tight">{t.desc}</p>
+                      {t.hazmat && <Badge variant="outline" className="text-[8px] mt-2 border-orange-500/30 text-orange-400">HAZMAT</Badge>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {selectedTrailer && (
                 <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-cyan-400 flex-shrink-0" />
@@ -1125,8 +1147,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
               )}
 
               {/* GAP-274-339: Industry Vertical — custom fields, compliance, docs */}
-              {selectedTrailer && (
-                <div className="mt-4 pt-4 border-t border-slate-700/50">
+              {selectedTrailer && selectedVertical && (
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-700/50">
                   <VerticalFieldsPanel
                     selectedVertical={selectedVertical}
                     onVerticalChange={setSelectedVertical}
@@ -1181,41 +1203,75 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     </div>
                   )}
                 </div>
-                <div>
-                  <label className="text-sm text-slate-400 mb-1 block">Hazmat Classification</label>
-                  <Select value={formData.hazmatClass || ""} onValueChange={(v: any) => { updateField("hazmatClass", v); updateField("hazardClassNumber", v); }}>
-                    <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg"><SelectValue placeholder="Select class" /></SelectTrigger>
-                    <SelectContent>{getClassesForTrailer(formData.trailerType).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                  {formData.hazmatClass && SEGREGATION_TABLE[formData.hazmatClass] && (
-                    <div className="mt-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                      <div className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-red-400" /><span className="text-red-400 text-sm font-medium">49 CFR 177.848 — Segregation Warning</span></div>
-                      <p className="text-slate-400 text-xs mt-1">This class <strong>cannot</strong> be co-loaded with: {SEGREGATION_TABLE[formData.hazmatClass].map(c => `Class ${c}`).join(', ')}</p>
+                {formData.spectraVerified && formData.hazmatClass && formData.unNumber ? (
+                  <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                        <span className="text-sm font-semibold text-emerald-400">ERG Verified Classification</span>
+                      </div>
+                      <button onClick={() => updateField("spectraVerified", false)} className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors underline">Change</button>
                     </div>
-                  )}
-                </div>
-                <div ref={unSuggestRef} className="relative z-40">
-                  <label className="text-sm text-slate-400 mb-1 block">UN Number (auto-detects product as you type)</label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <Input value={formData.unNumber || ""} onChange={(e: any) => handleUNChange(e.target.value)} onFocus={() => { if (unSearchQuery.length >= 2) setShowUNSuggestions(true); }}
-                      placeholder="e.g., 1203, UN1223" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg pl-10" />
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/20">
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider">Hazmat Class</p>
+                        <p className="text-purple-400 text-sm font-bold mt-0.5">{formData.hazmatClass}{formData.placardName ? ` — ${formData.placardName}` : ""}</p>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/20">
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider">UN Number</p>
+                        <p className="text-cyan-400 text-sm font-bold mt-0.5">{formData.unNumber}</p>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/20">
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider">ERG Guide</p>
+                        <p className="text-white text-sm font-bold mt-0.5">Guide {formData.ergGuide}</p>
+                      </div>
+                    </div>
+                    {formData.hazmatClass && SEGREGATION_TABLE[formData.hazmatClass] && (
+                      <div className="mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                        <div className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-red-400" /><span className="text-red-400 text-sm font-medium">49 CFR 177.848 — Segregation Warning</span></div>
+                        <p className="text-slate-400 text-xs mt-1">This class <strong>cannot</strong> be co-loaded with: {SEGREGATION_TABLE[formData.hazmatClass].map(c => `Class ${c}`).join(', ')}</p>
+                      </div>
+                    )}
                   </div>
-                  {showUNSuggestions && ergUNSearch.data?.results?.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
-                      <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50">ERG 2020 -- UN Number Matches</div>
-                      {ergUNSearch.data.results.map((m: any, i: number) => (
-                        <button key={`un-${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-[#334155] flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
-                          <div className="flex-1 min-w-0"><p className="text-slate-900 dark:text-white text-sm font-medium truncate">{m.name}</p></div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
-                            <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
-                          </div>
-                        </button>
-                      ))}
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-sm text-slate-400 mb-1 block">Hazmat Classification</label>
+                      <Select value={formData.hazmatClass || ""} onValueChange={(v: any) => { updateField("hazmatClass", v); updateField("hazardClassNumber", v); }}>
+                        <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg"><SelectValue placeholder="Select class" /></SelectTrigger>
+                        <SelectContent>{getClassesForTrailer(formData.trailerType).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                      </Select>
+                      {formData.hazmatClass && SEGREGATION_TABLE[formData.hazmatClass] && (
+                        <div className="mt-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                          <div className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-red-400" /><span className="text-red-400 text-sm font-medium">49 CFR 177.848 — Segregation Warning</span></div>
+                          <p className="text-slate-400 text-xs mt-1">This class <strong>cannot</strong> be co-loaded with: {SEGREGATION_TABLE[formData.hazmatClass].map(c => `Class ${c}`).join(', ')}</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                    <div ref={unSuggestRef} className="relative z-40">
+                      <label className="text-sm text-slate-400 mb-1 block">UN Number (auto-detects product as you type)</label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <Input value={formData.unNumber || ""} onChange={(e: any) => handleUNChange(e.target.value)} onFocus={() => { if (unSearchQuery.length >= 2) setShowUNSuggestions(true); }}
+                          placeholder="e.g., 1203, UN1223" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg pl-10" />
+                      </div>
+                      {showUNSuggestions && ergUNSearch.data?.results?.length > 0 && (
+                        <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                          <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50">ERG 2020 -- UN Number Matches</div>
+                          {ergUNSearch.data.results.map((m: any, i: number) => (
+                            <button key={`un-${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-[#334155] flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
+                              <div className="flex-1 min-w-0"><p className="text-slate-900 dark:text-white text-sm font-medium truncate">{m.name}</p></div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
+                                <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
                 {/* ── DOT Hazmat Fields (49 CFR 172.200-204) ── */}
                 {formData.hazmatClass && (
                   <div className="mt-4 p-4 rounded-xl bg-orange-500/5 border border-orange-500/20">
@@ -2284,12 +2340,6 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <p className="text-[10px] text-slate-500">No endorsements required — select a count above to add CDL endorsement requirements.</p>
                 )}
               </div>
-              {isHazmat && (
-                <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
-                  <div className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-orange-400" /><span className="text-orange-400 text-sm font-medium">Hazmat load requires HM endorsement on CDL</span></div>
-                  <p className="text-slate-400 text-xs mt-1">Catalyst must have active hazmat endorsement and appropriate insurance coverage.</p>
-                </div>
-              )}
 
               {/* Assignment Type */}
               <div>

@@ -429,7 +429,7 @@ export default function AccessorialManagement() {
                         </div>
 
                         {/* Action buttons */}
-                        {(claimDetailQuery.data.status === "pending_review" || claimDetailQuery.data.status === "submitted") && (
+                        {(claimDetailQuery.data.status === "pending_review" || (claimDetailQuery.data.status as string) === "submitted") && (
                           <div className="flex gap-2 pt-2">
                             <Button
                               size="sm"
