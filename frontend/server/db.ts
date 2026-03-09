@@ -28,7 +28,7 @@ function createPool() {
 
   const pool = mysql2.createPool({
     uri: dbUrl,
-    connectionLimit: 30,
+    connectionLimit: 150,
     waitForConnections: true,
     queueLimit: 200,
     idleTimeout: 60000,
