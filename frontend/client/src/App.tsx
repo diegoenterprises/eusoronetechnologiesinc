@@ -872,7 +872,7 @@ function Router() {
       {/* ============================================ */}
       <Route path="/rate-negotiations" component={guard([...SHIP, ...CARR, ...BROK], <RateNegotiations />)} />
       <Route path="/carrier-scorecard" component={guard([...SHIP, ...CARR, ...BROK, ...COMP], <CarrierScorecardPage />)} />
-      <Route path="/carrier-tiers" component={guard([...SHIP, ...CARR, ...BROK, ...COMP, ...DISP], <CarrierTierDashboard />)} />
+      <Route path="/carrier-tiers" component={guard(SUPR, <CarrierTierDashboard />)} />
       <Route path="/carrier-capacity" component={guard([...SHIP, ...CARR, ...BROK, ...COMP, ...DISP], <CarrierCapacityPage />)} />
       <Route path="/tank-monitor" component={guard(ALL, <TankLevelMonitor />)} />
       <Route path="/demurrage-charges" component={guard([...SHIP, ...CARR, ...BROK, ...COMP, ...DISP], <DemurrageChargesPage />)} />

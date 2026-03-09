@@ -1436,8 +1436,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(ciInsertIdx, 0, ciItem);
   }
 
-  // GAP-063: Inject Carrier Tier System for qualifying roles
-  if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/carrier-tiers')) {
+  // GAP-063: Inject Carrier Tier System — SUPER_ADMIN only
+  if (normalizedRole === 'SUPER_ADMIN' && !result.some(m => m.path === '/carrier-tiers')) {
     const tierItem: MenuItem = {
       icon: "Crown",
       label: "Carrier Tiers",

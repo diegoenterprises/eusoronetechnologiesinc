@@ -224,7 +224,167 @@ export const carrierTierRouter = router({
       };
     }),
 
-  // 6. Get tier distribution — admin analytics
+  // 6. List all carriers with their tiers — admin table view
+  listAllCarrierTiers: protectedProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      tierFilter: z.enum(["all", "gold", "silver", "bronze", "standard"]).optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        // Get all carriers — use raw SQL to handle optional columns
+        const [rawRows] = await db.execute(sql`
+          SELECT id, name, dot_number as dotNumber, mc_number as mcNumber,
+                 email, phone, created_at as createdAt
+          FROM companies
+          WHERE dot_number IS NOT NULL
+          ORDER BY id DESC LIMIT 500
+        `) as any;
+        let carrierRows: any[] = (rawRows || []).map((r: any) => ({
+          id: r.id, name: r.name, dotNumber: r.dotNumber || r.dot_number,
+          mcNumber: r.mcNumber || r.mc_number, email: r.email, phone: r.phone,
+          createdAt: r.createdAt || r.created_at,
+        }));
+
+        // Search filter
+        const searchTerm = input?.search?.toLowerCase();
+        if (searchTerm) {
+          carrierRows = carrierRows.filter(c =>
+            (c.name || "").toLowerCase().includes(searchTerm) ||
+            (c.dotNumber || "").toLowerCase().includes(searchTerm) ||
+            (c.mcNumber || "").toLowerCase().includes(searchTerm) ||
+            String(c.id).includes(searchTerm)
+          );
+        }
+
+        // Calculate tier for each carrier
+        const results: Array<{
+          id: number;
+          name: string;
+          dotNumber: string | null;
+          mcNumber: string | null;
+          email: string | null;
+          phone: string | null;
+          tier: string;
+          compositeScore: number;
+          totalLoads: number;
+          onTimeRate: number;
+          completionRate: number;
+          tenureMonths: number;
+          createdAt: any;
+        }> = [];
+
+        for (const carrier of carrierRows) {
+          const [stats] = await db.select({
+            total: sql<number>`count(*)`,
+            onTime: sql<number>`SUM(CASE WHEN ${loads.actualDeliveryDate} <= ${loads.estimatedDeliveryDate} OR ${loads.actualDeliveryDate} IS NULL THEN 1 ELSE 0 END)`,
+            delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`,
+          }).from(loads).where(eq(loads.catalystId, carrier.id));
+
+          const totalLoads = stats?.total || 0;
+          const onTimeRate = totalLoads > 0 ? Math.round(((stats?.onTime || 0) / totalLoads) * 100) : 100;
+          const completionRate = totalLoads > 0 ? Math.round(((stats?.delivered || 0) / totalLoads) * 100) : 100;
+          const tenureMonths = carrier.createdAt
+            ? Math.round((Date.now() - new Date(carrier.createdAt).getTime()) / (30 * 86400000))
+            : 0;
+
+          const tierInput: CarrierTierInput = {
+            carrierId: carrier.id,
+            scorecardOverall: Math.round(onTimeRate * 0.5 + completionRate * 0.5),
+            onTimeRate,
+            safetyScore: 80,
+            complianceScore: 80,
+            completionRate,
+            avgReviewRating: 4.0,
+            reviewCount: 0,
+            fmcsaRiskTier: "UNKNOWN",
+            fmcsaRiskScore: 0,
+            tenureMonths,
+            totalLoads,
+            recentLoads90d: 0,
+          };
+
+          const result = calculateCarrierTier(tierInput);
+
+          results.push({
+            id: carrier.id,
+            name: carrier.name || "Unknown",
+            dotNumber: carrier.dotNumber,
+            mcNumber: carrier.mcNumber,
+            email: carrier.email || null,
+            phone: carrier.phone || null,
+            tier: result.tier,
+            compositeScore: result.compositeScore,
+            totalLoads,
+            onTimeRate,
+            completionRate,
+            tenureMonths,
+            createdAt: carrier.createdAt,
+          });
+        }
+
+        // Tier filter
+        const tierFilter = input?.tierFilter;
+        if (tierFilter && tierFilter !== "all") {
+          return results.filter(r => r.tier === tierFilter);
+        }
+
+        return results;
+      } catch (e) {
+        console.error("[CarrierTier] listAllCarrierTiers error:", e);
+        return [];
+      }
+    }),
+
+  // 7. Override carrier tier manually (SUPER_ADMIN)
+  overrideTier: protectedProcedure
+    .input(z.object({
+      carrierId: z.number(),
+      tier: z.enum(["gold", "silver", "bronze", "standard"]),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "No database" };
+
+      try {
+        // Try to set tier override on the company record
+        await db.execute(sql`
+          UPDATE companies SET tier_override = ${input.tier} WHERE id = ${input.carrierId}
+        `);
+        return { success: true, carrierId: input.carrierId, tier: input.tier };
+      } catch (e) {
+        // tier_override column may not exist — add it
+        try {
+          await db.execute(sql`ALTER TABLE companies ADD COLUMN tier_override VARCHAR(20) DEFAULT NULL`);
+          await db.execute(sql`UPDATE companies SET tier_override = ${input.tier} WHERE id = ${input.carrierId}`);
+          return { success: true, carrierId: input.carrierId, tier: input.tier };
+        } catch (e2) {
+          console.error("[CarrierTier] overrideTier error:", e2);
+          return { success: false, error: "Failed to override tier" };
+        }
+      }
+    }),
+
+  // 8. Clear tier override (revert to calculated)
+  clearTierOverride: protectedProcedure
+    .input(z.object({ carrierId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: false };
+
+      try {
+        await db.execute(sql`UPDATE companies SET tier_override = NULL WHERE id = ${input.carrierId}`);
+        return { success: true, carrierId: input.carrierId };
+      } catch {
+        return { success: false };
+      }
+    }),
+
+  // 9. Get tier distribution — admin analytics
   getTierDistribution: protectedProcedure
     .query(async () => {
       const db = await getDb();
