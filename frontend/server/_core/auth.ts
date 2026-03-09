@@ -11,7 +11,10 @@ import { getDb } from "../db";
 import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
-const JWT_SECRET = process.env.JWT_SECRET || "eusotrip-dev-secret-key-change-in-production";
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === "production" ? "" : "eusotrip-dev-secret-key-change-in-production");
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required in production");
+}
 const TOKEN_EXPIRY = "7d";
 
 interface TokenPayload {
@@ -94,8 +97,10 @@ export const authService = {
    * Login with credentials (for development/testing)
    */
   async loginWithCredentials(email: string, password: string): Promise<{ user: AuthUser; token: string } | null> {
-    // Test users for development
-    const testUsers: Record<string, AuthUser> = {
+    const isDevelopment = process.env.NODE_ENV !== "production";
+
+    // Test users ONLY available in development
+    const testUsers: Record<string, AuthUser> = isDevelopment ? {
       "diego": { id: "admin-diego", email: "diego@eusotrip.com", role: "SUPER_ADMIN", name: "Diego" },
       "diego@eusotrip.com": { id: "admin-diego", email: "diego@eusotrip.com", role: "SUPER_ADMIN", name: "Diego" },
       "shipper@eusotrip.com": { id: "shipper-1", email: "shipper@eusotrip.com", role: "SHIPPER", name: "Test Shipper" },
@@ -109,7 +114,8 @@ export const authService = {
       "safety@eusotrip.com": { id: "safety-1", email: "safety@eusotrip.com", role: "SAFETY_MANAGER", name: "Test Safety Manager" },
       "admin@eusotrip.com": { id: "admin-1", email: "admin@eusotrip.com", role: "ADMIN", name: "Test Admin" },
       "superadmin@eusotrip.com": { id: "superadmin-1", email: "superadmin@eusotrip.com", role: "SUPER_ADMIN", name: "Super Admin" },
-    };
+      "factoring@eusotrip.com": { id: "factoring-1", email: "factoring@eusotrip.com", role: "FACTORING", name: "Test Factoring" },
+    } : {};
 
     // 1. Check database users first (registered users with bcrypt passwords)
     try {
@@ -148,16 +154,19 @@ export const authService = {
       console.warn("[auth] DB login check failed, falling back to test users:", err);
     }
 
-    // 2. Fall back to test users
+    // 2. Fall back to test users (DEVELOPMENT ONLY)
+    if (!isDevelopment) {
+      return null;
+    }
     const testUser = testUsers[email];
     if (!testUser) {
       return null;
     }
 
-    // Master password for all test users
-    const MASTER_PASSWORD = "Esang2027!";
+    // Dev-only test password — never available in production
+    const DEV_TEST_PASSWORD = process.env.DEV_TEST_PASSWORD || "dev-test-only";
     
-    if (password === MASTER_PASSWORD) {
+    if (password === DEV_TEST_PASSWORD) {
       // Resolve test user to a real DB record so ctx.user.id is a real integer
       let resolvedUser: AuthUser = { ...testUser };
       try {

@@ -54,6 +54,7 @@ export const users = mysqlTable(
       "TERMINAL_MANAGER",
       "COMPLIANCE_OFFICER",
       "SAFETY_MANAGER",
+      "FACTORING",
       "ADMIN",
       "SUPER_ADMIN",
     ])

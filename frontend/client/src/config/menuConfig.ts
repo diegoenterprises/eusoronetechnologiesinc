@@ -1518,7 +1518,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   }
 
   // GAP-164: Inject Photo Inspection for carrier/driver/compliance roles
-  const PHOTO_INSP_ROLES = new Set(['CATALYST', 'DRIVER', 'COMPLIANCE_OFFICER', 'SAFETY_OFFICER', 'ADMIN', 'SUPER_ADMIN']);
+  const PHOTO_INSP_ROLES = new Set(['CATALYST', 'DRIVER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER', 'ADMIN', 'SUPER_ADMIN']);
   if (PHOTO_INSP_ROLES.has(normalizedRole) && !result.some(m => m.path === '/photo-inspection')) {
     const photoInspItem: MenuItem = {
       icon: "Camera",
@@ -1534,7 +1534,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   }
 
   // GAP-424: Inject Compliance Rules for compliance/safety/carrier/admin roles
-  const COMPLIANCE_RULES_ROLES = new Set(['COMPLIANCE_OFFICER', 'SAFETY_OFFICER', 'CATALYST', 'ADMIN', 'SUPER_ADMIN']);
+  const COMPLIANCE_RULES_ROLES = new Set(['COMPLIANCE_OFFICER', 'SAFETY_MANAGER', 'CATALYST', 'ADMIN', 'SUPER_ADMIN']);
   if (COMPLIANCE_RULES_ROLES.has(normalizedRole) && !result.some(m => m.path === '/compliance-rules')) {
     const compRulesItem: MenuItem = {
       icon: "Shield",
@@ -1549,7 +1549,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   }
 
   // GAP-367: Inject Anomaly Monitor for admin/compliance/safety roles
-  const ANOMALY_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'COMPLIANCE_OFFICER', 'SAFETY_OFFICER']);
+  const ANOMALY_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER']);
   if (ANOMALY_ROLES.has(normalizedRole) && !result.some(m => m.path === '/anomaly-monitor')) {
     const anomalyItem: MenuItem = {
       icon: "Brain",
@@ -1564,7 +1564,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   }
 
   // GAP-438: Inject Mission Balancer for dispatch/carrier/admin roles
-  const MISSION_ROLES = new Set(['DISPATCHER', 'CATALYST', 'ADMIN', 'SUPER_ADMIN']);
+  const MISSION_ROLES = new Set(['DISPATCH', 'CATALYST', 'ADMIN', 'SUPER_ADMIN']);
   if (MISSION_ROLES.has(normalizedRole) && !result.some(m => m.path === '/mission-balancer')) {
     const missionItem: MenuItem = {
       icon: "Target",
@@ -1579,7 +1579,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   }
 
   // GAP-083: Inject Load Consolidation for shipper/broker/dispatch/admin roles
-  const CONSOLIDATION_ROLES = new Set(['SHIPPER', 'BROKER', 'DISPATCHER', 'CATALYST', 'ADMIN', 'SUPER_ADMIN']);
+  const CONSOLIDATION_ROLES = new Set(['SHIPPER', 'BROKER', 'DISPATCH', 'CATALYST', 'ADMIN', 'SUPER_ADMIN']);
   if (CONSOLIDATION_ROLES.has(normalizedRole) && !result.some(m => m.path === '/load-consolidation')) {
     const consolItem: MenuItem = {
       icon: "Layers",
@@ -1594,7 +1594,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   }
 
   // Task 21.1: Inject Mobile Command Center for driver/carrier/dispatch roles
-  const MOBILE_CMD_ROLES = new Set(['DRIVER', 'CATALYST', 'DISPATCHER', 'ESCORT', 'ADMIN', 'SUPER_ADMIN']);
+  const MOBILE_CMD_ROLES = new Set(['DRIVER', 'CATALYST', 'DISPATCH', 'ESCORT', 'ADMIN', 'SUPER_ADMIN']);
   if (MOBILE_CMD_ROLES.has(normalizedRole) && !result.some(m => m.path === '/mobile-command')) {
     const mobileItem: MenuItem = {
       icon: "Smartphone",
@@ -1610,7 +1610,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   }
 
   // Task 13.1: Inject Contextual Pricing for shipper/broker/carrier/dispatch roles
-  const PRICING_ROLES = new Set(['SHIPPER', 'BROKER', 'CATALYST', 'DISPATCHER', 'ADMIN', 'SUPER_ADMIN']);
+  const PRICING_ROLES = new Set(['SHIPPER', 'BROKER', 'CATALYST', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN']);
   if (PRICING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/contextual-pricing')) {
     const pricingItem: MenuItem = {
       icon: "Zap",

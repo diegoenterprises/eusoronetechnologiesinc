@@ -15,6 +15,7 @@ export type UserRole =
   | "DISPATCH"
   | "COMPLIANCE_OFFICER"
   | "SAFETY_MANAGER"
+  | "FACTORING"
   | "ADMIN"
   | "SUPER_ADMIN";
 
@@ -281,6 +282,20 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "messages:send",
     "messages:view",
     "messages:broadcast",
+  ],
+
+  FACTORING: [
+    "loads:view",
+    "tracking:view_own",
+    "compliance:view",
+    "wallet:view",
+    "wallet:transact",
+    "analytics:view_own",
+    "analytics:export",
+    "documents:view",
+    "documents:upload",
+    "messages:send",
+    "messages:view",
   ],
 
   ADMIN: [

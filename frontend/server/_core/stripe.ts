@@ -219,14 +219,47 @@ class StripeService {
   /**
    * Verify webhook signature
    */
-  verifyWebhookSignature(payload: string, signature: string): boolean {
+  verifyWebhookSignature(payload: string | Buffer, signature: string): any | null {
     if (!STRIPE_WEBHOOK_SECRET) {
       console.warn("[Stripe] Webhook secret not configured");
-      return false;
+      return null;
     }
-    // In production, use Stripe's library for proper signature verification
-    // This is a placeholder - actual implementation would use crypto
-    return true;
+    try {
+      const crypto = require("crypto");
+      const payloadStr = typeof payload === "string" ? payload : payload.toString("utf8");
+      // Parse Stripe signature header: t=timestamp,v1=sig1,v1=sig2...
+      const parts: Record<string, string[]> = {};
+      for (const item of signature.split(",")) {
+        const [key, val] = item.split("=");
+        if (!parts[key]) parts[key] = [];
+        parts[key].push(val);
+      }
+      const timestamp = parts["t"]?.[0];
+      const signatures = parts["v1"] || [];
+      if (!timestamp || signatures.length === 0) {
+        throw new Error("Invalid signature header format");
+      }
+      // Tolerance: reject events older than 5 minutes
+      const tolerance = 300;
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (nowSec - Number(timestamp) > tolerance) {
+        throw new Error("Webhook timestamp too old");
+      }
+      // Compute expected signature
+      const signedPayload = `${timestamp}.${payloadStr}`;
+      const expected = crypto.createHmac("sha256", STRIPE_WEBHOOK_SECRET).update(signedPayload).digest("hex");
+      // Compare against all v1 signatures
+      const valid = signatures.some((sig: string) =>
+        crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))
+      );
+      if (!valid) {
+        throw new Error("Signature mismatch");
+      }
+      return JSON.parse(payloadStr);
+    } catch (err: any) {
+      console.error("[Stripe] Webhook signature verification failed:", err.message);
+      return null;
+    }
   }
 }
 

@@ -162,10 +162,13 @@ async function startServer() {
 
       if (webhookSecret && sig) {
         event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      } else if (process.env.NODE_ENV === "production") {
+        console.error("[Stripe Webhook] REJECTED — STRIPE_WEBHOOK_SECRET not configured in production");
+        return res.status(400).json({ error: "Webhook secret not configured" });
       } else {
-        // In test mode without webhook secret, parse directly
+        // Development only: parse unverified events
         event = JSON.parse(req.body.toString());
-        console.warn("[Stripe Webhook] No webhook secret configured — accepting unverified event");
+        console.warn("[Stripe Webhook] DEV MODE — accepting unverified event");
       }
 
       console.log(`[Stripe Webhook] ${event.type}`);
@@ -234,11 +237,15 @@ async function startServer() {
           const _db1 = await _getDb();
           if (_db1 && session.metadata?.loadId) {
             try {
+              const _payerId = Number(session.metadata.userId) || 0;
+              const _amount = String(amountCents / 100);
+              const _currency = session.currency || "usd";
+              const _paymentType = session.metadata.paymentType || "load_payment";
+              const _stripeId = session.payment_intent || session.id;
+              const _loadId = Number(session.metadata.loadId);
               await _db1.execute(
-                `INSERT INTO payments (payer_id, amount, currency, payment_type, status, stripe_payment_id, load_id, created_at)
-                 VALUES (${session.metadata.userId || 0}, '${amountCents / 100}', '${session.currency || "usd"}', 
-                         '${session.metadata.paymentType || "load_payment"}', 'succeeded', '${session.payment_intent || session.id}', 
-                         ${session.metadata.loadId}, NOW())`
+                _sql`INSERT INTO payments (payer_id, amount, currency, payment_type, status, stripe_payment_id, load_id, created_at)
+                     VALUES (${_payerId}, ${_amount}, ${_currency}, ${_paymentType}, 'succeeded', ${_stripeId}, ${_loadId}, NOW())`
               );
             } catch (e) { console.error("[Stripe Webhook] DB insert error:", e); }
           }
