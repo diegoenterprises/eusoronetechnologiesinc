@@ -4,7 +4,7 @@
  * Phone calls via mobile network (no Twilio)
  */
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,14 +38,33 @@ export default function MessagingCenter() {
   const inputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<any>(null);
 
-  // ── Queries (all DB-backed) ──
+  // ── WebSocket-driven refetch (replaces polling) ──
+  useEffect(() => {
+    const wsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`;
+    let ws: WebSocket | null = null;
+    try {
+      ws = new WebSocket(wsUrl);
+      ws.onmessage = (evt) => {
+        try {
+          const msg = JSON.parse(evt.data);
+          if (msg.type === "message:new" || msg.type === "message:updated" || msg.type === "conversation:updated") {
+            conversationsQuery.refetch();
+            if (selectedConversation) messagesQuery.refetch();
+          }
+        } catch {}
+      };
+    } catch {}
+    return () => { ws?.close(); };
+  }, [selectedConversation]);
+
+  // ── Queries (all DB-backed, fallback polling at 30s for resilience) ──
   const conversationsQuery = (trpc as any).messages.getConversations.useQuery(
     { search: searchTerm || undefined },
-    { refetchInterval: 6000 }
+    { refetchInterval: 30000 }
   );
   const messagesQuery = (trpc as any).messages.getMessages.useQuery(
     { conversationId: selectedConversation || "" },
-    { enabled: !!selectedConversation, refetchInterval: 3000 }
+    { enabled: !!selectedConversation, refetchInterval: 30000 }
   );
   const usersQuery = (trpc as any).messages.searchUsers.useQuery(
     { query: userSearchTerm || undefined, limit: 15 },

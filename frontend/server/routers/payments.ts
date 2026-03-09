@@ -8,6 +8,7 @@ import { z } from "zod";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
+import { emitPaymentReceived, emitPaymentSent } from "../services/socketService";
 import { getDb } from "../db";
 import { payments, loads, users } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
@@ -121,6 +122,7 @@ export const paymentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database not available");
       await db.insert(payments).values({ payerId: ctx.user.id, payeeId: ctx.user.id, amount: input.amount, currency: "USD", paymentType: "subscription", status: "succeeded", paymentMethod: input.paymentMethod });
+      try { emitPaymentReceived(ctx.user.id, { type: "deposit", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch {}
       return { success: true };
     }),
 
@@ -129,6 +131,7 @@ export const paymentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database not available");
       await db.insert(payments).values({ payerId: ctx.user.id, payeeId: ctx.user.id, amount: input.amount, currency: "USD", paymentType: "payout", status: "pending" });
+      try { emitPaymentSent(ctx.user.id, { type: "withdrawal", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch {}
       return { success: true };
     }),
 
@@ -163,6 +166,8 @@ export const paymentsRouter = router({
         status: "pending",
         stripePaymentIntentId: stripeId,
       });
+      try { emitPaymentSent(ctx.user.id, { type: "load_payment", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch {}
+      try { emitPaymentReceived(input.recipientId, { type: "load_payment", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch {}
       return { success: true, clientSecret: (pi as any)?.client_secret || null, paymentIntentId: stripeId };
     }),
 
@@ -513,6 +518,7 @@ export const paymentsRouter = router({
           paymentType: "load_payment", status: "succeeded",
           paymentMethod: input.method || "card",
         });
+        try { emitPaymentSent(ctx.user.id, { type: "load_payment", amount: input.amount, currency: "USD", timestamp: new Date().toISOString() }); } catch {}
         return { success: true, transactionId: `txn_${(row as any).insertId || Date.now()}` };
       }
       return { success: false, transactionId: null };

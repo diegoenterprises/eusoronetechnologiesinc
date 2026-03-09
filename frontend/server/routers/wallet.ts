@@ -10,6 +10,7 @@ import { TRPCError } from "@trpc/server";
 import { eq, and, desc, gte, lte, sql, or, inArray } from "drizzle-orm";
 import { router, isolatedApprovedProcedure as auditedProtectedProcedure, isolatedAdminProcedure as auditedAdminProcedure, sensitiveData, pci } from "../_core/trpc";
 import { logger } from "../_core/logger";
+import { emitWalletUpdate, emitPaymentSent, emitPaymentReceived } from "../services/socketService";
 import { getDb } from "../db";
 import {
   wallets,
@@ -606,13 +607,15 @@ export const walletRouter = router({
         totalSpent: String(parseFloat(wallet.totalSpent || "0") + input.amount),
       }).where(eq(wallets.id, wallet.id));
 
+      try { emitWalletUpdate(userId, { type: "payout", amount: -input.amount, currency: "USD", timestamp: new Date().toISOString() }); } catch {}
+
       return {
         id: `payout_${txn.id}`,
         amount: input.amount,
         fee,
         netAmount,
         status: input.instant ? "processing" : "pending",
-        estimatedArrival: input.instant 
+        estimatedArrival: input.instant
           ? new Date(Date.now() + 30 * 60 * 1000).toISOString()
           : new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
         createdAt: new Date().toISOString(),
@@ -873,6 +876,13 @@ export const walletRouter = router({
           completedAt: new Date(),
         });
       }
+
+      try {
+        emitPaymentSent(userId, { type: "p2p_transfer", amount: input.amount, currency: "USD", timestamp: new Date().toISOString() });
+        emitPaymentReceived(Number(input.recipientId), { type: "p2p_transfer", amount: netAmount, currency: "USD", timestamp: new Date().toISOString() });
+        emitWalletUpdate(userId, { type: "p2p_transfer", amount: -input.amount, currency: "USD", timestamp: new Date().toISOString() });
+        emitWalletUpdate(Number(input.recipientId), { type: "p2p_transfer", amount: netAmount, currency: "USD", timestamp: new Date().toISOString() });
+      } catch {}
 
       return {
         id: `transfer_${result.insertId}`,
@@ -1147,6 +1157,8 @@ export const walletRouter = router({
         })
         .where(eq(wallets.id, wallet.id));
 
+      try { emitWalletUpdate(userId, { type: "instant_pay", amount: -input.amount, currency: "USD", timestamp: new Date().toISOString() }); } catch {}
+
       return {
         id: result.insertId,
         amount: input.amount,
@@ -1258,6 +1270,13 @@ export const walletRouter = router({
           .set({ availableBalance: String(recipientBalance + input.amount) })
           .where(eq(wallets.id, recipientWallet.id));
       }
+
+      try {
+        emitPaymentSent(userId, { type: "chat_payment", amount: input.amount, currency: "USD", timestamp: new Date().toISOString() });
+        if (input.paymentType !== "request") {
+          emitPaymentReceived(input.recipientUserId, { type: "chat_payment", amount: input.amount, currency: "USD", timestamp: new Date().toISOString() });
+        }
+      } catch {}
 
       return {
         id: result.insertId,
