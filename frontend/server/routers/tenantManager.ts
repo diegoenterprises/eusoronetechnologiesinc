@@ -1,0 +1,125 @@
+// GAP-445: PaaS White-Label Infrastructure — Tenant Management tRPC Router
+import { router, roleProcedure, protectedProcedure } from "../_core/trpc";
+import { z } from "zod";
+import { getDb } from "../db";
+import { sql } from "drizzle-orm";
+import crypto from "crypto";
+
+const superAdminProcedure = roleProcedure("SUPER_ADMIN");
+
+export const tenantManagerRouter = router({
+  // Create a new tenant
+  create: superAdminProcedure
+    .input(z.object({
+      parentCarrierId: z.number().optional(),
+      customDomain: z.string().optional(),
+      maxUsers: z.number().default(50),
+      maxLoads: z.number().default(1000),
+      features: z.record(z.string(), z.any()).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const tenantKey = `tk_${crypto.randomBytes(24).toString("hex")}`;
+      await db.execute(
+        sql`INSERT INTO tenants (tenantKey, parentCarrierId, customDomain, maxUsers, maxLoads, features)
+            VALUES (${tenantKey}, ${input.parentCarrierId || null}, ${input.customDomain || null}, ${input.maxUsers}, ${input.maxLoads}, ${JSON.stringify(input.features || {})})`
+      );
+      return { success: true, tenantKey };
+    }),
+
+  // List all tenants
+  list: superAdminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+    const [rows] = await db.execute(sql`SELECT * FROM tenants ORDER BY id DESC LIMIT 200`) as any;
+    return (rows || []).map((r: any) => ({
+      ...r,
+      features: typeof r.features === "string" ? JSON.parse(r.features) : r.features,
+      tenantKeyPreview: r.tenantKey ? `${r.tenantKey.substring(0, 8)}...` : null,
+    }));
+  }),
+
+  // Get single tenant
+  get: superAdminProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const [rows] = await db.execute(sql`SELECT * FROM tenants WHERE id = ${input.id} LIMIT 1`) as any;
+      if (!rows?.[0]) return null;
+      const t = rows[0];
+      t.features = typeof t.features === "string" ? JSON.parse(t.features) : t.features;
+
+      // Get user count
+      const [userRows] = await db.execute(
+        sql`SELECT COUNT(*) as cnt FROM tenant_data_isolation WHERE tenantId = ${input.id}`
+      ) as any;
+      t.userCount = Number(userRows?.[0]?.cnt || 0);
+      return t;
+    }),
+
+  // Update tenant
+  update: superAdminProcedure
+    .input(z.object({
+      id: z.number(),
+      customDomain: z.string().optional(),
+      maxUsers: z.number().optional(),
+      maxLoads: z.number().optional(),
+      status: z.enum(["active", "suspended", "deactivated"]).optional(),
+      features: z.record(z.string(), z.any()).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const sets: string[] = [];
+      if (input.customDomain !== undefined) sets.push(`customDomain = '${input.customDomain}'`);
+      if (input.maxUsers !== undefined) sets.push(`maxUsers = ${input.maxUsers}`);
+      if (input.maxLoads !== undefined) sets.push(`maxLoads = ${input.maxLoads}`);
+      if (input.status !== undefined) sets.push(`status = '${input.status}'`);
+      if (input.features !== undefined) sets.push(`features = '${JSON.stringify(input.features)}'`);
+      if (sets.length === 0) return { success: true };
+      await db.execute(sql.raw(`UPDATE tenants SET ${sets.join(", ")} WHERE id = ${input.id}`));
+      return { success: true };
+    }),
+
+  // Assign user to tenant
+  assignUser: superAdminProcedure
+    .input(z.object({ userId: z.number(), tenantId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      await db.execute(
+        sql`INSERT INTO tenant_data_isolation (userId, tenantId) VALUES (${input.userId}, ${input.tenantId})
+            ON DUPLICATE KEY UPDATE tenantId = ${input.tenantId}`
+      );
+      return { success: true };
+    }),
+
+  // Regenerate tenant API key
+  regenerateKey: superAdminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const newKey = `tk_${crypto.randomBytes(24).toString("hex")}`;
+      await db.execute(sql`UPDATE tenants SET tenantKey = ${newKey} WHERE id = ${input.id}`);
+      return { success: true, tenantKey: newKey };
+    }),
+
+  // Get tenant stats
+  getStats: superAdminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { total: 0, active: 0, suspended: 0 };
+    const [rows] = await db.execute(
+      sql`SELECT status, COUNT(*) as cnt FROM tenants GROUP BY status`
+    ) as any;
+    const counts: Record<string, number> = {};
+    (rows || []).forEach((r: any) => { counts[r.status] = Number(r.cnt); });
+    return {
+      total: Object.values(counts).reduce((a, b) => a + b, 0),
+      active: counts.active || 0,
+      suspended: counts.suspended || 0,
+    };
+  }),
+});

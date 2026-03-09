@@ -407,6 +407,8 @@ const ESANGOperations = lazy(() => import("./pages/admin/ESANGOperations"));
 const UptimeDashboard = lazy(() => import("./pages/admin/UptimeDashboard"));
 const IndustryProfiles = lazy(() => import("./pages/admin/IndustryProfiles"));
 const DisasterResilience = lazy(() => import("./pages/admin/DisasterResilience"));
+// ── Phase 5: Scale + Polish + Innovation (GAP-436 → GAP-451) ──
+const Phase5CommandCenter = lazy(() => import("./pages/superadmin/Phase5CommandCenter"));
 
 function Router() {
   // Role constants for route protection
@@ -846,6 +848,8 @@ function Router() {
       <Route path={"/super-admin/backups"} component={guard(SUPR, <BackupManagement />)} />
       <Route path={"/super-admin/releases"} component={guard(SUPR, <ReleaseNotes />)} />
       <Route path={"/super-admin/data-export"} component={guard(SUPR, <DataExport />)} />
+      {/* Phase 5: Innovation Lab + Scale */}
+      <Route path={"/super-admin/phase5"} component={guard(SUPR, <Phase5CommandCenter />)} />
 
       {/* ============================================ */}
       {/* UTILITY & DETAIL ROUTES */}

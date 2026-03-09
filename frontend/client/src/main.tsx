@@ -7,6 +7,7 @@ import superjson from "superjson";
 import App from "./App";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { getLoginUrl } from "./const";
+import "./i18n";
 import "./index.css";
 import "./styles/theme-dark-premium.css";
 import "./styles/theme-light.css";

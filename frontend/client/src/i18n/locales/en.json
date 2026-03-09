@@ -1,0 +1,109 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "loads": "Loads",
+    "messages": "Messages",
+    "settings": "Settings",
+    "support": "Support",
+    "news": "News",
+    "billing": "Billing",
+    "wallet": "Wallet"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "refresh": "Refresh",
+    "loading": "Loading...",
+    "noResults": "No results found",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "status": "Status",
+    "actions": "Actions",
+    "details": "Details",
+    "total": "Total",
+    "active": "Active",
+    "pending": "Pending",
+    "completed": "Completed"
+  },
+  "auth": {
+    "login": "Log In",
+    "logout": "Log Out",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "welcomeBack": "Welcome back"
+  },
+  "loads": {
+    "title": "Load Board",
+    "createLoad": "Create Load",
+    "myLoads": "My Loads",
+    "available": "Available Loads",
+    "origin": "Origin",
+    "destination": "Destination",
+    "weight": "Weight",
+    "rate": "Rate",
+    "distance": "Distance",
+    "equipment": "Equipment",
+    "pickupDate": "Pickup Date",
+    "deliveryDate": "Delivery Date",
+    "status": {
+      "posted": "Posted",
+      "assigned": "Assigned",
+      "inTransit": "In Transit",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled"
+    }
+  },
+  "hazmat": {
+    "title": "Hazmat Compliance",
+    "unNumber": "UN Number",
+    "hazmatClass": "Hazmat Class",
+    "packingGroup": "Packing Group",
+    "properShippingName": "Proper Shipping Name",
+    "emergencyResponse": "Emergency Response",
+    "placard": "Placard Required"
+  },
+  "compliance": {
+    "title": "Compliance",
+    "adr": "EU ADR Compliance",
+    "imdg": "IMDG Code",
+    "dot": "DOT Regulations",
+    "driverCertification": "Driver Certification",
+    "tunnelRestrictions": "Tunnel Restrictions"
+  },
+  "fleet": {
+    "title": "Fleet Management",
+    "vehicles": "Vehicles",
+    "drivers": "Drivers",
+    "tracking": "Tracking",
+    "maintenance": "Maintenance",
+    "telemetry": "Telemetry"
+  },
+  "innovationLab": {
+    "title": "Innovation Lab",
+    "newExperiment": "New Experiment",
+    "hypothesis": "Hypothesis",
+    "variants": "Variants",
+    "sampleSize": "Sample Size",
+    "significance": "Statistical Significance",
+    "pValue": "p-value",
+    "computeResults": "Compute Results"
+  },
+  "language": {
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "switchLanguage": "Switch Language"
+  }
+}

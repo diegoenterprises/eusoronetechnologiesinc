@@ -8196,3 +8196,168 @@ export const lanePerformanceCache = mysqlTable("lane_performance_cache", {
   lastUpdated: datetime("lastUpdated").notNull().default(sql`NOW()`),
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// PHASE 5: SCALE + POLISH + INNOVATION (GAP-436 → GAP-451)
+// ═══════════════════════════════════════════════════════════════════
+
+// GAP-451: Innovation Lab — A/B Testing Framework
+export const experiments = mysqlTable("experiments", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  status: varchar("status", { length: 50 }).notNull().default("draft"),
+  hypothesisStatement: text("hypothesisStatement").notNull(),
+  variants: json("variants").notNull(),
+  targetUserSegment: varchar("targetUserSegment", { length: 255 }),
+  minSampleSize: int("minSampleSize").notNull().default(100),
+  significanceThreshold: decimal("significanceThreshold", { precision: 3, scale: 2 }).default("0.95"),
+  startDate: datetime("startDate").notNull(),
+  endDate: datetime("endDate"),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
+});
+
+export const variantAssignments = mysqlTable("variant_assignments", {
+  id: int("id").autoincrement().primaryKey(),
+  experimentId: int("experimentId").notNull(),
+  userId: int("userId").notNull(),
+  variantId: varchar("variantId", { length: 50 }).notNull(),
+  assignedAt: timestamp("assignedAt").defaultNow(),
+  region: varchar("region", { length: 50 }),
+  userType: varchar("userType", { length: 50 }),
+});
+
+export const metricEvents = mysqlTable("metric_events", {
+  id: int("id").autoincrement().primaryKey(),
+  experimentId: int("experimentId").notNull(),
+  userId: int("userId").notNull(),
+  variantId: varchar("variantId", { length: 50 }).notNull(),
+  metricName: varchar("metricName", { length: 100 }).notNull(),
+  metricValue: decimal("metricValue", { precision: 10, scale: 4 }).notNull(),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
+export const experimentResults = mysqlTable("experiment_results", {
+  id: int("id").autoincrement().primaryKey(),
+  experimentId: int("experimentId").notNull(),
+  variantId: varchar("variantId", { length: 50 }).notNull(),
+  metricName: varchar("metricName", { length: 100 }).notNull(),
+  sampleSize: int("sampleSize").notNull(),
+  mean: decimal("mean", { precision: 10, scale: 4 }).notNull(),
+  stdDev: decimal("stdDev", { precision: 10, scale: 4 }),
+  pValue: decimal("pValue", { precision: 5, scale: 4 }),
+  confidenceIntervalLow: decimal("confidenceIntervalLow", { precision: 10, scale: 4 }),
+  confidenceIntervalHigh: decimal("confidenceIntervalHigh", { precision: 10, scale: 4 }),
+  isSignificant: boolean("isSignificant").default(false),
+  calculatedAt: timestamp("calculatedAt").defaultNow(),
+});
+
+// GAP-450: White-Label Branding Framework
+export const tenantBranding = mysqlTable("tenant_branding", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenantId").notNull(),
+  logoUrl: varchar("logoUrl", { length: 500 }),
+  faviconUrl: varchar("faviconUrl", { length: 500 }),
+  primaryColor: varchar("primaryColor", { length: 7 }).default("#1E40AF"),
+  secondaryColor: varchar("secondaryColor", { length: 7 }).default("#059669"),
+  fontFamily: varchar("fontFamily", { length: 100 }).default("Inter, system-ui"),
+  customDomain: varchar("customDomain", { length: 255 }),
+  brandName: varchar("brandName", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
+});
+
+// GAP-449: EU ADR Compliance Engine
+export const adrCompliance = mysqlTable("adr_compliance", {
+  id: int("id").autoincrement().primaryKey(),
+  loadId: int("loadId").notNull(),
+  adrClass: varchar("adrClass", { length: 10 }).notNull(),
+  adrUnNumber: varchar("adrUnNumber", { length: 10 }),
+  tunnelRestrictionCode: varchar("tunnelRestrictionCode", { length: 1 }),
+  documentGeneratedAt: timestamp("documentGeneratedAt"),
+  documentUrl: varchar("documentUrl", { length: 500 }),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+export const adrDriverCertifications = mysqlTable("adr_driver_certifications", {
+  id: int("id").autoincrement().primaryKey(),
+  driverId: int("driverId").notNull(),
+  certificationId: varchar("certificationId", { length: 100 }).notNull(),
+  adrClass: varchar("adrClass", { length: 10 }),
+  expiryDate: datetime("expiryDate").notNull(),
+  countryCode: varchar("countryCode", { length: 2 }).default("DE"),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+// GAP-448: IMDG Code Integration (Multi-Modal Hazmat)
+export const imdgCompliance = mysqlTable("imdg_compliance", {
+  id: int("id").autoincrement().primaryKey(),
+  loadId: int("loadId").notNull(),
+  imdgClass: varchar("imdgClass", { length: 10 }).notNull(),
+  imdgProperShippingName: varchar("imdgProperShippingName", { length: 255 }).notNull(),
+  packingGroupCode: varchar("packingGroupCode", { length: 3 }),
+  containerPackingCertUrl: varchar("containerPackingCertUrl", { length: 500 }),
+  dgDeclarationFormUrl: varchar("dgDeclarationFormUrl", { length: 500 }),
+  vesselManifestSubmitted: boolean("vesselManifestSubmitted").default(false),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+// GAP-446: Autonomous Vehicle Integration Prep
+export const autonomousVehicles = mysqlTable("autonomous_vehicles", {
+  id: int("id").autoincrement().primaryKey(),
+  vehicleId: int("vehicleId").notNull(),
+  vin: varchar("vin", { length: 17 }).notNull(),
+  avLevel: int("avLevel").notNull(),
+  telemetryLastUpdate: timestamp("telemetryLastUpdate"),
+  operationalStatus: varchar("operationalStatus", { length: 50 }).default("idle"),
+  remotePilotId: int("remotePilotId"),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+export const avTelemetry = mysqlTable("av_telemetry", {
+  id: int("id").autoincrement().primaryKey(),
+  avId: int("avId").notNull(),
+  timestamp: timestamp("timestamp").defaultNow(),
+  latitude: decimal("latitude", { precision: 10, scale: 8 }).notNull(),
+  longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
+  speed: decimal("speed", { precision: 5, scale: 2 }),
+  fuelLevel: decimal("fuelLevel", { precision: 5, scale: 2 }),
+  engineTemp: decimal("engineTemp", { precision: 5, scale: 2 }),
+  diagnosticCode: varchar("diagnosticCode", { length: 50 }),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+// GAP-445: PaaS White-Label Infrastructure
+export const tenants = mysqlTable("tenants", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantKey: varchar("tenantKey", { length: 100 }).notNull(),
+  parentCarrierId: int("parentCarrierId"),
+  customDomain: varchar("customDomain", { length: 255 }),
+  maxUsers: int("maxUsers").default(50),
+  maxLoads: int("maxLoads").default(1000),
+  features: json("features"),
+  status: varchar("status", { length: 50 }).default("active"),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+export const tenantDataIsolation = mysqlTable("tenant_data_isolation", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  tenantId: int("tenantId").notNull(),
+  visibleLoadIds: json("visibleLoadIds"),
+  visibleCarrierIds: json("visibleCarrierIds"),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+// GAP-444: Blockchain Audit Trail
+export const blockchainAuditTrail = mysqlTable("blockchain_audit_trail", {
+  id: int("id").autoincrement().primaryKey(),
+  loadId: int("loadId").notNull(),
+  eventType: varchar("eventType", { length: 100 }).notNull(),
+  eventData: json("eventData").notNull(),
+  blockHash: varchar("blockHash", { length: 256 }),
+  previousBlockHash: varchar("previousBlockHash", { length: 256 }),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+

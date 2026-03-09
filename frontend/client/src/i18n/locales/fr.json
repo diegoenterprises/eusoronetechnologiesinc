@@ -1,0 +1,109 @@
+{
+  "nav": {
+    "dashboard": "Tableau de Bord",
+    "loads": "Chargements",
+    "messages": "Messages",
+    "settings": "Paramètres",
+    "support": "Assistance",
+    "news": "Actualités",
+    "billing": "Facturation",
+    "wallet": "Portefeuille"
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "refresh": "Actualiser",
+    "loading": "Chargement...",
+    "noResults": "Aucun résultat",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "submit": "Soumettre",
+    "close": "Fermer",
+    "yes": "Oui",
+    "no": "Non",
+    "status": "Statut",
+    "actions": "Actions",
+    "details": "Détails",
+    "total": "Total",
+    "active": "Actif",
+    "pending": "En attente",
+    "completed": "Terminé"
+  },
+  "auth": {
+    "login": "Se Connecter",
+    "logout": "Se Déconnecter",
+    "register": "S'inscrire",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "welcomeBack": "Bon retour"
+  },
+  "loads": {
+    "title": "Tableau des Chargements",
+    "createLoad": "Créer un Chargement",
+    "myLoads": "Mes Chargements",
+    "available": "Chargements Disponibles",
+    "origin": "Origine",
+    "destination": "Destination",
+    "weight": "Poids",
+    "rate": "Tarif",
+    "distance": "Distance",
+    "equipment": "Équipement",
+    "pickupDate": "Date d'Enlèvement",
+    "deliveryDate": "Date de Livraison",
+    "status": {
+      "posted": "Publié",
+      "assigned": "Attribué",
+      "inTransit": "En Transit",
+      "delivered": "Livré",
+      "cancelled": "Annulé"
+    }
+  },
+  "hazmat": {
+    "title": "Conformité Matières Dangereuses",
+    "unNumber": "Numéro ONU",
+    "hazmatClass": "Classe de Danger",
+    "packingGroup": "Groupe d'Emballage",
+    "properShippingName": "Désignation Officielle de Transport",
+    "emergencyResponse": "Intervention d'Urgence",
+    "placard": "Plaque Requise"
+  },
+  "compliance": {
+    "title": "Conformité",
+    "adr": "Conformité ADR UE",
+    "imdg": "Code IMDG",
+    "dot": "Réglementations DOT",
+    "driverCertification": "Certification du Conducteur",
+    "tunnelRestrictions": "Restrictions de Tunnel"
+  },
+  "fleet": {
+    "title": "Gestion de Flotte",
+    "vehicles": "Véhicules",
+    "drivers": "Conducteurs",
+    "tracking": "Suivi",
+    "maintenance": "Maintenance",
+    "telemetry": "Télémétrie"
+  },
+  "innovationLab": {
+    "title": "Laboratoire d'Innovation",
+    "newExperiment": "Nouvelle Expérience",
+    "hypothesis": "Hypothèse",
+    "variants": "Variantes",
+    "sampleSize": "Taille de l'Échantillon",
+    "significance": "Significativité Statistique",
+    "pValue": "valeur p",
+    "computeResults": "Calculer les Résultats"
+  },
+  "language": {
+    "en": "Anglais",
+    "es": "Espagnol",
+    "fr": "Français",
+    "switchLanguage": "Changer de Langue"
+  }
+}

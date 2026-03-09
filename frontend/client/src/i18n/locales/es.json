@@ -1,0 +1,109 @@
+{
+  "nav": {
+    "dashboard": "Panel de Control",
+    "loads": "Cargas",
+    "messages": "Mensajes",
+    "settings": "Configuración",
+    "support": "Soporte",
+    "news": "Noticias",
+    "billing": "Facturación",
+    "wallet": "Billetera"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "refresh": "Actualizar",
+    "loading": "Cargando...",
+    "noResults": "Sin resultados",
+    "confirm": "Confirmar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "submit": "Enviar",
+    "close": "Cerrar",
+    "yes": "Sí",
+    "no": "No",
+    "status": "Estado",
+    "actions": "Acciones",
+    "details": "Detalles",
+    "total": "Total",
+    "active": "Activo",
+    "pending": "Pendiente",
+    "completed": "Completado"
+  },
+  "auth": {
+    "login": "Iniciar Sesión",
+    "logout": "Cerrar Sesión",
+    "register": "Registrarse",
+    "email": "Correo Electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "welcomeBack": "Bienvenido de nuevo"
+  },
+  "loads": {
+    "title": "Tablero de Cargas",
+    "createLoad": "Crear Carga",
+    "myLoads": "Mis Cargas",
+    "available": "Cargas Disponibles",
+    "origin": "Origen",
+    "destination": "Destino",
+    "weight": "Peso",
+    "rate": "Tarifa",
+    "distance": "Distancia",
+    "equipment": "Equipo",
+    "pickupDate": "Fecha de Recogida",
+    "deliveryDate": "Fecha de Entrega",
+    "status": {
+      "posted": "Publicada",
+      "assigned": "Asignada",
+      "inTransit": "En Tránsito",
+      "delivered": "Entregada",
+      "cancelled": "Cancelada"
+    }
+  },
+  "hazmat": {
+    "title": "Cumplimiento de Materiales Peligrosos",
+    "unNumber": "Número ONU",
+    "hazmatClass": "Clase de Peligro",
+    "packingGroup": "Grupo de Embalaje",
+    "properShippingName": "Nombre de Envío",
+    "emergencyResponse": "Respuesta de Emergencia",
+    "placard": "Placa Requerida"
+  },
+  "compliance": {
+    "title": "Cumplimiento",
+    "adr": "Cumplimiento EU ADR",
+    "imdg": "Código IMDG",
+    "dot": "Regulaciones DOT",
+    "driverCertification": "Certificación del Conductor",
+    "tunnelRestrictions": "Restricciones de Túneles"
+  },
+  "fleet": {
+    "title": "Gestión de Flota",
+    "vehicles": "Vehículos",
+    "drivers": "Conductores",
+    "tracking": "Rastreo",
+    "maintenance": "Mantenimiento",
+    "telemetry": "Telemetría"
+  },
+  "innovationLab": {
+    "title": "Laboratorio de Innovación",
+    "newExperiment": "Nuevo Experimento",
+    "hypothesis": "Hipótesis",
+    "variants": "Variantes",
+    "sampleSize": "Tamaño de Muestra",
+    "significance": "Significancia Estadística",
+    "pValue": "valor p",
+    "computeResults": "Calcular Resultados"
+  },
+  "language": {
+    "en": "Inglés",
+    "es": "Español",
+    "fr": "Francés",
+    "switchLanguage": "Cambiar Idioma"
+  }
+}

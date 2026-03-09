@@ -220,6 +220,14 @@ import { esangAIRouter } from "./routers/esangAI";
 import { infrastructureRouter } from "./routers/infrastructure";
 import { industryProfilesRouter } from "./routers/industryProfiles";
 import { developerPortalRouter } from "./routers/developerPortal";
+// ═══ Phase 5: Scale + Polish + Innovation (GAP-436 → GAP-451) ═══
+import { experimentsRouter } from "./routers/experiments";
+import { blockchainAuditRouter } from "./routers/blockchainAudit";
+import { adrRouter as adrComplianceRouter } from "./routers/adr";
+import { imdgRouter } from "./routers/imdg";
+import { autonomousRouter } from "./routers/autonomous";
+import { brandingRouter } from "./routers/branding";
+import { tenantManagerRouter } from "./routers/tenantManager";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -1411,6 +1419,22 @@ export const appRouter = router({
   industryProfile: industryProfilesRouter,
   // Developer Portal + MCP Write Tools
   devPortal: developerPortalRouter,
+
+  // ═══ Phase 5: Scale + Polish + Innovation (GAP-436 → GAP-451) ═══
+  // GAP-451: Innovation Lab A/B Testing
+  experiments: experimentsRouter,
+  // GAP-444: Blockchain Audit Trail
+  blockchainAudit: blockchainAuditRouter,
+  // GAP-449: EU ADR Compliance
+  adrCompliance: adrComplianceRouter,
+  // GAP-448: IMDG Code (Multi-Modal Hazmat)
+  imdg: imdgRouter,
+  // GAP-446: Autonomous Vehicle Integration
+  autonomous: autonomousRouter,
+  // GAP-450: White-Label Branding
+  branding: brandingRouter,
+  // GAP-445: PaaS Tenant Management
+  tenantManager: tenantManagerRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,

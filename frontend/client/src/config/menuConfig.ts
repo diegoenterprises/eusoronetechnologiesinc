@@ -1321,6 +1321,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Settings", label: "Platform Config", path: "/super-admin/settings", badge: 0, description: "System settings & configuration" },
       ],
     },
+    {
+      icon: "FlaskConical",
+      label: "Innovation Lab",
+      path: "/super-admin/phase5",
+      badge: 0,
+      description: "A/B testing, blockchain audit, EU compliance, AV fleet & white-label",
+    },
     { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Platform-wide messaging" },
     { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
     { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & documentation" },
