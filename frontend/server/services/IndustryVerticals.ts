@@ -176,11 +176,6 @@ export const INDUSTRY_VERTICALS: Record<string, IndustryVertical> = {
     equipmentTypes: ["MC-306", "MC-307", "MC-312", "MC-331", "MC-338", "Food-Grade Tanker", "Acid Tanker"],
     cargoTypes: ["petroleum", "chemicals", "liquid", "food_grade_liquid", "crude_oil", "fuel", "water"],
     customFields: [
-      { key: "productName", label: "Product Name", type: "text", required: true, placeholder: "e.g. Diesel Fuel" },
-      { key: "volume", label: "Volume", type: "number", required: true, placeholder: "6000", unit: "gallons" },
-      { key: "specificGravity", label: "Specific Gravity", type: "number", required: false, placeholder: "0.85" },
-      { key: "tankSpec", label: "Tank Specification", type: "select", required: true, options: ["MC-306/DOT-406", "MC-307/DOT-407", "MC-312/DOT-412", "MC-331", "MC-338", "Food-Grade SS"] },
-      { key: "foodGrade", label: "Food-Grade Required", type: "boolean", required: false, defaultValue: false },
       { key: "kosher", label: "Kosher Certified", type: "boolean", required: false, defaultValue: false },
       { key: "lastProduct", label: "Last Product Hauled", type: "text", required: false, placeholder: "For cross-contamination check" },
       { key: "washRequired", label: "Tank Wash Required", type: "boolean", required: false, defaultValue: false },

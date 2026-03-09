@@ -20,7 +20,7 @@ import {
   Droplets, Wind, Box, Thermometer, Snowflake,
   Scale, Link2, Plus, Trash2, Calculator,
   GlassWater, MilkOff, Clock, Zap, Users, User,
-  Container, Blinds, ArrowDownToLine
+  Container, Blinds, ArrowDownToLine, ChevronDown
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { EsangIcon } from "@/components/EsangIcon";
@@ -327,6 +327,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
     setVerticalFieldData(prev => ({ ...prev, [key]: value }));
   }, []);
   const [rateMode, setRateMode] = useState<"total" | "perMile">("total");
+  const [showSpectraMatch, setShowSpectraMatch] = useState(false);
   const [compSearchQuery, setCompSearchQuery] = useState("");
   const [activeCompIdx, setActiveCompIdx] = useState<number | null>(null);
   const [showCompSuggestions, setShowCompSuggestions] = useState(false);
@@ -562,10 +563,10 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
   // Build active step indices: filter SPECTRA-MATCH for non-hazmat, filter by quickMode
   const activeStepIndices = useMemo(() => {
     let indices = ALL_STEPS.map((_, i) => i);
-    if (!isHazmat) indices = indices.filter(i => i !== 3); // Skip SPECTRA-MATCH
+    indices = indices.filter(i => i !== 3); // SPECTRA-MATCH now embedded in Product Classification step
     if (isQuickMode && wizConfig.quickSteps) indices = indices.filter(i => wizConfig.quickSteps!.includes(i));
     return indices;
-  }, [isHazmat, isQuickMode, wizConfig.quickSteps]);
+  }, [isQuickMode, wizConfig.quickSteps]);
   const STEPS = activeStepIndices.map(i => ALL_STEPS[i]);
   const rs = activeStepIndices[step] ?? 0; // Map logical step → real content index
 
@@ -1325,6 +1326,75 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   </div>
                 )}
                 {formData.hazmatClass && <HazmatDecalPreview hazmatClass={formData.hazmatClass} unNumber={formData.unNumber} productName={formData.productName} />}
+
+                {/* ── SPECTRA-MATCH Collapsible — only for liquid/gas tanker hazmat ── */}
+                {isLiquidOrGas && formData.hazmatClass && formData.spectraVerified && (
+                  <div className="mt-4 rounded-xl border border-cyan-500/20 overflow-hidden">
+                    <button
+                      onClick={() => setShowSpectraMatch(!showSpectraMatch)}
+                      className="w-full flex items-center justify-between p-4 bg-cyan-500/5 hover:bg-cyan-500/10 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <EsangIcon className="w-4 h-4 text-cyan-400" />
+                        <span className="text-sm font-semibold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">SPECTRA-MATCH Verification</span>
+                        <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">Optional</Badge>
+                      </div>
+                      <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform duration-200", showSpectraMatch && "rotate-180")} />
+                    </button>
+                    {showSpectraMatch && (
+                      <div className="p-4 space-y-4 bg-slate-900/20 border-t border-cyan-500/10 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <p className="text-slate-400 text-xs">Enter physical properties so SPECTRA-MATCH can verify product identity. All fields improve verification accuracy.</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">API Gravity (degrees)</label>
+                            <Input type="number" step="0.1" value={formData.apiGravity || ""} onChange={(e: any) => updateField("apiGravity", e.target.value)} placeholder="e.g., 35.5" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">BS&W (%)</label>
+                            <Input type="number" step="0.01" value={formData.bsw || ""} onChange={(e: any) => updateField("bsw", e.target.value)} placeholder="e.g., 0.5" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Sulfur Content (%)</label>
+                            <Input type="number" step="0.01" value={formData.sulfurContent || ""} onChange={(e: any) => updateField("sulfurContent", e.target.value)} placeholder="e.g., 1.2" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Flash Point (F)</label>
+                            <Input type="number" value={formData.flashPoint || ""} onChange={(e: any) => updateField("flashPoint", e.target.value)} placeholder="e.g., -45" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Viscosity (cSt @ 40C)</label>
+                            <Input type="number" step="0.1" value={formData.viscosity || ""} onChange={(e: any) => updateField("viscosity", e.target.value)} placeholder="e.g., 5.8" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Pour Point (F)</label>
+                            <Input type="number" value={formData.pourPoint || ""} onChange={(e: any) => updateField("pourPoint", e.target.value)} placeholder="e.g., -20" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Reid Vapor Pressure (psi)</label>
+                            <Input type="number" step="0.1" value={formData.reidVaporPressure || ""} onChange={(e: any) => updateField("reidVaporPressure", e.target.value)} placeholder="e.g., 8.5" className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Color / Appearance</label>
+                            <Select value={formData.appearance || ""} onValueChange={(v: any) => updateField("appearance", v)}>
+                              <SelectTrigger className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Clear">Clear / Colorless</SelectItem>
+                                <SelectItem value="Light">Light / Straw</SelectItem>
+                                <SelectItem value="Amber">Amber</SelectItem>
+                                <SelectItem value="Dark">Dark Brown</SelectItem>
+                                <SelectItem value="Black">Black</SelectItem>
+                                <SelectItem value="Green">Green / Olive</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-700/20 border border-slate-200 dark:border-slate-700/30">
+                          <div className="flex items-center gap-2"><Info className="w-3.5 h-3.5 text-slate-500" /><span className="text-slate-500 text-[10px]">These parameters feed into SPECTRA-MATCH multi-parameter identification to cross-verify the declared product against physical properties.</span></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>) : (
                 <div className="space-y-4">
                   <div ref={productDropdownRef} className="relative">
@@ -2770,7 +2840,11 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
               {formData.distance && (formData.rate || formData.ratePerMile) && (() => {
                 const hz = hzQuoteQuery.data;
                 const hzRate = hz?.pricing?.ratePerMile || 0;
-                // Fallback base rates by equipment type (mirrors EQUIPMENT_RATES in quotes.ts)
+                // ML prediction RPM (now backed by real DB lane data)
+                const mlPredRPM = mlRatePrediction?.data?.predictedSpotRate && formData.distance > 0
+                  ? Math.round((mlRatePrediction.data.predictedSpotRate / formData.distance) * 100) / 100
+                  : 0;
+                // Equipment-based fallback only when no real data sources available
                 const FALLBACK_BASE_RPM: Record<string, number> = {
                   tanker: 3.05, mc331: 3.45, mc338: 3.85, dry_van: 2.65,
                   flatbed: 2.95, reefer: 3.15, hopper: 2.85, hazmat_van: 3.10,
@@ -2778,7 +2852,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                 };
                 const distAdj = formData.distance < 200 ? 1.25 : formData.distance < 500 ? 1.0 : 0.85;
                 const fallbackRPM = (FALLBACK_BASE_RPM[rateEquipmentType] || 2.65) * distAdj;
-                const marketRPM = hzRate > 0 ? hzRate : fallbackRPM;
+                // Priority: Hot Zones (real-time) > ML prediction (DB-backed) > equipment fallback
+                const marketRPM = hzRate > 0 ? hzRate : mlPredRPM > 0 ? mlPredRPM : fallbackRPM;
                 const marketLow = hz?.marketComparison ? Math.round((hz.marketComparison.low / Math.max(formData.distance, 1)) * 100) / 100 : Math.round(marketRPM * 0.85 * 100) / 100;
                 const marketHigh = hz?.marketComparison ? Math.round((hz.marketComparison.high / Math.max(formData.distance, 1)) * 100) / 100 : Math.round(marketRPM * 1.18 * 100) / 100;
                 const userRPM = Number(formData.ratePerMile || (Number(formData.rate) / formData.distance).toFixed(2));

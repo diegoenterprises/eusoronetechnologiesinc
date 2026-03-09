@@ -1024,7 +1024,7 @@ async function startServer() {
   });
 
   // =========================================================================
-  // MCP SERVER — Claude Cowork custom connector (Model Context Protocol)
+  // MCP SERVER — Model Context Protocol connector
   // =========================================================================
   try {
     const { mountMcpServer } = await import("../services/mcpServer");

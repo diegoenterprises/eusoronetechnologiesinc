@@ -1,6 +1,6 @@
 /**
- * MCP SERVER — Model Context Protocol for Claude Cowork
- * Exposes EusoTrip platform data & tools so Claude can connect as a custom connector.
+ * MCP SERVER — Model Context Protocol
+ * Exposes EusoTrip platform data & tools via MCP for AI-powered integrations.
  * 
  * Transport: Streamable HTTP (stateless)
  * Auth: Bearer token via MCP_API_KEY env var
