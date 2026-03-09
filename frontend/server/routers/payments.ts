@@ -135,8 +135,34 @@ export const paymentsRouter = router({
     .input(z.object({ recipientId: z.number(), amount: z.string().regex(/^\d+(\.\d{1,2})?$/), loadId: z.number().optional(), description: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database not available");
-      await db.insert(payments).values({ payerId: ctx.user.id, payeeId: input.recipientId, loadId: input.loadId, amount: input.amount, currency: "USD", paymentType: "load_payment", status: "succeeded" });
-      return { success: true };
+      const amountCents = Math.round(parseFloat(input.amount) * 100);
+
+      // Create Stripe PaymentIntent — status confirmed via webhook
+      const pi = await safeStripe(() => stripe.paymentIntents.create({
+        amount: amountCents,
+        currency: "usd",
+        metadata: {
+          userId: String(ctx.user.id),
+          recipientUserId: String(input.recipientId),
+          loadId: input.loadId ? String(input.loadId) : "",
+          paymentType: "load_payment",
+        },
+        description: input.description || `Load payment from user ${ctx.user.id}`,
+      }));
+
+      const stripeId = pi?.id || null;
+      // Insert with PENDING status — webhook will update to succeeded
+      await db.insert(payments).values({
+        payerId: ctx.user.id,
+        payeeId: input.recipientId,
+        loadId: input.loadId,
+        amount: input.amount,
+        currency: "USD",
+        paymentType: "load_payment",
+        status: "pending",
+        stripePaymentIntentId: stripeId,
+      });
+      return { success: true, clientSecret: (pi as any)?.client_secret || null, paymentIntentId: stripeId };
     }),
 
   // ════════════════════════════════════════════════════════════════

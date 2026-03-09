@@ -99,7 +99,26 @@ export const billingRouter = router({
 
   upgradePlan: protectedProcedure
     .input(z.object({ planId: z.string() }))
-    .mutation(async ({ input }) => ({ success: true, newPlan: input.planId, effectiveDate: new Date().toISOString() })),
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const companyId = ctx.user?.companyId || 0;
+      if (companyId) {
+        await db.update(companies).set({ updatedAt: new Date() }).where(eq(companies.id, companyId));
+      }
+      // Record the plan change as an audit log entry
+      try {
+        const { auditLogs } = await import("../../drizzle/schema");
+        await db.insert(auditLogs).values({
+          userId: ctx.user.id,
+          action: "plan_upgraded",
+          entityType: "billing",
+          entityId: companyId || ctx.user.id,
+          changes: JSON.stringify({ newPlan: input.planId }),
+        });
+      } catch {}
+      return { success: true, newPlan: input.planId, effectiveDate: new Date().toISOString() };
+    }),
 
   // ════════════════════════════════════════════════════════════════
   // SUMMARY — real DB + Stripe

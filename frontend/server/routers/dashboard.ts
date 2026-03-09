@@ -47,8 +47,7 @@ export const dashboardRouter = router({
   getStats: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) {
-      // Return seed data when database is unavailable (dev mode)
-      return getSeedStats(ctx.user?.role || 'SHIPPER');
+      throw new Error("Dashboard data unavailable — database connection failed");
     }
 
     const role = ctx.user?.role || 'SHIPPER';
@@ -85,7 +84,7 @@ export const dashboardRouter = router({
       }, 120); // 2min TTL
     } catch (error) {
       console.error('[Dashboard] Stats query failed:', error);
-      return getSeedStats(role);
+      throw new Error("Unable to load dashboard data. Please try again.");
     }
   }),
 
@@ -94,7 +93,7 @@ export const dashboardRouter = router({
    */
   getActiveShipments: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedShipments();
+    if (!db) return [];
 
     const userId = typeof ctx.user?.id === 'string' ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
     const role = ctx.user?.role || 'SHIPPER';

@@ -411,18 +411,36 @@ export const adminRouter = router({
   getDatabaseHealth: auditedAdminProcedure
     .input(z.object({}).optional())
     .query(async () => {
-      return {
-        status: "unknown",
-        uptime: "",
-        version: "",
-        connections: { active: 0, max: 0, available: 0 },
-        storage: { used: "0 GB", total: "0 GB", percentage: 0 },
-        performance: { avgQueryTime: 0, slowQueries: 0, indexHitRate: 0 },
-        queriesPerSec: 0,
-        avgQueryTime: 0,
-        dbSize: "0 GB",
-        tables: [],
-      };
+      const db = await getDb();
+      if (!db) return { status: "offline", uptime: "", version: "", connections: { active: 0, max: 0, available: 0 }, storage: { used: "0 GB", total: "0 GB", percentage: 0 }, performance: { avgQueryTime: 0, slowQueries: 0, indexHitRate: 0 }, queriesPerSec: 0, avgQueryTime: 0, dbSize: "0 GB", tables: [] };
+      try {
+        const statusVars = await db.execute(sql`SHOW GLOBAL STATUS WHERE Variable_name IN ('Uptime','Threads_connected','Threads_running','Queries','Slow_queries')`);
+        const vars: Record<string, string> = {};
+        for (const row of statusVars as any[]) { vars[row.Variable_name] = row.Value; }
+        const maxConnRows = await db.execute(sql`SHOW VARIABLES WHERE Variable_name = 'max_connections'`);
+        const maxConn = parseInt((maxConnRows as any[])[0]?.Value || "151", 10);
+        const versionRows = await db.execute(sql`SELECT VERSION() as ver`);
+        const version = (versionRows as any[])[0]?.ver || "";
+        const active = parseInt(vars.Threads_connected || "0", 10);
+        const upSec = parseInt(vars.Uptime || "0", 10);
+        const days = Math.floor(upSec / 86400);
+        const hrs = Math.floor((upSec % 86400) / 3600);
+        const queries = parseInt(vars.Queries || "0", 10);
+        const qps = upSec > 0 ? Math.round(queries / upSec) : 0;
+        // DB size
+        const sizeRows = await db.execute(sql`SELECT ROUND(SUM(data_length + index_length) / 1073741824, 2) AS sizeGB FROM information_schema.tables WHERE table_schema = DATABASE()`);
+        const dbSizeGB = (sizeRows as any[])[0]?.sizeGB || "0";
+        return {
+          status: "healthy", uptime: `${days}d ${hrs}h`, version,
+          connections: { active, max: maxConn, available: maxConn - active },
+          storage: { used: `${dbSizeGB} GB`, total: "20 GB", percentage: Math.round(parseFloat(dbSizeGB) / 20 * 100) },
+          performance: { avgQueryTime: 0, slowQueries: parseInt(vars.Slow_queries || "0", 10), indexHitRate: 0 },
+          queriesPerSec: qps, avgQueryTime: 0, dbSize: `${dbSizeGB} GB`, tables: [],
+        };
+      } catch (e: any) {
+        console.error("[Admin] getDatabaseHealth error:", e.message);
+        return { status: "error", uptime: "", version: "", connections: { active: 0, max: 0, available: 0 }, storage: { used: "0 GB", total: "0 GB", percentage: 0 }, performance: { avgQueryTime: 0, slowQueries: 0, indexHitRate: 0 }, queriesPerSec: 0, avgQueryTime: 0, dbSize: "0 GB", tables: [] };
+      }
     }),
 
   /**
@@ -430,8 +448,30 @@ export const adminRouter = router({
    */
   getSlowQueries: auditedAdminProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
-    .query(async () => {
-      return [];
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const rows = await db.execute(
+          sql`SELECT DIGEST_TEXT as query, COUNT_STAR as executions, 
+              ROUND(AVG_TIMER_WAIT / 1000000000, 2) as avgTimeMs,
+              ROUND(SUM_TIMER_WAIT / 1000000000, 2) as totalTimeMs,
+              FIRST_SEEN as firstSeen, LAST_SEEN as lastSeen
+              FROM performance_schema.events_statements_summary_by_digest
+              WHERE SCHEMA_NAME = DATABASE() AND DIGEST_TEXT IS NOT NULL
+              ORDER BY AVG_TIMER_WAIT DESC LIMIT ${input.limit}`
+        );
+        return (rows as any[]).map((r: any) => ({
+          query: (r.query || "").substring(0, 200),
+          executions: r.executions || 0,
+          avgTimeMs: r.avgTimeMs || 0,
+          totalTimeMs: r.totalTimeMs || 0,
+          firstSeen: r.firstSeen || null,
+          lastSeen: r.lastSeen || null,
+        }));
+      } catch {
+        return [];
+      }
     }),
 
   /**
@@ -518,7 +558,23 @@ export const adminRouter = router({
   getVerificationQueue: auditedAdminProcedure
     .input(z.object({ type: z.enum(["user", "company", "document", "all"]).optional(), limit: z.number().optional(), filter: z.string().optional() }).optional())
     .query(async ({ input }) => {
-      return [];
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const pending = await db.select({
+          id: users.id, name: users.name, email: users.email, role: users.role,
+          createdAt: users.createdAt, metadata: users.metadata,
+        }).from(users).where(eq(users.isVerified, false)).orderBy(desc(users.createdAt)).limit(input?.limit || 50);
+        return pending.map(u => {
+          let approvalStatus = "pending";
+          try { const meta = u.metadata ? JSON.parse(u.metadata as string) : {}; approvalStatus = meta.approvalStatus || "pending"; } catch {}
+          return {
+            id: String(u.id), type: "user" as const, name: u.name || "Unknown",
+            email: u.email || "", role: u.role || "DRIVER",
+            submittedAt: u.createdAt?.toISOString() || "", status: approvalStatus,
+          };
+        });
+      } catch { return []; }
     }),
 
   /**
@@ -526,7 +582,21 @@ export const adminRouter = router({
    */
   getVerificationSummary: auditedAdminProcedure
     .query(async () => {
-      return { pending: 0, approved: 0, rejected: 0, avgProcessingTime: "", approvedToday: 0, rejectedToday: 0, avgWaitTime: "" };
+      const db = await getDb();
+      if (!db) return { pending: 0, approved: 0, rejected: 0, avgProcessingTime: "", approvedToday: 0, rejectedToday: 0, avgWaitTime: "" };
+      try {
+        const [pendingC] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isVerified, false));
+        const [approvedC] = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(eq(users.isVerified, true), eq(users.isActive, true)));
+        return {
+          pending: pendingC?.count || 0,
+          approved: approvedC?.count || 0,
+          rejected: 0,
+          avgProcessingTime: "",
+          approvedToday: 0,
+          rejectedToday: 0,
+          avgWaitTime: "",
+        };
+      } catch { return { pending: 0, approved: 0, rejected: 0, avgProcessingTime: "", approvedToday: 0, rejectedToday: 0, avgWaitTime: "" }; }
     }),
 
   /**

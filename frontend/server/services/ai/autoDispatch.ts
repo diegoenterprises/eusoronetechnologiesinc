@@ -9,7 +9,7 @@
 
 import { getDb } from "../../db";
 import { drivers, loads, users, vehicles } from "../../../drizzle/schema";
-import { eq, sql, and, inArray } from "drizzle-orm";
+import { eq, sql, and, inArray, gte, desc } from "drizzle-orm";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -213,8 +213,19 @@ export async function suggestAssignments(
       // Closer is better: 0 miles → 35 pts, 500+ miles → 0 pts
       const proximityScore = Math.max(0, 35 * (1 - Math.min(distanceMiles, 500) / 500));
 
-      // ── HOS Fit Score (0–25) ──
-      const hosRemaining = DEFAULT_HOS_REMAINING; // TODO: integrate live ELD data
+      // ── HOS Fit Score (0–25) — query real ELD data ──
+      let hosRemaining = DEFAULT_HOS_REMAINING;
+      let hosDataAvailable = false;
+      try {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const hosRows: any[] = await db.execute(
+          sql`SELECT COALESCE(SUM(TIMESTAMPDIFF(MINUTE, start_time, COALESCE(end_time, NOW()))), 0) AS totalDriving
+              FROM hos_logs WHERE driver_id = ${driver.id} AND status = 'driving' AND log_date >= ${todayStr}`
+        );
+        const drivingMinutesToday = (hosRows[0] as any)?.totalDriving || 0;
+        hosRemaining = Math.max(0, 11 - drivingMinutesToday / 60);
+        hosDataAvailable = true;
+      } catch { /* ELD table may not exist yet — use default */ }
       const hosRatio = Math.min(hosRemaining / Math.max(estimatedTripHours, 1), 1);
       const hosScore = hosRemaining >= estimatedTripHours
         ? 25 * hosRatio
