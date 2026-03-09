@@ -10,6 +10,7 @@
 
 import { z } from "zod";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { 
@@ -80,7 +81,7 @@ export const dashboardRouter = router({
           case 'SUPER_ADMIN':
             return await getAdminStats(db);
           default:
-            return getSeedStats(role);
+            throw new TRPCError({ code: 'BAD_REQUEST', message: `Unsupported dashboard role: ${role}` });
         }
       }, 120); // 2min TTL
     } catch (error) {
@@ -132,8 +133,9 @@ export const dashboardRouter = router({
         hazmat: load.cargoType === 'hazmat',
         hazmatClass: load.hazmatClass || null,
       }));
-    } catch (error) {
-      return getSeedShipments();
+    } catch (e) {
+      console.error("[dashboard] Failed to load active shipments:", e);
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' });
     }
   }),
 
@@ -142,11 +144,11 @@ export const dashboardRouter = router({
    */
   getFleetStatus: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedFleetStatus();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
 
     try {
       const companyId = ctx.user?.companyId || 0;
-      
+
       const [total] = await db
         .select({ count: sql<number>`count(*)` })
         .from(vehicles)
@@ -175,8 +177,9 @@ export const dashboardRouter = router({
         outOfService: 0,
         utilization: total?.count ? Math.round((inUse?.count || 0) / total.count * 100) : 0,
       };
-    } catch (error) {
-      return getSeedFleetStatus();
+    } catch (e) {
+      console.error("[dashboard] Failed to load fleet status:", e);
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' });
     }
   }),
 
@@ -190,7 +193,7 @@ export const dashboardRouter = router({
     }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) return getSeedAvailableLoads();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
 
       try {
         let query = db
@@ -219,8 +222,9 @@ export const dashboardRouter = router({
           status: load.status,
           bidCount: 0, // Would join with bids table
         }));
-      } catch (error) {
-        return getSeedAvailableLoads();
+      } catch (e) {
+        console.error("[dashboard] Failed to load available loads:", e);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' });
       }
     }),
 
@@ -252,7 +256,7 @@ export const dashboardRouter = router({
     }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) return getSeedEarnings();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
 
       const period = input?.period || 'month';
       const days = period === 'week' ? 7 : period === 'month' ? 30 : 365;
@@ -280,8 +284,9 @@ export const dashboardRouter = router({
           trend: '+5.2%', // Would calculate from historical data
           topLane: 'DAL → HOU',
         };
-      } catch (error) {
-        return getSeedEarnings();
+      } catch (e) {
+        console.error("[dashboard] Failed to load earnings:", e);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' });
       }
     }),
 
@@ -290,7 +295,7 @@ export const dashboardRouter = router({
    */
   getComplianceAlerts: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedComplianceAlerts();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
 
     try {
       const companyId = ctx.user?.companyId || 0;
@@ -360,9 +365,10 @@ export const dashboardRouter = router({
         }
       }
 
-      return alerts.length > 0 ? alerts : getSeedComplianceAlerts();
-    } catch (error) {
-      return getSeedComplianceAlerts();
+      return alerts;
+    } catch (e) {
+      console.error("[dashboard] Failed to load compliance alerts:", e);
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' });
     }
   }),
 
@@ -431,7 +437,7 @@ export const dashboardRouter = router({
    */
   getCSAScores: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedCSAScores();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const companyId = ctx.user?.companyId || 0;
       const [totalInsp] = await db.select({ count: sql<number>`count(*)` }).from(inspections).where(eq(inspections.companyId, companyId));
@@ -463,7 +469,7 @@ export const dashboardRouter = router({
         dataSource: sms ? 'fmcsa_bulk_9.8M' : 'platform_internal',
         fmcsaOosRates: sms ? { driver: sms.driverOosRate, vehicle: sms.vehicleOosRate } : null,
       };
-    } catch { return getSeedCSAScores(); }
+    } catch (e) { console.error("[dashboard] Failed to load CSA scores:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
@@ -471,12 +477,12 @@ export const dashboardRouter = router({
    */
   getDriverScorecards: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedDriverScorecard();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const companyId = ctx.user?.companyId || 0;
       const drvList = await db.select({ id: drivers.id, userId: drivers.userId, userName: users.name, safetyScore: drivers.safetyScore, totalLoads: drivers.totalLoads, totalMiles: drivers.totalMiles, status: drivers.status }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).limit(20);
       return drvList.map(d => ({ id: String(d.id), name: d.userName || `Driver #${d.id}`, safetyScore: d.safetyScore || 100, totalLoads: d.totalLoads || 0, totalMiles: d.totalMiles || 0, status: d.status || 'active', rank: 0 }));
-    } catch { return getSeedDriverScorecard(); }
+    } catch (e) { console.error("[dashboard] Failed to load driver scorecards:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
@@ -484,7 +490,7 @@ export const dashboardRouter = router({
    */
   getDispatchData: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedDispatchData();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const companyId = ctx.user?.companyId || 0;
       const [active] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, companyId), sql`${loads.status} IN ('assigned','in_transit','loading','unloading')`));
@@ -493,7 +499,7 @@ export const dashboardRouter = router({
       const [loading] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, companyId), eq(loads.status, 'loading')));
       const [availDrivers] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(and(eq(drivers.companyId, companyId), sql`${drivers.status} IN ('active','available')`));
       return { activeLoads: active?.count || 0, unassigned: unassigned?.count || 0, enRoute: enRoute?.count || 0, loading: loading?.count || 0, inTransit: enRoute?.count || 0, issues: 0, driversAvailable: availDrivers?.count || 0, loadsRequiringAction: [] };
-    } catch { return getSeedDispatchData(); }
+    } catch (e) { console.error("[dashboard] Failed to load dispatch data:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
@@ -501,14 +507,14 @@ export const dashboardRouter = router({
    */
   getEscortJobs: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedEscortJobs();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const userId = ctx.user?.id || 0;
       // Query loads tagged as escort-required that are assigned to this user
       const [active] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, userId), sql`${loads.status} IN ('assigned','in_transit','loading')`));
       const [completed] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, userId), eq(loads.status, 'delivered')));
       return { activeJobs: active?.count || 0, upcoming: 0, completed: completed?.count || 0, monthlyEarnings: 0, rating: 0, availableJobs: [], certifications: [] };
-    } catch { return getSeedEscortJobs(); }
+    } catch (e) { console.error("[dashboard] Failed to load escort jobs:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
@@ -516,7 +522,7 @@ export const dashboardRouter = router({
    */
   getShipperDashboard: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedShipperDashboard();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const userId = ctx.user?.id || 0;
       const [active] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('in_transit','assigned','loading','unloading')`));
@@ -527,7 +533,7 @@ export const dashboardRouter = router({
       const [delivered] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'delivered')));
       const onTimeRate = (total?.count || 0) > 0 ? Math.round(((delivered?.count || 0) / (total?.count || 1)) * 100) : 0;
       return { activeLoads: active?.count || 0, pendingBids: pendingBidsCount?.count || 0, deliveredThisWeek: deliveredWeek?.count || 0, avgRatePerMile: 0, onTimeRate, loadsRequiringAttention: [] };
-    } catch { return getSeedShipperDashboard(); }
+    } catch (e) { console.error("[dashboard] Failed to load shipper dashboard:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
@@ -535,14 +541,14 @@ export const dashboardRouter = router({
    */
   getBrokerDashboard: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedBrokerDashboard();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const [activeL] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(sql`${loads.status} IN ('posted','bidding','assigned','in_transit')`);
       const [pending] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(eq(bids.status, 'pending'));
       const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const [weekVol] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(gte(loads.createdAt, sevenDaysAgo));
       return { activeLoads: activeL?.count || 0, pendingMatches: pending?.count || 0, weeklyVolume: weekVol?.count || 0, commissionEarned: Math.round((weekVol?.rev || 0) * 0.15), marginAverage: 15, shipperLoads: 0, catalystCapacity: [] };
-    } catch { return getSeedBrokerDashboard(); }
+    } catch (e) { console.error("[dashboard] Failed to load broker dashboard:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
@@ -550,7 +556,7 @@ export const dashboardRouter = router({
    */
   getAdminDashboard: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedAdminDashboard();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const [totalU] = await db.select({ count: sql<number>`count(*)` }).from(users);
       const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -558,35 +564,35 @@ export const dashboardRouter = router({
       const [activeL] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(sql`${loads.status} IN ('in_transit','assigned','loading','unloading')`);
       const dbStatus = db ? 'healthy' : 'degraded';
       return { totalUsers: totalU?.count || 0, pendingVerifications: 0, activeLoads: activeL?.count || 0, todaySignups: todaySignups?.count || 0, openTickets: 0, platformHealth: { api: { status: 'healthy', latency: 45 }, database: { status: dbStatus, uptime: 99.9 }, eldSync: { status: 'healthy' }, payment: { status: 'healthy' }, gps: { status: 'healthy' }, scada: { status: 'healthy' } }, criticalErrors24h: 0 };
-    } catch { return getSeedAdminDashboard(); }
+    } catch (e) { console.error("[dashboard] Failed to load admin dashboard:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
    * Get catalyst sourcing data for brokers
    */
   getCatalystSourcing: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedCatalystSourcing();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get margin calculator data for brokers
    */
   getMarginCalculator: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedMarginCalculator();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get fuel stations nearby
    */
   getFuelStations: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedFuelStations();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get weather data for routes
    */
   getWeatherData: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedWeatherData();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
@@ -594,7 +600,7 @@ export const dashboardRouter = router({
    */
   getAccidentTracker: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedAccidentTracker();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const companyId = ctx.user?.companyId || 0;
       const startOfYear = new Date(new Date().getFullYear(), 0, 1);
@@ -617,7 +623,7 @@ export const dashboardRouter = router({
       } catch {}
 
       return { ytd: ytd?.count || 0, lastIncident: lastInc?.occurredAt?.toISOString().split('T')[0] || 'N/A', severity: { minor: minor?.count || 0, major: major?.count || 0, fatal: fatal?.count || 0 }, trend: '0%', preventable: 0, nonPreventable: 0, fmcsaCrashData };
-    } catch { return getSeedAccidentTracker(); }
+    } catch (e) { console.error("[dashboard] Failed to load accident tracker:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
@@ -625,7 +631,7 @@ export const dashboardRouter = router({
    */
   getDriverQualifications: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedDriverQualifications();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const companyId = ctx.user?.companyId || 0;
       const now = new Date();
@@ -639,28 +645,28 @@ export const dashboardRouter = router({
         else if (earliest < new Date(now.getTime() + 30 * 86400000)) status = 'expiring';
         return { id: String(d.id), name: d.userName || `Driver #${d.id}`, status, documentsComplete: exps.length, documentsRequired: 3, nearestExpiry: earliest?.toISOString().split('T')[0] || '' };
       });
-    } catch { return getSeedDriverQualifications(); }
+    } catch (e) { console.error("[dashboard] Failed to load driver qualifications:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
    * Get yard management data for terminals
    */
   getYardManagement: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedYardManagement();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get route permits for escorts
    */
   getRoutePermits: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedRoutePermits();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get formation tracking for escorts
    */
   getFormationTracking: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedFormationTracking();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
@@ -668,12 +674,12 @@ export const dashboardRouter = router({
    */
   getNotifications: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedNotifications();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const userId = ctx.user?.id || 0;
       const recentLoads = await db.select({ id: loads.id, loadNumber: loads.loadNumber, status: loads.status, createdAt: loads.createdAt }).from(loads).where(sql`${loads.shipperId} = ${userId} OR ${loads.catalystId} = ${userId} OR ${loads.driverId} = ${userId}`).orderBy(sql`${loads.createdAt} DESC`).limit(5);
       return recentLoads.map(l => ({ id: `notif_${l.id}`, type: 'load_update', title: `Load ${l.loadNumber || l.id}`, message: `Status: ${l.status}`, read: false, createdAt: l.createdAt?.toISOString() || '' }));
-    } catch { return getSeedNotifications(); }
+    } catch (e) { console.error("[dashboard] Failed to load notifications:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
@@ -681,19 +687,19 @@ export const dashboardRouter = router({
    */
   getRecentActivity: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedRecentActivity();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const userId = ctx.user?.id || 0;
       const recentLoads = await db.select({ id: loads.id, loadNumber: loads.loadNumber, status: loads.status, createdAt: loads.createdAt, pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation }).from(loads).where(sql`${loads.shipperId} = ${userId} OR ${loads.catalystId} = ${userId} OR ${loads.driverId} = ${userId}`).orderBy(sql`${loads.createdAt} DESC`).limit(10);
       return recentLoads.map(l => ({ id: `act_${l.id}`, type: 'load', action: l.status === 'delivered' ? 'delivered' : l.status === 'in_transit' ? 'in_transit' : 'updated', description: `${l.loadNumber || `LOAD-${l.id}`}: ${((l.pickupLocation as any)?.city || '?')} to ${((l.deliveryLocation as any)?.city || '?')}`, timestamp: l.createdAt?.toISOString() || '' }));
-    } catch { return getSeedRecentActivity(); }
+    } catch (e) { console.error("[dashboard] Failed to load recent activity:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
    * Get quick actions based on role
    */
   getQuickActions: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedQuickActions();
+    return [{ id: 'create_load', label: 'Create Load', icon: 'Package', color: 'blue' }, { id: 'find_catalyst', label: 'Find Catalyst', icon: 'Truck', color: 'green' }, { id: 'view_bids', label: 'View Bids', icon: 'DollarSign', color: 'yellow' }, { id: 'track_shipments', label: 'Track Shipments', icon: 'MapPin', color: 'purple' }];
   }),
 
   /**
@@ -701,7 +707,7 @@ export const dashboardRouter = router({
    */
   getDocumentExpirations: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedDocumentExpirations();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const companyId = ctx.user?.companyId;
       const now = new Date();
@@ -710,21 +716,21 @@ export const dashboardRouter = router({
       if (companyId) conds.push(eq(documents.companyId, companyId));
       const rows = await db.select({ id: documents.id, name: documents.name, type: documents.type, expiryDate: documents.expiryDate }).from(documents).where(and(...conds)).orderBy(documents.expiryDate).limit(10);
       return rows.map(d => ({ id: String(d.id), name: d.name, type: d.type, expiresAt: d.expiryDate?.toISOString().split('T')[0] || '', daysRemaining: d.expiryDate ? Math.ceil((new Date(d.expiryDate).getTime() - now.getTime()) / 86400000) : 0 }));
-    } catch { return getSeedDocumentExpirations(); }
+    } catch (e) { console.error("[dashboard] Failed to load document expirations:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
    * Get detention time tracking
    */
   getDetentionTracking: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedDetentionTracking();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get dock scheduling data for terminal managers
    */
   getDockScheduling: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedDockScheduling();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
@@ -732,54 +738,54 @@ export const dashboardRouter = router({
    */
   getInboundShipments: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedInboundShipments();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const companyId = ctx.user?.companyId || 0;
       const rows = await db.select({ id: loads.id, loadNumber: loads.loadNumber, status: loads.status, deliveryDate: loads.deliveryDate, pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation }).from(loads).where(sql`${loads.status} IN ('in_transit','assigned','loading') AND (${loads.catalystId} = ${companyId} OR ${loads.shipperId} = ${companyId})`).orderBy(loads.deliveryDate).limit(10);
       return rows.map(r => ({ id: r.loadNumber || String(r.id), status: r.status, origin: ((r.pickupLocation as any)?.city || 'Unknown'), destination: ((r.deliveryLocation as any)?.city || 'Unknown'), eta: r.deliveryDate?.toISOString() || 'TBD' }));
-    } catch (e) { return getSeedInboundShipments(); }
+    } catch (e) { console.error("[dashboard] Failed to load inbound shipments:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
    * Get labor management data
    */
   getLaborManagement: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedLaborManagement();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get vehicle health/telematics data
    */
   getVehicleHealth: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedVehicleHealth();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get HOS monitoring data for multiple drivers
    */
   getHOSMonitoring: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedHOSMonitoring();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get gate activity for terminal managers
    */
   getGateActivity: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedGateActivity();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get freight quotes
    */
   getFreightQuotes: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedFreightQuotes();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get delivery exceptions
    */
   getDeliveryExceptions: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedDeliveryExceptions();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
@@ -787,7 +793,7 @@ export const dashboardRouter = router({
    */
   getShippingVolume: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedShippingVolume();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -798,7 +804,7 @@ export const dashboardRouter = router({
       const lastVal = lastMonth?.count || 1;
       const growth = lastVal > 0 ? `${Math.round(((mtdVal - lastVal) / lastVal) * 100)}%` : '0%';
       return { mtd: mtdVal, lastMonth: lastVal, growth, byMode: { ftl: mtdVal, ltl: 0, intermodal: 0 }, trend: [] };
-    } catch (e) { return getSeedShippingVolume(); }
+    } catch (e) { console.error("[dashboard] Failed to load shipping volume:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
@@ -806,7 +812,7 @@ export const dashboardRouter = router({
    */
   getLaneAnalytics: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedLaneAnalytics();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const rows = await db.select().from(loads).where(eq(loads.status, 'delivered')).orderBy(desc(loads.createdAt)).limit(200);
       const laneMap: Record<string, { count: number; rev: number }> = {};
@@ -818,28 +824,28 @@ export const dashboardRouter = router({
         laneMap[lane].rev += parseFloat(String(l.rate || 0));
       }
       return Object.entries(laneMap).sort((a, b) => b[1].count - a[1].count).slice(0, 10).map(([lane, s]) => ({ lane, loads: s.count, revenue: Math.round(s.rev), avgRate: s.count > 0 ? Math.round(s.rev / s.count) : 0 }));
-    } catch (e) { return getSeedLaneAnalytics(); }
+    } catch (e) { console.error("[dashboard] Failed to load lane analytics:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
    * Get route optimization data
    */
   getRouteOptimization: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedRouteOptimization();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get truck location data
    */
   getTruckLocation: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedTruckLocation();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get maintenance schedule
    */
   getMaintenanceSchedule: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedMaintenanceSchedule();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
@@ -847,7 +853,7 @@ export const dashboardRouter = router({
    */
   getFleetUtilization: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedFleetUtilization();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const companyId = ctx.user?.companyId || 0;
       const [total] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(eq(vehicles.companyId, companyId));
@@ -856,7 +862,7 @@ export const dashboardRouter = router({
       const [maintV] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), eq(vehicles.status, 'maintenance')));
       const t = total?.count || 0;
       return { trucks: { total: t, active: activeV?.count || 0, idle: idleV?.count || 0, maintenance: maintV?.count || 0 }, utilization: t > 0 ? Math.round(((activeV?.count || 0) / t) * 100) : 0, avgMilesPerDay: 0, emptyMiles: 0, revenuePerTruck: 0 };
-    } catch { return getSeedFleetUtilization(); }
+    } catch (e) { console.error("[dashboard] Failed to load fleet utilization:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
@@ -864,7 +870,7 @@ export const dashboardRouter = router({
    */
   getEquipmentAvailability: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedEquipmentAvailability();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const companyId = ctx.user?.companyId || 0;
       const getByType = async (type: string) => {
@@ -876,21 +882,21 @@ export const dashboardRouter = router({
         return { total: total?.count || 0, available: avail?.count || 0, inUse: inUse?.count || 0, maintenance: maint?.count || 0 };
       };
       return { tankers: await getByType('tanker'), dryVan: await getByType('dry_van'), flatbed: await getByType('flatbed') };
-    } catch { return getSeedEquipmentAvailability(); }
+    } catch (e) { console.error("[dashboard] Failed to load equipment availability:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
    * Get profitability data
    */
   getProfitability: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedProfitability();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get load matching data
    */
   getLoadMatching: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedLoadMatching();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
@@ -898,7 +904,7 @@ export const dashboardRouter = router({
    */
   getActiveLoadsOverview: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedActiveLoadsOverview();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const [active] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(sql`${loads.status} IN ('assigned','in_transit','loading','unloading','at_pickup','at_delivery')`);
       const [inTransit] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'in_transit'));
@@ -906,7 +912,7 @@ export const dashboardRouter = router({
       const [unloadingC] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'unloading'));
       const [delivered] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'delivered'));
       return { active: active?.count || 0, inTransit: inTransit?.count || 0, loading: loadingC?.count || 0, unloading: unloadingC?.count || 0, delayed: 0, onTime: delivered?.count || 0 };
-    } catch { return getSeedActiveLoadsOverview(); }
+    } catch (e) { console.error("[dashboard] Failed to load active loads overview:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
@@ -914,14 +920,14 @@ export const dashboardRouter = router({
    */
   getUserAnalytics: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedUserAnalytics();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const [totalU] = await db.select({ count: sql<number>`count(*)` }).from(users);
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const [newToday] = await db.select({ count: sql<number>`count(*)` }).from(users).where(gte(users.createdAt, today));
       const [activeU] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isActive, true));
       return { totalUsers: totalU?.count || 0, newToday: newToday?.count || 0, activeToday: activeU?.count || 0, churn: 0, growth: '0%' };
-    } catch { return getSeedUserAnalytics(); }
+    } catch (e) { console.error("[dashboard] Failed to load user analytics:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
@@ -929,7 +935,7 @@ export const dashboardRouter = router({
    */
   getRevenue: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedRevenue();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -940,42 +946,42 @@ export const dashboardRouter = router({
       const ytdVal = Math.round(ytd?.rev || 0);
       const target = 100000;
       return { mtd: mtdVal, ytd: ytdVal, growth: '0%', target, progress: target > 0 ? Math.round((mtdVal / target) * 100) : 0 };
-    } catch { return getSeedRevenue(); }
+    } catch (e) { console.error("[dashboard] Failed to load revenue:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
    * Get shipment analytics
    */
   getShipmentAnalytics: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedShipmentAnalytics();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get cost analysis
    */
   getCostAnalysis: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedCostAnalysis();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get fleet tracking data
    */
   getFleetTracking: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedFleetTracking();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get fuel analytics
    */
   getFuelAnalytics: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedFuelAnalytics();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get route history
    */
   getRouteHistory: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedRouteHistory();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
@@ -983,7 +989,7 @@ export const dashboardRouter = router({
    */
   getSafetyMetrics: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedSafetyMetrics();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const companyId = ctx.user?.companyId || 0;
       const startOfYear = new Date(new Date().getFullYear(), 0, 1);
@@ -995,14 +1001,14 @@ export const dashboardRouter = router({
       const [lastInc] = await db.select({ occurredAt: incidents.occurredAt }).from(incidents).where(eq(incidents.companyId, companyId)).orderBy(sql`${incidents.occurredAt} DESC`).limit(1);
       const daysSince = lastInc?.occurredAt ? Math.floor((Date.now() - new Date(lastInc.occurredAt).getTime()) / 86400000) : 365;
       return { score, incidents: incCount?.count || 0, violations: violCount?.count || 0, daysWithoutAccident: daysSince, trend: '0%' };
-    } catch { return getSeedSafetyMetrics(); }
+    } catch (e) { console.error("[dashboard] Failed to load safety metrics:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
    * Get yard status
    */
   getYardStatus: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedYardStatus();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
@@ -1010,26 +1016,26 @@ export const dashboardRouter = router({
    */
   getDriversList: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return getSeedDriversList();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
     try {
       const companyId = ctx.user?.companyId || 0;
       const drvList = await db.select({ id: drivers.id, userName: users.name, status: drivers.status, safetyScore: drivers.safetyScore, totalLoads: drivers.totalLoads }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).limit(30);
       return drvList.map(d => ({ id: String(d.id), name: d.userName || `Driver #${d.id}`, status: d.status || 'active', safetyScore: d.safetyScore || 100, loads: d.totalLoads || 0 }));
-    } catch { return getSeedDriversList(); }
+    } catch (e) { console.error("[dashboard] Failed to load drivers list:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
   /**
    * Get profit analysis
    */
   getProfitAnalysis: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedProfitAnalysis();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   /**
    * Get load matching results
    */
   getLoadMatchingResults: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedLoadMatchingResults();
+    throw new TRPCError({ code: 'NOT_IMPLEMENTED', message: 'This endpoint is not yet connected to live data' });
   }),
 
   // Layout & Widgets
@@ -1664,31 +1670,6 @@ async function getAdminStats(db: any) {
   };
 }
 
-// ============================================================================
-// SEED DATA FUNCTIONS (for development when DB unavailable)
-// ============================================================================
-
-function getSeedStats(role: string) {
-  const empty = {
-    SHIPPER: { totalLoads: 0, activeLoads: 0, deliveredLoads: 0, totalSpent: 0, onTimeRate: 0, avgTransitTime: '0 days' },
-    CATALYST: { totalLoads: 0, activeLoads: 0, totalRevenue: 0, fleetSize: 0, utilizationRate: 0, avgRatePerMile: 0 },
-    BROKER: { activeShippers: 0, activeCatalysts: 0, loadsThisMonth: 0, totalCommission: 0, avgMargin: 0, pendingPayments: 0 },
-    DRIVER: { completedLoads: 0, totalEarnings: 0, milesThisWeek: 0, safetyScore: 0, hoursAvailable: 0, nextLoad: null },
-    DISPATCH: { activeDrivers: 0, loadsInTransit: 0, pendingAssignments: 0, hosViolations: 0, avgResponseTime: '0 min', fleetUtilization: 0 },
-    TERMINAL_MANAGER: { docksActive: 0, docksTotal: 0, appointmentsToday: 0, throughputToday: 0, tankUtilization: 0, pendingBOLs: 0 },
-    COMPLIANCE_OFFICER: { driversCompliant: 0, driversTotal: 0, expiringDocuments: 0, pendingAudits: 0, csaScore: 'N/A', lastAuditDate: '' },
-    SAFETY_MANAGER: { accidentsYTD: 0, incidentRate: 0, driverScoreAvg: 0, inspectionsPassed: 0, maintenanceDue: 0, safetyMeetingsCompleted: 0 },
-    ADMIN: { totalUsers: 0, totalCompanies: 0, totalLoads: 0, activeUsers: 0, systemHealth: 'healthy', revenue: 0 },
-  };
-  return empty[role as keyof typeof empty] || empty.SHIPPER;
-}
-
-function getSeedShipments() { return []; }
-function getSeedFleetStatus() { return { total: 0, available: 0, inUse: 0, maintenance: 0, outOfService: 0, utilization: 0 }; }
-function getSeedAvailableLoads() { return []; }
-function getSeedEarnings() { return { total: 0, loads: 0, average: 0, trend: '0%', topLane: '' }; }
-function getSeedComplianceAlerts() { return []; }
-
 function getProgressFromStatus(status: string | null): number {
   const statusProgress: Record<string, number> = {
     draft: 0,
@@ -1708,61 +1689,3 @@ function getProgressFromStatus(status: string | null): number {
   return statusProgress[status || 'draft'] || 0;
 }
 
-// ============================================================================
-// ADDITIONAL SEED DATA FUNCTIONS FOR ROLE-SPECIFIC DASHBOARDS
-// Per User Journey Documents 01-10
-// ============================================================================
-
-export function getSeedCSAScores() {
-  return { unsafeDriving: { score: 0, threshold: 65, status: 'ok' }, hosCompliance: { score: 0, threshold: 65, status: 'ok' }, driverFitness: { score: 0, threshold: 65, status: 'ok' }, controlledSubstances: { score: 0, threshold: 65, status: 'ok' }, vehicleMaintenance: { score: 0, threshold: 65, status: 'ok' }, hazmatCompliance: { score: 0, threshold: 65, status: 'ok' }, crashIndicator: { score: 0, threshold: 65, status: 'ok' }, lastUpdated: new Date().toISOString() };
-}
-export function getSeedDriverScorecard() { return []; }
-export function getSeedDispatchData() { return { activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0, inTransit: 0, issues: 0, driversAvailable: 0, loadsRequiringAction: [] }; }
-export function getSeedEscortJobs() { return { activeJobs: 0, upcoming: 0, completed: 0, monthlyEarnings: 0, rating: 0, availableJobs: [], certifications: [] }; }
-export function getSeedShipperDashboard() { return { activeLoads: 0, pendingBids: 0, deliveredThisWeek: 0, avgRatePerMile: 0, onTimeRate: 0, loadsRequiringAttention: [] }; }
-export function getSeedBrokerDashboard() { return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, marginAverage: 0, shipperLoads: 0, catalystCapacity: [] }; }
-export function getSeedAdminDashboard() { return { totalUsers: 0, pendingVerifications: 0, activeLoads: 0, todaySignups: 0, openTickets: 0, platformHealth: { api: { status: 'healthy', latency: 0 }, database: { status: 'healthy', uptime: 0 }, eldSync: { status: 'healthy' }, payment: { status: 'healthy' }, gps: { status: 'healthy' }, scada: { status: 'healthy' } }, criticalErrors24h: 0 }; }
-export function getSeedCatalystSourcing() { return []; }
-export function getSeedMarginCalculator() { return { shipperRate: 0, catalystRate: 0, margin: 0, marginPercent: 0, avgMargin: 0, fuelSurcharge: 0, accessorials: 0 }; }
-export function getSeedFuelStations() { return []; }
-export function getSeedWeatherData() { return { current: { temp: 0, condition: 'N/A', humidity: 0, wind: 0 }, forecast: [], alerts: [] }; }
-export function getSeedAccidentTracker() { return { ytd: 0, lastIncident: 'N/A', severity: { minor: 0, major: 0, fatal: 0 }, trend: '0%', preventable: 0, nonPreventable: 0 }; }
-export function getSeedDriverQualifications() { return []; }
-export function getSeedYardManagement() { return { totalSpots: 0, occupied: 0, available: 0, trailers: 0, containers: 0, bobtails: 0, docks: { total: 0, active: 0, available: 0 }, avgDwellTime: '0 hours' }; }
-export function getSeedRoutePermits() { return []; }
-export function getSeedFormationTracking() { return { loadId: '', escortLead: { name: '', distance: 0, status: '' }, mainVehicle: { driver: '', speed: 0, status: '' }, escortChase: { name: '', distance: 0, status: '' }, formationStatus: 'N/A', nextCheckpoint: '', eta: '' }; }
-export function getSeedNotifications() { return []; }
-export function getSeedRecentActivity() { return []; }
-export function getSeedQuickActions() { return [{ id: 'create_load', label: 'Create Load', icon: 'Package', color: 'blue' }, { id: 'find_catalyst', label: 'Find Catalyst', icon: 'Truck', color: 'green' }, { id: 'view_bids', label: 'View Bids', icon: 'DollarSign', color: 'yellow' }, { id: 'track_shipments', label: 'Track Shipments', icon: 'MapPin', color: 'purple' }]; }
-export function getSeedDocumentExpirations() { return []; }
-export function getSeedDetentionTracking() { return { totalHours: 0, estimatedCharges: 0, locations: [] as { location: string; hours: number }[], mtdCharges: 0, avgWaitTime: '0 hours' }; }
-export function getSeedDockScheduling() { return []; }
-export function getSeedInboundShipments() { return []; }
-export function getSeedLaborManagement() { return { onDuty: 0, scheduled: 0, overtime: 0, productivity: 0, departments: [] }; }
-export function getSeedVehicleHealth() { return { overall: 0, engine: { status: 'N/A', temp: 0, code: null }, tires: { status: 'N/A', psi: 0, alert: null }, oil: { status: 'N/A', life: 0 }, fuel: { level: 0, range: 0 }, def: { level: 0 }, lastService: '', nextService: '' }; }
-export function getSeedHOSMonitoring() { return []; }
-export function getSeedGateActivity() { return []; }
-export function getSeedFreightQuotes() { return []; }
-export function getSeedDeliveryExceptions() { return []; }
-export function getSeedShippingVolume() { return { mtd: 0, lastMonth: 0, growth: '0%', byMode: { ftl: 0, ltl: 0, intermodal: 0 }, trend: [] }; }
-export function getSeedLaneAnalytics() { return []; }
-export function getSeedRouteOptimization() { return { original: { miles: 0, hours: 0, fuel: 0 }, optimized: { miles: 0, hours: 0, fuel: 0 }, savings: { miles: 0, hours: 0, fuel: 0, cost: 0 }, hazmatCompliant: false, restrictions: [] }; }
-export function getSeedTruckLocation() { return []; }
-export function getSeedMaintenanceSchedule() { return []; }
-export function getSeedFleetUtilization() { return { trucks: { total: 0, active: 0, idle: 0, maintenance: 0 }, utilization: 0, avgMilesPerDay: 0, emptyMiles: 0, revenuePerTruck: 0 }; }
-export function getSeedEquipmentAvailability() { return { tankers: { total: 0, available: 0, inUse: 0, maintenance: 0 }, dryVan: { total: 0, available: 0, inUse: 0, maintenance: 0 }, flatbed: { total: 0, available: 0, inUse: 0, maintenance: 0 } }; }
-export function getSeedProfitability() { return { avgMargin: 0, topLane: { route: '', margin: 0 }, profit: { mtd: 0, lastMonth: 0, growth: '0%' }, costBreakdown: { fuel: 0, labor: 0, maintenance: 0, other: 0 } }; }
-export function getSeedLoadMatching() { return []; }
-export function getSeedActiveLoadsOverview() { return { active: 0, inTransit: 0, loading: 0, unloading: 0, delayed: 0, onTime: 0 }; }
-export function getSeedUserAnalytics() { return { totalUsers: 0, newToday: 0, activeToday: 0, churn: 0, growth: '0%' }; }
-export function getSeedRevenue() { return { mtd: 0, ytd: 0, growth: '0%', target: 0, progress: 0 }; }
-export function getSeedShipmentAnalytics() { return []; }
-export function getSeedCostAnalysis() { return { fuel: { amount: 0, percent: 0, trend: '0%' }, labor: { amount: 0, percent: 0, trend: '0%' }, maintenance: { amount: 0, percent: 0, trend: '0%' }, other: { amount: 0, percent: 0, trend: '0%' }, total: 0 }; }
-export function getSeedFleetTracking() { return [] as { id: string; driver: string; status: string; speed: number; lat: number; lng: number }[]; }
-export function getSeedFuelAnalytics() { return { avgMpg: 0, totalGallons: 0, cost: 0, efficiency: 0, trend: '0%' }; }
-export function getSeedRouteHistory() { return { current: { origin: '', dest: '', miles: 0, eta: '' }, completed: 0, upcoming: 0, totalMiles: 0 }; }
-export function getSeedSafetyMetrics() { return { score: 0, incidents: 0, violations: 0, daysWithoutAccident: 0, trend: '0%' }; }
-export function getSeedYardStatus() { return { totalSpots: 0, occupied: 0, available: 0, checkingIn: 0, checkingOut: 0, utilization: 0 }; }
-export function getSeedDriversList() { return []; }
-export function getSeedProfitAnalysis() { return { avgMargin: 0, topLane: { route: '', margin: 0 }, profit: { mtd: 0, lastMonth: 0, growth: '0%' } }; }
-export function getSeedLoadMatchingResults() { return []; }

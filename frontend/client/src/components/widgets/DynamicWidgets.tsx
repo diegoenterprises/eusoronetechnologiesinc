@@ -647,7 +647,7 @@ export const LiveTrackingWidget: React.FC = () => {
     refetchInterval: 30000,
   });
 
-  const vehicles = vehiclesData || [];
+  const vehicles = (vehiclesData || []) as { id: string; driver: string; status: string; speed: number; lat: number; lng: number }[];
 
   return (
     <ResponsiveWidget expandThreshold={300}>
@@ -2233,7 +2233,7 @@ export const DetentionTrackerWidget: React.FC = () => {
     refetchInterval: 120000,
   });
 
-  const detention = detentionData || { active: 0, totalHours: 0, estimatedCharges: 0, locations: [] };
+  const detention = (detentionData || { active: 0, totalHours: 0, estimatedCharges: 0, locations: [] }) as { active: number; totalHours: number; estimatedCharges: number; locations: { location: string; hours: number }[] };
 
   return (
     <ResponsiveWidget>
