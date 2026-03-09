@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { LIGHTSPEED } from "@/lib/lightspeedQueryConfig";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -110,12 +111,12 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
 
   const { data, isLoading, refetch } = trpc.hotZones.getRateFeed.useQuery(
     { equipment: equipFilter || undefined, layers: activeLayers.length > 0 ? activeLayers : undefined },
-    { refetchInterval: 30_000, staleTime: 20_000 }
+    { ...LIGHTSPEED.intelligence }
   );
 
   const { data: mapIntel } = trpc.hotZones.getMapIntelligence.useQuery(
     undefined,
-    { refetchInterval: 120_000, staleTime: 60_000 }
+    { ...LIGHTSPEED.intelligence }
   );
 
   // Terminal integration intelligence — enriched by connected terminals' API keys

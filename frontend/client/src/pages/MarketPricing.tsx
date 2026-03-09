@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
+import { LIGHTSPEED } from "@/lib/lightspeedQueryConfig";
 import { useTheme } from "@/contexts/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -93,10 +94,10 @@ export default function MarketPricing() {
 
   const { data, isLoading, refetch } = trpc.marketPricing.getCommodities.useQuery(
     { category: activeCategory !== "All Markets" ? activeCategory : undefined, search: search || undefined },
-    { refetchInterval: 15000 }
+    { ...LIGHTSPEED.intelligence }
   );
 
-  const { data: intel, refetch: refetchIntel } = trpc.marketPricing.getMarketIntelligence.useQuery(undefined, { refetchInterval: 30000 });
+  const { data: intel, refetch: refetchIntel } = trpc.marketPricing.getMarketIntelligence.useQuery(undefined, { ...LIGHTSPEED.intelligence });
 
   // Force refresh mutation — busts all server caches, triggers hot zones + market data sync
   const forceRefreshMutation = (trpc as any).marketPricing?.forceRefreshAll?.useMutation?.({

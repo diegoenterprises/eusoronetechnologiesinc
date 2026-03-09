@@ -42,14 +42,17 @@ export const marketRouter = router({
     .query(async () => {
       const db = await getDb(); if (!db) return [];
       try {
-        const trends: Array<{ month: string; avgRate: number; volume: number }> = [];
-        for (let i = 5; i >= 0; i--) {
+        const ranges = Array.from({ length: 6 }, (_, idx) => {
+          const i = 5 - idx;
           const start = new Date(); start.setMonth(start.getMonth() - i, 1); start.setHours(0, 0, 0, 0);
           const end = new Date(start); end.setMonth(end.getMonth() + 1);
+          return { start, end, label: start.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) };
+        });
+        const results = await Promise.all(ranges.map(async ({ start, end }) => {
           const [stats] = await db.select({ count: sql<number>`count(*)`, avgRate: sql<number>`COALESCE(AVG(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(and(gte(loads.createdAt, start), sql`${loads.createdAt} < ${end}`));
-          trends.push({ month: start.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), avgRate: Math.round(stats?.avgRate || 0), volume: stats?.count || 0 });
-        }
-        return trends;
+          return stats;
+        }));
+        return ranges.map((r, i) => ({ month: r.label, avgRate: Math.round(results[i]?.avgRate || 0), volume: results[i]?.count || 0 }));
       } catch (e) { return []; }
     }),
 

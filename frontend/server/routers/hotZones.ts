@@ -448,7 +448,7 @@ async function getDbFuelPrices(): Promise<ExtCache["fuelPrices"]> {
 
 // ── DB ENHANCEMENT (Platform + FMCSA 9.8M records) ──
 let _dbEnhCache: { data: DbEnhancement; ts: number } | null = null;
-const DB_ENH_TTL = 60_000; // 60s cache — FMCSA data doesn't change in seconds
+const DB_ENH_TTL = 600_000; // 10min cache — FMCSA census data changes weekly, not per-second
 
 interface DbEnhancement {
   loadsByState: Record<string, number>;
@@ -474,7 +474,7 @@ async function getDbEnhancement(): Promise<DbEnhancement> {
   try {
     const redisCached = await lsCacheThrough<DbEnhancement>("WARM", "hz:db_enhancement", async () => {
       return await _fetchDbEnhancement();
-    }, 120); // 2min TTL in Redis
+    }, 600); // 10min TTL in Redis — FMCSA data changes weekly
     if (redisCached) {
       _dbEnhCache = { data: redisCached, ts: Date.now() };
       return redisCached;
@@ -598,7 +598,7 @@ async function _fetchDbEnhancement(): Promise<DbEnhancement> {
 
 // ── CACHED FORECAST + AI TREND (avoid re-running on every poll) ──
 let _forecastCache: { data: Record<string, { trend: string; nextWeek: number | null }>; ts: number } | null = null;
-const FORECAST_TTL = 300_000; // 5 min
+const FORECAST_TTL = 900_000; // 15 min — ML forecasts are expensive and don't change rapidly
 
 async function getCachedForecasts(): Promise<Record<string, { trend: string; nextWeek: number | null }>> {
   if (_forecastCache && Date.now() - _forecastCache.ts < FORECAST_TTL) return _forecastCache.data;
@@ -620,7 +620,7 @@ async function getCachedForecasts(): Promise<Record<string, { trend: string; nex
 }
 
 let _aiTrendCache: { data: Record<string, { trend: string; anomaly: boolean }>; ts: number } | null = null;
-const AI_TREND_TTL = 120_000; // 2 min
+const AI_TREND_TTL = 600_000; // 10 min — AI trend analysis is heavy and stable
 
 async function getCachedAiTrends(dbData: DbEnhancement): Promise<Record<string, { trend: string; anomaly: boolean }>> {
   if (_aiTrendCache && Date.now() - _aiTrendCache.ts < AI_TREND_TTL) return _aiTrendCache.data;
@@ -640,6 +640,24 @@ async function getCachedAiTrends(dbData: DbEnhancement): Promise<Record<string, 
   } catch {}
   _aiTrendCache = { data: map, ts: Date.now() };
   return map;
+}
+
+// ── STARTUP PREFETCH — warm caches before first user request ──
+export async function prefetchHotZonesData() {
+  try {
+    logger.info("[HotZones] Prefetching FMCSA + fuel + weather data...");
+    const start = Date.now();
+    await Promise.all([
+      getDbEnhancement(),
+      getDbFuelPrices(),
+      getDbWeatherAlerts(),
+      cached("fuelPrices", fetchFuelPrices),
+      cached("weatherAlerts", fetchWeatherAlerts),
+    ]);
+    logger.info(`[HotZones] Prefetch complete in ${Date.now() - start}ms`);
+  } catch (e) {
+    logger.warn("[HotZones] Prefetch failed (non-fatal):", e);
+  }
 }
 
 // ── MAIN ROUTER ──

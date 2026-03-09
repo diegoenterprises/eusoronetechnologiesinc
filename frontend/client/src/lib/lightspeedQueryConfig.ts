@@ -45,6 +45,18 @@ export const LIGHTSPEED = {
   },
 
   /**
+   * INTELLIGENCE pages: HotZones, Market Intelligence, Carrier Intelligence
+   * - staleTime: 3min (heavy FMCSA/aggregate queries — data changes hourly not per-second)
+   * - refetchInterval: 3min
+   */
+  intelligence: {
+    staleTime: 3 * 60_000,
+    gcTime: 15 * 60_000,
+    refetchInterval: 3 * 60_000,
+    refetchOnWindowFocus: false,
+  },
+
+  /**
    * DASHBOARD pages: Main dashboard, analytics, fleet overview
    * - staleTime: 2min (dashboards don't need second-by-second updates)
    * - refetchInterval: 60s

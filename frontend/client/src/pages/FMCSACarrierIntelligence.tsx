@@ -755,39 +755,39 @@ export default function FMCSACarrierIntelligence() {
   const searchEnabled = debouncedQuery.length >= 2;
   const searchResults = trpc.fmcsaData.search.useQuery(
     { query: debouncedQuery, limit: 15 },
-    { enabled: searchEnabled, placeholderData: (prev: any) => prev, staleTime: 30_000 }
+    { enabled: searchEnabled, placeholderData: (prev: any) => prev, staleTime: 300_000 }
   );
 
   // Carrier detail queries (only when a DOT is selected)
   const snapshot = trpc.fmcsaData.getSnapshot.useQuery(
     { dotNumber: selectedDot! },
-    { enabled: !!selectedDot, retry: 1, staleTime: 60_000 }
+    { enabled: !!selectedDot, retry: 1, staleTime: 600_000 }
   );
   const smsScores = trpc.fmcsaData.getSmsScores.useQuery(
     { dotNumber: selectedDot! },
-    { enabled: !!selectedDot && (activeTab === "overview" || activeTab === "safety"), retry: 1, staleTime: 60_000 }
+    { enabled: !!selectedDot && (activeTab === "overview" || activeTab === "safety"), retry: 1, staleTime: 600_000 }
   );
   const authority = trpc.fmcsaData.getAuthority.useQuery(
     { dotNumber: selectedDot! },
-    { enabled: !!selectedDot && (activeTab === "overview" || activeTab === "authority"), retry: 1, staleTime: 60_000 }
+    { enabled: !!selectedDot && (activeTab === "overview" || activeTab === "authority"), retry: 1, staleTime: 600_000 }
   );
   const insurance = trpc.fmcsaData.getInsurance.useQuery(
     { dotNumber: selectedDot! },
-    { enabled: !!selectedDot && (activeTab === "overview" || activeTab === "insurance"), retry: 1, staleTime: 60_000 }
+    { enabled: !!selectedDot && (activeTab === "overview" || activeTab === "insurance"), retry: 1, staleTime: 600_000 }
   );
   const crashes = trpc.fmcsaData.getCrashes.useQuery(
     { dotNumber: selectedDot!, limit: 50 },
-    { enabled: !!selectedDot && activeTab === "crashes", retry: 1, staleTime: 60_000 }
+    { enabled: !!selectedDot && activeTab === "crashes", retry: 1, staleTime: 600_000 }
   );
   const inspections = trpc.fmcsaData.getInspections.useQuery(
     { dotNumber: selectedDot!, limit: 50 },
-    { enabled: !!selectedDot && activeTab === "inspections", retry: 1, staleTime: 60_000 }
+    { enabled: !!selectedDot && activeTab === "inspections", retry: 1, staleTime: 600_000 }
   );
   const verification = trpc.fmcsaData.verifyCarrierForLoad.useQuery(
     { dotNumber: selectedDot!, loadType: "general" },
-    { enabled: !!selectedDot, retry: 1, staleTime: 60_000 }
+    { enabled: !!selectedDot, retry: 1, staleTime: 600_000 }
   );
-  const dbStats = trpc.fmcsaData.getStats.useQuery(undefined, { staleTime: 60_000 });
+  const dbStats = trpc.fmcsaData.getStats.useQuery(undefined, { staleTime: 600_000 });
 
   // Monitoring mutations
   const addMonitor = trpc.fmcsaData.addToMonitoring.useMutation();

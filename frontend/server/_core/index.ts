@@ -1126,6 +1126,14 @@ async function startServer() {
       } catch {}
     }, 5000);
 
+    // Pre-warm Hot Zones FMCSA + fuel + weather caches (eliminates 10-min first-load)
+    setTimeout(async () => {
+      try {
+        const { prefetchHotZonesData } = await import("../routers/hotZones");
+        await prefetchHotZonesData();
+      } catch {}
+    }, 8000);
+
     // Auto-seed platform fee configs if table is empty
     setTimeout(async () => {
       try {
