@@ -9,7 +9,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { router, auditedPublicProcedure, auditedProtectedProcedure, sensitiveData } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb, getPool } from "../db";
-import { users, companies, documents, userOperatingStates } from "../../drizzle/schema";
+import { users, companies, documents, userOperatingStates, drivers } from "../../drizzle/schema";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { initNewUserGamification } from "../services/missionGenerator";
@@ -775,6 +775,24 @@ export const registrationRouter = router({
       }).$returningId();
 
       const userId = Number(userResult[0]?.id);
+
+      // Create operational driver record (links user to fleet operations, HOS, safety scoring)
+      try {
+        await db.insert(drivers).values({
+          userId,
+          companyId: companyId || 0,
+          licenseNumber: input.cdlNumber || null,
+          licenseState: input.cdlState || null,
+          licenseExpiry: input.cdlExpiration ? new Date(input.cdlExpiration) : null,
+          medicalCardExpiry: input.medicalCardExpiration ? new Date(input.medicalCardExpiration) : null,
+          hazmatEndorsement: input.hazmatEndorsement || false,
+          hazmatExpiry: input.hazmatExpiration ? new Date(input.hazmatExpiration) : null,
+          twicExpiry: input.twicExpiration ? new Date(input.twicExpiration) : null,
+          status: "active",
+        });
+      } catch (driverErr) {
+        logger.error("[Registration] Failed to create driver record:", driverErr);
+      }
 
       await storeRegistrationMetadata(db, userId, {
         complianceIds: input.complianceIds,

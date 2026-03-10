@@ -9,7 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { loads, bids, users, companies, terminals, loadStops, notifications } from "../../drizzle/schema";
+import { loads, bids, users, companies, terminals, loadStops, notifications, drivers } from "../../drizzle/schema";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import {
@@ -2499,8 +2499,26 @@ export const bidsRouter = router({
     await db.update(bids).set({ status: 'accepted' } as any).where(eq(bids.id, bidIdNum));
     // Reject all other pending bids on this load
     await db.update(bids).set({ status: 'rejected' } as any).where(and(eq(bids.loadId, bid.loadId), sql`${bids.id} != ${bidIdNum}`, eq(bids.status, 'pending')));
-    // Assign catalyst to load
-    await db.update(loads).set({ status: 'assigned', catalystId: bid.catalystId } as any).where(eq(loads.id, bid.loadId));
+
+    // Resolve driver: if bidder is a DRIVER, assign directly; if CATALYST, find their company's driver
+    let driverId: number | null = null;
+    try {
+      const [bidder] = await db.select({ id: users.id, role: users.role, companyId: users.companyId }).from(users).where(eq(users.id, bid.catalystId)).limit(1);
+      if (bidder?.role === 'DRIVER') {
+        driverId = bidder.id;
+      } else if (bidder?.companyId) {
+        // Find an active driver in the catalyst's company
+        const [companyDriver] = await db.select({ userId: drivers.userId }).from(drivers).where(and(eq(drivers.companyId, bidder.companyId), eq(drivers.status, 'active'))).limit(1);
+        if (companyDriver) driverId = companyDriver.userId;
+      }
+    } catch {}
+
+    // Assign catalyst (and driver if resolved) to load
+    await db.update(loads).set({
+      status: driverId ? 'assigned' : 'awarded',
+      catalystId: bid.catalystId,
+      ...(driverId ? { driverId } : {}),
+    } as any).where(eq(loads.id, bid.loadId));
     emitBidAwarded({ bidId: input.bidId, loadId: String(bid.loadId), loadNumber: load?.loadNumber || '', catalystId: String(bid.catalystId), catalystName: 'Catalyst', amount: Number(bid.amount), status: 'accepted', timestamp: new Date().toISOString() });
     emitLoadStatusChange({ loadId: String(bid.loadId), loadNumber: load?.loadNumber || '', previousStatus: load?.status || '', newStatus: 'assigned', timestamp: new Date().toISOString() });
     emitNotification(String(bid.catalystId), { id: `notif_${Date.now()}`, type: 'bid_accepted', title: 'Bid Accepted!', message: `Your bid of $${Number(bid.amount).toLocaleString()} for load ${load?.loadNumber} has been accepted`, priority: 'high', data: { loadId: String(bid.loadId), bidId: input.bidId }, actionUrl: `/loads/${bid.loadId}`, timestamp: new Date().toISOString() });
