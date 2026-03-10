@@ -13,21 +13,24 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { 
-  loads, 
-  bids, 
-  users, 
-  companies, 
-  vehicles, 
-  drivers, 
-  terminals, 
-  appointments, 
-  documents, 
-  incidents, 
+import {
+  loads,
+  bids,
+  users,
+  companies,
+  vehicles,
+  drivers,
+  terminals,
+  appointments,
+  documents,
+  incidents,
   inspections,
   escortAssignments,
   convoys,
   certifications,
+  payments,
+  settlements,
+  platformRevenue,
 } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte, count, sum } from "drizzle-orm";
 import { getSafetyScores, getCrashSummary, getInsuranceStatus, getAuthority, getOOSStatus } from "../services/fmcsaBulkLookup";
@@ -277,12 +280,44 @@ export const dashboardRouter = router({
             gte(loads.createdAt, start)
           ));
 
+        // Calculate trend: compare current period vs previous period
+        const prevStart = new Date(start);
+        prevStart.setDate(prevStart.getDate() - days);
+        const [prevEarnings] = await db
+          .select({ total: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` })
+          .from(loads)
+          .where(and(
+            eq(loads.driverId, userId),
+            sql`${loads.status} = 'delivered'`,
+            gte(loads.createdAt, prevStart),
+            lte(loads.createdAt, start)
+          ));
+        const currTotal = earnings?.total || 0;
+        const prevTotal = prevEarnings?.total || 0;
+        const trend = prevTotal > 0
+          ? `${currTotal >= prevTotal ? '+' : ''}${(((currTotal - prevTotal) / prevTotal) * 100).toFixed(1)}%`
+          : null;
+
+        // Find top lane by revenue
+        const laneRows = await db.select().from(loads)
+          .where(and(eq(loads.driverId, userId), sql`${loads.status} = 'delivered'`, gte(loads.createdAt, start)))
+          .orderBy(desc(loads.createdAt)).limit(200);
+        const laneRevenue: Record<string, number> = {};
+        for (const l of laneRows) {
+          const p = (l.pickupLocation as any) || {}; const d = (l.deliveryLocation as any) || {};
+          const lane = `${(p.city || p.state || '').slice(0, 3).toUpperCase()} → ${(d.city || d.state || '').slice(0, 3).toUpperCase()}`;
+          if (lane === ' → ') continue;
+          laneRevenue[lane] = (laneRevenue[lane] || 0) + parseFloat(String(l.rate || 0));
+        }
+        const topLaneEntry = Object.entries(laneRevenue).sort((a, b) => b[1] - a[1])[0];
+        const topLane = topLaneEntry ? topLaneEntry[0] : null;
+
         return {
-          total: earnings?.total || 0,
+          total: currTotal,
           loads: earnings?.count || 0,
-          average: earnings?.count ? (earnings?.total || 0) / earnings.count : 0,
-          trend: '+5.2%', // Would calculate from historical data
-          topLane: 'DAL → HOU',
+          average: earnings?.count ? currTotal / earnings.count : 0,
+          trend,
+          topLane,
         };
       } catch (e) {
         logger.error("[dashboard] Failed to load earnings:", e);
@@ -397,19 +432,25 @@ export const dashboardRouter = router({
     const db = await getDb();
     if (!db) return [];
     try {
-      const rows = await db.select().from(loads).where(eq(loads.status, 'delivered')).orderBy(desc(loads.createdAt)).limit(200);
-      const laneMap: Record<string, { count: number; totalRate: number }> = {};
+      const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const sixtyDaysAgo = new Date(); sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+      const rows = await db.select().from(loads).where(and(eq(loads.status, 'delivered'), gte(loads.createdAt, sixtyDaysAgo))).orderBy(desc(loads.createdAt)).limit(500);
+      const laneMap: Record<string, { count: number; totalRate: number; prevCount: number; prevTotalRate: number }> = {};
       for (const l of rows) {
         const p = (l.pickupLocation as any) || {}; const d = (l.deliveryLocation as any) || {};
         const lane = `${(p.city || p.state || '?').slice(0, 3).toUpperCase()} → ${(d.city || d.state || '?').slice(0, 3).toUpperCase()}`;
-        if (!laneMap[lane]) laneMap[lane] = { count: 0, totalRate: 0 };
-        laneMap[lane].count++;
-        laneMap[lane].totalRate += parseFloat(String(l.rate || 0));
+        if (!laneMap[lane]) laneMap[lane] = { count: 0, totalRate: 0, prevCount: 0, prevTotalRate: 0 };
+        const created = new Date(l.createdAt!);
+        const rate = parseFloat(String(l.rate || 0));
+        if (created >= thirtyDaysAgo) { laneMap[lane].count++; laneMap[lane].totalRate += rate; }
+        else { laneMap[lane].prevCount++; laneMap[lane].prevTotalRate += rate; }
       }
-      return Object.entries(laneMap).sort((a, b) => b[1].count - a[1].count).slice(0, 5).map(([lane, s]) => ({
-        lane, rate: s.count > 0 ? Math.round((s.totalRate / s.count) * 100) / 100 : 0, change: '0%',
-        volume: s.count > 10 ? 'High' : s.count > 3 ? 'Medium' : 'Low',
-      }));
+      return Object.entries(laneMap).sort((a, b) => b[1].count - a[1].count).slice(0, 5).map(([lane, s]) => {
+        const currentAvg = s.count > 0 ? s.totalRate / s.count : 0;
+        const prevAvg = s.prevCount > 0 ? s.prevTotalRate / s.prevCount : 0;
+        const change = prevAvg > 0 ? `${currentAvg >= prevAvg ? '+' : ''}${(((currentAvg - prevAvg) / prevAvg) * 100).toFixed(1)}%` : null;
+        return { lane, rate: Math.round(currentAvg * 100) / 100, change, volume: s.count > 10 ? 'High' : s.count > 3 ? 'Medium' : 'Low' };
+      });
     } catch (e) { return []; }
   }),
 
@@ -428,8 +469,12 @@ export const dashboardRouter = router({
       const [todayAppts] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(eq(appointments.terminalId, termId), gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow)));
       const [completedAppts] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(eq(appointments.terminalId, termId), eq(appointments.status, 'completed')));
       const dockCount = terminal?.dockCount || 0;
-      return { docks: { total: dockCount, active: Math.min(dockCount, todayAppts?.count || 0), available: Math.max(0, dockCount - (todayAppts?.count || 0)) }, appointments: { today: todayAppts?.count || 0, pending: Math.max(0, (todayAppts?.count || 0) - (completedAppts?.count || 0)), completed: completedAppts?.count || 0 }, tankLevels: [], throughput: { today: 0, mtd: 0, unit: 'gallons' } };
-    } catch { return { docks: { total: 0, active: 0, available: 0 }, appointments: { today: 0, pending: 0, completed: 0 }, tankLevels: [], throughput: { today: 0, mtd: 0, unit: 'gallons' } }; }
+      // Throughput: count loads delivered to this terminal today and MTD
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const [throughputToday] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.destinationTerminalId, termId), sql`${loads.status} = 'delivered'`, gte(loads.updatedAt, today), lte(loads.updatedAt, tomorrow)));
+      const [throughputMtd] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.destinationTerminalId, termId), sql`${loads.status} = 'delivered'`, gte(loads.updatedAt, monthStart)));
+      return { docks: { total: dockCount, active: Math.min(dockCount, todayAppts?.count || 0), available: Math.max(0, dockCount - (todayAppts?.count || 0)) }, appointments: { today: todayAppts?.count || 0, pending: Math.max(0, (todayAppts?.count || 0) - (completedAppts?.count || 0)), completed: completedAppts?.count || 0 }, tankLevels: [], throughput: { today: throughputToday?.count || 0, mtd: throughputMtd?.count || 0, unit: 'loads' } };
+    } catch { return { docks: { total: 0, active: 0, available: 0 }, appointments: { today: 0, pending: 0, completed: 0 }, tankLevels: [], throughput: { today: null, mtd: null, unit: 'loads' } }; }
   }),
 
   /**
@@ -562,8 +607,24 @@ export const dashboardRouter = router({
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const [todaySignups] = await db.select({ count: sql<number>`count(*)` }).from(users).where(gte(users.createdAt, today));
       const [activeL] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(sql`${loads.status} IN ('in_transit','assigned','loading','unloading')`);
-      const dbStatus = db ? 'healthy' : 'degraded';
-      return { totalUsers: totalU?.count || 0, pendingVerifications: 0, activeLoads: activeL?.count || 0, todaySignups: todaySignups?.count || 0, openTickets: 0, platformHealth: { api: { status: 'healthy', latency: 45 }, database: { status: dbStatus, uptime: 99.9 }, eldSync: { status: 'healthy' }, payment: { status: 'healthy' }, gps: { status: 'healthy' }, scada: { status: 'healthy' } }, criticalErrors24h: 0 };
+      // Measure actual DB latency
+      const dbStart = Date.now();
+      let dbStatus = 'degraded';
+      try { await db.select({ v: sql`1` }).from(users).limit(1); dbStatus = 'healthy'; } catch { dbStatus = 'degraded'; }
+      const dbLatency = Date.now() - dbStart;
+
+      // Query actual pending verifications (users not approved)
+      const [pendingV] = await db.select({ count: sql<number>`count(*)` }).from(users).where(sql`${users.role} = 'PENDING'`);
+
+      // Query actual platform revenue (last 30 days)
+      const revStart = new Date(); revStart.setDate(revStart.getDate() - 30);
+      let revenueTotal = 0;
+      try {
+        const [rev] = await db.select({ sum: sql<number>`COALESCE(SUM(amount), 0)` }).from(platformRevenue).where(gte(platformRevenue.createdAt, revStart));
+        revenueTotal = rev?.sum || 0;
+      } catch { /* table may not exist yet */ }
+
+      return { totalUsers: totalU?.count || 0, pendingVerifications: pendingV?.count || 0, activeLoads: activeL?.count || 0, todaySignups: todaySignups?.count || 0, openTickets: null, platformHealth: { api: { status: 'healthy', latency: dbLatency }, database: { status: dbStatus, uptime: null }, eldSync: { status: null }, payment: { status: null }, gps: { status: null }, scada: { status: null } }, criticalErrors24h: null };
     } catch (e) { logger.error("[dashboard] Failed to load admin dashboard:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
@@ -1430,13 +1491,27 @@ async function getCatalystStats(db: any, companyId: number) {
     .from(vehicles)
     .where(eq(vehicles.companyId, companyId));
 
+  // Calculate utilization: vehicles in use / total vehicles
+  const [vehiclesInUse] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(vehicles)
+    .where(and(eq(vehicles.companyId, companyId), eq(vehicles.status, 'in_use')));
+  const utilizationRate = fleetSize?.count ? Math.round((vehiclesInUse?.count || 0) / fleetSize.count * 100) : null;
+
+  // Calculate avg rate per mile from delivered loads with distance
+  const [rpmData] = await db
+    .select({ totalRate: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)`, totalMiles: sql<number>`COALESCE(SUM(CAST(distance AS DECIMAL)), 0)` })
+    .from(loads)
+    .where(and(eq(loads.catalystId, companyId), sql`${loads.status} = 'delivered'`, sql`${loads.distance} > 0`));
+  const avgRatePerMile = rpmData?.totalMiles > 0 ? Math.round((rpmData.totalRate / rpmData.totalMiles) * 100) / 100 : null;
+
   return {
     totalLoads: totalLoads?.count || 0,
     activeLoads: activeLoads?.count || 0,
     totalRevenue: totalRevenue?.sum || 0,
     fleetSize: fleetSize?.count || 0,
-    utilizationRate: 84,
-    avgRatePerMile: 2.45,
+    utilizationRate,
+    avgRatePerMile,
   };
 }
 
@@ -1459,13 +1534,31 @@ async function getBrokerStats(db: any, userId: number) {
     .from(bids)
     .where(eq(bids.status, 'pending'));
 
+  // Count distinct active shippers and catalysts from recent loads
+  const [shipperCount] = await db.select({ count: sql<number>`COUNT(DISTINCT ${loads.shipperId})` }).from(loads).where(gte(loads.createdAt, thirtyDaysAgo));
+  const [catalystCount] = await db.select({ count: sql<number>`COUNT(DISTINCT ${loads.catalystId})` }).from(loads).where(and(gte(loads.createdAt, thirtyDaysAgo), sql`${loads.catalystId} IS NOT NULL`));
+
+  // Calculate actual commission from settlements
+  let totalCommission = 0;
+  try {
+    const [comm] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(brokerFee AS DECIMAL)), 0)` }).from(settlements).where(gte(settlements.createdAt, thirtyDaysAgo));
+    totalCommission = comm?.sum || 0;
+  } catch { /* brokerFee column may not exist */ }
+
+  // Pending payments from settlements
+  let pendingPaymentsCount = 0;
+  try {
+    const [pp] = await db.select({ count: sql<number>`count(*)` }).from(payments).where(eq(payments.status, 'pending'));
+    pendingPaymentsCount = pp?.count || 0;
+  } catch {}
+
   return {
-    activeShippers: 0,
-    activeCatalysts: 0,
+    activeShippers: shipperCount?.count || 0,
+    activeCatalysts: catalystCount?.count || 0,
     loadsThisMonth: loadsThisMonth?.count || 0,
-    totalCommission: 0,
-    avgMargin: 12.5,
-    pendingPayments: 0,
+    totalCommission,
+    avgMargin: null,
+    pendingPayments: pendingPaymentsCount,
     activeLoads: activeLoadsCount?.count || 0,
     pendingBids: totalBids?.count || 0,
   };
@@ -1482,13 +1575,35 @@ async function getDriverStats(db: any, userId: number) {
     .from(loads)
     .where(and(eq(loads.driverId, userId), sql`${loads.status} = 'delivered'`));
 
+  // Miles this week: sum distance from loads delivered this week
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 7);
+  const [weekMiles] = await db
+    .select({ sum: sql<number>`COALESCE(SUM(CAST(distance AS DECIMAL)), 0)` })
+    .from(loads)
+    .where(and(eq(loads.driverId, userId), sql`${loads.status} = 'delivered'`, gte(loads.updatedAt, weekStart)));
+
+  // Safety score from drivers table
+  const [driverRow] = await db
+    .select({ safetyScore: drivers.safetyScore })
+    .from(drivers)
+    .where(eq(drivers.userId, userId))
+    .limit(1);
+
+  // Next assigned load
+  const [nextLoad] = await db
+    .select({ id: loads.id, loadNumber: loads.loadNumber, pickupDate: loads.pickupDate })
+    .from(loads)
+    .where(and(eq(loads.driverId, userId), sql`${loads.status} IN ('assigned', 'confirmed', 'en_route_pickup')`))
+    .orderBy(loads.pickupDate)
+    .limit(1);
+
   return {
     completedLoads: completedLoads?.count || 0,
     totalEarnings: totalEarnings?.sum || 0,
-    milesThisWeek: 0,
-    safetyScore: 0,
-    hoursAvailable: 0,
-    nextLoad: null,
+    milesThisWeek: weekMiles?.sum || 0,
+    safetyScore: driverRow?.safetyScore ?? null,
+    hoursAvailable: null,
+    nextLoad: nextLoad || null,
   };
 }
 
@@ -1520,12 +1635,22 @@ async function getDispatchStats(db: any, companyId: number) {
 
   const utilization = fleetTotal?.count ? Math.round((fleetInUse?.count || 0) / fleetTotal.count * 100) : 0;
 
+  // HOS violations: count drivers with expired HOS (medicalCardExpiry or licenseExpiry past)
+  const [hosViolationCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(drivers)
+    .where(and(
+      eq(drivers.companyId, companyId),
+      sql`${drivers.status} IN ('active', 'available', 'on_load')`,
+      sql`(${drivers.medicalCardExpiry} < NOW() OR ${drivers.licenseExpiry} < NOW())`
+    ));
+
   return {
     activeDrivers: activeDriversCount?.count || 0,
     loadsInTransit: loadsInTransit?.count || 0,
     pendingAssignments: pendingAssignments?.count || 0,
-    hosViolations: 0,
-    avgResponseTime: '12 min',
+    hosViolations: hosViolationCount?.count || 0,
+    avgResponseTime: null,
     fleetUtilization: utilization,
   };
 }
@@ -1588,12 +1713,22 @@ async function getComplianceStats(db: any, companyId: number) {
       gte(documents.expiryDate, new Date())
     ));
 
+  // CSA score: look up company DOT number and query FMCSA if available
+  let csaScore: string | null = null;
+  try {
+    const [company] = await db.select({ dotNumber: companies.dotNumber }).from(companies).where(eq(companies.id, companyId)).limit(1);
+    if (company?.dotNumber) {
+      const safety = await getSafetyScores(String(company.dotNumber));
+      csaScore = (safety as any)?.safetyRating || (safety as any)?.overallRating || null;
+    }
+  } catch { /* FMCSA API unavailable */ }
+
   return {
     driversCompliant: driversCompliant?.count || 0,
     driversTotal: driversTotal?.count || 0,
     expiringDocuments: expiringDocs?.count || 0,
-    pendingAudits: 0,
-    csaScore: 'Satisfactory',
+    pendingAudits: null,
+    csaScore,
     lastAuditDate: null,
   };
 }
@@ -1637,13 +1772,19 @@ async function getSafetyStats(db: any, companyId: number) {
 
   const passRate = inspectionsTotal?.count ? Math.round((inspectionsPassed?.count || 0) / inspectionsTotal.count * 100) : 100;
 
+  // Incident rate: incidents per 100 drivers (annualized)
+  const [driverCount] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, companyId));
+  const incidentRate = driverCount?.count > 0
+    ? Math.round(((accidentsYTD?.count || 0) / driverCount.count) * 100 * 10) / 10
+    : null;
+
   return {
     accidentsYTD: accidentsYTD?.count || 0,
-    incidentRate: 0,
+    incidentRate,
     driverScoreAvg: Math.round(driversWithScores?.avg || 100),
     inspectionsPassed: passRate,
     maintenanceDue: maintenanceDue?.count || 0,
-    safetyMeetingsCompleted: 0,
+    safetyMeetingsCompleted: null,
   };
 }
 
@@ -1660,13 +1801,30 @@ async function getAdminStats(db: any) {
     .select({ count: sql<number>`count(*)` })
     .from(loads);
 
+  // Active users: users who logged in within last 7 days
+  const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const [activeUsersCount] = await db.select({ count: sql<number>`count(*)` }).from(users).where(gte(users.updatedAt, sevenDaysAgo));
+
+  // System health: check DB responsiveness
+  const healthStart = Date.now();
+  let sysHealth: string | null = null;
+  try { await db.select({ v: sql`1` }).from(users).limit(1); sysHealth = Date.now() - healthStart < 1000 ? 'healthy' : 'degraded'; } catch { sysHealth = 'unhealthy'; }
+
+  // Revenue: sum from platformRevenue table (last 30 days)
+  let revenue: number | null = null;
+  try {
+    const revStart = new Date(); revStart.setDate(revStart.getDate() - 30);
+    const [rev] = await db.select({ sum: sql<number>`COALESCE(SUM(amount), 0)` }).from(platformRevenue).where(gte(platformRevenue.createdAt, revStart));
+    revenue = rev?.sum || 0;
+  } catch { revenue = null; }
+
   return {
     totalUsers: totalUsers?.count || 0,
     totalCompanies: totalCompanies?.count || 0,
     totalLoads: totalLoads?.count || 0,
-    activeUsers: 0,
-    systemHealth: 'healthy',
-    revenue: 0,
+    activeUsers: activeUsersCount?.count || 0,
+    systemHealth: sysHealth,
+    revenue,
   };
 }
 
