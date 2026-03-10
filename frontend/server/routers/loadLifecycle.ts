@@ -27,7 +27,7 @@ import { router, isolatedApprovedProcedure as protectedProcedure } from "../_cor
 import { logger } from "../_core/logger";
 import { feeCalculator } from "../services/feeCalculator";
 import { getDb } from "../db";
-import { loads, vehicles, escortAssignments, settlements, settlementDocuments, wallets, walletTransactions, notifications, users } from "../../drizzle/schema";
+import { loads, vehicles, escortAssignments, settlements, settlementDocuments, wallets, walletTransactions, notifications, users, drivers, payments, auditLogs } from "../../drizzle/schema";
 import type { Load, User } from "../../drizzle/schema";
 import { eq, and, ne, sql, inArray } from "drizzle-orm";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
@@ -2194,11 +2194,62 @@ export const loadLifecycleRouter = router({
                 });
               } catch (docErr: any) { logger.warn('[SettlementDoc] Persist error:', docErr?.message); }
 
+              // ── Fix 3: Bridge settlement → payments table ──
+              try {
+                await _sDb.insert(payments).values({
+                  loadId: numericLoadId,
+                  payerId: load.shipperId,
+                  payeeId: carrierId,
+                  amount: carrierPay.toFixed(2),
+                  currency: "USD",
+                  paymentType: "load_payment",
+                  status: "pending",
+                  metadata: {
+                    subType: "settlement_payment",
+                    totalShipperCharge: parseFloat(totalShipperCharge.toFixed(2)),
+                    platformFee: parseFloat(platformFee.toFixed(2)),
+                    accessorials: accessorialTotal,
+                    hazmatSurcharge,
+                  },
+                });
+              } catch (payErr: any) { logger.warn('[Settlement] Payment record error:', payErr?.message); }
+
+              // ── Fix 4: Driver earnings audit record ──
+              if (load.driverId) {
+                try {
+                  await _sDb.insert(auditLogs).values({
+                    userId: load.driverId,
+                    action: "driver_earnings_recorded",
+                    entityType: "driver_earnings",
+                    entityId: numericLoadId,
+                    changes: {
+                      loadId: numericLoadId,
+                      loadNumber: load.loadNumber || null,
+                      carrierId,
+                      carrierPayment: parseFloat(carrierPay.toFixed(2)),
+                      totalShipperCharge: parseFloat(totalShipperCharge.toFixed(2)),
+                      platformFee: parseFloat(platformFee.toFixed(2)),
+                    },
+                    severity: "LOW",
+                  });
+                } catch (earnErr: any) { logger.warn('[Settlement] Driver earnings audit error:', earnErr?.message); }
+              }
+
               logger.info(`[Settlement] Load ${numericLoadId} settled: rate=$${loadRate}, accessorials=$${accessorialTotal.toFixed(2)}, hazmat=$${hazmatSurcharge.toFixed(2)}, total=$${totalShipperCharge.toFixed(2)}, fee=$${platformFee.toFixed(2)}, carrier=$${carrierPay.toFixed(2)}`);
             }
           }
         } catch (settleErr: any) {
           logger.warn(`[Settlement] Auto-settle error for load ${numericLoadId}:`, settleErr?.message);
+        }
+
+        // Reset driver status to available after delivery
+        if (load?.driverId) {
+          try {
+            const _drDb = await getDb();
+            if (_drDb) {
+              await _drDb.update(drivers).set({ status: "available" }).where(eq(drivers.userId, load.driverId));
+            }
+          } catch { /* non-critical — driver status reset */ }
         }
 
         // ── INVOICE GENERATION — auto-generate invoice and transition to "invoiced" ──

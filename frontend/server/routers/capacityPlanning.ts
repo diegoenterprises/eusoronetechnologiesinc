@@ -91,11 +91,11 @@ export const capacityPlanningRouter = router({
         const inUseTrucks = vMap["in_use"] || 0;
         const maintenanceTrucks = (vMap["maintenance"] || 0) + (vMap["out_of_service"] || 0);
 
-        // Driver counts
+        // Driver counts — exclude inactive drivers from capacity planning
         const driverCounts = await db.select({
           status: drivers.status,
           cnt: count(),
-        }).from(drivers).groupBy(drivers.status);
+        }).from(drivers).where(ne(drivers.status, 'inactive')).groupBy(drivers.status);
 
         const dMap: Record<string, number> = {};
         driverCounts.forEach(d => { dMap[d.status || "active"] = Number(d.cnt); });

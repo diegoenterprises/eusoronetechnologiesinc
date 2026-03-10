@@ -6,7 +6,10 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
-import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router, roleProcedure } from "../_core/trpc";
+
+// Earnings: visible to drivers, catalysts, dispatch, and admins
+const earningsProcedure = roleProcedure("DRIVER", "CATALYST", "DISPATCH", "ADMIN", "SUPER_ADMIN");
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, payments, users } from "../../drizzle/schema";
@@ -18,7 +21,7 @@ export const earningsRouter = router({
   /**
    * Get earnings summary for current user
    */
-  getSummary: protectedProcedure
+  getSummary: earningsProcedure
     .input(z.object({
       period: z.enum(["week", "month", "quarter", "year"]).default("week"),
     }))
@@ -89,7 +92,7 @@ export const earningsRouter = router({
   /**
    * Get earnings for DriverEarnings page
    */
-  getEarnings: protectedProcedure
+  getEarnings: earningsProcedure
     .input(z.object({ period: z.string().optional(), offset: z.number().optional().default(0), limit: z.number().optional().default(20) }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -130,7 +133,7 @@ export const earningsRouter = router({
   /**
    * Get weekly summary for DriverEarnings page
    */
-  getWeeklySummary: protectedProcedure
+  getWeeklySummary: earningsProcedure
     .input(z.object({ offset: z.number().optional().default(0) }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -172,7 +175,7 @@ export const earningsRouter = router({
   /**
    * List earnings entries — from loads table
    */
-  list: protectedProcedure
+  list: earningsProcedure
     .input(z.object({ status: earningStatusSchema.optional(), startDate: z.string().optional(), endDate: z.string().optional(), limit: z.number().default(20), offset: z.number().default(0) }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -195,7 +198,7 @@ export const earningsRouter = router({
   /**
    * Get weekly summaries — computed from real data
    */
-  getWeeklySummaries: protectedProcedure
+  getWeeklySummaries: earningsProcedure
     .input(z.object({ weeks: z.number().default(8) }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -218,7 +221,7 @@ export const earningsRouter = router({
   /**
    * Get pay statement — from loads for the given week
    */
-  getPayStatement: protectedProcedure
+  getPayStatement: earningsProcedure
     .input(z.object({ statementId: z.string().optional(), weekEnding: z.string().optional() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -238,7 +241,7 @@ export const earningsRouter = router({
   /**
    * Get year-to-date summary — from real loads data
    */
-  getYTDSummary: protectedProcedure
+  getYTDSummary: earningsProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
       const userId = ctx.user?.id || 0;
@@ -255,21 +258,21 @@ export const earningsRouter = router({
     }),
 
   // Additional earnings procedures — real DB queries
-  getHistory: protectedProcedure.input(z.object({ limit: z.number().optional(), period: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+  getHistory: earningsProcedure.input(z.object({ limit: z.number().optional(), period: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
     const db = await getDb(); if (!db) return [];
     try { const results = await db.select().from(payments).where(eq(payments.payeeId, ctx.user?.id || 0)).orderBy(desc(payments.createdAt)).limit(input?.limit || 20); return results.map(p => ({ id: String(p.id), date: p.createdAt?.toISOString()?.split("T")[0] || "", amount: Number(p.amount), type: p.paymentType || "payment" })); } catch { return []; }
   }),
-  getSettlementHistory: protectedProcedure.input(z.object({ status: z.string().optional(), driverId: z.string().optional() }).optional()).query(async ({ ctx }) => {
+  getSettlementHistory: earningsProcedure.input(z.object({ status: z.string().optional(), driverId: z.string().optional() }).optional()).query(async ({ ctx }) => {
     const db = await getDb(); if (!db) return [];
     try { const results = await db.select().from(payments).where(eq(payments.payeeId, ctx.user?.id || 0)).orderBy(desc(payments.createdAt)).limit(20); return results.map(p => ({ id: String(p.id), period: "", grossPay: Number(p.amount), netPay: Number(p.amount), status: p.status || "pending" })); } catch { return []; }
   }),
-  getSettlementById: protectedProcedure.input(z.object({ settlementId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => {
+  getSettlementById: earningsProcedure.input(z.object({ settlementId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => {
     const db = await getDb(); const sid = input?.settlementId || input?.id || "0";
     const empty = { id: sid, settlementNumber: "", period: "", periodStart: "", periodEnd: "", driverId: "", driverName: "", grossPay: 0, grossRevenue: 0, driverPay: 0, payRate: 0, payType: "", paymentMethod: "", deductions: 0, totalDeductions: 0, netPay: 0, status: "pending", paidDate: "", loads: [], revenueItems: [], deductionItems: [], deductionDetails: [], breakdown: { lineHaul: 0, fuelSurcharge: 0, accessorials: 0 } };
     if (!db) return empty;
     try { const [p] = await db.select().from(payments).where(eq(payments.id, parseInt(sid, 10))).limit(1); if (!p) return empty; return { ...empty, id: String(p.id), grossPay: Number(p.amount), netPay: Number(p.amount), status: p.status || "pending", paymentMethod: p.paymentMethod || "" }; } catch { return empty; }
   }),
-  approveSettlement: protectedProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ ctx, input }) => {
+  approveSettlement: earningsProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) throw new Error("Database unavailable");
     const sid = parseInt(input.settlementId, 10);
@@ -288,7 +291,7 @@ export const earningsRouter = router({
     } catch {}
     return { success: true, settlementId: input.settlementId, approvedAt: new Date().toISOString() };
   }),
-  processPayment: protectedProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ input }) => {
+  processPayment: earningsProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("Database unavailable");
     const sid = parseInt(input.settlementId, 10);
@@ -299,7 +302,7 @@ export const earningsRouter = router({
   }),
 
   // P0 Blocker 6: Dispute a settlement
-  disputeSettlement: protectedProcedure
+  disputeSettlement: earningsProcedure
     .input(z.object({
       settlementId: z.string(),
       reason: z.string().min(5),
@@ -333,7 +336,7 @@ export const earningsRouter = router({
 
       return { success: true, settlementId: input.settlementId, status: 'disputed', disputeCreated: true };
     }),
-  getEarningsSummary: protectedProcedure.query(async ({ ctx }) => {
+  getEarningsSummary: earningsProcedure.query(async ({ ctx }) => {
     const db = await getDb(); if (!db) return { total: 0, pending: 0, paid: 0, avgPerLoad: 0, breakdown: { lineHaul: 0, fuelSurcharge: 0, accessorials: 0 } };
     try {
       const userId = ctx.user?.id || 0;

@@ -9,7 +9,7 @@ import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedApprovedProcedure, isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { payments, loads, users, vehicles, companies, detentionClaims, factoringInvoices, wallets, walletTransactions } from "../../drizzle/schema";
+import { payments, loads, users, vehicles, companies, detentionClaims, factoringInvoices, wallets, walletTransactions, auditLogs } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { unsafeCast } from "../_core/types/unsafe";
@@ -655,6 +655,100 @@ export const billingRouter = router({
       await db.update(detentionClaims)
         .set(updates)
         .where(eq(detentionClaims.id, input.detentionId));
+
+      // ── Financial linkage: approved detention creates wallet credit + payment ──
+      try {
+        const [detention] = await db
+          .select()
+          .from(detentionClaims)
+          .where(eq(detentionClaims.id, input.detentionId))
+          .limit(1);
+
+        if (detention) {
+          const detentionAmount = input.adjustedAmount ?? parseFloat(String(detention.totalAmount || "0"));
+          const carrierId = detention.claimedByUserId;
+          const payerId = detention.claimedAgainstUserId || 0;
+
+          if (detentionAmount > 0 && carrierId) {
+            // 1. Insert payments record linking detention to load
+            await db.insert(payments).values({
+              loadId: detention.loadId,
+              payerId,
+              payeeId: carrierId,
+              amount: detentionAmount.toFixed(2),
+              currency: "USD",
+              paymentType: "payout",
+              status: "pending",
+              metadata: {
+                subType: "detention_payout",
+                detentionClaimId: input.detentionId,
+                locationType: detention.locationType,
+                billableMinutes: detention.billableMinutes,
+              },
+            });
+
+            // 2. Credit carrier wallet
+            let [carrierWallet] = await db
+              .select()
+              .from(wallets)
+              .where(eq(wallets.userId, carrierId))
+              .limit(1);
+            if (!carrierWallet) {
+              try {
+                await db.insert(wallets).values({
+                  userId: carrierId,
+                  availableBalance: "0",
+                  pendingBalance: "0",
+                  reservedBalance: "0",
+                  currency: "USD",
+                });
+              } catch {}
+              [carrierWallet] = await db
+                .select()
+                .from(wallets)
+                .where(eq(wallets.userId, carrierId))
+                .limit(1);
+            }
+            if (carrierWallet) {
+              await db.execute(
+                sql`UPDATE wallets SET availableBalance = availableBalance + ${detentionAmount.toFixed(2)}, totalReceived = totalReceived + ${detentionAmount.toFixed(2)} WHERE id = ${carrierWallet.id}`,
+              );
+              await db.insert(walletTransactions).values({
+                walletId: carrierWallet.id,
+                type: "earnings",
+                amount: detentionAmount.toFixed(2),
+                fee: "0",
+                netAmount: detentionAmount.toFixed(2),
+                currency: "USD",
+                status: "completed",
+                description: `Detention approved — Load #${detention.loadId} — ${detention.locationType} — $${detentionAmount.toFixed(2)}`,
+                loadId: detention.loadId,
+                completedAt: new Date(),
+              });
+            }
+
+            // 3. Audit log
+            await db.insert(auditLogs).values({
+              userId: adminId,
+              action: "detention_payout_created",
+              entityType: "detention_claim",
+              entityId: input.detentionId,
+              changes: {
+                amount: detentionAmount,
+                carrierId,
+                payerId,
+                loadId: detention.loadId,
+              },
+              severity: "MEDIUM",
+            });
+          }
+        }
+      } catch (finErr: any) {
+        logger.warn(
+          `[Billing] Detention financial linkage error for ${input.detentionId}:`,
+          finErr?.message,
+        );
+      }
 
       return { success: true };
     }),

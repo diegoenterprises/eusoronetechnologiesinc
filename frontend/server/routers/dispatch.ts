@@ -173,7 +173,9 @@ export const dispatchRouter = router({
           })
           .from(drivers)
           .leftJoin(users, eq(drivers.userId, users.id))
-          .where(companyId > 0 ? eq(drivers.companyId, companyId) : undefined)
+          .where(companyId > 0
+            ? and(eq(drivers.companyId, companyId), ne(drivers.status, 'inactive'))
+            : ne(drivers.status, 'inactive'))
           .limit(input.limit);
 
         // Get loads for each driver
@@ -499,6 +501,9 @@ export const dispatchRouter = router({
         // FMCSA Authority & OOS checks (if driver has a company with DOT#)
         if (companyId) {
           const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+          if (!company?.isActive) {
+            throw new Error('Company is inactive and cannot be assigned loads');
+          }
           if (company?.dotNumber) {
             try {
               const oosStatus = await getOOSStatus(company.dotNumber);
@@ -583,10 +588,13 @@ export const dispatchRouter = router({
           }
         }
 
-        // Vehicle inspection check
+        // Vehicle inspection and status check
         if (input.vehicleId) {
           const vIdNum = parseInt(input.vehicleId.replace(/\D/g, '')) || 0;
           const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, vIdNum)).limit(1);
+          if (vehicle?.status === 'maintenance' || vehicle?.status === 'out_of_service') {
+            throw new Error(`Vehicle is currently ${vehicle.status} and cannot be assigned`);
+          }
           if (vehicle?.nextInspectionDate && new Date(vehicle.nextInspectionDate) < new Date()) {
             throw new Error('Vehicle inspection has expired. Schedule inspection before assignment.');
           }

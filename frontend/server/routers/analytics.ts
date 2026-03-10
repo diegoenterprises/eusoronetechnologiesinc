@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
+import { eq, and, desc, sql, gte, lte, ne } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
@@ -84,13 +84,15 @@ export const analyticsRouter = router({
           .limit(5);
 
         const topSourcesWithNames = await Promise.all(topShippers.map(async (s) => {
-          const [co] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, s.shipperId || 0)).limit(1);
-          return { name: co?.name || `Company #${s.shipperId}`, revenue: Math.round(s.total || 0), loads: s.count || 0 };
+          const [co] = await db.select({ name: companies.name, isActive: companies.isActive }).from(companies).where(and(eq(companies.id, s.shipperId || 0), eq(companies.isActive, true))).limit(1);
+          if (!co) return null;
+          return { name: co.name || `Company #${s.shipperId}`, revenue: Math.round(s.total || 0), loads: s.count || 0 };
         }));
+        const filteredTopSources = topSourcesWithNames.filter((s): s is NonNullable<typeof s> => s !== null);
 
         return {
           byCategory: byCargo.map(c => ({ category: c.cargoType || 'general', revenue: Math.round(c.total || 0), loads: c.count || 0 })),
-          topSources: topSourcesWithNames,
+          topSources: filteredTopSources,
         };
       } catch (e) { logger.error('[Analytics] getRevenueBreakdown error:', e); return { byCategory: [], topSources: [] }; }
     }),

@@ -494,7 +494,7 @@ function Router() {
       <Route path={"/account-status"} component={guard(ALL, <AccountStatus />)} />
       <Route path={"/settings"} component={guard(ALL, <SettingsPage />)} />
       <Route path={"/messages"} component={guard(ALL, <MessagesPage />)} />
-      <Route path={"/wallet"} component={guard(ALL, <WalletPage />)} />
+      <Route path={"/wallet"} component={guard([...SHIP, ...CARR, ...BROK, ...FACT, ...DRIV, ...DISP, ...ESCT, ...TERM, ...ADMN], <WalletPage />)} />
       <Route path={"/news"} component={guard(ALL, <NewsFeedPage />)} />
       <Route path={"/support"} component={guard(ALL, <SupportPage />)} />
       <Route path={"/company-channels"} component={guard(ALL, <CompanyChannels />)} />
@@ -504,34 +504,34 @@ function Router() {
       <Route path={"/erg"} component={guard(ALL, <ErgPage />)} />
       <Route path={"/missions"} component={guard(ALL, <Missions />)} />
       <Route path={"/partners"} component={guard(ALL, <MyPartners />)} />
-      <Route path={"/live-tracking"} component={guard(ALL, <DriverTracking />)} />
-      <Route path={"/fleet-tracking"} component={guard(ALL, <FleetTracking />)} />
+      <Route path={"/live-tracking"} component={guard([...DRIV, ...CARR, ...DISP, ...SHIP, ...BROK, ...ADMN], <DriverTracking />)} />
+      <Route path={"/fleet-tracking"} component={guard([...CARR, ...DISP, ...ADMN], <FleetTracking />)} />
       <Route path={"/location-intelligence"} component={guard(ALL, <LocationIntelligence />)} />
       <Route path={"/admin/telemetry"} component={guard(ADMN, <AdminTelemetry />)} />
       <Route path={"/admin/approvals"} component={guard(ADMN, <AdminApprovalQueue />)} />
-      <Route path={"/zeun-breakdown"} component={guard(ALL, <ZeunBreakdown />)} />
-      <Route path={"/zeun-fleet"} component={guard(ALL, <ZeunFleetDashboard />)} />
+      <Route path={"/zeun-breakdown"} component={guard([...CARR, ...DRIV, ...DISP, ...ADMN], <ZeunBreakdown />)} />
+      <Route path={"/zeun-fleet"} component={guard([...CARR, ...DISP, ...ADMN], <ZeunFleetDashboard />)} />
       <Route path={"/admin/zeun"} component={guard(ADMN, <ZeunAdminDashboard />)} />
       <Route path={"/eld"} component={guard(ELDR, <ELDIntegrationPage />)} />
-      <Route path={"/hot-zones"} component={guard(ALL, <HotZones />)} />
+      <Route path={"/hot-zones"} component={guard([...DRIV, ...CARR, ...DISP, ...SAFE, ...ADMN], <HotZones />)} />
       <Route path={"/ratings"} component={guard(ALL, <RatingsReviews />)} />
-      <Route path={"/claims"} component={guard(ALL, <ClaimsPage />)} />
-      <Route path={"/market-pricing"} component={guard(ALL, <MarketPricing />)} />
-      <Route path={"/market-intelligence"} component={guard(ALL, <MarketIntelligence2026 />)} />
+      <Route path={"/claims"} component={guard([...SHIP, ...CARR, ...BROK, ...FACT, ...DISP, ...ADMN], <ClaimsPage />)} />
+      <Route path={"/market-pricing"} component={guard([...SHIP, ...CARR, ...BROK, ...DISP, ...ADMN], <MarketPricing />)} />
+      <Route path={"/market-intelligence"} component={guard([...SHIP, ...CARR, ...BROK, ...DISP, ...ADMN], <MarketIntelligence2026 />)} />
       <Route path={"/authority"} component={guard([...CARR, ...DRIV, ...BROK, ...DISP, ...ESCT], <OperatingAuthority />)} />
       {/* Gold Standard: Shared auth, settings & cross-role compliance */}
       <Route path={"/settings/change-password"} component={guard(ALL, <ChangePasswordPage />)} />
       <Route path={"/settings/2fa-setup"} component={guard(ALL, <TwoFactorSetupPage />)} />
       <Route path={"/settings/2fa"} component={guard(ALL, <TwoFactorAuthPage />)} />
       <Route path={"/settings/sessions"} component={guard(ALL, <SessionMgmtPage />)} />
-      <Route path={"/bol-management"} component={guard(ALL, <ShippingPapersHub />)} />
-      <Route path={"/rate-sheet"} component={guard(ALL, <RateSheetReconciliation />)} />
-      <Route path={"/pod"} component={guard(ALL, <PODManagementPage />)} />
+      <Route path={"/bol-management"} component={guard([...SHIP, ...CARR, ...BROK, ...DRIV, ...DISP, ...TERM, ...COMP, ...ADMN], <ShippingPapersHub />)} />
+      <Route path={"/rate-sheet"} component={guard([...SHIP, ...CARR, ...BROK, ...DISP, ...FACT, ...ADMN], <RateSheetReconciliation />)} />
+      <Route path={"/pod"} component={guard([...SHIP, ...CARR, ...BROK, ...DRIV, ...DISP, ...TERM, ...ADMN], <PODManagementPage />)} />
       <Route path={"/erg/guide"} component={guard(ALL, <ERGGuidePage />)} />
       <Route path={"/erg/lookup"} component={guard(ALL, <ERGLookupPage />)} />
       <Route path={"/fmcsa-lookup"} component={guard([...CARR, ...BROK, ...COMP, ...SHIP], <SAFERLookupPage />)} />
       <Route path={"/carrier-intelligence"} component={guard(ELDR, <FMCSACarrierIntelligencePage />)} />
-      <Route path={"/hazmat/certifications"} component={guard(ALL, <HazmatComplianceHub />)} />
+      <Route path={"/hazmat/certifications"} component={guard([...DRIV, ...CARR, ...COMP, ...SAFE, ...ADMN], <HazmatComplianceHub />)} />
       <Route path={"/insurance"} component={guard([...CARR, ...BROK, ...COMP, "ESCORT"], <InsuranceMgmtPage />)} />
       <Route path={"/insurance/per-load"} component={guard([...CARR, ...SHIP, ...BROK], <PerLoadInsurance />)} />
       <Route path={"/insurance/verification"} component={guard([...CARR, ...BROK, ...COMP, ...SHIP, ...DRIV, "ESCORT", "DISPATCH"], <InsuranceVerification />)} />
@@ -559,7 +559,7 @@ function Router() {
       <Route path={"/loads"} component={guard(LOAD, <MyLoadsPage />)} />
       <Route path={"/tracking"} component={guard(LOAD, <ShipperDispatchControl />)} />
       <Route path={"/catalysts"} component={guard([...SHIP, "BROKER"], <CatalystsPage />)} />
-      <Route path={"/payments"} component={guard(ALL, <WalletPage />)} />
+      <Route path={"/payments"} component={guard([...SHIP, ...CARR, ...BROK, ...FACT, ...DRIV, ...DISP, ...ESCT, ...TERM, ...ADMN], <WalletPage />)} />
       <Route path={"/company"} component={guard([...LOAD, "ESCORT"], <CompanyProfile />)} />
       <Route path={"/agreements/create"} component={guard([...LOAD, "TERMINAL_MANAGER", "ESCORT"], <ShipperAgreementWizard />)} />
       <Route path={"/agreements/broker"} component={guard([...BROK, "SHIPPER"], <BrokerContractWizard />)} />
@@ -647,31 +647,31 @@ function Router() {
       <Route path={"/driver/hazmat-endorsement"} component={guard(DRIV, <HazmatComplianceHub />)} />
       <Route path={"/driver/twic-card"} component={guard(DRIV, <TWICCard />)} />
       <Route path={"/driver/drug-test"} component={guard(DRIV, <DrugTestAcknowledgment />)} />
-      <Route path={"/hazmat/segregation-rules"} component={guard(ALL, <SegregationRules />)} />
-      <Route path={"/hazmat/fire-response"} component={guard(ALL, <FireResponse />)} />
-      <Route path={"/hazmat/incident-report"} component={guard(ALL, <IncidentReportForm />)} />
+      <Route path={"/hazmat/segregation-rules"} component={guard([...DRIV, ...CARR, ...DISP, ...COMP, ...SAFE, ...TERM, ...ADMN], <SegregationRules />)} />
+      <Route path={"/hazmat/fire-response"} component={guard([...DRIV, ...CARR, ...DISP, ...COMP, ...SAFE, ...TERM, ...ADMN], <FireResponse />)} />
+      <Route path={"/hazmat/incident-report"} component={guard([...DRIV, ...CARR, ...DISP, ...COMP, ...SAFE, ...TERM, ...ADMN], <IncidentReportForm />)} />
       <Route path={"/driver/trip-pay"} component={guard(DRIV, <TripPay />)} />
       <Route path={"/driver/settlement-history"} component={guard(DRIV, <SettlementHistory />)} />
       <Route path={"/driver/deductions"} component={guard(DRIV, <DeductionsBreakdown />)} />
       <Route path={"/driver/bonus-tracker"} component={guard(DRIV, <BonusTracker />)} />
       <Route path={"/driver/direct-deposit"} component={guard(DRIV, <DirectDeposit />)} />
       <Route path={"/driver/availability"} component={guard(DRIV, <DriverAvailability />)} />
-      <Route path={"/hazmat/placard-guide"} component={guard(ALL, <PlacardGuide />)} />
+      <Route path={"/hazmat/placard-guide"} component={guard([...DRIV, ...CARR, ...DISP, ...COMP, ...SAFE, ...TERM, ...ADMN], <PlacardGuide />)} />
       <Route path={"/emergency-alerts"} component={guard(ALL, <EmergencyNotification />)} />
       <Route path={"/emergency-protocols"} component={guard(ALL, <EmergencyProtocols />)} />
       <Route path={"/settings/language"} component={guard(ALL, <LanguageSettings />)} />
       <Route path={"/settings/privacy"} component={guard(ALL, <PrivacySettings />)} />
-      <Route path={"/hazmat/nrc-report"} component={guard(ALL, <NRCReport />)} />
-      <Route path={"/hazmat/dot-5800"} component={guard(ALL, <DOT5800Form />)} />
-      <Route path={"/hazmat/security-plan"} component={guard(ALL, <SecurityPlan />)} />
-      <Route path={"/hazmat/registration"} component={guard(ALL, <HazmatComplianceHub />)} />
-      <Route path={"/hazmat/corrective-actions"} component={guard(ALL, <CorrectiveActions />)} />
-      <Route path={"/hazmat/regulatory-updates"} component={guard(ALL, <RegulatoryUpdates />)} />
-      <Route path={"/hazmat/tank-valve"} component={guard(ALL, <TankValve />)} />
-      <Route path={"/hazmat/tank-pressure"} component={guard(ALL, <TankPressure />)} />
-      <Route path={"/hazmat/cryogenic-tank"} component={guard(ALL, <CryogenicTank />)} />
-      <Route path={"/hazmat/liquid-tank"} component={guard(ALL, <LiquidTankInspection />)} />
-      <Route path={"/hazmat/pressurized-tank"} component={guard(ALL, <PressurizedTankInspection />)} />
+      <Route path={"/hazmat/nrc-report"} component={guard([...DRIV, ...CARR, ...COMP, ...SAFE, ...ADMN], <NRCReport />)} />
+      <Route path={"/hazmat/dot-5800"} component={guard([...DRIV, ...CARR, ...COMP, ...SAFE, ...ADMN], <DOT5800Form />)} />
+      <Route path={"/hazmat/security-plan"} component={guard([...DRIV, ...CARR, ...COMP, ...SAFE, ...ADMN], <SecurityPlan />)} />
+      <Route path={"/hazmat/registration"} component={guard([...DRIV, ...CARR, ...COMP, ...SAFE, ...ADMN], <HazmatComplianceHub />)} />
+      <Route path={"/hazmat/corrective-actions"} component={guard([...DRIV, ...CARR, ...COMP, ...SAFE, ...ADMN], <CorrectiveActions />)} />
+      <Route path={"/hazmat/regulatory-updates"} component={guard([...DRIV, ...CARR, ...COMP, ...SAFE, ...ADMN], <RegulatoryUpdates />)} />
+      <Route path={"/hazmat/tank-valve"} component={guard([...DRIV, ...CARR, ...COMP, ...SAFE, ...TERM, ...ADMN], <TankValve />)} />
+      <Route path={"/hazmat/tank-pressure"} component={guard([...DRIV, ...CARR, ...COMP, ...SAFE, ...TERM, ...ADMN], <TankPressure />)} />
+      <Route path={"/hazmat/cryogenic-tank"} component={guard([...DRIV, ...CARR, ...COMP, ...SAFE, ...TERM, ...ADMN], <CryogenicTank />)} />
+      <Route path={"/hazmat/liquid-tank"} component={guard([...DRIV, ...CARR, ...COMP, ...SAFE, ...TERM, ...ADMN], <LiquidTankInspection />)} />
+      <Route path={"/hazmat/pressurized-tank"} component={guard([...DRIV, ...CARR, ...COMP, ...SAFE, ...TERM, ...ADMN], <PressurizedTankInspection />)} />
       <Route path={"/driver/flatbed-securement"} component={guard(DRIV, <FlatbedSecurement />)} />
       <Route path={"/driver/hopper-inspection"} component={guard(DRIV, <HopperInspection />)} />
       <Route path={"/driver/voice-messages"} component={guard(DRIV, <VoiceMessaging />)} />
@@ -681,8 +681,8 @@ function Router() {
       <Route path={"/driver/today"} component={guard(DRIV, <TodaySchedule />)} />
       <Route path={"/hazmat/driver-filter"} component={guard(DISP, <HazmatDriverFilter />)} />
       <Route path={"/hazmat/equipment-filter"} component={guard(DISP, <HazmatEquipmentFilter />)} />
-      <Route path={"/hazmat/route-restrictions"} component={guard(ALL, <HazmatRouteRestriction />)} />
-      <Route path={"/hazmat/route-compliance"} component={guard(ALL, <HazmatComplianceHub />)} />
+      <Route path={"/hazmat/route-restrictions"} component={guard([...DRIV, ...CARR, ...DISP, ...COMP, ...SAFE, ...ADMN], <HazmatRouteRestriction />)} />
+      <Route path={"/hazmat/route-compliance"} component={guard([...DRIV, ...CARR, ...DISP, ...COMP, ...SAFE, ...ADMN], <HazmatComplianceHub />)} />
       <Route path={"/hazmat/check-in"} component={guard(DRIV, <HazmatCheckIn />)} />
       <Route path={"/hazmat/dock-assignment"} component={guard(DRIV, <DockAssignment />)} />
       <Route path={"/hazmat/loading-status"} component={guard(DRIV, <LoadingUnloadingStatus />)} />
@@ -887,23 +887,23 @@ function Router() {
       {/* ============================================ */}
       {/* UTILITY & DETAIL ROUTES */}
       {/* ============================================ */}
-      <Route path={"/billing"} component={guard(ALL, <Billing />)} />
+      <Route path={"/billing"} component={guard([...SHIP, ...CARR, ...BROK, ...FACT, ...ADMN], <Billing />)} />
       <Route path={"/messaging"} component={guard(ALL, <MessagingCenter />)} />
-      <Route path={"/invoice/:invoiceId"} component={guard(ALL, <InvoiceDetails />)} />
-      <Route path={"/settlement/:settlementId"} component={guard(ALL, <SettlementDetails />)} />
-      <Route path={"/tools/rate-calculator"} component={guard(ALL, <RateCalculator />)} />
+      <Route path={"/invoice/:invoiceId"} component={guard([...SHIP, ...CARR, ...BROK, ...FACT, ...ADMN], <InvoiceDetails />)} />
+      <Route path={"/settlement/:settlementId"} component={guard([...SHIP, ...CARR, ...BROK, ...DISP, ...ADMN], <SettlementDetails />)} />
+      <Route path={"/tools/rate-calculator"} component={guard([...SHIP, ...CARR, ...BROK, ...DISP, ...ADMN], <RateCalculator />)} />
       <Route path={"/directory"} component={guard(ALL, <IndustryDirectory />)} />
       <Route path={"/industry-verticals"} component={guard([...SHIP, ...CARR, ...BROK, ...ADMN], <IndustryVerticals />)} />
       <Route path={"/live-news"} component={guard(ALL, <LiveNewsFeed />)} />
       <Route path={"/catalyst-compliance"} component={guard(CARR, <OperatingAuthority />)} />
-      <Route path={"/fuel-prices"} component={guard(ALL, <FuelPrices />)} />
+      <Route path={"/fuel-prices"} component={guard([...DRIV, ...CARR, ...DISP, ...BROK, ...SHIP, ...ADMN], <FuelPrices />)} />
       <Route path={"/weather-alerts"} component={guard(ALL, <WeatherAlerts />)} />
       <Route path={"/the-haul"} component={guard(ALL, <TheHaul />)} />
       <Route path={"/audit-log"} component={guard(ADMN, <AuditLog />)} />
       <Route path={"/procedures"} component={guard(ALL, <ProceduresPage />)} />
-      <Route path={"/shipments"} component={guard(ALL, <ShipmentPage />)} />
+      <Route path={"/shipments"} component={guard(LOAD, <ShipmentPage />)} />
       <Route path={"/channels"} component={guard(ALL, <ChannelsPage />)} />
-      <Route path={"/reports"} component={guard(ALL, <Analytics />)} />
+      <Route path={"/reports"} component={guard([...SHIP, ...CARR, ...BROK, ...DISP, ...COMP, ...SAFE, ...ADMN], <Analytics />)} />
 
       {/* ============================================ */}
       {/* FRONTEND GAP AUDIT: 16 NEW PAGES */}
@@ -912,7 +912,7 @@ function Router() {
       <Route path="/carrier-scorecard" component={guard([...SHIP, ...CARR, ...BROK, ...COMP], <CarrierScorecardPage />)} />
       <Route path="/carrier-tiers" component={guard(SUPR, <CarrierTierDashboard />)} />
       <Route path="/carrier-capacity" component={guard([...SHIP, ...CARR, ...BROK, ...COMP, ...DISP], <CarrierCapacityPage />)} />
-      <Route path="/tank-monitor" component={guard(ALL, <TankLevelMonitor />)} />
+      <Route path="/tank-monitor" component={guard([...CARR, ...DRIV, ...TERM, ...DISP, ...ADMN], <TankLevelMonitor />)} />
       <Route path="/demurrage-charges" component={guard([...SHIP, ...CARR, ...BROK, ...COMP, ...DISP], <DemurrageChargesPage />)} />
       <Route path="/nl-load-creator" component={guard([...SHIP, ...CARR, ...BROK, ...DISP], <NLLoadCreatorPage />)} />
       <Route path="/voice-esang" component={guard(ALL, <VoiceESANGPage />)} />
@@ -931,7 +931,7 @@ function Router() {
       <Route path="/lane-contracts" component={guard([...SHIP, ...CARR, ...BROK], <LaneContractsPage />)} />
       <Route path="/advanced-bidding" component={guard([...SHIP, ...CARR, ...BROK, ...DISP], <LoadBiddingAdvanced />)} />
       <Route path="/accounting" component={guard([...SHIP, ...CARR, ...BROK, ...FACT], <AccountingPage />)} />
-      <Route path="/in-house" component={guard(ALL, <InHouseFleet />)} />
+      <Route path="/in-house" component={guard([...SHIP, ...CARR, ...DISP, ...ADMN], <InHouseFleet />)} />
       <Route path="/inspection-forms" component={guard([...COMP, ...SAFE, ...CARR, ...DRIV], <InspectionFormsPage />)} />
       <Route path="/vendors" component={guard([...CARR, ...SHIP, ...ADMN], <VendorManagement />)} />
       <Route path="/vendor-supplier" component={guard([...CARR, ...SHIP, ...ADMN], <VendorSupplier />)} />
@@ -944,14 +944,14 @@ function Router() {
       {/* ============================================ */}
       {/* ZEUN MECHANICS ROUTES */}
       {/* ============================================ */}
-      <Route path={"/zeun/breakdown"} component={guard(ALL, <ZeunBreakdownReport />)} />
-      <Route path={"/zeun/maintenance"} component={guard(ALL, <ZeunMaintenanceTracker />)} />
-      <Route path={"/zeun/providers"} component={guard(ALL, <ZeunProviderNetwork />)} />
+      <Route path={"/zeun/breakdown"} component={guard([...CARR, ...DRIV, ...DISP, ...ADMN], <ZeunBreakdownReport />)} />
+      <Route path={"/zeun/maintenance"} component={guard([...CARR, ...DRIV, ...DISP, ...ADMN], <ZeunMaintenanceTracker />)} />
+      <Route path={"/zeun/providers"} component={guard([...CARR, ...DRIV, ...DISP, ...ADMN], <ZeunProviderNetwork />)} />
 
       {/* ============================================ */}
       {/* ACTIVE TRIP — Driver's real-time command center */}
       {/* ============================================ */}
-      <Route path={"/active-trip"} component={guard(ALL, <ActiveTrip />)} />
+      <Route path={"/active-trip"} component={guard([...DRIV, ...CARR, ...DISP, ...ESCT, ...ADMN], <ActiveTrip />)} />
 
       {/* ============================================ */}
       {/* CONSOLIDATED PAGES (Tabbed Parent Pages) */}

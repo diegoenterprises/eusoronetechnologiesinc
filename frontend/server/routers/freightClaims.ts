@@ -10,7 +10,7 @@ import { eq, and, desc, sql, gte, lte, like } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { incidents } from "../../drizzle/schema";
+import { incidents, payments, wallets, walletTransactions, auditLogs } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
 
 // ---------------------------------------------------------------------------
@@ -527,12 +527,14 @@ export const freightClaimsRouter = router({
         counterOfferAmount: z.number().optional(),
         reason: z.string(),
         conditions: z.string().optional(),
+        payerId: z.number().optional(),
+        payeeId: z.number().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
+      const numId = parseNumericId(input.claimId);
       if (db) {
-        const numId = parseNumericId(input.claimId);
         const finalStatus =
           input.decision === "approve" || input.decision === "partial"
             ? "resolved"
@@ -543,6 +545,101 @@ export const freightClaimsRouter = router({
           .update(incidents)
           .set({ status: unsafeCast(finalStatus) })
           .where(eq(incidents.id, numId));
+
+        // ── Financial linkage: approved/partial claim creates payment + wallet credit ──
+        if (
+          (input.decision === "approve" || input.decision === "partial") &&
+          db
+        ) {
+          const payoutAmount =
+            input.decision === "approve"
+              ? (input.approvedAmount || 0)
+              : (input.approvedAmount || 0);
+
+          if (payoutAmount > 0) {
+            const payerId = input.payerId || (ctx.user?.companyId || 0);
+            const payeeId = input.payeeId || (Number(ctx.user?.id) || 0);
+
+            try {
+              // 1. Insert payments record for claim payout
+              await db.insert(payments).values({
+                loadId: null,
+                payerId,
+                payeeId,
+                amount: payoutAmount.toFixed(2),
+                currency: "USD",
+                paymentType: "payout",
+                status: "pending",
+                metadata: {
+                  subType: "claim_payout",
+                  claimId: input.claimId,
+                  decision: input.decision,
+                  reason: input.reason,
+                },
+              });
+
+              // 2. Credit claimant wallet
+              let [claimantWallet] = await db
+                .select()
+                .from(wallets)
+                .where(eq(wallets.userId, payeeId))
+                .limit(1);
+              if (!claimantWallet) {
+                try {
+                  await db.insert(wallets).values({
+                    userId: payeeId,
+                    availableBalance: "0",
+                    pendingBalance: "0",
+                    reservedBalance: "0",
+                    currency: "USD",
+                  });
+                } catch {}
+                [claimantWallet] = await db
+                  .select()
+                  .from(wallets)
+                  .where(eq(wallets.userId, payeeId))
+                  .limit(1);
+              }
+              if (claimantWallet) {
+                await db.execute(
+                  sql`UPDATE wallets SET availableBalance = availableBalance + ${payoutAmount.toFixed(2)}, totalReceived = totalReceived + ${payoutAmount.toFixed(2)} WHERE id = ${claimantWallet.id}`,
+                );
+                await db.insert(walletTransactions).values({
+                  walletId: claimantWallet.id,
+                  type: "earnings",
+                  amount: payoutAmount.toFixed(2),
+                  fee: "0",
+                  netAmount: payoutAmount.toFixed(2),
+                  currency: "USD",
+                  status: "completed",
+                  description: `Freight claim ${input.decision} — ${input.claimId} — $${payoutAmount.toFixed(2)}`,
+                  completedAt: new Date(),
+                });
+              }
+
+              // 3. Audit log
+              await db.insert(auditLogs).values({
+                userId: Number(ctx.user?.id) || null,
+                action: "claim_payout_created",
+                entityType: "freight_claim",
+                entityId: numId,
+                changes: {
+                  decision: input.decision,
+                  amount: payoutAmount,
+                  payerId,
+                  payeeId,
+                  reason: input.reason,
+                },
+                severity: "MEDIUM",
+              });
+            } catch (finErr: any) {
+              logger.warn(
+                `[FreightClaims] Financial linkage error for ${input.claimId}:`,
+                finErr?.message,
+              );
+            }
+          }
+        }
       }
 
       return {

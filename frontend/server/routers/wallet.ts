@@ -125,7 +125,7 @@ export const walletRouter = router({
       loadId: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'WALLET' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role, companyId: ctx.user!.companyId, action: 'CREATE', resource: 'WALLET' }, (ctx as any).req);
       const { walletTransactions } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const userId = Number(ctx.user?.id) || 0;
@@ -153,7 +153,7 @@ export const walletRouter = router({
       status: transactionStatusSchema.optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'WALLET' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role, companyId: ctx.user!.companyId, action: 'UPDATE', resource: 'WALLET' }, (ctx as any).req);
       const { walletTransactions } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const userId = Number(ctx.user?.id) || 0;
@@ -176,7 +176,7 @@ export const walletRouter = router({
   delete: auditedProtectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'DELETE', resource: 'WALLET' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role, companyId: ctx.user!.companyId, action: 'DELETE', resource: 'WALLET' }, (ctx as any).req);
       const { walletTransactions } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const userId = Number(ctx.user?.id) || 0;
@@ -194,7 +194,7 @@ export const walletRouter = router({
    */
   getBalance: auditedProtectedProcedure
     .query(async ({ ctx }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'WALLET' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role, companyId: ctx.user!.companyId, action: 'READ', resource: 'WALLET' }, (ctx as any).req);
       const db = await getDb();
       const userId = Number(ctx.user?.id) || 0;
 

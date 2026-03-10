@@ -1796,7 +1796,8 @@ async function getAdminStats(db: any) {
 
   const [totalCompanies] = await db
     .select({ count: sql<number>`count(*)` })
-    .from(companies);
+    .from(companies)
+    .where(eq(companies.isActive, true));
 
   const [totalLoads] = await db
     .select({ count: sql<number>`count(*)` })
@@ -1804,7 +1805,7 @@ async function getAdminStats(db: any) {
 
   // Active users: users who logged in within last 7 days
   const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const [activeUsersCount] = await db.select({ count: sql<number>`count(*)` }).from(users).where(gte(users.updatedAt, sevenDaysAgo));
+  const [activeUsersCount] = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(gte(users.updatedAt, sevenDaysAgo), eq(users.isActive, true)));
 
   // System health: check DB responsiveness
   const healthStart = Date.now();

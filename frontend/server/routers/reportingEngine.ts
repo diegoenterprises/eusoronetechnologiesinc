@@ -8,7 +8,12 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
-import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router, roleProcedure } from "../_core/trpc";
+
+// Financial reporting: restricted to roles that need report access (no DRIVER, ESCORT, TERMINAL_MANAGER)
+const reportingProcedure = roleProcedure("CATALYST", "BROKER", "SHIPPER", "DISPATCH", "ADMIN", "SUPER_ADMIN", "FACTORING", "COMPLIANCE_OFFICER");
+// Safety/compliance reports: also accessible to SAFETY_MANAGER
+const safetyReportingProcedure = roleProcedure("CATALYST", "BROKER", "SHIPPER", "DISPATCH", "ADMIN", "SUPER_ADMIN", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER");
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
@@ -99,7 +104,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 1. getReportsDashboard — Reports overview
   // =========================================================================
-  getReportsDashboard: protectedProcedure
+  getReportsDashboard: reportingProcedure
     .input(z.object({}).optional())
     .query(async ({ ctx }) => {
       const db = await getDb();
@@ -165,7 +170,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 2. getReportCatalog — All available report types by category
   // =========================================================================
-  getReportCatalog: protectedProcedure
+  getReportCatalog: reportingProcedure
     .input(z.object({ search: z.string().optional() }).optional())
     .query(async ({ input }) => {
       const catalog = [
@@ -293,7 +298,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 3. runReport — Execute a report with parameters
   // =========================================================================
-  runReport: protectedProcedure
+  runReport: reportingProcedure
     .input(z.object({
       reportId: z.string(),
       dateRange: dateRangeSchema.optional(),
@@ -370,7 +375,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 4. getExecutiveSummary — Executive-level KPI summary
   // =========================================================================
-  getExecutiveSummary: protectedProcedure
+  getExecutiveSummary: reportingProcedure
     .input(z.object({
       dateRange: dateRangeSchema.optional(),
       period: z.enum(["day", "week", "month", "quarter", "year"]).default("month"),
@@ -484,7 +489,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 5. getOperationalMetrics — Detailed operational metrics
   // =========================================================================
-  getOperationalMetrics: protectedProcedure
+  getOperationalMetrics: reportingProcedure
     .input(z.object({ dateRange: dateRangeSchema.optional() }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -563,7 +568,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 6. getFinancialReports — P&L, cash flow, AR aging
   // =========================================================================
-  getFinancialReports: protectedProcedure
+  getFinancialReports: reportingProcedure
     .input(z.object({
       reportType: z.enum(["pl", "balance_sheet", "cash_flow", "ar_aging", "margin"]).default("pl"),
       dateRange: dateRangeSchema.optional(),
@@ -641,7 +646,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 7. getSafetyReports — Accidents, violations, CSA scores
   // =========================================================================
-  getSafetyReports: protectedProcedure
+  getSafetyReports: safetyReportingProcedure
     .input(z.object({ dateRange: dateRangeSchema.optional() }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -696,7 +701,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 8. getComplianceReports — HOS violations, drug testing, training
   // =========================================================================
-  getComplianceReports: protectedProcedure
+  getComplianceReports: safetyReportingProcedure
     .input(z.object({ dateRange: dateRangeSchema.optional() }).optional())
     .query(async ({ ctx }) => {
       const db = await getDb();
@@ -739,7 +744,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 9. getDriverPerformanceReport — Multi-factor driver scoring
   // =========================================================================
-  getDriverPerformanceReport: protectedProcedure
+  getDriverPerformanceReport: reportingProcedure
     .input(z.object({
       dateRange: dateRangeSchema.optional(),
       sortBy: z.enum(["overallScore", "safetyScore", "efficiencyScore", "loads", "revenue"]).default("overallScore"),
@@ -844,7 +849,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 10. getFleetUtilizationReport — Revenue vs dead miles
   // =========================================================================
-  getFleetUtilizationReport: protectedProcedure
+  getFleetUtilizationReport: reportingProcedure
     .input(z.object({ dateRange: dateRangeSchema.optional() }).optional())
     .query(async ({ ctx }) => {
       const db = await getDb();
@@ -929,7 +934,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 11. getLaneAnalysisReport — Lane-level profitability
   // =========================================================================
-  getLaneAnalysisReport: protectedProcedure
+  getLaneAnalysisReport: reportingProcedure
     .input(z.object({
       dateRange: dateRangeSchema.optional(),
       minVolume: z.number().default(1),
@@ -1007,7 +1012,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 12. getCustomerReport — Customer performance and billing
   // =========================================================================
-  getCustomerReport: protectedProcedure
+  getCustomerReport: reportingProcedure
     .input(z.object({
       customerId: z.number().optional(),
       dateRange: dateRangeSchema.optional(),
@@ -1068,7 +1073,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 13. createCustomReport — Build custom report with drag-and-drop fields
   // =========================================================================
-  createCustomReport: protectedProcedure
+  createCustomReport: reportingProcedure
     .input(z.object({
       name: z.string().min(1).max(200),
       description: z.string().optional(),
@@ -1109,7 +1114,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 14. saveReportTemplate — Save report config as reusable template
   // =========================================================================
-  saveReportTemplate: protectedProcedure
+  saveReportTemplate: reportingProcedure
     .input(z.object({
       name: z.string().min(1).max(200),
       description: z.string().optional(),
@@ -1137,7 +1142,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 15. scheduleReport — Schedule recurring delivery
   // =========================================================================
-  scheduleReport: protectedProcedure
+  scheduleReport: reportingProcedure
     .input(z.object({
       reportId: z.string(),
       name: z.string().min(1),
@@ -1182,7 +1187,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 16. getScheduledReports — List scheduled reports
   // =========================================================================
-  getScheduledReports: protectedProcedure
+  getScheduledReports: reportingProcedure
     .input(z.object({}).optional())
     .query(async ({ ctx }) => {
       return {
@@ -1230,7 +1235,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 17. exportReport — Export report (PDF, Excel, CSV)
   // =========================================================================
-  exportReport: protectedProcedure
+  exportReport: reportingProcedure
     .input(z.object({
       reportId: z.string(),
       format: reportFormatSchema,
@@ -1254,7 +1259,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 18. getBenchmarkReport — Industry benchmark comparison
   // =========================================================================
-  getBenchmarkReport: protectedProcedure
+  getBenchmarkReport: reportingProcedure
     .input(z.object({
       fleetSize: z.enum(["small", "medium", "large"]).default("medium"),
       region: z.string().default("national"),
@@ -1350,7 +1355,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 19. getTrendAnalysis — Trend analysis across any metric
   // =========================================================================
-  getTrendAnalysis: protectedProcedure
+  getTrendAnalysis: reportingProcedure
     .input(z.object({
       metric: kpiMetricSchema,
       dateRange: dateRangeSchema,
@@ -1523,7 +1528,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 20. getKpiAlerts — KPI threshold alerts configuration
   // =========================================================================
-  getKpiAlerts: protectedProcedure
+  getKpiAlerts: reportingProcedure
     .input(z.object({}).optional())
     .query(async ({ ctx }) => {
       return {
@@ -1540,7 +1545,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 21. configureKpiAlert — Set up alert when KPI crosses threshold
   // =========================================================================
-  configureKpiAlert: protectedProcedure
+  configureKpiAlert: reportingProcedure
     .input(z.object({
       id: z.string().optional(),
       metric: kpiMetricSchema,
@@ -1569,7 +1574,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 22. getDataDictionary — Available data fields for report building
   // =========================================================================
-  getDataDictionary: protectedProcedure
+  getDataDictionary: reportingProcedure
     .input(z.object({ dataSource: z.string().optional() }).optional())
     .query(async () => {
       const dictionary = {
@@ -1630,7 +1635,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 23. getReportHistory — Previously generated report history
   // =========================================================================
-  getReportHistory: protectedProcedure
+  getReportHistory: reportingProcedure
     .input(z.object({
       ...paginationSchema.shape,
       reportType: z.string().optional(),
@@ -1651,7 +1656,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 24. shareReport — Share report via email or link
   // =========================================================================
-  shareReport: protectedProcedure
+  shareReport: reportingProcedure
     .input(z.object({
       reportId: z.string(),
       shareType: z.enum(["email", "link"]),
@@ -1673,7 +1678,7 @@ export const reportingEngineRouter = router({
   // =========================================================================
   // 25. getDotAuditReport — Pre-built DOT audit report package
   // =========================================================================
-  getDotAuditReport: protectedProcedure
+  getDotAuditReport: safetyReportingProcedure
     .input(z.object({ year: z.number().optional() }).optional())
     .query(async ({ ctx }) => {
       const db = await getDb();

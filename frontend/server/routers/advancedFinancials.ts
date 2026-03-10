@@ -13,7 +13,10 @@
 
 import { z } from "zod";
 import { sql } from "drizzle-orm";
-import { router, isolatedApprovedProcedure as protectedProcedure } from "../_core/trpc";
+import { router, roleProcedure } from "../_core/trpc";
+
+// Financial data: restricted — no DRIVER, ESCORT, TERMINAL_MANAGER, SAFETY_MANAGER, COMPLIANCE_OFFICER
+const financialProcedure = roleProcedure("CATALYST", "BROKER", "SHIPPER", "DISPATCH", "FACTORING", "ADMIN", "SUPER_ADMIN");
 import { getDb } from "../db";
 
 // ── Currency helpers ──
@@ -90,7 +93,7 @@ export const advancedFinancialsRouter = router({
 
   // ─────────── MULTI-CURRENCY ───────────
 
-  getMultiCurrencyRates: protectedProcedure
+  getMultiCurrencyRates: financialProcedure
     .input(z.object({ margin: z.number().min(0).max(0.05).optional().default(0.015) }).optional())
     .query(({ input }) => {
       const margin = input?.margin ?? 0.015;
@@ -109,7 +112,7 @@ export const advancedFinancialsRouter = router({
       return { rates, baseCurrency: "USD" as CurrencyCode, lastRefreshed: now };
     }),
 
-  convertCurrency: protectedProcedure
+  convertCurrency: financialProcedure
     .input(z.object({
       amount: z.number().positive(),
       from: z.enum(CURRENCY_CODES),
@@ -134,7 +137,7 @@ export const advancedFinancialsRouter = router({
 
   // ─────────── 1099 GENERATION ───────────
 
-  generate1099: protectedProcedure
+  generate1099: financialProcedure
     .input(z.object({
       taxYear: z.number().int().min(2020).max(2030),
       contractorId: z.string().optional(),
@@ -222,7 +225,7 @@ export const advancedFinancialsRouter = router({
       };
     }),
 
-  get1099Summary: protectedProcedure
+  get1099Summary: financialProcedure
     .input(z.object({ taxYear: z.number().int().min(2020).max(2030) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -298,7 +301,7 @@ export const advancedFinancialsRouter = router({
 
   // ─────────── REVENUE RECOGNITION (ASC 606) ───────────
 
-  getRevenueRecognition: protectedProcedure
+  getRevenueRecognition: financialProcedure
     .input(z.object({ period: z.string().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -385,7 +388,7 @@ export const advancedFinancialsRouter = router({
       };
     }),
 
-  getRevenueSchedule: protectedProcedure
+  getRevenueSchedule: financialProcedure
     .input(z.object({ months: z.number().int().min(1).max(24).optional().default(12) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -443,7 +446,7 @@ export const advancedFinancialsRouter = router({
 
   // ─────────── COLLECTIONS ───────────
 
-  getCollectionsQueue: protectedProcedure
+  getCollectionsQueue: financialProcedure
     .input(z.object({ sortBy: z.enum(["priority", "amount", "age"]).optional().default("priority") }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -530,7 +533,7 @@ export const advancedFinancialsRouter = router({
       return { items, totalOutstanding: Math.round(items.reduce((s, i) => s + i.balance, 0) * 100) / 100 };
     }),
 
-  recordCollectionAction: protectedProcedure
+  recordCollectionAction: financialProcedure
     .input(z.object({
       invoiceId: z.string(),
       actionType: z.enum(["call", "email", "letter", "legal", "payment_plan"]),
@@ -548,7 +551,7 @@ export const advancedFinancialsRouter = router({
       status: "logged",
     })),
 
-  getCollectionsAnalytics: protectedProcedure.query(async () => {
+  getCollectionsAnalytics: financialProcedure.query(async () => {
     const db = await getDb();
 
     // Compute real aging buckets from payments
@@ -639,7 +642,7 @@ export const advancedFinancialsRouter = router({
 
   // ─────────── FACTORING ───────────
 
-  getFactoringOffers: protectedProcedure
+  getFactoringOffers: financialProcedure
     .input(z.object({ invoiceId: z.string().optional() }))
     .query(async () => {
       const db = await getDb();
@@ -667,7 +670,7 @@ export const advancedFinancialsRouter = router({
       };
     }),
 
-  submitForFactoring: protectedProcedure
+  submitForFactoring: financialProcedure
     .input(z.object({
       invoiceId: z.string(),
       provider: z.string(),
@@ -688,7 +691,7 @@ export const advancedFinancialsRouter = router({
 
   // ─────────── FUEL CARDS ───────────
 
-  getFuelCardTransactions: protectedProcedure
+  getFuelCardTransactions: financialProcedure
     .input(z.object({ limit: z.number().optional().default(25), driverFilter: z.string().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -790,7 +793,7 @@ export const advancedFinancialsRouter = router({
       };
     }),
 
-  reconcileFuelCards: protectedProcedure
+  reconcileFuelCards: financialProcedure
     .input(z.object({
       transactionIds: z.array(z.string()),
       loadId: z.string().optional(),
@@ -806,7 +809,7 @@ export const advancedFinancialsRouter = router({
 
   // ─────────── ADVANCED BILLING ───────────
 
-  getAdvancedBilling: protectedProcedure
+  getAdvancedBilling: financialProcedure
     .input(z.object({ loadId: z.string().optional() }))
     .query(async ({ input }) => {
       if (input.loadId) {
@@ -881,7 +884,7 @@ export const advancedFinancialsRouter = router({
       };
     }),
 
-  generateInvoiceBatch: protectedProcedure
+  generateInvoiceBatch: financialProcedure
     .input(z.object({
       invoiceIds: z.array(z.string()).optional(),
       dateRange: z.object({ from: z.string(), to: z.string() }).optional(),
@@ -932,7 +935,7 @@ export const advancedFinancialsRouter = router({
 
   // ─────────── FINANCIAL DASHBOARD & ANALYTICS ───────────
 
-  getFinancialDashboard: protectedProcedure.query(async () => {
+  getFinancialDashboard: financialProcedure.query(async () => {
     const db = await getDb();
     const now = new Date();
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01 00:00:00`;
@@ -1063,7 +1066,7 @@ export const advancedFinancialsRouter = router({
     };
   }),
 
-  getProfitabilityByLane: protectedProcedure
+  getProfitabilityByLane: financialProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1147,7 +1150,7 @@ export const advancedFinancialsRouter = router({
       };
     }),
 
-  getProfitabilityByCustomer: protectedProcedure
+  getProfitabilityByCustomer: financialProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1230,7 +1233,7 @@ export const advancedFinancialsRouter = router({
       };
     }),
 
-  getPaymentTermsOptimization: protectedProcedure.query(async () => {
+  getPaymentTermsOptimization: financialProcedure.query(async () => {
     const db = await getDb();
 
     // Find customers with consistent payment patterns for optimization
@@ -1315,7 +1318,7 @@ export const advancedFinancialsRouter = router({
     };
   }),
 
-  getCashFlowForecast: protectedProcedure
+  getCashFlowForecast: financialProcedure
     .input(z.object({ days: z.enum(["30", "60", "90"]).optional().default("90") }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1407,7 +1410,7 @@ export const advancedFinancialsRouter = router({
       };
     }),
 
-  getExpenseCategories: protectedProcedure
+  getExpenseCategories: financialProcedure
     .input(z.object({ period: z.string().optional() }))
     .query(async () => {
       const db = await getDb();
@@ -1479,7 +1482,7 @@ export const advancedFinancialsRouter = router({
       };
     }),
 
-  getBudgetVsActual: protectedProcedure
+  getBudgetVsActual: financialProcedure
     .input(z.object({ year: z.number().optional().default(2026) }))
     .query(async ({ input }) => {
       const db = await getDb();

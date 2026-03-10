@@ -9,7 +9,10 @@
 
 import { z } from "zod";
 import { eq, and, desc, asc, sql, gte, lte, like, or, count as drizzleCount, inArray } from "drizzle-orm";
-import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router, roleProcedure } from "../_core/trpc";
+
+// Broker operations: restricted to BROKER + ADMIN roles only
+const brokerProcedure = roleProcedure("BROKER", "ADMIN", "SUPER_ADMIN");
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, bids, companies, users, insurancePolicies, incidents } from "../../drizzle/schema";
@@ -62,7 +65,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 1. BROKER DASHBOARD
   // ═══════════════════════════════════════════
-  getBrokerDashboard: protectedProcedure
+  getBrokerDashboard: brokerProcedure
     .input(z.object({ period: z.string().default("30d") }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -128,7 +131,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 2. BROKER SCORECARD
   // ═══════════════════════════════════════════
-  getBrokerScorecard: protectedProcedure
+  getBrokerScorecard: brokerProcedure
     .input(z.object({ brokerId: z.number().optional(), period: z.string().default("90d") }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -211,7 +214,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 3. CARRIER POOL
   // ═══════════════════════════════════════════
-  getCarrierPool: protectedProcedure
+  getCarrierPool: brokerProcedure
     .input(z.object({
       status: z.enum(["all", "vetted", "pending", "rejected"]).default("all"),
       search: z.string().optional(),
@@ -271,7 +274,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 4. VET CARRIER
   // ═══════════════════════════════════════════
-  vetCarrier: protectedProcedure
+  vetCarrier: brokerProcedure
     .input(z.object({
       carrierId: z.number(),
       dotNumber: z.string().optional(),
@@ -346,7 +349,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 5. DOUBLE-BROKERING DETECTION
   // ═══════════════════════════════════════════
-  getDoubleBrokeringDetection: protectedProcedure
+  getDoubleBrokeringDetection: brokerProcedure
     .input(z.object({ period: z.string().default("30d"), riskLevel: z.enum(["all", "high", "medium", "low"]).default("all") }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -427,7 +430,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 6. FLAG DOUBLE BROKERING
   // ═══════════════════════════════════════════
-  flagDoubleBrokering: protectedProcedure
+  flagDoubleBrokering: brokerProcedure
     .input(z.object({
       loadId: z.number(),
       carrierId: z.number(),
@@ -472,7 +475,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 7. BROKER COMPLIANCE
   // ═══════════════════════════════════════════
-  getBrokerCompliance: protectedProcedure
+  getBrokerCompliance: brokerProcedure
     .input(z.object({ brokerId: z.number().optional() }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -535,7 +538,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 8. COMMISSION TRACKING
   // ═══════════════════════════════════════════
-  getCommissionTracking: protectedProcedure
+  getCommissionTracking: brokerProcedure
     .input(z.object({
       period: z.string().default("30d"),
       agentId: z.number().optional(),
@@ -602,7 +605,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 9. COMMISSION STRUCTURES
   // ═══════════════════════════════════════════
-  getCommissionStructures: protectedProcedure
+  getCommissionStructures: brokerProcedure
     .query(async () => {
       // Commission structure definitions
       return {
@@ -650,7 +653,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 10. CALCULATE COMMISSION
   // ═══════════════════════════════════════════
-  calculateCommission: protectedProcedure
+  calculateCommission: brokerProcedure
     .input(z.object({
       loadRate: z.number(),
       carrierCost: z.number(),
@@ -692,7 +695,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 11. BROKER-CARRIER RELATIONSHIPS
   // ═══════════════════════════════════════════
-  getBrokerCarrierRelationships: protectedProcedure
+  getBrokerCarrierRelationships: brokerProcedure
     .input(z.object({ limit: z.number().default(50), sortBy: z.string().default("loads") }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -760,7 +763,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 12. PREFERRED CARRIERS
   // ═══════════════════════════════════════════
-  getPreferredCarriers: protectedProcedure
+  getPreferredCarriers: brokerProcedure
     .input(z.object({ lane: z.string().optional(), vertical: z.string().optional() }).optional())
     .query(async ({ ctx }) => {
       const db = await getDb();
@@ -809,7 +812,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 13. CARRIER NEGOTIATIONS
   // ═══════════════════════════════════════════
-  getCarrierNegotiations: protectedProcedure
+  getCarrierNegotiations: brokerProcedure
     .input(z.object({ carrierId: z.number().optional(), period: z.string().default("90d") }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -878,7 +881,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 14. 3PL MANAGEMENT
   // ═══════════════════════════════════════════
-  get3plManagement: protectedProcedure
+  get3plManagement: brokerProcedure
     .input(z.object({ status: z.string().default("all") }).optional())
     .query(async ({ ctx }) => {
       const db = await getDb();
@@ -942,7 +945,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 15. 3PL PERFORMANCE
   // ═══════════════════════════════════════════
-  get3plPerformance: protectedProcedure
+  get3plPerformance: brokerProcedure
     .input(z.object({ customerId: z.number().optional(), period: z.string().default("30d") }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -989,7 +992,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 16. 3PL BILLING
   // ═══════════════════════════════════════════
-  get3plBilling: protectedProcedure
+  get3plBilling: brokerProcedure
     .input(z.object({ customerId: z.number().optional(), period: z.string().default("30d") }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -1051,7 +1054,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 17. LOAD TENDER MANAGEMENT
   // ═══════════════════════════════════════════
-  getLoadTenderManagement: protectedProcedure
+  getLoadTenderManagement: brokerProcedure
     .input(z.object({ period: z.string().default("30d") }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -1112,7 +1115,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 18. CAPACITY PROCUREMENT
   // ═══════════════════════════════════════════
-  getCapacityProcurement: protectedProcedure
+  getCapacityProcurement: brokerProcedure
     .input(z.object({ lane: z.string().optional(), equipmentType: z.string().optional() }).optional())
     .query(async ({ ctx }) => {
       const db = await getDb();
@@ -1158,7 +1161,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 19. BROKER MARGIN ANALYSIS
   // ═══════════════════════════════════════════
-  getBrokerMarginAnalysis: protectedProcedure
+  getBrokerMarginAnalysis: brokerProcedure
     .input(z.object({ period: z.string().default("30d"), groupBy: z.enum(["lane", "customer", "carrier"]).default("lane") }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -1219,7 +1222,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 20. REBATE TRACKING
   // ═══════════════════════════════════════════
-  getRebateTracking: protectedProcedure
+  getRebateTracking: brokerProcedure
     .input(z.object({ period: z.string().default("365d") }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -1277,7 +1280,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 21. BROKER RISK MANAGEMENT
   // ═══════════════════════════════════════════
-  getBrokerRiskManagement: protectedProcedure
+  getBrokerRiskManagement: brokerProcedure
     .input(z.object({ period: z.string().default("30d") }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -1344,7 +1347,7 @@ export const brokerManagementRouter = router({
   // ═══════════════════════════════════════════
   // 22. AGENT MANAGEMENT
   // ═══════════════════════════════════════════
-  getAgentManagement: protectedProcedure
+  getAgentManagement: brokerProcedure
     .input(z.object({ period: z.string().default("30d") }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
