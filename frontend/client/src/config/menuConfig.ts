@@ -140,6 +140,18 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Digital truck stop — lobby, missions, rewards"
     },
     {
+      icon: "Wrench",
+      label: "Zeun™ Fleet",
+      path: "/fleet-maintenance",
+      badge: 0,
+      description: "Fleet maintenance, fuel & document management",
+      children: [
+        { icon: "Wrench", label: "Fleet Maintenance", path: "/fleet-maintenance", badge: 0, description: "PM scheduling & DOT prep" },
+        { icon: "Fuel", label: "Fuel Management", path: "/fuel-management", badge: 0, description: "Fuel analytics & FSC engine" },
+        { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "BOLs, invoices & e-signatures" },
+      ],
+    },
+    {
       icon: "Settings",
       label: "Settings",
       path: "/settings",
@@ -252,6 +264,19 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/the-haul",
       badge: 0,
       description: "Digital truck stop — lobby, missions, rewards"
+    },
+    {
+      icon: "Wrench",
+      label: "Zeun™ Fleet",
+      path: "/fleet-maintenance",
+      badge: 0,
+      description: "Fleet maintenance, fuel, routing & asset tracking",
+      children: [
+        { icon: "Wrench", label: "Fleet Maintenance", path: "/fleet-maintenance", badge: 0, description: "PM scheduling, parts & DOT prep" },
+        { icon: "Fuel", label: "Fuel Management", path: "/fuel-management", badge: 0, description: "Fuel cards & consumption analytics" },
+        { icon: "Route", label: "Route Optimization", path: "/route-optimization", badge: 0, description: "AI routing & toll optimization" },
+        { icon: "Radar", label: "Asset Tracking", path: "/asset-tracking", badge: 0, description: "IoT sensors & GPS tracking" },
+      ],
     },
     {
       icon: "Settings",
@@ -546,13 +571,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       ],
     },
     // ─── BUSINESS ───
-    {
-      icon: "KeyRound",
-      label: "Customer Portal",
-      path: "/admin/portal",
-      badge: 0,
-      description: "Token management, load linking & portal analytics"
-    },
     {
       icon: "Handshake",
       label: "My Partners",
@@ -1207,6 +1225,89 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       ],
     },
     {
+      icon: "Wrench",
+      label: "Zeun™ Fleet",
+      path: "/fleet-maintenance",
+      badge: 0,
+      description: "Fleet maintenance, fuel, route optimization & asset tracking",
+      children: [
+        { icon: "Wrench", label: "Fleet Maintenance", path: "/fleet-maintenance", badge: 0, description: "PM scheduling, parts, tires, DOT prep & warranties" },
+        { icon: "Fuel", label: "Fuel Management", path: "/fuel-management", badge: 0, description: "Fuel cards, consumption analytics & FSC engine" },
+        { icon: "Route", label: "Route Optimization", path: "/route-optimization", badge: 0, description: "AI routing, toll optimization & mileage analytics" },
+        { icon: "Radar", label: "Asset Tracking", path: "/asset-tracking", badge: 0, description: "IoT sensors, GPS, trailer & container tracking" },
+        { icon: "Ship", label: "Multi-Modal", path: "/multi-modal", badge: 0, description: "Intermodal, rail, port ops, drayage & container mgmt" },
+      ],
+    },
+    {
+      icon: "Wallet",
+      label: "EusoWallet™ Finance",
+      path: "/advanced-financials",
+      badge: 0,
+      description: "Advanced financials, claims, detention & broker ops",
+      children: [
+        { icon: "TrendingUp", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "Multi-currency, 1099, revenue recognition & collections" },
+        { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
+        { icon: "Clock", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention tracking, lumper, TONU & accessorial billing" },
+        { icon: "Landmark", label: "Broker Management", path: "/broker-management", badge: 0, description: "Scorecard, carrier pool, commission & 3PL SLA" },
+      ],
+    },
+    {
+      icon: "Trophy",
+      label: "The Haul™ Engage",
+      path: "/advanced-gamification",
+      badge: 0,
+      description: "Advanced gamification, wellness & workforce",
+      children: [
+        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "Guilds, prestige, rewards store & tournaments" },
+        { icon: "Heart", label: "Driver Wellness", path: "/driver-wellness", badge: 0, description: "Fatigue, mental health, retention & career dev" },
+        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "LMS, certifications, permits & CSA scores" },
+        { icon: "Users2", label: "HR & Workforce", path: "/hr-workforce", badge: 0, description: "Recruiting, payroll, performance & benefits" },
+      ],
+    },
+    {
+      icon: "Globe",
+      label: "Intelligence",
+      path: "/competitive-intelligence",
+      badge: 0,
+      description: "Market intelligence, reporting, verticals & integrations",
+      children: [
+        { icon: "TrendingUp", label: "Competitive Intel", path: "/competitive-intelligence", badge: 0, description: "Market analysis, growth planning & SWOT" },
+        { icon: "PieChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom reports, dashboards & data exports" },
+        { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Petroleum, chemical, food, construction & environmental" },
+        { icon: "Plug", label: "Advanced Integrations", path: "/advanced-integrations", badge: 0, description: "EDI, fuel cards, ELD, accounting & API marketplace" },
+        { icon: "Rocket", label: "Future Vision", path: "/future-vision", badge: 0, description: "Autonomous, EV/hydrogen, blockchain, ESG & digital twin" },
+      ],
+    },
+    {
+      icon: "ShieldAlert",
+      label: "Compliance & Safety",
+      path: "/safety-risk",
+      badge: 0,
+      description: "Safety, emergency protocols, cross-border & audit",
+      children: [
+        { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety analytics, risk scoring & incident tracking" },
+        { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "HAZMAT spill, accident, weather & disaster routing" },
+        { icon: "Globe", label: "Cross-Border", path: "/cross-border", badge: 0, description: "Customs, multi-jurisdiction & international compliance" },
+        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-logs", badge: 0, description: "Deep compliance auditing & regulatory tracking" },
+      ],
+    },
+    {
+      icon: "LayoutGrid",
+      label: "Operations Hub",
+      path: "/yard-management",
+      badge: 0,
+      description: "Yard, documents, portal, communication & data tools",
+      children: [
+        { icon: "Warehouse", label: "Yard Management", path: "/yard-management", badge: 0, description: "Dock scheduling, trailer pool & cross-dock ops" },
+        { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "BOL, e-signatures, document workflows & archival" },
+        { icon: "KeyRound", label: "Customer Portal", path: "/portal", badge: 0, description: "CRM, rate management, contracts & self-service" },
+        { icon: "Radio", label: "Communication Hub", path: "/communication-hub", badge: 0, description: "Multi-channel messaging, broadcasts & notifications" },
+        { icon: "Smartphone", label: "Driver Mobile", path: "/mobile-command", badge: 0, description: "Mobile-first driver tools & field operations" },
+        { icon: "Handshake", label: "Vendor & Supplier", path: "/vendor-supplier", badge: 0, description: "Vendor management, procurement & SLA tracking" },
+        { icon: "HardDrive", label: "Data Migration", path: "/data-migration", badge: 0, description: "System migration, imports & data validation" },
+      ],
+    },
+    {
       icon: "Settings",
       label: "Settings",
       path: "/admin/settings",
@@ -1286,6 +1387,46 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/super-admin/phase5",
       badge: 0,
       description: "A/B testing, blockchain audit, EU compliance, AV fleet & white-label",
+    },
+    {
+      icon: "Wrench",
+      label: "Zeun™ Fleet",
+      path: "/fleet-maintenance",
+      badge: 0,
+      description: "Fleet maintenance, fuel, routing & asset tracking",
+      children: [
+        { icon: "Wrench", label: "Fleet Maintenance", path: "/fleet-maintenance", badge: 0, description: "PM scheduling, parts, tires & DOT prep" },
+        { icon: "Fuel", label: "Fuel Management", path: "/fuel-management", badge: 0, description: "Fuel cards & consumption analytics" },
+        { icon: "Route", label: "Route Optimization", path: "/route-optimization", badge: 0, description: "AI routing & toll optimization" },
+        { icon: "Radar", label: "Asset Tracking", path: "/asset-tracking", badge: 0, description: "IoT sensors, GPS & container tracking" },
+        { icon: "Ship", label: "Multi-Modal", path: "/multi-modal", badge: 0, description: "Intermodal, rail, port ops & drayage" },
+      ],
+    },
+    {
+      icon: "Globe",
+      label: "Intelligence",
+      path: "/competitive-intelligence",
+      badge: 0,
+      description: "Market intelligence, reporting, verticals & vision",
+      children: [
+        { icon: "TrendingUp", label: "Competitive Intel", path: "/competitive-intelligence", badge: 0, description: "Market analysis & growth planning" },
+        { icon: "PieChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom reports & data exports" },
+        { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Petroleum, chemical, food & more" },
+        { icon: "Plug", label: "Integrations", path: "/advanced-integrations", badge: 0, description: "EDI, fuel cards, ELD & API marketplace" },
+        { icon: "Rocket", label: "Future Vision", path: "/future-vision", badge: 0, description: "Autonomous, EV, blockchain & ESG" },
+      ],
+    },
+    {
+      icon: "ShieldAlert",
+      label: "Compliance & Safety",
+      path: "/safety-risk",
+      badge: 0,
+      description: "Safety, emergency protocols & audit",
+      children: [
+        { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety analytics & risk scoring" },
+        { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "HAZMAT, accident & disaster routing" },
+        { icon: "Globe", label: "Cross-Border", path: "/cross-border", badge: 0, description: "Customs & international compliance" },
+      ],
     },
     { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Platform-wide messaging" },
     { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
@@ -1609,6 +1750,420 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     const rateIdx = result.findIndex(m => m.path === '/rate-negotiations');
     const pricingInsertIdx = rateIdx >= 0 ? rateIdx + 1 : result.length;
     result.splice(pricingInsertIdx, 0, pricingItem);
+  }
+
+  // ─── Intelligence category injections (all roles) ───
+  if (!result.some(m => m.path === '/competitive-intelligence')) {
+    const item: MenuItem = {
+      icon: "BarChart3",
+      label: "Competitive Intelligence",
+      path: "/competitive-intelligence",
+      badge: 0,
+      category: "Intelligence",
+      description: "Market benchmarking, competitor analysis & strategic insights",
+    };
+    const lastIntel = result.findIndex(m => m.path === '/carrier-capacity');
+    const idx = lastIntel >= 0 ? lastIntel + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/reporting-engine')) {
+    const item: MenuItem = {
+      icon: "FileBarChart",
+      label: "Reporting Engine",
+      path: "/reporting-engine",
+      badge: 0,
+      category: "Intelligence",
+      description: "Custom report builder, scheduled reports & data exports",
+    };
+    const prev = result.findIndex(m => m.path === '/competitive-intelligence');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/asset-tracking')) {
+    const item: MenuItem = {
+      icon: "Radio",
+      label: "Asset Tracking & IoT",
+      path: "/asset-tracking",
+      badge: 0,
+      category: "Intelligence",
+      description: "Real-time asset tracking, IoT sensor data & geofence alerts",
+    };
+    const prev = result.findIndex(m => m.path === '/reporting-engine');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/industry-verticals')) {
+    const item: MenuItem = {
+      icon: "Factory",
+      label: "Industry Verticals",
+      path: "/industry-verticals",
+      badge: 0,
+      category: "Intelligence",
+      description: "Vertical-specific workflows for petroleum, pharma, agriculture & more",
+    };
+    const prev = result.findIndex(m => m.path === '/asset-tracking');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  // ─── Financial category injections (EusoWallet™ — all roles) ───
+  if (!result.some(m => m.path === '/advanced-financials')) {
+    const item: MenuItem = {
+      icon: "Landmark",
+      label: "Advanced Financials",
+      path: "/advanced-financials",
+      badge: 0,
+      category: "Financial",
+      description: "EusoWallet™ advanced financial management, GL integration & reporting",
+    };
+    const prev = result.findIndex(m => m.path === '/contextual-pricing');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/freight-claims')) {
+    const item: MenuItem = {
+      icon: "FileWarning",
+      label: "Freight Claims",
+      path: "/freight-claims",
+      badge: 0,
+      category: "Financial",
+      description: "EusoWallet™ freight claim filing, tracking & resolution",
+    };
+    const prev = result.findIndex(m => m.path === '/advanced-financials');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/detention-accessorials')) {
+    const item: MenuItem = {
+      icon: "Timer",
+      label: "Detention & Accessorials",
+      path: "/detention-accessorials",
+      badge: 0,
+      category: "Financial",
+      description: "EusoWallet™ detention time tracking, accessorial charge management",
+    };
+    const prev = result.findIndex(m => m.path === '/freight-claims');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  // ─── Compliance category injections (all roles) ───
+  if (!result.some(m => m.path === '/training-compliance')) {
+    const item: MenuItem = {
+      icon: "GraduationCap",
+      label: "Training & Compliance",
+      path: "/training-compliance",
+      badge: 0,
+      category: "Compliance",
+      description: "Training programs, certifications & compliance coursework",
+    };
+    const prev = result.findIndex(m => m.path === '/compliance-rules');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/emergency-protocols')) {
+    const item: MenuItem = {
+      icon: "Siren",
+      label: "Emergency Protocols",
+      path: "/emergency-protocols",
+      badge: 0,
+      category: "Compliance",
+      description: "Emergency response plans, SOS procedures & incident workflows",
+    };
+    const prev = result.findIndex(m => m.path === '/training-compliance');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/cross-border')) {
+    const item: MenuItem = {
+      icon: "Globe",
+      label: "Cross-Border Shipping",
+      path: "/cross-border",
+      badge: 0,
+      category: "Compliance",
+      description: "International shipping compliance, customs & cross-border documentation",
+    };
+    const prev = result.findIndex(m => m.path === '/emergency-protocols');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/safety-risk')) {
+    const item: MenuItem = {
+      icon: "ShieldAlert",
+      label: "Safety & Risk",
+      path: "/safety-risk",
+      badge: 0,
+      category: "Compliance",
+      description: "Safety scoring, risk assessment & mitigation strategies",
+    };
+    const prev = result.findIndex(m => m.path === '/cross-border');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/audit-compliance')) {
+    const item: MenuItem = {
+      icon: "ClipboardCheck",
+      label: "Audit & Compliance",
+      path: "/audit-compliance",
+      badge: 0,
+      category: "Compliance",
+      description: "Audit trails, compliance checklists & regulatory reporting",
+    };
+    const prev = result.findIndex(m => m.path === '/safety-risk');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  // ─── Optimization category injections (all roles) ───
+  if (!result.some(m => m.path === '/route-optimization')) {
+    const item: MenuItem = {
+      icon: "Route",
+      label: "Route Optimization",
+      path: "/route-optimization",
+      badge: 0,
+      category: "Optimization",
+      description: "AI-powered route planning, fuel optimization & multi-stop routing",
+    };
+    const prev = result.findIndex(m => m.path === '/market-pricing');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/capacity-planning')) {
+    const item: MenuItem = {
+      icon: "LayoutGrid",
+      label: "Capacity Planning",
+      path: "/capacity-planning",
+      badge: 0,
+      category: "Optimization",
+      description: "Fleet capacity forecasting, demand planning & resource allocation",
+    };
+    const prev = result.findIndex(m => m.path === '/route-optimization');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/yard-management')) {
+    const item: MenuItem = {
+      icon: "Warehouse",
+      label: "Yard Management",
+      path: "/yard-management",
+      badge: 0,
+      category: "Optimization",
+      description: "Yard operations, trailer tracking & dock scheduling",
+    };
+    const prev = result.findIndex(m => m.path === '/capacity-planning');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/multi-modal')) {
+    const item: MenuItem = {
+      icon: "Ship",
+      label: "Multi-Modal Transport",
+      path: "/multi-modal",
+      badge: 0,
+      category: "Optimization",
+      description: "Intermodal shipping — truck, rail, ocean & air coordination",
+    };
+    const prev = result.findIndex(m => m.path === '/yard-management');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/future-vision')) {
+    const item: MenuItem = {
+      icon: "Sparkles",
+      label: "Future Vision",
+      path: "/future-vision",
+      badge: 0,
+      category: "Optimization",
+      description: "Emerging tech, autonomous fleet planning & innovation roadmap",
+    };
+    const prev = result.findIndex(m => m.path === '/multi-modal');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  // Customer Portal is admin-only — do not inject for non-admin roles
+  if (['ADMIN', 'SUPER_ADMIN'].includes(normalizedRole) && !result.some(m => m.path === '/customer-portal')) {
+    const item: MenuItem = {
+      icon: "Users",
+      label: "Customer Portal",
+      path: "/customer-portal",
+      badge: 0,
+      category: "Optimization",
+      description: "Self-service customer portal for tracking, booking & communication",
+    };
+    const prev = result.findIndex(m => m.path === '/future-vision');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  // ─── Operations category injections (all roles) ───
+  if (!result.some(m => m.path === '/fleet-maintenance')) {
+    const item: MenuItem = {
+      icon: "Wrench",
+      label: "Fleet Maintenance",
+      path: "/fleet-maintenance",
+      badge: 0,
+      category: "Operations",
+      description: "Zeun™ preventive maintenance scheduling, work orders & fleet health",
+    };
+    const prev = result.findIndex(m => m.path === '/customer-portal');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/fuel-management')) {
+    const item: MenuItem = {
+      icon: "Fuel",
+      label: "Fuel Management",
+      path: "/fuel-management",
+      badge: 0,
+      category: "Operations",
+      description: "Fuel card management, consumption tracking & cost optimization",
+    };
+    const prev = result.findIndex(m => m.path === '/fleet-maintenance');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/communication-hub')) {
+    const item: MenuItem = {
+      icon: "MessageSquare",
+      label: "Communication Hub",
+      path: "/communication-hub",
+      badge: 0,
+      category: "Operations",
+      description: "Unified messaging, notifications & broadcast communications",
+    };
+    const prev = result.findIndex(m => m.path === '/fuel-management');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/broker-management')) {
+    const item: MenuItem = {
+      icon: "Briefcase",
+      label: "Broker Management",
+      path: "/broker-management",
+      badge: 0,
+      category: "Operations",
+      description: "Broker relationships, commission tracking & performance management",
+    };
+    const prev = result.findIndex(m => m.path === '/communication-hub');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/document-management')) {
+    const item: MenuItem = {
+      icon: "FileStack",
+      label: "Document Management",
+      path: "/document-management",
+      badge: 0,
+      category: "Operations",
+      description: "EusoTicket™ centralized document storage, versioning & digital signatures",
+    };
+    const prev = result.findIndex(m => m.path === '/broker-management');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/hr-workforce')) {
+    const item: MenuItem = {
+      icon: "UserCog",
+      label: "HR & Workforce",
+      path: "/hr-workforce",
+      badge: 0,
+      category: "Operations",
+      description: "Driver onboarding, workforce management & HR compliance",
+    };
+    const prev = result.findIndex(m => m.path === '/document-management');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/vendor-management')) {
+    const item: MenuItem = {
+      icon: "Store",
+      label: "Vendor Management",
+      path: "/vendor-management",
+      badge: 0,
+      category: "Operations",
+      description: "Vendor relationships, contracts & procurement management",
+    };
+    const prev = result.findIndex(m => m.path === '/hr-workforce');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  // Data Migration is admin-only — do not inject for non-admin roles
+  if (['ADMIN', 'SUPER_ADMIN'].includes(normalizedRole) && !result.some(m => m.path === '/data-migration')) {
+    const item: MenuItem = {
+      icon: "DatabaseZap",
+      label: "Data Migration",
+      path: "/data-migration",
+      badge: 0,
+      category: "Operations",
+      description: "Data import/export, system migration & ETL tools",
+    };
+    const prev = result.findIndex(m => m.path === '/vendor-management');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  // ─── Gamification / The Haul™ injections (all roles) ───
+  if (!result.some(m => m.path === '/advanced-gamification')) {
+    const item: MenuItem = {
+      icon: "Trophy",
+      label: "Advanced Gamification",
+      path: "/advanced-gamification",
+      badge: 0,
+      category: "The Haul",
+      description: "The Haul™ advanced achievements, seasons, tournaments & rewards",
+    };
+    const haulIdx = result.findIndex(m => m.path === '/the-haul');
+    const idx = haulIdx >= 0 ? haulIdx + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/driver-wellness')) {
+    const item: MenuItem = {
+      icon: "Heart",
+      label: "Driver Wellness",
+      path: "/driver-wellness",
+      badge: 0,
+      category: "The Haul",
+      description: "The Haul™ driver wellness programs, health tracking & fatigue management",
+    };
+    const prev = result.findIndex(m => m.path === '/advanced-gamification');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
+  }
+
+  if (!result.some(m => m.path === '/driver-mobile')) {
+    const item: MenuItem = {
+      icon: "Smartphone",
+      label: "Driver Mobile",
+      path: "/driver-mobile",
+      badge: 0,
+      category: "The Haul",
+      description: "The Haul™ mobile-first driver experience & on-the-road tools",
+    };
+    const prev = result.findIndex(m => m.path === '/driver-wellness');
+    const idx = prev >= 0 ? prev + 1 : result.length;
+    result.splice(idx, 0, item);
   }
 
   return result;

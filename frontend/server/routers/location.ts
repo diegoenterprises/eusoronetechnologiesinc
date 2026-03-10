@@ -115,7 +115,7 @@ const GPS_BATCH_STALE_MS = 60_000;
 /** Piggyback cleanup: remove entries older than 60s on each request */
 function _pruneGpsBatchRateMap() {
   const cutoff = Date.now() - GPS_BATCH_STALE_MS;
-  for (const [key, ts] of _gpsBatchLastTs) {
+  for (const [key, ts] of Array.from(_gpsBatchLastTs)) {
     if (ts < cutoff) _gpsBatchLastTs.delete(key);
   }
 }
@@ -415,7 +415,7 @@ const telemetrySubRouter = router({
               wsService.broadcastToChannel(
                 WS_CHANNELS.LOAD(loadIdStr),
                 {
-                  type: String(trigger.data?.event || "load:geofence_event"),
+                  type: String(trigger.data?.event || "load:geofence_event") as import("@shared/websocket-events").WSEventType,
                   data: { loadId: loadIdStr, ...trigger.data },
                   timestamp: now,
                 },

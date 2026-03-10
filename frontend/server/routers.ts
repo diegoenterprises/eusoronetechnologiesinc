@@ -52,6 +52,7 @@ import { walletRouter } from "./routers/wallet";
 import { newsfeedRouter } from "./routers/newsfeed";
 import { contactsRouter } from "./routers/contacts";
 import { claimsRouter } from "./routers/claims";
+import { freightClaimsRouter } from "./routers/freightClaims";
 import { fuelRouter } from "./routers/fuel";
 import { ratingsRouter } from "./routers/ratings";
 import { inventoryRouter } from "./routers/inventory";
@@ -103,6 +104,7 @@ import { legalRouter } from "./routers/legal";
 import { smsRouter } from "./routers/sms";
 import { pushRouter } from "./routers/push";
 import { fuelCardsRouter } from "./routers/fuelCards";
+import { fuelManagementRouter } from "./routers/fuelManagement";
 import { facilityRouter } from "./routers/facility";
 import { exportsRouter } from "./routers/exports";
 import { eldRouter } from "./routers/eld";
@@ -217,6 +219,7 @@ import { missionBalancerRouter } from "./routers/missionBalancer";
 import { loadConsolidationRouter } from "./routers/loadConsolidation";
 import { mobileCommandRouter } from "./routers/mobileCommand";
 import { crossBorderComplianceRouter } from "./routers/crossBorderCompliance";
+import { crossBorderRouter } from "./routers/crossBorder";
 import { esangAIRouter } from "./routers/esangAI";
 import { infrastructureRouter } from "./routers/infrastructure";
 import { industryProfilesRouter } from "./routers/industryProfiles";
@@ -229,6 +232,46 @@ import { imdgRouter } from "./routers/imdg";
 import { autonomousRouter } from "./routers/autonomous";
 import { brandingRouter } from "./routers/branding";
 import { tenantManagerRouter } from "./routers/tenantManager";
+import { advancedFinancialsRouter } from "./routers/advancedFinancials";
+import { trainingComplianceRouter } from "./routers/trainingCompliance";
+import { advancedGamificationRouter } from "./routers/advancedGamification";
+import { documentManagementRouter } from "./routers/documentManagement";
+import { reportingEngineRouter } from "./routers/reportingEngine";
+// ═══ Yard Management, Warehouse & Cross-Dock Operations ═══
+import { yardManagementRouter } from "./routers/yardManagement";
+import { futureVisionRouter } from "./routers/futureVision";
+import { driverWellnessRouter } from "./routers/driverWellness";
+import { emergencyProtocolsRouter } from "./routers/emergencyProtocols";
+import { advancedIntegrationsRouter } from "./routers/advancedIntegrations";
+import { competitiveIntelRouter } from "./routers/competitiveIntel";
+import { routeOptimizationRouter } from "./routers/routeOptimization";
+// Vendor & Supplier Management — scorecards, procurement, POs, RFQ, compliance, spend analytics
+import { vendorSupplierRouter } from "./routers/vendorSupplier";
+// HR & Workforce Management — recruiting, onboarding, payroll, performance, benefits, compliance
+import { hrWorkforceRouter } from "./routers/hrWorkforce";
+// Multi-Modal & Intermodal — rail coordination, port ops, drayage, transloading, container/chassis mgmt
+import { multiModalRouter } from "./routers/multiModal";
+// Asset Tracking & IoT Sensor Management — real-time tracking, sensors, cold chain, cargo integrity
+import { assetTrackingRouter } from "./routers/assetTracking";
+// Safety Risk Analytics & Management — predictive analytics, risk scoring, incident investigation,
+// near-miss reporting, behavioral safety, fleet safety culture, coaching, compliance calendar
+import { safetyRiskRouter } from "./routers/safetyRisk";
+// Capacity Planning — forecasting, fleet right-sizing, network design, load matching, backhaul
+import { capacityPlanningRouter } from "./routers/capacityPlanning";
+// Detention, Demurrage & Accessorial Charge Management — detention tracking, demurrage,
+// accessorial catalog, TONU, layover, lumper fees, driver assist, fuel surcharge, disputes, billing
+import { detentionAccessorialsRouter } from "./routers/detentionAccessorials";
+// Audit Compliance — SOX, audit scheduling, findings, CAPA, regulatory filings, ethics hotline, risk register
+import { auditComplianceRouter } from "./routers/auditCompliance";
+// Broker & 3PL Management — scorecard, carrier pool, double-brokering detection, compliance,
+// commission tracking, 3PL SLA management, margin analysis, risk management
+import { brokerManagementRouter } from "./routers/brokerManagement";
+// Communication Hub — unified messaging, notifications, driver comms, dispatch alerts
+import { communicationHubRouter } from "./routers/communicationHub";
+// Data Migration — import/export, legacy system migration, data mapping, validation
+import { dataMigrationRouter } from "./routers/dataMigration";
+// Driver Mobile — home dashboard, trip planner, expenses, roadside assistance, truck stops, parking, HOS, docs
+import { driverMobileRouter } from "./routers/driverMobile";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -890,6 +933,9 @@ export const appRouter = router({
   terminals: terminalsRouter,
   supplyChain: supplyChainRouter,
 
+  // Yard Management, Warehouse & Cross-Dock Operations
+  yardManagement: yardManagementRouter,
+
   // Viral Invite System
   invite: inviteRouter,
 
@@ -985,9 +1031,13 @@ export const appRouter = router({
 
   // Claims & Disputes
   claims: claimsRouter,
+  freightClaims: freightClaimsRouter,
 
   // Fuel Management
   fuel: fuelRouter,
+
+  // Fuel Management (Comprehensive)
+  fuelManagement: fuelManagementRouter,
 
   // Ratings & Reviews
   ratings: ratingsRouter,
@@ -1268,6 +1318,9 @@ export const appRouter = router({
   // Emergency Response Command Center — Pipeline crisis mobilization
   emergencyResponse: emergencyResponseRouter,
 
+  // Emergency & Disaster Protocols — Weather, HAZMAT, accidents, natural disasters, multi-agency coordination
+  emergencyProtocols: emergencyProtocolsRouter,
+
   // EusoContract — Agreement & Contract Management System
   agreements: agreementsRouter,
 
@@ -1413,6 +1466,8 @@ export const appRouter = router({
   // ═══ Phase 4: Intelligence Layer (Months 13-18) ═══
   // GAP-407/408/410: Cross-Border Compliance (TDG, ACE/ACI, NOM, CTPAT, FX)
   crossBorder: crossBorderComplianceRouter,
+  // Cross-Border & International Shipping (customs, FAST, cabotage, bonded, eManifest, analytics)
+  crossBorderShipping: crossBorderRouter,
   // GAP-440/417: ESANG AI Decision Logging, Auto-Dispatch, Auto-Approve
   esangAI: esangAIRouter,
   // GAP-450: Infrastructure Resilience (Backup, Uptime, Weather/Disaster)
@@ -1437,6 +1492,13 @@ export const appRouter = router({
   branding: brandingRouter,
   // GAP-445: PaaS Tenant Management
   tenantManager: tenantManagerRouter,
+  // Advanced Financials — multi-currency, 1099, collections, factoring, fuel cards, billing
+  advancedFinancials: advancedFinancialsRouter,
+  // Advanced Gamification — guilds, prestige, rewards store, events, tournaments, achievements
+  advancedGamification: advancedGamificationRouter,
+
+  // Training, Compliance & Regulatory Management (LMS, certs, permits, insurance, D&A, CSA, audit, IFTA/UCR/BOC)
+  trainingCompliance: trainingComplianceRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,
@@ -1448,6 +1510,54 @@ export const appRouter = router({
 
   // Task 3.2.3: Multi-tenant RBAC Admin
   rbacAdmin: rbacAdminRouter,
+  // Future Vision — autonomous, EV/H2, blockchain, AI/ML, drone, ESG, digital twin
+  futureVision: futureVisionRouter,
+  // Driver Wellness & Retention — wellness scoring, fatigue detection, mental health,
+  // retention analytics, career development, benefits, incentives, peer recognition
+  driverWellness: driverWellnessRouter,
+  // Advanced Integrations — EDI 204/210/214/990, fuel cards, ELD/telematics, accounting ERP, API marketplace
+  advancedIntegrations: advancedIntegrationsRouter,
+  // Competitive Intelligence & Growth Planning — market analysis, competitor profiling,
+  // customer acquisition/churn, fleet expansion, territory analysis, SWOT, strategic recommendations
+  competitiveIntel: competitiveIntelRouter,
+  // HR & Workforce Management — recruiting, onboarding, payroll, performance, benefits, compliance
+  hrWorkforce: hrWorkforceRouter,
+  // Reporting Engine — custom report builder, scheduled reports, executive dashboards,
+  // operational analytics, benchmark reporting, data export, regulatory reports
+  reportingEngine: reportingEngineRouter,
+  // Document Management — OCR, templates, e-signatures, workflows, BOL/POD, compliance vault
+  documentManagement: documentManagementRouter,
+  // Asset Tracking & IoT Sensor Management — fleet GPS, sensor data, cold chain, cargo integrity,
+  // trailer/container tracking, utilization analytics, geofence events, lifecycle management
+  assetTracking: assetTrackingRouter,
+  // Safety Risk Analytics & Management — predictive analytics, risk scoring, incident investigation,
+  // near-miss reporting, behavioral safety, fleet safety culture, coaching, compliance calendar
+  safetyRisk: safetyRiskRouter,
+  // Capacity Planning — forecasting, demand planning, fleet right-sizing, network design,
+  // load matching, backhaul optimization, driver scheduling, seasonal adjustments
+  capacityPlanning: capacityPlanningRouter,
+  // Detention, Demurrage & Accessorial Charge Management — automated detention tracking,
+  // demurrage calculations, accessorial catalog, TONU, layover, lumper, driver assist, billing
+  detentionAccessorials: detentionAccessorialsRouter,
+  // Route Optimization — multi-stop, toll management, restrictions, HOS, weather, fuel, HAZMAT
+  routeOptimization: routeOptimizationRouter,
+  // Audit & Compliance Management — SOX, audit scheduling, findings, CAPA, regulatory filings,
+  // compliance scorecard, policy management, ethics hotline, risk register, training
+  auditCompliance: auditComplianceRouter,
+  // Multi-Modal & Intermodal — rail coordination, port ops, drayage, transloading,
+  // container/chassis management, per diem/demurrage, customs, mode optimization
+  multiModal: multiModalRouter,
+  // Driver Mobile — home dashboard, trip planner, expense tracking, receipt scanning,
+  // roadside assistance, nearby services, truck stops, parking, weigh stations, HOS, documents
+  driverMobile: driverMobileRouter,
+  // Vendor & Supplier Management — scorecards, procurement, POs, RFQ, compliance, spend analytics
+  vendorSupplier: vendorSupplierRouter,
+  // Data Migration & System Stress Testing — TMS import/export, bulk migration, stress tests, DR
+  dataMigration: dataMigrationRouter,
+  // Broker & 3PL Management — scorecard, carrier pool, double-brokering, commission, margin analysis
+  brokerManagement: brokerManagementRouter,
+  // Communication Hub — unified messaging, notifications, driver comms, dispatch alerts
+  communicationHub: communicationHubRouter,
 });
 
 export type AppRouter = typeof appRouter;

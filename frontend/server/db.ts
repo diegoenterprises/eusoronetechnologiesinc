@@ -2424,6 +2424,8 @@ export async function getUserByOpenId(openId: string) {
     currentLocation: users.currentLocation, lastGPSUpdate: users.lastGPSUpdate,
     createdAt: users.createdAt, updatedAt: users.updatedAt,
     lastSignedIn: users.lastSignedIn, deletedAt: users.deletedAt,
+    status: users.status, closedAt: users.closedAt, closedReason: users.closedReason,
+    deactivatedAt: users.deactivatedAt, deactivatedBy: users.deactivatedBy,
   };
 
   // Try openId lookup — may fail if column doesn't exist in actual DB
