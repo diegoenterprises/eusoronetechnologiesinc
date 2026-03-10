@@ -196,6 +196,8 @@ const ROUTE_TTL: Record<string, number> = {
   "factoring.getInvoices": 120,
   "settlementBatching.getBatches": 120,
   "settlementBatching.getBatch": 120,
+  "settlementBatching.getInvoiceForLoad": 60,
+  "settlementBatching.getMyInvoices": 60,
 
   // ── CARRIERS / BROKERS / SHIPPERS / CATALYSTS / COMPANIES ──
   "carrierScorecard.getScorecard": 900,

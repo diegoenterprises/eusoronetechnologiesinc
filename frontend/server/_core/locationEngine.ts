@@ -276,6 +276,36 @@ export async function ingestBreadcrumbs(
     await writeLivePing(driverId, last.lat, last.lng, last.speed, last.heading);
   } catch { /* non-critical — road intel layer is best-effort */ }
 
+  // Route deviation auto-monitoring: check if driver deviated from planned route on every update
+  if (loadId && loadState === "in_transit" && last.lat && last.lng) {
+    try {
+      const deviation = await checkRouteDeviation(loadId, { lat: last.lat, lng: last.lng });
+      if (deviation && deviation.deviated && deviation.deviationMiles > 2) {
+        logger.warn(`[RouteDeviation] Load ${loadId} deviated ${deviation.deviationMiles} mi (severity: ${deviation.severity})`);
+        // Persist a geotag for the deviation event
+        try {
+          await createGeotag({
+            loadId,
+            userId: driverId,
+            userRole: "driver",
+            driverId,
+            vehicleId: vehicleId || undefined,
+            eventType: "route_deviation",
+            eventCategory: "safety",
+            lat: last.lat,
+            lng: last.lng,
+            timestamp: new Date(last.timestamp),
+            source: "system",
+            metadata: {
+              deviationMiles: deviation.deviationMiles,
+              severity: deviation.severity,
+            },
+          });
+        } catch { /* non-critical geotag */ }
+      }
+    } catch { /* non-critical route deviation check */ }
+  }
+
   // Also update the user's current location in gpsTracking for fleet view
   try {
     const existing = await db.select({ id: gpsTracking.id })
@@ -733,6 +763,9 @@ export async function processGeofenceEvent(event: GeofenceEventData): Promise<Tr
       }
       if (event.action === "DWELL" && event.dwellTimeSeconds) {
         const dwellMinutes = event.dwellTimeSeconds / 60;
+        // Check detention alert thresholds (warns at 60, 30, 15, 0 minutes before free time expires)
+        const pickupAlert = checkDetentionAlerts(dwellMinutes, 120, event.loadId || 0, "pickup");
+        if (pickupAlert) triggers.push(pickupAlert);
         if (dwellMinutes >= 120) {
           triggers.push(
             { type: "detention_billing", target: "system", data: { loadId: event.loadId, location: "pickup", dwellMinutes } },
@@ -800,6 +833,9 @@ export async function processGeofenceEvent(event: GeofenceEventData): Promise<Tr
       }
       if (event.action === "DWELL" && event.dwellTimeSeconds) {
         const dwellMinutes = event.dwellTimeSeconds / 60;
+        // Check detention alert thresholds (warns at 60, 30, 15, 0 minutes before free time expires)
+        const deliveryAlert = checkDetentionAlerts(dwellMinutes, 120, event.loadId || 0, "delivery");
+        if (deliveryAlert) triggers.push(deliveryAlert);
         if (dwellMinutes >= 120) {
           triggers.push(
             { type: "detention_billing", target: "system", data: { loadId: event.loadId, location: "delivery", dwellMinutes } },
@@ -892,12 +928,14 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   booked: ["en_route_to_pickup", "cancelled"],
   en_route_to_pickup: ["approaching_pickup", "at_pickup", "cancelled"],
   approaching_pickup: ["at_pickup", "cancelled"],
-  at_pickup: ["loading", "in_transit", "cancelled"],
+  at_pickup: ["pickup_checkin", "loading", "in_transit", "cancelled"],
+  pickup_checkin: ["loading", "in_transit", "cancelled"],
   loading: ["loaded", "in_transit"],
   loaded: ["in_transit"],
   in_transit: ["approaching_delivery", "at_delivery", "delivered"],
   approaching_delivery: ["at_delivery"],
-  at_delivery: ["unloading", "delivered"],
+  at_delivery: ["delivery_checkin", "unloading", "delivered"],
+  delivery_checkin: ["unloading", "delivered"],
   unloading: ["delivered"],
   delivered: ["completed"],
   completed: [],
@@ -926,6 +964,32 @@ async function transitionLoadStatus(loadId: number, newStatus: string): Promise<
 
   await db.update(loads).set({ status: newStatus as any }).where(eq(loads.id, loadId));
   return true;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DETENTION ALERT THRESHOLDS (Section 4.3 / 8.2)
+// Emits warnings at specific intervals before and when free time expires.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function checkDetentionAlerts(
+  dwellMinutes: number, freeTimeMinutes: number, loadId: number, locationType: string,
+): TriggerResult | null {
+  const remainingFreeTime = freeTimeMinutes - dwellMinutes;
+  const ALERT_THRESHOLDS = [60, 30, 15, 0]; // minutes before detention starts
+
+  for (const threshold of ALERT_THRESHOLDS) {
+    if (Math.abs(remainingFreeTime - threshold) < 1) { // within 1 minute of threshold
+      const message = threshold > 0
+        ? `Detention starts in ${threshold} minutes at ${locationType}`
+        : `FREE TIME EXPIRED — Detention charges now accruing at ${locationType}`;
+      return {
+        type: "detention_alert",
+        target: "all",
+        data: { loadId, message, remainingFreeTime: threshold, locationType, dwellMinutes },
+      };
+    }
+  }
+  return null;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

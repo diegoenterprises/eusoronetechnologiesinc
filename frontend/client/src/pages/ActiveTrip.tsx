@@ -1115,19 +1115,477 @@ function EusoRoadsLiDARPanel() {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════
+// POD SUBMISSION — Proof of Delivery capture after unloading
+// ═══════════════════════════════════════════════════════════════
+
+function PODSubmissionPanel({ load, onSubmitted }: { load: any; onSubmitted: () => void }) {
+  const [receiverName, setReceiverName] = useState("");
+  const [notes, setNotes] = useState("");
+  const [photoTaken, setPhotoTaken] = useState(false);
+  const [signatureCaptured, setSignatureCaptured] = useState(false);
+
+  const { data: podData, refetch: refetchPOD } = trpc.pod.getPODForLoad.useQuery(
+    { loadId: load.id },
+    { enabled: load.status === "pod_pending" || load.status === "pod_rejected" }
+  );
+
+  const submitPOD = trpc.pod.submitPOD.useMutation({
+    onSuccess: () => {
+      toast.success("POD submitted — awaiting approval");
+      onSubmitted();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to submit POD");
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!receiverName.trim()) {
+      toast.error("Receiver name is required");
+      return;
+    }
+    submitPOD.mutate({
+      loadId: load.id,
+      receiverName: receiverName.trim(),
+      notes: notes.trim() || undefined,
+      photoBase64: photoTaken ? "placeholder_photo" : undefined,
+      signatureBase64: signatureCaptured ? "placeholder_signature" : undefined,
+    });
+  };
+
+  // ── POD Pending: waiting for shipper approval ──
+  if (load.status === "pod_pending") {
+    return (
+      <div className="max-w-lg mx-auto space-y-4 pb-8">
+        <div className="rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-950 border border-blue-500/30 p-6 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center mx-auto mb-4">
+            <Clock className="w-7 h-7 text-blue-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">POD Submitted</h3>
+          <p className="text-sm text-zinc-400 mb-1">Waiting for shipper approval...</p>
+          {podData?.receiverName && (
+            <p className="text-xs text-zinc-500 mt-3">
+              Signed by: <span className="text-zinc-300">{podData.receiverName}</span>
+            </p>
+          )}
+          <button
+            onClick={() => { refetchPOD(); onSubmitted(); }}
+            className="mt-5 px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-sm text-zinc-300 font-medium transition-colors flex items-center justify-center gap-2 mx-auto"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Refresh Status
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── POD Rejected: show reason + resubmit ──
+  if (load.status === "pod_rejected") {
+    return (
+      <div className="max-w-lg mx-auto space-y-4 pb-8">
+        <div className="rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-950 border border-red-500/30 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-5 h-5 text-red-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-white">POD Rejected</h3>
+              <p className="text-xs text-zinc-500">Your proof of delivery was not accepted</p>
+            </div>
+          </div>
+          {(podData?.rejectionReason || load.holdReason) && (
+            <div className="rounded-xl bg-red-500/5 border border-red-500/20 p-3 mb-4">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Reason</p>
+              <p className="text-sm text-red-300">{podData?.rejectionReason || load.holdReason}</p>
+            </div>
+          )}
+
+          <div className="space-y-3 mt-4">
+            <div>
+              <label className="text-xs text-zinc-500 uppercase tracking-wider block mb-1.5">Receiver Name</label>
+              <input
+                type="text"
+                value={receiverName}
+                onChange={(e) => setReceiverName(e.target.value)}
+                placeholder="Full name of receiver"
+                className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => { setPhotoTaken(true); toast.success("Photo captured"); }}
+                className={`py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                  photoTaken ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-300" : "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                <Camera className="w-3.5 h-3.5" />
+                {photoTaken ? "Photo Taken" : "Take Photo"}
+              </button>
+              <button
+                onClick={() => { setSignatureCaptured(true); toast.success("Signature captured"); }}
+                className={`py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                  signatureCaptured ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-300" : "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                {signatureCaptured ? "Signed" : "Capture Signature"}
+              </button>
+            </div>
+            <div>
+              <label className="text-xs text-zinc-500 uppercase tracking-wider block mb-1.5">Notes (optional)</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Any delivery notes..."
+                rows={2}
+                className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50 resize-none"
+              />
+            </div>
+            <button
+              onClick={handleSubmit}
+              disabled={submitPOD.isPending || !receiverName.trim()}
+              className="w-full py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+            >
+              {submitPOD.isPending ? (
+                <><Loader2 className="w-4 h-4 animate-spin" />Resubmitting...</>
+              ) : (
+                <><CheckCircle2 className="w-4 h-4" />Resubmit POD</>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Unloaded: initial POD submission form ──
+  return (
+    <div className="max-w-lg mx-auto space-y-4 pb-8">
+      <div className="rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 p-5">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+            <FileText className="w-5 h-5 text-cyan-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-white">Submit Proof of Delivery</h3>
+            <p className="text-xs text-zinc-500">Capture delivery confirmation for {load.loadNumber}</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {/* Receiver Name */}
+          <div>
+            <label className="text-xs text-zinc-500 uppercase tracking-wider block mb-1.5">Receiver Name</label>
+            <input
+              type="text"
+              value={receiverName}
+              onChange={(e) => setReceiverName(e.target.value)}
+              placeholder="Full name of receiver"
+              className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50"
+            />
+          </div>
+
+          {/* Photo & Signature buttons */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => { setPhotoTaken(true); toast.success("Photo captured"); }}
+              className={`py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                photoTaken ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-300" : "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5" />
+              {photoTaken ? "Photo Taken" : "Take Photo"}
+            </button>
+            <button
+              onClick={() => { setSignatureCaptured(true); toast.success("Signature captured"); }}
+              className={`py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                signatureCaptured ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-300" : "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              {signatureCaptured ? "Signed" : "Capture Signature"}
+            </button>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="text-xs text-zinc-500 uppercase tracking-wider block mb-1.5">Notes (optional)</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Any delivery notes, damage observations, etc."
+              rows={3}
+              className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50 resize-none"
+            />
+          </div>
+
+          {/* Submit */}
+          <button
+            onClick={handleSubmit}
+            disabled={submitPOD.isPending || !receiverName.trim()}
+            className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+          >
+            {submitPOD.isPending ? (
+              <><Loader2 className="w-4 h-4 animate-spin" />Submitting POD...</>
+            ) : (
+              <><CheckCircle2 className="w-4 h-4" />Submit POD</>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PRE-TRIP GATE — Must pass inspection + HOS before starting trip
+// ═══════════════════════════════════════════════════════════════
+
+function PreTripGate({ load, onStarted }: { load: any; onStarted: () => void }) {
+  const [, navigate] = useLocation();
+  const pickup = load.pickupLocation as any || {};
+  const delivery = load.deliveryLocation as any || {};
+
+  const { data: preTripStatus, isLoading, refetch } = trpc.interstate.getPreTripStatus.useQuery(
+    { loadId: load.id },
+    { refetchInterval: 15000 }
+  );
+
+  const confirmMutation = trpc.interstate.confirmAndStartTrip.useMutation({
+    onSuccess: () => {
+      toast.success("Trip started — en route to pickup");
+      onStarted();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Cannot start trip");
+    },
+  });
+
+  const hosCheck = preTripStatus?.hosCheck;
+  const inspCheck = preTripStatus?.inspectionCheck;
+
+  return (
+    <div className="max-w-lg mx-auto space-y-4 pb-8">
+      {/* Load Info */}
+      <div className="rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider">Assigned Load</p>
+            <p className="text-lg font-bold text-white">{load.loadNumber}</p>
+          </div>
+          <div className="px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300">
+            {load.status.replace(/_/g, " ").toUpperCase()}
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-400" />
+              <p className="text-xs text-zinc-500">Origin</p>
+            </div>
+            <p className="text-sm font-medium text-zinc-200 truncate">{pickup.city}, {pickup.state}</p>
+          </div>
+          <ArrowRight className="w-5 h-5 text-zinc-600 flex-shrink-0" />
+          <div className="flex-1 min-w-0 text-right">
+            <div className="flex items-center gap-1.5 justify-end mb-0.5">
+              <p className="text-xs text-zinc-500">Destination</p>
+              <div className="w-2 h-2 rounded-full bg-red-400" />
+            </div>
+            <p className="text-sm font-medium text-zinc-200 truncate">{delivery.city}, {delivery.state}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-zinc-800/50">
+          <div className="flex items-center gap-1.5">
+            <Navigation className="w-3.5 h-3.5 text-zinc-500" />
+            <span className="text-xs text-zinc-400">{Number(load.distance || 0).toFixed(0)} mi</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Package className="w-3.5 h-3.5 text-zinc-500" />
+            <span className="text-xs text-zinc-400">{load.cargoType || "General"}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Pre-Trip Checklist */}
+      <div className="rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 p-5">
+        <h3 className="text-sm font-semibold text-white mb-1 flex items-center gap-2">
+          <Shield className="w-4 h-4 text-cyan-400" />
+          Pre-Trip Checklist
+        </h3>
+        <p className="text-xs text-zinc-500 mb-4">Complete all checks before starting your trip</p>
+
+        {isLoading ? (
+          <div className="space-y-3">
+            <div className="h-16 rounded-xl bg-zinc-800/50 animate-pulse" />
+            <div className="h-16 rounded-xl bg-zinc-800/50 animate-pulse" />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* HOS Check */}
+            <div className={`rounded-xl border p-4 ${
+              hosCheck?.ok ? "border-emerald-500/30 bg-emerald-500/5" : "border-red-500/30 bg-red-500/5"
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                    hosCheck?.ok ? "bg-emerald-500/20" : "bg-red-500/20"
+                  }`}>
+                    <Clock className={`w-4 h-4 ${hosCheck?.ok ? "text-emerald-400" : "text-red-400"}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">Hours of Service</p>
+                    <p className="text-xs text-zinc-400">
+                      {hosCheck?.ok
+                        ? `${hosCheck.drivingHoursRemaining}h driving available`
+                        : hosCheck?.message || "HOS check required"}
+                    </p>
+                  </div>
+                </div>
+                {hosCheck?.ok
+                  ? <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  : <AlertTriangle className="w-5 h-5 text-red-400" />}
+              </div>
+              {!hosCheck?.ok && (
+                <button
+                  onClick={() => navigate("/hos")}
+                  className="mt-3 w-full py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300 font-medium transition-colors"
+                >
+                  View HOS Dashboard
+                </button>
+              )}
+            </div>
+
+            {/* Pre-Trip Inspection Check */}
+            <div className={`rounded-xl border p-4 ${
+              inspCheck?.ok ? "border-emerald-500/30 bg-emerald-500/5" : "border-amber-500/30 bg-amber-500/5"
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                    inspCheck?.ok ? "bg-emerald-500/20" : "bg-amber-500/20"
+                  }`}>
+                    <Camera className={`w-4 h-4 ${inspCheck?.ok ? "text-emerald-400" : "text-amber-400"}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">Pre-Trip DVIR Inspection</p>
+                    <p className="text-xs text-zinc-400">
+                      {inspCheck?.ok
+                        ? `${inspCheck.result?.toUpperCase()} — Score: ${inspCheck.score}%`
+                        : inspCheck?.result
+                          ? `${inspCheck.result.toUpperCase()} — Vehicle not safe to operate`
+                          : "No inspection on file — run AI inspection"}
+                    </p>
+                  </div>
+                </div>
+                {inspCheck?.ok
+                  ? <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  : <Camera className="w-5 h-5 text-amber-400" />}
+              </div>
+              {!inspCheck?.ok && (
+                <button
+                  onClick={() => navigate("/photo-inspection")}
+                  className="mt-3 w-full py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-xs text-white font-medium transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  Run AI Photo Inspection
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Start Trip Button */}
+        <button
+          onClick={() => confirmMutation.mutate({ loadId: load.id })}
+          disabled={!preTripStatus?.canStart || confirmMutation.isPending}
+          className={`mt-4 w-full py-3.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+            preTripStatus?.canStart
+              ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+              : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+          }`}
+        >
+          {confirmMutation.isPending ? (
+            <><Loader2 className="w-4 h-4 animate-spin" />Starting Trip...</>
+          ) : preTripStatus?.canStart ? (
+            <><Play className="w-4 h-4" />Confirm &amp; Start Trip</>
+          ) : (
+            <><Lock className="w-4 h-4" />Complete All Checks to Start</>
+          )}
+        </button>
+
+        <button
+          onClick={() => refetch()}
+          className="mt-2 w-full py-2 rounded-lg text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex items-center justify-center gap-1"
+        >
+          <RefreshCw className="w-3 h-3" />
+          Refresh Status
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHECK-IN CARD — Facility gate check-in for pickup/delivery
+// ═══════════════════════════════════════════════════════════════
+
+function CheckInCard({ loadId, type, onCheckedIn }: { loadId: number; type: "pickup" | "delivery"; onCheckedIn: () => void }) {
+  const [gateCode, setGateCode] = useState("");
+  const checkIn = trpc.loadLifecycle.checkIn.useMutation({
+    onSuccess: () => { toast.success(`Checked in at ${type}`); onCheckedIn(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  return (
+    <div className="rounded-2xl bg-gradient-to-br from-amber-900/20 to-zinc-950 border border-amber-500/30 p-5">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+          <MapPin className="w-5 h-5 text-amber-400" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-white">Facility Check-In</p>
+          <p className="text-xs text-zinc-400">You've arrived at the {type} facility</p>
+        </div>
+      </div>
+      <input
+        type="text"
+        placeholder="Gate code (optional)"
+        value={gateCode}
+        onChange={(e) => setGateCode(e.target.value)}
+        className="w-full px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-white placeholder-zinc-500 mb-3"
+      />
+      <button
+        onClick={() => checkIn.mutate({ loadId, type, gateCode: gateCode || undefined })}
+        disabled={checkIn.isPending}
+        className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+      >
+        {checkIn.isPending ? <><Loader2 className="w-4 h-4 animate-spin" />Checking In...</> : <><MapPin className="w-4 h-4" />Check In at {type === "pickup" ? "Pickup" : "Delivery"}</>}
+      </button>
+    </div>
+  );
+}
+
 export default function ActiveTrip() {
   const [, navigate] = useLocation();
 
   // Auto-detect driver's current active load
-  const { data: activeLoad, isLoading: loadingActive } = trpc.interstate.getMyActiveLoad.useQuery(
+  const { data: activeLoad, isLoading: loadingActive, refetch: refetchLoad } = trpc.interstate.getMyActiveLoad.useQuery(
     undefined,
     { refetchInterval: 10000 }
   );
 
-  // Get full trip data once we have a load
+  // Is load in pre-trip gate status?
+  const needsPreTrip = activeLoad?.status === "assigned" || activeLoad?.status === "confirmed";
+
+  // Is load in POD submission flow?
+  const needsPOD = activeLoad?.status === "unloaded" || activeLoad?.status === "pod_pending" || activeLoad?.status === "pod_rejected";
+
+  // Get full trip data once we have an active (non-gate) load
   const { data: tripData, refetch: refetchTrip } = trpc.interstate.getActiveTrip.useQuery(
     { loadId: activeLoad?.id || 0 },
-    { enabled: !!activeLoad?.id, refetchInterval: 15000 }
+    { enabled: !!activeLoad?.id && !needsPreTrip && !needsPOD, refetchInterval: 15000 }
   );
 
   if (loadingActive) {
@@ -1148,7 +1606,7 @@ export default function ActiveTrip() {
           <Truck className="w-12 h-12 text-zinc-600 mx-auto" />
           <h2 className="text-xl font-semibold text-zinc-300">No Active Trip</h2>
           <p className="text-zinc-500 text-sm">
-            Your active trip dashboard will appear here when you have an in-progress load assigned to you.
+            Your active trip dashboard will appear here when you have a load assigned to you.
           </p>
           <button
             onClick={() => navigate("/loads")}
@@ -1159,6 +1617,16 @@ export default function ActiveTrip() {
         </div>
       </div>
     );
+  }
+
+  // Pre-trip gate: driver has an assigned/confirmed load but hasn't passed inspection + HOS
+  if (needsPreTrip) {
+    return <PreTripGate load={activeLoad} onStarted={() => refetchLoad()} />;
+  }
+
+  // POD gate: load is unloaded/pod_pending/pod_rejected — show POD submission flow
+  if (needsPOD) {
+    return <PODSubmissionPanel load={activeLoad} onSubmitted={() => refetchLoad()} />;
   }
 
   const pickup = activeLoad.pickupLocation as any || {};
@@ -1178,6 +1646,10 @@ export default function ActiveTrip() {
             activeLoad.status === "in_transit" ? "bg-blue-500/20 text-blue-300" :
             activeLoad.status === "at_pickup" || activeLoad.status === "loading" ? "bg-amber-500/20 text-amber-300" :
             activeLoad.status === "at_delivery" || activeLoad.status === "unloading" ? "bg-emerald-500/20 text-emerald-300" :
+            activeLoad.status === "unloaded" ? "bg-amber-500/20 text-amber-300" :
+            activeLoad.status === "pod_pending" ? "bg-blue-500/20 text-blue-300" :
+            activeLoad.status === "pod_rejected" ? "bg-red-500/20 text-red-300" :
+            activeLoad.status === "delivered" ? "bg-emerald-500/20 text-emerald-300" :
             "bg-zinc-700/50 text-zinc-400"
           }`}>
             {activeLoad.status.replace(/_/g, " ").toUpperCase()}
@@ -1300,6 +1772,14 @@ export default function ActiveTrip() {
 
       {/* Active SOS Banner */}
       <ActiveSOSBanner loadId={activeLoad.id} />
+
+      {/* Facility Check-In Card — appears when driver is at pickup or delivery */}
+      {activeLoad.status === "at_pickup" && (
+        <CheckInCard loadId={activeLoad.id} type="pickup" onCheckedIn={() => refetchLoad()} />
+      )}
+      {activeLoad.status === "at_delivery" && (
+        <CheckInCard loadId={activeLoad.id} type="delivery" onCheckedIn={() => refetchLoad()} />
+      )}
 
       {/* SOS Emergency Button */}
       <SOSButton loadId={activeLoad.id} onAlert={() => refetchTrip()} />

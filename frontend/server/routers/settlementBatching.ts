@@ -533,4 +533,56 @@ export const settlementBatchingRouter = router({
 
       return { batchesCreated, totalLoads, totalAmount };
     }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // INVOICE QUERY ENDPOINTS
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * getInvoiceForLoad — Returns invoice data for a specific load
+   */
+  getInvoiceForLoad: protectedProcedure
+    .input(z.object({ loadId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const { getInvoiceForLoad } = await import("../services/invoiceService");
+      const invoice = await getInvoiceForLoad(input.loadId);
+      if (!invoice) {
+        return { invoice: null };
+      }
+
+      // Verify user has access (must be shipper, catalyst, or driver on the load)
+      const userId = Number((ctx.user as any)?.id) || 0;
+      const role = ((ctx.user as any)?.role || "").toUpperCase();
+      const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN" || role === "DISPATCH";
+      const isParty = userId === invoice.shipperId || userId === invoice.catalystId || userId === invoice.driverId;
+      if (!isAdmin && !isParty) {
+        throw new Error("You do not have access to this invoice");
+      }
+
+      return { invoice };
+    }),
+
+  /**
+   * getMyInvoices — Returns all invoices where user is shipper (payable) or catalyst (receivable)
+   */
+  getMyInvoices: protectedProcedure
+    .input(z.object({
+      role: z.enum(["shipper", "catalyst", "all"]).default("all"),
+      limit: z.number().min(1).max(100).default(50),
+      offset: z.number().min(0).default(0),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const userId = Number((ctx.user as any)?.id) || 0;
+      if (!userId) throw new Error("Authentication required");
+
+      const { getInvoicesForUser } = await import("../services/invoiceService");
+      const result = await getInvoicesForUser(
+        userId,
+        input?.role || "all",
+        input?.limit || 50,
+        input?.offset || 0,
+      );
+
+      return result;
+    }),
 });

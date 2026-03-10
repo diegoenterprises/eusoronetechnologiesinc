@@ -13,6 +13,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 import { adminProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { sosAlerts, tripComplianceEvents, tripStateMiles, loads, users } from "../../drizzle/schema";
@@ -23,6 +24,8 @@ import {
   handleStateCrossing,
   generateIFTAReport,
 } from "../services/interstateCompliance";
+import { getHOSSummaryWithELD } from "../services/hosEngine";
+import { generatePhotoInspectionReport } from "../services/PhotoInspectionAI";
 
 export const interstateRouter = router({
   // ═══════════════════════════════════════════════════════════════
@@ -53,8 +56,9 @@ export const interstateRouter = router({
       const userId = Number(ctx.user?.id) || 0;
       if (!userId) return null;
 
-      // Find load where this user is the driver and status is in-transit
+      // Find load where this user is the driver — includes assigned/confirmed for pre-trip gate
       const activeStatuses = [
+        "assigned", "confirmed",
         "en_route_pickup", "at_pickup", "loading", "loaded",
         "in_transit", "at_delivery", "unloading",
       ] as const;
@@ -79,6 +83,116 @@ export const interstateRouter = router({
         .limit(1);
 
       return load || null;
+    }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // PRE-TRIP GATE — Validates inspection + HOS before trip start
+  // ═══════════════════════════════════════════════════════════════
+
+  getPreTripStatus: protectedProcedure
+    .input(z.object({ loadId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const userId = Number(ctx.user?.id) || 0;
+      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      // Verify load belongs to this driver
+      const [load] = await db.select({ id: loads.id, status: loads.status })
+        .from(loads)
+        .where(and(eq(loads.id, input.loadId), eq(loads.driverId, userId)))
+        .limit(1);
+      if (!load) throw new TRPCError({ code: "NOT_FOUND", message: "Load not found" });
+
+      // HOS check
+      let hosOk = false;
+      let hosDrivingHours = 0;
+      let hosMessage = "";
+      try {
+        const hos = await getHOSSummaryWithELD(userId);
+        hosOk = hos.canDrive;
+        hosDrivingHours = Math.round((hos.hoursAvailable.driving / 60) * 10) / 10; // minutes → hours
+        if (!hos.canDrive) {
+          hosMessage = hos.breakRequired
+            ? "30-minute break required before driving"
+            : `Insufficient driving hours (${hosDrivingHours}h remaining)`;
+        }
+      } catch {
+        hosMessage = "Unable to verify HOS — connect ELD";
+      }
+
+      // Pre-trip inspection check — look for a recent passing inspection
+      let inspectionOk = false;
+      let inspectionResult: string | null = null;
+      let inspectionScore: number | null = null;
+      try {
+        const report = await generatePhotoInspectionReport(
+          `VEH-${String(userId).padStart(3, "0")}`, String(userId), "pre_trip"
+        );
+        inspectionOk = report.safeToOperate;
+        inspectionResult = report.overallResult;
+        inspectionScore = report.complianceScore;
+      } catch {
+        inspectionResult = null;
+      }
+
+      return {
+        loadId: input.loadId,
+        loadStatus: load.status,
+        hosCheck: { ok: hosOk, drivingHoursRemaining: hosDrivingHours, message: hosMessage },
+        inspectionCheck: { ok: inspectionOk, result: inspectionResult, score: inspectionScore },
+        canStart: hosOk && inspectionOk && (load.status === "assigned" || load.status === "confirmed"),
+      };
+    }),
+
+  confirmAndStartTrip: protectedProcedure
+    .input(z.object({ loadId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = Number(ctx.user?.id) || 0;
+      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      // Verify load belongs to this driver and is in correct status
+      const [load] = await db.select({ id: loads.id, status: loads.status })
+        .from(loads)
+        .where(and(eq(loads.id, input.loadId), eq(loads.driverId, userId)))
+        .limit(1);
+      if (!load) throw new TRPCError({ code: "NOT_FOUND", message: "Load not found" });
+      if (load.status !== "assigned" && load.status !== "confirmed") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Cannot start trip — load status is ${load.status}` });
+      }
+
+      // Validate HOS
+      const hos = await getHOSSummaryWithELD(userId);
+      if (!hos.canDrive) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: hos.breakRequired
+            ? "30-minute break required before driving"
+            : "Insufficient HOS hours remaining — cannot start trip",
+        });
+      }
+
+      // Validate pre-trip inspection
+      const report = await generatePhotoInspectionReport(
+        `VEH-${String(userId).padStart(3, "0")}`, String(userId), "pre_trip"
+      );
+      if (!report.safeToOperate) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `Pre-trip inspection ${report.overallResult.toUpperCase()} — vehicle not safe to operate`,
+        });
+      }
+
+      // All checks passed — transition to en_route_pickup
+      await db.update(loads)
+        .set({ status: "en_route_pickup", updatedAt: new Date() })
+        .where(eq(loads.id, input.loadId));
+
+      return { success: true, newStatus: "en_route_pickup" };
     }),
 
   // ═══════════════════════════════════════════════════════════════

@@ -402,7 +402,7 @@ export interface UIAction {
 export interface Transition {
   id: string;
   from: LoadState | LoadState[];
-  to: LoadState;
+  to: LoadState | "__previous_state__";
   trigger: TriggerType;
   triggerEvent: string;
   actor: UserRole[];
@@ -410,6 +410,7 @@ export interface Transition {
   effects: Effect[];
   uiAction: UIAction;
   priority: number;
+  description?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1047,7 +1048,7 @@ export const TRANSITIONS: Transition[] = [
   },
   {
     id: "ON_HOLD_TO_PREVIOUS",
-    from: "ON_HOLD", to: "IN_TRANSIT",
+    from: "ON_HOLD", to: "__previous_state__",
     trigger: "USER_ACTION", triggerEvent: "release_hold",
     actor: ["COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
     guards: [],
@@ -1215,6 +1216,97 @@ export const TRANSITIONS: Transition[] = [
     uiAction: { component: "ResolveButton", location: "primary", label: "Weight Resolved — Resume", icon: "CheckCircle", variant: "success" },
     priority: 1,
   },
+
+  // ── CONFIRMED → ASSIGNED (unconfirm for reassignment) ──
+  {
+    id: "CONFIRMED_TO_ASSIGNED",
+    from: "CONFIRMED", to: "ASSIGNED",
+    trigger: "USER_ACTION", triggerEvent: "unconfirm_load",
+    actor: ["CATALYST", "DISPATCH", "ADMIN", "SUPER_ADMIN"],
+    guards: [],
+    effects: [
+      { type: "notification", action: "load_unconfirmed", recipients: ["CATALYST", "DISPATCH"] },
+    ],
+    uiAction: { component: "UnconfirmButton", location: "header", label: "Unconfirm Load", icon: "Undo", variant: "danger", requiresConfirmation: true, confirmationMessage: "Unconfirm this load? It will be available for reassignment." },
+    priority: 5,
+    description: "Driver unconfirms load — available for reassignment",
+  },
+
+  // ── EXCEPTION ESCALATION: unresolved exceptions → ON_HOLD ──
+  {
+    id: "LOADING_EXCEPTION_TO_ON_HOLD",
+    from: "LOADING_EXCEPTION", to: "ON_HOLD",
+    trigger: "TIMEOUT", triggerEvent: "exception_escalation",
+    actor: ["ADMIN", "SAFETY_MANAGER"],
+    guards: [],
+    effects: [
+      { type: "notification", action: "exception_escalated_to_hold", recipients: ["ADMIN", "SAFETY_MANAGER", "DISPATCH", "CATALYST"] },
+    ],
+    uiAction: { component: "AutoTransition", location: "automatic", label: "Escalate to Hold", variant: "danger" },
+    priority: 2,
+    description: "Exception unresolved after threshold — escalate to hold",
+  },
+  {
+    id: "TRANSIT_EXCEPTION_TO_ON_HOLD",
+    from: "TRANSIT_EXCEPTION", to: "ON_HOLD",
+    trigger: "TIMEOUT", triggerEvent: "exception_escalation",
+    actor: ["ADMIN", "SAFETY_MANAGER"],
+    guards: [],
+    effects: [
+      { type: "notification", action: "exception_escalated_to_hold", recipients: ["ADMIN", "SAFETY_MANAGER", "DISPATCH", "CATALYST"] },
+    ],
+    uiAction: { component: "AutoTransition", location: "automatic", label: "Escalate to Hold", variant: "danger" },
+    priority: 2,
+    description: "Exception unresolved after threshold — escalate to hold",
+  },
+  {
+    id: "UNLOADING_EXCEPTION_TO_ON_HOLD",
+    from: "UNLOADING_EXCEPTION", to: "ON_HOLD",
+    trigger: "TIMEOUT", triggerEvent: "exception_escalation",
+    actor: ["ADMIN", "SAFETY_MANAGER"],
+    guards: [],
+    effects: [
+      { type: "notification", action: "exception_escalated_to_hold", recipients: ["ADMIN", "SAFETY_MANAGER", "DISPATCH", "CATALYST"] },
+    ],
+    uiAction: { component: "AutoTransition", location: "automatic", label: "Escalate to Hold", variant: "danger" },
+    priority: 2,
+    description: "Exception unresolved after threshold — escalate to hold",
+  },
+
+  // ── CONTAMINATION_REJECT → UNLOADING (clear-and-resume path) ──
+  {
+    id: "CONTAMINATION_REJECT_TO_UNLOADING",
+    from: "CONTAMINATION_REJECT", to: "UNLOADING",
+    trigger: "USER_ACTION", triggerEvent: "clear_contamination",
+    actor: ["TERMINAL_MANAGER", "SHIPPER", "ADMIN", "SUPER_ADMIN"],
+    guards: [
+      { type: "document", check: "lab_results_uploaded", errorMessage: "Lab clearance required" },
+    ],
+    effects: [
+      { type: "notification", action: "contamination_cleared", recipients: ["SHIPPER", "DISPATCH", "COMPLIANCE_OFFICER"] },
+    ],
+    uiAction: { component: "ClearButton", location: "primary", label: "Lab Clear — Resume Unloading", icon: "CheckCircle", variant: "success" },
+    priority: 1,
+    description: "Lab results clear product — resume unloading",
+  },
+
+  // ── SEAL_BREACH → CANCELLED (reject compromised cargo) ──
+  {
+    id: "SEAL_BREACH_TO_CANCELLED",
+    from: "SEAL_BREACH", to: "CANCELLED",
+    trigger: "USER_ACTION", triggerEvent: "reject_compromised_cargo",
+    actor: ["SHIPPER", "ADMIN", "SUPER_ADMIN"],
+    guards: [
+      { type: "document", check: "inspection_report_uploaded", errorMessage: "Inspection report must be uploaded before rejecting cargo" },
+    ],
+    effects: [
+      { type: "notification", action: "compromised_cargo_rejected", recipients: ["SHIPPER", "DISPATCH", "CATALYST", "ADMIN", "SAFETY_MANAGER"] },
+      { type: "financial", action: "process_rejection_claim" },
+    ],
+    uiAction: { component: "CancelButton", location: "primary", label: "Reject Cargo — Cancel", icon: "XCircle", variant: "danger", requiresConfirmation: true, confirmationMessage: "Reject this cargo as too compromised for delivery? A rejection claim will be filed." },
+    priority: 2,
+    description: "Cargo too compromised for delivery — cancel with claim",
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -1235,7 +1327,8 @@ export function getTransitionById(id: string): Transition | undefined {
 export function isValidTransition(from: LoadState, to: LoadState): boolean {
   return TRANSITIONS.some(t => {
     const fromMatch = Array.isArray(t.from) ? t.from.includes(from) : t.from === from;
-    return fromMatch && t.to === to;
+    // __previous_state__ sentinel matches any target state (resolved at runtime)
+    return fromMatch && (t.to === to || t.to === "__previous_state__");
   });
 }
 

@@ -22,12 +22,13 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, isolatedApprovedProcedure as protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { feeCalculator } from "../services/feeCalculator";
 import { getDb } from "../db";
-import { loads, vehicles, escortAssignments, settlements, settlementDocuments, wallets, walletTransactions } from "../../drizzle/schema";
-import { eq, and, ne, sql } from "drizzle-orm";
+import { loads, vehicles, escortAssignments, settlements, settlementDocuments, wallets, walletTransactions, notifications, users } from "../../drizzle/schema";
+import { eq, and, ne, sql, inArray } from "drizzle-orm";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
 
 import {
@@ -56,6 +57,109 @@ import { onLoadStateChange as checkConvoySync } from "../services/loadLifecycle/
 import { createGeotag } from "../_core/locationEngine";
 import { getHOSSummary, canDriverAcceptLoad } from "../services/hosEngine";
 import { resolveComplianceMatrix, PRODUCT_CATALOG, TRAILER_PRODUCT_MAP } from "../seeds/complianceMatrix";
+
+// ═══════════════════════════════════════════════════════════════
+// NOTIFICATION DISPATCHER — centralized load lifecycle notifications
+// ═══════════════════════════════════════════════════════════════
+
+const NOTIFICATION_MAP: Record<string, { roles: string[]; userFields: string[]; title: string; type: string; priority: string }> = {
+  "posted": { roles: ["CATALYST", "DISPATCH", "BROKER"], userFields: [], title: "New Load Posted", type: "load_update", priority: "normal" },
+  "awarded": { roles: [], userFields: ["catalystId"], title: "Load Awarded to You", type: "load_update", priority: "high" },
+  "accepted": { roles: [], userFields: ["shipperId"], title: "Carrier Accepted Load", type: "load_update", priority: "normal" },
+  "declined": { roles: [], userFields: ["shipperId"], title: "Carrier Declined Load", type: "load_update", priority: "high" },
+  "assigned": { roles: [], userFields: ["driverId"], title: "Load Assigned to You", type: "load_update", priority: "high" },
+  "confirmed": { roles: [], userFields: ["catalystId", "shipperId"], title: "Driver Confirmed Load", type: "load_update", priority: "normal" },
+  "en_route_pickup": { roles: [], userFields: ["shipperId", "catalystId"], title: "Driver En Route to Pickup", type: "load_update", priority: "normal" },
+  "at_pickup": { roles: [], userFields: ["shipperId", "catalystId"], title: "Driver Arrived at Pickup", type: "load_update", priority: "normal" },
+  "loading": { roles: [], userFields: ["shipperId"], title: "Loading Started", type: "load_update", priority: "normal" },
+  "loaded": { roles: [], userFields: ["shipperId", "catalystId"], title: "Loading Complete", type: "load_update", priority: "normal" },
+  "in_transit": { roles: [], userFields: ["shipperId", "catalystId"], title: "Load In Transit", type: "load_update", priority: "normal" },
+  "at_delivery": { roles: [], userFields: ["shipperId", "catalystId"], title: "Driver Arrived at Delivery", type: "load_update", priority: "normal" },
+  "unloading": { roles: [], userFields: ["shipperId"], title: "Unloading Started", type: "load_update", priority: "normal" },
+  "unloaded": { roles: [], userFields: ["shipperId", "catalystId"], title: "Unloading Complete", type: "load_update", priority: "normal" },
+  "pod_pending": { roles: [], userFields: ["shipperId"], title: "POD Submitted — Review Required", type: "load_update", priority: "high" },
+  "delivered": { roles: [], userFields: ["driverId", "catalystId"], title: "Delivery Confirmed", type: "load_update", priority: "high" },
+  "pod_rejected": { roles: [], userFields: ["driverId"], title: "POD Rejected — Resubmit Required", type: "load_update", priority: "high" },
+  "invoiced": { roles: [], userFields: ["shipperId"], title: "Invoice Ready", type: "payment_received", priority: "high" },
+  "paid": { roles: [], userFields: ["catalystId", "driverId"], title: "Payment Received", type: "payment_received", priority: "high" },
+  "cancelled": { roles: [], userFields: ["shipperId", "catalystId", "driverId"], title: "Load Cancelled", type: "load_update", priority: "urgent" },
+  "on_hold": { roles: [], userFields: ["shipperId", "catalystId", "driverId"], title: "Load Placed On Hold", type: "load_update", priority: "urgent" },
+  // Exception statuses
+  "loading_exception": { roles: ["SAFETY_MANAGER"], userFields: ["shipperId", "catalystId"], title: "Loading Exception Reported", type: "load_update", priority: "urgent" },
+  "transit_exception": { roles: ["SAFETY_MANAGER"], userFields: ["shipperId", "catalystId"], title: "Transit Exception Reported", type: "load_update", priority: "urgent" },
+  "unloading_exception": { roles: ["SAFETY_MANAGER"], userFields: ["shipperId", "catalystId"], title: "Unloading Exception Reported", type: "load_update", priority: "urgent" },
+  "temp_excursion": { roles: ["SAFETY_MANAGER"], userFields: ["shipperId", "catalystId", "driverId"], title: "Temperature Excursion Alert", type: "compliance_expiring", priority: "urgent" },
+  "reefer_breakdown": { roles: ["SAFETY_MANAGER"], userFields: ["shipperId", "catalystId", "driverId"], title: "Reefer Unit Breakdown", type: "compliance_expiring", priority: "urgent" },
+  "contamination_reject": { roles: ["SAFETY_MANAGER", "ADMIN"], userFields: ["shipperId", "catalystId"], title: "Cargo Contamination Detected", type: "compliance_expiring", priority: "urgent" },
+  "seal_breach": { roles: ["SAFETY_MANAGER", "ADMIN"], userFields: ["shipperId", "catalystId"], title: "Seal Breach Detected", type: "compliance_expiring", priority: "urgent" },
+  "weight_violation": { roles: ["COMPLIANCE_OFFICER"], userFields: ["shipperId", "catalystId"], title: "Weight Violation Detected", type: "compliance_expiring", priority: "urgent" },
+};
+
+/**
+ * Emit in-app notifications + WebSocket broadcasts for a load status change.
+ * Fire-and-forget: errors are caught internally so they never break the main flow.
+ */
+export async function emitLoadNotifications(
+  loadId: number,
+  newStatus: string,
+  load: { shipperId?: number | null; catalystId?: number | null; driverId?: number | null; loadNumber?: string },
+) {
+  const config = NOTIFICATION_MAP[newStatus];
+  if (!config) return;
+
+  const db = await getDb();
+  if (!db) return;
+
+  // Collect target user IDs
+  const targetUserIds: number[] = [];
+
+  // Add specific users from load fields
+  for (const field of config.userFields) {
+    const uid = (load as any)[field];
+    if (uid && typeof uid === "number") targetUserIds.push(uid);
+  }
+
+  // Add role-based users
+  if (config.roles.length > 0) {
+    try {
+      const roleUsers = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(inArray(users.role, config.roles as any));
+      for (const u of roleUsers) {
+        if (!targetUserIds.includes(u.id)) targetUserIds.push(u.id);
+      }
+    } catch (roleErr) {
+      logger.warn("[LoadNotifications] Role lookup error:", (roleErr as Error).message);
+    }
+  }
+
+  // Insert in-app notifications
+  for (const userId of targetUserIds) {
+    try {
+      await db.insert(notifications).values({
+        userId,
+        type: config.type as any,
+        title: config.title,
+        message: `Load ${load.loadNumber || loadId} status changed to ${newStatus.replace(/_/g, " ").toUpperCase()}`,
+        data: JSON.stringify({ loadId, status: newStatus }),
+        isRead: false,
+      });
+    } catch {}
+  }
+
+  // WebSocket broadcast
+  try {
+    const { getIO } = await import("../services/socketService");
+    const io = getIO();
+    if (io) {
+      io.to(`load:${loadId}`).emit("load:status_changed", { loadId, status: newStatus, loadNumber: load.loadNumber });
+      for (const uid of targetUserIds) {
+        io.to(`user:${uid}`).emit("notification:new", { loadId, title: config.title, status: newStatus });
+      }
+    }
+  } catch {}
+}
 
 // ═══════════════════════════════════════════════════════════════
 // GEOFENCE HELPERS
@@ -1180,7 +1284,7 @@ export const loadLifecycleRouter = router({
           return {
             transitionId: t.id,
             to: t.to,
-            toMeta: STATE_METADATA[t.to],
+            toMeta: t.to === "__previous_state__" ? undefined : STATE_METADATA[t.to as LoadState],
             trigger: t.trigger,
             uiAction: t.uiAction,
             canExecute: guardErrors.length === 0,
@@ -1247,7 +1351,7 @@ export const loadLifecycleRouter = router({
       const transitions = getTransitionsFrom(current);
       const seen = new Set<string>();
       const uniqueStates: LoadState[] = [];
-      for (const t of transitions) { if (!seen.has(t.to)) { seen.add(t.to); uniqueStates.push(t.to); } }
+      for (const t of transitions) { if (t.to !== "__previous_state__" && !seen.has(t.to)) { seen.add(t.to); uniqueStates.push(t.to as LoadState); } }
       return uniqueStates.map(s => {
         const m = STATE_METADATA[s as LoadState];
         return {
@@ -1328,16 +1432,40 @@ export const loadLifecycleRouter = router({
         return { success: false, errors, step: "GUARD_VALIDATION" };
       }
 
+      // Resolve __previous_state__ sentinel for ON_HOLD release
+      let resolvedTo = transition.to;
+      if (transition.to === "__previous_state__") {
+        const prevStateRow = await db.execute(sql`SELECT previous_state FROM loads WHERE id = ${numericLoadId}`);
+        const prevState = (prevStateRow as any)?.[0]?.[0]?.previous_state
+          || (prevStateRow as any)?.rows?.[0]?.previous_state
+          || (prevStateRow as any)?.[0]?.previous_state;
+        resolvedTo = prevState ? prevState.toUpperCase() : "IN_TRANSIT";
+        logger.info(`[LoadLifecycle] ON_HOLD release: restoring to previous state "${resolvedTo}"`);
+      }
+
       // Update load status in DB
-      const newStatusLower = transition.to.toLowerCase();
+      const newStatusLower = resolvedTo.toLowerCase();
       try {
         await db.execute(sql`UPDATE loads SET status = ${newStatusLower}, updatedAt = NOW() WHERE id = ${numericLoadId}`);
       } catch (dbErr) {
         return { success: false, error: `DB update failed: ${(dbErr as Error).message}` };
       }
 
+      // ── NOTIFICATION DISPATCH — in-app + WebSocket after successful status update ──
+      try {
+        const [loadData] = await db.select({
+          shipperId: loads.shipperId,
+          catalystId: loads.catalystId,
+          driverId: loads.driverId,
+          loadNumber: loads.loadNumber,
+        }).from(loads).where(eq(loads.id, numericLoadId)).limit(1);
+        await emitLoadNotifications(numericLoadId, newStatusLower, loadData || {});
+      } catch (notifErr) {
+        logger.warn("[LoadLifecycle] Notification dispatch error:", (notifErr as Error).message);
+      }
+
       // If ON_HOLD, save previous state
-      if (transition.to === "ON_HOLD") {
+      if (resolvedTo === "ON_HOLD") {
         try {
           await db.execute(sql`
             UPDATE loads SET previous_state = ${currentState.toLowerCase()},
@@ -1367,7 +1495,7 @@ export const loadLifecycleRouter = router({
       }
 
       // Route intelligence on DELIVERED
-      if (transition.to === "DELIVERED") {
+      if (resolvedTo === "DELIVERED") {
         await generateRouteReport(numericLoadId, ctx.user?.id || 0);
 
         // ── SETTLEMENT AUTOMATION — with accessorials, hazmat surcharge, and carrier wallet credit ──
@@ -1488,6 +1616,17 @@ export const loadLifecycleRouter = router({
           logger.warn(`[Settlement] Auto-settle error for load ${numericLoadId}:`, settleErr?.message);
         }
 
+        // ── INVOICE GENERATION — auto-generate invoice and transition to "invoiced" ──
+        try {
+          const { generateInvoiceForLoad } = await import("../services/invoiceService");
+          const invoice = await generateInvoiceForLoad(numericLoadId);
+          if (invoice) {
+            logger.info(`[Invoice] ${invoice.invoiceNumber} generated for load ${numericLoadId} — $${invoice.totalRate.toFixed(2)}`);
+          }
+        } catch (invErr: any) {
+          logger.warn(`[Invoice] Auto-invoice generation failed for load ${numericLoadId}:`, invErr?.message);
+        }
+
         // WS-E2E-005: Fire gamification events on DELIVERED
         try {
           const driverId = load?.driverId || 0;
@@ -1531,24 +1670,24 @@ export const loadLifecycleRouter = router({
       }
 
       // Convoy sync — check if this state change satisfies a sync point
-      try { await checkConvoySync(numericLoadId, transition.to); } catch { /* non-critical */ }
+      try { await checkConvoySync(numericLoadId, resolvedTo); } catch { /* non-critical */ }
 
       // ── GPS GEOTAG — immutable audit trail on every transition ──
       const geotagId = await geotagTransition(
         numericLoadId, ctx.user?.id || 0, userRole,
-        currentState, transition.to, input.transitionId,
+        currentState, resolvedTo, input.transitionId,
         input.location, load, input.metadata,
       );
 
       // ── COMPLIANCE SNAPSHOT — capture at assignment (first time cargo profile is locked in) ──
-      if (transition.to === "ASSIGNED" || transition.to === "ACCEPTED" || transition.to === "CONFIRMED") {
+      if (resolvedTo === "ASSIGNED" || resolvedTo === "ACCEPTED" || resolvedTo === "CONFIRMED") {
         await captureComplianceSnapshot(numericLoadId, load);
       }
 
       // Audit log
-      await logTransition(numericLoadId, currentState, transition.to, transition, ctx.user?.id || 0, userRole, guardsPassed, effectsExecuted, { ...input.metadata, geotagId }, true);
+      await logTransition(numericLoadId, currentState, resolvedTo, transition, ctx.user?.id || 0, userRole, guardsPassed, effectsExecuted, { ...input.metadata, geotagId }, true);
 
-      logger.info(`[LoadLifecycle] ${currentState} → ${transition.to} (${input.transitionId}) for load ${input.loadId}`);
+      logger.info(`[LoadLifecycle] ${currentState} → ${resolvedTo} (${input.transitionId}) for load ${input.loadId}`);
 
       // ── Real-time broadcast via Socket.io ──
       try {
@@ -1556,7 +1695,7 @@ export const loadLifecycleRouter = router({
         emitLoadStateChange({
           loadId: input.loadId,
           previousState: currentState,
-          newState: transition.to,
+          newState: resolvedTo,
           transitionId: input.transitionId,
           actorId: ctx.user?.id || 0,
           actorName: ctx.user?.name || "System",
@@ -1573,13 +1712,13 @@ export const loadLifecycleRouter = router({
           loadId: String(numericLoadId),
           loadNumber: load?.loadNumber || `LOAD-${numericLoadId}`,
           previousStatus: currentState,
-          newStatus: transition.to,
+          newStatus: resolvedTo,
           updatedBy: String(ctx.user?.id || 0),
           timestamp: new Date().toISOString(),
           location: input.location ? { lat: input.location.lat, lng: input.location.lng } : undefined,
         });
 
-        const statusLabel = transition.to.replace(/_/g, " ").toLowerCase();
+        const statusLabel = resolvedTo.replace(/_/g, " ").toLowerCase();
         const loadNum = load?.loadNumber || `#${numericLoadId}`;
 
         if (load?.shipperId) {
@@ -1587,9 +1726,9 @@ export const loadLifecycleRouter = router({
             id: `notif_${Date.now()}_sh`,
             type: "load_update",
             title: `Load ${loadNum}: ${statusLabel}`,
-            message: `Your load transitioned from ${currentState} to ${transition.to}`,
+            message: `Your load transitioned from ${currentState} to ${resolvedTo}`,
             priority: "medium",
-            data: { loadId: String(numericLoadId), newState: transition.to },
+            data: { loadId: String(numericLoadId), newState: resolvedTo },
             timestamp: new Date().toISOString(),
           });
         }
@@ -1598,9 +1737,9 @@ export const loadLifecycleRouter = router({
             id: `notif_${Date.now()}_cat`,
             type: "load_update",
             title: `Load ${loadNum}: ${statusLabel}`,
-            message: `Load transitioned to ${transition.to}`,
+            message: `Load transitioned to ${resolvedTo}`,
             priority: "medium",
-            data: { loadId: String(numericLoadId), newState: transition.to },
+            data: { loadId: String(numericLoadId), newState: resolvedTo },
             timestamp: new Date().toISOString(),
           });
         }
@@ -1609,9 +1748,9 @@ export const loadLifecycleRouter = router({
             id: `notif_${Date.now()}_drv`,
             type: "load_update",
             title: `Load ${loadNum}: ${statusLabel}`,
-            message: `Load transitioned to ${transition.to}`,
+            message: `Load transitioned to ${resolvedTo}`,
             priority: "high",
-            data: { loadId: String(numericLoadId), newState: transition.to },
+            data: { loadId: String(numericLoadId), newState: resolvedTo },
             timestamp: new Date().toISOString(),
           });
         }
@@ -1625,7 +1764,7 @@ export const loadLifecycleRouter = router({
           loadId: String(numericLoadId),
           loadNumber: load?.loadNumber || `LOAD-${numericLoadId}`,
           previousState: currentState,
-          newState: transition.to,
+          newState: resolvedTo,
           timestamp: new Date().toISOString(),
           actorId: String(ctx.user?.id || 0),
         };
@@ -1634,19 +1773,19 @@ export const loadLifecycleRouter = router({
         wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_STATUS_CHANGED, data: stdPayload, timestamp: stdPayload.timestamp });
 
         // load:posted
-        if (transition.to === "POSTED") {
+        if (resolvedTo === "POSTED") {
           wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_POSTED, data: stdPayload, timestamp: stdPayload.timestamp });
         }
         // load:assigned
-        if (transition.to === "ASSIGNED") {
+        if (resolvedTo === "ASSIGNED") {
           wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_ASSIGNED, data: { ...stdPayload, driverId: load?.driverId ? String(load.driverId) : undefined, vehicleId: load?.vehicleId ? String(load.vehicleId) : undefined }, timestamp: stdPayload.timestamp });
         }
         // load:cancelled
-        if (transition.to === "CANCELLED") {
+        if (resolvedTo === "CANCELLED") {
           wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_CANCELLED, data: { ...stdPayload, reason: (input.metadata as any)?.cancellationReason || "unspecified" }, timestamp: stdPayload.timestamp });
         }
         // load:completed
-        if (transition.to === "DELIVERED") {
+        if (resolvedTo === "DELIVERED") {
           wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_COMPLETED, data: { ...stdPayload, summary: { rate: (load as any).rate, distance: (load as any).distance } }, timestamp: stdPayload.timestamp });
         }
         // load:location_updated — when location data is present
@@ -1663,17 +1802,17 @@ export const loadLifecycleRouter = router({
         }
         // load:exception_raised — cargo exception states
         const EXCEPTION_STATES = ["TEMP_EXCURSION", "REEFER_BREAKDOWN", "CONTAMINATION_REJECT", "SEAL_BREACH", "WEIGHT_VIOLATION"];
-        if (EXCEPTION_STATES.includes(transition.to)) {
-          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_EXCEPTION_RAISED, data: { loadId: String(numericLoadId), exceptionType: transition.to, severity: "critical", timestamp: stdPayload.timestamp }, timestamp: stdPayload.timestamp });
+        if (EXCEPTION_STATES.includes(resolvedTo)) {
+          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_EXCEPTION_RAISED, data: { loadId: String(numericLoadId), exceptionType: resolvedTo, severity: "critical", timestamp: stdPayload.timestamp }, timestamp: stdPayload.timestamp });
         }
       } catch { /* non-critical — standard events are supplementary */ }
 
       // ── Financial event emissions — settlement, cancellation, escrow ──
       const FINANCIAL_STATES = ["DELIVERED", "CANCELLED", "DISPUTE"];
-      if (FINANCIAL_STATES.includes(transition.to)) {
+      if (FINANCIAL_STATES.includes(resolvedTo)) {
         try {
           const { emitFinancialEvent } = await import("../_core/websocket");
-          const finType = transition.to === "DELIVERED" ? "settlement_created" : transition.to === "CANCELLED" ? "cancellation_processed" : "dispute_opened";
+          const finType = resolvedTo === "DELIVERED" ? "settlement_created" : resolvedTo === "CANCELLED" ? "cancellation_processed" : "dispute_opened";
           const finAmount = parseFloat(String((load as any).rate || "0"));
           if (load?.shipperId) {
             emitFinancialEvent(String(load.shipperId), {
@@ -1689,7 +1828,7 @@ export const loadLifecycleRouter = router({
           if (load?.catalystId) {
             emitFinancialEvent(String(load.catalystId), {
               transactionId: `fin_${numericLoadId}_${Date.now()}_c`,
-              type: transition.to === "DELIVERED" ? "payment_pending" : "cancellation_processed",
+              type: resolvedTo === "DELIVERED" ? "payment_pending" : "cancellation_processed",
               amount: finAmount,
               currency: "USD",
               loadId: String(numericLoadId),
@@ -1702,7 +1841,7 @@ export const loadLifecycleRouter = router({
 
       // ── Dispatch event emissions — assignment, unassignment, status changes ──
       const DISPATCH_STATES = ["ASSIGNED", "CONFIRMED", "EN_ROUTE_PICKUP", "AT_PICKUP", "LOADING", "IN_TRANSIT", "AT_DELIVERY", "UNLOADING"];
-      if (DISPATCH_STATES.includes(transition.to)) {
+      if (DISPATCH_STATES.includes(resolvedTo)) {
         try {
           const { emitDispatchEvent } = await import("../_core/websocket");
           const dispatchCompanyId = (load as any).companyId || load?.shipperId || 0;
@@ -1711,9 +1850,9 @@ export const loadLifecycleRouter = router({
               loadId: String(numericLoadId),
               loadNumber: load?.loadNumber || `LOAD-${numericLoadId}`,
               driverId: load?.driverId ? String(load.driverId) : undefined,
-              eventType: transition.to === "ASSIGNED" ? "load_assigned" : "status_changed",
+              eventType: resolvedTo === "ASSIGNED" ? "load_assigned" : "status_changed",
               priority: "normal",
-              message: `Load ${load?.loadNumber || numericLoadId} transitioned to ${transition.to}`,
+              message: `Load ${load?.loadNumber || numericLoadId} transitioned to ${resolvedTo}`,
               timestamp: new Date().toISOString(),
             });
           }
@@ -1721,7 +1860,7 @@ export const loadLifecycleRouter = router({
       }
 
       // ── Compliance alert emissions — weight violations ──
-      if (transition.to === "WEIGHT_VIOLATION") {
+      if (resolvedTo === "WEIGHT_VIOLATION") {
         try {
           const { emitComplianceAlert } = await import("../_core/websocket");
           const complianceCompanyId = (load as any).companyId || load?.shipperId || 0;
@@ -1740,7 +1879,7 @@ export const loadLifecycleRouter = router({
       }
 
       // ── Gamification event on delivery ──
-      if (transition.to === "DELIVERED") {
+      if (resolvedTo === "DELIVERED") {
         try {
           const { emitGamificationEvent } = await import("../_core/websocket");
           const { WS_EVENTS } = await import("@shared/websocket-events");
@@ -1766,12 +1905,12 @@ export const loadLifecycleRouter = router({
 
       // ── Cargo exception notifications — urgent email + SMS ──
       const CARGO_EXCEPTION_STATES = ["TEMP_EXCURSION", "REEFER_BREAKDOWN", "CONTAMINATION_REJECT", "SEAL_BREACH", "WEIGHT_VIOLATION"];
-      if (CARGO_EXCEPTION_STATES.includes(transition.to)) {
+      if (CARGO_EXCEPTION_STATES.includes(resolvedTo)) {
         try {
           const { lookupAndNotify } = await import("../services/notifications");
           const cargoType = (load as any).cargoType || undefined;
-          if (load.shipperId) lookupAndNotify(load.shipperId, { type: "cargo_exception", loadNumber: load.loadNumber, exceptionType: transition.to.toLowerCase(), loadId: input.loadId, cargoType });
-          if (load.catalystId) lookupAndNotify(load.catalystId, { type: "cargo_exception", loadNumber: load.loadNumber, exceptionType: transition.to.toLowerCase(), loadId: input.loadId, cargoType });
+          if (load.shipperId) lookupAndNotify(load.shipperId, { type: "cargo_exception", loadNumber: load.loadNumber, exceptionType: resolvedTo.toLowerCase(), loadId: input.loadId, cargoType });
+          if (load.catalystId) lookupAndNotify(load.catalystId, { type: "cargo_exception", loadNumber: load.loadNumber, exceptionType: resolvedTo.toLowerCase(), loadId: input.loadId, cargoType });
         } catch { /* non-critical */ }
       }
 
@@ -1779,12 +1918,12 @@ export const loadLifecycleRouter = router({
         success: true,
         loadId: input.loadId,
         previousState: currentState,
-        newState: transition.to,
+        newState: resolvedTo,
         transitionId: input.transitionId,
         guardsPassed,
         effectsExecuted,
         transitionedAt: new Date().toISOString(),
-        newStateMeta: STATE_METADATA[transition.to],
+        newStateMeta: STATE_METADATA[resolvedTo as LoadState],
       };
     }),
 
@@ -1858,6 +1997,19 @@ export const loadLifecycleRouter = router({
       const newStatusLower = to.toLowerCase();
       await db.execute(sql`UPDATE loads SET status = ${newStatusLower}, updatedAt = NOW() WHERE id = ${numericLoadId}`);
 
+      // ── NOTIFICATION DISPATCH — in-app + WebSocket after successful status update (v1 path) ──
+      try {
+        const [loadDataV1] = await db.select({
+          shipperId: loads.shipperId,
+          catalystId: loads.catalystId,
+          driverId: loads.driverId,
+          loadNumber: loads.loadNumber,
+        }).from(loads).where(eq(loads.id, numericLoadId)).limit(1);
+        await emitLoadNotifications(numericLoadId, newStatusLower, loadDataV1 || {});
+      } catch (notifErr) {
+        logger.warn("[LoadLifecycle] Notification dispatch error (v1):", (notifErr as Error).message);
+      }
+
       // Execute financial effects
       const financialEffects = match.effects.filter(e => e.type === "financial");
       for (const eff of financialEffects) {
@@ -1867,6 +2019,17 @@ export const loadLifecycleRouter = router({
       // Route report on DELIVERED
       if (to === "DELIVERED") {
         await generateRouteReport(numericLoadId, ctx.user?.id || 0);
+
+        // Auto-generate invoice on delivery confirmation (v1 path)
+        try {
+          const { generateInvoiceForLoad } = await import("../services/invoiceService");
+          const invoice = await generateInvoiceForLoad(numericLoadId);
+          if (invoice) {
+            logger.info(`[Invoice] ${invoice.invoiceNumber} generated for load ${numericLoadId} (v1 path)`);
+          }
+        } catch (invErr: any) {
+          logger.warn(`[Invoice] Auto-invoice generation failed for load ${numericLoadId} (v1 path):`, (invErr as Error)?.message);
+        }
       }
 
       // ── GPS GEOTAG — immutable audit trail (v1 compat path) ──
@@ -2155,5 +2318,52 @@ export const loadLifecycleRouter = router({
       } catch (e) {
         return { success: false, error: (e as Error).message };
       }
+    }),
+
+  // ── FACILITY CHECK-IN — Manual trigger for pickup_checkin / delivery_checkin ──
+  checkIn: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      type: z.enum(["pickup", "delivery"]),
+      gateCode: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const userId = Number(ctx.user?.id) || 0;
+
+      const [load] = await db.select({ id: loads.id, status: loads.status, driverId: loads.driverId })
+        .from(loads).where(eq(loads.id, input.loadId)).limit(1);
+      if (!load) throw new TRPCError({ code: "NOT_FOUND", message: "Load not found" });
+
+      // Validate correct status for check-in
+      if (input.type === "pickup" && load.status !== "at_pickup") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Must be at pickup to check in" });
+      }
+      if (input.type === "delivery" && load.status !== "at_delivery") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Must be at delivery to check in" });
+      }
+
+      // Allow driver OR terminal manager
+      const newStatus = input.type === "pickup" ? "pickup_checkin" : "delivery_checkin";
+
+      await db.update(loads)
+        .set({ status: newStatus as any, updatedAt: new Date() })
+        .where(eq(loads.id, input.loadId));
+
+      // Audit log the check-in transition
+      try {
+        const fromStatus = input.type === "pickup" ? "at_pickup" : "at_delivery";
+        await geotagTransition(
+          input.loadId, userId, (ctx.user?.role || "driver"),
+          fromStatus, newStatus, `${input.type}_checkin`,
+          undefined, load, { gateCode: input.gateCode, notes: input.notes },
+        );
+      } catch { /* non-critical */ }
+
+      logger.info(`[LoadLifecycle] Check-in: load ${input.loadId} → ${newStatus} by user ${userId}`);
+
+      return { success: true, newStatus };
     }),
 });

@@ -9,7 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { loads, bids, users, companies, terminals, loadStops } from "../../drizzle/schema";
+import { loads, bids, users, companies, terminals, loadStops, notifications } from "../../drizzle/schema";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import {
@@ -21,6 +21,7 @@ import {
 import { WS_EVENTS } from "@shared/websocket-events";
 import { emailService } from "../_core/email";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
+import { emitLoadNotifications } from "./loadLifecycle";
 import { getCarrierSafetyIntel, getSafetyScores, getOOSStatus } from "../services/fmcsaBulkLookup";
 import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
 import { feeCalculator } from "../services/feeCalculator";
@@ -157,6 +158,8 @@ export const loadsRouter = router({
       vaporRecoveryRequired: z.boolean().optional(),
       assignedBrokerId: z.number().optional(),
       assignedDriverId: z.number().optional(),
+      tempMin: z.string().optional(),
+      tempMax: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'LOAD' }, (ctx as any).req);
@@ -211,6 +214,177 @@ export const loadsRouter = router({
           : []),
       ].filter(Boolean).join("\n");
 
+      // siPayload is built after the validation block so requiredEndorsements can be included
+
+      if (!db) throw new Error("Database not available — cannot create load");
+
+      const dbUserId = await resolveUserId(ctx.user);
+      if (!dbUserId) throw new Error("Could not resolve user account");
+
+      // ── Server-side validation block ──────────────────────────────────
+
+      // 1. Weight limit validation by state
+      const STATE_WEIGHT_LIMITS: Record<string, number> = {
+        MI: 164000, MT: 131060, ND: 105500, SD: 129000, NV: 129000,
+        // Default federal limit for all other states
+      };
+      const DEFAULT_WEIGHT_LIMIT = 80000;
+
+      const weightLbs = Number(input?.weight) || 0;
+      if (weightLbs > 0) {
+        const originState = input?.origin?.split(",")[1]?.trim()?.toUpperCase() || "";
+        const destState = input?.destination?.split(",")[1]?.trim()?.toUpperCase() || "";
+        const originLimit = STATE_WEIGHT_LIMITS[originState] ?? DEFAULT_WEIGHT_LIMIT;
+        const destLimit = STATE_WEIGHT_LIMITS[destState] ?? DEFAULT_WEIGHT_LIMIT;
+
+        if (originState && weightLbs > originLimit) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Weight ${weightLbs} lbs exceeds the ${originState} state limit of ${originLimit} lbs`,
+          });
+        }
+        if (destState && weightLbs > destLimit) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Weight ${weightLbs} lbs exceeds the ${destState} state limit of ${destLimit} lbs`,
+          });
+        }
+      }
+
+      // 2. Hazmat class vs trailer type validation
+      const TRAILER_HAZMAT_ALLOWED: Record<string, string[]> = {
+        liquid_tank: ["3", "5.1", "5.2", "6.1", "8"],
+        gas_tank: ["2.1", "2.2", "2.3"],
+        hazmat_van: ["1", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "2.1", "2.2", "2.3", "3", "4.1", "4.2", "4.3", "5.1", "5.2", "6.1", "6.2", "7", "8", "9"],
+        dry_van: ["9"],
+        reefer: ["9"],
+        flatbed: ["9"],
+      };
+
+      const trailerType = input?.trailerType?.toLowerCase() || "";
+      const hazmatClass = input?.hazmatClass || "";
+      if (hazmatClass && trailerType) {
+        const allowedClasses = TRAILER_HAZMAT_ALLOWED[trailerType];
+        if (allowedClasses !== undefined) {
+          if (!allowedClasses.includes(hazmatClass)) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Hazmat class ${hazmatClass} is not allowed on trailer type "${trailerType}". Allowed classes: ${allowedClasses.join(", ")}`,
+            });
+          }
+        } else if (!trailerType.includes("tank") && !trailerType.includes("hazmat")) {
+          // Trailer types not in the map and not tank/hazmat → no hazmat allowed
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Trailer type "${trailerType}" does not support hazmat cargo`,
+          });
+        }
+      }
+
+      // 3. Multi-compartment segregation check
+      const SEGREGATION_TABLE: Record<string, string[]> = {
+        "1": ["2.1","2.2","2.3","3","4.1","4.2","4.3","5.1","5.2","6.1","7","8"],
+        "2.1": ["1","2.3","3","4.1","4.2","4.3","5.1","5.2","6.1","7","8"],
+        "3": ["1","2.1","2.3","4.1","4.3","5.1","5.2","6.1","7","8"],
+        "4.1": ["1","2.1","2.3","3","4.3","5.1","5.2","6.1","7","8"],
+        "4.2": ["1","2.1","3","5.1","5.2","7","8"],
+        "4.3": ["1","2.1","3","4.1","5.1","5.2","6.1","7","8"],
+        "5.1": ["1","2.1","3","4.1","4.2","4.3","6.1","7","8"],
+        "5.2": ["1","2.1","3","4.1","4.2","4.3","6.1","7"],
+        "6.1": ["1","2.1","3","4.1","4.3","5.1","5.2","7","8"],
+        "7": ["1","2.1","3","4.1","4.2","4.3","5.1","5.2","6.1","8"],
+        "8": ["1","2.1","3","4.1","4.2","4.3","5.1","6.1","7"],
+      };
+
+      const compartmentProducts = input?.compartmentProducts || [];
+      const hazardClasses = compartmentProducts
+        .map((cp) => cp.hazardClass)
+        .filter((c): c is string => !!c);
+
+      if (hazardClasses.length > 1) {
+        for (let i = 0; i < hazardClasses.length; i++) {
+          for (let j = i + 1; j < hazardClasses.length; j++) {
+            const classA = hazardClasses[i];
+            const classB = hazardClasses[j];
+            const incompatible = SEGREGATION_TABLE[classA];
+            if (incompatible && incompatible.includes(classB)) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Hazmat segregation violation: class ${classA} and class ${classB} cannot be transported in the same vehicle (49 CFR 177.848)`,
+              });
+            }
+          }
+        }
+      }
+
+      // 4. CDL endorsement auto-requirement
+      const requiredEndorsements: string[] = [];
+      const isTankTrailer = trailerType.includes("tank");
+      if (hazmatClass && isTankTrailer) {
+        requiredEndorsements.push("X"); // Combined H+N
+      } else {
+        if (hazmatClass) requiredEndorsements.push("H");
+        if (isTankTrailer) requiredEndorsements.push("N");
+      }
+
+      // 5. Emergency phone validation for hazmat
+      if (hazmatClass) {
+        const phone = input?.emergencyPhone || "";
+        const digitCount = phone.replace(/\D/g, "").length;
+        if (!phone || digitCount < 10) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Hazmat loads require a valid emergency phone number with at least 10 digits (49 CFR 172.604)",
+          });
+        }
+      }
+
+      // 6. Reefer temperature validation
+      if (trailerType === "reefer" || trailerType === "refrigerated" || trailerType.includes("reefer")) {
+        const tempMin = input?.tempMin ? Number(input.tempMin) : null;
+        const tempMax = input?.tempMax ? Number(input.tempMax) : null;
+        if (tempMin !== null && tempMax !== null) {
+          if (tempMin >= tempMax) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Invalid temperature range: min (${tempMin}°F) must be less than max (${tempMax}°F)`,
+            });
+          }
+        } else if ((tempMin !== null && tempMax === null) || (tempMin === null && tempMax !== null)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Reefer loads require both minimum and maximum temperature values",
+          });
+        }
+      }
+
+      // 7. Pickup / delivery date validation
+      if (input?.pickupDate) {
+        const pickupTime = new Date(input.pickupDate).getTime();
+        if (pickupTime <= Date.now()) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Pickup date must be in the future",
+          });
+        }
+        if (input?.deliveryDate) {
+          const deliveryTime = new Date(input.deliveryDate).getTime();
+          if (deliveryTime <= pickupTime) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Delivery date must be after the pickup date",
+            });
+          }
+        }
+      }
+
+      // 8. Distance validation (warning only — non-blocking)
+      if ((!input?.distance || input.distance === 0) && input?.origin && input?.destination) {
+        logger.warn(`[Loads] Load created with zero/null distance: origin=${input.origin}, destination=${input.destination}`);
+      }
+
+      // ── End validation block ──────────────────────────────────────────
+
       // Store equipmentType in structured JSON alongside plain-text notes
       const siPayload = JSON.stringify({
         equipmentType: input?.equipment || input?.trailerType || null,
@@ -218,12 +392,8 @@ export const loadsRouter = router({
         packingGroup: null,
         properShippingName: input?.placardName || null,
         ergNotes: ergNotes || null,
+        requiredEndorsements: requiredEndorsements.length > 0 ? requiredEndorsements : null,
       });
-
-      if (!db) throw new Error("Database not available — cannot create load");
-
-      const dbUserId = await resolveUserId(ctx.user);
-      if (!dbUserId) throw new Error("Could not resolve user account");
 
       // Retry insert up to 3 times in case of duplicate loadNumber collision
       let insertedId = 0;
@@ -348,6 +518,19 @@ export const loadsRouter = router({
 
       // Send branded email + SMS to shipper (non-blocking)
       lookupAndNotify(dbUserId, { type: "load_posted", loadNumber, loadId: String(insertedId), origin: input?.origin, destination: input?.destination, product: input?.productName });
+
+      // ── NOTIFICATION DISPATCH — in-app notifications for load creation ──
+      try {
+        const creationStatus = input?.assignmentType === 'direct_catalyst' && input?.assignedCatalystId ? "assigned" : "posted";
+        await emitLoadNotifications(insertedId, creationStatus, {
+          shipperId: dbUserId,
+          catalystId: input?.assignedCatalystId || null,
+          driverId: null,
+          loadNumber,
+        });
+      } catch (notifErr) {
+        logger.warn("[Loads] Create notification dispatch error:", (notifErr as any)?.message);
+      }
 
       // Notify Terminal Manager(s) when load originates from their terminal
       if (input?.originTerminalId && db) {
