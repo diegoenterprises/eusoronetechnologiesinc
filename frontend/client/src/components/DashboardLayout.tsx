@@ -107,7 +107,7 @@ import {
   Combine,
   MoreHorizontal,
 } from "lucide-react";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
@@ -513,6 +513,20 @@ export default function DashboardLayout({
       children: item.children?.filter((c) => !c.mobileOnly || isMobile),
     }));
 
+  // Group categorized items together, inserted before footer items (Settings/News/More/Support)
+  const CATEGORY_ORDER: Record<string, number> = { Intelligence: 0, Financial: 1, Procurement: 2, Compliance: 3, Optimization: 4 };
+  const FOOTER_LABELS = new Set(['Settings', 'News', 'More', 'Support', 'The Haul']);
+  const sortedMenuItems = useMemo(() => {
+    const uncategorized = menuItems.filter(i => !i.category);
+    const categorized = menuItems
+      .filter(i => !!i.category)
+      .sort((a, b) => (CATEGORY_ORDER[a.category!] ?? 99) - (CATEGORY_ORDER[b.category!] ?? 99));
+    if (categorized.length === 0) return uncategorized;
+    const mainItems = uncategorized.filter(i => !FOOTER_LABELS.has(i.label));
+    const footerItems = uncategorized.filter(i => FOOTER_LABELS.has(i.label));
+    return [...mainItems, ...categorized, ...footerItems];
+  }, [menuItems]);
+
   // Determine active menu item based on current location (includes children)
   const activeMenuItem = menuItems.find((item) => 
     item.path === location || item.children?.some(c => c.path === location)
@@ -610,14 +624,21 @@ export default function DashboardLayout({
 
         {/* Menu Items */}
         <nav aria-label="Main navigation" className="flex-1 overflow-y-auto smooth-scroll p-3 space-y-1">
-          {menuItems.map((item, index) => {
+          {sortedMenuItems.map((item, index) => {
             const hasChildren = item.children && item.children.length > 0;
             const isParentExpanded = expandedParents.has(item.path);
             const isActive = item.path === location || (!hasChildren && activeMenuItem?.path === item.path);
             const isChildActive = hasChildren && item.children!.some(c => c.path === location);
             const isLocked = !isApproved && item.requiresApproval;
+            const prevCategory = index > 0 ? sortedMenuItems[index - 1].category : undefined;
+            const showCategoryHeader = sidebarOpen && item.category && item.category !== prevCategory;
             return (
               <div key={item.path}>
+              {showCategoryHeader && (
+                <div className={`text-[10px] uppercase tracking-wider px-3 pt-4 pb-1 font-semibold ${theme === "light" ? "text-slate-400" : "text-gray-500"}`}>
+                  {item.category}
+                </div>
+              )}
               <motion.button
                 onClick={() => {
                   if (hasChildren) {

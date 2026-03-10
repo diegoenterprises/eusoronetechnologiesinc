@@ -26,6 +26,7 @@ export interface MenuItem {
   requiresAuth?: boolean; // Default true
   requiresApproval?: boolean; // If true, item is locked until account is approved
   mobileOnly?: boolean; // If true, item is hidden on viewports wider than 768px
+  category?: string; // Section header for grouped items (e.g. "Intelligence", "Financial")
   children?: MenuItem[]; // Sub-menu items (collapsible)
 }
 
@@ -1388,6 +1389,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "ELD Intelligence",
       path: eldPath,
       badge: 0,
+      category: "Intelligence",
       description: ELD_DESCRIPTIONS[normalizedRole] || "Fleet ELD health, HOS compliance & road intelligence",
     };
     // Insert before Market Intelligence or before The Haul (organic position)
@@ -1404,6 +1406,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "Carrier Intelligence",
       path: "/carrier-intelligence",
       badge: 0,
+      category: "Intelligence",
       description: "FMCSA carrier vetting — authority, insurance, safety scores, inspections & monitoring",
     };
     // Insert after ELD Intelligence or after FMCSA Lookup
@@ -1420,6 +1423,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "Carrier Tiers",
       path: "/carrier-tiers",
       badge: 0,
+      category: "Intelligence",
       description: "Gold/Silver/Bronze carrier classification, benefits & promotion paths",
     };
     const ciIdx = result.findIndex(m => m.path === '/carrier-intelligence');
@@ -1434,6 +1438,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "Carrier Capacity",
       path: "/carrier-capacity",
       badge: 0,
+      category: "Intelligence",
       description: "Capacity calendar, availability search & find similar carriers AI",
     };
     const tierIdx = result.findIndex(m => m.path === '/carrier-tiers');
@@ -1448,6 +1453,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "Demurrage Charges",
       path: "/demurrage-charges",
       badge: 0,
+      category: "Financial",
       description: "Automated demurrage & detention charge generation, review & approval",
     };
     const capIdx = result.findIndex(m => m.path === '/carrier-capacity');
@@ -1466,6 +1472,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "RFP Manager",
       path: "/rfp-manager",
       badge: 0,
+      category: "Procurement",
       description: "Create, distribute & award carrier RFPs",
     };
     const dmrIdx2 = result.findIndex(m => m.path === '/demurrage-charges');
@@ -1480,6 +1487,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "Bid Review",
       path: "/bid-review",
       badge: 0,
+      category: "Procurement",
       description: "Compare bids, negotiate counter-offers, and award lanes",
     };
     const rfpIdx = result.findIndex(m => m.path === '/rfp-manager');
@@ -1495,6 +1503,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "AI Photo Inspection",
       path: "/photo-inspection",
       badge: 0,
+      category: "Compliance",
       description: "AI-powered pre-trip vehicle inspection with photo analysis",
     };
     const bidIdx = result.findIndex(m => m.path === '/bid-review');
@@ -1511,6 +1520,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "Compliance Rules",
       path: "/compliance-rules",
       badge: 0,
+      category: "Compliance",
       description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement",
     };
     const photoIdx = result.findIndex(m => m.path === '/photo-inspection');
@@ -1526,6 +1536,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "Anomaly Monitor",
       path: "/anomaly-monitor",
       badge: 0,
+      category: "Intelligence",
       description: "AI-powered anomaly detection across all operations",
     };
     const compRulesIdx = result.findIndex(m => m.path === '/compliance-rules');
@@ -1541,6 +1552,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "Mission Balancer",
       path: "/mission-balancer",
       badge: 0,
+      category: "Optimization",
       description: "AI-optimized load distribution & fleet workload balancing",
     };
     const anomalyIdx = result.findIndex(m => m.path === '/anomaly-monitor');
@@ -1556,6 +1568,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "Load Consolidation",
       path: "/load-consolidation",
       badge: 0,
+      category: "Optimization",
       description: "Multi-shipper shipment consolidation for cost savings",
     };
     const missionIdx = result.findIndex(m => m.path === '/mission-balancer');
@@ -1588,6 +1601,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "Smart Pricing",
       path: "/contextual-pricing",
       badge: 0,
+      category: "Financial",
       description: "AI-enriched dynamic pricing with real-time market signals",
     };
     const rateIdx = result.findIndex(m => m.path === '/rate-negotiations');
