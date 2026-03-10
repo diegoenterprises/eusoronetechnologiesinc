@@ -28,8 +28,14 @@ import { logger } from "../_core/logger";
 import { feeCalculator } from "../services/feeCalculator";
 import { getDb } from "../db";
 import { loads, vehicles, escortAssignments, settlements, settlementDocuments, wallets, walletTransactions, notifications, users } from "../../drizzle/schema";
+import type { Load, User } from "../../drizzle/schema";
 import { eq, and, ne, sql, inArray } from "drizzle-orm";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
+
+/** Row shape returned by raw `db.execute(sql`...`)` queries (MySQL2 RowDataPacket). */
+type RawRow = Record<string, unknown>;
+/** Tuple shape from `db.execute()`: [rows[], fieldPackets]. */
+type RawQueryResult = [RawRow[], unknown];
 
 import {
   LOAD_STATES,
@@ -116,7 +122,7 @@ export async function emitLoadNotifications(
 
   // Add specific users from load fields
   for (const field of config.userFields) {
-    const uid = (load as any)[field];
+    const uid = (load as Record<string, unknown>)[field];
     if (uid && typeof uid === "number") targetUserIds.push(uid);
   }
 
@@ -126,7 +132,7 @@ export async function emitLoadNotifications(
       const roleUsers = await db
         .select({ id: users.id })
         .from(users)
-        .where(inArray(users.role, config.roles as any));
+        .where(inArray(users.role, config.roles as typeof users.role.enumValues));
       for (const u of roleUsers) {
         if (!targetUserIds.includes(u.id)) targetUserIds.push(u.id);
       }
@@ -140,7 +146,7 @@ export async function emitLoadNotifications(
     try {
       await db.insert(notifications).values({
         userId,
-        type: config.type as any,
+        type: config.type as typeof notifications.type.enumValues[number],
         title: config.title,
         message: `Load ${load.loadNumber || loadId} status changed to ${newStatus.replace(/_/g, " ").toUpperCase()}`,
         data: JSON.stringify({ loadId, status: newStatus }),
@@ -321,12 +327,12 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
         const [carrier] = await db.execute(sql`
           SELECT hazmatLicense, hazmatExpiry FROM users WHERE id = ${carrierId} LIMIT 1
         `);
-        const row = ((carrier as unknown as any[][])?.[0] || [])[0];
+        const row = ((carrier as unknown as RawQueryResult)?.[0] || [])[0];
         if (!row) return guard.errorMessage;
         if (!row.hazmatLicense) return guard.errorMessage;
         // Check expiry
-        if (row.hazmatExpiry && new Date(row.hazmatExpiry) < new Date()) {
-          return `Carrier hazmat authorization expired on ${new Date(row.hazmatExpiry).toLocaleDateString()}`;
+        if (row.hazmatExpiry && new Date(String(row.hazmatExpiry)) < new Date()) {
+          return `Carrier hazmat authorization expired on ${new Date(String(row.hazmatExpiry)).toLocaleDateString()}`;
         }
         return null;
       } catch {
@@ -351,15 +357,15 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
           WHERE companyId IN (SELECT companyId FROM users WHERE id = ${insCarrierId})
             AND status = 'active'
             AND expirationDate > NOW()
-        `) as unknown as any[][];
+        `) as unknown as RawQueryResult;
         const rows = policies || [];
-        const liabilityOk = rows.some((p: any) =>
+        const liabilityOk = rows.some((p: RawRow) =>
           (p.policyType === 'auto_liability' || p.policyType === 'general_liability')
-          && parseFloat(p.coverageAmount || "0") >= minLiability
+          && parseFloat(String(p.coverageAmount || "0")) >= minLiability
         );
-        const cargoOk = rows.some((p: any) =>
+        const cargoOk = rows.some((p: RawRow) =>
           p.policyType === 'cargo'
-          && parseFloat(p.coverageAmount || "0") >= minCargo
+          && parseFloat(String(p.coverageAmount || "0")) >= minCargo
         );
         if (!liabilityOk) return `Carrier liability insurance below $${minLiability.toLocaleString()} minimum for this load type`;
         if (!cargoOk) return `Carrier cargo insurance below $${minCargo.toLocaleString()} minimum for this load type`;
@@ -381,16 +387,16 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
         const [result] = await db.execute(sql`
           SELECT hazmatEndorsement, hazmatExpiry, cdlEndorsements
           FROM driver_profiles WHERE userId = ${hazDriverId} LIMIT 1
-        `) as unknown as any[][];
+        `) as unknown as RawQueryResult;
         const driver = (result || [])[0];
         if (!driver) return guard.errorMessage;
         // Check H or X endorsement
-        const endorsements: string = driver.cdlEndorsements || "";
+        const endorsements: string = String(driver.cdlEndorsements || "");
         const hasH = endorsements.includes("H") || endorsements.includes("X");
         if (!hasH && !driver.hazmatEndorsement) return guard.errorMessage;
         // Check expiry
-        if (driver.hazmatExpiry && new Date(driver.hazmatExpiry) < new Date()) {
-          return `Driver HazMat endorsement expired on ${new Date(driver.hazmatExpiry).toLocaleDateString()}`;
+        if (driver.hazmatExpiry && new Date(String(driver.hazmatExpiry)) < new Date()) {
+          return `Driver HazMat endorsement expired on ${new Date(String(driver.hazmatExpiry)).toLocaleDateString()}`;
         }
         return null;
       } catch {
@@ -412,10 +418,10 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
         if (!db) return guard.errorMessage;
         const [result] = await db.execute(sql`
           SELECT cdlEndorsements FROM driver_profiles WHERE userId = ${tankDriverId} LIMIT 1
-        `) as unknown as any[][];
+        `) as unknown as RawQueryResult;
         const driver = (result || [])[0];
         if (!driver) return guard.errorMessage;
-        const endorsements: string = driver.cdlEndorsements || "";
+        const endorsements: string = String(driver.cdlEndorsements || "");
         const hasN = endorsements.includes("N") || endorsements.includes("X");
         if (!hasN) return guard.errorMessage;
         return null;
@@ -438,7 +444,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
         const [vRows] = await db.execute(sql`
           SELECT trailerType, trailerSpec, maxPayloadLbs, reeferStatus
           FROM vehicles WHERE id = ${vehicleId} LIMIT 1
-        `) as unknown as any[][];
+        `) as unknown as RawQueryResult;
         const vehicle = (vRows || [])[0];
         if (!vehicle) return IS_PROD ? guard.errorMessage : null;
         // Tanker spec match
@@ -452,7 +458,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
           return "Reefer load requires vehicle with operational refrigeration unit";
         }
         // Weight capacity check
-        if (loadWeight > 0 && vehicle.maxPayloadLbs && loadWeight > parseFloat(vehicle.maxPayloadLbs)) {
+        if (loadWeight > 0 && vehicle.maxPayloadLbs && loadWeight > parseFloat(String(vehicle.maxPayloadLbs))) {
           return `Load weight (${loadWeight} lbs) exceeds vehicle capacity (${vehicle.maxPayloadLbs} lbs)`;
         }
         return null;
@@ -477,11 +483,11 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
           WHERE vehicleId = ${segVehicleId}
             AND id != ${segLoadId}
             AND status IN ('assigned', 'confirmed', 'en_route_pickup', 'at_pickup', 'loading', 'loaded', 'in_transit')
-        `) as unknown as any[][];
+        `) as unknown as RawQueryResult;
         const otherLoads = otherRows || [];
         const incompatible = SEGREGATION_TABLE[segHazmat] || [];
         for (const other of otherLoads) {
-          const otherClass = other.hazmatClass || other.hazardClassNumber;
+          const otherClass = String(other.hazmatClass || other.hazardClassNumber || "");
           if (otherClass && incompatible.includes(otherClass)) {
             return `Hazmat Class ${segHazmat} cannot be transported with Class ${otherClass} on same vehicle per 49 CFR 177.848`;
           }
@@ -595,7 +601,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
                 SELECT id FROM approval_requests
                 WHERE load_id = ${ctx.load?.id} AND gate_id = 'rate_override' AND status = 'APPROVED'
                 LIMIT 1
-              `) as unknown as any[][];
+              `) as unknown as RawQueryResult;
               if ((overrideRows || []).length > 0) return null; // approved override — bypass
             }
           } catch { /* DB error — fall through to reject */ }
@@ -702,7 +708,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
               SELECT id FROM documents
               WHERE load_id = ${tlLoadId} AND type = 'temp_log'
               LIMIT 1
-            `) as unknown as any[][];
+            `) as unknown as RawQueryResult;
             if ((rows || []).length > 0) return null;
           }
         } catch { /* non-critical */ }
@@ -722,7 +728,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
               SELECT id FROM documents
               WHERE load_id = ${rdLoadId} AND type = 'reefer_diagnostic'
               LIMIT 1
-            `) as unknown as any[][];
+            `) as unknown as RawQueryResult;
             if ((rows || []).length > 0) return null;
           }
         } catch { /* non-critical */ }
@@ -742,7 +748,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
               SELECT id FROM documents
               WHERE load_id = ${spLoadId} AND type = 'seal_photo'
               LIMIT 1
-            `) as unknown as any[][];
+            `) as unknown as RawQueryResult;
             if ((rows || []).length > 0) return null;
           }
         } catch { /* non-critical */ }
@@ -762,7 +768,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
               SELECT id FROM documents
               WHERE load_id = ${ciLoadId} AND type = 'cargo_inspection'
               LIMIT 1
-            `) as unknown as any[][];
+            `) as unknown as RawQueryResult;
             if ((rows || []).length > 0) return null;
           }
         } catch { /* non-critical */ }
@@ -782,7 +788,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
               SELECT id FROM documents
               WHERE load_id = ${stLoadId} AND type = 'scale_ticket'
               LIMIT 1
-            `) as unknown as any[][];
+            `) as unknown as RawQueryResult;
             if ((rows || []).length > 0) return null;
           }
         } catch { /* non-critical */ }
@@ -802,7 +808,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
               SELECT id FROM documents
               WHERE load_id = ${lrLoadId} AND type = 'lab_results'
               LIMIT 1
-            `) as unknown as any[][];
+            `) as unknown as RawQueryResult;
             if ((rows || []).length > 0) return null;
           }
         } catch { /* non-critical */ }
@@ -822,7 +828,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
               SELECT id FROM documents
               WHERE load_id = ${irLoadId} AND type = 'inspection_report'
               LIMIT 1
-            `) as unknown as any[][];
+            `) as unknown as RawQueryResult;
             if ((rows || []).length > 0) return null;
           }
         } catch { /* non-critical */ }
@@ -1036,7 +1042,7 @@ async function hasDocumentOfType(loadId: number | undefined, docType: string): P
       SELECT id FROM documents
       WHERE load_id = ${loadId} AND type = ${docType}
       LIMIT 1
-    `) as unknown as any[][];
+    `) as unknown as RawQueryResult;
     return (rows || []).length > 0;
   } catch { return false; }
 }
@@ -1341,8 +1347,8 @@ async function captureComplianceSnapshot(loadId: number, load: any) {
       try {
         const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, load.vehicleId)).limit(1);
         if (vehicle) {
-          snapshot.vehicleType = (vehicle as any).vehicleType || (vehicle as any).type || null;
-          snapshot.vehicleVin = (vehicle as any).vin || null;
+          snapshot.vehicleType = vehicle.vehicleType || null;
+          snapshot.vehicleVin = vehicle.vin || null;
         }
       } catch { /* non-critical */ }
     }
@@ -1401,7 +1407,7 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
       const db = await getDb();
       if (db) {
         const [load] = await db.select({ cargoType: loads.cargoType }).from(loads).where(eq(loads.id, loadId)).limit(1);
-        cargoType = (load as any)?.cargoType;
+        cargoType = load?.cargoType;
       }
     }
 
@@ -1463,17 +1469,17 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
         if (!db) break;
         const [load] = await db.select().from(loads).where(eq(loads.id, loadId)).limit(1);
         if (!load) break;
-        const loadAmount = parseFloat(String((load as any).rate || "0"));
+        const loadAmount = parseFloat(String(load.rate || "0"));
         if (loadAmount > 0 && (action === "capture_escrow" || action === "process_settlement")) {
           const feeResult = await feeCalculator.calculateFee({
-            userId: (load as any).shipperId || 0,
+            userId: load.shipperId || 0,
             userRole: "SHIPPER",
             transactionType: "load_completion",
             amount: loadAmount,
             loadId,
           });
           if (feeResult.finalFee > 0) {
-            await feeCalculator.recordFeeCollection(loadId, "load_completion", (load as any).shipperId || 0, loadAmount, feeResult);
+            await feeCalculator.recordFeeCollection(loadId, "load_completion", load.shipperId || 0, loadAmount, feeResult);
             logger.info(`[LoadLifecycle] ${action}: $${feeResult.finalFee.toFixed(2)} for load ${loadId}`);
           }
         }
@@ -1483,12 +1489,12 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
         // Phase 4.3 — Cancellation financial handling based on load status at time of cancellation
         const db = await getDb();
         if (!db) break;
-        const [loadRows] = await db.execute(sql`SELECT status, rate, origin, destination, catalystId, driverId, hazmatClass, trailerType FROM loads WHERE id = ${loadId} LIMIT 1`) as unknown as any[][];
+        const [loadRows] = await db.execute(sql`SELECT status, rate, origin, destination, catalystId, driverId, hazmatClass, trailerType FROM loads WHERE id = ${loadId} LIMIT 1`) as unknown as RawQueryResult;
         const cancelLoad = (loadRows || [])[0];
         if (!cancelLoad) break;
-        const cancelStatus = cancelLoad.status || "";
-        const cancelRate = parseFloat(cancelLoad.rate || "0");
-        const cancelCarrierId = cancelLoad.catalystId || cancelLoad.driverId || 0;
+        const cancelStatus = String(cancelLoad.status || "");
+        const cancelRate = parseFloat(String(cancelLoad.rate || "0"));
+        const cancelCarrierId = Number(cancelLoad.catalystId || cancelLoad.driverId || 0);
 
         // Pre-award: no financial impact
         if (["draft", "posted", "bidding"].includes(cancelStatus)) {
@@ -1507,7 +1513,7 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
                 VALUES (${loadId}, 'TONU', ${tonuAmount.toFixed(2)}, 'auto_approved', ${`TONU — Load cancelled at ${cancelStatus} status`}, NOW())
               `);
               // Credit TONU to carrier wallet
-              const [wRows] = await db.execute(sql`SELECT id FROM wallets WHERE userId = ${cancelCarrierId} LIMIT 1`) as unknown as any[][];
+              const [wRows] = await db.execute(sql`SELECT id FROM wallets WHERE userId = ${cancelCarrierId} LIMIT 1`) as unknown as RawQueryResult;
               const wallet = (wRows || [])[0];
               if (wallet) {
                 await db.execute(sql`UPDATE wallets SET availableBalance = availableBalance + ${tonuAmount.toFixed(2)}, totalReceived = totalReceived + ${tonuAmount.toFixed(2)} WHERE id = ${wallet.id}`);
@@ -1560,7 +1566,7 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
                 INSERT INTO accessorial_charges (loadId, type, amount, status, description, createdAt)
                 VALUES (${loadId}, 'TONU', ${totalTonu.toFixed(2)}, 'auto_approved', ${`TONU + deadhead — Load cancelled at ${cancelStatus}`}, NOW())
               `);
-              const [wRows] = await db.execute(sql`SELECT id FROM wallets WHERE userId = ${cancelCarrierId} LIMIT 1`) as unknown as any[][];
+              const [wRows] = await db.execute(sql`SELECT id FROM wallets WHERE userId = ${cancelCarrierId} LIMIT 1`) as unknown as RawQueryResult;
               const wallet = (wRows || [])[0];
               if (wallet) {
                 await db.execute(sql`UPDATE wallets SET availableBalance = availableBalance + ${totalTonu.toFixed(2)}, totalReceived = totalReceived + ${totalTonu.toFixed(2)} WHERE id = ${wallet.id}`);
@@ -1612,7 +1618,7 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
                 VALUES (${loadId}, ${cancelLoad.shipperId || 0}, ${cancelCarrierId}, ${cancelRate.toFixed(2)}, '5.00', ${(partialRate * 0.05).toFixed(2)}, ${(partialRate * 0.95).toFixed(2)}, ${partialRate.toFixed(2)}, 'partial_cancellation')
               `);
               const netPay = partialRate * 0.95;
-              const [wRows] = await db.execute(sql`SELECT id FROM wallets WHERE userId = ${cancelCarrierId} LIMIT 1`) as unknown as any[][];
+              const [wRows] = await db.execute(sql`SELECT id FROM wallets WHERE userId = ${cancelCarrierId} LIMIT 1`) as unknown as RawQueryResult;
               const wallet = (wRows || [])[0];
               if (wallet) {
                 await db.execute(sql`UPDATE wallets SET availableBalance = availableBalance + ${netPay.toFixed(2)}, totalReceived = totalReceived + ${netPay.toFixed(2)} WHERE id = ${wallet.id}`);
@@ -1652,7 +1658,7 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
           const [escRows] = await escDb.execute(sql`
             SELECT id, amount, walletId FROM wallet_transactions
             WHERE loadId = ${loadId} AND type = 'escrow_hold' AND status = 'pending'
-          `) as unknown as any[][];
+          `) as unknown as RawQueryResult;
           for (const esc of (escRows || [])) {
             await escDb.execute(sql`UPDATE wallet_transactions SET status = 'released', completedAt = NOW() WHERE id = ${esc.id}`);
             if (esc.walletId && esc.amount) {
@@ -1726,16 +1732,16 @@ async function generateRouteReport(loadId: number, userId: number) {
       ORDER BY device_timestamp ASC
       LIMIT 2000
     `);
-    const pts = (trail as unknown as any[][])[0] || [];
+    const pts = (trail as unknown as RawQueryResult)[0] || [];
     if (pts.length < 2) return;
 
     const first = pts[0];
     const last = pts[pts.length - 1];
-    const speeds = pts.filter((p: any) => p.speed).map((p: any) => Number(p.speed));
+    const speeds = pts.filter((p: RawRow) => p.speed).map((p: RawRow) => Number(p.speed));
     const avgSpd = speeds.length > 0 ? speeds.reduce((a: number, b: number) => a + b, 0) / speeds.length : null;
     const maxSpd = speeds.length > 0 ? Math.max(...speeds) : null;
-    const startTime = new Date(first.device_timestamp);
-    const endTime = new Date(last.device_timestamp);
+    const startTime = new Date(String(first.device_timestamp));
+    const endTime = new Date(String(last.device_timestamp));
     const transitMins = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
     const toRad = (d: number) => d * Math.PI / 180;
     const R = 3959;
@@ -1754,7 +1760,7 @@ async function generateRouteReport(loadId: number, userId: number) {
               ${Number(last.latitude)}, ${Number(last.longitude)},
               ${dist.toFixed(2)}, ${transitMins},
               ${avgSpd?.toFixed(2) || null}, ${maxSpd?.toFixed(2) || null},
-              ${pts.filter((p: any, i: number) => i > 0 && Number(p.speed || 0) < 2).length},
+              ${pts.filter((p: RawRow, i: number) => i > 0 && Number(p.speed || 0) < 2).length},
               0,
               ${startTime.toISOString()}, ${endTime.toISOString()})
     `);
@@ -1848,7 +1854,7 @@ export const loadLifecycleRouter = router({
         : [null];
       if (!load) return [];
 
-      const currentState = ((load as any).status || "draft").toUpperCase() as LoadState;
+      const currentState = (load.status || "draft").toUpperCase() as LoadState;
       const userRole = (ctx.user?.role || "DRIVER").toUpperCase() as UserRole;
       const transitions = getTransitionsFrom(currentState);
 
@@ -1886,7 +1892,7 @@ export const loadLifecycleRouter = router({
           WHERE lst.load_id = ${Number(input.loadId) || 0}
           ORDER BY lst.created_at ASC
         `);
-        return (((rows as unknown as any[][])[0]) || []).map((r: any) => ({
+        return (((rows as unknown as RawQueryResult)[0]) || []).map((r: RawRow) => ({
           id: r.id,
           fromState: r.from_state,
           toState: r.to_state,
@@ -1897,7 +1903,7 @@ export const loadLifecycleRouter = router({
           actorRole: r.actor_role,
           success: r.success,
           errorMessage: r.error_message,
-          createdAt: r.created_at?.toISOString?.() || r.created_at,
+          createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : r.created_at,
         }));
       } catch {
         return [];
@@ -1970,7 +1976,7 @@ export const loadLifecycleRouter = router({
         : [null];
       if (!load) return { success: false, error: "Load not found" };
 
-      const currentState = ((load as any).status || "draft").toUpperCase() as LoadState;
+      const currentState = (load.status || "draft").toUpperCase() as LoadState;
       const transition = getTransitionById(input.transitionId);
       if (!transition) return { success: false, error: `Unknown transition: ${input.transitionId}` };
 
@@ -1992,7 +1998,7 @@ export const loadLifecycleRouter = router({
       const guardCtx: GuardContext = {
         load,
         location: input.location,
-        targetLocation: input.targetLocation || (load as any).pickupLocation || (load as any).deliveryLocation,
+        targetLocation: input.targetLocation || load.pickupLocation || load.deliveryLocation || undefined,
         complianceChecks: input.complianceChecks || {},
         metadata: input.metadata || {},
         data: input.data || {},
@@ -2011,13 +2017,13 @@ export const loadLifecycleRouter = router({
       }
 
       // Resolve __previous_state__ sentinel for ON_HOLD release
-      let resolvedTo = transition.to;
+      let resolvedTo: string = transition.to;
       if (transition.to === "__previous_state__") {
         const prevStateRow = await db.execute(sql`SELECT previous_state FROM loads WHERE id = ${numericLoadId}`);
-        const prevState = (prevStateRow as any)?.[0]?.[0]?.previous_state
-          || (prevStateRow as any)?.rows?.[0]?.previous_state
-          || (prevStateRow as any)?.[0]?.previous_state;
-        resolvedTo = prevState ? prevState.toUpperCase() : "IN_TRANSIT";
+        const rawResult = prevStateRow as unknown as RawQueryResult;
+        const prevRows = rawResult?.[0] || (rawResult as unknown as { rows?: RawRow[] })?.rows || [];
+        const prevState = prevRows[0]?.previous_state;
+        resolvedTo = prevState ? String(prevState).toUpperCase() : "IN_TRANSIT";
         logger.info(`[LoadLifecycle] ON_HOLD release: restoring to previous state "${resolvedTo}"`);
       }
 
@@ -2090,9 +2096,9 @@ export const loadLifecycleRouter = router({
                 const [accRows] = await _sDb.execute(sql`
                   SELECT type, amount, status FROM accessorial_charges
                   WHERE loadId = ${numericLoadId} AND status IN ('approved', 'auto_approved')
-                `) as unknown as any[][];
+                `) as unknown as RawQueryResult;
                 for (const acc of (accRows || [])) {
-                  accessorialTotal += parseFloat(acc.amount || "0");
+                  accessorialTotal += parseFloat(String(acc.amount || "0"));
                 }
               } catch { /* accessorial_charges table may not exist yet */ }
 
@@ -2106,12 +2112,12 @@ export const loadLifecycleRouter = router({
                       AND (effectiveFrom IS NULL OR effectiveFrom <= NOW())
                       AND (effectiveTo IS NULL OR effectiveTo >= NOW())
                     LIMIT 1
-                  `) as unknown as any[][];
+                  `) as unknown as RawQueryResult;
                   const hazFee = (feeRows || [])[0];
                   if (hazFee) {
-                    hazmatSurcharge = parseFloat(hazFee.flatAmount || "0");
-                    if (hazFee.baseRate && parseFloat(hazFee.baseRate) > 0) {
-                      hazmatSurcharge += loadRate * (parseFloat(hazFee.baseRate) / 100);
+                    hazmatSurcharge = parseFloat(String(hazFee.flatAmount || "0"));
+                    if (hazFee.baseRate && parseFloat(String(hazFee.baseRate)) > 0) {
+                      hazmatSurcharge += loadRate * (parseFloat(String(hazFee.baseRate)) / 100);
                     }
                   }
                 } catch { /* platform_fee_configs table may not exist yet */ }
@@ -2213,7 +2219,7 @@ export const loadLifecycleRouter = router({
             fireGamificationEvent({ userId: driverId, type: "load_completed", value: 1 });
             fireGamificationEvent({ userId: driverId, type: "route_completed", value: 1 });
             // delivery_on_time: compare delivery vs ETA
-            const loadEta = (load as any)?.eta || (load as any)?.estimatedDelivery;
+            const loadEta = load?.estimatedDeliveryDate || load?.deliveryDate;
             if (loadEta) {
               const etaDate = new Date(String(loadEta));
               if (new Date() <= etaDate) {
@@ -2224,14 +2230,14 @@ export const loadLifecycleRouter = router({
             const _gDb = await getDb();
             if (_gDb) {
               const [cnt] = await _gDb.select({ count: sql<number>`COUNT(*)` }).from(loads)
-                .where(and(eq(loads.driverId, driverId), eq(loads.status, 'delivered' as any)));
+                .where(and(eq(loads.driverId, driverId), eq(loads.status, 'delivered' as typeof loads.status.enumValues[number])));
               if ((cnt?.count || 0) <= 1) {
                 fireGamificationEvent({ userId: driverId, type: "first_load_completed", value: 1 });
               }
             }
           }
           // escort_completed
-          if (load && (load as any).requiresEscort) {
+          if (load && load.requiresEscort) {
             const _eDb = await getDb();
             if (_eDb) {
               const escorts = await _eDb.select({ escortUserId: escortAssignments.escortUserId })
@@ -2360,23 +2366,23 @@ export const loadLifecycleRouter = router({
         }
         // load:cancelled
         if (resolvedTo === "CANCELLED") {
-          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_CANCELLED, data: { ...stdPayload, reason: (input.metadata as any)?.cancellationReason || "unspecified" }, timestamp: stdPayload.timestamp });
+          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_CANCELLED, data: { ...stdPayload, reason: input.metadata?.cancellationReason || "unspecified" }, timestamp: stdPayload.timestamp });
         }
         // load:completed
         if (resolvedTo === "DELIVERED") {
-          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_COMPLETED, data: { ...stdPayload, summary: { rate: (load as any).rate, distance: (load as any).distance } }, timestamp: stdPayload.timestamp });
+          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_COMPLETED, data: { ...stdPayload, summary: { rate: load.rate, distance: load.distance } }, timestamp: stdPayload.timestamp });
         }
         // load:location_updated — when location data is present
         if (input.location) {
           wsService.broadcastToChannel(WS_CHANNELS.LOAD_TRACKING(String(numericLoadId)), { type: WS_EVENTS.LOAD_LOCATION_UPDATED, data: { loadId: String(numericLoadId), lat: input.location.lat, lng: input.location.lng, timestamp: stdPayload.timestamp }, timestamp: stdPayload.timestamp });
         }
         // load:bol_signed — when BOL document metadata is present
-        if ((input.metadata as any)?.bolDocumentId) {
-          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_BOL_SIGNED, data: { loadId: String(numericLoadId), bolDocumentId: (input.metadata as any).bolDocumentId, timestamp: stdPayload.timestamp }, timestamp: stdPayload.timestamp });
+        if (input.metadata?.bolDocumentId) {
+          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_BOL_SIGNED, data: { loadId: String(numericLoadId), bolDocumentId: input.metadata!.bolDocumentId, timestamp: stdPayload.timestamp }, timestamp: stdPayload.timestamp });
         }
         // load:pod_submitted — when POD signature metadata is present
-        if ((input.metadata as any)?.podSignatureUrl) {
-          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_POD_SUBMITTED, data: { loadId: String(numericLoadId), podUrl: (input.metadata as any).podSignatureUrl, timestamp: stdPayload.timestamp }, timestamp: stdPayload.timestamp });
+        if (input.metadata?.podSignatureUrl) {
+          wsService.broadcastToChannel(loadChannel, { type: WS_EVENTS.LOAD_POD_SUBMITTED, data: { loadId: String(numericLoadId), podUrl: input.metadata!.podSignatureUrl, timestamp: stdPayload.timestamp }, timestamp: stdPayload.timestamp });
         }
         // load:exception_raised — cargo exception states
         const EXCEPTION_STATES = ["TEMP_EXCURSION", "REEFER_BREAKDOWN", "CONTAMINATION_REJECT", "SEAL_BREACH", "WEIGHT_VIOLATION"];
@@ -2391,7 +2397,7 @@ export const loadLifecycleRouter = router({
         try {
           const { emitFinancialEvent } = await import("../_core/websocket");
           const finType = resolvedTo === "DELIVERED" ? "settlement_created" : resolvedTo === "CANCELLED" ? "cancellation_processed" : "dispute_opened";
-          const finAmount = parseFloat(String((load as any).rate || "0"));
+          const finAmount = parseFloat(String(load.rate || "0"));
           if (load?.shipperId) {
             emitFinancialEvent(String(load.shipperId), {
               transactionId: `fin_${numericLoadId}_${Date.now()}`,
@@ -2422,7 +2428,7 @@ export const loadLifecycleRouter = router({
       if (DISPATCH_STATES.includes(resolvedTo)) {
         try {
           const { emitDispatchEvent } = await import("../_core/websocket");
-          const dispatchCompanyId = (load as any).companyId || load?.shipperId || 0;
+          const dispatchCompanyId = (load as Record<string, unknown>).companyId || load?.shipperId || 0;
           if (dispatchCompanyId) {
             emitDispatchEvent(String(dispatchCompanyId), {
               loadId: String(numericLoadId),
@@ -2441,7 +2447,7 @@ export const loadLifecycleRouter = router({
       if (resolvedTo === "WEIGHT_VIOLATION") {
         try {
           const { emitComplianceAlert } = await import("../_core/websocket");
-          const complianceCompanyId = (load as any).companyId || load?.shipperId || 0;
+          const complianceCompanyId = (load as Record<string, unknown>).companyId || load?.shipperId || 0;
           if (complianceCompanyId) {
             emitComplianceAlert(String(complianceCompanyId), {
               entityType: "vehicle",
@@ -2486,7 +2492,7 @@ export const loadLifecycleRouter = router({
       if (CARGO_EXCEPTION_STATES.includes(resolvedTo)) {
         try {
           const { lookupAndNotify } = await import("../services/notifications");
-          const cargoType = (load as any).cargoType || undefined;
+          const cargoType = load.cargoType || undefined;
           if (load.shipperId) lookupAndNotify(load.shipperId, { type: "cargo_exception", loadNumber: load.loadNumber, exceptionType: resolvedTo.toLowerCase(), loadId: input.loadId, cargoType });
           if (load.catalystId) lookupAndNotify(load.catalystId, { type: "cargo_exception", loadNumber: load.loadNumber, exceptionType: resolvedTo.toLowerCase(), loadId: input.loadId, cargoType });
         } catch { /* non-critical */ }
@@ -2686,8 +2692,8 @@ export const loadLifecycleRouter = router({
         : [null];
       if (!load) return null;
 
-      const rate = parseFloat(String((load as any).rate || "0"));
-      const distance = parseFloat(String((load as any).distance || "0"));
+      const rate = parseFloat(String(load.rate || "0"));
+      const distance = parseFloat(String(load.distance || "0"));
       const timers = await getTimerHistory(numId);
       const activeTimers = await getFinancialTimers(numId);
 
@@ -2696,7 +2702,7 @@ export const loadLifecycleRouter = router({
       const layoverCharges = timers.filter(t => t.type === "LAYOVER").reduce((s, t) => s + t.currentCharge, 0);
 
       const fuelSurcharge = Math.round(distance * 0.58 * 100) / 100; // $0.58/mi avg
-      const hazmatSurcharge = (load as any).cargoType === "hazmat" ? Math.round(rate * 0.15 * 100) / 100 : 0;
+      const hazmatSurcharge = load.cargoType === "hazmat" ? Math.round(rate * 0.15 * 100) / 100 : 0;
 
       return {
         loadId: input.loadId,
@@ -2729,7 +2735,7 @@ export const loadLifecycleRouter = router({
           ORDER BY ar.created_at DESC
           LIMIT 50
         `);
-        return (((rows as unknown as any[][])[0]) || []).map((r: any) => ({
+        return (((rows as unknown as RawQueryResult)[0]) || []).map((r: RawRow) => ({
           id: r.id,
           loadId: r.load_id,
           loadNumber: r.load_number,
@@ -2737,8 +2743,8 @@ export const loadLifecycleRouter = router({
           gateId: r.gate_id,
           transitionId: r.transition_id,
           status: r.status,
-          requestedAt: r.requested_at?.toISOString?.() || r.requested_at,
-          expiresAt: r.expires_at?.toISOString?.() || r.expires_at,
+          requestedAt: r.requested_at instanceof Date ? r.requested_at.toISOString() : r.requested_at,
+          expiresAt: r.expires_at instanceof Date ? r.expires_at.toISOString() : r.expires_at,
         }));
       } catch {
         return [];
@@ -2804,11 +2810,11 @@ export const loadLifecycleRouter = router({
         const rows = await db.execute(sql`
           SELECT * FROM approval_requests WHERE id = ${input.approvalId} AND status = 'PENDING' LIMIT 1
         `);
-        const approval = ((rows as unknown as any[][])[0] || [])[0];
+        const approval = ((rows as unknown as RawQueryResult)[0] || [])[0];
         if (!approval) return { success: false, error: "Approval request not found or already resolved" };
 
         // Check expiration
-        if (approval.expires_at && new Date(approval.expires_at) < new Date()) {
+        if (approval.expires_at && new Date(String(approval.expires_at)) < new Date()) {
           await db.execute(sql`UPDATE approval_requests SET status = 'EXPIRED' WHERE id = ${input.approvalId}`);
           return { success: false, error: "Approval request has expired" };
         }
@@ -2827,7 +2833,7 @@ export const loadLifecycleRouter = router({
           emitApprovalEvent({
             loadId: String(approval.load_id),
             approvalId: input.approvalId,
-            gateId: approval.gate_id,
+            gateId: String(approval.gate_id),
             action: "approved",
             actorId: ctx.user?.id || 0,
             timestamp: new Date().toISOString(),
@@ -2838,8 +2844,8 @@ export const loadLifecycleRouter = router({
           success: true,
           approvalId: input.approvalId,
           loadId: String(approval.load_id),
-          gateId: approval.gate_id,
-          transitionId: approval.transition_id,
+          gateId: String(approval.gate_id),
+          transitionId: String(approval.transition_id),
         };
       } catch (e) {
         return { success: false, error: (e as Error).message };
@@ -2865,7 +2871,7 @@ export const loadLifecycleRouter = router({
         const rows = await db.execute(sql`
           SELECT * FROM approval_requests WHERE id = ${input.approvalId} AND status = 'PENDING' LIMIT 1
         `);
-        const approval = ((rows as unknown as any[][])[0] || [])[0];
+        const approval = ((rows as unknown as RawQueryResult)[0] || [])[0];
         if (!approval) return { success: false, error: "Approval request not found or already resolved" };
 
         await db.execute(sql`
@@ -2881,7 +2887,7 @@ export const loadLifecycleRouter = router({
           emitApprovalEvent({
             loadId: String(approval.load_id),
             approvalId: input.approvalId,
-            gateId: approval.gate_id,
+            gateId: String(approval.gate_id),
             action: "denied",
             actorId: ctx.user?.id || 0,
             timestamp: new Date().toISOString(),
@@ -2937,7 +2943,7 @@ export const loadLifecycleRouter = router({
       existingData.complianceChecks = checks;
 
       await db.update(loads)
-        .set({ specialInstructions: JSON.stringify(existingData) } as any)
+        .set({ specialInstructions: JSON.stringify(existingData) })
         .where(eq(loads.id, input.loadId));
 
       logger.info(`[LoadLifecycle] Compliance check "${input.checkName}" = ${input.passed} for load ${input.loadId} by user ${userId}`);
@@ -2974,7 +2980,7 @@ export const loadLifecycleRouter = router({
       const newStatus = input.type === "pickup" ? "pickup_checkin" : "delivery_checkin";
 
       await db.update(loads)
-        .set({ status: newStatus as any, updatedAt: new Date() })
+        .set({ status: newStatus as typeof loads.status.enumValues[number], updatedAt: new Date() })
         .where(eq(loads.id, input.loadId));
 
       // Audit log the check-in transition

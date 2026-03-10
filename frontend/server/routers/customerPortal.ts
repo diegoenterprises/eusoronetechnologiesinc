@@ -26,7 +26,7 @@ function generateToken(): string {
   return crypto.randomBytes(32).toString("hex"); // 64-char hex
 }
 
-async function validateToken(db: any, accessToken: string) {
+async function validateToken(db: NonNullable<Awaited<ReturnType<typeof getDb>>>, accessToken: string) {
   const [token] = await db.select().from(portalAccessTokens)
     .where(and(
       eq(portalAccessTokens.accessToken, accessToken),
@@ -43,7 +43,7 @@ async function validateToken(db: any, accessToken: string) {
     .where(eq(portalAccessTokens.id, token.id));
 
   // Log access
-  await (db as any).execute(
+  await db.execute(
     sql`INSERT INTO portal_audit_log (portalTokenId, action) VALUES (${token.id}, 'portal_access')`
   );
 
@@ -63,11 +63,11 @@ export const customerPortalRouter = router({
       expiresInDays: z.number().min(1).max(730).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || "ADMIN", companyId: (ctx.user as any)?.companyId, action: "CREATE", resource: "INVOICE" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user!.role || "ADMIN", companyId: ctx.user!.companyId, action: "CREATE", resource: "INVOICE" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
-      const userId = Number((ctx.user as any)?.id) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
+      const userId = Number(ctx.user!.id) || 0;
 
       const accessToken = generateToken();
       const expiresInDays = input.expiresInDays || 365;
@@ -76,7 +76,7 @@ export const customerPortalRouter = router({
 
       const permissions = input.permissions || { loads: "read", map: "read", timeline: "read" };
 
-      await (db as any).execute(
+      await db.execute(
         sql`INSERT INTO portal_access_tokens (companyId, issuedBy, customerName, customerEmail, accessToken, permissions, expiresAt) VALUES (${companyId}, ${userId}, ${input.customerName}, ${input.customerEmail || null}, ${accessToken}, ${JSON.stringify(permissions)}, ${expiresAt.toISOString().slice(0, 19).replace("T", " ")})`
       );
 
@@ -100,7 +100,7 @@ export const customerPortalRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const tokens = await db.select().from(portalAccessTokens)
         .where(eq(portalAccessTokens.companyId, companyId))
@@ -109,7 +109,7 @@ export const customerPortalRouter = router({
       // Get load counts per token
       const result = [];
       for (const t of tokens) {
-        const [countRow]: any = await (db as any).execute(
+        const [countRow] = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM portal_load_links WHERE portalTokenId = ${t.id}`
         );
         const loadCount = Array.isArray(countRow) ? Number(countRow[0]?.cnt || 0) : 0;
@@ -134,10 +134,10 @@ export const customerPortalRouter = router({
   revokeAccess: protectedProcedure
     .input(z.object({ tokenId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || "ADMIN", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "INVOICE" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user!.role || "ADMIN", companyId: ctx.user!.companyId, action: "UPDATE", resource: "INVOICE" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       await db.update(portalAccessTokens)
         .set({ isActive: 0 })
@@ -155,10 +155,10 @@ export const customerPortalRouter = router({
       loadIds: z.array(z.number()).min(1),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || "ADMIN", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "INVOICE" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user!.role || "ADMIN", companyId: ctx.user!.companyId, action: "UPDATE", resource: "INVOICE" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       // Verify token belongs to company
       const [token] = await db.select().from(portalAccessTokens)
@@ -171,7 +171,7 @@ export const customerPortalRouter = router({
 
       for (const loadId of input.loadIds) {
         try {
-          await (db as any).execute(
+          await db.execute(
             sql`INSERT IGNORE INTO portal_load_links (portalTokenId, loadId) VALUES (${input.tokenId}, ${loadId})`
           );
           linked++;
@@ -192,21 +192,21 @@ export const customerPortalRouter = router({
       allocationContractId: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || "ADMIN", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "INVOICE" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user!.role || "ADMIN", companyId: ctx.user!.companyId, action: "UPDATE", resource: "INVOICE" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       // Find loads linked to this allocation contract via daily tracking
-      const [trackingRows]: any = await (db as any).execute(
+      const [trackingRows] = await db.execute(
         sql`SELECT DISTINCT loadId FROM allocation_daily_tracking WHERE contractId = ${input.allocationContractId} AND loadId IS NOT NULL`
       );
-      const loadIds = Array.isArray(trackingRows) ? trackingRows.map((r: any) => r.loadId).filter(Boolean) : [];
+      const loadIds = Array.isArray(trackingRows) ? trackingRows.map((r: Record<string, unknown>) => r.loadId).filter(Boolean) : [];
 
       let linked = 0;
       for (const loadId of loadIds) {
         try {
-          await (db as any).execute(
+          await db.execute(
             sql`INSERT IGNORE INTO portal_load_links (portalTokenId, loadId) VALUES (${input.tokenId}, ${loadId})`
           );
           linked++;
@@ -229,15 +229,15 @@ export const customerPortalRouter = router({
       if (!token) throw new Error("Invalid or expired portal token");
 
       // Log action
-      await (db as any).execute(
+      await db.execute(
         sql`INSERT INTO portal_audit_log (portalTokenId, action, resourceType) VALUES (${token.id}, 'get_loads', 'load')`
       );
 
-      const [rows]: any = await (db as any).execute(
+      const [rows] = await db.execute(
         sql`SELECT l.id, l.loadNumber, l.pickupLocation, l.deliveryLocation, l.pickupDate, l.deliveryDate, l.cargoType, l.status, l.specialInstructions FROM loads l INNER JOIN portal_load_links pll ON pll.loadId = l.id WHERE pll.portalTokenId = ${token.id} ORDER BY l.pickupDate DESC`
       );
 
-      const loadList = Array.isArray(rows) ? rows.map((r: any) => ({
+      const loadList = Array.isArray(rows) ? rows.map((r: Record<string, unknown>) => ({
         loadId: r.id,
         loadNumber: r.loadNumber,
         pickupLocation: r.pickupLocation,
@@ -270,20 +270,20 @@ export const customerPortalRouter = router({
         .limit(1);
       if (!link) throw new Error("Load not accessible");
 
-      await (db as any).execute(
+      await db.execute(
         sql`INSERT INTO portal_audit_log (portalTokenId, action, resourceType, resourceId) VALUES (${token.id}, 'get_load_detail', 'load', ${input.loadId})`
       );
 
-      const [loadRows]: any = await (db as any).execute(
+      const [loadRows] = await db.execute(
         sql`SELECT l.id, l.loadNumber, l.pickupLocation, l.deliveryLocation, l.pickupDate, l.deliveryDate, l.cargoType, l.status, l.specialInstructions, l.weight, l.distance FROM loads l WHERE l.id = ${input.loadId} LIMIT 1`
       );
       const load = Array.isArray(loadRows) ? loadRows[0] : null;
       if (!load) throw new Error("Load not found");
 
       // Get timeline events from load_events if available
-      let timeline: any[] = [];
+      let timeline: Record<string, unknown>[] = [];
       try {
-        const [events]: any = await (db as any).execute(
+        const [events] = await db.execute(
           sql`SELECT eventType as event, status, location, timestamp FROM load_events WHERE loadId = ${input.loadId} ORDER BY timestamp ASC`
         );
         if (Array.isArray(events)) timeline = events;
@@ -318,14 +318,14 @@ export const customerPortalRouter = router({
       const token = await validateToken(db, input.accessToken);
       if (!token) throw new Error("Invalid or expired portal token");
 
-      await (db as any).execute(
+      await db.execute(
         sql`INSERT INTO portal_audit_log (portalTokenId, action, resourceType) VALUES (${token.id}, 'get_map', 'gps')`
       );
 
       // GPS data delayed 2 minutes for operational security
-      let positions: any[] = [];
+      let positions: Record<string, unknown>[] = [];
       try {
-        const [rows]: any = await (db as any).execute(
+        const [rows] = await db.execute(
           sql`SELECT g.loadId, g.latitude, g.longitude, g.heading, g.speed, g.timestamp as lastUpdate, l.status FROM gps_tracking g INNER JOIN portal_load_links pll ON pll.loadId = g.loadId INNER JOIN loads l ON l.id = g.loadId WHERE pll.portalTokenId = ${token.id} AND g.timestamp <= DATE_SUB(NOW(), INTERVAL 2 MINUTE) AND g.id IN (SELECT MAX(g2.id) FROM gps_tracking g2 WHERE g2.timestamp <= DATE_SUB(NOW(), INTERVAL 2 MINUTE) GROUP BY g2.loadId)`
         );
         if (Array.isArray(rows)) positions = rows;
@@ -361,7 +361,7 @@ export const customerPortalRouter = router({
   getCustomerDashboard: protectedProcedure
     .input(z.object({ customerId: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const userId = (ctx.user as any)?.id;
+      const userId = ctx.user!.id;
       const customerId = input?.customerId || String(userId);
 
       try {
@@ -442,7 +442,7 @@ export const customerPortalRouter = router({
 
         if (!row) return null;
 
-        const meta: any = typeof row.metadata === "string"
+        const meta: Record<string, unknown> = typeof row.metadata === "string"
           ? JSON.parse(row.metadata || "{}")
           : (row.metadata || {});
 
@@ -508,7 +508,7 @@ export const customerPortalRouter = router({
           .where(eq(users.id, Number(input.customerId)))
           .limit(1);
 
-        const meta: any = typeof existing?.metadata === "string"
+        const meta: Record<string, unknown> = typeof existing?.metadata === "string"
           ? JSON.parse(existing.metadata || "{}")
           : (existing?.metadata || {});
 
@@ -542,11 +542,11 @@ export const customerPortalRouter = router({
           .where(eq(users.id, Number(input.customerId)))
           .limit(1);
 
-        const meta: any = typeof row?.metadata === "string"
+        const meta: Record<string, unknown> = typeof row?.metadata === "string"
           ? JSON.parse(row.metadata || "{}")
           : (row?.metadata || {});
 
-        const ob = meta.onboarding || {};
+        const ob = (meta.onboarding || {}) as Record<string, unknown>;
 
         const steps = [
           { id: "profile", label: "Complete Company Profile", description: "Fill in company details and primary contact", completed: !!ob.profile, order: 1 },
@@ -598,16 +598,17 @@ export const customerPortalRouter = router({
           .where(eq(users.id, Number(input.customerId)))
           .limit(1);
 
-        const meta: any = typeof row?.metadata === "string"
+        const meta: Record<string, unknown> = typeof row?.metadata === "string"
           ? JSON.parse(row.metadata || "{}")
           : (row?.metadata || {});
 
         if (!meta.onboarding) meta.onboarding = { startedAt: new Date().toISOString() };
-        meta.onboarding[input.stepId] = true;
+        const onboarding = meta.onboarding as Record<string, unknown>;
+        onboarding[input.stepId] = true;
 
         const allSteps = ["profile", "documents", "credit", "lanes", "contacts", "billing", "api", "training"];
-        const allComplete = allSteps.every(s => meta.onboarding[s]);
-        if (allComplete) meta.onboarding.completedAt = new Date().toISOString();
+        const allComplete = allSteps.every(s => onboarding[s]);
+        if (allComplete) onboarding.completedAt = new Date().toISOString();
 
         await db.update(users)
           .set({ metadata: JSON.stringify(meta) })
@@ -643,8 +644,8 @@ export const customerPortalRouter = router({
           .limit(50);
 
         const rates = rows.map(l => {
-          const p = (l.pickupLocation as any) || {};
-          const d = (l.deliveryLocation as any) || {};
+          const p = (l.pickupLocation as Record<string, string> | null) || {};
+          const d = (l.deliveryLocation as Record<string, string> | null) || {};
           const rate = l.rate ? parseFloat(String(l.rate)) : 0;
           const distance = l.distance ? parseFloat(String(l.distance)) : 0;
           return {
@@ -654,7 +655,7 @@ export const customerPortalRouter = router({
             rate,
             distance,
             ratePerMile: distance > 0 ? Math.round((rate / distance) * 100) / 100 : 0,
-            equipmentType: (l as any).equipmentType || "Dry Van",
+            equipmentType: "Dry Van",
             effectiveDate: l.createdAt ? new Date(l.createdAt).toISOString() : "",
             rateType: "spot" as const,
           };
@@ -853,11 +854,11 @@ export const customerPortalRouter = router({
         const db = await getDb();
         if (!db) return { shipments: [], total: 0 };
 
-        const userId = (ctx.user as any)?.id;
+        const userId = ctx.user!.id;
         const customerId = input?.customerId || String(userId);
         const conditions = [eq(loads.shipperId, Number(customerId))];
         if (input?.status && input.status !== "all") {
-          conditions.push(eq(loads.status, input.status as any));
+          conditions.push(eq(loads.status, input.status as typeof loads.$inferSelect["status"]));
         }
 
         const page = input?.page || 1;
@@ -877,21 +878,21 @@ export const customerPortalRouter = router({
           .offset((page - 1) * limit);
 
         const shipments = rows.map(l => {
-          const p = (l.pickupLocation as any) || {};
-          const d = (l.deliveryLocation as any) || {};
+          const p = (l.pickupLocation as Record<string, string> | null) || {};
+          const d = (l.deliveryLocation as Record<string, string> | null) || {};
           return {
             id: String(l.id),
-            loadNumber: (l as any).loadNumber || `LD-${l.id}`,
+            loadNumber: l.loadNumber || `LD-${l.id}`,
             status: l.status || "unknown",
             origin: `${p.city || ""}, ${p.state || ""}`,
             destination: `${d.city || ""}, ${d.state || ""}`,
-            pickupDate: (l as any).pickupDate || "",
-            deliveryDate: (l as any).deliveryDate || "",
+            pickupDate: l.pickupDate || "",
+            deliveryDate: l.deliveryDate || "",
             carrier: "",
             driver: "",
-            equipment: (l as any).equipmentType || "Dry Van",
+            equipment: "Dry Van",
             rate: l.rate ? parseFloat(String(l.rate)) : 0,
-            weight: (l as any).weight || 0,
+            weight: l.weight || 0,
             lastUpdate: l.updatedAt ? new Date(l.updatedAt).toISOString() : "",
             eta: "",
             currentLocation: null as { lat: number; lng: number } | null,
@@ -919,7 +920,7 @@ export const customerPortalRouter = router({
         const db = await getDb();
         if (!db) return { onTimeRate: 0, totalDeliveries: 0, avgTransitDays: 0, lateRate: 0, earlyRate: 0, avgDwellTimeHours: 0, claimRate: 0, monthlyTrend: [] };
 
-        const userId = (ctx.user as any)?.id;
+        const userId = ctx.user!.id;
         const customerId = input?.customerId || String(userId);
 
         const [stats] = await db
@@ -961,7 +962,7 @@ export const customerPortalRouter = router({
         const db = await getDb();
         if (!db) return { volume: 0, spend: 0, avgRate: 0, yoyGrowth: 0, topLanes: [], equipmentMix: [], monthlyVolume: [], serviceLevels: { onTime: 0, claimFree: 0, avgResponseTime: "N/A" } };
 
-        const userId = (ctx.user as any)?.id;
+        const userId = ctx.user!.id;
         const customerId = input?.customerId || String(userId);
 
         const [stats] = await db
@@ -1278,7 +1279,7 @@ export const customerPortalRouter = router({
         const db = await getDb();
         if (!db) return { invoices: [], summary: { totalOutstanding: 0, totalPaid: 0, overdueAmount: 0, averageDaysToPay: 0 }, total: 0 };
 
-        const userId = (ctx.user as any)?.id;
+        const userId = ctx.user!.id;
         const customerId = input?.customerId || String(userId);
 
         const [stats] = await db

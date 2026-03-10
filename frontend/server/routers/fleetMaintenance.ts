@@ -12,7 +12,7 @@
  */
 
 import { z } from "zod";
-import { eq, and, desc, sql, gte, lte, like, count, sum, avg } from "drizzle-orm";
+import { eq, and, desc, sql, gte, lte, like, count, sum, avg, type SQL } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
@@ -157,7 +157,7 @@ export const fleetMaintenanceRouter = router({
   getMaintenanceDashboard: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("Database unavailable");
-    const companyId = (ctx.user as any)?.companyId || 1;
+    const companyId = ctx.user!.companyId || 1;
     const now = new Date();
     const mtdStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -338,7 +338,7 @@ export const fleetMaintenanceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = (ctx.user as any)?.companyId || 1;
+      const companyId = ctx.user!.companyId || 1;
       const now = new Date();
 
       // Build conditions
@@ -433,8 +433,8 @@ export const fleetMaintenanceRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = (ctx.user as any)?.id || 0;
-      const companyId = (ctx.user as any)?.companyId;
+      const userId = ctx.user!.id || 0;
+      const companyId = ctx.user!.companyId;
 
       // Map work order priority to breakdown severity
       const severityMap: Record<string, "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"> = {
@@ -482,10 +482,10 @@ export const fleetMaintenanceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = (ctx.user as any)?.companyId || 1;
+      const companyId = ctx.user!.companyId || 1;
 
       // Build conditions
-      const conditions: any[] = [eq(zeunBreakdownReports.companyId, companyId)];
+      const conditions: SQL[] = [eq(zeunBreakdownReports.companyId, companyId)];
       if (input.status) {
         // Map WO status back to breakdown statuses
         const statusMap: Record<string, string[]> = {
@@ -500,7 +500,7 @@ export const fleetMaintenanceRouter = router({
       }
       if (input.priority) {
         const sevMap: Record<string, string> = { critical: "CRITICAL", high: "HIGH", medium: "MEDIUM", low: "LOW" };
-        conditions.push(eq(zeunBreakdownReports.severity, sevMap[input.priority] as any));
+        conditions.push(eq(zeunBreakdownReports.severity, sevMap[input.priority] as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"));
       }
       if (input.vehicleId) {
         conditions.push(eq(zeunBreakdownReports.vehicleId, input.vehicleId));
@@ -597,7 +597,7 @@ export const fleetMaintenanceRouter = router({
       const breakdownId = parseInt(input.workOrderId.replace("WO-", ""), 10);
       if (isNaN(breakdownId)) throw new Error("Invalid work order ID");
 
-      const updates: Record<string, any> = {};
+      const updates: Record<string, unknown> = {};
       if (input.status) {
         const reverseStatusMap: Record<string, string> = {
           open: "REPORTED", in_progress: "UNDER_REPAIR",
@@ -613,7 +613,7 @@ export const fleetMaintenanceRouter = router({
         await db.update(zeunBreakdownReports).set(updates).where(eq(zeunBreakdownReports.id, breakdownId));
       }
 
-      logger.info(`[FleetMaintenance] Work order ${input.workOrderId} updated by user ${(ctx.user as any)?.id}`);
+      logger.info(`[FleetMaintenance] Work order ${input.workOrderId} updated by user ${ctx.user!.id}`);
       return {
         id: input.workOrderId,
         status: input.status || "in_progress",
@@ -621,7 +621,7 @@ export const fleetMaintenanceRouter = router({
         laborHours: input.laborHours || 0,
         notes: input.notes || "",
         updatedAt: new Date().toISOString(),
-        updatedBy: (ctx.user as any)?.id || 0,
+        updatedBy: ctx.user!.id || 0,
         success: true,
       };
     }),
@@ -766,7 +766,7 @@ export const fleetMaintenanceRouter = router({
         estimatedDelivery: new Date(Date.now() + (input.urgency === "emergency" ? 1 : input.urgency === "expedited" ? 3 : 7) * 86400000).toISOString(),
         status: "ordered" as const,
         createdAt: new Date().toISOString(),
-        createdBy: (ctx.user as any)?.id || 0,
+        createdBy: ctx.user!.id || 0,
       };
     }),
 
@@ -783,7 +783,7 @@ export const fleetMaintenanceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = (ctx.user as any)?.companyId || 1;
+      const companyId = ctx.user!.companyId || 1;
       const now = new Date();
 
       // Get real vehicles to build warranty entries from
@@ -878,7 +878,7 @@ export const fleetMaintenanceRouter = router({
         status: "submitted" as const,
         estimatedResolutionDays: 14,
         createdAt: new Date().toISOString(),
-        submittedBy: (ctx.user as any)?.id || 0,
+        submittedBy: ctx.user!.id || 0,
       };
     }),
 
@@ -894,12 +894,12 @@ export const fleetMaintenanceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = (ctx.user as any)?.companyId || 1;
+      const companyId = ctx.user!.companyId || 1;
       const now = new Date();
       const positions = Object.values(tirePositionSchema.enum);
 
       // Get real vehicles (tractors only for tires)
-      const conditions: any[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
+      const conditions: SQL[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
       if (input.vehicleId) conditions.push(eq(vehicles.id, input.vehicleId));
       else conditions.push(sql`${vehicles.vehicleType} IN ('tractor','box_truck','escort_truck','pilot_car')`);
 
@@ -991,8 +991,8 @@ export const fleetMaintenanceRouter = router({
       // Log as a maintenance log entry
       await db.insert(zeunMaintenanceLogs).values({
         vehicleId: input.vehicleId,
-        driverId: (ctx.user as any)?.id || null,
-        companyId: (ctx.user as any)?.companyId || null,
+        driverId: ctx.user!.id || null,
+        companyId: ctx.user!.companyId || null,
         serviceType: `Tire ${input.eventType}`,
         serviceDate: new Date(),
         odometerAtService: input.mileage,
@@ -1007,7 +1007,7 @@ export const fleetMaintenanceRouter = router({
         eventId,
         ...input,
         createdAt: new Date().toISOString(),
-        createdBy: (ctx.user as any)?.id || 0,
+        createdBy: ctx.user!.id || 0,
         success: true,
       };
     }),
@@ -1023,10 +1023,10 @@ export const fleetMaintenanceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = (ctx.user as any)?.companyId || 1;
+      const companyId = ctx.user!.companyId || 1;
       const now = new Date();
 
-      const conditions: any[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
+      const conditions: SQL[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
       if (input.vehicleId) conditions.push(eq(vehicles.id, input.vehicleId));
 
       const fleetVehicles = await db.select().from(vehicles).where(and(...conditions)).limit(200);
@@ -1241,9 +1241,9 @@ export const fleetMaintenanceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = (ctx.user as any)?.companyId || 1;
+      const companyId = ctx.user!.companyId || 1;
 
-      const conditions: any[] = [eq(inspections.companyId, companyId)];
+      const conditions: SQL[] = [eq(inspections.companyId, companyId)];
       if (input.vehicleId) conditions.push(eq(inspections.vehicleId, input.vehicleId));
 
       const rows = await db.select({
@@ -1319,11 +1319,11 @@ export const fleetMaintenanceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = (ctx.user as any)?.companyId || 1;
+      const companyId = ctx.user!.companyId || 1;
       const since = new Date(Date.now() - input.periodDays * 86400000);
 
       // Get vehicles
-      const vehConditions: any[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
+      const vehConditions: SQL[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
       if (input.vehicleId) vehConditions.push(eq(vehicles.id, input.vehicleId));
       else vehConditions.push(sql`${vehicles.vehicleType} IN ('tractor','box_truck','escort_truck','pilot_car')`);
 
@@ -1418,11 +1418,11 @@ export const fleetMaintenanceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = (ctx.user as any)?.companyId || 1;
+      const companyId = ctx.user!.companyId || 1;
       const now = new Date();
       const since = new Date(now.getFullYear(), now.getMonth() - input.periodMonths, 1);
 
-      const baseConditions: any[] = [
+      const baseConditions: SQL[] = [
         eq(zeunMaintenanceLogs.companyId, companyId),
         gte(zeunMaintenanceLogs.serviceDate, since),
       ];
@@ -1560,7 +1560,7 @@ export const fleetMaintenanceRouter = router({
   getRecallAlerts: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("Database unavailable");
-    const companyId = (ctx.user as any)?.companyId || 1;
+    const companyId = ctx.user!.companyId || 1;
 
     const recalls = await db.select({
       id: zeunVehicleRecalls.id,
@@ -1639,7 +1639,7 @@ export const fleetMaintenanceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = (ctx.user as any)?.companyId || 1;
+      const companyId = ctx.user!.companyId || 1;
       const now = new Date();
 
       // Get overdue and upcoming schedules as predictive alerts
@@ -1718,7 +1718,7 @@ export const fleetMaintenanceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = (ctx.user as any)?.companyId || 1;
+      const companyId = ctx.user!.companyId || 1;
 
       const fleetVehicles = await db.select({
         id: vehicles.id,
@@ -1801,11 +1801,11 @@ export const fleetMaintenanceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = (ctx.user as any)?.companyId || 1;
+      const companyId = ctx.user!.companyId || 1;
       const now = new Date();
       const cutoff = new Date(now.getTime() + input.daysAhead * 86400000);
 
-      const vehConditions: any[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
+      const vehConditions: SQL[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
       if (input.vehicleId) vehConditions.push(eq(vehicles.id, input.vehicleId));
 
       const fleetVehicles = await db.select({
@@ -2005,7 +2005,7 @@ export const fleetMaintenanceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = (ctx.user as any)?.companyId || 1;
+      const companyId = ctx.user!.companyId || 1;
 
       const fleetVehicles = await db.select({
         id: vehicles.id,
@@ -2082,7 +2082,7 @@ export const fleetMaintenanceRouter = router({
   getFleetSummary: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("Database unavailable");
-    const companyId = (ctx.user as any)?.companyId || 1;
+    const companyId = ctx.user!.companyId || 1;
 
     // Total vehicles
     const [totalRow] = await db.select({ cnt: count() }).from(vehicles)
@@ -2141,11 +2141,11 @@ export const fleetMaintenanceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = (ctx.user as any)?.companyId || 1;
+      const companyId = ctx.user!.companyId || 1;
       const now = new Date();
 
       // Get overdue and critical-priority maintenance schedules
-      const conditions: any[] = [eq(vehicles.companyId, companyId)];
+      const conditions: SQL[] = [eq(vehicles.companyId, companyId)];
       if (input.severity === "critical") {
         conditions.push(eq(zeunMaintenanceSchedules.isOverdue, true));
       } else if (input.severity === "high") {
@@ -2212,7 +2212,7 @@ export const fleetMaintenanceRouter = router({
   getAlertCounts: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("Database unavailable");
-    const companyId = (ctx.user as any)?.companyId || 1;
+    const companyId = ctx.user!.companyId || 1;
 
     const [overdueRow] = await db.select({ cnt: count() })
       .from(zeunMaintenanceSchedules)

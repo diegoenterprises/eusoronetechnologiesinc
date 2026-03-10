@@ -28,6 +28,22 @@ import {
 } from "../../drizzle/schema";
 
 // ============================================================================
+// HELPER TYPES
+// ============================================================================
+
+/** Row type returned by raw SQL queries via db.execute() */
+/**
+ * mysql2 RowDataPacket — raw query results have dynamic column types.
+ * Typed to match mysql2's RowDataPacket interface shape.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface RawRow { [column: string]: any }
+/** Destructured result of db.execute() for SELECT — first element is the rows array */
+type RawQueryRows = [RawRow[], ...unknown[]];
+/** Destructured result of db.execute() for INSERT/UPDATE — first element has insertId */
+type RawMutationResult = [{ insertId: number; affectedRows: number }, ...unknown[]];
+
+// ============================================================================
 // SCHEMAS
 // ============================================================================
 
@@ -141,7 +157,7 @@ async function getWorkflowsFromDb(): Promise<StoredWorkflow[]> {
     for (const r of rows) {
       if (seen.has(r.action)) continue;
       seen.add(r.action);
-      result.push(r.metadata as any);
+      result.push(r.metadata as StoredWorkflow);
     }
     return result;
   } catch { return []; }
@@ -157,7 +173,7 @@ async function getWorkflowById(id: string): Promise<StoredWorkflow | null> {
       .where(and(eq(auditLogs.entityType, "doc_workflow"), eq(auditLogs.action, id)))
       .orderBy(desc(auditLogs.createdAt))
       .limit(1);
-    return rows[0] ? (rows[0].metadata as any) : null;
+    return rows[0] ? (rows[0].metadata as StoredWorkflow) : null;
   } catch { return null; }
 }
 
@@ -168,9 +184,9 @@ async function upsertWorkflow(workflow: StoredWorkflow): Promise<void> {
     await db.insert(auditLogs).values({
       action: workflow.id,
       entityType: "doc_workflow",
-      metadata: workflow as any,
+      metadata: workflow as unknown as Record<string, unknown>,
       severity: "LOW",
-    } as any);
+    });
   } catch { /* non-critical */ }
 }
 
@@ -188,7 +204,7 @@ async function getSignaturesFromDb(): Promise<StoredSignatureRequest[]> {
     for (const r of rows) {
       if (seen.has(r.action)) continue;
       seen.add(r.action);
-      result.push(r.metadata as any);
+      result.push(r.metadata as StoredSignatureRequest);
     }
     return result;
   } catch { return []; }
@@ -204,7 +220,7 @@ async function getSignatureById(id: string): Promise<StoredSignatureRequest | nu
       .where(and(eq(auditLogs.entityType, "doc_signature"), eq(auditLogs.action, id)))
       .orderBy(desc(auditLogs.createdAt))
       .limit(1);
-    return rows[0] ? (rows[0].metadata as any) : null;
+    return rows[0] ? (rows[0].metadata as StoredSignatureRequest) : null;
   } catch { return null; }
 }
 
@@ -215,9 +231,9 @@ async function upsertSignature(request: StoredSignatureRequest): Promise<void> {
     await db.insert(auditLogs).values({
       action: request.id,
       entityType: "doc_signature",
-      metadata: request as any,
+      metadata: request as unknown as Record<string, unknown>,
       severity: "LOW",
-    } as any);
+    });
   } catch { /* non-critical */ }
 }
 
@@ -225,7 +241,7 @@ async function upsertSignature(request: StoredSignatureRequest): Promise<void> {
 // DB helpers — map a raw documents row to the shape the frontend expects
 // ============================================================================
 
-function mapDocRow(r: any): Record<string, any> {
+function mapDocRow(r: RawRow): RawRow {
   return {
     id: String(r.id),
     name: r.name ?? r.fileName ?? "",
@@ -280,32 +296,32 @@ export const documentManagementRouter = router({
         // Total counts from documents table
         const [totalRows] = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM documents WHERE (userId = ${userId} OR companyId = ${companyId}) AND deletedAt IS NULL`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const totalDocuments = Number((totalRows || [])[0]?.cnt) || 0;
 
         // Pending review (from user_documents)
         const [pendingRows] = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM user_documents WHERE userId = ${userId} AND docStatus = 'PENDING_REVIEW' AND deletedAt IS NULL`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const pendingReview = Number((pendingRows || [])[0]?.cnt) || 0;
 
         // Expiring soon (within 30 days)
         const [expiringRows] = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM documents WHERE (userId = ${userId} OR companyId = ${companyId}) AND deletedAt IS NULL AND expiryDate IS NOT NULL AND expiryDate > NOW() AND expiryDate <= DATE_ADD(NOW(), INTERVAL 30 DAY)`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const expiringSoon = Number((expiringRows || [])[0]?.cnt) || 0;
 
         // Expired
         const [expiredRows] = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM documents WHERE (userId = ${userId} OR companyId = ${companyId}) AND deletedAt IS NULL AND expiryDate IS NOT NULL AND expiryDate <= NOW()`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const expired = Number((expiredRows || [])[0]?.cnt) || 0;
 
         // Recent uploads
         const [recentRows] = await db.execute(
           sql`SELECT id, name, type, status, createdAt FROM documents WHERE (userId = ${userId} OR companyId = ${companyId}) AND deletedAt IS NULL ORDER BY createdAt DESC LIMIT 5`
-        ) as any;
-        const recentUploads = (recentRows || []).map((r: any) => ({
+        ) as unknown as RawQueryRows;
+        const recentUploads = (recentRows || []).map((r: RawRow) => ({
           id: String(r.id), name: r.name, type: r.type, status: r.status,
           uploadedAt: r.createdAt?.toISOString?.() ?? "",
         }));
@@ -313,14 +329,14 @@ export const documentManagementRouter = router({
         // By type
         const [typeRows] = await db.execute(
           sql`SELECT type, COUNT(*) as cnt FROM documents WHERE (userId = ${userId} OR companyId = ${companyId}) AND deletedAt IS NULL GROUP BY type`
-        ) as any;
-        const byType = (typeRows || []).map((r: any) => ({ type: r.type, count: Number(r.cnt) }));
+        ) as unknown as RawQueryRows;
+        const byType = (typeRows || []).map((r: RawRow) => ({ type: r.type, count: Number(r.cnt) }));
 
         // By status
         const [statusRows] = await db.execute(
           sql`SELECT status, COUNT(*) as cnt FROM documents WHERE (userId = ${userId} OR companyId = ${companyId}) AND deletedAt IS NULL GROUP BY status`
-        ) as any;
-        const byStatus = (statusRows || []).map((r: any) => ({ status: r.status, count: Number(r.cnt) }));
+        ) as unknown as RawQueryRows;
+        const byStatus = (statusRows || []).map((r: RawRow) => ({ status: r.status, count: Number(r.cnt) }));
 
         // By category (derived from type)
         const byCategory: Record<string, number> = {};
@@ -332,7 +348,7 @@ export const documentManagementRouter = router({
         // Templates count
         const [tplRows] = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM document_templates WHERE isActive = 1`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const templatesAvailable = Number((tplRows || [])[0]?.cnt) || 0;
 
         return {
@@ -426,7 +442,7 @@ export const documentManagementRouter = router({
             AND (${entityIdFilter} IS NULL OR d.loadId = ${entityIdFilter} OR d.companyId = ${entityIdFilter})
             AND (${dateFromFilter} IS NULL OR d.createdAt >= ${dateFromFilter})
             AND (${dateToFilter} IS NULL OR d.createdAt <= ${dateToFilter})
-        `) as any;
+        `) as unknown as RawQueryRows;
         const total = Number((countRes || [])[0]?.cnt) || 0;
 
         // Fetch page — use raw SQL with dynamic ORDER BY (safe since sortCol is from enum)
@@ -442,7 +458,7 @@ export const documentManagementRouter = router({
             AND (${dateToFilter} IS NULL OR d.createdAt <= ${dateToFilter})
           ORDER BY d.createdAt DESC
           LIMIT ${input.pageSize} OFFSET ${offset}
-        `) as any;
+        `) as unknown as RawQueryRows;
 
         const docs = (rows || []).map(mapDocRow);
 
@@ -471,14 +487,14 @@ export const documentManagementRouter = router({
 
         const [rows] = await db.execute(
           sql`SELECT * FROM documents WHERE id = ${docId} AND deletedAt IS NULL LIMIT 1`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const r = (rows || [])[0];
         if (!r) return null;
 
         // Also pull user_documents row if available for richer data
         const [udRows] = await db.execute(
           sql`SELECT * FROM user_documents WHERE userId = ${r.userId} AND documentTypeId = ${r.type} AND deletedAt IS NULL ORDER BY uploadedAt DESC LIMIT 1`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const ud = (udRows || [])[0];
 
         const doc = mapDocRow(r);
@@ -537,7 +553,7 @@ export const documentManagementRouter = router({
           INSERT INTO documents (userId, companyId, loadId, type, name, fileUrl, expiryDate, status, createdAt)
           VALUES (${userId}, ${companyId || null}, ${loadId}, ${input.type}, ${input.name}, ${fileUrl},
                   ${input.expiresAt ? new Date(input.expiresAt) : null}, 'active', ${now})
-        `) as any;
+        `) as unknown as RawMutationResult;
         const docId = String(insertRes?.insertId ?? 0);
 
         // Also insert into user_documents for rich tracking
@@ -583,7 +599,7 @@ export const documentManagementRouter = router({
 
         const [rows] = await db.execute(
           sql`SELECT * FROM documents WHERE id = ${docId} AND deletedAt IS NULL LIMIT 1`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const doc = (rows || [])[0];
         if (!doc) return { success: false, error: "Document not found" };
 
@@ -654,7 +670,7 @@ export const documentManagementRouter = router({
 
         const [rows] = await db.execute(
           sql`SELECT * FROM documents WHERE id = ${docId} AND deletedAt IS NULL LIMIT 1`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const doc = (rows || [])[0];
         if (!doc) return { success: false, error: "Document not found", extractedData: null };
 
@@ -768,9 +784,9 @@ export const documentManagementRouter = router({
             AND (${typeFilter} IS NULL OR documentTypeId = ${typeFilter})
             AND (${searchFilter} IS NULL OR name LIKE ${searchFilter} OR description LIKE ${searchFilter})
           ORDER BY name ASC
-        `) as any;
+        `) as unknown as RawQueryRows;
 
-        return (rows || []).map((r: any) => ({
+        return (rows || []).map((r: RawRow) => ({
           id: String(r.id),
           name: r.name,
           description: r.description || "",
@@ -824,7 +840,7 @@ export const documentManagementRouter = router({
           VALUES
             (${input.type}, ${input.name}, ${input.description}, '1', ${`/templates/${randomBytes(8).toString("hex")}`},
              1, ${JSON.stringify(input.mergeFields)}, 1, ${now}, ${now})
-        `) as any;
+        `) as unknown as RawMutationResult;
         const tplId = String(insertRes?.insertId ?? 0);
 
         return { id: tplId, message: "Template created successfully" };
@@ -854,7 +870,7 @@ export const documentManagementRouter = router({
 
         const [tplRows] = await db.execute(
           sql`SELECT * FROM document_templates WHERE id = ${tplId} AND isActive = 1 LIMIT 1`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const template = (tplRows || [])[0];
         if (!template) return { success: false, error: "Template not found" };
 
@@ -870,7 +886,7 @@ export const documentManagementRouter = router({
         const [insertRes] = await db.execute(sql`
           INSERT INTO documents (userId, companyId, loadId, type, name, fileUrl, status, createdAt)
           VALUES (${userId}, ${companyId || null}, ${loadId}, ${template.documentTypeId}, ${docName}, ${fileUrl}, 'active', ${now})
-        `) as any;
+        `) as unknown as RawMutationResult;
         const docId = String(insertRes?.insertId ?? 0);
 
         return {
@@ -964,7 +980,7 @@ export const documentManagementRouter = router({
         try {
           const [loadRows] = await db.execute(
             sql`SELECT id FROM loads WHERE loadNumber = ${input.loadNumber} LIMIT 1`
-          ) as any;
+          ) as unknown as RawQueryRows;
           loadId = (loadRows || [])[0]?.id ?? null;
         } catch { /* ignore — load may not exist yet */ }
       }
@@ -977,7 +993,7 @@ export const documentManagementRouter = router({
           const [insertRes] = await db.execute(sql`
             INSERT INTO documents (userId, companyId, loadId, type, name, fileUrl, status, createdAt)
             VALUES (${userId}, ${companyId || null}, ${loadId}, 'bol', ${`BOL-${proNumber}`}, ${fileUrl}, 'active', ${now})
-          `) as any;
+          `) as unknown as RawMutationResult;
           bolId = String(insertRes?.insertId ?? bolId);
         } catch (e) {
           logger.error("[DocumentManagement] generateBol insert error:", e);
@@ -1059,7 +1075,7 @@ export const documentManagementRouter = router({
         try {
           const [loadRows] = await db.execute(
             sql`SELECT id FROM loads WHERE loadNumber = ${input.loadNumber} LIMIT 1`
-          ) as any;
+          ) as unknown as RawQueryRows;
           loadId = (loadRows || [])[0]?.id ?? null;
         } catch { /* ignore */ }
       }
@@ -1073,7 +1089,7 @@ export const documentManagementRouter = router({
             INSERT INTO documents (userId, companyId, loadId, type, name, fileUrl, status, createdAt)
             VALUES (${userId}, ${companyId || null}, ${loadId}, 'rate_confirmation',
                     ${`Rate Confirmation - ${input.loadNumber}`}, ${fileUrl}, 'active', ${now})
-          `) as any;
+          `) as unknown as RawMutationResult;
           rcId = String(insertRes?.insertId ?? rcId);
         } catch (e) {
           logger.error("[DocumentManagement] generateRateConfirmation insert error:", e);
@@ -1117,7 +1133,7 @@ export const documentManagementRouter = router({
           const docId = parseInt(input.documentId, 10);
           const [rows] = await db.execute(
             sql`SELECT name FROM documents WHERE id = ${docId} AND deletedAt IS NULL LIMIT 1`
-          ) as any;
+          ) as unknown as RawQueryRows;
           const r = (rows || [])[0];
           if (!r) return { success: false, error: "Document not found" };
           docName = r.name;
@@ -1285,7 +1301,7 @@ export const documentManagementRouter = router({
           const docId = parseInt(input.documentId, 10);
           const [rows] = await db.execute(
             sql`SELECT name FROM documents WHERE id = ${docId} AND deletedAt IS NULL LIMIT 1`
-          ) as any;
+          ) as unknown as RawQueryRows;
           const r = (rows || [])[0];
           if (!r) return { success: false, error: "Document not found" };
           docName = r.name;
@@ -1437,7 +1453,7 @@ export const documentManagementRouter = router({
         // First try to use the pre-computed doc_compliance_status
         const [compRows] = await db.execute(
           sql`SELECT * FROM doc_compliance_status WHERE (userId = ${userId} OR companyId = ${companyId}) LIMIT 1`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const compStatus = (compRows || [])[0];
 
         // Fetch documents for compliance mapping
@@ -1446,16 +1462,16 @@ export const documentManagementRouter = router({
           FROM documents
           WHERE (userId = ${userId} OR companyId = ${companyId}) AND deletedAt IS NULL
             AND type IN ('operating_authority','insurance','registration','inspection','medical_card','ifta','irp','hazmat_placard','permit')
-        `) as any;
-        const docs = (docRows || []).map((r: any) => ({
+        `) as unknown as RawQueryRows;
+        const docs = (docRows || []).map((r: RawRow) => ({
           id: String(r.id), name: r.name, type: r.type, status: r.status,
           expiresAt: r.expiryDate?.toISOString?.() ?? null,
           uploadedAt: r.createdAt?.toISOString?.() ?? "",
         }));
 
         const regulations = filtered.map((r) => {
-          const regDocs = docs.filter((d: any) => r.requiredDocuments.includes(d.type));
-          const approvedCount = regDocs.filter((d: any) => d.status === "active").length;
+          const regDocs = docs.filter((d: RawRow) => r.requiredDocuments.includes(d.type));
+          const approvedCount = regDocs.filter((d: RawRow) => d.status === "active").length;
           return {
             ...r,
             complianceScore: regDocs.length > 0
@@ -1520,10 +1536,10 @@ export const documentManagementRouter = router({
             AND expiryDate > NOW()
             AND expiryDate <= DATE_ADD(NOW(), INTERVAL ${daysAhead} DAY)
           ORDER BY expiryDate ASC
-        `) as any;
+        `) as unknown as RawQueryRows;
 
         const now = new Date();
-        const expiring = (expiringRows || []).map((r: any) => {
+        const expiring = (expiringRows || []).map((r: RawRow) => {
           const exp = new Date(r.expiryDate);
           const days = Math.ceil((exp.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
           return {
@@ -1534,7 +1550,7 @@ export const documentManagementRouter = router({
           };
         });
 
-        let expired: any[] = [];
+        let expired: { id: string; name: RawRow[string]; type: RawRow[string]; expiresAt: string; daysExpired: number }[] = [];
         if (includeExpired) {
           const [expiredRows] = await db.execute(sql`
             SELECT id, name, type, expiryDate
@@ -1542,9 +1558,9 @@ export const documentManagementRouter = router({
             WHERE (userId = ${userId} OR companyId = ${companyId}) AND deletedAt IS NULL
               AND expiryDate IS NOT NULL AND expiryDate <= NOW()
             ORDER BY expiryDate DESC
-          `) as any;
+          `) as unknown as RawQueryRows;
 
-          expired = (expiredRows || []).map((r: any) => ({
+          expired = (expiredRows || []).map((r: RawRow) => ({
             id: String(r.id), name: r.name, type: r.type,
             expiresAt: r.expiryDate?.toISOString?.() ?? null,
             daysExpired: Math.ceil((now.getTime() - new Date(r.expiryDate).getTime()) / (24 * 60 * 60 * 1000)),
@@ -1580,7 +1596,7 @@ export const documentManagementRouter = router({
         // Get document type to look up version history
         const [docRows] = await db.execute(
           sql`SELECT type, userId FROM documents WHERE id = ${docId} AND deletedAt IS NULL LIMIT 1`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const doc = (docRows || [])[0];
         if (!doc) return { versions: [], currentVersion: 0 };
 
@@ -1590,9 +1606,9 @@ export const documentManagementRouter = router({
           FROM user_documents
           WHERE userId = ${doc.userId} AND documentTypeId = ${doc.type} AND deletedAt IS NULL
           ORDER BY version DESC
-        `) as any;
+        `) as unknown as RawQueryRows;
 
-        const versions = (versionRows || []).map((r: any) => ({
+        const versions = (versionRows || []).map((r: RawRow) => ({
           version: Number(r.version) || 1,
           uploadedAt: r.uploadedAt?.toISOString?.() ?? "",
           uploadedBy: String(r.uploadedBy),
@@ -1629,7 +1645,7 @@ export const documentManagementRouter = router({
           const docId = parseInt(input.documentId, 10);
           const [rows] = await db.execute(
             sql`SELECT id FROM documents WHERE id = ${docId} AND deletedAt IS NULL LIMIT 1`
-          ) as any;
+          ) as unknown as RawQueryRows;
           if (!(rows || [])[0]) return { success: false, error: "Document not found" };
         } catch { /* proceed */ }
       }
@@ -1672,7 +1688,7 @@ export const documentManagementRouter = router({
         const placeholders = ids.map(() => "?").join(",");
         const [rows] = await db.execute(
           sql`SELECT id, name, type FROM documents WHERE id IN (${sql.raw(ids.join(","))}) AND deletedAt IS NULL`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const found = rows || [];
 
         if (found.length === 0) return { success: false, error: "No documents found" };
@@ -1723,20 +1739,20 @@ export const documentManagementRouter = router({
         // Total documents
         const [totalRes] = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM documents WHERE (userId = ${userId} OR companyId = ${companyId}) AND deletedAt IS NULL`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const totalDocuments = Number((totalRes || [])[0]?.cnt) || 0;
 
         // This month
         const [monthRes] = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM documents WHERE (userId = ${userId} OR companyId = ${companyId}) AND deletedAt IS NULL AND createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const documentsThisMonth = Number((monthRes || [])[0]?.cnt) || 0;
 
         // By type
         const [typeRows] = await db.execute(
           sql`SELECT type, COUNT(*) as cnt FROM documents WHERE (userId = ${userId} OR companyId = ${companyId}) AND deletedAt IS NULL GROUP BY type ORDER BY cnt DESC`
-        ) as any;
-        const typeBreakdown = (typeRows || []).map((r: any) => ({ type: r.type, count: Number(r.cnt) }));
+        ) as unknown as RawQueryRows;
+        const typeBreakdown = (typeRows || []).map((r: RawRow) => ({ type: r.type, count: Number(r.cnt) }));
 
         // Upload trend by week (last 4 weeks)
         const [trendRows] = await db.execute(sql`
@@ -1746,8 +1762,8 @@ export const documentManagementRouter = router({
             AND createdAt >= DATE_SUB(NOW(), INTERVAL 28 DAY)
           GROUP BY WEEK(createdAt)
           ORDER BY wk ASC
-        `) as any;
-        const uploadTrend = (trendRows || []).map((r: any, i: number) => ({
+        `) as unknown as RawQueryRows;
+        const uploadTrend = (trendRows || []).map((r: RawRow, i: number) => ({
           period: `Week ${i + 1}`,
           uploads: Number(r.cnt),
         }));
@@ -1759,11 +1775,11 @@ export const documentManagementRouter = router({
         // OCR accuracy from user_documents
         const [ocrRes] = await db.execute(
           sql`SELECT AVG(ocrConfidenceScore) as avg_score FROM user_documents WHERE userId = ${userId} AND ocrProcessed = 1 AND deletedAt IS NULL`
-        ) as any;
+        ) as unknown as RawQueryRows;
         const ocrAccuracy = Number((ocrRes || [])[0]?.avg_score) || 0;
 
         // Top categories
-        const topCategories = typeBreakdown.slice(0, 5).map((t: any) => ({
+        const topCategories = typeBreakdown.slice(0, 5).map((t: { type: RawRow[string]; count: number }) => ({
           type: t.type,
           count: t.count,
           percentage: Math.round((t.count / Math.max(totalDocuments, 1)) * 100),
@@ -1848,7 +1864,7 @@ export const documentManagementRouter = router({
             AND (${docIdFilter} IS NULL OR d.id = ${docIdFilter})
             AND (${dateFromFilter} IS NULL OR d.createdAt >= ${dateFromFilter})
             AND (${dateToFilter} IS NULL OR d.createdAt <= ${dateToFilter})
-        `) as any;
+        `) as unknown as RawQueryRows;
         const total = Number((countRes || [])[0]?.cnt) || 0;
 
         const [rows] = await db.execute(sql`
@@ -1860,9 +1876,9 @@ export const documentManagementRouter = router({
             AND (${dateToFilter} IS NULL OR d.createdAt <= ${dateToFilter})
           ORDER BY d.createdAt DESC
           LIMIT ${pageSize} OFFSET ${offset}
-        `) as any;
+        `) as unknown as RawQueryRows;
 
-        const entries = (rows || []).map((r: any) => ({
+        const entries = (rows || []).map((r: RawRow) => ({
           documentId: String(r.id),
           documentName: r.name,
           action: r.status === "active" ? "uploaded" : r.status === "expired" ? "expired" : "updated",
@@ -1906,7 +1922,7 @@ export const documentManagementRouter = router({
 
         const [rows] = await db.execute(
           sql`SELECT id FROM documents WHERE id = ${docId} AND deletedAt IS NULL LIMIT 1`
-        ) as any;
+        ) as unknown as RawQueryRows;
         if (!(rows || [])[0]) return { success: false, error: "Document not found" };
 
         const now = new Date();

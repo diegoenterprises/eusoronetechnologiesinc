@@ -10,8 +10,9 @@ import { isolatedApprovedProcedure as protectedProcedure, router } from "../_cor
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, bids, users, companies, terminals, loadStops, notifications, drivers } from "../../drizzle/schema";
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, type SQL } from "drizzle-orm";
 import { randomBytes } from "crypto";
+import type { ResultSetHeader } from "mysql2";
 import {
   emitLoadStatusChange,
   emitBidReceived,
@@ -30,13 +31,25 @@ import { lookupAndNotify } from "../services/notifications";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { ownershipFilter } from "../services/security/isolation/ownership-verifier";
 import { serverCalcWeight } from "@shared/cargoCalculations";
+import type { User, Load, InsertLoad, InsertUser, Bid, InsertBid } from "../../drizzle/schema";
 
-async function resolveUserId(ctxUser: any): Promise<number> {
+/** JSON location shape used for pickupLocation / deliveryLocation */
+type LocationJson = { address: string; city: string; state: string; zipCode: string; lat: number; lng: number };
+
+/** Fallback helper: return location JSON or empty object with same shape */
+function loc(v: LocationJson | null | undefined): LocationJson {
+  return v ?? { address: "", city: "", state: "", zipCode: "", lat: 0, lng: 0 };
+}
+
+/** Type for currentLocation JSON (narrower shape in loads table) */
+type CurrentLocationJson = { lat: number; lng: number };
+
+async function resolveUserId(ctxUser: User | null | undefined): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   const email = ctxUser?.email || "";
   const name = ctxUser?.name || "User";
-  const role = (ctxUser?.role || "SHIPPER") as any;
+  const role = ctxUser?.role || "SHIPPER";
 
   // 1. Try email lookup (most reliable — email column always exists)
   if (email) {
@@ -50,7 +63,7 @@ async function resolveUserId(ctxUser: any): Promise<number> {
 
   // 2. User doesn't exist — create them
   try {
-    const insertData: Record<string, any> = {
+    const baseInsertData = {
       email: email || `user-${Date.now()}@eusotrip.com`,
       name,
       role,
@@ -59,15 +72,14 @@ async function resolveUserId(ctxUser: any): Promise<number> {
     };
     // Try with openId first; if column missing, retry without
     try {
-      insertData.openId = String(ctxUser?.id || `auto-${Date.now()}`);
-      const result = await db.insert(users).values(insertData as any);
-      const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
+      const insertDataWithOpenId = { ...baseInsertData, openId: String(ctxUser?.id || `auto-${Date.now()}`) };
+      const result = await db.insert(users).values(insertDataWithOpenId);
+      const insertedId = (result as unknown as [ResultSetHeader, unknown])[0]?.insertId;
       if (insertedId) return insertedId;
-    } catch (insertErr: any) {
-      logger.warn("[resolveUserId] insert with openId failed, retrying without:", insertErr?.message);
-      delete insertData.openId;
-      const result = await db.insert(users).values(insertData as any);
-      const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
+    } catch (insertErr: unknown) {
+      logger.warn("[resolveUserId] insert with openId failed, retrying without:", (insertErr as Error)?.message);
+      const result = await db.insert(users).values({ ...baseInsertData, openId: `auto-${Date.now()}` });
+      const insertedId = (result as unknown as [ResultSetHeader, unknown])[0]?.insertId;
       if (insertedId) return insertedId;
     }
     // Re-query by email
@@ -76,7 +88,7 @@ async function resolveUserId(ctxUser: any): Promise<number> {
       return newRow?.id || 0;
     }
     return 0;
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error("[resolveUserId] Insert failed:", err);
     if (email) {
       try {
@@ -163,7 +175,7 @@ export const loadsRouter = router({
       tempMax: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'LOAD' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role || 'SHIPPER', companyId: ctx.user!.companyId, action: 'CREATE', resource: 'LOAD' }, ctx.req);
       const db = await getDb();
       // Collision-safe load number: date prefix + 8-char crypto-random suffix
       // If a duplicate key collision occurs, retry with a new number (up to 3 times)
@@ -434,11 +446,11 @@ export const loadsRouter = router({
             hazardClassNumber: input?.hazardClassNumber || null,
             subsidiaryHazards: input?.subsidiaryHazards || null,
             specialPermit: input?.specialPermit || null,
-          } as any);
-          insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+          } satisfies InsertLoad);
+          insertedId = (result as unknown as [ResultSetHeader, unknown])[0]?.insertId || 0;
           break; // success
-        } catch (err: any) {
-          if (err?.code === "ER_DUP_ENTRY" && attempt < 2) {
+        } catch (err: unknown) {
+          if ((err as Record<string, unknown>)?.code === "ER_DUP_ENTRY" && attempt < 2) {
             loadNumber = generateLoadNumber(); // regenerate and retry
             continue;
           }
@@ -478,7 +490,7 @@ export const loadsRouter = router({
               appointmentStart: input?.deliveryDate ? new Date(input.deliveryDate) : null,
               status: "pending" as const,
             },
-          ] as any);
+          ]);
         } catch (stopErr) {
           logger.warn('[Loads] Failed to auto-create load stops:', stopErr);
         }
@@ -491,7 +503,7 @@ export const loadsRouter = router({
             catalystId: input.assignedCatalystId,
             status: 'assigned',
             updatedAt: new Date(),
-          } as any).where(eq(loads.id, insertedId));
+          } satisfies Partial<InsertLoad>).where(eq(loads.id, insertedId));
         } catch (e) {
           logger.error('[Loads] Auto-assign catalyst error:', e);
         }
@@ -528,7 +540,7 @@ export const loadsRouter = router({
           loadNumber,
         });
       } catch (notifErr) {
-        logger.warn("[Loads] Create notification dispatch error:", (notifErr as any)?.message);
+        logger.warn("[Loads] Create notification dispatch error:", (notifErr as Error)?.message);
       }
 
       // Notify Terminal Manager(s) when load originates from their terminal
@@ -571,8 +583,8 @@ export const loadsRouter = router({
       } catch { /* embedding service unavailable */ }
 
       // AI Turbocharge: OSRM ETA + rate prediction (fire-and-forget enrichment)
-      let aiEta: any = null;
-      let aiRate: any = null;
+      let aiEta: unknown = null;
+      let aiRate: unknown = null;
       try {
         const { calculateETA } = await import("../services/ai/osrmRouter");
         const { predictRate } = await import("../services/ai/forecastEngine");
@@ -599,7 +611,7 @@ export const loadsRouter = router({
   update: protectedProcedure
     .input(z.object({ id: z.string(), data: z.any() }).optional())
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'LOAD' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role || 'SHIPPER', companyId: ctx.user!.companyId, action: 'UPDATE', resource: 'LOAD' }, ctx.req);
       const db = await getDb();
       if (!db || !input?.id) throw new Error("Database not available");
       const loadId = parseInt(input.id, 10);
@@ -612,7 +624,7 @@ export const loadsRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Delivery date cannot be before pickup date.' });
         }
 
-        const updateSet: Record<string, any> = { updatedAt: new Date() };
+        const updateSet: Partial<InsertLoad> & Record<string, unknown> = { updatedAt: new Date() };
         if (input.data.status) updateSet.status = input.data.status;
         if (input.data.rate) updateSet.rate = String(input.data.rate);
         if (input.data.specialInstructions) updateSet.specialInstructions = input.data.specialInstructions;
@@ -636,7 +648,7 @@ export const loadsRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }).optional())
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'DELETE', resource: 'LOAD' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role || 'SHIPPER', companyId: ctx.user!.companyId, action: 'DELETE', resource: 'LOAD' }, ctx.req);
       const db = await getDb();
       if (!db || !input?.id) throw new Error("Database not available");
       const loadId = parseInt(input.id, 10);
@@ -665,8 +677,8 @@ export const loadsRouter = router({
           .limit(25);
 
         let result = loadList.map(l => {
-          const pickup = l.pickupLocation as any || {};
-          const delivery = l.deliveryLocation as any || {};
+          const pickup = loc(l.pickupLocation);
+          const delivery = loc(l.deliveryLocation);
           const progress = ({'draft':2,'posted':5,'bidding':8,'expired':0,'awarded':12,'declined':0,'lapsed':0,'accepted':15,'assigned':18,'confirmed':20,'en_route_pickup':25,'at_pickup':30,'pickup_checkin':32,'loading':38,'loading_exception':38,'loaded':45,'in_transit':55,'transit_hold':55,'transit_exception':55,'at_delivery':70,'delivery_checkin':72,'unloading':78,'unloading_exception':78,'unloaded':82,'pod_pending':88,'pod_rejected':85,'delivered':92,'invoiced':94,'disputed':90,'paid':97,'complete':100,'cancelled':0,'on_hold':0} as Record<string,number>)[l.status] ?? 10;
           return {
             id: String(l.id),
@@ -744,9 +756,9 @@ export const loadsRouter = router({
 
         if (!load) return null;
 
-        const pickup = load.pickupLocation as any || {};
-        const delivery = load.deliveryLocation as any || {};
-        const current = load.currentLocation as any || {};
+        const pickup = loc(load.pickupLocation);
+        const delivery = loc(load.deliveryLocation);
+        const current = (load.currentLocation ?? {}) as { lat?: number; lng?: number; city?: string; state?: string };
         const progress = ({'draft':2,'posted':5,'bidding':8,'expired':0,'awarded':12,'declined':0,'lapsed':0,'accepted':15,'assigned':18,'confirmed':20,'en_route_pickup':25,'at_pickup':30,'pickup_checkin':32,'loading':38,'loading_exception':38,'loaded':45,'in_transit':55,'transit_hold':55,'transit_exception':55,'at_delivery':70,'delivery_checkin':72,'unloading':78,'unloading_exception':78,'unloaded':82,'pod_pending':88,'pod_rejected':85,'delivered':92,'invoiced':94,'disputed':90,'paid':97,'complete':100,'cancelled':0,'on_hold':0} as Record<string,number>)[load.status] ?? 10;
 
         const originStr = [pickup.city, pickup.state].filter(Boolean).join(', ') || 'Unknown';
@@ -754,11 +766,12 @@ export const loadsRouter = router({
 
         // Parse product + equipmentType from specialInstructions (JSON or text)
         const rawSI_track = load.specialInstructions || '';
-        let siJson_track: any = {};
+        let siJson_track: Record<string, unknown> = {};
         let notes_track = rawSI_track;
         if (typeof rawSI_track === 'string') { try { siJson_track = JSON.parse(rawSI_track); notes_track = ""; } catch { /* text notes */ } }
-        const product = (siJson_track?.ergNotes?.match?.(/^Product: (.+)$/m)?.[1]) || notes_track.match(/^Product: (.+)$/m)?.[1] || (load as any).commodityName || load.cargoType || 'General Cargo';
-        const trackEquip = siJson_track?.equipmentType || notes_track.match(/^Equipment: (.+)$/m)?.[1] || notes_track.match(/^Trailer Type: (.+)$/m)?.[1] || null;
+        const ergNotesStr = typeof siJson_track?.ergNotes === 'string' ? siJson_track.ergNotes : '';
+        const product = ergNotesStr.match(/^Product: (.+)$/m)?.[1] || notes_track.match(/^Product: (.+)$/m)?.[1] || load.commodityName || load.cargoType || 'General Cargo';
+        const trackEquip = (siJson_track?.equipmentType as string | undefined) || notes_track.match(/^Equipment: (.+)$/m)?.[1] || notes_track.match(/^Trailer Type: (.+)$/m)?.[1] || null;
 
         // Build tracking history from load lifecycle
         const history: { status: string; timestamp: string; location: string; notes?: string }[] = [];
@@ -766,7 +779,7 @@ export const loadsRouter = router({
         if (load.status !== 'posted' && load.status !== 'bidding') history.push({ status: 'Catalyst Assigned', timestamp: load.updatedAt ? new Date(load.updatedAt).toLocaleString() : 'N/A', location: originStr });
         if (['loading', 'at_pickup', 'in_transit', 'at_delivery', 'unloading', 'delivered'].includes(load.status)) history.push({ status: 'Picked Up', timestamp: load.pickupDate ? new Date(load.pickupDate).toLocaleString() : 'N/A', location: originStr });
         if (['in_transit', 'at_delivery', 'unloading', 'delivered'].includes(load.status)) history.push({ status: 'In Transit', timestamp: load.updatedAt ? new Date(load.updatedAt).toLocaleString() : 'N/A', location: current.city ? `${current.city}, ${current.state}` : 'En Route' });
-        if (load.status === 'delivered') history.push({ status: 'Delivered', timestamp: (load as any).actualDeliveryDate ? new Date((load as any).actualDeliveryDate).toLocaleString() : 'N/A', location: destStr });
+        if (load.status === 'delivered') history.push({ status: 'Delivered', timestamp: load.actualDeliveryDate ? new Date(load.actualDeliveryDate).toLocaleString() : 'N/A', location: destStr });
         if (load.status === 'cancelled') history.push({ status: 'Cancelled', timestamp: load.updatedAt ? new Date(load.updatedAt).toLocaleString() : 'N/A', location: 'N/A', notes: 'Shipment cancelled' });
 
         return {
@@ -821,13 +834,13 @@ export const loadsRouter = router({
       if (!db) throw new Error("Database not available");
 
       // Build proper Drizzle conditions (not raw SQL strings)
-      const filters: any[] = [];
+      const filters: SQL[] = [];
 
       // If marketplace mode, show ALL posted/bidding loads (for Load Board / Find Loads)
       // Otherwise scope by user role so each user only sees THEIR loads
       if (!input.marketplace) {
         const role = await resolveUserRole(ctx.user);
-        logger.info(`[loads.list] user=${ctx.user?.email} role=${role} id=${(ctx.user as any)?.id}`);
+        logger.info(`[loads.list] user=${ctx.user?.email} role=${role} id=${ctx.user?.id}`);
         if (isAdminRole(role)) {
           // Admins see all — no filter needed, skip resolveUserId entirely
           logger.info(`[loads.list] Admin bypass — no user scoping applied`);
@@ -847,7 +860,7 @@ export const loadsRouter = router({
         filters.push(sql`${loads.status} IN ('posted', 'bidding', 'awarded')`);
       }
       if (input.status) {
-        filters.push(eq(loads.status, input.status as any));
+        filters.push(eq(loads.status, input.status!));
       }
       if (input.date) {
         // Show loads whose pickupDate OR deliveryDate matches the selected date.
@@ -875,9 +888,9 @@ export const loadsRouter = router({
       logger.info(`[loads.list] Returned ${results.length} rows`);
 
       // Batch-fetch shipper, catalyst, driver profiles and company logos
-      const shipperIds = Array.from(new Set(results.map((r: any) => r.shipperId).filter(Boolean)));
-      const catalystIds = Array.from(new Set(results.map((r: any) => r.catalystId).filter(Boolean)));
-      const driverIds = Array.from(new Set(results.map((r: any) => r.driverId).filter(Boolean)));
+      const shipperIds = Array.from(new Set(results.map(r => r.shipperId).filter(Boolean)));
+      const catalystIds = Array.from(new Set(results.map(r => r.catalystId).filter(Boolean))) as number[];
+      const driverIds = Array.from(new Set(results.map(r => r.driverId).filter(Boolean))) as number[];
       const allUserIds = Array.from(new Set([...shipperIds, ...catalystIds, ...driverIds]));
       const userMap = new Map<number, { name: string | null; profilePicture: string | null; companyId: number | null; phone: string | null }>();
       const companyMap = new Map<number, { name: string; logo: string | null }>();
@@ -889,7 +902,7 @@ export const loadsRouter = router({
             .from(users)
             .where(inArray(users.id, allUserIds));
           for (const s of userRows) {
-            userMap.set(s.id, { name: s.name, profilePicture: s.profilePicture, companyId: s.companyId, phone: (s as any).phone || null });
+            userMap.set(s.id, { name: s.name, profilePicture: s.profilePicture, companyId: s.companyId, phone: s.phone || null });
           }
           // Fetch company logos
           const companyIds = Array.from(new Set(userRows.filter(s => s.companyId).map(s => s.companyId!)));
@@ -908,19 +921,19 @@ export const loadsRouter = router({
       }
 
       // Transform DB rows to match what the frontend expects
-      return results.map((row: any) => {
-        const pickup = row.pickupLocation as any || {};
-        const delivery = row.deliveryLocation as any || {};
+      return results.map((row) => {
+        const pickup = loc(row.pickupLocation);
+        const delivery = loc(row.deliveryLocation);
         const shipper = userMap.get(row.shipperId);
         const catalyst = row.catalystId ? userMap.get(row.catalystId) : null;
         const driver = row.driverId ? userMap.get(row.driverId) : null;
         const company = shipper?.companyId ? companyMap.get(shipper.companyId) : null;
         const catalystCompany = catalyst?.companyId ? companyMap.get(catalyst.companyId) : null;
         // Extract equipmentType from specialInstructions (JSON or text)
-        let siList: any = {};
+        let siList: Record<string, unknown> = {};
         const rawSIList = row.specialInstructions || "";
         if (typeof rawSIList === 'string') { try { siList = JSON.parse(rawSIList); } catch { /* text notes */ } }
-        const listEquip = siList?.equipmentType || (typeof rawSIList === 'string' ? rawSIList.match?.(/^Equipment: (.+)$/m)?.[1] || rawSIList.match?.(/^Trailer Type: (.+)$/m)?.[1] : null) || null;
+        const listEquip = (siList?.equipmentType as string | undefined) || (typeof rawSIList === 'string' ? rawSIList.match?.(/^Equipment: (.+)$/m)?.[1] || rawSIList.match?.(/^Trailer Type: (.+)$/m)?.[1] : null) || null;
         return {
           ...row,
           id: String(row.id),
@@ -942,11 +955,11 @@ export const loadsRouter = router({
           catalystCompanyName: catalystCompany?.name || null,
           driverName: driver?.name || null,
           driverPhone: driver?.phone || null,
-          commodity: (row as any).commodityName || null,
-          commodityName: (row as any).commodityName || null,
+          commodity: row.commodityName || null,
+          commodityName: row.commodityName || null,
           equipmentType: listEquip,
           cargoType: row.cargoType || 'general',
-          spectraMatchVerified: !!(row as any).spectraMatchResult,
+          spectraMatchVerified: !!row.spectraMatchResult,
         };
       });
     }),
@@ -970,16 +983,18 @@ export const loadsRouter = router({
       const load = result[0];
       if (!load) return null;
       const rateNum = typeof load.rate === 'number' ? load.rate : Number(load.rate) || 0;
-      const pickup = load.pickupLocation as any || {};
-      const delivery = load.deliveryLocation as any || {};
+      const pickup = loc(load.pickupLocation);
+      const delivery = loc(load.deliveryLocation);
 
       // Compute distance via haversine when DB distance is missing but coords exist
       let resolvedDistance = load.distance ? parseFloat(String(load.distance)) : 0;
       if (resolvedDistance <= 0) {
-        const pLat = parseFloat(pickup.lat || pickup.latitude || 0);
-        const pLng = parseFloat(pickup.lng || pickup.longitude || pickup.lon || 0);
-        const dLat = parseFloat(delivery.lat || delivery.latitude || 0);
-        const dLng = parseFloat(delivery.lng || delivery.longitude || delivery.lon || 0);
+        const rawPickup = (load.pickupLocation ?? {}) as Record<string, unknown>;
+        const rawDelivery = (load.deliveryLocation ?? {}) as Record<string, unknown>;
+        const pLat = parseFloat(String(rawPickup.lat || rawPickup.latitude || 0));
+        const pLng = parseFloat(String(rawPickup.lng || rawPickup.longitude || rawPickup.lon || 0));
+        const dLat = parseFloat(String(rawDelivery.lat || rawDelivery.latitude || 0));
+        const dLng = parseFloat(String(rawDelivery.lng || rawDelivery.longitude || rawDelivery.lon || 0));
         if (pLat && pLng && dLat && dLng) {
           const R = 3958.8; // Earth radius in miles
           const dLatR = (dLat - pLat) * Math.PI / 180;
@@ -992,12 +1007,12 @@ export const loadsRouter = router({
       }
       // Parse specialInstructions — may be JSON (loadBoard) or text notes (wizard)
       const rawSI = load.specialInstructions || "";
-      let siJson: any = {};
+      let siJson: Record<string, unknown> = {};
       let notes = rawSI;
       if (typeof rawSI === 'string') {
         try { siJson = JSON.parse(rawSI); notes = ""; } catch { /* plain text notes */ }
       } else if (typeof rawSI === 'object') {
-        siJson = rawSI; notes = "";
+        siJson = rawSI as Record<string, unknown>; notes = "";
       }
       const ergProduct = notes.match(/^Product: (.+)$/m)?.[1] || null;
       const ergEquip = notes.match(/^Equipment: (.+)$/m)?.[1] || null;
@@ -1005,34 +1020,34 @@ export const loadsRouter = router({
       const ergGuideMatch = notes.match(/ERG Guide: (\d+)/)?.[1];
       const ergGuide = ergGuideMatch ? parseInt(ergGuideMatch) : null;
       // Resolve equipmentType: JSON field > text notes > null (never cargoType)
-      const resolvedEquipType = siJson?.equipmentType || ergEquip || ergTrailer || null;
+      const resolvedEquipType = (siJson?.equipmentType as string | undefined) || ergEquip || ergTrailer || null;
       // Serialize ALL Date fields to ISO strings to prevent React "Objects are not valid as React child" crash
-      const safeDate = (d: any) => d instanceof Date ? d.toISOString() : (typeof d === 'string' ? d : null);
+      const safeDate = (d: Date | string | null | undefined) => d instanceof Date ? d.toISOString() : (typeof d === 'string' ? d : null);
       return {
         ...load,
         id: String(load.id),
         distance: resolvedDistance,
         pickupDate: safeDate(load.pickupDate),
         deliveryDate: safeDate(load.deliveryDate),
-        estimatedDeliveryDate: safeDate((load as any).estimatedDeliveryDate),
-        actualDeliveryDate: safeDate((load as any).actualDeliveryDate),
-        deletedAt: safeDate((load as any).deletedAt),
+        estimatedDeliveryDate: safeDate(load.estimatedDeliveryDate),
+        actualDeliveryDate: safeDate(load.actualDeliveryDate),
+        deletedAt: safeDate(load.deletedAt),
         createdAt: safeDate(load.createdAt),
-        updatedAt: safeDate((load as any).updatedAt),
+        updatedAt: safeDate(load.updatedAt),
         origin: { address: pickup.address || "", city: pickup.city || "", state: pickup.state || "", zip: pickup.zipCode || "" },
         destination: { address: delivery.address || "", city: delivery.city || "", state: delivery.state || "", zip: delivery.zipCode || "" },
         pickupLocation: { city: pickup.city || "", state: pickup.state || "" },
         deliveryLocation: { city: delivery.city || "", state: delivery.state || "" },
-        commodity: (load as any).commodityName || ergProduct || null,
-        commodityName: (load as any).commodityName || ergProduct || null,
+        commodity: load.commodityName || ergProduct || null,
+        commodityName: load.commodityName || ergProduct || null,
         ergGuide,
         biddingEnds: load.pickupDate instanceof Date ? load.pickupDate.toISOString() : (load.pickupDate || new Date().toISOString()),
         suggestedRateMin: rateNum * 0.9,
         suggestedRateMax: rateNum * 1.1,
         equipmentType: resolvedEquipType,
         cargoType: load.cargoType || "general",
-        spectraMatchResult: (load as any).spectraMatchResult || null,
-        spectraMatchVerified: !!(load as any).spectraMatchResult,
+        spectraMatchResult: load.spectraMatchResult || null,
+        spectraMatchVerified: !!load.spectraMatchResult,
         notes: notes || "",
         shipperId: load.shipperId,
       };
@@ -1113,7 +1128,7 @@ export const loadsRouter = router({
         specialInstructions: input.specialInstructions,
       });
 
-      const insertedId = (result as any).insertId || 0;
+      const insertedId = (result as unknown as [ResultSetHeader, unknown])[0]?.insertId || 0;
 
       // Emit real-time event for load creation
       emitLoadStatusChange({
@@ -1293,8 +1308,8 @@ export const loadsRouter = router({
       .limit(limit);
     
     return results.map(l => {
-      const pickup = l.pickupLocation as any || {};
-      const delivery = l.deliveryLocation as any || {};
+      const pickup = loc(l.pickupLocation);
+      const delivery = loc(l.deliveryLocation);
       return {
         id: String(l.id),
         loadNumber: l.loadNumber,
@@ -1342,7 +1357,7 @@ export const loadsRouter = router({
         currency: original.currency,
         specialInstructions: original.specialInstructions,
         commodityName: original.commodityName,
-      } as any).$returningId();
+      } satisfies InsertLoad).$returningId();
 
       return { success: true, newLoadId: String(result[0]?.id), loadNumber: newLoadNumber };
     }),
@@ -1367,7 +1382,7 @@ export const loadsRouter = router({
         .from(loads).where(eq(loads.id, loadId)).limit(1);
       if (!load) throw new Error("Load not found");
 
-      const updateData: Record<string, any> = {
+      const updateData: Partial<InsertLoad> = {
         catalystId: input.catalystId,
         status: 'assigned',
         updatedAt: new Date(),
@@ -1402,7 +1417,7 @@ export const loadsRouter = router({
         vehicleId: null,
         status: 'posted',
         updatedAt: new Date(),
-      } as any).where(eq(loads.id, loadId));
+      } satisfies Partial<InsertLoad>).where(eq(loads.id, loadId));
       return { success: true };
     }),
 
@@ -1421,7 +1436,7 @@ export const loadsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const loadId = parseInt(input.loadId, 10);
-      const updateData: Record<string, any> = {
+      const updateData: Partial<InsertLoad> = {
         catalystId: input.newCatalystId,
         updatedAt: new Date(),
       };
@@ -1483,7 +1498,7 @@ export const loadsRouter = router({
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const loadId = parseInt(input.loadId, 10);
       const userId = Number(ctx.user?.id) || 0;
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user?.companyId) || 0;
 
       const result = await db.insert(documents).values({
         loadId,
@@ -1493,7 +1508,7 @@ export const loadsRouter = router({
         name: input.name,
         fileUrl: input.fileUrl,
         status: 'active',
-      } as any).$returningId();
+      } as typeof documents.$inferInsert).$returningId();
 
       // WS-P0-019R: Hash document content for integrity chain
       try {
@@ -1695,8 +1710,8 @@ export const loadsRouter = router({
         }).from(loads).orderBy(desc(loads.createdAt)).limit(input.limit * 3);
 
         let results = rows.map(l => {
-          const p = l.pickupLocation as any || {};
-          const d = l.deliveryLocation as any || {};
+          const p = loc(l.pickupLocation);
+          const d = loc(l.deliveryLocation);
           return {
             id: String(l.id), loadNumber: l.loadNumber || '',
             status: l.status, cargoType: l.cargoType,
@@ -1756,8 +1771,8 @@ export const loadsRouter = router({
                 if (!existingIds.has(hit.entityId)) {
                   const match = rows.find(r => String(r.id) === hit.entityId);
                   if (match) {
-                    const p = match.pickupLocation as any || {};
-                    const d = match.deliveryLocation as any || {};
+                    const p = loc(match.pickupLocation);
+                    const d = loc(match.deliveryLocation);
                     results.push({
                       id: String(match.id), loadNumber: match.loadNumber || '',
                       status: match.status, cargoType: match.cargoType,
@@ -1796,7 +1811,7 @@ export const loadsRouter = router({
       const loadId = parseInt(input.loadId, 10);
       const userId = await resolveUserId(ctx.user);
 
-      const updateData: Record<string, any> = {
+      const updateData: Partial<InsertLoad> = {
         catalystId: userId,
         status: 'assigned',
         updatedAt: new Date(),
@@ -1831,7 +1846,7 @@ export const loadsRouter = router({
         status: 'disputed',
         specialInstructions: (load.specialInstructions || '') + disputeNote,
         updatedAt: new Date(),
-      } as any).where(eq(loads.id, loadId));
+      } satisfies Partial<InsertLoad>).where(eq(loads.id, loadId));
 
       emitLoadStatusChange({
         loadId: String(loadId), loadNumber: load.loadNumber || '',
@@ -1885,7 +1900,7 @@ export const loadsRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) return { csv: '', count: 0 };
       try {
-        const companyId = Number((ctx.user as any)?.companyId) || 0;
+        const companyId = Number(ctx.user?.companyId) || 0;
         const rows = await db.select({
           loadNumber: loads.loadNumber, status: loads.status, cargoType: loads.cargoType,
           rate: loads.rate, distance: loads.distance, weight: loads.weight,
@@ -1895,8 +1910,8 @@ export const loadsRouter = router({
 
         const header = 'Load Number,Status,Cargo Type,Rate,Distance,Weight,Origin,Destination,Pickup Date,Delivery Date,Created\n';
         const csvRows = rows.map(r => {
-          const p = r.pickupLocation as any || {};
-          const d = r.deliveryLocation as any || {};
+          const p = loc(r.pickupLocation);
+          const d = loc(r.deliveryLocation);
           return [
             r.loadNumber, r.status, r.cargoType, r.rate || '', r.distance || '', r.weight || '',
             `"${p.city || ''} ${p.state || ''}"`, `"${d.city || ''} ${d.state || ''}"`,
@@ -1941,7 +1956,7 @@ export const loadsRouter = router({
       if (input.loadIds.length === 0) return { success: true, updated: 0 };
 
       await db.update(loads).set({
-        status: input.newStatus as any,
+        status: input.newStatus as Load["status"],
         updatedAt: new Date(),
       }).where(inArray(loads.id, input.loadIds));
 
@@ -1979,7 +1994,7 @@ export const bidsRouter = router({
     }))
     .mutation(async ({ input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
-      const updates: Record<string, any> = {};
+      const updates: Partial<InsertBid> = {};
       if (input.amount !== undefined) updates.amount = String(input.amount);
       if (input.notes) updates.notes = input.notes;
       if (input.status) updates.status = input.status;
@@ -2031,7 +2046,7 @@ export const bidsRouter = router({
         status: "pending",
       });
 
-      const bidId = (result as any).insertId || 0;
+      const bidId = (result as unknown as [ResultSetHeader, unknown])[0]?.insertId || 0;
 
       // Get load details for notification
       const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId)).limit(1);
@@ -2152,7 +2167,7 @@ export const bidsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const updateData: any = { status: input.status };
+      const updateData: Partial<InsertBid> & Record<string, unknown> = { status: input.status as Bid["status"] };
       if (input.counterAmount) {
         updateData.counterAmount = input.counterAmount.toString();
       }
@@ -2234,7 +2249,7 @@ export const bidsRouter = router({
 
       await db
         .update(bids)
-        .set({ status: "withdrawn" } as any)
+        .set({ status: "withdrawn" })
         .where(eq(bids.id, input.bidId));
 
       return { success: true };
@@ -2250,15 +2265,15 @@ export const bidsRouter = router({
     if (!bid) return null;
     
     const [load] = await db.select().from(loads).where(eq(loads.id, bid.loadId)).limit(1);
-    const pickup = load?.pickupLocation as any || {};
-    const delivery = load?.deliveryLocation as any || {};
+    const pickup = loc(load?.pickupLocation);
+    const delivery = loc(load?.deliveryLocation);
     const distance = load?.distance ? parseFloat(String(load.distance)) : 0;
     const amount = bid.amount ? parseFloat(String(bid.amount)) : 0;
     // Extract equipmentType from specialInstructions
-    let siBid: any = {};
+    let siBid: Record<string, unknown> = {};
     const rawSIBid = load?.specialInstructions || "";
     if (typeof rawSIBid === 'string') { try { siBid = JSON.parse(rawSIBid); } catch { /* text */ } }
-    const bidEquip = siBid?.equipmentType || (typeof rawSIBid === 'string' ? rawSIBid.match?.(/^Equipment: (.+)$/m)?.[1] : null) || null;
+    const bidEquip = (siBid?.equipmentType as string | undefined) || (typeof rawSIBid === 'string' ? rawSIBid.match?.(/^Equipment: (.+)$/m)?.[1] : null) || null;
     
     return {
       id: String(bid.id),
@@ -2396,8 +2411,8 @@ export const bidsRouter = router({
       const recentBids = await db.select().from(bids).where(eq(bids.catalystId, userId)).orderBy(desc(bids.createdAt)).limit(input?.limit || 10);
       const results = await Promise.all(recentBids.map(async (b) => {
         const [load] = await db.select().from(loads).where(eq(loads.id, b.loadId)).limit(1);
-        const pickup = load?.pickupLocation as any || {};
-        const delivery = load?.deliveryLocation as any || {};
+        const pickup = loc(load?.pickupLocation);
+        const delivery = loc(load?.deliveryLocation);
         const loadRate = load?.rate ? parseFloat(String(load.rate)) : 0;
         const bidAmt = b.amount ? parseFloat(String(b.amount)) : 0;
         return {
@@ -2433,7 +2448,7 @@ export const bidsRouter = router({
         notes: input.notes || '',
         status: 'pending',
       });
-      const bidId = (result as any).insertId || 0;
+      const bidId = (result as unknown as [ResultSetHeader, unknown])[0]?.insertId || 0;
 
       // Emit real-time bid received event
       const [load] = await db.select().from(loads).where(eq(loads.id, loadIdNum)).limit(1);
@@ -2470,7 +2485,7 @@ export const bidsRouter = router({
     if (load && load.shipperId !== userId) throw new Error("Only the load owner can accept bids");
 
     // ── FMCSA Safety Gate: verify carrier before bid award ──
-    let fmcsaSafetyGate: any = null;
+    let fmcsaSafetyGate: Record<string, unknown> | null = null;
     try {
       const [catalystCompany] = await db.select({ dotNumber: companies.dotNumber, name: companies.name }).from(companies).where(eq(companies.id, bid.catalystId)).limit(1);
       if (catalystCompany?.dotNumber) {
@@ -2491,13 +2506,13 @@ export const bidsRouter = router({
           throw new Error(`FMCSA Safety Gate BLOCKED: Carrier ${catalystCompany.name} (DOT ${catalystCompany.dotNumber}) is OUT OF SERVICE — ${oos.reason}`);
         }
       }
-    } catch (gateErr: any) {
-      if (gateErr.message?.includes('FMCSA Safety Gate BLOCKED')) throw gateErr;
+    } catch (gateErr: unknown) {
+      if ((gateErr as Error).message?.includes('FMCSA Safety Gate BLOCKED')) throw gateErr;
     }
 
-    await db.update(bids).set({ status: 'accepted' } as any).where(eq(bids.id, bidIdNum));
+    await db.update(bids).set({ status: 'accepted' }).where(eq(bids.id, bidIdNum));
     // Reject all other pending bids on this load
-    await db.update(bids).set({ status: 'rejected' } as any).where(and(eq(bids.loadId, bid.loadId), sql`${bids.id} != ${bidIdNum}`, eq(bids.status, 'pending')));
+    await db.update(bids).set({ status: 'rejected' }).where(and(eq(bids.loadId, bid.loadId), sql`${bids.id} != ${bidIdNum}`, eq(bids.status, 'pending')));
 
     // Resolve driver: if bidder is a DRIVER, assign directly; if CATALYST, find their company's driver
     let driverId: number | null = null;
@@ -2517,7 +2532,7 @@ export const bidsRouter = router({
       status: driverId ? 'assigned' : 'awarded',
       catalystId: bid.catalystId,
       ...(driverId ? { driverId } : {}),
-    } as any).where(eq(loads.id, bid.loadId));
+    } satisfies Partial<InsertLoad>).where(eq(loads.id, bid.loadId));
     emitBidAwarded({ bidId: input.bidId, loadId: String(bid.loadId), loadNumber: load?.loadNumber || '', catalystId: String(bid.catalystId), catalystName: 'Catalyst', amount: Number(bid.amount), status: 'accepted', timestamp: new Date().toISOString() });
     emitLoadStatusChange({ loadId: String(bid.loadId), loadNumber: load?.loadNumber || '', previousStatus: load?.status || '', newStatus: 'assigned', timestamp: new Date().toISOString() });
     emitNotification(String(bid.catalystId), { id: `notif_${Date.now()}`, type: 'bid_accepted', title: 'Bid Accepted!', message: `Your bid of $${Number(bid.amount).toLocaleString()} for load ${load?.loadNumber} has been accepted`, priority: 'high', data: { loadId: String(bid.loadId), bidId: input.bidId }, actionUrl: `/loads/${bid.loadId}`, timestamp: new Date().toISOString() });
@@ -2525,9 +2540,9 @@ export const bidsRouter = router({
     // Email + SMS: notify catalyst their bid was accepted
     lookupAndNotify(bid.catalystId, { type: "bid_accepted", loadNumber: load?.loadNumber || '', bidAmount: Number(bid.amount) });
     // Email + SMS: notify catalyst of load assignment
-    const pickup = load?.pickupLocation as any || {};
-    const delivery = load?.deliveryLocation as any || {};
-    lookupAndNotify(bid.catalystId, { type: "load_assigned", loadNumber: load?.loadNumber || '', origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : undefined, destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : undefined });
+    const acceptPickup = loc(load?.pickupLocation);
+    const acceptDelivery = loc(load?.deliveryLocation);
+    lookupAndNotify(bid.catalystId, { type: "load_assigned", loadNumber: load?.loadNumber || '', origin: acceptPickup.city && acceptPickup.state ? `${acceptPickup.city}, ${acceptPickup.state}` : undefined, destination: acceptDelivery.city && acceptDelivery.state ? `${acceptDelivery.city}, ${acceptDelivery.state}` : undefined });
     return { success: true, bidId: input.bidId, fmcsaSafetyGate };
   }),
   reject: protectedProcedure.input(z.object({ bidId: z.string(), reason: z.string().optional() })).mutation(async ({ ctx, input }) => {
@@ -2539,7 +2554,7 @@ export const bidsRouter = router({
     const [load] = await db.select().from(loads).where(eq(loads.id, bid.loadId)).limit(1);
     const userId = await resolveUserId(ctx.user);
     if (load && load.shipperId !== userId) throw new Error("Only the load owner can reject bids");
-    await db.update(bids).set({ status: 'rejected' } as any).where(eq(bids.id, bidIdNum));
+    await db.update(bids).set({ status: 'rejected' }).where(eq(bids.id, bidIdNum));
     emitNotification(String(bid.catalystId), { id: `notif_${Date.now()}`, type: 'bid_rejected', title: 'Bid Declined', message: `Your bid for load ${load?.loadNumber} was declined${input.reason ? ': ' + input.reason : ''}`, priority: 'medium', data: { loadId: String(bid.loadId), bidId: input.bidId }, actionUrl: `/bids`, timestamp: new Date().toISOString() });
     // Email + SMS: notify catalyst their bid was rejected
     lookupAndNotify(bid.catalystId, { type: "bid_rejected", loadNumber: load?.loadNumber || '' });
@@ -2555,7 +2570,7 @@ export const bidsRouter = router({
     if (!bid) throw new Error("Bid not found");
     if (bid.catalystId !== userId) throw new Error("You can only cancel your own bids");
     if (bid.status !== 'pending') throw new Error("Only pending bids can be cancelled");
-    await db.update(bids).set({ status: 'withdrawn' } as any).where(eq(bids.id, bidIdNum));
+    await db.update(bids).set({ status: 'withdrawn' }).where(eq(bids.id, bidIdNum));
     return { success: true, bidId: input.bidId };
   }),
 
@@ -2580,8 +2595,8 @@ export const bidsRouter = router({
     }
     // Group bids by load
     return myLoads.map(l => {
-      const pickup = l.pickupLocation as any || {};
-      const delivery = l.deliveryLocation as any || {};
+      const pickup = loc(l.pickupLocation);
+      const delivery = loc(l.deliveryLocation);
       const loadBids = allBids.filter(b => b.loadId === l.id);
       return {
         loadId: String(l.id),
@@ -2627,18 +2642,18 @@ export const bidsRouter = router({
     const isCatalyst = load.catalystId === userId;
     const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
     if (!isOwner && !isCatalyst && !isAdmin) throw new Error("Not authorized to update this load");
-    const updateSet: Record<string, any> = { status: input.status, updatedAt: new Date() };
+    const updateSet: Partial<InsertLoad> & Record<string, unknown> = { status: input.status, updatedAt: new Date() };
     if (input.lat && input.lng) updateSet.currentLocation = { lat: input.lat, lng: input.lng };
     if (input.status === 'delivered') updateSet.actualDeliveryDate = new Date();
     if (input.notes) {
       updateSet.specialInstructions = [(load.specialInstructions || ''), `[STATUS ${input.status.toUpperCase()} ${new Date().toISOString()}] ${input.notes}`].filter(Boolean).join('\n');
     }
-    await db.update(loads).set(updateSet as any).where(eq(loads.id, loadIdNum));
+    await db.update(loads).set(updateSet as Partial<InsertLoad>).where(eq(loads.id, loadIdNum));
     emitLoadStatusChange({ loadId: input.loadId, loadNumber: load.loadNumber, previousStatus: load.status, newStatus: input.status, timestamp: new Date().toISOString(), updatedBy: String(userId) });
 
     // Email + SMS: notify all parties of status change
-    const lPickup = load.pickupLocation as any || {};
-    const lDelivery = load.deliveryLocation as any || {};
+    const lPickup = loc(load.pickupLocation);
+    const lDelivery = loc(load.deliveryLocation);
     const originStr = lPickup.city && lPickup.state ? `${lPickup.city}, ${lPickup.state}` : undefined;
     const destStr = lDelivery.city && lDelivery.state ? `${lDelivery.city}, ${lDelivery.state}` : undefined;
 
@@ -2652,7 +2667,7 @@ export const bidsRouter = router({
       if (load.catalystId) lookupAndNotify(load.catalystId, { type: "load_cancelled", loadNumber: load.loadNumber, reason: input.notes });
     } else if (['temp_excursion', 'reefer_breakdown', 'contamination_reject', 'seal_breach', 'weight_violation'].includes(input.status)) {
       // Cargo exception: urgent alert to all parties
-      const cargoType = (load as any).cargoType || undefined;
+      const cargoType = load.cargoType || undefined;
       if (load.shipperId) lookupAndNotify(load.shipperId, { type: "cargo_exception", loadNumber: load.loadNumber, exceptionType: input.status, loadId: input.loadId, cargoType, description: input.notes });
       if (load.catalystId) lookupAndNotify(load.catalystId, { type: "cargo_exception", loadNumber: load.loadNumber, exceptionType: input.status, loadId: input.loadId, cargoType, description: input.notes });
     } else {
@@ -2713,14 +2728,14 @@ export const bidsRouter = router({
           .limit(input.limit || 50);
 
         return loadList.map(l => {
-          const pickup = l.pickupLocation as any || {};
-          const delivery = l.deliveryLocation as any || {};
+          const pickup = loc(l.pickupLocation);
+          const delivery = loc(l.deliveryLocation);
           const bidCount = 0;
           // Extract equipmentType from specialInstructions
-          let siMkt: any = {};
+          let siMkt: Record<string, unknown> = {};
           const rawSIMkt = l.specialInstructions || "";
           if (typeof rawSIMkt === 'string') { try { siMkt = JSON.parse(rawSIMkt); } catch { /* text */ } }
-          const mktEquip = siMkt?.equipmentType || (typeof rawSIMkt === 'string' ? rawSIMkt.match?.(/^Equipment: (.+)$/m)?.[1] : null) || null;
+          const mktEquip = (siMkt?.equipmentType as string | undefined) || (typeof rawSIMkt === 'string' ? rawSIMkt.match?.(/^Equipment: (.+)$/m)?.[1] : null) || null;
           return {
             id: l.id,
             loadNumber: l.loadNumber,
@@ -2772,8 +2787,8 @@ export const bidsRouter = router({
         commodityName: load.commodityName,
         specialInstructions: JSON.stringify({ templateName: input.templateName }),
         status: "draft",
-      } as any);
-      const insertId = (result as any).insertId || (result as any)[0]?.insertId;
+      } satisfies InsertLoad);
+      const insertId = (result as unknown as [ResultSetHeader, unknown])[0]?.insertId;
       return { success: true, templateId: insertId, name: input.templateName };
     }),
 
@@ -2801,8 +2816,8 @@ export const bidsRouter = router({
         pickupDate: input.pickupDate ? new Date(input.pickupDate) : undefined,
         deliveryDate: input.deliveryDate ? new Date(input.deliveryDate) : undefined,
         status: "posted",
-      } as any);
-      const insertId = (result as any).insertId || (result as any)[0]?.insertId;
+      } satisfies InsertLoad);
+      const insertId = (result as unknown as [ResultSetHeader, unknown])[0]?.insertId;
       emitLoadStatusChange({ loadId: String(insertId), loadNumber, previousStatus: "", newStatus: "posted", timestamp: new Date().toISOString(), updatedBy: String(userId) });
       return { success: true, loadId: insertId, loadNumber };
     }),
@@ -2829,7 +2844,7 @@ export const bidsRouter = router({
         const loadNumber = `LD-${Date.now().toString(36).toUpperCase()}-${created.length}`;
         const result = await db.insert(loads).values({
           shipperId: userId, loadNumber,
-          cargoType: (ld.cargoType || "general") as any,
+          cargoType: (ld.cargoType || "general"),
           weight: ld.weight ? String(ld.weight) : null,
           rate: ld.rate ? String(ld.rate) : null,
           pickupLocation: { address: ld.origin, city: ld.origin.split(",")[0]?.trim() || "", state: ld.origin.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 },
@@ -2838,8 +2853,8 @@ export const bidsRouter = router({
           deliveryDate: ld.deliveryDate ? new Date(ld.deliveryDate) : undefined,
           specialInstructions: ld.specialInstructions || null,
           status: "posted",
-        } as any);
-        const insertId = (result as any).insertId || (result as any)[0]?.insertId;
+        } satisfies InsertLoad);
+        const insertId = (result as unknown as [ResultSetHeader, unknown])[0]?.insertId;
         created.push({ loadId: insertId, loadNumber });
       }
       return { success: true, count: created.length, loads: created };
@@ -2861,7 +2876,7 @@ export const bidsRouter = router({
       await db.update(loads).set({
         status: "cancelled",
         specialInstructions: `${load.specialInstructions || ""}\n[CANCELLED: ${input.reason}]`.trim(),
-      } as any).where(eq(loads.id, input.loadId));
+      } satisfies Partial<InsertLoad>).where(eq(loads.id, input.loadId));
       emitLoadStatusChange({ loadId: String(input.loadId), loadNumber: load.loadNumber || "", previousStatus: load.status, newStatus: "cancelled", timestamp: new Date().toISOString(), updatedBy: String(userId) });
       return { success: true, loadId: input.loadId, reason: input.reason };
     }),
@@ -2877,7 +2892,7 @@ export const bidsRouter = router({
       const userId = await resolveUserId(ctx.user);
       const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId)).limit(1);
       if (!load || load.shipperId !== userId) throw new Error("Not authorized");
-      await db.update(bids).set({ status: "rejected" } as any)
+      await db.update(bids).set({ status: "rejected" })
         .where(and(eq(bids.loadId, input.loadId), inArray(bids.id, input.bidIds)));
       return { success: true, declined: input.bidIds.length };
     }),
@@ -2897,10 +2912,10 @@ export const bidsRouter = router({
       if (loadBids.length === 0) throw new Error("No pending bids");
       const sorted = [...loadBids].sort((a, b) => parseFloat(a.amount || "0") - parseFloat(b.amount || "0"));
       const winner = sorted[0];
-      await db.update(bids).set({ status: "accepted" } as any).where(eq(bids.id, winner.id));
-      await db.update(bids).set({ status: "rejected" } as any)
+      await db.update(bids).set({ status: "accepted" }).where(eq(bids.id, winner.id));
+      await db.update(bids).set({ status: "rejected" })
         .where(and(eq(bids.loadId, input.loadId), eq(bids.status, "pending")));
-      await db.update(loads).set({ status: "assigned", catalystId: winner.catalystId } as any).where(eq(loads.id, input.loadId));
+      await db.update(loads).set({ status: "assigned", catalystId: winner.catalystId } satisfies Partial<InsertLoad>).where(eq(loads.id, input.loadId));
       emitBidAwarded({ bidId: String(winner.id), loadId: String(input.loadId), catalystId: String(winner.catalystId), catalystName: "Catalyst", amount: Number(winner.amount) || 0, status: "accepted", loadNumber: load.loadNumber || "", timestamp: new Date().toISOString() });
       emitLoadStatusChange({ loadId: String(input.loadId), loadNumber: load.loadNumber || "", previousStatus: load.status, newStatus: "assigned", timestamp: new Date().toISOString(), updatedBy: String(userId) });
       return { success: true, winnerId: winner.id, winnerCatalystId: winner.catalystId, amount: winner.amount };
@@ -2967,7 +2982,7 @@ export const bidsRouter = router({
       const colIdx = (name: string) => headers.indexOf(name);
 
       const errors: { row: number; message: string }[] = [];
-      const parsed: any[] = [];
+      const parsed: Record<string, unknown>[] = [];
 
       for (let i = 1; i < lines.length; i++) {
         try {
@@ -3005,8 +3020,8 @@ export const bidsRouter = router({
             specialInstructions: get("notes") || get("instructions") || null,
             createdAt: new Date(),
           });
-        } catch (e: any) {
-          errors.push({ row: i + 1, message: e?.message?.slice(0, 80) || "Parse error" });
+        } catch (e: unknown) {
+          errors.push({ row: i + 1, message: (e as Error)?.message?.slice(0, 80) || "Parse error" });
         }
       }
 
@@ -3017,13 +3032,17 @@ export const bidsRouter = router({
           validRows: parsed.length,
           errorRows: errors.length,
           errors: errors.slice(0, 20),
-          preview: parsed.slice(0, 5).map(p => ({
-            loadNumber: p.loadNumber,
-            origin: `${p.pickupLocation.city}, ${p.pickupLocation.state}`,
-            destination: `${p.deliveryLocation.city}, ${p.deliveryLocation.state}`,
-            cargoType: p.cargoType,
-            rate: p.rate,
-          })),
+          preview: parsed.slice(0, 5).map(p => {
+            const pPickup = (p.pickupLocation || {}) as Record<string, string>;
+            const pDelivery = (p.deliveryLocation || {}) as Record<string, string>;
+            return {
+              loadNumber: p.loadNumber as string,
+              origin: `${pPickup.city || ''}, ${pPickup.state || ''}`,
+              destination: `${pDelivery.city || ''}, ${pDelivery.state || ''}`,
+              cargoType: p.cargoType as string,
+              rate: p.rate as string | null,
+            };
+          }),
           importedCount: 0,
         };
       }
@@ -3032,10 +3051,10 @@ export const bidsRouter = router({
       let importedCount = 0;
       for (const load of parsed) {
         try {
-          await db.insert(loads).values(load as any);
+          await db.insert(loads).values(load as InsertLoad);
           importedCount++;
-        } catch (e: any) {
-          errors.push({ row: 0, message: `Insert failed: ${e?.message?.slice(0, 60)}` });
+        } catch (e: unknown) {
+          errors.push({ row: 0, message: `Insert failed: ${(e as Error)?.message?.slice(0, 60)}` });
         }
       }
 
@@ -3068,7 +3087,7 @@ export const bidsRouter = router({
       if (!db) throw new Error("Database not available");
 
       try {
-        const filters: any[] = [];
+        const filters: SQL[] = [];
         const role = await resolveUserRole(ctx.user);
 
         if (!isAdminRole(role)) {
@@ -3089,7 +3108,7 @@ export const bidsRouter = router({
           filters.push(sql`${loads.createdAt} <= ${input.endDate + " 23:59:59"}`);
         }
         if (input.status) {
-          filters.push(eq(loads.status, input.status as any));
+          filters.push(eq(loads.status, input.status as Load["status"]));
         }
 
         const rows = await db.select({
@@ -3114,9 +3133,9 @@ export const bidsRouter = router({
           .orderBy(desc(loads.createdAt))
           .limit(input.limit);
 
-        const exportRows = rows.map((r: any) => {
-          const pickup = r.pickupLocation as any || {};
-          const delivery = r.deliveryLocation as any || {};
+        const exportRows = rows.map((r) => {
+          const pickup = loc(r.pickupLocation);
+          const delivery = loc(r.deliveryLocation);
           const rate = r.rate ? parseFloat(String(r.rate)) : 0;
           const dist = r.distance ? parseFloat(String(r.distance)) : 0;
           return {

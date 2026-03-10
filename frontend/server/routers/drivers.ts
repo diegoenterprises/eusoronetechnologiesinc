@@ -227,8 +227,8 @@ export const driversRouter = router({
           .limit(1);
         if (!load) return null;
 
-        const pickup = load.pickupLocation as any || {};
-        const delivery = load.deliveryLocation as any || {};
+        const pickup = (load.pickupLocation as Record<string, string | number | null> | null) || {};
+        const delivery = (load.deliveryLocation as Record<string, string | number | null> | null) || {};
 
         // Get shipper name
         const [shipper] = await db.select({ name: users.name, metadata: users.metadata })
@@ -510,7 +510,7 @@ export const driversRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       const driverId = parseInt(input.driverId, 10);
-      await db.update(drivers).set({ status: input.status as any }).where(eq(drivers.id, driverId));
+      await db.update(drivers).set({ status: input.status as typeof drivers.$inferSelect["status"] }).where(eq(drivers.id, driverId));
       return {
         success: true,
         driverId: input.driverId,
@@ -587,7 +587,7 @@ export const driversRouter = router({
       const loadId = parseInt(input.loadId, 10);
       const [driver] = await db.select({ userId: drivers.userId }).from(drivers).where(eq(drivers.id, driverId)).limit(1);
       if (!driver) throw new Error("Driver not found");
-      await db.update(loads).set({ driverId: driver.userId, status: 'assigned' } as any).where(eq(loads.id, loadId));
+      await db.update(loads).set({ driverId: driver.userId, status: 'assigned' as typeof loads.$inferSelect["status"] }).where(eq(loads.id, loadId));
       return {
         success: true,
         driverId: input.driverId,
@@ -745,8 +745,8 @@ export const driversRouter = router({
 
         if (!load) return null;
 
-        const pickup = load.pickupLocation as any || {};
-        const delivery = load.deliveryLocation as any || {};
+        const pickup = (load.pickupLocation as Record<string, string | number | null> | null) || {};
+        const delivery = (load.deliveryLocation as Record<string, string | number | null> | null) || {};
 
         return {
           loadNumber: load.loadNumber,
@@ -846,10 +846,10 @@ export const driversRouter = router({
         const userId = ctx.user?.id || 0;
         const [currentLoad] = await db.select().from(loads).where(and(eq(loads.driverId, userId), sql`${loads.status} NOT IN ('delivered', 'cancelled')`)).limit(1);
         if (!currentLoad) throw new Error("No active load found");
-        const updateSet: Record<string, any> = { status: input.status, updatedAt: new Date() };
+        const updateSet: Record<string, unknown> = { status: input.status, updatedAt: new Date() };
         if (input.status === 'delivered') updateSet.actualDeliveryDate = new Date();
         if (input.notes) updateSet.specialInstructions = [(currentLoad.specialInstructions || ''), `[DRIVER ${input.status.toUpperCase()} ${new Date().toISOString()}] ${input.notes}`].filter(Boolean).join('\n');
-        await db.update(loads).set(updateSet as any).where(eq(loads.id, currentLoad.id));
+        await db.update(loads).set(updateSet as Record<string, unknown>).where(eq(loads.id, currentLoad.id));
 
         // ── ORGANIC HOS EVENT ── Trip lifecycle → automatic duty status
         // The driver doesn't need to separately toggle HOS; the trip status
@@ -867,8 +867,8 @@ export const driversRouter = router({
         if (newDutyStatus) {
           try {
             // Build location string from load data for the HOS log entry
-            const pickup = currentLoad.pickupLocation as any || {};
-            const delivery = currentLoad.deliveryLocation as any || {};
+            const pickup = (currentLoad.pickupLocation as Record<string, string | number | null> | null) || {};
+            const delivery = (currentLoad.deliveryLocation as Record<string, string | number | null> | null) || {};
             const location = input.status.includes("pickup")
               ? `${pickup.city || ""}, ${pickup.state || ""}`.trim().replace(/^,\s*/, "")
               : `${delivery.city || ""}, ${delivery.state || ""}`.trim().replace(/^,\s*/, "");
@@ -944,7 +944,7 @@ export const driversRouter = router({
         try {
           const [result] = await db.insert(inspections).values({
             companyId, driverId: userId, vehicleId,
-            type: input.type as any, status: 'pending', defectsFound: 0,
+            type: input.type as typeof inspections.$inferSelect["type"], status: 'pending', defectsFound: 0,
           }).$returningId();
           if (result) dvirId = `dvir_${result.id}`;
         } catch (e) { logger.error('[Drivers] startDVIR error:', e); }
@@ -1085,8 +1085,8 @@ export const driversRouter = router({
         if (!driver) return [];
         const rows = await db.select().from(loads).where(eq(loads.driverId, driver.userId)).orderBy(desc(loads.createdAt)).limit(input.limit);
         return rows.map(l => {
-          const pickup = l.pickupLocation as any || {};
-          const delivery = l.deliveryLocation as any || {};
+          const pickup = (l.pickupLocation as Record<string, string | number | null> | null) || {};
+          const delivery = (l.deliveryLocation as Record<string, string | number | null> | null) || {};
           return {
             id: String(l.id), loadNumber: l.loadNumber, status: l.status,
             origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
@@ -1104,7 +1104,7 @@ export const driversRouter = router({
     if (!db) throw new Error("Database unavailable");
     const loadId = parseInt(input.loadId, 10);
     const userId = ctx.user?.id || 0;
-    await db.update(loads).set({ driverId: userId, status: 'assigned' } as any).where(eq(loads.id, loadId));
+    await db.update(loads).set({ driverId: userId, status: 'assigned' as typeof loads.$inferSelect["status"] }).where(eq(loads.id, loadId));
     return { success: true, loadId: input.loadId };
   }),
   declineLoad: auditedOperationsProcedure.input(z.object({ loadId: z.string(), reason: z.string().optional() })).mutation(async ({ ctx, input }) => {
@@ -1113,7 +1113,7 @@ export const driversRouter = router({
       try {
         const loadId = parseInt(input.loadId, 10);
         const userId = ctx.user?.id || 0;
-        await db.update(loads).set({ driverId: null, status: 'posted' } as any).where(and(eq(loads.id, loadId), eq(loads.driverId, userId)));
+        await db.update(loads).set({ driverId: null, status: 'posted' as typeof loads.$inferSelect["status"] }).where(and(eq(loads.id, loadId), eq(loads.driverId, userId)));
       } catch (e) { logger.error('[Drivers] declineLoad error:', e); }
     }
     return { success: true, loadId: input.loadId };
@@ -1125,8 +1125,8 @@ export const driversRouter = router({
       const userId = ctx.user?.id || 0;
       const rows = await db.select().from(loads).where(and(eq(loads.driverId, userId), sql`${loads.status} IN ('assigned', 'en_route_pickup')`)).orderBy(desc(loads.createdAt)).limit(10);
       return rows.map(l => {
-        const pickup = l.pickupLocation as any || {};
-        const delivery = l.deliveryLocation as any || {};
+        const pickup = (l.pickupLocation as Record<string, string | number | null> | null) || {};
+        const delivery = (l.deliveryLocation as Record<string, string | number | null> | null) || {};
         return { id: String(l.id), loadNumber: l.loadNumber, status: l.status, origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown', destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown', rate: l.rate ? parseFloat(String(l.rate)) : 0, pickupDate: l.pickupDate?.toISOString() || '' };
       });
     } catch (e) { logger.error('[Drivers] getPendingLoads error:', e); return []; }
@@ -1223,8 +1223,8 @@ export const driversRouter = router({
       const userId = ctx.user?.id || 0;
       const rows = await db.select().from(loads).where(and(eq(loads.driverId, userId), eq(loads.status, 'delivered'))).orderBy(desc(loads.createdAt)).limit(input?.limit || 20);
       return rows.map(l => {
-        const pickup = l.pickupLocation as any || {};
-        const delivery = l.deliveryLocation as any || {};
+        const pickup = (l.pickupLocation as Record<string, string | number | null> | null) || {};
+        const delivery = (l.deliveryLocation as Record<string, string | number | null> | null) || {};
         return { id: String(l.id), loadNumber: l.loadNumber, origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown', destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown', rate: l.rate ? parseFloat(String(l.rate)) : 0, miles: l.distance ? parseFloat(String(l.distance)) : 0, completedAt: l.actualDeliveryDate?.toISOString() || l.updatedAt?.toISOString() || '' };
       });
     } catch (e) { logger.error('[Drivers] getCompletedTrips error:', e); return []; }
@@ -1437,7 +1437,7 @@ export const driversRouter = router({
         const defectCount = input.defects?.length || input.items?.filter(i => !i.passed).length || 0;
         const [result] = await db.insert(inspections).values({
           companyId, driverId: userId, vehicleId,
-          type: 'pre_trip' as any, status: defectCount > 0 ? 'failed' : 'passed',
+          type: 'pre_trip' as typeof inspections.$inferSelect["type"], status: defectCount > 0 ? 'failed' : 'passed',
           defectsFound: defectCount, completedAt: new Date(),
         }).$returningId();
         if (result) inspectionId = `insp_${result.id}`;
@@ -1630,7 +1630,7 @@ export const driversRouter = router({
         .where(and(eq(loads.driverId, driverId), sql`${loads.status} IN ('assigned', 'en_route_pickup', 'at_pickup', 'loading', 'in_transit')`));
 
       // Update the vehicle's assigned driver
-      await db.update(vehicles).set({ assignedDriverId: driverId, updatedAt: new Date() } as any)
+      await db.update(vehicles).set({ currentDriverId: driverId, updatedAt: new Date() })
         .where(eq(vehicles.id, vehicleId));
 
       return { success: true, driverId: input.driverId, vehicleId: input.vehicleId };
@@ -1647,7 +1647,7 @@ export const driversRouter = router({
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const vehicleId = parseInt(input.vehicleId, 10);
 
-      await db.update(vehicles).set({ assignedDriverId: null, updatedAt: new Date() } as any)
+      await db.update(vehicles).set({ currentDriverId: null, updatedAt: new Date() })
         .where(eq(vehicles.id, vehicleId));
 
       return { success: true };
@@ -1676,7 +1676,7 @@ export const driversRouter = router({
 
       if (driver) {
         const newStatus = input.status === 'driving' ? 'on_load' : input.status === 'off_duty' ? 'off_duty' : 'active';
-        await db.update(drivers).set({ status: newStatus as any, updatedAt: new Date() })
+        await db.update(drivers).set({ status: newStatus as typeof drivers.$inferSelect["status"], updatedAt: new Date() })
           .where(eq(drivers.id, driver.id));
       }
 
@@ -1748,12 +1748,12 @@ export const driversRouter = router({
           .from(users).where(eq(users.id, driver.userId)).limit(1);
         if (!user?.currentLocation) return null;
 
-        const loc = user.currentLocation as any;
+        const loc = user.currentLocation as { lat: number; lng: number; city?: string; state?: string } | null;
         return {
-          lat: loc.lat || 0,
-          lng: loc.lng || 0,
-          city: loc.city || '',
-          state: loc.state || '',
+          lat: loc?.lat || 0,
+          lng: loc?.lng || 0,
+          city: loc?.city || '',
+          state: loc?.state || '',
           lastUpdated: user.lastGPSUpdate?.toISOString() || '',
         };
       } catch (e) { return null; }
@@ -1812,8 +1812,8 @@ export const driversRouter = router({
           .limit(input.limit);
 
         return rows.map(l => {
-          const p = l.pickupLocation as any || {};
-          const d = l.deliveryLocation as any || {};
+          const p = (l.pickupLocation as Record<string, string | number | null> | null) || {};
+          const d = (l.deliveryLocation as Record<string, string | number | null> | null) || {};
           return {
             id: String(l.id),
             loadNumber: l.loadNumber || '',
@@ -1883,7 +1883,7 @@ export const driversRouter = router({
         expiryDate: input.expiryDate ? new Date(input.expiryDate) : null,
         documentUrl: input.documentUrl || null,
         status: 'active',
-      } as any).$returningId();
+      }).$returningId();
 
       return { success: true, certificationId: String(result[0]?.id) };
     }),
@@ -1972,8 +1972,8 @@ export const driversRouter = router({
         .where(and(eq(loads.driverId, userId), sql`${loads.status} NOT IN ('delivered', 'cancelled', 'draft')`))
         .orderBy(desc(loads.createdAt)).limit(1);
       if (load) {
-        const pickup = load.pickupLocation as any || {};
-        const delivery = load.deliveryLocation as any || {};
+        const pickup = (load.pickupLocation as Record<string, string | number | null> | null) || {};
+        const delivery = (load.deliveryLocation as Record<string, string | number | null> | null) || {};
         const [shipper] = await db.select({ name: users.name, metadata: users.metadata })
           .from(users).where(eq(users.id, load.shipperId)).limit(1);
         const shipperMeta = shipper?.metadata ? (typeof shipper.metadata === 'string' ? JSON.parse(shipper.metadata) : shipper.metadata) : {};
@@ -1981,8 +1981,8 @@ export const driversRouter = router({
           id: String(load.id), loadNumber: load.loadNumber || '', status: load.status,
           commodity: load.commodityName || load.cargoType || 'General',
           hazmatClass: load.hazmatClass || null,
-          origin: { name: pickup.facility || pickup.city || 'Pickup', city: pickup.city || '', state: pickup.state || '' },
-          destination: { name: delivery.facility || delivery.city || 'Delivery', city: delivery.city || '', state: delivery.state || '' },
+          origin: { name: String(pickup.facility || pickup.city || 'Pickup'), city: String(pickup.city || ''), state: String(pickup.state || '') },
+          destination: { name: String(delivery.facility || delivery.city || 'Delivery'), city: String(delivery.city || ''), state: String(delivery.state || '') },
           pickupDate: load.pickupDate?.toISOString() || '', deliveryDate: load.deliveryDate?.toISOString() || '',
           rate: load.rate ? parseFloat(String(load.rate)) : 0,
           miles: load.distance ? parseFloat(String(load.distance)) : 0,
@@ -2028,8 +2028,8 @@ export const driversRouter = router({
       // 7) Recent loads
       const recentRows = await db.select().from(loads).where(eq(loads.driverId, userId)).orderBy(desc(loads.createdAt)).limit(5);
       empty.recentLoads = recentRows.map(l => {
-        const p = l.pickupLocation as any || {};
-        const d = l.deliveryLocation as any || {};
+        const p = (l.pickupLocation as Record<string, string | number | null> | null) || {};
+        const d = (l.deliveryLocation as Record<string, string | number | null> | null) || {};
         return {
           id: String(l.id), loadNumber: l.loadNumber || '', status: l.status,
           origin: p.city && p.state ? `${p.city}, ${p.state}` : 'Unknown',
@@ -2136,10 +2136,10 @@ export const driversRouter = router({
       // Group by origin-state → dest-state
       const laneMap = new Map<string, { origin: string; destination: string; count: number; totalRate: number; totalDistance: number }>();
       for (const load of completedLoads) {
-        const p = load.pickupLocation as any || {};
-        const d = load.deliveryLocation as any || {};
-        const originState = p.state || "??";
-        const destState = d.state || "??";
+        const p = (load.pickupLocation as Record<string, string | number | null> | null) || {};
+        const d = (load.deliveryLocation as Record<string, string | number | null> | null) || {};
+        const originState = String(p.state || "??");
+        const destState = String(d.state || "??");
         const key = `${originState}-${destState}`;
         const existing = laneMap.get(key) || { origin: originState, destination: destState, count: 0, totalRate: 0, totalDistance: 0 };
         existing.count++;
@@ -2204,14 +2204,14 @@ export const driversRouter = router({
 
         // Filter by lane
         const laneLoads = allLoads.filter(l => {
-          const p = l.pickupLocation as any || {};
-          const d = l.deliveryLocation as any || {};
+          const p = (l.pickupLocation as Record<string, string | number | null> | null) || {};
+          const d = (l.deliveryLocation as Record<string, string | number | null> | null) || {};
           return p.state === input.originState && d.state === input.destState;
         }).slice(0, input.limit || 20);
 
         return laneLoads.map(l => {
-          const p = l.pickupLocation as any || {};
-          const d = l.deliveryLocation as any || {};
+          const p = (l.pickupLocation as Record<string, string | number | null> | null) || {};
+          const d = (l.deliveryLocation as Record<string, string | number | null> | null) || {};
           return {
             id: l.id,
             loadNumber: l.loadNumber || `LD-${l.id}`,

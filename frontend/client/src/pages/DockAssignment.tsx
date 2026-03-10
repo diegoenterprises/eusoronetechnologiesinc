@@ -104,7 +104,7 @@ export default function DockAssignment() {
     return {
       dockNumber: 'TBD',
       bay: 'Assigned at arrival',
-      facility: pickup.name || `${pickup.city}, ${pickup.state}`,
+      facility: String(pickup.name || `${pickup.city}, ${pickup.state}`),
       status: 'assigned' as DockStatus,
       estimatedWait: 15,
       loadNumber: load.loadNumber,

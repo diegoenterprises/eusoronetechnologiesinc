@@ -8,12 +8,12 @@ import { users, auditLogs, notificationPreferences, companies } from "../../driz
 
 // Ensure the current user exists in DB — uses EMAIL as primary lookup
 // (openId column may not exist in actual DB so we never query by it)
-async function ensureUserExists(ctxUser: any): Promise<number> {
+async function ensureUserExists(ctxUser: Record<string, unknown> | null | undefined): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const email = ctxUser?.email || "";
-  const name = ctxUser?.name || "User";
-  const role = (ctxUser?.role || "SHIPPER") as any;
+  const email = (ctxUser?.email as string) || "";
+  const name = (ctxUser?.name as string) || "User";
+  const role = (ctxUser?.role || "SHIPPER") as typeof users.role.enumValues[number];
 
   // 1. Try email lookup (most reliable — email column always exists)
   if (email) {
@@ -27,7 +27,7 @@ async function ensureUserExists(ctxUser: any): Promise<number> {
 
   // 2. User doesn't exist — create them (skip openId to avoid missing-column errors)
   try {
-    const insertData: Record<string, any> = {
+    const insertData: Record<string, unknown> = {
       email: email || `user-${Date.now()}@eusotrip.com`,
       name,
       role,
@@ -37,15 +37,15 @@ async function ensureUserExists(ctxUser: any): Promise<number> {
     // Try including openId — if column doesn't exist, we'll retry without it
     try {
       insertData.openId = String(ctxUser?.id || `auto-${Date.now()}`);
-      const result = await db.insert(users).values(insertData as any);
-      const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
+      const result = await db.insert(users).values(insertData as typeof users.$inferInsert);
+      const insertedId = (result as unknown as { insertId?: number }).insertId || ((result as unknown as { insertId?: number }[])[0]?.insertId);
       if (insertedId) return insertedId;
-    } catch (insertErr: any) {
+    } catch (insertErr) {
       // If openId column doesn't exist, retry without it
-      logger.warn("[ensureUserExists] insert with openId failed, retrying without:", insertErr?.message);
+      logger.warn("[ensureUserExists] insert with openId failed, retrying without:", (insertErr as Error)?.message);
       delete insertData.openId;
-      const result = await db.insert(users).values(insertData as any);
-      const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
+      const result = await db.insert(users).values(insertData as typeof users.$inferInsert);
+      const insertedId = (result as unknown as { insertId?: number }).insertId || ((result as unknown as { insertId?: number }[])[0]?.insertId);
       if (insertedId) return insertedId;
     }
     // Re-query by email to get the id
@@ -54,7 +54,7 @@ async function ensureUserExists(ctxUser: any): Promise<number> {
       return newRow?.id || 0;
     }
     return 0;
-  } catch (err: any) {
+  } catch (err) {
     logger.error("[ensureUserExists] Insert failed:", err);
     // Duplicate key? Try to find by email again
     if (email) {
@@ -133,7 +133,7 @@ export const usersRouter = router({
       await ensureUserExists(ctx.user);
       // Query by email — select only safe columns (openId may not exist in DB)
       const userEmail = ctx.user?.email || "";
-      let user: any = null;
+      let user: { id: number; name: string | null; email: string | null; phone: string | null; role: string; isVerified: boolean; profilePicture: string | null; createdAt: Date } | null = null;
       if (userEmail) {
         const [found] = await db.select({
           id: users.id, name: users.name, email: users.email,
@@ -251,26 +251,28 @@ export const usersRouter = router({
 
       // Read existing metadata, merge
       const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
-      let meta: any = {};
+      let meta: Record<string, unknown> = {};
       try { meta = row?.metadata ? (typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata) : {}; } catch { meta = {}; }
 
       // Notification preferences
       if (!meta.notificationPreferences) meta.notificationPreferences = {};
-      if (input.emailNotifications !== undefined) meta.notificationPreferences.emailNotifications = input.emailNotifications;
-      if (input.smsNotifications !== undefined) meta.notificationPreferences.smsNotifications = input.smsNotifications;
-      if (input.pushNotifications !== undefined) meta.notificationPreferences.pushNotifications = input.pushNotifications;
-      if (input.smsAlerts !== undefined) meta.notificationPreferences.smsAlerts = input.smsAlerts;
-      if (input.marketingEmails !== undefined) meta.notificationPreferences.marketingEmails = input.marketingEmails;
+      const notifPrefs = meta.notificationPreferences as Record<string, unknown>;
+      if (input.emailNotifications !== undefined) notifPrefs.emailNotifications = input.emailNotifications;
+      if (input.smsNotifications !== undefined) notifPrefs.smsNotifications = input.smsNotifications;
+      if (input.pushNotifications !== undefined) notifPrefs.pushNotifications = input.pushNotifications;
+      if (input.smsAlerts !== undefined) notifPrefs.smsAlerts = input.smsAlerts;
+      if (input.marketingEmails !== undefined) notifPrefs.marketingEmails = input.marketingEmails;
 
       // Display preferences
       if (!meta.displayPreferences) meta.displayPreferences = {};
-      if (input.language !== undefined) meta.displayPreferences.language = input.language;
-      if (input.timezone !== undefined) meta.displayPreferences.timezone = input.timezone;
-      if (input.theme !== undefined) meta.displayPreferences.theme = input.theme;
-      if (input.darkMode !== undefined) meta.displayPreferences.theme = input.darkMode ? "dark" : "light";
-      if (input.compactMode !== undefined) meta.displayPreferences.compactMode = input.compactMode;
-      if (input.dateFormat !== undefined) meta.displayPreferences.dateFormat = input.dateFormat;
-      if (input.distanceUnit !== undefined) meta.displayPreferences.distanceUnit = input.distanceUnit;
+      const dispPrefs = meta.displayPreferences as Record<string, unknown>;
+      if (input.language !== undefined) dispPrefs.language = input.language;
+      if (input.timezone !== undefined) dispPrefs.timezone = input.timezone;
+      if (input.theme !== undefined) dispPrefs.theme = input.theme;
+      if (input.darkMode !== undefined) dispPrefs.theme = input.darkMode ? "dark" : "light";
+      if (input.compactMode !== undefined) dispPrefs.compactMode = input.compactMode;
+      if (input.dateFormat !== undefined) dispPrefs.dateFormat = input.dateFormat;
+      if (input.distanceUnit !== undefined) dispPrefs.distanceUnit = input.distanceUnit;
 
       await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
       return { success: true, updatedAt: new Date().toISOString() };
@@ -408,8 +410,8 @@ export const usersRouter = router({
           .where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('en_route_pickup','en_route_delivery','at_pickup','at_delivery','loading','unloading','assigned')`))
           .limit(1);
         if (activeLoad) throw new Error("Cannot close account with active loads in transit. Complete or cancel all active loads first.");
-      } catch (e: any) {
-        if (e.message?.includes("Cannot close")) throw e;
+      } catch (e) {
+        if ((e as Error).message?.includes("Cannot close")) throw e;
       }
 
       // 3. Soft-delete: anonymize PII
@@ -423,7 +425,7 @@ export const usersRouter = router({
         isActive: false,
         deletedAt: closedAt,
         metadata: JSON.stringify({ closedAt: closedAt.toISOString(), closedReason: input.reason || "user_requested", originalEmail: user.email }),
-      } as any).where(eq(users.id, userId));
+      } as Partial<typeof users.$inferInsert>).where(eq(users.id, userId));
 
       // 4. Set status columns
       try {
@@ -434,8 +436,8 @@ export const usersRouter = router({
       try {
         await db.insert(auditLogs).values({
           userId, action: 'ACCOUNT_CLOSED', entityType: 'user', entityId: userId,
-          changes: { reason: input.reason || 'user_requested' },
-        } as any);
+          changes: { reason: input.reason || 'user_requested' } as Record<string, unknown>,
+        } as typeof auditLogs.$inferInsert);
       } catch (e) { logger.warn("[Users] closeAccount audit log failed:", e); }
 
       return { success: true, closedAt: closedAt.toISOString() };
@@ -459,13 +461,13 @@ export const usersRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const adminUser = ctx.user as any;
+      const adminUser = ctx.user!;
       if (!adminUser?.role || !['ADMIN', 'SUPER_ADMIN'].includes(adminUser.role)) {
         throw new Error("Admin privileges required");
       }
 
       // 1. Set user inactive
-      await db.update(users).set({ isActive: false, deletedAt: new Date() } as any).where(eq(users.id, input.userId));
+      await db.update(users).set({ isActive: false, deletedAt: new Date() } as Partial<typeof users.$inferInsert>).where(eq(users.id, input.userId));
 
       // 2. Set deactivation columns
       try {
@@ -476,8 +478,8 @@ export const usersRouter = router({
       try {
         await db.insert(auditLogs).values({
           userId: Number(adminUser.id), action: 'ACCOUNT_DEACTIVATED', entityType: 'user', entityId: input.userId,
-          changes: { targetUserId: input.userId, reason: input.reason },
-        } as any);
+          changes: { targetUserId: input.userId, reason: input.reason } as Record<string, unknown>,
+        } as typeof auditLogs.$inferInsert);
       } catch (e) { logger.warn("[Users] deactivateAccount audit log failed:", e); }
 
       return { success: true, userId: input.userId, deactivatedAt: new Date().toISOString() };
@@ -489,12 +491,12 @@ export const usersRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const adminUser = ctx.user as any;
+      const adminUser = ctx.user!;
       if (!adminUser?.role || !['ADMIN', 'SUPER_ADMIN'].includes(adminUser.role)) {
         throw new Error("Admin privileges required");
       }
 
-      await db.update(users).set({ isActive: true, deletedAt: null } as any).where(eq(users.id, input.userId));
+      await db.update(users).set({ isActive: true, deletedAt: null } as Partial<typeof users.$inferInsert>).where(eq(users.id, input.userId));
       try {
         await db.execute(sql`UPDATE users SET status = 'active', deactivatedAt = NULL, deactivatedBy = NULL WHERE id = ${input.userId}`);
       } catch (e) { logger.warn("[Users] reactivateAccount status update failed:", e); }
@@ -502,8 +504,8 @@ export const usersRouter = router({
       try {
         await db.insert(auditLogs).values({
           userId: Number(adminUser.id), action: 'ACCOUNT_REACTIVATED', entityType: 'user', entityId: input.userId,
-          changes: { targetUserId: input.userId },
-        } as any);
+          changes: { targetUserId: input.userId } as Record<string, unknown>,
+        } as typeof auditLogs.$inferInsert);
       } catch (e) { logger.warn("[Users] reactivateAccount audit log failed:", e); }
 
       return { success: true, userId: input.userId, reactivatedAt: new Date().toISOString() };
@@ -689,20 +691,20 @@ export const usersRouter = router({
           ? `${input.firstName || ""} ${input.lastName || ""}`.trim()
           : input.name;
 
-        const updateData: Record<string, any> = { updatedAt: new Date() };
+        const updateData: Record<string, unknown> = { updatedAt: new Date() };
         if (fullName) updateData.name = fullName;
         if (input.email) updateData.email = input.email;
         if (input.phone !== undefined) updateData.phone = input.phone;
 
         await db.update(users).set(updateData).where(eq(users.id, userId));
         return { success: true };
-      } catch (error: any) {
+      } catch (error) {
         logger.error("[users.updateProfile] Error:", error);
-        if (error.message?.includes("phone")) {
+        if ((error as Error).message?.includes("phone")) {
           const fullName = input.firstName || input.lastName
             ? `${input.firstName || ""} ${input.lastName || ""}`.trim()
             : input.name;
-          const fallbackData: Record<string, any> = { updatedAt: new Date() };
+          const fallbackData: Record<string, unknown> = { updatedAt: new Date() };
           if (fullName) fallbackData.name = fullName;
           if (input.email) fallbackData.email = input.email;
           await db.update(users).set(fallbackData).where(eq(users.id, userId));
@@ -721,7 +723,7 @@ export const usersRouter = router({
       if (!userId) throw new Error("Could not resolve user");
 
       const [user] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
-      let meta: any = {};
+      let meta: Record<string, unknown> = {};
       try { meta = user?.metadata ? JSON.parse(user.metadata as string) : {}; } catch { meta = {}; }
       const ec = meta.emergencyContact || null;
       return ec as { name: string; phone: string; email: string; relationship: string } | null;
@@ -742,7 +744,7 @@ export const usersRouter = router({
       if (!userId) throw new Error("Could not resolve user");
 
       const [user] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
-      let meta: any = {};
+      let meta: Record<string, unknown> = {};
       try { meta = user?.metadata ? JSON.parse(user.metadata as string) : {}; } catch { meta = {}; }
       meta.emergencyContact = {
         name: input.name.trim(),
@@ -768,7 +770,7 @@ export const usersRouter = router({
       try {
         await db.update(users).set({ profilePicture: input.imageData, updatedAt: new Date() }).where(eq(users.id, userId));
         return { success: true };
-      } catch (error: any) {
+      } catch (error) {
         logger.error("[users.uploadProfilePicture] Error:", error);
         throw new Error("Failed to upload profile picture");
       }
@@ -791,9 +793,9 @@ export const usersRouter = router({
 
       // Read existing metadata, merge notification prefs
       const [user] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
-      let meta: any = {};
+      let meta: Record<string, unknown> = {};
       try { meta = user?.metadata ? JSON.parse(user.metadata as string) : {}; } catch { meta = {}; }
-      meta.notificationPreferences = { ...meta.notificationPreferences, ...input };
+      meta.notificationPreferences = { ...(meta.notificationPreferences as Record<string, unknown>), ...input };
 
       await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
       return { success: true, preferences: input };
@@ -837,7 +839,7 @@ export const usersRouter = router({
 
         // Record passwordChangedAt in metadata for security score
         try {
-          let pwMeta: any = {};
+          let pwMeta: Record<string, unknown> = {};
           try { pwMeta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch { /* metadata parse failed — use default */ pwMeta = {}; }
           pwMeta.passwordChangedAt = new Date().toISOString();
           await db.update(users).set({ metadata: JSON.stringify(pwMeta) }).where(eq(users.id, userId));
@@ -855,7 +857,7 @@ export const usersRouter = router({
 
       // 2FA toggle — store in metadata
       if (input.twoFactorEnabled !== undefined) {
-        let meta: any = {};
+        let meta: Record<string, unknown> = {};
         try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch { /* metadata parse failed — use default */ meta = {}; }
         meta.twoFactorEnabled = input.twoFactorEnabled;
         await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
@@ -887,10 +889,10 @@ export const usersRouter = router({
       if (!db) return { enabled: false, method: null, lastUpdated: null, backupCodes: [] as string[], usedBackupCodes: [] as string[], remainingBackupCodes: 0 };
       try {
         const userId = Number(ctx.user?.id) || 0;
-        const [row] = await db.execute(sql`SELECT enabled, lastVerified, backupCodes FROM mfa_secrets WHERE userId = ${userId} LIMIT 1`) as any[];
+        const [row] = await db.execute(sql`SELECT enabled, lastVerified, backupCodes FROM mfa_secrets WHERE userId = ${userId} LIMIT 1`) as unknown as Record<string, unknown>[];
         if (!row) return { enabled: false, method: null, lastUpdated: null, backupCodes: [] as string[], usedBackupCodes: [] as string[], remainingBackupCodes: 0 };
-        const codes = row.backupCodes ? JSON.parse(row.backupCodes) : [];
-        return { enabled: !!row.enabled, method: row.enabled ? 'authenticator' : null, lastUpdated: row.lastVerified?.toISOString() || null, backupCodes: codes, usedBackupCodes: [] as string[], remainingBackupCodes: codes.length };
+        const codes = row.backupCodes ? JSON.parse(String(row.backupCodes)) : [];
+        return { enabled: !!row.enabled, method: row.enabled ? 'authenticator' : null, lastUpdated: row.lastVerified ? new Date(row.lastVerified as string).toISOString() : null, backupCodes: codes, usedBackupCodes: [] as string[], remainingBackupCodes: codes.length };
       } catch { return { enabled: false, method: null, lastUpdated: null, backupCodes: [] as string[], usedBackupCodes: [] as string[], remainingBackupCodes: 0 }; }
     }),
 
@@ -934,7 +936,7 @@ export const usersRouter = router({
           const hashedCodes = hashBackupCodes(backupCodes);
           try {
             await db.execute(sql`INSERT INTO mfa_secrets (userId, secret, enabled, backupCodes, lastVerified) VALUES (${userId}, ${input.secret}, TRUE, ${JSON.stringify(hashedCodes)}, NOW()) ON DUPLICATE KEY UPDATE secret = ${input.secret}, enabled = TRUE, backupCodes = ${JSON.stringify(hashedCodes)}, lastVerified = NOW()`);
-          } catch (e: any) { logger.error('[MFA] DB persist error:', e?.message?.slice(0, 100)); }
+          } catch (e) { logger.error('[MFA] DB persist error:', (e as Error)?.message?.slice(0, 100)); }
           return { success: true, enabledAt: new Date().toISOString(), backupCodes };
         }
         return { success: valid, enabledAt: valid ? new Date().toISOString() : null };
@@ -1167,11 +1169,11 @@ export const usersRouter = router({
         email: input.email,
         phone: input.phone || null,
         passwordHash,
-        role: input.role as any,
+        role: input.role as typeof users.role.enumValues[number],
         companyId: input.companyId || null,
         isActive: true,
         isVerified: false,
-      } as any).$returningId();
+      } as typeof users.$inferInsert).$returningId();
 
       const newUserId = Number(result[0]?.id);
 
@@ -1211,7 +1213,7 @@ export const usersRouter = router({
       const userId = parseInt(input.id, 10);
       if (isNaN(userId)) throw new Error("Invalid user ID");
 
-      const updateData: Record<string, any> = { updatedAt: new Date() };
+      const updateData: Record<string, unknown> = { updatedAt: new Date() };
       if (input.name !== undefined) updateData.name = input.name;
       if (input.email !== undefined) updateData.email = input.email;
       if (input.phone !== undefined) updateData.phone = input.phone;
@@ -1238,9 +1240,9 @@ export const usersRouter = router({
       if (isNaN(userId)) throw new Error("Invalid user ID");
 
       const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
-      let meta: any = {};
+      let meta: Record<string, unknown> = {};
       try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch { /* metadata parse failed — use default */ }
-      meta.tokenVersion = (meta.tokenVersion || 0) + 1;
+      meta.tokenVersion = (Number(meta.tokenVersion) || 0) + 1;
       meta.deletedReason = input.reason || 'admin_action';
       meta.deletedBy = 'admin';
 
@@ -1276,10 +1278,10 @@ export const usersRouter = router({
       if (!user) throw new Error("User not found");
 
       const previousRole = user.role;
-      let meta: any = {};
+      let meta: Record<string, unknown> = {};
       try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch { /* metadata parse failed — use default */ }
       if (!meta.roleHistory) meta.roleHistory = [];
-      meta.roleHistory.push({
+      (meta.roleHistory as Record<string, unknown>[]).push({
         from: previousRole,
         to: input.newRole,
         changedBy: ctx.user?.id || 'system',
@@ -1288,7 +1290,7 @@ export const usersRouter = router({
       });
 
       await db.update(users).set({
-        role: input.newRole as any,
+        role: input.newRole as typeof users.role.enumValues[number],
         metadata: JSON.stringify(meta),
         updatedAt: new Date(),
       }).where(eq(users.id, userId));
@@ -1401,12 +1403,12 @@ export const usersRouter = router({
         await db.update(notificationPreferences).set({
           ...input,
           updatedAt: new Date(),
-        } as any).where(eq(notificationPreferences.userId, userId));
+        } as Partial<typeof notificationPreferences.$inferInsert>).where(eq(notificationPreferences.userId, userId));
       } else {
         await db.insert(notificationPreferences).values({
           userId,
           ...input,
-        } as any);
+        } as typeof notificationPreferences.$inferInsert);
       }
 
       return { success: true };
@@ -1422,7 +1424,7 @@ export const usersRouter = router({
   impersonate: protectedProcedure
     .input(z.object({ userId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const currentUser = ctx.user as any;
+      const currentUser = ctx.user!;
       if (!currentUser?.role || !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
         throw new Error("Impersonation requires admin privileges");
       }
@@ -1445,9 +1447,9 @@ export const usersRouter = router({
           action: 'impersonate',
           entityType: 'user',
           entityId: targetId,
-          changes: { detail: `Admin ${currentUser.email} impersonated user ${targetUser.email}` },
-          ipAddress: (ctx as any).req?.ip || '',
-        } as any);
+          changes: { detail: `Admin ${currentUser.email} impersonated user ${targetUser.email}` } as Record<string, unknown>,
+          ipAddress: ctx.req?.ip || '',
+        } as typeof auditLogs.$inferInsert);
       } catch (e) { logger.warn("[Users] impersonation audit log failed:", e); }
 
       const { authService } = await import("../_core/auth");
@@ -1492,8 +1494,8 @@ export const usersRouter = router({
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
         const [recentCount] = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM password_reset_tokens WHERE userId = ${user.id} AND createdAt > ${oneHourAgo}`
-        ) as any[];
-        if ((recentCount?.cnt || 0) >= 3) return { success: true }; // Silent rate limit
+        ) as unknown as Record<string, unknown>[];
+        if (Number(recentCount?.cnt || 0) >= 3) return { success: true }; // Silent rate limit
 
         // 3. Generate secure token
         const token = crypto.randomBytes(32).toString("hex");
@@ -1521,11 +1523,11 @@ export const usersRouter = router({
         try {
           await db.insert(auditLogs).values({
             userId: user.id, action: 'PASSWORD_RESET_REQUESTED', entityType: 'user', entityId: user.id,
-            changes: { email: input.email },
-          } as any);
+            changes: { email: input.email } as Record<string, unknown>,
+          } as typeof auditLogs.$inferInsert);
         } catch (e) { logger.warn("[Users] password reset request audit log failed:", e); }
-      } catch (err: any) {
-        logger.error("[PasswordReset] Request error:", err?.message?.slice(0, 200));
+      } catch (err) {
+        logger.error("[PasswordReset] Request error:", (err as Error)?.message?.slice(0, 200));
       }
 
       return { success: true };
@@ -1540,12 +1542,12 @@ export const usersRouter = router({
       // 1. Lookup token
       const [tokenRow] = await db.execute(
         sql`SELECT id, userId, expiresAt, usedAt FROM password_reset_tokens WHERE token = ${input.token} LIMIT 1`
-      ) as any[];
+      ) as unknown as Record<string, unknown>[];
       if (!tokenRow) throw new Error("Invalid or expired reset token");
       if (tokenRow.usedAt) throw new Error("This reset token has already been used");
 
       // 2. Check not expired
-      if (new Date(tokenRow.expiresAt) < new Date()) {
+      if (new Date(tokenRow.expiresAt as string) < new Date()) {
         throw new Error("Reset token has expired. Please request a new one.");
       }
 
@@ -1554,23 +1556,23 @@ export const usersRouter = router({
       const newHash = await bcryptMod.default.hash(input.newPassword, 12);
 
       // 4. Update user password
-      await db.update(users).set({ passwordHash: newHash, updatedAt: new Date() }).where(eq(users.id, tokenRow.userId));
+      await db.update(users).set({ passwordHash: newHash, updatedAt: new Date() }).where(eq(users.id, tokenRow.userId as number));
 
       // 5. Mark token as used & delete all tokens for this user
-      await db.execute(sql`UPDATE password_reset_tokens SET usedAt = NOW() WHERE id = ${tokenRow.id}`);
-      await db.execute(sql`DELETE FROM password_reset_tokens WHERE userId = ${tokenRow.userId} AND id != ${tokenRow.id}`);
+      await db.execute(sql`UPDATE password_reset_tokens SET usedAt = NOW() WHERE id = ${tokenRow.id as number}`);
+      await db.execute(sql`DELETE FROM password_reset_tokens WHERE userId = ${tokenRow.userId as number} AND id != ${tokenRow.id as number}`);
 
       // 6. Log to audit
       try {
         await db.insert(auditLogs).values({
-          userId: tokenRow.userId, action: 'PASSWORD_RESET', entityType: 'user', entityId: tokenRow.userId,
-          changes: { method: 'token_reset' },
-        } as any);
+          userId: tokenRow.userId as number, action: 'PASSWORD_RESET', entityType: 'user', entityId: tokenRow.userId as number,
+          changes: { method: 'token_reset' } as Record<string, unknown>,
+        } as typeof auditLogs.$inferInsert);
       } catch (e) { logger.warn("[Users] password reset audit log failed:", e); }
 
       // 7. Send confirmation email
       try {
-        const [user] = await db.select({ email: users.email, name: users.name }).from(users).where(eq(users.id, tokenRow.userId)).limit(1);
+        const [user] = await db.select({ email: users.email, name: users.name }).from(users).where(eq(users.id, tokenRow.userId as number)).limit(1);
         if (user?.email) {
           const { notifyPasswordChanged } = await import("../services/notifications");
           notifyPasswordChanged({ email: user.email, name: user.name || "" });

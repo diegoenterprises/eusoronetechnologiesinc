@@ -22,15 +22,29 @@ import { getDb } from "../db";
 import { loads, companies, vehicles, bids, drivers, users, loadBids, bidAutoAcceptRules, negotiations, negotiationMessages, laneContracts, agreements, loadStops } from "../../drizzle/schema";
 import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
 
+/** Parsed JSON object from text/json columns */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface JsonRecord { [key: string]: any }
+
+/** Location object from pickupLocation / deliveryLocation JSON columns */
+interface LocationJson {
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  lat?: number;
+  lng?: number;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ROLE-AWARE USER RESOLUTION
 // Maps auth context (Clerk/JWT) → DB user ID, role, company, driver profile
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async function resolveUserId(ctxUser: any): Promise<number> {
+async function resolveUserId(ctxUser: Record<string, unknown> | null): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const email = ctxUser?.email || "";
+  const email = String(ctxUser?.email || "");
   if (!email) return ctxUser?.id ? Number(ctxUser.id) : 0;
   try {
     const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
@@ -51,7 +65,7 @@ interface UserProfile {
   carrierInsuranceAmount: number;
 }
 
-async function resolveUserProfile(ctxUser: any): Promise<UserProfile> {
+async function resolveUserProfile(ctxUser: Record<string, unknown> | null): Promise<UserProfile> {
   const userId = await resolveUserId(ctxUser);
   const role = await resolveUserRole(ctxUser);
   const admin = isAdminRole(role);
@@ -81,7 +95,7 @@ async function resolveUserProfile(ctxUser: any): Promise<UserProfile> {
           if (co.insurancePolicy) {
             try {
               const ins = typeof co.insurancePolicy === 'string' ? JSON.parse(co.insurancePolicy) : co.insurancePolicy;
-              carrierInsuranceAmount = (ins as any)?.amount || (ins as any)?.limit || 0;
+              carrierInsuranceAmount = (ins as JsonRecord)?.amount || (ins as JsonRecord)?.limit || 0;
             } catch { carrierInsuranceAmount = 0; }
           }
         }
@@ -675,8 +689,8 @@ export const loadBoardRouter = router({
         const [stats] = await db.select({ count: sql<number>`count(*)`, avgRate: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(whereClause!);
         return {
           loads: rows.map(l => {
-            const pickup = l.pickupLocation as any || {};
-            const delivery = l.deliveryLocation as any || {};
+            const pickup = l.pickupLocation as LocationJson | null || {};
+            const delivery = l.deliveryLocation as LocationJson | null || {};
             const si = typeof l.specialInstructions === 'string' ? (() => { try { return JSON.parse(l.specialInstructions); } catch { return {}; } })() : (l.specialInstructions || {});
             return {
               id: String(l.id), loadNumber: l.loadNumber, status: l.status,
@@ -687,13 +701,13 @@ export const loadBoardRouter = router({
               weight: l.weight ? parseFloat(String(l.weight)) : 0,
               weightUnit: 'lbs',
               cargoType: l.cargoType || '',
-              equipmentType: (si as any)?.equipmentType || null,
+              equipmentType: (si as JsonRecord)?.equipmentType || null,
               hazmat: !!l.hazmatClass,
               hazmatClass: l.hazmatClass || null,
               commodityName: l.commodityName || '',
-              unNumber: (si as any)?.unNumber || null,
-              packingGroup: (si as any)?.packingGroup || null,
-              properShippingName: (si as any)?.properShippingName || null,
+              unNumber: (si as JsonRecord)?.unNumber || null,
+              packingGroup: (si as JsonRecord)?.packingGroup || null,
+              properShippingName: (si as JsonRecord)?.properShippingName || null,
               pickupDate: l.pickupDate?.toISOString() || null,
               createdAt: l.createdAt?.toISOString() || null,
               postedAt: l.createdAt?.toISOString() || '',
@@ -715,8 +729,8 @@ export const loadBoardRouter = router({
       try {
         const [load] = await db.select().from(loads).where(eq(loads.id, parseInt(input.id))).limit(1);
         if (!load) return null;
-        const pickup = load.pickupLocation as any || {};
-        const delivery = load.deliveryLocation as any || {};
+        const pickup = load.pickupLocation as LocationJson | null || {};
+        const delivery = load.deliveryLocation as LocationJson | null || {};
         let shipperName = '';
         if (load.shipperId) {
           const [co] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, load.shipperId)).limit(1);
@@ -807,9 +821,10 @@ export const loadBoardRouter = router({
           if (suspiciousMatch && (suspiciousMatch.brokerChainDepth || 0) > 0) {
             throw new Error(`Double-brokering detected: similar load ${suspiciousMatch.loadNumber} already brokered on this lane. Re-posting brokered loads is prohibited.`);
           }
-        } catch (dbErr: any) {
-          if (dbErr?.message?.includes('Double-brokering')) throw dbErr;
-          logger.warn('[LoadBoard] Double-broker check warning:', dbErr?.message);
+        } catch (dbErr: unknown) {
+          const errMsg = dbErr instanceof Error ? dbErr.message : '';
+          if (errMsg.includes('Double-brokering')) throw dbErr;
+          logger.warn('[LoadBoard] Double-broker check warning:', errMsg);
         }
       }
 
@@ -849,7 +864,7 @@ export const loadBoardRouter = router({
         shipperId: profile.userId,
         loadNumber,
         status: "posted",
-        cargoType: derivedCargo as any,
+        cargoType: derivedCargo as typeof loads.cargoType.enumValues[number],
         hazmatClass: isHazmat ? (input.hazmatClass || "9") : null,
         commodityName: input.commodity,
         weight: String(input.weight),
@@ -861,7 +876,7 @@ export const loadBoardRouter = router({
         deliveryDate: new Date(input.deliveryDate),
         originalShipperId: isBroker ? null : profile.userId,
         brokerChainDepth: isBroker ? 1 : 0,
-      } as any).$returningId();
+      }).$returningId();
 
       // GAP-002: Insert multi-stop data if provided
       const allStops = input.stops && input.stops.length > 0 ? input.stops : [
@@ -869,7 +884,7 @@ export const loadBoardRouter = router({
         { stopType: "delivery" as const, facilityName: input.destination.facility, address: input.destination.address, city: input.destination.city, state: input.destination.state, zipCode: input.destination.zip, contactName: input.destination.contact, contactPhone: input.destination.phone },
       ];
       try {
-        const stopValues = allStops.map((s: any, i: number) => ({
+        const stopValues = allStops.map((s: JsonRecord, i: number) => ({
           loadId: result.id,
           sequence: i + 1,
           stopType: s.stopType,
@@ -889,7 +904,7 @@ export const loadBoardRouter = router({
           estimatedWeight: s.estimatedWeight ? String(s.estimatedWeight) : null,
           status: "pending" as const,
         }));
-        await db.insert(loadStops).values(stopValues as any);
+        await db.insert(loadStops).values(stopValues);
       } catch (stopErr) {
         logger.warn('[LoadBoard] Failed to insert load stops:', stopErr);
       }
@@ -955,7 +970,7 @@ export const loadBoardRouter = router({
             const vId = parseInt(input.vehicleId);
             const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, vId)).limit(1);
             if (vehicle) {
-              const vType = ((vehicle as any).trailerType || (vehicle as any).vehicleType || '').toUpperCase();
+              const vType = (vehicle.vehicleType || '').toUpperCase();
               const allowed = classReqs.trailerTypes.map(t => t.toUpperCase());
               if (vType && !allowed.some(a => vType.includes(a))) {
                 hazmatWarnings.push(`Vehicle trailer type '${vType}' may not be authorized for Hazmat Class ${load.hazmatClass}. Allowed: ${allowed.join(', ')}`);
@@ -1061,8 +1076,8 @@ export const loadBoardRouter = router({
         }
         const rows = await db.select().from(loads).where(scopeCondition).orderBy(desc(loads.createdAt)).limit(50);
         return rows.map(l => {
-          const pickup = l.pickupLocation as any || {};
-          const delivery = l.deliveryLocation as any || {};
+          const pickup = l.pickupLocation as LocationJson | null || {};
+          const delivery = l.deliveryLocation as LocationJson | null || {};
           const si = typeof l.specialInstructions === 'string' ? (() => { try { return JSON.parse(l.specialInstructions); } catch { return {}; } })() : (l.specialInstructions || {});
           return {
             id: String(l.id),
@@ -1078,7 +1093,7 @@ export const loadBoardRouter = router({
             weightUnit: 'lbs',
             distanceUnit: 'mi',
             cargoType: l.cargoType || '',
-            equipmentType: (si as any)?.equipmentType || null,
+            equipmentType: (si as JsonRecord)?.equipmentType || null,
             hazmatClass: l.hazmatClass || null,
             commodityName: l.commodityName || '',
             specialInstructions: l.specialInstructions || '',
@@ -1157,7 +1172,7 @@ export const loadBoardRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const loadId = parseInt(input.loadId);
-      const updates: Record<string, any> = {};
+      const updates: Record<string, unknown> = {};
       if (input.rate !== undefined) updates.rate = String(input.rate);
       if (input.pickupDate) updates.pickupDate = new Date(input.pickupDate);
       if (input.deliveryDate) updates.deliveryDate = new Date(input.deliveryDate);
@@ -1294,7 +1309,7 @@ export const loadBoardRouter = router({
             if (co.insurancePolicy) {
               try {
                 const ins = typeof co.insurancePolicy === 'string' ? JSON.parse(co.insurancePolicy) : co.insurancePolicy;
-                carrierInsuranceAmount = (ins as any)?.amount || (ins as any)?.limit || 1000000;
+                carrierInsuranceAmount = (ins as JsonRecord)?.amount || (ins as JsonRecord)?.limit || 1000000;
               } catch { carrierInsuranceAmount = 1000000; }
             }
           }
@@ -1303,7 +1318,7 @@ export const loadBoardRouter = router({
         if (input.vehicleId) {
           const [veh] = await db.select().from(vehicles).where(eq(vehicles.id, input.vehicleId)).limit(1);
           if (veh) {
-            trailerType = ((veh as any).trailerType || (veh as any).vehicleType || '').toUpperCase();
+            trailerType = (veh.vehicleType || '').toUpperCase();
           }
         }
 
@@ -1325,8 +1340,8 @@ export const loadBoardRouter = router({
           const reasons: string[] = [];
           const warnings: string[] = [];
           let score = 50; // base score
-          const pickup = load.pickupLocation as any || {};
-          const delivery = load.deliveryLocation as any || {};
+          const pickup = load.pickupLocation as LocationJson | null || {};
+          const delivery = load.deliveryLocation as LocationJson | null || {};
           const isHazmat = !!load.hazmatClass;
           const loadWeight = load.weight ? parseFloat(String(load.weight)) : 0;
 
@@ -1404,7 +1419,7 @@ export const loadBoardRouter = router({
           if (score <= 0) continue;
 
           // Extract equipmentType from specialInstructions
-          let siMatch: any = {};
+          let siMatch: JsonRecord = {};
           const rawSIMatch = load.specialInstructions || "";
           if (typeof rawSIMatch === 'string') { try { siMatch = JSON.parse(rawSIMatch); } catch { /* text */ } }
           const matchEquip = siMatch?.equipmentType || null;
@@ -1503,7 +1518,7 @@ export const loadBoardRouter = router({
             if (co.insurancePolicy) {
               try {
                 const ins = typeof co.insurancePolicy === 'string' ? JSON.parse(co.insurancePolicy) : co.insurancePolicy;
-                insAmount = (ins as any)?.amount || (ins as any)?.limit || 0;
+                insAmount = (ins as JsonRecord)?.amount || (ins as JsonRecord)?.limit || 0;
               } catch { insAmount = 0; }
             }
             if (classReqs && insAmount >= classReqs.insuranceMinimum) {
@@ -1519,7 +1534,7 @@ export const loadBoardRouter = router({
           }
 
           // Compliance status
-          if (co.complianceStatus === 'compliant' || co.complianceStatus === ('active' as any)) {
+          if (co.complianceStatus === 'compliant' || (co.complianceStatus as string) === 'active') {
             quals.push('Compliance: active');
             score += 10;
           } else if (co.complianceStatus === 'non_compliant' || co.complianceStatus === 'expired') {
@@ -1561,7 +1576,7 @@ export const loadBoardRouter = router({
    */
   getStats: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    const empty = { totalAvailable: 0, hazmatLoads: 0, generalLoads: 0, avgRate: 0, myPosted: 0, myBooked: 0, bidsReceived: 0, topLanes: [] as any[], userRole: '' };
+    const empty = { totalAvailable: 0, hazmatLoads: 0, generalLoads: 0, avgRate: 0, myPosted: 0, myBooked: 0, bidsReceived: 0, topLanes: [] as { lane: string; volume: number; avgRate: number }[], userRole: '' };
     if (!db) return empty;
     try {
       const profile = await resolveUserProfile(ctx.user);
@@ -1577,18 +1592,18 @@ export const loadBoardRouter = router({
       let myPostedCount = 0, myBookedCount = 0, bidsReceivedCount = 0;
       if (profile.isAdmin) {
         const [mp] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(sql`${loads.status} IN ('posted', 'available', 'bidding')`);
-        const [mb] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(eq(loads.status, 'assigned' as any));
+        const [mb] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(eq(loads.status, 'assigned'));
         const [bc] = await db.select({ c: sql<number>`COUNT(*)` }).from(bids).where(eq(bids.status, 'pending'));
         myPostedCount = mp?.c || 0; myBookedCount = mb?.c || 0; bidsReceivedCount = bc?.c || 0;
       } else if (CARRIER_ROLES.includes(profile.role)) {
         const [mp] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('posted', 'available', 'bidding')`));
-        const [mb] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(and(eq(loads.catalystId, userId), eq(loads.status, 'assigned' as any)));
+        const [mb] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(and(eq(loads.catalystId, userId), eq(loads.status, 'assigned')));
         const [bc] = await db.select({ c: sql<number>`COUNT(*)` }).from(bids).where(eq(bids.catalystId, userId));
         myPostedCount = mp?.c || 0; myBookedCount = mb?.c || 0; bidsReceivedCount = bc?.c || 0;
       } else {
         // SHIPPER, TERMINAL_MANAGER, FACTORING, COMPLIANCE_OFFICER, SAFETY_MANAGER
         const [mp] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('posted', 'available', 'bidding')`));
-        const [mb] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(and(eq(loads.catalystId, userId), eq(loads.status, 'assigned' as any)));
+        const [mb] = await db.select({ c: sql<number>`COUNT(*)` }).from(loads).where(and(eq(loads.catalystId, userId), eq(loads.status, 'assigned')));
         const [bc] = await db.select({ c: sql<number>`COUNT(*)` }).from(bids).where(and(eq(bids.status, 'pending'), sql`${bids.loadId} IN (SELECT id FROM loads WHERE shipper_id = ${userId})`));
         myPostedCount = mp?.c || 0; myBookedCount = mb?.c || 0; bidsReceivedCount = bc?.c || 0;
       }
@@ -1645,10 +1660,10 @@ export const loadBoardRouter = router({
           .limit(input.limit);
 
         return recentLoads.map(l => {
-          const pickup = l.pickupLocation as any || {};
-          const delivery = l.deliveryLocation as any || {};
+          const pickup = l.pickupLocation as LocationJson | null || {};
+          const delivery = l.deliveryLocation as LocationJson | null || {};
           let action = 'updated';
-          if (l.status === 'posted' || l.status === ('available' as any)) action = 'posted';
+          if (l.status === 'posted' || l.status === ('available' as string)) action = 'posted';
           else if (l.status === 'assigned') action = 'booked';
           else if (l.status === 'in_transit') action = 'in_transit';
           else if (l.status === 'delivered') action = 'delivered';
@@ -1718,22 +1733,22 @@ export const loadBoardRouter = router({
 
         return {
           loads: rows.map(l => {
-            const pickup = l.pickupLocation as any || {};
-            const delivery = l.deliveryLocation as any || {};
+            const pickup = l.pickupLocation as LocationJson | null || {};
+            const delivery = l.deliveryLocation as LocationJson | null || {};
             const classReqs = HAZMAT_CLASS_REQUIREMENTS[l.hazmatClass!];
             const si = typeof l.specialInstructions === 'string' ? (() => { try { return JSON.parse(l.specialInstructions); } catch { return {}; } })() : (l.specialInstructions || {});
             return {
               id: String(l.id),
               loadNumber: l.loadNumber || `LOAD-${l.id}`,
               hazmatClass: l.hazmatClass,
-              unNumber: (si as any)?.unNumber || null,
-              packingGroup: (si as any)?.packingGroup || null,
-              properShippingName: (si as any)?.properShippingName || null,
+              unNumber: (si as JsonRecord)?.unNumber || null,
+              packingGroup: (si as JsonRecord)?.packingGroup || null,
+              properShippingName: (si as JsonRecord)?.properShippingName || null,
               origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : '',
               destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : '',
               rate: l.rate ? parseFloat(String(l.rate)) : 0,
               weight: l.weight ? parseFloat(String(l.weight)) : 0,
-              equipmentType: (si as any)?.equipmentType || null,
+              equipmentType: (si as JsonRecord)?.equipmentType || null,
               cargoType: l.cargoType || '',
               requiredEndorsement: classReqs?.endorsement || 'H',
               requiredTrailers: classReqs?.trailerTypes || [],
@@ -2039,7 +2054,7 @@ export const loadBoardRouter = router({
               if (co.hazmatExpiry && new Date(co.hazmatExpiry) < new Date()) hazmatWarnings.push("Company HMSP expired");
               let insAmount = 0;
               if (co.insurancePolicy) {
-                try { const ins = typeof co.insurancePolicy === 'string' ? JSON.parse(co.insurancePolicy) : co.insurancePolicy; insAmount = (ins as any)?.amount || (ins as any)?.limit || 0; } catch { insAmount = 0; }
+                try { const ins = typeof co.insurancePolicy === 'string' ? JSON.parse(co.insurancePolicy) : co.insurancePolicy; insAmount = (ins as JsonRecord)?.amount || (ins as JsonRecord)?.limit || 0; } catch { insAmount = 0; }
               }
               if (classReqs && insAmount < classReqs.insuranceMinimum) {
                 hazmatWarnings.push(`Insurance $${(insAmount / 1000000).toFixed(1)}M below required $${(classReqs.insuranceMinimum / 1000000).toFixed(1)}M`);
@@ -2307,8 +2322,8 @@ export const loadBoardRouter = router({
         if (neg.loadId) {
           const [load] = await db.select().from(loads).where(eq(loads.id, neg.loadId)).limit(1);
           if (load) {
-            const pickup = load.pickupLocation as any || {};
-            const delivery = load.deliveryLocation as any || {};
+            const pickup = load.pickupLocation as LocationJson | null || {};
+            const delivery = load.deliveryLocation as LocationJson | null || {};
             loadInfo = {
               id: load.id,
               loadNumber: load.loadNumber,
@@ -2398,7 +2413,7 @@ export const loadBoardRouter = router({
         // If load-based, auto-assign the load
         if (neg.loadId) {
           const assignTo = userId === neg.initiatorUserId ? neg.respondentUserId : neg.initiatorUserId;
-          const offer = neg.currentOffer as any;
+          const offer = neg.currentOffer as JsonRecord;
           await db.update(loads).set({
             status: "assigned",
             catalystId: assignTo,
@@ -2586,14 +2601,14 @@ export const loadBoardRouter = router({
             if (co.hazmatExpiry && new Date(co.hazmatExpiry) < new Date()) carrierHazmatAuth = false;
             carrierCompanyId = co.id;
             if (co.insurancePolicy) {
-              try { const ins = typeof co.insurancePolicy === 'string' ? JSON.parse(co.insurancePolicy) : co.insurancePolicy; carrierInsuranceAmount = (ins as any)?.amount || (ins as any)?.limit || 1000000; } catch { carrierInsuranceAmount = 1000000; }
+              try { const ins = typeof co.insurancePolicy === 'string' ? JSON.parse(co.insurancePolicy) : co.insurancePolicy; carrierInsuranceAmount = (ins as JsonRecord)?.amount || (ins as JsonRecord)?.limit || 1000000; } catch { carrierInsuranceAmount = 1000000; }
             }
           }
         }
 
         if (input.vehicleId) {
           const [veh] = await db.select().from(vehicles).where(eq(vehicles.id, input.vehicleId)).limit(1);
-          if (veh) trailerType = ((veh as any).trailerType || (veh as any).vehicleType || '').toUpperCase();
+          if (veh) trailerType = (veh.vehicleType || '').toUpperCase();
         }
 
         // 2. Fetch active lane contracts for this carrier
@@ -2626,7 +2641,7 @@ export const loadBoardRouter = router({
               partyBId: sql<number>`COALESCE(${agreements.partyBUserId}, 0)`,
             }).from(agreements)
               .where(and(
-                eq(agreements.status, "active" as any),
+                eq(agreements.status, "active"),
                 sql`${agreements.expirationDate} > NOW()`,
                 sql`${agreements.partyACompanyId} = ${carrierCompanyId} OR ${agreements.partyBCompanyId} = ${carrierCompanyId}`,
               ))
@@ -2657,8 +2672,8 @@ export const loadBoardRouter = router({
           const reasons: string[] = [];
           const warnings: string[] = [];
           let score = 50;
-          const pickup = load.pickupLocation as any || {};
-          const delivery = load.deliveryLocation as any || {};
+          const pickup = load.pickupLocation as LocationJson | null || {};
+          const delivery = load.deliveryLocation as LocationJson | null || {};
           const isHazmat = !!load.hazmatClass;
           const loadWeight = load.weight ? parseFloat(String(load.weight)) : 0;
           const originState = (pickup.state || '').toUpperCase();
@@ -2722,7 +2737,7 @@ export const loadBoardRouter = router({
           if (score <= 0) continue;
 
           // Extract equipmentType from specialInstructions
-          let siAdv: any = {};
+          let siAdv: JsonRecord = {};
           const rawSIAdv = load.specialInstructions || "";
           if (typeof rawSIAdv === 'string') { try { siAdv = JSON.parse(rawSIAdv); } catch { /* text */ } }
           const advEquip = siAdv?.equipmentType || null;

@@ -44,14 +44,14 @@ export const settlementBatchingRouter = router({
       loadIds: z.array(z.number()).min(1),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || "DISPATCH", companyId: (ctx.user as any)?.companyId, action: "CREATE", resource: "INVOICE" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role, companyId: ctx.user!.companyId, action: "CREATE", resource: "INVOICE" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
       if (!companyId) throw new Error("Company context required");
 
       // Get settlements for the provided load IDs
-      const matchedSettlements: any[] = [];
+      const matchedSettlements: Array<typeof settlements.$inferSelect> = [];
       for (const loadId of input.loadIds) {
         const [s] = await db.select().from(settlements).where(eq(settlements.loadId, loadId)).limit(1);
         if (s) {
@@ -83,7 +83,7 @@ export const settlementBatchingRouter = router({
       const batchNumber = generateBatchNumber(input.batchType);
 
       // Insert batch using raw SQL for date fields
-      await (db as any).execute(
+      await db.execute(
         sql`INSERT INTO settlement_batches (batchNumber, companyId, batchType, periodStart, periodEnd, status, totalLoads, subtotalAmount, fscAmount, accessorialAmount, deductionAmount, totalAmount) VALUES (${batchNumber}, ${companyId}, ${input.batchType}, ${input.periodStart}, ${input.periodEnd}, 'draft', ${matchedSettlements.length}, ${subtotal.toFixed(2)}, ${fscTotal.toFixed(2)}, ${accessorialTotal.toFixed(2)}, ${deductionTotal.toFixed(2)}, ${total.toFixed(2)})`
       );
 
@@ -103,7 +103,7 @@ export const settlementBatchingRouter = router({
         const [ld] = await db.select({ loadNumber: loads.loadNumber, pickupDate: loads.pickupDate, deliveryDate: loads.deliveryDate })
           .from(loads).where(eq(loads.id, s.loadId)).limit(1);
 
-        await (db as any).execute(
+        await db.execute(
           sql`INSERT INTO settlement_batch_items (batchId, settlementId, loadId, loadNumber, pickupDate, deliveryDate, lineAmount, fscAmount, accessorialAmount, deductions, netAmount) VALUES (${batch.id}, ${s.id}, ${s.loadId}, ${ld?.loadNumber || null}, ${ld?.pickupDate || null}, ${ld?.deliveryDate || null}, ${lineAmt.toFixed(2)}, ${"0.00"}, ${accAmt.toFixed(2)}, ${dedAmt.toFixed(2)}, ${netAmt.toFixed(2)})`
         );
       }
@@ -130,7 +130,7 @@ export const settlementBatchingRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
       if (!companyId) throw new Error("Company context required");
 
       const conditions = [sql`${settlementBatches.companyId} = ${companyId}`];
@@ -155,7 +155,7 @@ export const settlementBatchingRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const [batch] = await db.select().from(settlementBatches)
         .where(and(eq(settlementBatches.id, input.batchId), eq(settlementBatches.companyId, companyId)))
@@ -175,11 +175,11 @@ export const settlementBatchingRouter = router({
   approveBatch: protectedProcedure
     .input(z.object({ batchId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || "DISPATCH", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "INVOICE" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role, companyId: ctx.user!.companyId, action: "UPDATE", resource: "INVOICE" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
-      const userId = Number((ctx.user as any)?.id) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
+      const userId = Number(ctx.user!.id) || 0;
 
       const [batch] = await db.select().from(settlementBatches)
         .where(and(eq(settlementBatches.id, input.batchId), eq(settlementBatches.companyId, companyId)))
@@ -205,10 +205,10 @@ export const settlementBatchingRouter = router({
       paymentMethod: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || "DISPATCH", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "INVOICE" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role, companyId: ctx.user!.companyId, action: "UPDATE", resource: "INVOICE" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const [batch] = await db.select().from(settlementBatches)
         .where(and(eq(settlementBatches.id, input.batchId), eq(settlementBatches.companyId, companyId)))
@@ -281,10 +281,10 @@ export const settlementBatchingRouter = router({
       settlementId: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || "DISPATCH", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "INVOICE" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role, companyId: ctx.user!.companyId, action: "UPDATE", resource: "INVOICE" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       // Validate batch
       const [batch] = await db.select().from(settlementBatches)
@@ -312,14 +312,14 @@ export const settlementBatchingRouter = router({
       const dedAmt = Number(s.platformFeeAmount) || 0;
       const netAmt = lineAmt + accAmt - dedAmt;
 
-      await (db as any).execute(
+      await db.execute(
         sql`INSERT INTO settlement_batch_items (batchId, settlementId, loadId, loadNumber, pickupDate, deliveryDate, lineAmount, fscAmount, accessorialAmount, deductions, netAmount) VALUES (${batch.id}, ${s.id}, ${s.loadId}, ${ld?.loadNumber || null}, ${ld?.pickupDate || null}, ${ld?.deliveryDate || null}, ${lineAmt.toFixed(2)}, ${"0.00"}, ${accAmt.toFixed(2)}, ${dedAmt.toFixed(2)}, ${netAmt.toFixed(2)})`
       );
 
       // Recalculate batch totals
-      const [totals]: any = await (db as any).execute(
+      const [totals] = await db.execute(
         sql`SELECT COUNT(*) as cnt, COALESCE(SUM(lineAmount),0) as sub, COALESCE(SUM(fscAmount),0) as fsc, COALESCE(SUM(accessorialAmount),0) as acc, COALESCE(SUM(deductions),0) as ded, COALESCE(SUM(netAmount),0) as tot FROM settlement_batch_items WHERE batchId = ${batch.id}`
-      );
+      ) as unknown as [Record<string, string | number | null>[]];
       const t = Array.isArray(totals) ? totals[0] : totals;
 
       await db.update(settlementBatches).set({
@@ -347,10 +347,10 @@ export const settlementBatchingRouter = router({
       settlementId: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || "DISPATCH", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "INVOICE" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role, companyId: ctx.user!.companyId, action: "UPDATE", resource: "INVOICE" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const [batch] = await db.select().from(settlementBatches)
         .where(and(eq(settlementBatches.id, input.batchId), eq(settlementBatches.companyId, companyId)))
@@ -359,14 +359,14 @@ export const settlementBatchingRouter = router({
       if (batch.status !== "draft") throw new Error("Can only remove items from draft batches");
 
       // Delete the item
-      await (db as any).execute(
+      await db.execute(
         sql`DELETE FROM settlement_batch_items WHERE batchId = ${input.batchId} AND settlementId = ${input.settlementId}`
       );
 
       // Recalculate batch totals
-      const [totals]: any = await (db as any).execute(
+      const [totals] = await db.execute(
         sql`SELECT COUNT(*) as cnt, COALESCE(SUM(lineAmount),0) as sub, COALESCE(SUM(fscAmount),0) as fsc, COALESCE(SUM(accessorialAmount),0) as acc, COALESCE(SUM(deductions),0) as ded, COALESCE(SUM(netAmount),0) as tot FROM settlement_batch_items WHERE batchId = ${input.batchId}`
-      );
+      ) as unknown as [Record<string, string | number | null>[]];
       const t = Array.isArray(totals) ? totals[0] : totals;
 
       await db.update(settlementBatches).set({
@@ -393,8 +393,8 @@ export const settlementBatchingRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
-      const driverId = input.driverId || Number((ctx.user as any)?.driverId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
+      const driverId = input.driverId || 0;
 
       // Get driver_payable batches where this driver has settlements
       const batches = await db.select()
@@ -406,11 +406,11 @@ export const settlementBatchingRouter = router({
         .orderBy(sql`${settlementBatches.createdAt} DESC`);
 
       // Filter to batches containing this driver's settlements
-      const result: any[] = [];
+      const result: Array<{ batchId: number; batchNumber: string; periodStart: Date | null; periodEnd: Date | null; totalAmount: string | null; status: string | null; paidAt: Date | null }> = [];
       for (const b of batches) {
-        const [item] = await (db as any).execute(
+        const [item] = await db.execute(
           sql`SELECT sbi.id FROM settlement_batch_items sbi JOIN settlements s ON sbi.settlementId = s.id WHERE sbi.batchId = ${b.id} AND s.driverId = ${driverId} LIMIT 1`
-        ) as any;
+        ) as unknown as [Record<string, unknown>[]];
         if (Array.isArray(item) && item.length > 0) {
           result.push({
             batchId: b.id,
@@ -435,7 +435,7 @@ export const settlementBatchingRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const [batch] = await db.select().from(settlementBatches)
         .where(and(eq(settlementBatches.id, input.batchId), eq(settlementBatches.companyId, companyId)))
@@ -459,13 +459,13 @@ export const settlementBatchingRouter = router({
    */
   autoBatch: protectedProcedure
     .mutation(async ({ ctx }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || "ADMIN", companyId: (ctx.user as any)?.companyId, action: "CREATE", resource: "INVOICE" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role, companyId: ctx.user!.companyId, action: "CREATE", resource: "INVOICE" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       // Find completed settlements not yet in any batch, from last 7 days
-      const [unbatched]: any = await (db as any).execute(
+      const [unbatched] = await db.execute(
         sql`SELECT s.* FROM settlements s LEFT JOIN settlement_batch_items sbi ON sbi.settlementId = s.id WHERE sbi.id IS NULL AND s.status = 'completed' AND s.settledAt >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND (s.carrierId IN (SELECT userId FROM drivers WHERE companyId = ${companyId}) OR s.shipperId IN (SELECT id FROM users WHERE companyId = ${companyId})) ORDER BY s.settledAt ASC`
       );
 
@@ -474,7 +474,7 @@ export const settlementBatchingRouter = router({
       }
 
       // Group by batch type
-      const groups: Record<string, any[]> = {
+      const groups: Record<string, Record<string, unknown>[]> = {
         shipper_payable: [],
         carrier_receivable: [],
         driver_payable: [],
@@ -507,7 +507,7 @@ export const settlementBatchingRouter = router({
 
         const batchNumber = generateBatchNumber(batchType);
 
-        await (db as any).execute(
+        await db.execute(
           sql`INSERT INTO settlement_batches (batchNumber, companyId, batchType, periodStart, periodEnd, status, totalLoads, subtotalAmount, fscAmount, accessorialAmount, deductionAmount, totalAmount) VALUES (${batchNumber}, ${companyId}, ${batchType}, ${periodStart}, ${periodEnd}, 'draft', ${settles.length}, ${subtotal.toFixed(2)}, ${"0.00"}, ${accessorialTotal.toFixed(2)}, ${deductionTotal.toFixed(2)}, ${total.toFixed(2)})`
         );
 
@@ -521,7 +521,7 @@ export const settlementBatchingRouter = router({
           const dedAmt = Number(s.platformFeeAmount) || 0;
           const netAmt = lineAmt + accAmt - dedAmt;
 
-          await (db as any).execute(
+          await db.execute(
             sql`INSERT INTO settlement_batch_items (batchId, settlementId, loadId, loadNumber, lineAmount, fscAmount, accessorialAmount, deductions, netAmount) VALUES (${batch.id}, ${s.id}, ${s.loadId}, ${null}, ${lineAmt.toFixed(2)}, ${"0.00"}, ${accAmt.toFixed(2)}, ${dedAmt.toFixed(2)}, ${netAmt.toFixed(2)})`
           );
         }
@@ -551,8 +551,8 @@ export const settlementBatchingRouter = router({
       }
 
       // Verify user has access (must be shipper, catalyst, or driver on the load)
-      const userId = Number((ctx.user as any)?.id) || 0;
-      const role = ((ctx.user as any)?.role || "").toUpperCase();
+      const userId = Number(ctx.user!.id) || 0;
+      const role = (ctx.user!.role || "").toUpperCase();
       const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN" || role === "DISPATCH";
       const isParty = userId === invoice.shipperId || userId === invoice.catalystId || userId === invoice.driverId;
       if (!isAdmin && !isParty) {
@@ -572,7 +572,7 @@ export const settlementBatchingRouter = router({
       offset: z.number().min(0).default(0),
     }).optional())
     .query(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id) || 0;
+      const userId = Number(ctx.user!.id) || 0;
       if (!userId) throw new Error("Authentication required");
 
       const { getInvoicesForUser } = await import("../services/invoiceService");

@@ -33,7 +33,7 @@ export const adminRouter = router({
         openId,
         name: input.name,
         email: input.email,
-        role: input.role as any,
+        role: input.role as typeof users.$inferInsert["role"],
         companyId: input.companyId,
         isActive: true,
       }).$returningId();
@@ -105,7 +105,7 @@ export const adminRouter = router({
         let filtered = userList.map(u => {
           let approvalStatus = "unknown";
           try { const meta = u.metadata ? JSON.parse(u.metadata as string) : {}; approvalStatus = meta.approvalStatus || "unknown"; } catch { /* metadata parse failed — use default */ }
-          const loc = u.currentLocation as any;
+          const loc = u.currentLocation as { city?: string; state?: string } | null;
           return {
             id: String(u.id),
             name: u.name || 'Unknown',
@@ -223,7 +223,7 @@ export const adminRouter = router({
 
         if (input.search) {
           const pattern = `%${input.search}%`;
-          query = query.where(or(like(integrationWebhooks.providerSlug, pattern), like(integrationWebhooks.eventType, pattern))) as any;
+          query = query.where(or(like(integrationWebhooks.providerSlug, pattern), like(integrationWebhooks.eventType, pattern))) as typeof query;
         }
 
         return await query;
@@ -303,7 +303,7 @@ export const adminRouter = router({
         action: "feature_flag_toggled",
         entityType: "feature_flag",
         entityId: null,
-        userId: (ctx.user as any)?.id ?? null,
+        userId: ctx.user!.id ?? null,
         changes: JSON.stringify({ flagId: resolvedFlagId, enabled: input.enabled }),
         severity: "HIGH",
       });
@@ -354,12 +354,12 @@ export const adminRouter = router({
       const db = await getDb(); if (!db) return [];
       try {
         const rows = await db.execute(sql`SELECT EVENT_NAME, EVENT_TYPE, EXECUTE_AT, INTERVAL_VALUE, INTERVAL_FIELD, LAST_EXECUTED, STATUS, EVENT_COMMENT FROM information_schema.EVENTS WHERE EVENT_SCHEMA = DATABASE()`);
-        return (rows as any[]).map((r: any) => ({
+        return (rows as unknown as Record<string, unknown>[]).map((r) => ({
           id: r.EVENT_NAME,
           name: r.EVENT_NAME,
           type: r.EVENT_TYPE,
-          schedule: r.INTERVAL_VALUE ? `Every ${r.INTERVAL_VALUE} ${r.INTERVAL_FIELD}` : r.EXECUTE_AT?.toISOString() || "one-time",
-          lastRun: r.LAST_EXECUTED?.toISOString() || null,
+          schedule: r.INTERVAL_VALUE ? `Every ${r.INTERVAL_VALUE} ${r.INTERVAL_FIELD}` : (r.EXECUTE_AT as Date | null)?.toISOString() || "one-time",
+          lastRun: (r.LAST_EXECUTED as Date | null)?.toISOString() || null,
           status: r.STATUS === "ENABLED" ? "active" : "disabled",
           description: r.EVENT_COMMENT || "",
         }));
@@ -507,11 +507,11 @@ export const adminRouter = router({
       try {
         const statusVars = await db.execute(sql`SHOW GLOBAL STATUS WHERE Variable_name IN ('Uptime','Threads_connected','Threads_running','Queries','Slow_queries')`);
         const vars: Record<string, string> = {};
-        for (const row of statusVars as any[]) { vars[row.Variable_name] = row.Value; }
+        for (const row of statusVars as unknown as Record<string, string>[]) { vars[row.Variable_name] = row.Value; }
         const maxConnRows = await db.execute(sql`SHOW VARIABLES WHERE Variable_name = 'max_connections'`);
-        const maxConn = parseInt((maxConnRows as any[])[0]?.Value || "151", 10);
+        const maxConn = parseInt((maxConnRows as unknown as Record<string, string>[])[0]?.Value || "151", 10);
         const versionRows = await db.execute(sql`SELECT VERSION() as ver`);
-        const version = (versionRows as any[])[0]?.ver || "";
+        const version = (versionRows as unknown as Record<string, string>[])[0]?.ver || "";
         const active = parseInt(vars.Threads_connected || "0", 10);
         const upSec = parseInt(vars.Uptime || "0", 10);
         const days = Math.floor(upSec / 86400);
@@ -520,7 +520,7 @@ export const adminRouter = router({
         const qps = upSec > 0 ? Math.round(queries / upSec) : 0;
         // DB size
         const sizeRows = await db.execute(sql`SELECT ROUND(SUM(data_length + index_length) / 1073741824, 2) AS sizeGB FROM information_schema.tables WHERE table_schema = DATABASE()`);
-        const dbSizeGB = (sizeRows as any[])[0]?.sizeGB || "0";
+        const dbSizeGB = (sizeRows as unknown as Record<string, string>[])[0]?.sizeGB || "0";
         return {
           status: "healthy", uptime: `${days}d ${hrs}h`, version,
           connections: { active, max: maxConn, available: maxConn - active },
@@ -552,8 +552,8 @@ export const adminRouter = router({
               WHERE SCHEMA_NAME = DATABASE() AND DIGEST_TEXT IS NOT NULL
               ORDER BY AVG_TIMER_WAIT DESC LIMIT ${input.limit}`
         );
-        return (rows as any[]).map((r: any) => ({
-          query: (r.query || "").substring(0, 200),
+        return (rows as unknown as Record<string, unknown>[]).map((r) => ({
+          query: (String(r.query || "")).substring(0, 200),
           executions: r.executions || 0,
           avgTimeMs: r.avgTimeMs || 0,
           totalTimeMs: r.totalTimeMs || 0,
@@ -1298,19 +1298,19 @@ export const adminRouter = router({
     const db = await getDb(); if (!db) return [];
     try {
       const statusFilter = input?.status && input.status !== 'all' ? sql`AND status = ${input.status}` : sql``;
-      const rows = await db.execute(sql`SELECT id, settlementId, disputerId, respondentId, reason, status, resolution, heldAmount, createdAt, resolvedAt FROM disputes WHERE 1=1 ${statusFilter} ORDER BY createdAt DESC LIMIT ${input?.limit || 50}`) as any[];
-      return (rows || []).map((r: any) => ({ id: String(r.id), settlementId: String(r.settlementId), disputerId: r.disputerId, respondentId: r.respondentId, reason: r.reason, status: r.status, resolution: r.resolution, heldAmount: Number(r.heldAmount || 0), createdAt: r.createdAt?.toISOString?.() || '', resolvedAt: r.resolvedAt?.toISOString?.() || null }));
+      const rows = await db.execute(sql`SELECT id, settlementId, disputerId, respondentId, reason, status, resolution, heldAmount, createdAt, resolvedAt FROM disputes WHERE 1=1 ${statusFilter} ORDER BY createdAt DESC LIMIT ${input?.limit || 50}`) as unknown as Record<string, unknown>[];
+      return (rows || []).map((r) => ({ id: String(r.id), settlementId: String(r.settlementId), disputerId: r.disputerId, respondentId: r.respondentId, reason: r.reason, status: r.status, resolution: r.resolution, heldAmount: Number(r.heldAmount || 0), createdAt: (r.createdAt as Date | null)?.toISOString?.() || '', resolvedAt: (r.resolvedAt as Date | null)?.toISOString?.() || null }));
     } catch { return []; }
   }),
   getDisputeSummary: auditedAdminProcedure.query(async () => {
     const db = await getDb(); if (!db) return { open: 0, investigating: 0, resolved: 0, totalAmount: 0, inReview: 0, resolvedThisMonth: 0 };
     try {
-      const [open] = await db.execute(sql`SELECT COUNT(*) as cnt FROM disputes WHERE status = 'open'`) as any[];
-      const [review] = await db.execute(sql`SELECT COUNT(*) as cnt FROM disputes WHERE status = 'under_review'`) as any[];
-      const [resolved] = await db.execute(sql`SELECT COUNT(*) as cnt FROM disputes WHERE status = 'resolved'`) as any[];
-      const [total] = await db.execute(sql`SELECT COALESCE(SUM(heldAmount),0) as amt FROM disputes WHERE status IN ('open','under_review')`) as any[];
+      const [open] = await db.execute(sql`SELECT COUNT(*) as cnt FROM disputes WHERE status = 'open'`) as unknown as Record<string, number>[];
+      const [review] = await db.execute(sql`SELECT COUNT(*) as cnt FROM disputes WHERE status = 'under_review'`) as unknown as Record<string, number>[];
+      const [resolved] = await db.execute(sql`SELECT COUNT(*) as cnt FROM disputes WHERE status = 'resolved'`) as unknown as Record<string, number>[];
+      const [total] = await db.execute(sql`SELECT COALESCE(SUM(heldAmount),0) as amt FROM disputes WHERE status IN ('open','under_review')`) as unknown as Record<string, number>[];
       const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
-      const [thisMonth] = await db.execute(sql`SELECT COUNT(*) as cnt FROM disputes WHERE status = 'resolved' AND resolvedAt >= ${monthAgo}`) as any[];
+      const [thisMonth] = await db.execute(sql`SELECT COUNT(*) as cnt FROM disputes WHERE status = 'resolved' AND resolvedAt >= ${monthAgo}`) as unknown as Record<string, number>[];
       return { open: open?.cnt || 0, investigating: review?.cnt || 0, resolved: resolved?.cnt || 0, totalAmount: Number(total?.amt || 0), inReview: review?.cnt || 0, resolvedThisMonth: thisMonth?.cnt || 0 };
     } catch { return { open: 0, investigating: 0, resolved: 0, totalAmount: 0, inReview: 0, resolvedThisMonth: 0 }; }
   }),
@@ -1333,18 +1333,18 @@ export const adminRouter = router({
     await db.execute(sql`UPDATE disputes SET status = 'resolved', resolution = ${resolution}, resolvedBy = ${adminId}, resolvedAt = NOW(), notes = ${input.notes || ''} WHERE id = ${disputeId}`);
 
     // 2. Get dispute details for fund distribution
-    const [dispute] = await db.execute(sql`SELECT settlementId, disputerId, respondentId, heldAmount FROM disputes WHERE id = ${disputeId}`) as any[];
+    const [dispute] = await db.execute(sql`SELECT settlementId, disputerId, respondentId, heldAmount FROM disputes WHERE id = ${disputeId}`) as unknown as Record<string, unknown>[];
 
     // 3. Update settlement status back to appropriate state
     if (dispute?.settlementId) {
       const { payments } = await import("../../drizzle/schema");
       const newStatus = resolution === 'carrier_wins' ? 'approved' : resolution === 'shipper_wins' ? 'refunded' : 'approved';
-      await db.update(payments).set({ status: newStatus } as any).where(eq(payments.id, dispute.settlementId));
+      await db.update(payments).set({ status: newStatus } as Record<string, unknown>).where(eq(payments.id, dispute.settlementId as number));
     }
 
     // 4. Audit log
     try {
-      await db.insert(auditLogs).values({ userId: Number(adminId), action: 'DISPUTE_RESOLVED', entityType: 'dispute', entityId: disputeId, changes: { resolution, notes: input.notes } } as any);
+      await db.insert(auditLogs).values({ userId: Number(adminId), action: 'DISPUTE_RESOLVED', entityType: 'dispute', entityId: disputeId, changes: JSON.stringify({ resolution, notes: input.notes }) });
     } catch (e) { logger.warn("[Admin] dispute resolution audit log failed:", e); }
 
     // 5. Gamification event
@@ -1380,7 +1380,7 @@ export const adminRouter = router({
   getPlatformTrends: auditedAdminProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => []),
 
   // Permissions & Roles
-  getPermissions: auditedAdminProcedure.input(z.object({ roleId: z.string().nullable().optional() }).optional()).query(async () => { const perms = [] as any; perms.categories = []; return perms; }),
+  getPermissions: auditedAdminProcedure.input(z.object({ roleId: z.string().nullable().optional() }).optional()).query(async () => { const perms: unknown[] & { categories?: unknown[] } = [] as unknown[] & { categories?: unknown[] }; perms.categories = []; return perms; }),
   getRoleStats: auditedAdminProcedure.query(async () => ({ admin: 0, catalyst: 0, shipper: 0, driver: 0, totalRoles: 0, totalPermissions: 0, usersWithRoles: 0, customRoles: 0 })),
   getRoles: auditedAdminProcedure.query(async () => {
     // Return role definitions from application config (not DB-driven)
@@ -1438,7 +1438,7 @@ export const adminRouter = router({
     } catch (e: any) { logger.warn("[Admin] getRateLimitStats failed:", e.message); return defaults; }
   }),
   getRateLimitConfig: auditedAdminProcedure.query(async () => {
-    const defaults = { defaultLimit: 100, windowMs: 60000, endpoints: [] as any[], enabled: true, anonymousRpm: 30, authenticatedRpm: 100, burstLimit: 150, blockDuration: 3600 };
+    const defaults = { defaultLimit: 100, windowMs: 60000, endpoints: [] as unknown[], enabled: true, anonymousRpm: 30, authenticatedRpm: 100, burstLimit: 150, blockDuration: 3600 };
     const db = await getDb();
     if (!db) return defaults;
     try {
@@ -1665,8 +1665,8 @@ export const adminRouter = router({
           .limit(limit);
 
         for (const l of recentLoads) {
-          const pickup = (l.pickupLocation as any)?.city || "Unknown";
-          const delivery = (l.deliveryLocation as any)?.city || "Unknown";
+          const pickup = (l.pickupLocation as Record<string, string> | null)?.city || "Unknown";
+          const delivery = (l.deliveryLocation as Record<string, string> | null)?.city || "Unknown";
           const sev = l.status === "cancelled" ? "warning" as const : l.status === "delivered" ? "success" as const : "info" as const;
           events.push({
             id: `load-${l.id}`, type: "load", title: `Load #${l.id} — ${l.status}`,
@@ -1713,7 +1713,7 @@ export const adminRouter = router({
         try {
           const { agreements } = await import("../../drizzle/schema");
           const recentAgreements = await db.select({
-            id: agreements.id, title: (agreements as any).title, status: (agreements as any).status, createdAt: agreements.createdAt,
+            id: agreements.id, title: agreements.agreementNumber, status: agreements.status, createdAt: agreements.createdAt,
           }).from(agreements).orderBy(desc(agreements.createdAt)).limit(Math.min(limit, 10));
           for (const a of recentAgreements) {
             events.push({
@@ -1729,10 +1729,10 @@ export const adminRouter = router({
         try {
           const { insuranceClaims } = await import("../../drizzle/schema");
           const recentClaims = await db.select({
-            id: insuranceClaims.id, status: (insuranceClaims as any).status, createdAt: insuranceClaims.createdAt,
+            id: insuranceClaims.id, status: insuranceClaims.status, createdAt: insuranceClaims.createdAt,
           }).from(insuranceClaims).orderBy(desc(insuranceClaims.createdAt)).limit(Math.min(limit, 10));
           for (const c of recentClaims) {
-            const sev = (c.status === "open" || c.status === "escalated") ? "critical" as const : "warning" as const;
+            const sev = (String(c.status) === "open" || String(c.status) === "escalated") ? "critical" as const : "warning" as const;
             events.push({
               id: `claim-${c.id}`, type: "claim", title: `Claim #${c.id}`,
               detail: `Status: ${c.status || "open"}`,
@@ -1863,7 +1863,7 @@ export const adminRouter = router({
         } catch (e) { logger.warn("[Admin] document stats query failed:", e); }
 
         // ─── Fleet Stats (active drivers) ───
-        const [activeDrivers] = await db.select({ c: sql<number>`count(*)` }).from(users).where(and(eq(users.role, "DRIVER" as any), eq(users.isActive, true)));
+        const [activeDrivers] = await db.select({ c: sql<number>`count(*)` }).from(users).where(and(eq(users.role, "DRIVER"), eq(users.isActive, true)));
         stats.fleet.activeDrivers = activeDrivers?.c || 0;
 
         // ─── Audit Log Stats ───
@@ -2051,7 +2051,7 @@ export const adminRouter = router({
 
       try {
         // Get users with this role
-        const roleUsers = await db.select({ id: users.id }).from(users).where(eq(users.role, input.role as any));
+        const roleUsers = await db.select({ id: users.id }).from(users).where(eq(users.role, input.role as typeof users.$inferSelect["role"]));
         const userIds = roleUsers.map(u => u.id);
 
         if (userIds.length === 0) return { activities: [], stats: { total: 0 } };
@@ -2129,7 +2129,7 @@ export const adminRouter = router({
           openId,
           name: acct.name,
           email: acct.email,
-          role: acct.role as any,
+          role: acct.role as typeof users.$inferInsert["role"],
           isActive: true,
           isVerified: true,
         });
@@ -2268,7 +2268,7 @@ export const adminRouter = router({
       const badDates = await db.execute(
         sql`SELECT id, loadNumber, pickupDate, deliveryDate FROM loads WHERE deliveryDate IS NOT NULL AND pickupDate IS NOT NULL AND deliveryDate < pickupDate`
       );
-      const badRows = (badDates as any)?.[0] || badDates;
+      const badRows = (badDates as unknown as Record<string, unknown>[])?.[0] || badDates;
       if (Array.isArray(badRows)) {
         for (const row of badRows) {
           const fixedDate = new Date(new Date(row.pickupDate).getTime() + 86400000);
@@ -2296,7 +2296,7 @@ export const adminRouter = router({
       const zeroCoordLoads = await db.execute(
         sql`SELECT id, pickupLocation, deliveryLocation FROM loads WHERE JSON_EXTRACT(pickupLocation, '$.lat') = 0 OR JSON_EXTRACT(deliveryLocation, '$.lat') = 0`
       );
-      const zeroRows = (zeroCoordLoads as any)?.[0] || zeroCoordLoads;
+      const zeroRows = (zeroCoordLoads as unknown as Record<string, unknown>[])?.[0] || zeroCoordLoads;
       if (Array.isArray(zeroRows)) {
         for (const row of zeroRows) {
           const pickup = typeof row.pickupLocation === 'string' ? JSON.parse(row.pickupLocation) : row.pickupLocation;
@@ -2325,7 +2325,7 @@ export const adminRouter = router({
       const nullDistLoads = await db.execute(
         sql`SELECT id, pickupLocation, deliveryLocation FROM loads WHERE distance IS NULL AND pickupLocation IS NOT NULL AND deliveryLocation IS NOT NULL`
       );
-      const nullDistRows = (nullDistLoads as any)?.[0] || nullDistLoads;
+      const nullDistRows = (nullDistLoads as unknown as Record<string, unknown>[])?.[0] || nullDistLoads;
       if (Array.isArray(nullDistRows)) {
         for (const row of nullDistRows) {
           const p = typeof row.pickupLocation === 'string' ? JSON.parse(row.pickupLocation) : row.pickupLocation;
@@ -2338,7 +2338,7 @@ export const adminRouter = router({
             const a = Math.sin(dLat/2)**2 + Math.cos(p.lat * Math.PI/180) * Math.cos(d.lat * Math.PI/180) * Math.sin(dLng/2)**2;
             const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
             const roadDist = Math.round(dist * 1.3 * 100) / 100; // ~1.3x road factor
-            await db.update(loads).set({ distance: String(roadDist) } as any).where(eq(loads.id, row.id));
+            await db.update(loads).set({ distance: String(roadDist) }).where(eq(loads.id, row.id));
             fixes.push(`Load ${row.id}: calculated distance ${roadDist} mi`);
           }
         }
@@ -2357,8 +2357,8 @@ export const adminRouter = router({
       const checks: { name: string; pass: boolean; detail: string }[] = [];
 
       // P0-003: Platform fee configs
-      const [feeCount] = await db.select({ count: sql`count(*)` as any }).from(platformFeeConfigs);
-      const fc = (feeCount as any)?.count || 0;
+      const [feeCount] = await db.select({ count: sql<number>`count(*)` }).from(platformFeeConfigs);
+      const fc = feeCount?.count || 0;
       checks.push({ name: "P0-003: Platform fee configs seeded", pass: fc >= 8, detail: `${fc} configs` });
 
       // P0-009: RBAC — verify import works
@@ -2367,12 +2367,13 @@ export const adminRouter = router({
 
       // P0-010: No orphaned wallets
       const orphaned = await db.execute(sql`SELECT COUNT(*) as cnt FROM wallets w LEFT JOIN users u ON w.userId = u.id WHERE u.id IS NULL`);
-      const orphanCnt = (orphaned as any)?.[0]?.[0]?.cnt || (orphaned as any)?.[0]?.cnt || 0;
+      const orphanResult = orphaned as unknown as Record<string, unknown>[];
+      const orphanCnt = (Array.isArray(orphanResult?.[0]) ? (orphanResult[0] as Record<string, unknown>[])?.[0]?.cnt : orphanResult?.[0]?.cnt) || 0;
       checks.push({ name: "P0-010: No orphaned wallets", pass: Number(orphanCnt) === 0, detail: `${orphanCnt} orphaned` });
 
       // P0-011: All 11 roles have users
       const roleRows = await db.execute(sql`SELECT role, COUNT(*) as cnt FROM users WHERE isActive = 1 GROUP BY role ORDER BY role`);
-      const roles = (roleRows as any)?.[0] || roleRows;
+      const roles = (roleRows as unknown as Record<string, unknown>[])?.[0] || roleRows;
       const roleCount = Array.isArray(roles) ? roles.length : 0;
       checks.push({ name: "P0-011: Test accounts for all roles", pass: roleCount >= 10, detail: `${roleCount} distinct roles` });
 
@@ -2385,22 +2386,24 @@ export const adminRouter = router({
       checks.push({ name: "P0-012: Catalyst has companyId", pass: !!catUser?.companyId, detail: `companyId=${catUser?.companyId || 'NULL'}` });
 
       // P0-013: Vehicles exist
-      const [vCount] = await db.select({ count: sql`count(*)` as any }).from(vehicles);
-      const vc = (vCount as any)?.count || 0;
+      const [vCount] = await db.select({ count: sql<number>`count(*)` }).from(vehicles);
+      const vc = vCount?.count || 0;
       checks.push({ name: "P0-013: Test vehicles registered", pass: vc >= 3, detail: `${vc} vehicles` });
 
       // P0-014: No loads with delivery < pickup
       const badDates = await db.execute(sql`SELECT COUNT(*) as cnt FROM loads WHERE deliveryDate IS NOT NULL AND pickupDate IS NOT NULL AND deliveryDate < pickupDate`);
-      const bdCnt = (badDates as any)?.[0]?.[0]?.cnt || (badDates as any)?.[0]?.cnt || 0;
+      const bdResult = badDates as unknown as Record<string, unknown>[];
+      const bdCnt = (Array.isArray(bdResult?.[0]) ? (bdResult[0] as Record<string, unknown>[])?.[0]?.cnt : bdResult?.[0]?.cnt) || 0;
       checks.push({ name: "P0-014: No delivery < pickup dates", pass: Number(bdCnt) === 0, detail: `${bdCnt} bad dates` });
 
       // P0-014: No 0,0 coordinates
       const zeroCoords = await db.execute(sql`SELECT COUNT(*) as cnt FROM loads WHERE JSON_EXTRACT(pickupLocation, '$.lat') = 0`);
-      const zcCnt = (zeroCoords as any)?.[0]?.[0]?.cnt || (zeroCoords as any)?.[0]?.cnt || 0;
+      const zcResult = zeroCoords as unknown as Record<string, unknown>[];
+      const zcCnt = (Array.isArray(zcResult?.[0]) ? (zcResult[0] as Record<string, unknown>[])?.[0]?.cnt : zcResult?.[0]?.cnt) || 0;
       checks.push({ name: "P0-014: No 0,0 coordinates", pass: Number(zcCnt) === 0, detail: `${zcCnt} loads with 0,0` });
 
       // P0-004: Settlements table accessible
-      try { await db.select({ count: sql`count(*)` as any }).from(settlements); checks.push({ name: "P0-004: Settlements table accessible", pass: true, detail: "OK" }); }
+      try { await db.select({ count: sql<number>`count(*)` }).from(settlements); checks.push({ name: "P0-004: Settlements table accessible", pass: true, detail: "OK" }); }
       catch { checks.push({ name: "P0-004: Settlements table accessible", pass: false, detail: "Query failed" }); }
 
       // P0-007/008: WebSocket emitters importable
@@ -2473,14 +2476,16 @@ export const adminRouter = router({
       const hashedPassword = await bcrypt.hash(input.password, 12);
 
       // Create admin user
+      const { randomBytes: _rbAdmin } = require("crypto");
       const [result] = await db.insert(users).values({
+        openId: `admin_${Date.now()}_${_rbAdmin(4).toString('hex')}`,
         email: input.email,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         name: input.name,
         phone: input.phone || null,
         role: "ADMIN",
         status: "active",
-      } as any).$returningId();
+      }).$returningId();
 
       // Mark verification code as used
       await db.update(adminVerificationCodes)

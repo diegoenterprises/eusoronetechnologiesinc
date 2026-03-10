@@ -71,8 +71,8 @@ interface AssetLocation {
   address: string;
 }
 
-function vehicleToAssetLocation(v: any): AssetLocation {
-  const loc = v.currentLocation as any;
+function vehicleToAssetLocation(v: typeof vehicles.$inferSelect): AssetLocation {
+  const loc = v.currentLocation as { lat?: number; lng?: number; address?: string } | null;
   const seed = v.id * 31;
   return {
     assetId: String(v.id),
@@ -81,9 +81,9 @@ function vehicleToAssetLocation(v: any): AssetLocation {
     lat: loc?.lat ?? 29.76 + seededRandom(seed) * 4,
     lng: loc?.lng ?? -95.37 - seededRandom(seed + 1) * 6,
     heading: Math.round(seededRandom(seed + 2) * 360),
-    speed: v.status === "active" ? Math.round(seededRandom(seed + 3) * 65) : 0,
+    speed: v.status === "available" ? Math.round(seededRandom(seed + 3) * 65) : 0,
     lastUpdate: new Date(Date.now() - Math.round(seededRandom(seed + 4) * 600000)).toISOString(),
-    status: v.status || "active",
+    status: v.status || "available",
     address: loc?.address || "In Transit",
   };
 }
@@ -100,7 +100,7 @@ export const assetTrackingRouter = router({
     .input(z.object({}).optional())
     .query(async ({ ctx }) => {
       const db = await getDb();
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
       const fallback = {
         totalAssets: 0,
         trucks: 0,
@@ -178,11 +178,11 @@ export const assetTrackingRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return [];
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       return safeQuery("getAssetLocations", async () => {
-        const conditions: any[] = [eq(vehicles.companyId, companyId)];
-        if (input?.status) conditions.push(eq(vehicles.status, input.status as any));
+        const conditions: ReturnType<typeof eq>[] = [eq(vehicles.companyId, companyId)];
+        if (input?.status) conditions.push(eq(vehicles.status, input.status as typeof vehicles.$inferSelect["status"]));
         if (input?.assetType) {
           if (input.assetType === "trailer") conditions.push(eq(vehicles.vehicleType, "trailer"));
           else if (input.assetType === "truck") {
@@ -274,7 +274,7 @@ export const assetTrackingRouter = router({
         const [v] = await db.select().from(vehicles).where(eq(vehicles.id, id)).limit(1);
         if (!v) return [];
 
-        const loc = v.currentLocation as any;
+        const loc = v.currentLocation as { lat?: number; lng?: number; address?: string } | null;
         const baseLat = loc?.lat ?? 29.76;
         const baseLng = loc?.lng ?? -95.37;
         const points: Array<{ lat: number; lng: number; timestamp: string; speed: number; heading: number; event: string | null }> = [];
@@ -310,7 +310,7 @@ export const assetTrackingRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       return safeQuery("getIotSensors", async () => {
         const vList = await db.select({ id: vehicles.id, licensePlate: vehicles.licensePlate, make: vehicles.make, model: vehicles.model, vehicleType: vehicles.vehicleType })
@@ -411,7 +411,7 @@ export const assetTrackingRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       return safeQuery("getSensorAlerts", async () => {
         const vList = await db.select({ id: vehicles.id, licensePlate: vehicles.licensePlate, make: vehicles.make })
@@ -514,12 +514,12 @@ export const assetTrackingRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return { assets: [], complianceRate: 100, activeExcursions: 0 };
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       return safeQuery("getTemperatureMonitoring", async () => {
         const vList = await db.select({ id: vehicles.id, licensePlate: vehicles.licensePlate, make: vehicles.make, vehicleType: vehicles.vehicleType })
           .from(vehicles)
-          .where(and(eq(vehicles.companyId, companyId), eq(vehicles.vehicleType, "reefer" as any)))
+          .where(and(eq(vehicles.companyId, companyId), eq(vehicles.vehicleType, "reefer")))
           .limit(100);
 
         // If no reefers, return all vehicles as potential cold chain assets
@@ -563,7 +563,7 @@ export const assetTrackingRouter = router({
       ...dateRangeInput.shape,
     }).optional())
     .query(async ({ ctx }) => {
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
       const events: Array<{
         excursionId: string;
         assetId: string;
@@ -612,7 +612,7 @@ export const assetTrackingRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       return safeQuery("getCargoIntegrity", async () => {
         const vList = await db.select({ id: vehicles.id, licensePlate: vehicles.licensePlate, make: vehicles.make })
@@ -658,7 +658,7 @@ export const assetTrackingRouter = router({
       ...dateRangeInput.shape,
     }).optional())
     .query(async ({ ctx }) => {
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       const events: Array<{
         eventId: string;
@@ -708,7 +708,7 @@ export const assetTrackingRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       return safeQuery("getTrailerTracking", async () => {
         const vList = await db.select({ id: vehicles.id, licensePlate: vehicles.licensePlate, make: vehicles.make, model: vehicles.model, status: vehicles.status, currentLocation: vehicles.currentLocation })
@@ -720,7 +720,7 @@ export const assetTrackingRouter = router({
           const seed = v.id * 23;
           const statuses = ["loaded", "empty", "loading", "unloading"] as const;
           const loadStatus = statuses[Math.floor(seededRandom(seed) * 4)];
-          const loc = v.currentLocation as any;
+          const loc = v.currentLocation as { lat?: number; lng?: number; address?: string } | null;
 
           return {
             trailerId: String(v.id),
@@ -754,7 +754,7 @@ export const assetTrackingRouter = router({
       search: z.string().optional(),
     }).optional())
     .query(async ({ ctx }) => {
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       const containers: Array<{
         containerId: string;
@@ -823,7 +823,7 @@ export const assetTrackingRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return { summary: { movingPct: 0, idlePct: 0, revenuePct: 0, maintenancePct: 0 }, assets: [] };
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       return safeQuery("getAssetUtilization", async () => {
         const [totalRow] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(eq(vehicles.companyId, companyId));
@@ -875,7 +875,7 @@ export const assetTrackingRouter = router({
       minHours: z.number().optional(),
     }).optional())
     .query(async ({ ctx }) => {
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       const locations = [
         { name: "Main Yard - Houston", lat: 29.76, lng: -95.37, type: "yard" },
@@ -923,11 +923,11 @@ export const assetTrackingRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       return safeQuery("getGeofenceEvents", async () => {
         // Try to pull real geofence events from DB
-        let dbEvents: any[] = [];
+        let dbEvents: typeof geofenceEvents.$inferSelect[] = [];
         try {
           dbEvents = await db.select().from(geofenceEvents).orderBy(desc(geofenceEvents.createdAt)).limit(50);
         } catch {
@@ -937,16 +937,16 @@ export const assetTrackingRouter = router({
         if (dbEvents.length > 0) {
           return dbEvents.map(e => ({
             eventId: String(e.id),
-            assetId: String(e.vehicleId || e.driverId || 0),
-            assetName: `Unit ${e.vehicleId || e.driverId || 0}`,
+            assetId: String(e.userId || 0),
+            assetName: `Unit ${e.userId || 0}`,
             geofenceId: String(e.geofenceId),
-            geofenceName: e.geofenceName || `Zone ${e.geofenceId}`,
+            geofenceName: `Zone ${e.geofenceId}`,
             eventType: e.eventType || "enter",
             timestamp: (e.createdAt || new Date()).toISOString(),
-            lat: (e.location as any)?.lat || 0,
-            lng: (e.location as any)?.lng || 0,
-            speed: (e as any).speed || 0,
-            dwellSeconds: (e as any).dwellSeconds || null,
+            lat: e.latitude ? parseFloat(String(e.latitude)) : 0,
+            lng: e.longitude ? parseFloat(String(e.longitude)) : 0,
+            speed: 0,
+            dwellSeconds: e.dwellSeconds || null,
           }));
         }
 
@@ -1010,19 +1010,19 @@ export const assetTrackingRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return { success: false, message: "Database unavailable" };
-      const companyId = (ctx.user as any)?.companyId || 0;
-      const userId = (ctx.user as any)?.id;
+      const companyId = ctx.user!.companyId || 0;
+      const userId = ctx.user!.id;
 
       return safeQuery("configureGeofence", async () => {
         if (input.id) {
           // Update existing
           await db.update(geofences).set({
             name: input.name,
-            type: input.type as any,
-            shape: input.shape as any,
-            center: input.center as any,
+            type: input.type as typeof geofences.$inferSelect["type"],
+            shape: input.shape as typeof geofences.$inferSelect["shape"],
+            center: input.center as typeof geofences.$inferSelect["center"],
             radiusMeters: input.radiusMeters,
-            polygon: input.polygon as any,
+            polygon: input.polygon as typeof geofences.$inferSelect["polygon"],
             alertOnEnter: input.alertOnEnter,
             alertOnExit: input.alertOnExit,
             alertOnDwell: input.alertOnDwell,
@@ -1036,12 +1036,12 @@ export const assetTrackingRouter = router({
         // Create new
         const [gf] = await db.insert(geofences).values({
           name: input.name,
-          type: input.type as any,
-          shape: input.shape as any,
-          center: input.center as any,
+          type: input.type as typeof geofences.$inferSelect["type"],
+          shape: input.shape as typeof geofences.$inferSelect["shape"],
+          center: input.center as typeof geofences.$inferSelect["center"],
           radiusMeters: input.radiusMeters,
           radius: String(input.radiusMeters),
-          polygon: input.polygon as any,
+          polygon: input.polygon as typeof geofences.$inferSelect["polygon"],
           companyId,
           createdBy: userId ? Number(userId) : null,
           alertOnEnter: input.alertOnEnter,
@@ -1066,7 +1066,7 @@ export const assetTrackingRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       return safeQuery("getAssetMaintenanceDue", async () => {
         const vList = await db.select({ id: vehicles.id, licensePlate: vehicles.licensePlate, make: vehicles.make, model: vehicles.model, mileage: vehicles.mileage, status: vehicles.status })
@@ -1108,7 +1108,7 @@ export const assetTrackingRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return { stages: [], totalAssets: 0 };
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       return safeQuery("getAssetLifecycleStatus", async () => {
         const statusRows = await db.select({
@@ -1150,7 +1150,7 @@ export const assetTrackingRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return { assets: [], clusters: [], geofences: [] };
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       return safeQuery("getFleetMap", async () => {
         const vList = await db.select().from(vehicles)
@@ -1160,7 +1160,7 @@ export const assetTrackingRouter = router({
         const assets = vList.map(vehicleToAssetLocation);
 
         // Fetch geofences for overlay
-        let gfList: Array<{ id: number; name: string; center: any; radius: string | null; radiusMeters: number | null; type: string; isActive: boolean }> = [];
+        let gfList: Array<{ id: number; name: string; center: { lat: number; lng: number } | null; radius: string | null; radiusMeters: number | null; type: string; isActive: boolean }> = [];
         try {
           gfList = await db.select({
             id: geofences.id,
@@ -1198,7 +1198,7 @@ export const assetTrackingRouter = router({
       days: z.number().min(1).max(90).default(30),
     }).optional())
     .query(async ({ ctx }) => {
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       const alertTypes = ["temperature", "shock", "door", "geofence", "tire_pressure", "maintenance"];
       const history: Array<{

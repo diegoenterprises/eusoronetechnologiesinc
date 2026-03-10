@@ -23,10 +23,10 @@ import { fireGamificationEvent } from "../services/gamificationDispatcher";
 
 const catalystStatusSchema = z.enum(["active", "pending", "suspended", "inactive"]);
 
-async function resolveCatalystUserId(ctxUser: any): Promise<number> {
+async function resolveCatalystUserId(ctxUser: Record<string, unknown> | null | undefined): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const email = ctxUser?.email || "";
+  const email = String(ctxUser?.email || "");
   if (email) {
     try {
       const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
@@ -36,7 +36,7 @@ async function resolveCatalystUserId(ctxUser: any): Promise<number> {
   return 0;
 }
 
-async function resolveCompanyId(ctxUser: any): Promise<number> {
+async function resolveCompanyId(ctxUser: Record<string, unknown> | null | undefined): Promise<number> {
   const fromCtx = Number(ctxUser?.companyId) || 0;
   if (fromCtx) return fromCtx;
   // Fall back: resolve from users table
@@ -61,9 +61,9 @@ export const catalystsRouter = router({
       vehicleType: z.enum(["tractor", "trailer", "tanker", "flatbed", "refrigerated", "dry_van", "lowboy", "step_deck"]),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'VEHICLE' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: ctx.user!.companyId, action: 'CREATE', resource: 'VEHICLE' }, ctx.req);
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
-      const companyId = await resolveCompanyId(Number(ctx.user?.id) || 0);
+      const companyId = await resolveCompanyId(ctx.user as Record<string, unknown>);
       const [result] = await db.insert(vehicles).values({
         companyId,
         vin: input.vin,
@@ -87,10 +87,10 @@ export const catalystsRouter = router({
       email: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'COMPANY' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: ctx.user!.companyId, action: 'UPDATE', resource: 'COMPANY' }, ctx.req);
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
-      const companyId = await resolveCompanyId(Number(ctx.user?.id) || 0);
-      const updates: Record<string, any> = {};
+      const companyId = await resolveCompanyId(ctx.user as Record<string, unknown>);
+      const updates: Record<string, unknown> = {};
       if (input.name) updates.name = input.name;
       if (input.dotNumber) updates.dotNumber = input.dotNumber;
       if (input.mcNumber) updates.mcNumber = input.mcNumber;
@@ -105,7 +105,7 @@ export const catalystsRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'DELETE', resource: 'VEHICLE' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: ctx.user!.companyId, action: 'DELETE', resource: 'VEHICLE' }, ctx.req);
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       await db.update(vehicles).set({ status: "out_of_service", isActive: false }).where(eq(vehicles.id, input.id));
       return { success: true, id: input.id };
@@ -242,7 +242,7 @@ export const catalystsRouter = router({
    */
   getDashboardStats: protectedProcedure
     .query(async ({ ctx }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'COMPANY' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: ctx.user!.companyId, action: 'READ', resource: 'COMPANY' }, ctx.req);
       const db = await getDb();
       if (!db) {
         return { activeLoads: 0, availableCapacity: 0, weeklyRevenue: 0, fleetUtilization: 0, safetyScore: 0, onTimeRate: 0 };
@@ -368,8 +368,8 @@ export const catalystsRouter = router({
           .limit(input.limit);
 
         return activeLoads.map(l => {
-          const pickup = l.pickupLocation as any || {};
-          const delivery = l.deliveryLocation as any || {};
+          const pickup = l.pickupLocation ?? { city: '', state: '' };
+          const delivery = l.deliveryLocation ?? { city: '', state: '' };
           return {
             id: String(l.id),
             loadNumber: l.loadNumber,
@@ -407,8 +407,8 @@ export const catalystsRouter = router({
           .from(documents)
           .where(and(
             eq(documents.companyId, companyId),
-            gte(documents.expiryDate, new Date()) as any,
-            (sql`${documents.expiryDate} <= ${thirtyDaysFromNow}`) as any
+            gte(documents.expiryDate, new Date()),
+            sql`${documents.expiryDate} <= ${thirtyDaysFromNow}`
           ))
           .limit(5);
 
@@ -427,7 +427,7 @@ export const catalystsRouter = router({
           .from(vehicles)
           .where(and(
             eq(vehicles.companyId, companyId),
-            (sql`${vehicles.nextMaintenanceDate} <= ${thirtyDaysFromNow}`) as any
+            sql`${vehicles.nextMaintenanceDate} <= ${thirtyDaysFromNow}`
           ))
           .limit(5);
 
@@ -709,7 +709,7 @@ export const catalystsRouter = router({
         const userId = await resolveCatalystUserId(ctx.user);
         if (!userId) return [];
         const validStatuses = ['pending', 'accepted', 'rejected', 'expired', 'withdrawn'] as const;
-        const filterStatus = input.filter && validStatuses.includes(input.filter as any) ? input.filter as typeof validStatuses[number] : null;
+        const filterStatus = input.filter && validStatuses.includes(input.filter as typeof validStatuses[number]) ? input.filter as typeof validStatuses[number] : null;
 
         let bidList;
         if (filterStatus) {
@@ -720,8 +720,8 @@ export const catalystsRouter = router({
 
         return await Promise.all(bidList.map(async (b) => {
           const [load] = await db.select().from(loads).where(eq(loads.id, b.loadId)).limit(1);
-          const pickup = load?.pickupLocation as any || {};
-          const delivery = load?.deliveryLocation as any || {};
+          const pickup = load?.pickupLocation ?? { city: '', state: '' };
+          const delivery = load?.deliveryLocation ?? { city: '', state: '' };
           const dist = load?.distance ? parseFloat(String(load.distance)) : 0;
           const amt = b.amount ? parseFloat(String(b.amount)) : 0;
           return {
@@ -801,8 +801,8 @@ export const catalystsRouter = router({
           .limit(input.limit);
 
         return availableLoads.map(l => {
-          const pickup = l.pickupLocation as any || {};
-          const delivery = l.deliveryLocation as any || {};
+          const pickup = l.pickupLocation ?? { city: '', state: '' };
+          const delivery = l.deliveryLocation ?? { city: '', state: '' };
           return {
             id: String(l.id),
             loadNumber: l.loadNumber,
@@ -825,7 +825,7 @@ export const catalystsRouter = router({
   submitBid: protectedProcedure
     .input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'BID' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: ctx.user!.companyId, action: 'CREATE', resource: 'BID' }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       const catalystId = await resolveCatalystUserId(ctx.user);
@@ -848,7 +848,7 @@ export const catalystsRouter = router({
         notes: input.notes || '',
         status: 'pending',
       });
-      const bidId = (result as any).insertId || 0;
+      const bidId = (result as unknown as { insertId?: number }).insertId || 0;
 
       const [load] = await db.select().from(loads).where(eq(loads.id, loadIdNum)).limit(1);
       emitBidReceived({
@@ -889,7 +889,7 @@ export const catalystsRouter = router({
       if (!bid) throw new Error("Bid not found");
       if (bid.catalystId !== catalystId) throw new Error("You can only cancel your own bids");
       if (bid.status !== 'pending') throw new Error("Only pending bids can be cancelled");
-      await db.update(bids).set({ status: 'withdrawn' } as any).where(eq(bids.id, bidIdNum));
+      await db.update(bids).set({ status: 'withdrawn' } as Partial<typeof bids.$inferInsert>).where(eq(bids.id, bidIdNum));
       const [load] = await db.select().from(loads).where(eq(loads.id, bid.loadId)).limit(1);
       if (load?.shipperId) {
         emitNotification(String(load.shipperId), {
@@ -1010,7 +1010,7 @@ export const catalystsRouter = router({
         try {
           const companyId = parseInt(input.catalystId, 10);
           const statusMap: Record<string, string> = { active: 'compliant', pending: 'pending', suspended: 'non_compliant', inactive: 'expired' };
-          await db.update(companies).set({ complianceStatus: (statusMap[input.status] || 'pending') as any, isActive: input.status === 'active' }).where(eq(companies.id, companyId));
+          await db.update(companies).set({ complianceStatus: (statusMap[input.status] || 'pending') as typeof companies.complianceStatus.enumValues[number], isActive: input.status === 'active' }).where(eq(companies.id, companyId));
         } catch (e) { logger.error('[Catalysts] updateStatus error:', e); }
       }
       return { success: true, catalystId: input.catalystId, newStatus: input.status, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
@@ -1312,12 +1312,12 @@ export const catalystsRouter = router({
   // Additional catalyst procedures
   approve: protectedProcedure.input(z.object({ catalystId: z.string() })).mutation(async ({ input }) => {
     const db = await getDb();
-    if (db) { try { const id = parseInt(input.catalystId, 10); await db.update(companies).set({ complianceStatus: 'compliant' as any, isActive: true }).where(eq(companies.id, id)); } catch (e) { logger.error('[Catalysts] approve error:', e); } }
+    if (db) { try { const id = parseInt(input.catalystId, 10); await db.update(companies).set({ complianceStatus: 'compliant' as typeof companies.complianceStatus.enumValues[number], isActive: true }).where(eq(companies.id, id)); } catch (e) { logger.error('[Catalysts] approve error:', e); } }
     return { success: true, catalystId: input.catalystId };
   }),
   reject: protectedProcedure.input(z.object({ catalystId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
-    if (db) { try { const id = parseInt(input.catalystId, 10); await db.update(companies).set({ complianceStatus: 'non_compliant' as any }).where(eq(companies.id, id)); } catch (e) { logger.error('[Catalysts] reject error:', e); } }
+    if (db) { try { const id = parseInt(input.catalystId, 10); await db.update(companies).set({ complianceStatus: 'non_compliant' as typeof companies.complianceStatus.enumValues[number] }).where(eq(companies.id, id)); } catch (e) { logger.error('[Catalysts] reject error:', e); } }
     return { success: true, catalystId: input.catalystId };
   }),
   getDrivers: protectedProcedure.input(z.object({ catalystId: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
@@ -1350,7 +1350,7 @@ export const catalystsRouter = router({
       const companyId = ctx.user?.companyId || 0;
       const rows = await db.select().from(loads).where(eq(loads.catalystId, companyId)).orderBy(desc(loads.createdAt)).limit(input?.limit || 20);
       return rows.map(l => {
-        const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {};
+        const p = l.pickupLocation ?? { city: '', state: '' }; const d = l.deliveryLocation ?? { city: '', state: '' };
         return { id: String(l.id), loadNumber: l.loadNumber, status: l.status, origin: `${p.city || ''}, ${p.state || ''}`, destination: `${d.city || ''}, ${d.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0, date: l.createdAt?.toISOString() || '' };
       });
     } catch (e) { return []; }
@@ -1361,7 +1361,7 @@ export const catalystsRouter = router({
       const companyId = ctx.user?.companyId || 0;
       const rows = await db.select().from(loads).where(eq(loads.catalystId, companyId)).orderBy(desc(loads.createdAt)).limit(input?.limit || 10);
       return rows.map(l => {
-        const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {};
+        const p = l.pickupLocation ?? { city: '', state: '' }; const d = l.deliveryLocation ?? { city: '', state: '' };
         return { id: String(l.id), loadNumber: l.loadNumber, status: l.status, origin: `${p.city || ''}, ${p.state || ''}`, destination: `${d.city || ''}, ${d.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0 };
       });
     } catch (e) { return []; }
@@ -1564,11 +1564,11 @@ export const catalystsRouter = router({
         model: input.model || null,
         year: input.year || null,
         licensePlate: input.licensePlate || null,
-        vehicleType: input.vehicleType as any,
+        vehicleType: input.vehicleType as typeof vehicles.vehicleType.enumValues[number],
         capacity: input.capacity ? String(input.capacity) : null,
         status: 'available',
         isActive: true,
-      } as any).$returningId();
+      } as typeof vehicles.$inferInsert).$returningId();
 
       return { success: true, vehicleId: String(result[0]?.id) };
     }),
@@ -1659,8 +1659,8 @@ export const catalystsRouter = router({
           .limit(input.limit);
 
         return rows.map(l => {
-          const p = l.pickupLocation as any || {};
-          const d = l.deliveryLocation as any || {};
+          const p = l.pickupLocation ?? { city: '', state: '' };
+          const d = l.deliveryLocation ?? { city: '', state: '' };
           return {
             id: String(l.id),
             loadNumber: l.loadNumber || '',
@@ -1736,7 +1736,7 @@ export const catalystsRouter = router({
         fileUrl: input.fileUrl,
         expiryDate: input.expiryDate ? new Date(input.expiryDate) : null,
         status: 'active',
-      } as any).$returningId();
+      } as typeof documents.$inferInsert).$returningId();
 
       return { success: true, documentId: String(result[0]?.id) };
     }),
@@ -1753,13 +1753,13 @@ export const catalystsRouter = router({
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const companyId = parseInt(input.catalystId, 10);
 
-      await db.update(companies).set({ complianceStatus: 'suspended' } as any)
+      await db.update(companies).set({ complianceStatus: 'suspended' as typeof companies.complianceStatus.enumValues[number] })
         .where(eq(companies.id, companyId));
 
       // Withdraw all pending bids
       const companyUsers = await db.select({ id: users.id }).from(users).where(eq(users.companyId, companyId));
       for (const u of companyUsers) {
-        await db.update(bids).set({ status: 'withdrawn' } as any)
+        await db.update(bids).set({ status: 'withdrawn' } as Partial<typeof bids.$inferInsert>)
           .where(and(eq(bids.catalystId, u.id), eq(bids.status, 'pending')));
       }
 
@@ -1776,7 +1776,7 @@ export const catalystsRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const companyId = parseInt(input.catalystId, 10);
-      await db.update(companies).set({ complianceStatus: 'compliant' } as any)
+      await db.update(companies).set({ complianceStatus: 'compliant' as typeof companies.complianceStatus.enumValues[number] })
         .where(eq(companies.id, companyId));
       return { success: true };
     }),

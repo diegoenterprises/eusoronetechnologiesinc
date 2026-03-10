@@ -10,7 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, geofences, users, loads, fuelTransactions, inspections, drivers } from "../../drizzle/schema";
-import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
+import { eq, and, desc, sql, gte, lte, type SQL } from "drizzle-orm";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 
@@ -24,7 +24,7 @@ export const fleetRouter = router({
   getGeofences: protectedProcedure
     .input(z.object({ search: z.string().optional() }))
     .query(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'GEOFENCE' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: ctx.user!.companyId, action: 'READ', resource: 'GEOFENCE' }, ctx.req);
       const db = await getDb();
       if (!db) return [];
 
@@ -41,8 +41,8 @@ export const fleetRouter = router({
           name: g.name,
           type: g.type,
           radius: parseFloat(g.radius?.toString() || '0'),
-          lat: (g.center as any)?.lat || 0,
-          lng: (g.center as any)?.lng || 0,
+          lat: g.center?.lat || 0,
+          lng: g.center?.lng || 0,
           alerts: g.alertOnEnter || g.alertOnExit,
         }));
 
@@ -63,7 +63,7 @@ export const fleetRouter = router({
    */
   getGeofenceStats: protectedProcedure
     .query(async ({ ctx }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'GEOFENCE' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: ctx.user!.companyId, action: 'READ', resource: 'GEOFENCE' }, ctx.req);
       const db = await getDb();
       const fallback = { total: 0, terminals: 0, yards: 0, hubs: 0, alertsEnabled: 0, active: 0, alertsToday: 0, vehiclesInside: 0 };
       if (!db) return fallback;
@@ -100,13 +100,13 @@ export const fleetRouter = router({
   deleteGeofence: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'DELETE', resource: 'GEOFENCE' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: ctx.user!.companyId, action: 'DELETE', resource: 'GEOFENCE' }, ctx.req);
       const db = await getDb();
       if (!db) return { success: false, deletedId: input.id };
       try {
         const gid = parseInt(input.id, 10);
         const companyId = ctx.user?.companyId || 0;
-        await db.update(geofences).set({ isActive: false } as any).where(and(eq(geofences.id, gid), eq(geofences.companyId, companyId)));
+        await db.update(geofences).set({ isActive: false } as Partial<typeof geofences.$inferInsert>).where(and(eq(geofences.id, gid), eq(geofences.companyId, companyId)));
         return { success: true, deletedId: input.id };
       } catch (e) { logger.error('[Fleet] deleteGeofence error:', e); return { success: false, deletedId: input.id }; }
     }),
@@ -120,7 +120,7 @@ export const fleetRouter = router({
       status: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'VEHICLE' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: ctx.user!.companyId, action: 'READ', resource: 'VEHICLE' }, ctx.req);
       const db = await getDb();
       if (!db) return [];
 
@@ -189,7 +189,7 @@ export const fleetRouter = router({
   getFleetStats: protectedProcedure
     .input(z.object({ filters: z.any().optional() }).optional())
     .query(async ({ ctx }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'VEHICLE' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: ctx.user!.companyId, action: 'READ', resource: 'VEHICLE' }, ctx.req);
       const db = await getDb();
       if (!db) {
         return { totalVehicles: 0, total: 0, active: 0, inMaintenance: 0, maintenance: 0, outOfService: 0, utilization: 0, inTransit: 0, loading: 0, available: 0, atShipper: 0, atConsignee: 0, offDuty: 0, issues: 0, avgMpg: 0 };
@@ -234,7 +234,7 @@ export const fleetRouter = router({
    */
   getSummary: protectedProcedure
     .query(async ({ ctx }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'VEHICLE' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: ctx.user!.companyId, action: 'READ', resource: 'VEHICLE' }, ctx.req);
       const db = await getDb();
       if (!db) {
         return { totalVehicles: 0, active: 0, inMaintenance: 0, outOfService: 0, utilization: 0, avgAge: 0, maintenanceDueThisWeek: 0, inspectionsDueThisWeek: 0 };
@@ -279,7 +279,7 @@ export const fleetRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'VEHICLE' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: ctx.user!.companyId, action: 'READ', resource: 'VEHICLE' }, ctx.req);
       const db = await getDb();
       if (!db) return { vehicles: [], total: 0 };
 
@@ -356,7 +356,7 @@ export const fleetRouter = router({
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'VEHICLE' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: ctx.user!.companyId, action: 'READ', resource: 'VEHICLE' }, ctx.req);
       const db = await getDb();
       if (!db) return null;
 
@@ -373,7 +373,7 @@ export const fleetRouter = router({
 
         if (!vehicle) return null;
 
-        const location = vehicle.currentLocation as any || {};
+        const location = (vehicle.currentLocation ?? { lat: 0, lng: 0 });
 
         return {
           id: String(vehicle.id),
@@ -426,7 +426,7 @@ export const fleetRouter = router({
       licensePlate: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'VEHICLE' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: ctx.user!.companyId, action: 'CREATE', resource: 'VEHICLE' }, ctx.req);
       const db = await getDb();
       if (!db) return { id: '', success: false };
       try {
@@ -435,12 +435,12 @@ export const fleetRouter = router({
         const result = await db.insert(vehicles).values({
           companyId, vin: input.vin, make: input.make, model: input.model,
           year: input.year, licensePlate: input.licensePlate,
-          vehicleType: (typeMap[input.type] || 'tractor') as any,
+          vehicleType: (typeMap[input.type] || 'tractor') as typeof vehicles.vehicleType.enumValues[number],
           status: 'available', isActive: true,
         });
         return { id: String(result[0].insertId), ...input, status: 'active', createdAt: new Date().toISOString() };
-      } catch (e: any) {
-        if (e?.code === 'ER_DUP_ENTRY') return { id: '', success: false, error: 'VIN already exists' };
+      } catch (e) {
+        if ((e as Record<string, unknown>)?.code === 'ER_DUP_ENTRY') return { id: '', success: false, error: 'VIN already exists' };
         logger.error('[Fleet] create error:', e); return { id: '', success: false };
       }
     }),
@@ -457,13 +457,13 @@ export const fleetRouter = router({
       licensePlate: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'UPDATE', resource: 'VEHICLE' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: ctx.user!.companyId, action: 'UPDATE', resource: 'VEHICLE' }, ctx.req);
       const db = await getDb();
       if (!db) return { success: false, id: input.id };
       try {
         const vid = parseInt(input.id, 10);
         const companyId = ctx.user?.companyId || 0;
-        const updates: any = {};
+        const updates: Record<string, unknown> = {};
         if (input.status) {
           const statusMap: Record<string, string> = { active: 'available', maintenance: 'maintenance', out_of_service: 'out_of_service', retired: 'out_of_service' };
           updates.status = statusMap[input.status] || input.status;
@@ -483,7 +483,7 @@ export const fleetRouter = router({
    */
   getLocations: protectedProcedure
     .query(async ({ ctx }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'VEHICLE' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DRIVER', companyId: ctx.user!.companyId, action: 'READ', resource: 'VEHICLE' }, ctx.req);
       const db = await getDb();
       if (!db) return [];
 
@@ -515,19 +515,19 @@ export const fleetRouter = router({
         }
 
         return vehicleList.map(v => {
-          const loc = (v.currentLocation as any) || {};
+          const loc = (v.currentLocation ?? { lat: 0, lng: 0 }) as Record<string, unknown>;
           return {
             vehicleId: String(v.id),
             unitNumber: v.licensePlate || `VEH-${v.id}`,
             driverName: v.currentDriverId ? driverMap.get(v.currentDriverId) || 'Unassigned' : 'Unassigned',
-            location: { 
-              lat: loc.latitude || loc.lat || 0, 
-              lng: loc.longitude || loc.lng || 0 
+            location: {
+              lat: (loc.latitude as number) || (loc.lat as number) || 0,
+              lng: (loc.longitude as number) || (loc.lng as number) || 0
             },
-            heading: loc.heading || 0,
-            speed: loc.speed || 0,
+            heading: (loc.heading as number) || 0,
+            speed: (loc.speed as number) || 0,
             status: v.status === 'in_use' ? 'moving' : v.status === 'available' ? 'stopped' : 'idle',
-            lastUpdate: loc.timestamp || new Date().toISOString(),
+            lastUpdate: (loc.timestamp as string) || new Date().toISOString(),
           };
         });
       } catch (error) {
@@ -547,7 +547,7 @@ export const fleetRouter = router({
       try {
         const companyId = ctx.user?.companyId || 0;
         const cutoff = new Date(Date.now() + 90 * 86400000);
-        const conds: any[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true), sql`${vehicles.nextMaintenanceDate} IS NOT NULL`, lte(vehicles.nextMaintenanceDate, cutoff)];
+        const conds: SQL[] =[eq(vehicles.companyId, companyId), eq(vehicles.isActive, true), sql`${vehicles.nextMaintenanceDate} IS NOT NULL`, lte(vehicles.nextMaintenanceDate, cutoff)];
         if (input?.vehicleId) conds.push(eq(vehicles.id, parseInt(input.vehicleId, 10)));
         const rows = await db.select({ id: vehicles.id, make: vehicles.make, model: vehicles.model, licensePlate: vehicles.licensePlate, nextMaintenanceDate: vehicles.nextMaintenanceDate }).from(vehicles).where(and(...conds)).orderBy(vehicles.nextMaintenanceDate).limit(20);
         const now = new Date();
@@ -576,7 +576,7 @@ export const fleetRouter = router({
       if (db && vid) {
         try {
           const companyId = ctx.user?.companyId || 0;
-          await db.update(vehicles).set({ nextMaintenanceDate: new Date(input.scheduledDate) } as any).where(and(eq(vehicles.id, vid), eq(vehicles.companyId, companyId)));
+          await db.update(vehicles).set({ nextMaintenanceDate: new Date(input.scheduledDate) } as Partial<typeof vehicles.$inferInsert>).where(and(eq(vehicles.id, vid), eq(vehicles.companyId, companyId)));
         } catch (e) { logger.error('[Fleet] scheduleMaintenance error:', e); }
       }
       return { id: `m_${vid || Date.now()}`, ...input, status: "scheduled", createdAt: new Date().toISOString() };
@@ -596,7 +596,7 @@ export const fleetRouter = router({
       if (!db) return { totalGallons: 0, totalCost: 0, avgMPG: 0, entries: [] };
       try {
         const companyId = ctx.user?.companyId || 0;
-        const conds: any[] = [eq(fuelTransactions.companyId, companyId)];
+        const conds: SQL[] =[eq(fuelTransactions.companyId, companyId)];
         if (input.vehicleId) conds.push(eq(fuelTransactions.vehicleId, parseInt(input.vehicleId, 10)));
         if (input.startDate) conds.push(gte(fuelTransactions.transactionDate, new Date(input.startDate)));
         if (input.endDate) conds.push(lte(fuelTransactions.transactionDate, new Date(input.endDate)));
@@ -621,7 +621,7 @@ export const fleetRouter = router({
       if (!db) return [];
       try {
         const vid = parseInt(input.vehicleId, 10);
-        const rows = await db.select().from(inspections).where(and(eq(inspections.vehicleId, vid), eq(inspections.type, 'annual' as any))).orderBy(desc(inspections.completedAt)).limit(input.limit);
+        const rows = await db.select().from(inspections).where(and(eq(inspections.vehicleId, vid), eq(inspections.type, 'annual' as typeof inspections.type.enumValues[number]))).orderBy(desc(inspections.completedAt)).limit(input.limit);
         return rows.map(r => ({ id: String(r.id), type: r.type, status: r.status, date: r.completedAt?.toISOString().split('T')[0] || r.createdAt.toISOString().split('T')[0], defectsFound: r.defectsFound || 0 }));
       } catch (e) { logger.error('[Fleet] getMaintenanceHistory error:', e); return []; }
     }),
@@ -647,7 +647,7 @@ export const fleetRouter = router({
     if (!db) return { success: false, maintenanceId: input.maintenanceId || input.taskId };
     try {
       const id = parseInt((input.maintenanceId || input.taskId || '0').replace('maint_', ''), 10);
-      if (id) await db.update(vehicles).set({ nextMaintenanceDate: null } as any).where(eq(vehicles.id, id));
+      if (id) await db.update(vehicles).set({ nextMaintenanceDate: null } as Partial<typeof vehicles.$inferInsert>).where(eq(vehicles.id, id));
       return { success: true, maintenanceId: input.maintenanceId || input.taskId };
     } catch { return { success: true, maintenanceId: input.maintenanceId || input.taskId }; }
   }),
@@ -669,9 +669,9 @@ export const fleetRouter = router({
     if (!db) return [];
     try {
       const companyId = ctx.user?.companyId || 0;
-      const conds: any[] = [eq(inspections.companyId, companyId)];
+      const conds: SQL[] =[eq(inspections.companyId, companyId)];
       if (input?.vehicleId) conds.push(eq(inspections.vehicleId, parseInt(input.vehicleId, 10)));
-      if (input?.status && input.status !== 'all') conds.push(eq(inspections.status, input.status as any));
+      if (input?.status && input.status !== 'all') conds.push(eq(inspections.status, input.status as typeof inspections.status.enumValues[number]));
       conds.push(sql`${inspections.type} IN ('pre_trip', 'post_trip')`);
       const rows = await db.select().from(inspections).where(and(...conds)).orderBy(desc(inspections.completedAt)).limit(30);
       return rows.map(r => ({ id: String(r.id), vehicleId: String(r.vehicleId), driverId: String(r.driverId), type: r.type, status: r.status, defectsFound: r.defectsFound || 0, oosViolation: !!r.oosViolation, location: r.location || '', date: r.completedAt?.toISOString().split('T')[0] || r.createdAt.toISOString().split('T')[0] }));
@@ -698,8 +698,8 @@ export const fleetRouter = router({
     if (!db) return [];
     try {
       const companyId = ctx.user?.companyId || 0;
-      const conds: any[] = [eq(drivers.companyId, companyId)];
-      if (input?.status && input.status !== 'all') conds.push(eq(drivers.status, input.status as any));
+      const conds: SQL[] =[eq(drivers.companyId, companyId)];
+      if (input?.status && input.status !== 'all') conds.push(eq(drivers.status, input.status as typeof drivers.status.enumValues[number]));
       const rows = await db.select().from(drivers).where(and(...conds)).orderBy(desc(drivers.createdAt)).limit(50);
       const results = await Promise.all(rows.map(async (d) => {
         let name = '', email = '', phone = '';
@@ -728,8 +728,8 @@ export const fleetRouter = router({
     if (!db) return [];
     try {
       const companyId = ctx.user?.companyId || 0;
-      const conds: any[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
-      if (input?.type) conds.push(eq(vehicles.vehicleType, input.type as any));
+      const conds: SQL[] =[eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
+      if (input?.type) conds.push(eq(vehicles.vehicleType, input.type as typeof vehicles.vehicleType.enumValues[number]));
       const rows = await db.select().from(vehicles).where(and(...conds)).orderBy(desc(vehicles.createdAt)).limit(50);
       let results = rows.map(v => ({ id: String(v.id), unit: `${v.make || ''} ${v.model || ''}`.trim() || v.licensePlate || String(v.id), type: v.vehicleType, status: v.status, vin: v.vin, licensePlate: v.licensePlate || '', year: v.year || 0 }));
       if (input?.search) { const s = input.search.toLowerCase(); results = results.filter(r => r.unit.toLowerCase().includes(s) || r.vin.toLowerCase().includes(s)); }
@@ -772,7 +772,7 @@ export const fleetRouter = router({
     try {
       const companyId = ctx.user?.companyId || 0;
       const rows = await db.select({ id: vehicles.id, licensePlate: vehicles.licensePlate, make: vehicles.make, model: vehicles.model, status: vehicles.status, currentLocation: vehicles.currentLocation, lastGPSUpdate: vehicles.lastGPSUpdate }).from(vehicles).where(and(eq(vehicles.companyId, companyId), eq(vehicles.isActive, true))).limit(100);
-      return rows.filter(v => v.currentLocation).map(v => { const loc = v.currentLocation as any || {}; return { vehicleId: String(v.id), unit: v.licensePlate || `${v.make || ''} ${v.model || ''}`.trim(), lat: loc.lat || 0, lng: loc.lng || 0, status: v.status, lastUpdate: v.lastGPSUpdate?.toISOString() || '' }; });
+      return rows.filter(v => v.currentLocation).map(v => { const loc = v.currentLocation!; return { vehicleId: String(v.id), unit: v.licensePlate || `${v.make || ''} ${v.model || ''}`.trim(), lat: loc.lat || 0, lng: loc.lng || 0, status: v.status, lastUpdate: v.lastGPSUpdate?.toISOString() || '' }; });
     } catch { return []; }
   }),
 
@@ -782,7 +782,7 @@ export const fleetRouter = router({
     if (!db) return [];
     try {
       const companyId = ctx.user?.companyId || 0;
-      const conds: any[] = [eq(fuelTransactions.companyId, companyId)];
+      const conds: SQL[] =[eq(fuelTransactions.companyId, companyId)];
       if (input.vehicleId) conds.push(eq(fuelTransactions.vehicleId, parseInt(input.vehicleId, 10)));
       const rows = await db.select().from(fuelTransactions).where(and(...conds)).orderBy(desc(fuelTransactions.transactionDate)).limit(input.limit || 30);
       return rows.map(r => ({ id: String(r.id), vehicleId: String(r.vehicleId), date: r.transactionDate?.toISOString().split('T')[0] || '', gallons: parseFloat(r.gallons?.toString() || '0'), totalCost: parseFloat(r.totalAmount?.toString() || '0'), pricePerGallon: parseFloat(r.pricePerGallon?.toString() || '0'), location: r.stationName || '', fuelType: 'diesel' }));
@@ -806,7 +806,7 @@ export const fleetRouter = router({
     try {
       const companyId = ctx.user?.companyId || 0;
       const rows = await db.select({ id: vehicles.id, licensePlate: vehicles.licensePlate, make: vehicles.make, model: vehicles.model, status: vehicles.status, currentLocation: vehicles.currentLocation, lastGPSUpdate: vehicles.lastGPSUpdate }).from(vehicles).where(and(eq(vehicles.companyId, companyId), eq(vehicles.isActive, true))).limit(100);
-      return rows.map(v => { const loc = v.currentLocation as any || {}; return { id: String(v.id), unit: v.licensePlate || `${v.make || ''} ${v.model || ''}`.trim(), lat: loc.lat || 0, lng: loc.lng || 0, speed: loc.speed || 0, heading: loc.heading || 0, status: v.status, lastUpdate: v.lastGPSUpdate?.toISOString() || '' }; });
+      return rows.map(v => { const loc = (v.currentLocation ?? { lat: 0, lng: 0 }) as Record<string, number>; return { id: String(v.id), unit: v.licensePlate || `${v.make || ''} ${v.model || ''}`.trim(), lat: loc.lat || 0, lng: loc.lng || 0, speed: loc.speed || 0, heading: loc.heading || 0, status: v.status, lastUpdate: v.lastGPSUpdate?.toISOString() || '' }; });
     } catch { return []; }
   }),
   getGPSStats: protectedProcedure.input(z.object({ vehicleId: z.string().optional() }).optional()).query(async ({ ctx }) => {

@@ -13,6 +13,10 @@ import { getDb } from "../db";
 import { terminals, appointments, users, loads } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 
+/** Loose record for accessing fields that may come from joined/extended rows */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface LooseRow { [key: string]: any }
+
 const appointmentStatusSchema = z.enum(["scheduled", "checked_in", "loading", "completed", "cancelled", "no_show"]);
 const rackStatusSchema = z.enum(["available", "in_use", "maintenance", "offline"]);
 
@@ -49,7 +53,7 @@ export const terminalsRouter = router({
     }))
     .mutation(async ({ input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
-      const updates: Record<string, any> = {};
+      const updates: Record<string, unknown> = {};
       if (input.status) updates.status = input.status;
       if (input.scheduledAt) updates.scheduledAt = new Date(input.scheduledAt);
       if (input.dockNumber) updates.dockNumber = input.dockNumber;
@@ -334,7 +338,7 @@ export const terminalsRouter = router({
 
       // TAS pre-clearance checks (non-blocking — store results, don't hard-fail)
       let preClearanceStatus: "pending" | "cleared" | "denied" | "bypassed" = input.skipTasValidation || !dtn ? "bypassed" : "pending";
-      const preClearanceData: any = {};
+      const preClearanceData: Record<string, unknown> & { issues?: string[] } = {};
 
       if (!input.skipTasValidation && dtn) {
         try {
@@ -371,13 +375,13 @@ export const terminalsRouter = router({
                 const clearance = await dtn.sendDriverPreClearance({
                   driverId: String(input.driverId),
                   driverName: driver.name || '',
-                  cdlNumber: (driver as any).cdlNumber || '',
-                  cdlState: (driver as any).licenseState || '',
-                  hazmatEndorsement: (driver as any).hazmatEndorsement || false,
-                  hazmatExpiry: (driver as any).hazmatExpiry?.toISOString(),
-                  twicNumber: (driver as any).twicCard || '',
-                  twicExpiry: (driver as any).twicExpiry?.toISOString(),
-                  medicalCertExpiry: (driver as any).medicalCardExpiry?.toISOString(),
+                  cdlNumber: (driver as LooseRow).cdlNumber || '',
+                  cdlState: (driver as LooseRow).licenseState || '',
+                  hazmatEndorsement: (driver as LooseRow).hazmatEndorsement || false,
+                  hazmatExpiry: (driver as LooseRow).hazmatExpiry?.toISOString(),
+                  twicNumber: (driver as LooseRow).twicCard || '',
+                  twicExpiry: (driver as LooseRow).twicExpiry?.toISOString(),
+                  medicalCertExpiry: (driver as LooseRow).medicalCardExpiry?.toISOString(),
                   carrierDOT: '',
                   carrierMC: '',
                 });
@@ -402,7 +406,7 @@ export const terminalsRouter = router({
         const [result] = await db.insert(appointments).values({
           terminalId,
           scheduledAt,
-          type: (input.type || 'loading') as any,
+          type: (input.type || 'loading') as typeof appointments.type.enumValues[number],
           status: 'scheduled',
           product: input.product || null,
           quantity: input.quantity ? String(input.quantity) : null,
@@ -415,12 +419,12 @@ export const terminalsRouter = router({
           trailerNumber: input.trailerNumber || null,
           hazmatClass: input.hazmatClass || null,
           unNumber: input.unNumber || null,
-          preClearanceStatus: preClearanceStatus as any,
+          preClearanceStatus: preClearanceStatus as typeof appointments.preClearanceStatus.enumValues[number],
           preClearanceData,
           estimatedDurationMin: input.estimatedDurationMin || null,
           notes: input.notes || null,
           requestedById: requestedById,
-        } as any).$returningId();
+        }).$returningId();
 
         return {
           success: true,
@@ -475,7 +479,7 @@ export const terminalsRouter = router({
         const today = new Date(); today.setHours(0,0,0,0);
         const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
         const conditions = [gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow)];
-        if (input.status) conditions.push(eq(appointments.status, input.status as any));
+        if (input.status) conditions.push(eq(appointments.status, input.status as typeof appointments.status.enumValues[number]));
         const appts = await db.select().from(appointments).where(and(...conditions)).orderBy(appointments.scheduledAt).limit(50);
         const mapped = await Promise.all(appts.map(async (a) => {
           let driverName = 'Unassigned';
@@ -484,15 +488,15 @@ export const terminalsRouter = router({
             id: String(a.id), type: a.type, scheduledAt: a.scheduledAt?.toISOString() || '',
             dock: a.dockNumber || '', status: a.status, driver: driverName,
             loadId: a.loadId ? String(a.loadId) : null,
-            product: (a as any).product || null, quantity: (a as any).quantity || null,
-            quantityUnit: (a as any).quantityUnit || 'barrels',
-            truckNumber: (a as any).truckNumber || null, trailerNumber: (a as any).trailerNumber || null,
-            hazmatClass: (a as any).hazmatClass || null, unNumber: (a as any).unNumber || null,
-            preClearanceStatus: (a as any).preClearanceStatus || 'pending',
-            preClearanceData: (a as any).preClearanceData || null,
-            bolNumber: (a as any).bolNumber || null, carrierId: (a as any).carrierId || null,
-            estimatedDurationMin: (a as any).estimatedDurationMin || null,
-            notes: (a as any).notes || null,
+            product: (a as LooseRow).product || null, quantity: (a as LooseRow).quantity || null,
+            quantityUnit: (a as LooseRow).quantityUnit || 'barrels',
+            truckNumber: (a as LooseRow).truckNumber || null, trailerNumber: (a as LooseRow).trailerNumber || null,
+            hazmatClass: (a as LooseRow).hazmatClass || null, unNumber: (a as LooseRow).unNumber || null,
+            preClearanceStatus: (a as LooseRow).preClearanceStatus || 'pending',
+            preClearanceData: (a as LooseRow).preClearanceData || null,
+            bolNumber: (a as LooseRow).bolNumber || null, carrierId: (a as LooseRow).carrierId || null,
+            estimatedDurationMin: (a as LooseRow).estimatedDurationMin || null,
+            notes: (a as LooseRow).notes || null,
           };
         }));
         const [total] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow)));
@@ -526,7 +530,7 @@ export const terminalsRouter = router({
           const driverId = parseInt(input.driverId, 10) || null;
           const loadId = null;
           const scheduledAt = new Date(`${input.scheduledDate}T${input.scheduledTime}:00`);
-          const [result] = await db.insert(appointments).values({ terminalId, driverId, loadId, scheduledAt, type: 'loading', status: 'scheduled', dockNumber: null } as any).$returningId();
+          const [result] = await db.insert(appointments).values({ terminalId, driverId, loadId, scheduledAt, type: 'loading' as const, status: 'scheduled' as const, dockNumber: null }).$returningId();
           return { id: `apt_${result.id}`, confirmationNumber: `CONF-${String(result.id).padStart(6, '0')}`, status: 'scheduled', createdAt: new Date().toISOString() };
         } catch (e) { logger.error('[Terminals] createAppointment error:', e); }
       }
@@ -553,7 +557,7 @@ export const terminalsRouter = router({
         try {
           const id = parseInt(input.appointmentId.replace('apt_', ''), 10);
           if (id) {
-            const updates: Record<string, any> = { status: input.status as any };
+            const updates: Record<string, unknown> = { status: input.status };
             const now = new Date();
 
             // Track timestamps
@@ -573,9 +577,9 @@ export const terminalsRouter = router({
               try {
                 const [apptData] = await db.select().from(appointments).where(eq(appointments.id, id)).limit(1);
                 if (apptData) {
-                  const checkedIn = (apptData as any).checkedInAt;
-                  const completed = (apptData as any).completedAt;
-                  const estDuration = (apptData as any).estimatedDurationMin || 120; // default 2hr free time
+                  const checkedIn = (apptData as LooseRow).checkedInAt;
+                  const completed = (apptData as LooseRow).completedAt;
+                  const estDuration = (apptData as LooseRow).estimatedDurationMin || 120; // default 2hr free time
                   if (checkedIn && completed) {
                     const actualMinutes = Math.round((new Date(completed).getTime() - new Date(checkedIn).getTime()) / 60000);
                     detentionMinutes = Math.max(0, actualMinutes - estDuration);
@@ -602,11 +606,11 @@ export const terminalsRouter = router({
                       driverName = d?.name || driverName;
                     }
                     await dtn.notifyArrival(String(appt.terminalId), String(appt.loadId || id), driverName);
-                    await db.update(appointments).set({ arrivalNotifiedAt: now } as any).where(eq(appointments.id, id));
+                    await db.update(appointments).set({ arrivalNotifiedAt: now }).where(eq(appointments.id, id));
                   }
                   if (input.status === 'completed' && !appt.departureNotifiedAt) {
                     await dtn.notifyDeparture(String(appt.terminalId), String(appt.loadId || id));
-                    await db.update(appointments).set({ departureNotifiedAt: now } as any).where(eq(appointments.id, id));
+                    await db.update(appointments).set({ departureNotifiedAt: now }).where(eq(appointments.id, id));
                   }
                 }
               }
@@ -636,7 +640,7 @@ export const terminalsRouter = router({
       if (db) {
         try {
           const id = parseInt(input.appointmentId.replace('apt_', ''), 10);
-          if (id) await db.update(appointments).set({ status: 'checked_in' as any }).where(eq(appointments.id, id));
+          if (id) await db.update(appointments).set({ status: 'checked_in' as const }).where(eq(appointments.id, id));
         } catch (e) { logger.error('[Terminals] checkInTruck error:', e); }
       }
       return { success: true, appointmentId: input.appointmentId, checkInTime: new Date().toISOString(), assignedRack: 'Rack 1', estimatedLoadTime: 45 };
@@ -783,11 +787,11 @@ export const terminalsRouter = router({
           if (driver) {
             const clearance = await dtn.sendDriverPreClearance({
               driverId: String(input.driverId), driverName: driver.name || '',
-              cdlNumber: (driver as any).cdlNumber || '', cdlState: (driver as any).licenseState || '',
-              hazmatEndorsement: (driver as any).hazmatEndorsement || false,
-              hazmatExpiry: (driver as any).hazmatExpiry?.toISOString(),
-              twicNumber: (driver as any).twicCard || '', twicExpiry: (driver as any).twicExpiry?.toISOString(),
-              medicalCertExpiry: (driver as any).medicalCardExpiry?.toISOString(),
+              cdlNumber: (driver as LooseRow).cdlNumber || '', cdlState: (driver as LooseRow).licenseState || '',
+              hazmatEndorsement: (driver as LooseRow).hazmatEndorsement || false,
+              hazmatExpiry: (driver as LooseRow).hazmatExpiry?.toISOString(),
+              twicNumber: (driver as LooseRow).twicCard || '', twicExpiry: (driver as LooseRow).twicExpiry?.toISOString(),
+              medicalCertExpiry: (driver as LooseRow).medicalCardExpiry?.toISOString(),
               carrierDOT: '', carrierMC: '',
             });
             checks.push({ label: "Driver Pre-Clearance", status: clearance.authorized ? "pass" : "fail", detail: clearance.authorized ? `Cleared${clearance.preClearedGate ? ` — Gate ${clearance.preClearedGate}` : ''}` : clearance.issues.join('; ') });
@@ -837,7 +841,7 @@ export const terminalsRouter = router({
           const loadIdNum = parseInt(input.loadId, 10);
           if (loadIdNum) {
             const { loads: loadsTable } = await import('../../drizzle/schema');
-            await db.update(loadsTable).set({ status: 'loading' as any }).where(eq(loadsTable.id, loadIdNum));
+            await db.update(loadsTable).set({ status: 'loading' as const }).where(eq(loadsTable.id, loadIdNum));
           }
         } catch (e) { logger.error('[Terminals] startLoading error:', e); }
       }
@@ -966,11 +970,11 @@ export const terminalsRouter = router({
           canDispenseProduct: s.canDispenseProduct,
           status: s.status || "off_duty",
           terminalId: s.terminalId,
-          locationType: (s as any).locationType || "terminal",
-          locationName: (s as any).locationName || "",
-          locationAddress: (s as any).locationAddress || "",
-          locationLat: (s as any).locationLat ? Number((s as any).locationLat) : null,
-          locationLng: (s as any).locationLng ? Number((s as any).locationLng) : null,
+          locationType: (s as LooseRow).locationType || "terminal",
+          locationName: (s as LooseRow).locationName || "",
+          locationAddress: (s as LooseRow).locationAddress || "",
+          locationLat: (s as LooseRow).locationLat ? Number((s as LooseRow).locationLat) : null,
+          locationLng: (s as LooseRow).locationLng ? Number((s as LooseRow).locationLng) : null,
           createdAt: s.createdAt?.toISOString() || null,
         }));
         if (input.search) {
@@ -1047,7 +1051,7 @@ export const terminalsRouter = router({
         status: "off_duty",
         isActive: true,
         createdBy: userId,
-      } as any).$returningId();
+      }).$returningId();
       return { success: true, id: result.id };
     }),
 
@@ -1075,7 +1079,7 @@ export const terminalsRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const { terminalStaff } = await import("../../drizzle/schema");
-      const updates: Record<string, any> = {};
+      const updates: Record<string, unknown> = {};
       if (input.name !== undefined) updates.name = input.name;
       if (input.phone !== undefined) updates.phone = input.phone;
       if (input.email !== undefined) updates.email = input.email;
@@ -1245,8 +1249,8 @@ export const terminalsRouter = router({
           });
           smsSent = smsResult?.status === "SENT";
           if (!smsSent) smsError = `SMS status: ${smsResult?.status || "unknown"}`;
-        } catch (e: any) {
-          smsError = e?.message || "SMS send failed";
+        } catch (e: unknown) {
+          smsError = e instanceof Error ? e.message : "SMS send failed";
           logger.error("[sendAccessLink] sms error:", e);
         }
       }
@@ -1276,7 +1280,7 @@ export const terminalsRouter = router({
       if (db) {
         try {
           const id = parseInt(input.appointmentId.replace('apt_', ''), 10);
-          if (id) await db.update(appointments).set({ status: 'cancelled' as any }).where(eq(appointments.id, id));
+          if (id) await db.update(appointments).set({ status: 'cancelled' as const }).where(eq(appointments.id, id));
         } catch (e) { logger.error('[Terminals] cancelAppointment error:', e); }
       }
       return { success: true, appointmentId: input.appointmentId, cancelledAt: new Date().toISOString() };
@@ -1440,7 +1444,7 @@ export const terminalsRouter = router({
   // EIA Reporting
   getEIAReport: protectedProcedure.input(z.object({ period: z.string() })).query(async ({ input }) => ({ period: input.period, periodStart: "", periodEnd: "", dueDate: "", totalReceived: 0, totalDispatched: 0, inventory: 0, status: "pending", products: [] })),
   getEIAStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ reportsSubmitted: 0, lastSubmission: "", nextDue: "", totalVolume: 0, terminals: 0, products: 0, pendingReports: 0 })),
-  submitEIAReport: protectedProcedure.input(z.object({ period: z.string(), data: z.any().optional() })).mutation(async ({ input }) => ({ success: true, reportId: "eia_123", submittedAt: new Date().toISOString() })),
+  submitEIAReport: protectedProcedure.input(z.object({ period: z.string(), data: z.unknown().optional() })).mutation(async ({ input }) => ({ success: true, reportId: "eia_123", submittedAt: new Date().toISOString() })),
 
   /**
    * Get full terminal profile for the logged-in company
@@ -1462,7 +1466,7 @@ export const terminalsRouter = router({
       const [staffCount] = await db.select({ count: sql<number>`count(*)` }).from(terminalStaff).where(and(eq(terminalStaff.companyId, companyId), eq(terminalStaff.isActive, true)));
 
       // Get partnerships
-      let partners: any[] = [];
+      let partners: LooseRow[] = [];
       if (terminal) {
         const partnerRows = await db.select({
           id: terminalPartners.id,
@@ -1565,11 +1569,11 @@ export const terminalsRouter = router({
           tankCount: input.tankCount || 0,
           latitude: input.latitude != null ? String(input.latitude) : null,
           longitude: input.longitude != null ? String(input.longitude) : null,
-        } as any).$returningId();
+        }).$returningId();
         return { success: true, id: result.id, created: true };
       }
 
-      const updates: Record<string, any> = {};
+      const updates: Record<string, unknown> = {};
       if (input.name !== undefined) updates.name = input.name;
       if (input.code !== undefined) updates.code = input.code;
       if (input.address !== undefined) updates.address = input.address;
@@ -1686,9 +1690,10 @@ export const terminalsRouter = router({
           return { found: true, carrier };
         }
         return { found: false };
-      } catch (e: any) {
-        logger.warn("[Terminals] FMCSA lookup failed:", e?.message?.substring(0, 100));
-        return { found: false, error: e?.message || "FMCSA lookup failed" };
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "FMCSA lookup failed";
+        logger.warn("[Terminals] FMCSA lookup failed:", msg.substring(0, 100));
+        return { found: false, error: msg };
       }
     }),
 
@@ -1848,16 +1853,19 @@ export const terminalsRouter = router({
         } else {
           const [result] = await db.insert(integrationConnections).values({
             companyId,
+            userId: ctx.user!.id,
+            providerId: 0,
+            authType: "api_key",
             providerSlug: input.provider,
             apiKey: input.apiKey,
             apiSecret: input.apiSecret || null,
             externalId: input.externalId || null,
             status: "connected",
-          } as any).$returningId();
+          }).$returningId();
           return { success: true, id: result.id, action: "created" };
         }
-      } catch (e: any) {
-        throw new Error(`Failed to save integration key: ${e.message}`);
+      } catch (e: unknown) {
+        throw new Error(`Failed to save integration key: ${e instanceof Error ? e.message : String(e)}`);
       }
     }),
 
@@ -1871,8 +1879,8 @@ export const terminalsRouter = router({
         await db.update(integrationConnections).set({ status: "disconnected", apiKey: null, apiSecret: null })
           .where(and(eq(integrationConnections.companyId, companyId), eq(integrationConnections.providerSlug, input.provider)));
         return { success: true };
-      } catch (e: any) {
-        throw new Error(`Failed to remove integration key: ${e.message}`);
+      } catch (e: unknown) {
+        throw new Error(`Failed to remove integration key: ${e instanceof Error ? e.message : String(e)}`);
       }
     }),
 
@@ -1900,9 +1908,10 @@ export const terminalsRouter = router({
         // Try to load stored hours from terminal_metadata (JSON column approach)
         // If no custom hours exist, return industry-standard defaults
         try {
-          const [meta]: any = await db.execute(
+          const [meta] = await db.execute(
             sql`SELECT operating_hours FROM terminal_metadata WHERE terminal_id = ${tId} LIMIT 1`
-          );
+          ) as unknown as [LooseRow[]];
+
           if (meta?.[0]?.operating_hours) {
             const stored = typeof meta[0].operating_hours === "string"
               ? JSON.parse(meta[0].operating_hours)
@@ -1984,8 +1993,8 @@ export const terminalsRouter = router({
         `);
 
         return { success: true, terminalId: input.terminalId };
-      } catch (e: any) {
-        logger.error("[Terminals] setOperatingHours error:", e?.message?.slice(0, 100));
+      } catch (e: unknown) {
+        logger.error("[Terminals] setOperatingHours error:", e instanceof Error ? e.message.slice(0, 100) : "");
         throw new Error("Failed to save operating hours");
       }
     }),
@@ -2003,7 +2012,7 @@ export const terminalsRouter = router({
       const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
       const hours = defaultOperatingHours(input.terminalId);
-      const todayHours = hours.regularHours.find((h: any) => h.day === today);
+      const todayHours = hours.regularHours.find((h: { day: string }) => h.day === today);
       if (!todayHours || !todayHours.isOpen) {
         return { isOpen: false, reason: "Closed today", opensAt: null };
       }

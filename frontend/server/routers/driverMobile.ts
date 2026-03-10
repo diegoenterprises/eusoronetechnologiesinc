@@ -23,6 +23,11 @@ import {
 } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, or, like, asc } from "drizzle-orm";
 
+// ─── Helper types ──────────────────────────────────────────────────
+
+/** Loose record for accessing optional / JSON-sourced fields on load rows */
+type LoadRow = Record<string, unknown>;
+
 // ─── Zod Schemas ───────────────────────────────────────────────────
 
 const coordinatesSchema = z.object({
@@ -235,7 +240,7 @@ export const driverMobileRouter = router({
   getDriverHomeDashboard: protectedProcedure
     .input(z.object({ driverId: z.number().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       const db = await getDb();
 
       let currentLoad: any = null;
@@ -244,7 +249,7 @@ export const driverMobileRouter = router({
       let earningsWeek = 0;
       let milesThisWeek = 0;
       let alerts: { id: string; type: string; message: string; severity: string; timestamp: string }[] = [];
-      let driverName = (ctx.user as any)?.name || "Driver";
+      let driverName = ctx.user!.name || "Driver";
       let driverId = input?.driverId ?? null;
 
       if (db && userId) {
@@ -275,20 +280,20 @@ export const driverMobileRouter = router({
               const load = activeLoads[0];
               currentLoad = {
                 id: load.id,
-                referenceNumber: (load as any).referenceNumber || `LOAD-${load.id}`,
+                referenceNumber: (load as LoadRow).referenceNumber || `LOAD-${load.id}`,
                 status: load.status,
-                origin: (load as any).originCity
-                  ? `${(load as any).originCity}, ${(load as any).originState}`
-                  : (load as any).pickupAddress || "Origin",
-                destination: (load as any).destinationCity
-                  ? `${(load as any).destinationCity}, ${(load as any).destinationState}`
-                  : (load as any).deliveryAddress || "Destination",
-                pickupTime: (load as any).pickupDate || (load as any).pickupTime,
-                deliveryTime: (load as any).deliveryDate || (load as any).deliveryTime,
+                origin: (load as LoadRow).originCity
+                  ? `${(load as LoadRow).originCity}, ${(load as LoadRow).originState}`
+                  : (load as LoadRow).pickupAddress || "Origin",
+                destination: (load as LoadRow).destinationCity
+                  ? `${(load as LoadRow).destinationCity}, ${(load as LoadRow).destinationState}`
+                  : (load as LoadRow).deliveryAddress || "Destination",
+                pickupTime: (load as LoadRow).pickupDate || (load as LoadRow).pickupTime,
+                deliveryTime: (load as LoadRow).deliveryDate || (load as LoadRow).deliveryTime,
                 rate: Number(load.rate) || 0,
-                distance: Number((load as any).distance || (load as any).miles) || 0,
-                commodity: (load as any).commodity || (load as any).description || "",
-                weight: Number((load as any).weight) || 0,
+                distance: Number((load as LoadRow).distance || (load as LoadRow).miles) || 0,
+                commodity: (load as LoadRow).commodity || (load as LoadRow).description || "",
+                weight: Number((load as LoadRow).weight) || 0,
               };
             }
 
@@ -309,14 +314,14 @@ export const driverMobileRouter = router({
               const nl = upcomingLoads[0];
               nextAssignment = {
                 id: nl.id,
-                referenceNumber: (nl as any).referenceNumber || `LOAD-${nl.id}`,
-                origin: (nl as any).originCity
-                  ? `${(nl as any).originCity}, ${(nl as any).originState}`
-                  : (nl as any).pickupAddress || "Origin",
-                destination: (nl as any).destinationCity
-                  ? `${(nl as any).destinationCity}, ${(nl as any).destinationState}`
-                  : (nl as any).deliveryAddress || "Destination",
-                pickupTime: (nl as any).pickupDate || (nl as any).pickupTime,
+                referenceNumber: (nl as LoadRow).referenceNumber || `LOAD-${nl.id}`,
+                origin: (nl as LoadRow).originCity
+                  ? `${(nl as LoadRow).originCity}, ${(nl as LoadRow).originState}`
+                  : (nl as LoadRow).pickupAddress || "Origin",
+                destination: (nl as LoadRow).destinationCity
+                  ? `${(nl as LoadRow).destinationCity}, ${(nl as LoadRow).destinationState}`
+                  : (nl as LoadRow).deliveryAddress || "Destination",
+                pickupTime: (nl as LoadRow).pickupDate || (nl as LoadRow).pickupTime,
                 rate: Number(nl.rate) || 0,
               };
             }
@@ -493,7 +498,7 @@ export const driverMobileRouter = router({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       const db = await getDb();
 
       // In a full implementation, expenses would be in a dedicated table.
@@ -545,7 +550,7 @@ export const driverMobileRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       logger.info(`Driver ${userId} submitted expense: ${input.category} $${input.amount}`);
 
       return {
@@ -634,7 +639,7 @@ export const driverMobileRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       logger.info(`Driver ${userId} requested roadside assistance: ${input.issueType} at [${input.location.lat}, ${input.location.lng}]`);
 
       return {
@@ -688,7 +693,7 @@ export const driverMobileRouter = router({
       }));
 
       if (input.types && input.types.length > 0) {
-        services = services.filter((s) => input.types!.includes(s.type as any));
+        services = services.filter((s) => (input.types! as string[]).includes(s.type));
       }
 
       services = services
@@ -915,7 +920,7 @@ export const driverMobileRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       const defects = input.items.filter((i) => i.defectSeverity && i.defectSeverity !== "none");
       const criticalDefects = defects.filter((i) => i.defectSeverity === "critical");
 
@@ -949,7 +954,7 @@ export const driverMobileRouter = router({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       const db = await getDb();
       let totalMiles = 0;
       let loadCount = 0;
@@ -1019,7 +1024,7 @@ export const driverMobileRouter = router({
   getDriverDocuments: protectedProcedure
     .input(z.object({ driverId: z.number().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       const db = await getDb();
 
       const driverDocs: any[] = [];
@@ -1039,12 +1044,12 @@ export const driverMobileRouter = router({
                 id: "DOC-CDL",
                 type: "cdl",
                 title: "Commercial Driver's License",
-                number: (driverRow as any).licenseNumber || "TX-12345678",
-                state: (driverRow as any).licenseState || "TX",
+                number: (driverRow as Record<string, string | number | boolean | Date | null | undefined>).licenseNumber || "TX-12345678",
+                state: (driverRow as Record<string, string | number | boolean | Date | null | undefined>).licenseState || "TX",
                 class: "A",
                 endorsements: ["H", "N", "T"],
-                expirationDate: (driverRow as any).licenseExpiry
-                  ? new Date((driverRow as any).licenseExpiry).toISOString().split("T")[0]
+                expirationDate: (driverRow as Record<string, string | number | boolean | Date | null | undefined>).licenseExpiry
+                  ? new Date(String((driverRow as Record<string, string | number | boolean | Date | null | undefined>).licenseExpiry)).toISOString().split("T")[0]
                   : "2027-06-15",
                 status: "valid",
               });
@@ -1053,8 +1058,8 @@ export const driverMobileRouter = router({
                 id: "DOC-MED",
                 type: "medical_card",
                 title: "DOT Medical Card",
-                expirationDate: (driverRow as any).medicalCardExpiry
-                  ? new Date((driverRow as any).medicalCardExpiry).toISOString().split("T")[0]
+                expirationDate: (driverRow as Record<string, string | number | boolean | Date | null | undefined>).medicalCardExpiry
+                  ? new Date(String((driverRow as Record<string, string | number | boolean | Date | null | undefined>).medicalCardExpiry)).toISOString().split("T")[0]
                   : "2026-04-08",
                 status: "expiring_soon",
                 daysUntilExpiry: 28,
@@ -1102,7 +1107,7 @@ export const driverMobileRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       logger.info(`Driver ${userId} uploaded document: ${input.type} — ${input.title}`);
 
       return {
@@ -1124,7 +1129,7 @@ export const driverMobileRouter = router({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       const db = await getDb();
       const scheduledLoads: any[] = [];
 
@@ -1151,18 +1156,18 @@ export const driverMobileRouter = router({
             for (const l of upcoming) {
               scheduledLoads.push({
                 id: l.id,
-                referenceNumber: (l as any).referenceNumber || `LOAD-${l.id}`,
+                referenceNumber: (l as LoadRow).referenceNumber || `LOAD-${l.id}`,
                 status: l.status,
-                origin: (l as any).originCity
-                  ? `${(l as any).originCity}, ${(l as any).originState}`
+                origin: (l as LoadRow).originCity
+                  ? `${(l as LoadRow).originCity}, ${(l as LoadRow).originState}`
                   : "Origin",
-                destination: (l as any).destinationCity
-                  ? `${(l as any).destinationCity}, ${(l as any).destinationState}`
+                destination: (l as LoadRow).destinationCity
+                  ? `${(l as LoadRow).destinationCity}, ${(l as LoadRow).destinationState}`
                   : "Destination",
-                pickupDate: (l as any).pickupDate || (l as any).pickupTime,
-                deliveryDate: (l as any).deliveryDate || (l as any).deliveryTime,
+                pickupDate: (l as LoadRow).pickupDate || (l as LoadRow).pickupTime,
+                deliveryDate: (l as LoadRow).deliveryDate || (l as LoadRow).deliveryTime,
                 rate: Number(l.rate) || 0,
-                distance: Number((l as any).distance || (l as any).miles) || 0,
+                distance: Number((l as LoadRow).distance || (l as LoadRow).miles) || 0,
               });
             }
           }
@@ -1235,7 +1240,7 @@ export const driverMobileRouter = router({
   getDriverHosStatus: protectedProcedure
     .input(z.object({ driverId: z.number().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
 
       // Try to get real HOS data from the HOS engine
       try {
@@ -1321,7 +1326,7 @@ export const driverMobileRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       const start = new Date(input.startDate);
       const end = new Date(input.endDate);
       const days = Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1;
@@ -1383,7 +1388,7 @@ export const driverMobileRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       logger.info(`Driver ${userId} reported safety issue: ${input.type} — severity: ${input.severity}`);
 
       return {
@@ -1407,7 +1412,7 @@ export const driverMobileRouter = router({
       }),
     )
     .query(async ({ ctx }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
 
       return {
         myRank: 7,

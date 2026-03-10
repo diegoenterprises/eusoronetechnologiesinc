@@ -4,17 +4,18 @@
  */
 
 import { z } from "zod";
-import { eq, and, desc, sql, like } from "drizzle-orm";
+import { eq, and, desc, sql, like, type SQL } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loadTemplates, loads, loadStops } from "../../drizzle/schema";
+import type { InsertLoadTemplate } from "../../drizzle/schema";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { emitLoadStatusChange } from "../_core/websocket";
 import { resolveUserRole } from "../_core/resolveRole";
 
-async function resolveUserId(ctxUser: any): Promise<number> {
+async function resolveUserId(ctxUser: Record<string, unknown> | null | undefined): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   if (ctxUser?.id && typeof ctxUser.id === "number") return ctxUser.id;
@@ -70,13 +71,13 @@ export const loadTemplatesRouter = router({
       includeArchived: z.boolean().optional(),
     }).optional())
     .query(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: (ctx.user as any)?.companyId, action: "READ", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: ctx.user!.companyId, action: "READ", resource: "LOAD" }, ctx.req);
       const db = await getDb();
       if (!db) return [];
       const userId = await resolveUserId(ctx.user);
       if (!userId) return [];
 
-      const conditions: any[] = [eq(loadTemplates.ownerId, userId)];
+      const conditions: SQL[] = [eq(loadTemplates.ownerId, userId)];
       if (!input?.includeArchived) conditions.push(eq(loadTemplates.isArchived, false));
       if (input?.favoritesOnly) conditions.push(eq(loadTemplates.isFavorite, true));
       if (input?.search) conditions.push(like(loadTemplates.name, `%${input.search}%`));
@@ -92,7 +93,7 @@ export const loadTemplatesRouter = router({
   get: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: (ctx.user as any)?.companyId, action: "READ", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: ctx.user!.companyId, action: "READ", resource: "LOAD" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       const [tmpl] = await db.select().from(loadTemplates).where(eq(loadTemplates.id, input.id)).limit(1);
@@ -130,7 +131,7 @@ export const loadTemplatesRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: (ctx.user as any)?.companyId, action: "CREATE", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: ctx.user!.companyId, action: "CREATE", resource: "LOAD" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       const userId = await resolveUserId(ctx.user);
@@ -138,7 +139,7 @@ export const loadTemplatesRouter = router({
 
       const [result] = await db.insert(loadTemplates).values({
         ownerId: userId,
-        companyId: (ctx.user as any)?.companyId || null,
+        companyId: ctx.user!.companyId || null,
         name: input.name,
         description: input.description || null,
         origin: input.origin || null,
@@ -164,7 +165,7 @@ export const loadTemplatesRouter = router({
         preferredPickupTime: input.preferredPickupTime || null,
         specialInstructions: input.specialInstructions || null,
         notes: input.notes || null,
-      } as any).$returningId();
+      } as InsertLoadTemplate).$returningId();
 
       return { id: result.id, name: input.name };
     }),
@@ -176,7 +177,7 @@ export const loadTemplatesRouter = router({
       name: z.string().min(1).max(200),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: (ctx.user as any)?.companyId, action: "CREATE", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: ctx.user!.companyId, action: "CREATE", resource: "LOAD" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       const userId = await resolveUserId(ctx.user);
@@ -185,14 +186,14 @@ export const loadTemplatesRouter = router({
       if (!load) throw new Error("Load not found");
 
       // Fetch stops for this load
-      let loadStopData: any[] = [];
+      let loadStopData: (typeof loadStops.$inferSelect)[] = [];
       try {
         loadStopData = await db.select().from(loadStops)
           .where(eq(loadStops.loadId, input.loadId))
           .orderBy(loadStops.sequence);
       } catch {}
 
-      const stopsJson = loadStopData.length > 0 ? loadStopData.map((s: any) => ({
+      const stopsJson = loadStopData.length > 0 ? loadStopData.map((s) => ({
         stopType: s.stopType,
         facilityName: s.facilityName || undefined,
         address: s.address || undefined,
@@ -213,29 +214,29 @@ export const loadTemplatesRouter = router({
 
       const [result] = await db.insert(loadTemplates).values({
         ownerId: userId,
-        companyId: (ctx.user as any)?.companyId || null,
+        companyId: ctx.user!.companyId || null,
         name: input.name,
         description: `Saved from load ${load.loadNumber || load.id}`,
         origin: load.pickupLocation || null,
         destination: load.deliveryLocation || null,
         distance: load.distance || null,
-        commodity: (load as any).commodityName || (load as any).commodity || null,
+        commodity: load.commodityName || null,
         cargoType: load.cargoType || null,
-        equipmentType: (load as any).equipmentType || null,
-        trailerType: (load as any).trailerType || null,
+        equipmentType: null,
+        trailerType: null,
         weight: load.weight || null,
-        weightUnit: (load as any).weightUnit || "lbs",
-        quantity: (load as any).volume || null,
-        quantityUnit: (load as any).volumeUnit || null,
+        weightUnit: load.weightUnit || "lbs",
+        quantity: load.volume || null,
+        quantityUnit: load.volumeUnit || null,
         hazmatClass: load.hazmatClass || null,
         unNumber: load.unNumber || null,
-        packingGroup: (load as any).packingGroup || null,
-        properShippingName: (load as any).properShippingName || null,
+        packingGroup: load.packingGroup || null,
+        properShippingName: load.properShippingName || null,
         rate: load.rate || null,
         stops: stopsJson,
         equipmentRequirements: equipReqs,
         specialInstructions: typeof load.specialInstructions === "string" ? load.specialInstructions : null,
-      } as any).$returningId();
+      } as InsertLoadTemplate).$returningId();
 
       return { id: result.id, name: input.name };
     }),
@@ -249,7 +250,7 @@ export const loadTemplatesRouter = router({
       rate: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: (ctx.user as any)?.companyId, action: "CREATE", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: ctx.user!.companyId, action: "CREATE", resource: "LOAD" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       const userId = await resolveUserId(ctx.user);
@@ -263,7 +264,7 @@ export const loadTemplatesRouter = router({
         shipperId: userId,
         loadNumber,
         status: "posted",
-        cargoType: (tmpl.cargoType || "general") as any,
+        cargoType: (tmpl.cargoType || "general") as typeof loads.cargoType.enumValues[number],
         hazmatClass: tmpl.hazmatClass || null,
         unNumber: tmpl.unNumber || null,
         commodityName: tmpl.commodity || null,
@@ -280,12 +281,12 @@ export const loadTemplatesRouter = router({
         deliveryDate: input.deliveryDate ? new Date(input.deliveryDate) : undefined,
         properShippingName: tmpl.properShippingName || null,
         packingGroup: tmpl.packingGroup || null,
-      } as any).$returningId();
+      } as typeof loads.$inferInsert).$returningId();
 
       // Insert template stops into load_stops
       if (tmpl.stops && Array.isArray(tmpl.stops) && tmpl.stops.length > 0) {
         try {
-          const stopValues = tmpl.stops.map((s: any, i: number) => ({
+          const stopValues = tmpl.stops.map((s, i: number) => ({
             loadId: result.id,
             sequence: i + 1,
             stopType: s.stopType || "delivery",
@@ -299,20 +300,20 @@ export const loadTemplatesRouter = router({
             notes: s.notes || null,
             status: "pending" as const,
           }));
-          await db.insert(loadStops).values(stopValues as any);
+          await db.insert(loadStops).values(stopValues as (typeof loadStops.$inferInsert)[]);
         } catch (e) {
           logger.warn("[LoadTemplates] Failed to insert stops from template:", e);
         }
       } else {
         // Auto-create pickup/delivery stops from origin/destination
         try {
-          const o = tmpl.origin as any;
-          const d = tmpl.destination as any;
+          const o = tmpl.origin;
+          const d = tmpl.destination;
           if (o || d) {
             await db.insert(loadStops).values([
               ...(o ? [{ loadId: result.id, sequence: 1, stopType: "pickup" as const, facilityName: o.facilityName || null, address: o.address || null, city: o.city || null, state: o.state || null, zipCode: o.zipCode || null, status: "pending" as const }] : []),
               ...(d ? [{ loadId: result.id, sequence: o ? 2 : 1, stopType: "delivery" as const, facilityName: d.facilityName || null, address: d.address || null, city: d.city || null, state: d.state || null, zipCode: d.zipCode || null, status: "pending" as const }] : []),
-            ] as any);
+            ] as (typeof loadStops.$inferInsert)[]);
           }
         } catch (e) {
           logger.warn("[LoadTemplates] Failed to auto-create stops:", e);
@@ -323,7 +324,7 @@ export const loadTemplatesRouter = router({
       await db.update(loadTemplates).set({
         usageCount: sql`${loadTemplates.usageCount} + 1`,
         lastUsedAt: new Date(),
-      } as any).where(eq(loadTemplates.id, input.templateId));
+      } as unknown as Partial<InsertLoadTemplate>).where(eq(loadTemplates.id, input.templateId));
 
       emitLoadStatusChange({
         loadId: String(result.id),
@@ -370,7 +371,7 @@ export const loadTemplatesRouter = router({
       }),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: ctx.user!.companyId, action: "UPDATE", resource: "LOAD" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       const userId = await resolveUserId(ctx.user);
@@ -379,7 +380,7 @@ export const loadTemplatesRouter = router({
       if (!existing) throw new Error("Template not found");
       if (existing.ownerId !== userId) throw new Error("Not authorized to edit this template");
 
-      const updateSet: Record<string, any> = {};
+      const updateSet: Record<string, unknown> = {};
       for (const [key, val] of Object.entries(input.data)) {
         if (val !== undefined) {
           if (key === "rate") updateSet[key] = String(val);
@@ -389,7 +390,7 @@ export const loadTemplatesRouter = router({
       }
 
       if (Object.keys(updateSet).length > 0) {
-        await db.update(loadTemplates).set(updateSet as any).where(eq(loadTemplates.id, input.id));
+        await db.update(loadTemplates).set(updateSet as Partial<InsertLoadTemplate>).where(eq(loadTemplates.id, input.id));
       }
       return { success: true };
     }),
@@ -398,12 +399,12 @@ export const loadTemplatesRouter = router({
   toggleFavorite: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: ctx.user!.companyId, action: "UPDATE", resource: "LOAD" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       const [tmpl] = await db.select().from(loadTemplates).where(eq(loadTemplates.id, input.id)).limit(1);
       if (!tmpl) throw new Error("Template not found");
-      await db.update(loadTemplates).set({ isFavorite: !tmpl.isFavorite } as any).where(eq(loadTemplates.id, input.id));
+      await db.update(loadTemplates).set({ isFavorite: !tmpl.isFavorite } as Partial<InsertLoadTemplate>).where(eq(loadTemplates.id, input.id));
       return { isFavorite: !tmpl.isFavorite };
     }),
 
@@ -411,7 +412,7 @@ export const loadTemplatesRouter = router({
   remove: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: (ctx.user as any)?.companyId, action: "DELETE", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "SHIPPER", companyId: ctx.user!.companyId, action: "DELETE", resource: "LOAD" }, ctx.req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       const userId = await resolveUserId(ctx.user);

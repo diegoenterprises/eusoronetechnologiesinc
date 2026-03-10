@@ -192,7 +192,7 @@ async function queryCrossBorderLoads(
 ) {
   const conditions: ReturnType<typeof eq>[] = [isNull(loads.deletedAt)];
   if (opts?.statusFilter && opts.statusFilter.length > 0) {
-    conditions.push(inArray(loads.status, opts.statusFilter as any));
+    conditions.push(inArray(loads.status, opts.statusFilter as typeof loads.status.enumValues));
   }
   if (opts?.since) {
     conditions.push(gte(loads.createdAt, opts.since));
@@ -224,8 +224,8 @@ async function queryCrossBorderLoads(
 
   // Filter to cross-border: pickup country !== delivery country
   return rows.filter((r) => {
-    const pickupState = (r.pickupLocation as any)?.state;
-    const deliveryState = (r.deliveryLocation as any)?.state;
+    const pickupState = r.pickupLocation?.state;
+    const deliveryState = r.deliveryLocation?.state;
     const originCountry = stateToCountry(pickupState);
     const destCountry = stateToCountry(deliveryState);
     return originCountry && destCountry && originCountry !== destCountry;
@@ -279,7 +279,7 @@ export const crossBorderRouter = router({
 
       let totalDutiesPaid = 0;
       for (const dl of dutyLogs) {
-        const meta = dl.metadata as any;
+        const meta = dl.metadata as Record<string, unknown> | null;
         if (meta?.grandTotal) totalDutiesPaid += Number(meta.grandTotal);
       }
 
@@ -360,8 +360,8 @@ export const crossBorderRouter = router({
             .limit(1);
           if (driverUser?.name) driverName = driverUser.name;
         }
-        const pickup = ac.pickupLocation as any;
-        const delivery = ac.deliveryLocation as any;
+        const pickup = ac.pickupLocation;
+        const delivery = ac.deliveryLocation;
         const originCountry = stateToCountry(pickup?.state);
         const destCountry = stateToCountry(delivery?.state);
 
@@ -596,7 +596,7 @@ export const crossBorderRouter = router({
 
       // Create a document record for the customs declaration
       await db.insert(documents).values({
-        userId: (ctx.user as any)?.id ?? null,
+        userId: ctx.user!.id ?? null,
         loadId: loadRow?.id ?? null,
         type: `customs_declaration_${documentType.toLowerCase()}`,
         name: `${documentType} Declaration - ${declarationId}`,
@@ -606,7 +606,7 @@ export const crossBorderRouter = router({
 
       // Audit log the declaration generation
       await db.insert(auditLogs).values({
-        userId: (ctx.user as any)?.id ?? null,
+        userId: ctx.user!.id ?? null,
         action: "CROSS_BORDER_DECLARATION_GENERATED",
         entityType: "document",
         entityId: loadRow?.id ?? null,
@@ -617,12 +617,12 @@ export const crossBorderRouter = router({
           totalValue,
           totalWeight,
           usmcaCertified: input.usmc,
-        } as any,
+        } as Record<string, unknown>,
         metadata: {
           shipper: input.shipper.name,
           consignee: input.consignee.name,
           commodityCount: input.commodities.length,
-        } as any,
+        } as Record<string, unknown>,
         severity: "MEDIUM",
       });
 
@@ -744,7 +744,7 @@ export const crossBorderRouter = router({
       if (db) {
         try {
           await db.insert(auditLogs).values({
-            userId: (ctx.user as any)?.id ?? null,
+            userId: ctx.user!.id ?? null,
             action: "CROSS_BORDER_DUTY_CALCULATED",
             entityType: "cross_border",
             entityId: null,
@@ -752,14 +752,14 @@ export const crossBorderRouter = router({
               route: `${input.origin} → ${input.destination}`,
               commodityCount: input.commodities.length,
               usmcaCertified: input.usmcaCertified,
-            } as any,
+            } as Record<string, unknown>,
             metadata: {
               grandTotal,
               totalDuty: Math.round(totalDuty * 100) / 100,
               totalTax: Math.round(totalTax * 100) / 100,
               currency: input.currency,
               usmcaSavings: Math.round(totalSavings * 100) / 100,
-            } as any,
+            } as Record<string, unknown>,
             severity: "LOW",
           });
         } catch (err) {
@@ -800,7 +800,7 @@ export const crossBorderRouter = router({
 
       const targetCompanyId = input?.companyId
         ? parseInt(input.companyId, 10)
-        : (ctx.user as any)?.companyId ?? 1;
+        : ctx.user!.companyId ?? 1;
 
       // Query company compliance status
       const [company] = await db
@@ -918,7 +918,7 @@ export const crossBorderRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
-      const companyId = (ctx.user as any)?.companyId ?? 1;
+      const companyId = ctx.user!.companyId ?? 1;
 
       // Query active drivers with their user names
       const driverRows = await db
@@ -1077,8 +1077,8 @@ export const crossBorderRouter = router({
       if (!db) throw new Error("Database unavailable");
 
       const companyId = input?.carrierId
-        ? parseInt(input.carrierId, 10) || ((ctx.user as any)?.companyId ?? 1)
-        : (ctx.user as any)?.companyId ?? 1;
+        ? parseInt(input.carrierId, 10) || (ctx.user!.companyId ?? 1)
+        : ctx.user!.companyId ?? 1;
 
       // Query company and its insurance policies for bonding info
       const [company] = await db
@@ -1585,7 +1585,7 @@ export const crossBorderRouter = router({
 
       // Log broker assignment
       await db.insert(auditLogs).values({
-        userId: (ctx.user as any)?.id ?? null,
+        userId: ctx.user!.id ?? null,
         action: "CROSS_BORDER_BROKER_ASSIGNED",
         entityType: "load",
         entityId: loadRow?.id ?? null,
@@ -1595,11 +1595,11 @@ export const crossBorderRouter = router({
           portOfEntry: input.portOfEntry,
           serviceType: input.serviceType,
           fee,
-        } as any,
+        } as Record<string, unknown>,
         metadata: {
           loadId: input.loadId,
           brokerCompany: broker?.company ?? "Unknown",
-        } as any,
+        } as Record<string, unknown>,
         severity: "MEDIUM",
       });
 
@@ -1665,7 +1665,7 @@ export const crossBorderRouter = router({
       // Calculate readiness from real company data
       let readinessScore = 85;
       if (db) {
-        const companyId = (ctx.user as any)?.companyId ?? 1;
+        const companyId = ctx.user!.companyId ?? 1;
         const [comp] = await db
           .select({ complianceStatus: companies.complianceStatus })
           .from(companies)
@@ -1879,8 +1879,8 @@ export const crossBorderRouter = router({
 
       // Filter by border if specified
       const filteredLoads = border === "ALL" ? cbLoads : cbLoads.filter((l) => {
-        const pickupCountry = stateToCountry((l.pickupLocation as any)?.state);
-        const deliveryCountry = stateToCountry((l.deliveryLocation as any)?.state);
+        const pickupCountry = stateToCountry(l.pickupLocation?.state);
+        const deliveryCountry = stateToCountry(l.deliveryLocation?.state);
         if (border === "US-CA") {
           return (pickupCountry === "US" && deliveryCountry === "CA") || (pickupCountry === "CA" && deliveryCountry === "US");
         }
@@ -1918,7 +1918,7 @@ export const crossBorderRouter = router({
       let totalDuties = 0;
       let totalBrokerage = 0;
       for (const dl of dutyLogs) {
-        const meta = dl.metadata as any;
+        const meta = dl.metadata as Record<string, unknown> | null;
         if (meta?.totalDuty) totalDuties += Number(meta.totalDuty);
         totalBrokerage += 175; // standard brokerage per calculation
       }
@@ -1926,8 +1926,8 @@ export const crossBorderRouter = router({
       // Top routes from actual loads
       const routeMap: Record<string, { crossings: number; compliance: number; total: number }> = {};
       for (const l of filteredLoads) {
-        const pickup = l.pickupLocation as any;
-        const delivery = l.deliveryLocation as any;
+        const pickup = l.pickupLocation;
+        const delivery = l.deliveryLocation;
         const key = `${pickup?.city ?? "?"}, ${pickup?.state ?? "?"} → ${delivery?.city ?? "?"}, ${delivery?.state ?? "?"}`;
         if (!routeMap[key]) routeMap[key] = { crossings: 0, compliance: 0, total: 0 };
         routeMap[key].crossings++;
