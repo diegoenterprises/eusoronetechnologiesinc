@@ -10,9 +10,11 @@ import { isolatedApprovedProcedure as protectedProcedure, router } from "../_cor
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
-import { drivers, loads, users, escortAssignments, convoys, companies, vehicles, documents } from "../../drizzle/schema";
+import { drivers, loads, users, escortAssignments, convoys, companies, vehicles, documents, incidents } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, isNull, ne } from "drizzle-orm";
 import { emitDispatchEvent, emitDriverStatusChange, emitLoadStatusChange, emitNotification, emitEscortJobAssigned, emitEscortJobAvailable } from "../_core/websocket";
+import { TRPCError } from "@trpc/server";
+import { getHOSSummaryWithELD } from "../services/hosEngine";
 import { WS_EVENTS } from "@shared/websocket-events";
 import { getSafetyScores, getOOSStatus, getInsuranceStatus } from "../services/fmcsaBulkLookup";
 import { suggestAssignments } from "../services/ai/autoDispatch";
@@ -118,14 +120,26 @@ export const dispatchRouter = router({
           }
         } catch {}
 
+        // Get loads currently in loading status
+        const [loadingCount] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(loads)
+          .where(isAdmin ? eq(loads.status, 'loading') : and(eq(loads.status, 'loading'), eq(loads.catalystId, companyId)));
+
+        // Get active issues (unresolved incidents)
+        const [issuesCount] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(incidents)
+          .where(isAdmin ? ne(incidents.status, 'resolved') : and(ne(incidents.status, 'resolved'), eq(incidents.companyId, companyId)));
+
         return {
           active: activeLoads?.count || 0,
           activeLoads: activeLoads?.count || 0,
           unassigned: unassigned?.count || 0,
           enRoute: inTransit?.count || 0,
-          loading: 0,
+          loading: loadingCount?.count || 0,
           inTransit: inTransit?.count || 0,
-          issues: 0,
+          issues: issuesCount?.count || 0,
           completedToday: completedToday?.count || 0,
           totalDrivers: totalDrivers?.count || 0,
           availableDrivers: Math.max(0, availableDrivers),
@@ -133,7 +147,7 @@ export const dispatchRouter = router({
         };
       } catch (error) {
         logger.error('[Dispatch] getDashboardStats error:', error);
-        return { active: 0, activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0, inTransit: 0, issues: 0, completedToday: 0, totalDrivers: 0, availableDrivers: 0 };
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch dashboard stats' });
       }
     }),
 
@@ -170,14 +184,24 @@ export const dispatchRouter = router({
 
         const loadMap = new Map(activeLoads.map(l => [l.driverId, l.loadNumber]));
 
-        return driverList.map(d => ({
-          id: String(d.id),
-          name: d.userName || 'Unknown',
-          status: loadMap.has(d.userId) ? 'driving' : 'available',
-          load: loadMap.get(d.userId) || null,
-          location: 'Unknown',
-          hoursRemaining: 11,
-        }));
+        // Get HOS data for each driver
+        const hosResults = await Promise.allSettled(
+          driverList.map(d => getHOSSummaryWithELD(d.userId))
+        );
+
+        return driverList.map((d, idx) => {
+          const hos = hosResults[idx];
+          const hoursRemaining = hos.status === 'fulfilled' ? hos.value.hoursAvailable.driving : null;
+
+          return {
+            id: String(d.id),
+            name: d.userName || 'Unknown',
+            status: loadMap.has(d.userId) ? 'driving' : 'available',
+            load: loadMap.get(d.userId) || null,
+            location: null,
+            hoursRemaining,
+          };
+        });
       } catch (error) {
         logger.error('[Dispatch] getDriverStatuses error:', error);
         return [];
@@ -193,21 +217,46 @@ export const dispatchRouter = router({
       if (!db) return [];
 
       try {
-        const { incidents } = await import('../../drizzle/schema');
         const companyId = ctx.user?.companyId || 0;
+        const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'PLATFORM_ADMIN'].includes(ctx.user?.role || '');
 
-        const issueList = await db.select().from(incidents)
-          .where(sql`${incidents.status} != 'resolved'`)
+        const issueList = await db
+          .select({
+            id: incidents.id,
+            type: incidents.type,
+            severity: incidents.severity,
+            driverId: incidents.driverId,
+            driverName: users.name,
+            location: incidents.location,
+            createdAt: incidents.createdAt,
+            status: incidents.status,
+            description: incidents.description,
+          })
+          .from(incidents)
+          .leftJoin(drivers, eq(incidents.driverId, drivers.id))
+          .leftJoin(users, eq(drivers.userId, users.id))
+          .where(isAdmin ? ne(incidents.status, 'resolved') : and(ne(incidents.status, 'resolved'), eq(incidents.companyId, companyId)))
           .orderBy(desc(incidents.createdAt))
           .limit(10);
+
+        // Find active loads for the drivers involved in incidents
+        const driverIds = issueList.map(i => i.driverId).filter(Boolean) as number[];
+        let driverLoadMap = new Map<number, string>();
+        if (driverIds.length > 0) {
+          const driverLoads = await db
+            .select({ driverId: loads.driverId, loadNumber: loads.loadNumber })
+            .from(loads)
+            .where(sql`${loads.driverId} IN (${sql.join(driverIds.map(id => sql`${id}`), sql`,`)}) AND ${loads.status} IN ('assigned', 'in_transit')`);
+          driverLoadMap = new Map(driverLoads.map(l => [l.driverId!, l.loadNumber]));
+        }
 
         return issueList.map(i => ({
           id: `issue_${i.id}`,
           type: i.type || 'general',
           severity: i.severity || 'medium',
-          load: '',
-          driver: '',
-          location: i.location || 'Unknown',
+          load: i.driverId ? (driverLoadMap.get(i.driverId) || null) : null,
+          driver: i.driverName || null,
+          location: i.location || null,
           reportedAt: i.createdAt?.toISOString() || '',
           status: i.status,
           description: i.description || '',
