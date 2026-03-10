@@ -14,6 +14,9 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, companies, detentionClaims, platformFeeConfigs } from "../../drizzle/schema";
 
+/** Row shape returned by raw `db.execute(sql\`...\`)` — all values are primitives or null. */
+type RawSqlRow = Record<string, string | number | null>;
+
 // ════════════════════════════════════════════════════════════════════════════
 // RATE SCHEDULES & CONFIG
 // ════════════════════════════════════════════════════════════════════════════
@@ -100,7 +103,7 @@ async function queryDetentionClaims(db: any, filters: {
       ORDER BY dc.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `);
-    return ((result as unknown as any[][])[0]) || [];
+    return ((result as [RawSqlRow[], unknown])[0]) || [];
   } catch (e) {
     logger.warn("[detentionAccessorials] Query error:", (e as Error).message);
     return [];
@@ -155,8 +158,8 @@ export const detentionAccessorialsRouter = router({
             FROM detention_claims
             WHERE created_at >= ${dateFrom} AND created_at <= ${dateTo + " 23:59:59"}
               AND (catalyst_id = ${companyId} OR shipper_id = ${companyId})
-          `) as any;
-          const row = Array.isArray(stats) ? stats[0] : stats;
+          `) as unknown as [RawSqlRow[], unknown];
+          const row = Array.isArray(stats) ? (stats as RawSqlRow[])[0] : stats as RawSqlRow;
           activeCount = Number(row?.active_count || 0);
           totalEvents = Number(row?.total_events || 0);
           avgWaitMinutes = Math.round(Number(row?.avg_wait || 0));
@@ -167,7 +170,7 @@ export const detentionAccessorialsRouter = router({
         } catch { /* table may not exist */ }
 
         // Worst offenders (facilities with most detention)
-        let worstOffenders: any[] = [];
+        let worstOffenders: { facilityName: string; eventCount: number; totalAmount: number; avgWaitMinutes: number }[] = [];
         try {
           const offenderResult = await db.execute(sql`
             SELECT facility_name, COUNT(*) as event_count,
@@ -181,8 +184,8 @@ export const detentionAccessorialsRouter = router({
             ORDER BY event_count DESC
             LIMIT 10
           `);
-          worstOffenders = (((offenderResult as unknown as any[][])[0]) || []).map((r: any) => ({
-            facilityName: r.facility_name || "Unknown",
+          worstOffenders = (((offenderResult as unknown as [RawSqlRow[], unknown])[0]) || []).map((r: RawSqlRow) => ({
+            facilityName: String(r.facility_name || "Unknown"),
             eventCount: Number(r.event_count || 0),
             totalAmount: Number(r.total_amount || 0),
             avgWaitMinutes: Math.round(Number(r.avg_wait || 0)),
@@ -192,7 +195,7 @@ export const detentionAccessorialsRouter = router({
         // Recent events
         const recentEvents = (await queryDetentionClaims(db, {
           companyId, dateFrom, dateTo, limit: 5,
-        })).map((r: any) => ({
+        })).map((r: RawSqlRow) => ({
           id: r.id, loadId: r.load_id, facilityName: r.facility_name || "Unknown",
           status: r.status, totalMinutes: Number(r.total_minutes || 0),
           totalCharge: Number(r.total_charge || 0),
@@ -201,7 +204,7 @@ export const detentionAccessorialsRouter = router({
         }));
 
         // Charges by type
-        let chargesByType: any[] = [];
+        let chargesByType: { type: string; count: number; totalAmount: number }[] = [];
         try {
           const typeResult = await db.execute(sql`
             SELECT type, COUNT(*) as cnt, COALESCE(SUM(total_charge), 0) as total
@@ -211,8 +214,8 @@ export const detentionAccessorialsRouter = router({
             GROUP BY type
             ORDER BY total DESC
           `);
-          chargesByType = (((typeResult as unknown as any[][])[0]) || []).map((r: any) => ({
-            type: r.type || "detention",
+          chargesByType = (((typeResult as unknown as [RawSqlRow[], unknown])[0]) || []).map((r: RawSqlRow) => ({
+            type: String(r.type || "detention"),
             count: Number(r.cnt || 0),
             totalAmount: Number(r.total || 0),
           }));
@@ -258,9 +261,9 @@ export const detentionAccessorialsRouter = router({
           companyId, status: "submitted", limit: input?.limit || 25, offset: input?.offset || 0,
         });
 
-        const detentions = rows.map((r: any) => {
+        const detentions = rows.map((r: RawSqlRow) => {
           const arrivalTime = r.arrival_time || r.created_at;
-          const elapsed = arrivalTime ? Math.round((Date.now() - new Date(arrivalTime).getTime()) / 60000) : 0;
+          const elapsed = arrivalTime ? Math.round((Date.now() - new Date(String(arrivalTime)).getTime()) / 60000) : 0;
           const freeTime = Number(r.free_time_minutes || 120);
           const billableMinutes = Math.max(0, elapsed - freeTime);
 
@@ -313,7 +316,7 @@ export const detentionAccessorialsRouter = router({
           dateFrom, dateTo, limit: input?.limit || 50, offset: input?.offset || 0,
         });
 
-        const events = rows.map((r: any) => ({
+        const events = rows.map((r: RawSqlRow) => ({
           id: r.id,
           loadId: r.load_id,
           facilityName: r.facility_name || "Unknown",
@@ -419,10 +422,10 @@ export const detentionAccessorialsRouter = router({
           ORDER BY total_charges DESC
           LIMIT ${input?.limit || 20}
         `);
-        const rows = ((result as unknown as any[][])[0]) || [];
+        const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
         return {
-          facilities: rows.map((r: any, idx: number) => ({
+          facilities: rows.map((r: RawSqlRow, idx: number) => ({
             rank: idx + 1,
             facilityName: r.facility_name,
             eventCount: Number(r.event_count || 0),
@@ -473,10 +476,10 @@ export const detentionAccessorialsRouter = router({
           ORDER BY total_charges DESC
           LIMIT ${input?.limit || 20}
         `);
-        const rows = ((result as unknown as any[][])[0]) || [];
+        const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
         return {
-          customers: rows.map((r: any) => ({
+          customers: rows.map((r: RawSqlRow) => ({
             customerId: r.shipper_id,
             customerName: r.customer_name || "Unknown",
             eventCount: Number(r.event_count || 0),
@@ -567,9 +570,9 @@ export const detentionAccessorialsRouter = router({
           ORDER BY dc.created_at DESC
           LIMIT ${input?.limit || 25}
         `);
-        const rows = ((result as unknown as any[][])[0]) || [];
+        const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
-        const containers = rows.map((r: any) => ({
+        const containers = rows.map((r: RawSqlRow) => ({
           id: r.id,
           loadId: r.load_id,
           containerNumber: r.container_number || `CNT-${r.id}`,
@@ -774,9 +777,9 @@ export const detentionAccessorialsRouter = router({
           ORDER BY dc.created_at DESC
           LIMIT ${input?.limit || 25}
         `);
-        const rows = ((result as unknown as any[][])[0]) || [];
+        const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
-        const tonus = rows.map((r: any) => ({
+        const tonus = rows.map((r: RawSqlRow) => ({
           id: r.id,
           loadId: r.load_id,
           amount: Number(r.total_charge || 250),
@@ -873,9 +876,9 @@ export const detentionAccessorialsRouter = router({
           ORDER BY dc.created_at DESC
           LIMIT ${input?.limit || 25}
         `);
-        const rows = ((result as unknown as any[][])[0]) || [];
+        const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
-        const layovers = rows.map((r: any) => {
+        const layovers = rows.map((r: RawSqlRow) => {
           const days = Math.ceil(Number(r.total_minutes || 0) / 1440);
           return {
             id: r.id,
@@ -938,9 +941,9 @@ export const detentionAccessorialsRouter = router({
           ORDER BY dc.created_at DESC
           LIMIT ${input?.limit || 25}
         `);
-        const rows = ((result as unknown as any[][])[0]) || [];
+        const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
-        const lumpers = rows.map((r: any) => ({
+        const lumpers = rows.map((r: RawSqlRow) => ({
           id: r.id,
           loadId: r.load_id,
           facilityName: r.facility_name || "N/A",
@@ -1000,9 +1003,9 @@ export const detentionAccessorialsRouter = router({
           ORDER BY dc.created_at DESC
           LIMIT ${input?.limit || 25}
         `);
-        const rows = ((result as unknown as any[][])[0]) || [];
+        const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
-        const charges = rows.map((r: any) => ({
+        const charges = rows.map((r: RawSqlRow) => ({
           id: r.id,
           loadId: r.load_id,
           facilityName: r.facility_name || "N/A",
@@ -1058,9 +1061,9 @@ export const detentionAccessorialsRouter = router({
           ORDER BY dc.created_at DESC
           LIMIT ${input?.limit || 25}
         `);
-        const rows = ((result as unknown as any[][])[0]) || [];
+        const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
-        const surcharges = rows.map((r: any) => ({
+        const surcharges = rows.map((r: RawSqlRow) => ({
           id: r.id,
           loadId: r.load_id,
           loadRate: Number(r.loadRate || 0),
@@ -1119,9 +1122,9 @@ export const detentionAccessorialsRouter = router({
           ORDER BY dc.created_at DESC
           LIMIT ${input?.limit || 25}
         `);
-        const rows = ((result as unknown as any[][])[0]) || [];
+        const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
-        const disputes = rows.map((r: any) => ({
+        const disputes = rows.map((r: RawSqlRow) => ({
           id: r.id,
           claimId: r.id,
           loadId: r.load_id,
@@ -1135,7 +1138,7 @@ export const detentionAccessorialsRouter = router({
           shipperName: r.shipperName || "N/A",
         }));
 
-        const totalDisputedAmount = disputes.reduce((s: number, d: any) => s + d.disputedAmount, 0);
+        const totalDisputedAmount = disputes.reduce((s: number, d: { disputedAmount: number }) => s + d.disputedAmount, 0);
 
         return {
           disputes,
@@ -1182,7 +1185,7 @@ export const detentionAccessorialsRouter = router({
             AND created_at >= ${dateFrom} AND created_at <= ${dateTo + " 23:59:59"}
           GROUP BY type ORDER BY total DESC
         `);
-        const byType = (((typeResult as unknown as any[][])[0]) || []).map((r: any) => ({
+        const byType = (((typeResult as unknown as [RawSqlRow[], unknown])[0]) || []).map((r: RawSqlRow) => ({
           type: r.type || "other",
           count: Number(r.cnt || 0),
           totalAmount: Number(r.total || 0),
@@ -1198,7 +1201,7 @@ export const detentionAccessorialsRouter = router({
             AND created_at >= ${dateFrom} AND created_at <= ${dateTo + " 23:59:59"}
           GROUP BY month ORDER BY month ASC
         `);
-        const byMonth = (((monthResult as unknown as any[][])[0]) || []).map((r: any) => ({
+        const byMonth = (((monthResult as unknown as [RawSqlRow[], unknown])[0]) || []).map((r: RawSqlRow) => ({
           month: r.month,
           count: Number(r.cnt || 0),
           totalAmount: Number(r.total || 0),
@@ -1212,7 +1215,7 @@ export const detentionAccessorialsRouter = router({
             AND created_at >= ${dateFrom} AND created_at <= ${dateTo + " 23:59:59"}
           GROUP BY status
         `);
-        const byStatus = (((statusResult as unknown as any[][])[0]) || []).map((r: any) => ({
+        const byStatus = (((statusResult as unknown as [RawSqlRow[], unknown])[0]) || []).map((r: RawSqlRow) => ({
           status: r.status,
           count: Number(r.cnt || 0),
           totalAmount: Number(r.total || 0),
@@ -1318,10 +1321,10 @@ export const detentionAccessorialsRouter = router({
           ORDER BY total_charges DESC
           LIMIT 20
         `);
-        const rows = ((result as unknown as any[][])[0]) || [];
+        const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
         return {
-          letters: rows.map((r: any) => ({
+          letters: rows.map((r: RawSqlRow) => ({
             facilityName: r.facility_name,
             eventCount: Number(r.event_count || 0),
             totalCharges: Number(r.total_charges || 0),
@@ -1373,12 +1376,12 @@ export const detentionAccessorialsRouter = router({
           ORDER BY dc.created_at ASC
           LIMIT ${input?.batchSize || 50}
         `);
-        const rows = ((result as unknown as any[][])[0]) || [];
+        const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
-        const pendingCharges = rows.map((r: any) => ({
+        const pendingCharges = rows.map((r: RawSqlRow) => ({
           id: r.id,
           loadId: r.load_id,
-          type: r.type || "detention",
+          type: String(r.type || "detention"),
           amount: Number(r.total_charge || 0),
           status: r.status,
           facilityName: r.facility_name || "N/A",

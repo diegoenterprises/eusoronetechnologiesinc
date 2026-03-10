@@ -103,7 +103,7 @@ export const reportingEngineRouter = router({
     .input(z.object({}).optional())
     .query(async ({ ctx }) => {
       const db = await getDb();
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       // Recent reports (simulated from load of recent activity)
       const recentReports = [
@@ -831,7 +831,8 @@ export const reportingEngineRouter = router({
         // Sort
         const sortBy = input?.sortBy || "overallScore";
         const sortDir = input?.sortOrder === "asc" ? 1 : -1;
-        driverPerf.sort((a, b) => ((a as any)[sortBy] - (b as any)[sortBy]) * sortDir);
+        const sortKey = sortBy as keyof typeof driverPerf[number];
+        driverPerf.sort((a, b) => (Number(a[sortKey]) - Number(b[sortKey])) * sortDir);
 
         return { drivers: driverPerf, totalDrivers: driverPerf.length };
       } catch (e) {
@@ -1087,7 +1088,7 @@ export const reportingEngineRouter = router({
       sortOrder: sortOrderSchema.optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
       const reportConfig = {
         id: `custom-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
         name: input.name,
@@ -1117,7 +1118,7 @@ export const reportingEngineRouter = router({
       isPublic: z.boolean().default(false),
     }))
     .mutation(async ({ ctx, input }) => {
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
       return {
         success: true,
         template: {
@@ -1149,7 +1150,7 @@ export const reportingEngineRouter = router({
       enabled: z.boolean().default(true),
     }))
     .mutation(async ({ ctx, input }) => {
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       // Calculate next run
       const now = new Date();

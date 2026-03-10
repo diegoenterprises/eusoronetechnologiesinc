@@ -120,7 +120,7 @@ export const safetyRiskRouter = router({
       }
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const period = input?.period || "30d";
         const periodStart = getPeriodStartDate(period);
 
@@ -263,7 +263,7 @@ export const safetyRiskRouter = router({
       }
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const ninetyDaysAgo = getPeriodStartDate("90d");
 
         // Get drivers with their incident history
@@ -357,7 +357,7 @@ export const safetyRiskRouter = router({
       if (!db) return { drivers: [], total: 0 };
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const ninetyDaysAgo = getPeriodStartDate("90d");
 
         const conditions = [eq(drivers.companyId, companyId), eq(drivers.status, "active")];
@@ -463,7 +463,7 @@ export const safetyRiskRouter = router({
       }
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const period = input?.period || "30d";
         const periodStart = getPeriodStartDate(period);
 
@@ -589,9 +589,10 @@ export const safetyRiskRouter = router({
         if (!incident) return null;
 
         // Parse metadata for investigation details
-        let meta: any = {};
+        let meta: Record<string, unknown> = {};
         try {
-          meta = (incident as any).metadata ? JSON.parse(typeof (incident as any).metadata === "string" ? (incident as any).metadata : JSON.stringify((incident as any).metadata)) : {};
+          const rawMeta = (incident as Record<string, unknown>).metadata;
+          meta = rawMeta ? JSON.parse(typeof rawMeta === "string" ? rawMeta : JSON.stringify(rawMeta)) : {};
         } catch {}
 
         return {
@@ -636,7 +637,7 @@ export const safetyRiskRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       // Update incident metadata with investigation details
       const [existing] = await db
@@ -645,7 +646,7 @@ export const safetyRiskRouter = router({
         .where(eq(incidents.id, input.incidentId))
         .limit(1);
 
-      let meta: any = {};
+      let meta: Record<string, unknown> = {};
       try {
         meta = existing?.metadata ? JSON.parse(typeof existing.metadata === "string" ? existing.metadata : JSON.stringify(existing.metadata)) : {};
       } catch {}
@@ -685,7 +686,7 @@ export const safetyRiskRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       const [existing] = await db
         .select({ metadata: sql<string>`metadata` })
@@ -693,7 +694,7 @@ export const safetyRiskRouter = router({
         .where(eq(incidents.id, input.incidentId))
         .limit(1);
 
-      let meta: any = {};
+      let meta: Record<string, unknown> = {};
       try {
         meta = existing?.metadata ? JSON.parse(typeof existing.metadata === "string" ? existing.metadata : JSON.stringify(existing.metadata)) : {};
       } catch {}
@@ -707,7 +708,7 @@ export const safetyRiskRouter = router({
 
       // Add timeline entry
       if (!meta.investigationTimeline) meta.investigationTimeline = [];
-      meta.investigationTimeline.push({
+      (meta.investigationTimeline as Record<string, unknown>[]).push({
         date: new Date().toISOString(),
         action: input.status ? `Status changed to ${input.status}` : "Investigation updated",
         by: `User #${userId}`,
@@ -736,7 +737,7 @@ export const safetyRiskRouter = router({
       if (!db) return { reports: [], total: 0, ratePerDriver: 0 };
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const period = input?.period || "30d";
         const periodStart = getPeriodStartDate(period);
         const limit = input?.limit || 20;
@@ -782,8 +783,8 @@ export const safetyRiskRouter = router({
 
         return {
           reports: nearMisses.map((nm) => {
-            let meta: any = {};
-            try { meta = (nm as any).metadata ? JSON.parse(typeof (nm as any).metadata === "string" ? (nm as any).metadata : JSON.stringify((nm as any).metadata)) : {}; } catch {}
+            let meta: Record<string, unknown> = {};
+            try { const rawMeta = (nm as Record<string, unknown>).metadata; meta = rawMeta ? JSON.parse(typeof rawMeta === "string" ? rawMeta : JSON.stringify(rawMeta)) : {}; } catch {}
             return {
               id: nm.id,
               description: nm.description || "",
@@ -823,19 +824,19 @@ export const safetyRiskRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
       const metadata = JSON.stringify({
         nearMissType: input.nearMissType,
         weatherConditions: input.weatherConditions || "",
         roadConditions: input.roadConditions || "",
         actionTaken: input.actionTaken || "",
-        reportedBy: (ctx.user as any)?.id || 0,
+        reportedBy: ctx.user!.id || 0,
       });
 
       const [result] = await db.insert(incidents).values({
         companyId,
         type: "near_miss",
-        severity: input.severity as any,
+        severity: input.severity,
         description: input.description,
         location: input.location,
         occurredAt: new Date(input.occurredAt),
@@ -863,7 +864,7 @@ export const safetyRiskRouter = router({
       if (!db) return { observations: [], total: 0, safeRate: 0, atRiskRate: 0, topAtRiskBehaviors: [] };
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const period = input?.period || "30d";
         const periodStart = getPeriodStartDate(period);
 
@@ -902,8 +903,8 @@ export const safetyRiskRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
-      const companyId = (ctx.user as any)?.companyId || 0;
-      const userId = (ctx.user as any)?.id || 0;
+      const companyId = ctx.user!.companyId || 0;
+      const userId = ctx.user!.id || 0;
 
       const metadata = JSON.stringify({
         observationType: input.observationType,
@@ -948,7 +949,7 @@ export const safetyRiskRouter = router({
       }
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const period = input?.period || "90d";
         const periodStart = getPeriodStartDate(period);
 
@@ -1100,7 +1101,7 @@ export const safetyRiskRouter = router({
       }
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const period = input?.period || "1y";
         const periodStart = getPeriodStartDate(period);
 
@@ -1191,7 +1192,7 @@ export const safetyRiskRouter = router({
       }
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const period = input?.period || "1y";
         const periodStart = getPeriodStartDate(period);
 
@@ -1255,7 +1256,7 @@ export const safetyRiskRouter = router({
       if (!db) return { actions: [], total: 0 };
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const ninetyDaysAgo = getPeriodStartDate("90d");
 
         const conditions = [eq(drivers.companyId, companyId), eq(drivers.status, "active")];
@@ -1339,7 +1340,7 @@ export const safetyRiskRouter = router({
       if (!db) return { rankings: [], total: 0 };
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const limit = input?.limit || 20;
         const page = input?.page || 1;
 
