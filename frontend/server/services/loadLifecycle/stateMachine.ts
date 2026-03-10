@@ -604,6 +604,8 @@ export const TRANSITIONS: Transition[] = [
       { type: "document", check: "ifta_valid", errorMessage: "IFTA license required for interstate operations" },
       { type: "document", check: "irp_valid", errorMessage: "IRP registration required for interstate operations" },
       { type: "data", check: "route_state_compliance", errorMessage: "Route passes through state with compliance restriction for this load" },
+      // Flatbed/Oversize-specific guards
+      { type: "data", check: "oversize_escort_confirmed", errorMessage: "Escort vehicle positioning required for oversized loads" },
     ],
     effects: [
       { type: "notification", action: "trip_started", recipients: ["SHIPPER", "CATALYST", "DISPATCH"] },
@@ -696,6 +698,27 @@ export const TRANSITIONS: Transition[] = [
       { type: "document", check: "vapor_recovery_valid", errorMessage: "Vapor recovery certification required for petroleum/chemical tanker" },
       { type: "document", check: "reefer_temp_verified", errorMessage: "Reefer temperature must be verified and within range" },
       { type: "document", check: "fsma_cert_valid", errorMessage: "FSMA sanitary transport certification required (21 CFR 1.908)" },
+      // Tanker-specific guards
+      { type: "document", check: "tanker_hose_inspection", errorMessage: "Tanker hose connection inspection required (49 CFR 178.272)" },
+      { type: "data", check: "tanker_compartment_segregation", errorMessage: "Compartment product segregation check required (49 CFR 180.405)" },
+      // Reefer-specific guards
+      { type: "data", check: "reefer_precool_verified", errorMessage: "Reefer unit pre-cool verification required — confirm actual temp matches setpoint (FSMA 21 CFR 1.908)" },
+      // Hazmat-specific guards
+      { type: "document", check: "hazmat_placard_photo", errorMessage: "Photo of installed hazmat placards required (49 CFR 172.504)" },
+      { type: "data", check: "hazmat_loading_sequence", errorMessage: "Hazmat loading sequence verification required (49 CFR 177.804)" },
+      // Flatbed/Oversize-specific guards
+      { type: "data", check: "flatbed_securement_verified", errorMessage: "Load securement verification required — chains, straps, binders inspected (49 CFR 393.100)" },
+      { type: "data", check: "flatbed_dimension_verified", errorMessage: "Cargo dimensions (L×W×H) must be verified against permits and clearances" },
+      // Livestock-specific guards
+      { type: "data", check: "livestock_welfare_check", errorMessage: "Animal welfare inspection required before transport (USDA APHIS)" },
+      { type: "data", check: "livestock_ventilation_verified", errorMessage: "Ventilation and water access must be verified for livestock transport" },
+      // Auto transport-specific guards
+      { type: "data", check: "auto_vin_verified", errorMessage: "VIN verification required for all vehicles on transport" },
+      { type: "data", check: "auto_condition_documented", errorMessage: "Pre-transport vehicle condition inspection and photo documentation required" },
+      { type: "data", check: "auto_tiedown_verified", errorMessage: "Vehicle tiedown verification required — 4 tiedowns per vehicle (49 CFR 393.132)" },
+      // Intermodal-specific guards
+      { type: "data", check: "intermodal_twistlock_verified", errorMessage: "Twist-lock securement must be verified for intermodal containers" },
+      { type: "data", check: "intermodal_vgm_verified", errorMessage: "Verified Gross Mass (SOLAS VGM) required for intermodal containers" },
     ],
     effects: [
       { type: "notification", action: "loading_complete", recipients: ["SHIPPER", "DISPATCH", "CATALYST"] },
@@ -717,6 +740,8 @@ export const TRANSITIONS: Transition[] = [
       { type: "document", check: "hazmat_route_compliant", errorMessage: "Hazmat route must comply with restricted zone regulations" },
       { type: "document", check: "carb_compliant", errorMessage: "CARB Truck & Bus compliance required for California operations" },
       { type: "document", check: "weight_distance_tax", errorMessage: "Weight-distance tax registration required for OR/NM/NY/KY" },
+      // Livestock-specific guards
+      { type: "data", check: "livestock_28hr_plan", errorMessage: "28-Hour Law rest stop plan required — animals must be unloaded within 28 hours (49 USC 80502)" },
     ],
     effects: [
       { type: "notification", action: "departed_pickup", recipients: ["SHIPPER", "CATALYST", "DISPATCH"] },
@@ -809,6 +834,10 @@ export const TRANSITIONS: Transition[] = [
     actor: ["DRIVER", "TERMINAL_MANAGER"],
     guards: [
       { type: "location", check: "within_delivery_geofence", errorMessage: "Must be at delivery facility" },
+      // Reefer-specific guards
+      { type: "data", check: "reefer_delivery_temp_verified", errorMessage: "Temperature verification required at delivery — confirm cold chain integrity (FSMA 21 CFR 1.912)" },
+      // Livestock-specific guards
+      { type: "data", check: "livestock_count_verified", errorMessage: "Animal count verification required at delivery — must match manifest" },
     ],
     effects: [
       { type: "notification", action: "driver_checked_in_delivery", recipients: ["TERMINAL_MANAGER"] },
@@ -858,7 +887,10 @@ export const TRANSITIONS: Transition[] = [
     from: "UNLOADING", to: "UNLOADED",
     trigger: "USER_ACTION", triggerEvent: "unloading_complete",
     actor: ["DRIVER", "TERMINAL_MANAGER"],
-    guards: [],
+    guards: [
+      // Hazmat-specific guards
+      { type: "document", check: "hazmat_decontamination", errorMessage: "Decontamination/tank purge confirmation required for hazmat loads (49 CFR 177.840)" },
+    ],
     effects: [
       { type: "notification", action: "unloading_complete", recipients: ["SHIPPER", "DISPATCH", "CATALYST"] },
       { type: "financial", action: "stop_demurrage_timer" },
@@ -875,6 +907,10 @@ export const TRANSITIONS: Transition[] = [
     guards: [
       { type: "document", check: "pod_photo_present", errorMessage: "POD photo required" },
       { type: "document", check: "pod_signature_present", errorMessage: "Receiver signature required" },
+      // Tanker-specific guards
+      { type: "document", check: "tanker_residual_handling", errorMessage: "Residual product handling confirmation required for tanker loads" },
+      // Reefer-specific guards
+      { type: "document", check: "cold_chain_declaration", errorMessage: "Cold chain integrity declaration required for temperature-controlled loads" },
     ],
     effects: [
       { type: "notification", action: "pod_submitted", recipients: ["SHIPPER", "BROKER", "TERMINAL_MANAGER"] },

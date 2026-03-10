@@ -597,15 +597,36 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
     case "tanker_inspection_valid":
     case "vapor_recovery_valid":
     case "tank_washout_valid":
+    case "tanker_hose_inspection":
+    case "tanker_compartment_segregation":
+    case "tanker_residual_handling":
     case "hazmat_shipping_papers":
     case "hazmat_security_plan_active":
     case "hazmat_placard_verified":
     case "hazmat_route_compliant":
+    case "hazmat_placard_photo":
+    case "hazmat_loading_sequence":
+    case "hazmat_decontamination":
     case "reefer_temp_verified":
     case "reefer_pretrip_complete":
     case "fsma_cert_valid":
+    case "reefer_precool_verified":
+    case "reefer_delivery_temp_verified":
+    case "cold_chain_declaration":
     case "oversize_permit_valid":
     case "route_survey_complete":
+    case "flatbed_securement_verified":
+    case "flatbed_dimension_verified":
+    case "oversize_escort_confirmed":
+    case "livestock_welfare_check":
+    case "livestock_ventilation_verified":
+    case "livestock_28hr_plan":
+    case "livestock_count_verified":
+    case "auto_vin_verified":
+    case "auto_condition_documented":
+    case "auto_tiedown_verified":
+    case "intermodal_twistlock_verified":
+    case "intermodal_vgm_verified":
     case "ifta_valid":
     case "irp_valid":
     case "carb_compliant":
@@ -773,25 +794,59 @@ interface CargoProfile {
   hazmatClass: string | null;
   isTanker: boolean;
   isHazmat: boolean;
-  isRefer: boolean;
+  isReefer: boolean;
   isOversize: boolean;
   isInterstate: boolean;
+  isLivestock: boolean;
+  isAutoTransport: boolean;
+  isIntermodal: boolean;
+  isFlatbed: boolean;
   operatingStates: string[];
   vehicleType: string | null;
+  complianceChecks: Record<string, { passed: boolean; userId?: number; timestamp?: string; notes?: string | null } | undefined>;
+  /** @deprecated Use isReefer instead */
+  isRefer: boolean;
 }
 
 function buildCargoProfile(load: any): CargoProfile {
   const ct = (load?.cargoType || "general").toLowerCase();
+  const commodityName = (load?.commodityName || load?.commodity || "").toLowerCase();
+  const trailerType = (load?.trailerType || load?.equipmentType || "").toLowerCase();
+
+  const isTanker = TANKER_CARGO.has(ct) || trailerType.includes("tanker") || trailerType.includes("mc_") || trailerType.includes("mc-");
+  const isHazmat = HAZMAT_CARGO.has(ct) || !!load?.hazmatClass;
+  const isReefer = TEMP_CARGO.has(ct) || trailerType.includes("reefer") || trailerType.includes("refrigerated");
+  const isOversize = OVERSIZE_CARGO.has(ct) || load?.requiresEscort === true;
+  const isLivestock = ct === "livestock" || commodityName.includes("cattle") || commodityName.includes("livestock");
+  const isAutoTransport = ct === "vehicles" || trailerType.includes("auto") || trailerType.includes("car_carrier");
+  const isIntermodal = ct === "intermodal" || trailerType.includes("intermodal") || trailerType.includes("chassis");
+  const isFlatbed = trailerType.includes("flatbed") || trailerType.includes("step_deck") || trailerType.includes("lowboy");
+
+  // Read compliance checks from load.specialInstructions JSON
+  let complianceChecks: Record<string, any> = {};
+  try {
+    const si = typeof load?.specialInstructions === "string"
+      ? JSON.parse(load.specialInstructions || "{}")
+      : (load?.specialInstructions || {});
+    complianceChecks = si.complianceChecks || {};
+  } catch { /* non-critical — specialInstructions may contain non-JSON content */ }
+
   return {
     cargoType: ct,
     hazmatClass: load?.hazmatClass || null,
-    isTanker: TANKER_CARGO.has(ct),
-    isHazmat: HAZMAT_CARGO.has(ct) || !!load?.hazmatClass,
-    isRefer: TEMP_CARGO.has(ct),
-    isOversize: OVERSIZE_CARGO.has(ct),
+    isTanker,
+    isHazmat,
+    isReefer,
+    isRefer: isReefer, // backward compat alias
+    isOversize,
+    isLivestock,
+    isAutoTransport,
+    isIntermodal,
+    isFlatbed,
     isInterstate: detectInterstate(load),
     operatingStates: getOperatingStates(load),
     vehicleType: null, // Resolved from vehicle table if needed
+    complianceChecks,
   };
 }
 
@@ -808,6 +863,17 @@ function evaluateCargoGuard(check: string, profile: CargoProfile, errorMessage: 
       if (!profile.isTanker) return null;
       return IS_PROD ? errorMessage : null;
 
+    // ── Tanker vertical guards (v2.2) ──
+    case "tanker_hose_inspection":
+      if (!profile.isTanker) return null;
+      return profile.complianceChecks?.tanker_hose_inspection?.passed ? null : errorMessage;
+    case "tanker_compartment_segregation":
+      if (!profile.isTanker) return null;
+      return profile.complianceChecks?.tanker_compartment_segregation?.passed ? null : errorMessage;
+    case "tanker_residual_handling":
+      if (!profile.isTanker) return null;
+      return profile.complianceChecks?.tanker_residual_handling?.passed ? null : errorMessage;
+
     // ── Hazmat-specific ──
     case "hazmat_shipping_papers":
       if (!profile.isHazmat) return null;
@@ -823,16 +889,38 @@ function evaluateCargoGuard(check: string, profile: CargoProfile, errorMessage: 
       // Hazmat route compliance — check for restricted routes
       return null; // Always pass for now; route engine integration TBD
 
+    // ── Hazmat vertical guards (v2.2) ──
+    case "hazmat_placard_photo":
+      if (!profile.isHazmat) return null;
+      return profile.complianceChecks?.hazmat_placard_photo?.passed ? null : errorMessage;
+    case "hazmat_loading_sequence":
+      if (!profile.isHazmat) return null;
+      return profile.complianceChecks?.hazmat_loading_sequence?.passed ? null : errorMessage;
+    case "hazmat_decontamination":
+      if (!profile.isHazmat) return null;
+      return profile.complianceChecks?.hazmat_decontamination?.passed ? null : errorMessage;
+
     // ── Reefer / Temperature-controlled ──
     case "reefer_temp_verified":
-      if (!profile.isRefer) return null;
+      if (!profile.isReefer) return null;
       return IS_PROD ? errorMessage : null;
     case "reefer_pretrip_complete":
-      if (!profile.isRefer) return null;
+      if (!profile.isReefer) return null;
       return IS_PROD ? errorMessage : null;
     case "fsma_cert_valid":
-      if (!profile.isRefer && !profile.cargoType.includes("food")) return null;
+      if (!profile.isReefer && !profile.cargoType.includes("food")) return null;
       return IS_PROD ? errorMessage : null;
+
+    // ── Reefer vertical guards (v2.2) ──
+    case "reefer_precool_verified":
+      if (!profile.isReefer) return null;
+      return profile.complianceChecks?.reefer_precool_verified?.passed ? null : errorMessage;
+    case "reefer_delivery_temp_verified":
+      if (!profile.isReefer) return null;
+      return profile.complianceChecks?.reefer_delivery_temp_verified?.passed ? null : errorMessage;
+    case "cold_chain_declaration":
+      if (!profile.isReefer) return null;
+      return profile.complianceChecks?.cold_chain_declaration?.passed ? null : errorMessage;
 
     // ── Oversize ──
     case "oversize_permit_valid":
@@ -841,6 +929,51 @@ function evaluateCargoGuard(check: string, profile: CargoProfile, errorMessage: 
     case "route_survey_complete":
       if (!profile.isOversize) return null;
       return IS_PROD ? errorMessage : null;
+
+    // ── Flatbed / Oversize vertical guards (v2.2) ──
+    case "flatbed_securement_verified":
+      if (!profile.isFlatbed) return null;
+      return profile.complianceChecks?.flatbed_securement_verified?.passed ? null : errorMessage;
+    case "flatbed_dimension_verified":
+      if (!profile.isFlatbed && !profile.isOversize) return null;
+      return profile.complianceChecks?.flatbed_dimension_verified?.passed ? null : errorMessage;
+    case "oversize_escort_confirmed":
+      if (!profile.isOversize) return null;
+      return profile.complianceChecks?.oversize_escort_confirmed?.passed ? null : errorMessage;
+
+    // ── Livestock vertical guards (v2.2) ──
+    case "livestock_welfare_check":
+      if (!profile.isLivestock) return null;
+      return profile.complianceChecks?.livestock_welfare_check?.passed ? null : errorMessage;
+    case "livestock_ventilation_verified":
+      if (!profile.isLivestock) return null;
+      return profile.complianceChecks?.livestock_ventilation_verified?.passed ? null : errorMessage;
+    case "livestock_28hr_plan":
+      if (!profile.isLivestock) return null;
+      return profile.complianceChecks?.livestock_28hr_plan?.passed ? null : errorMessage;
+    case "livestock_count_verified":
+      if (!profile.isLivestock) return null;
+      return profile.complianceChecks?.livestock_count_verified?.passed ? null : errorMessage;
+
+    // ── Auto Transport vertical guards (v2.2) ──
+    case "auto_vin_verified":
+      if (!profile.isAutoTransport) return null;
+      return profile.complianceChecks?.auto_vin_verified?.passed ? null : errorMessage;
+    case "auto_condition_documented":
+      if (!profile.isAutoTransport) return null;
+      return profile.complianceChecks?.auto_condition_documented?.passed ? null : errorMessage;
+    case "auto_tiedown_verified":
+      if (!profile.isAutoTransport) return null;
+      return profile.complianceChecks?.auto_tiedown_verified?.passed ? null : errorMessage;
+
+    // ── Intermodal vertical guards (v2.2) ──
+    case "intermodal_twistlock_verified":
+      if (!profile.isIntermodal) return null;
+      return profile.complianceChecks?.intermodal_twistlock_verified?.passed ? null : errorMessage;
+    case "intermodal_vgm_verified":
+      if (!profile.isIntermodal) return null;
+      return profile.complianceChecks?.intermodal_vgm_verified?.passed ? null : errorMessage;
+
     // ── Interstate compliance ──
     case "ifta_valid":
       if (!profile.isInterstate) return null;
@@ -878,8 +1011,13 @@ async function captureComplianceSnapshot(loadId: number, load: any) {
       hazmatClass: profile.hazmatClass,
       isTanker: profile.isTanker,
       isHazmat: profile.isHazmat,
-      isRefer: profile.isRefer,
+      isReefer: profile.isReefer,
+      isRefer: profile.isReefer, // backward compat
       isOversize: profile.isOversize,
+      isLivestock: profile.isLivestock,
+      isAutoTransport: profile.isAutoTransport,
+      isIntermodal: profile.isIntermodal,
+      isFlatbed: profile.isFlatbed,
       isInterstate: profile.isInterstate,
       operatingStates: profile.operatingStates,
       pickupState: load?.pickupLocation?.state || null,
@@ -2318,6 +2456,53 @@ export const loadLifecycleRouter = router({
       } catch (e) {
         return { success: false, error: (e as Error).message };
       }
+    }),
+
+  // ── SUBMIT COMPLIANCE CHECK — drivers submit vertical-specific compliance items ──
+  submitComplianceCheck: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      checkName: z.string(),
+      passed: z.boolean(),
+      notes: z.string().optional(),
+      photoBase64: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const userId = Number(ctx.user?.id) || 0;
+
+      // Store compliance check in load specialInstructions JSON
+      const [load] = await db.select({ id: loads.id, specialInstructions: loads.specialInstructions })
+        .from(loads).where(eq(loads.id, input.loadId)).limit(1);
+      if (!load) throw new TRPCError({ code: "NOT_FOUND", message: "Load not found" });
+
+      let existingData: Record<string, any> = {};
+      try {
+        existingData = (typeof load.specialInstructions === "string"
+          ? JSON.parse(load.specialInstructions || "{}")
+          : load.specialInstructions) || {};
+      } catch {
+        // specialInstructions may contain non-JSON content (e.g. compliance snapshot appended text)
+        existingData = { _rawText: load.specialInstructions };
+      }
+
+      const checks: Record<string, any> = existingData.complianceChecks || {};
+      checks[input.checkName] = {
+        passed: input.passed,
+        userId,
+        timestamp: new Date().toISOString(),
+        notes: input.notes || null,
+      };
+      existingData.complianceChecks = checks;
+
+      await db.update(loads)
+        .set({ specialInstructions: JSON.stringify(existingData) } as any)
+        .where(eq(loads.id, input.loadId));
+
+      logger.info(`[LoadLifecycle] Compliance check "${input.checkName}" = ${input.passed} for load ${input.loadId} by user ${userId}`);
+
+      return { success: true, checkName: input.checkName, passed: input.passed };
     }),
 
   // ── FACILITY CHECK-IN — Manual trigger for pickup_checkin / delivery_checkin ──
