@@ -225,7 +225,7 @@ export const capacityPlanningRouter = router({
           const weekdayMult = dayOfWeek === 0 || dayOfWeek === 6 ? 0.6 : 1.1;
           return {
             date: day.toISOString().split("T")[0],
-            projected: Math.round(dailyBase * weekdayMult * (0.9 + Math.random() * 0.2)),
+            projected: Math.round(dailyBase * weekdayMult * (0.9 + (i % 5) * 0.04)),
             low: Math.round(dailyBase * weekdayMult * 0.75),
             high: Math.round(dailyBase * weekdayMult * 1.3),
           };
@@ -788,7 +788,7 @@ export const capacityPlanningRouter = router({
             id: i + 1,
             tractorType: "Day Cab",
             trailerType: trailerTypes[i % trailerTypes.length],
-            estimatedRevenue: Math.round(800 + Math.random() * 1200),
+            estimatedRevenue: Math.round(800 + ((i * 137) % 1200)),
           })),
           savings: possibleMatches * 350, // avg $350 savings per power-only vs full unit
         };

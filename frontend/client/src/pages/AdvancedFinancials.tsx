@@ -161,9 +161,9 @@ export default function AdvancedFinancials() {
 // ═══ OVERVIEW TAB ═══
 
 function OverviewTab({ isLight = false }: { isLight?: boolean }) {
-  const dashQ = (trpc as any).advancedFinancials.getFinancialDashboard.useQuery();
-  const cashFlowQ = (trpc as any).advancedFinancials.getCashFlowForecast.useQuery({ days: "30" });
-  const expensesQ = (trpc as any).advancedFinancials.getExpenseCategories.useQuery();
+  const dashQ = trpc.advancedFinancials.getFinancialDashboard.useQuery();
+  const cashFlowQ = trpc.advancedFinancials.getCashFlowForecast.useQuery({ days: "30" });
+  const expensesQ = trpc.advancedFinancials.getExpenseCategories.useQuery();
 
   const dash = dashQ.data;
   const cf = cashFlowQ.data;
@@ -311,8 +311,8 @@ function OverviewTab({ isLight = false }: { isLight?: boolean }) {
 // ═══ COLLECTIONS TAB ═══
 
 function CollectionsTab({ isLight = false }: { isLight?: boolean }) {
-  const queueQ = (trpc as any).advancedFinancials.getCollectionsQueue.useQuery({ sortBy: "priority" });
-  const analyticsQ = (trpc as any).advancedFinancials.getCollectionsAnalytics.useQuery();
+  const queueQ = trpc.advancedFinancials.getCollectionsQueue.useQuery({ sortBy: "priority" });
+  const analyticsQ = trpc.advancedFinancials.getCollectionsAnalytics.useQuery();
 
   const queue = queueQ.data;
   const analytics = analyticsQ.data;
@@ -400,8 +400,8 @@ function CollectionsTab({ isLight = false }: { isLight?: boolean }) {
 
 function Tax1099Tab({ isLight = false }: { isLight?: boolean }) {
   const [taxYear, setTaxYear] = useState(2025);
-  const summaryQ = (trpc as any).advancedFinancials.get1099Summary.useQuery({ taxYear });
-  const generateM = (trpc as any).advancedFinancials.generate1099.useMutation();
+  const summaryQ = trpc.advancedFinancials.get1099Summary.useQuery({ taxYear });
+  const generateM = trpc.advancedFinancials.generate1099.useMutation();
   const [genResult, setGenResult] = useState<any>(null);
 
   const summary = summaryQ.data;
@@ -495,8 +495,8 @@ function Tax1099Tab({ isLight = false }: { isLight?: boolean }) {
 // ═══ CURRENCY TAB ═══
 
 function CurrencyTab({ isLight = false }: { isLight?: boolean }) {
-  const ratesQ = (trpc as any).advancedFinancials.getMultiCurrencyRates.useQuery();
-  const convertM = (trpc as any).advancedFinancials.convertCurrency.useMutation();
+  const ratesQ = trpc.advancedFinancials.getMultiCurrencyRates.useQuery();
+  const convertM = trpc.advancedFinancials.convertCurrency.useMutation();
   const [amount, setAmount] = useState("1000");
   const [from, setFrom] = useState<string>("USD");
   const [to, setTo] = useState<string>("MXN");
@@ -584,9 +584,9 @@ function CurrencyTab({ isLight = false }: { isLight?: boolean }) {
 // ═══ PROFITABILITY TAB ═══
 
 function ProfitabilityTab({ isLight = false }: { isLight?: boolean }) {
-  const laneQ = (trpc as any).advancedFinancials.getProfitabilityByLane.useQuery({ limit: 10 });
-  const customerQ = (trpc as any).advancedFinancials.getProfitabilityByCustomer.useQuery({ limit: 10 });
-  const termsQ = (trpc as any).advancedFinancials.getPaymentTermsOptimization.useQuery();
+  const laneQ = trpc.advancedFinancials.getProfitabilityByLane.useQuery({ limit: 10 });
+  const customerQ = trpc.advancedFinancials.getProfitabilityByCustomer.useQuery({ limit: 10 });
+  const termsQ = trpc.advancedFinancials.getPaymentTermsOptimization.useQuery();
 
   const lanes = laneQ.data;
   const customers = customerQ.data;
@@ -712,8 +712,8 @@ function ProfitabilityTab({ isLight = false }: { isLight?: boolean }) {
 // ═══ FACTORING TAB ═══
 
 function FactoringTab({ isLight = false }: { isLight?: boolean }) {
-  const offersQ = (trpc as any).advancedFinancials.getFactoringOffers.useQuery();
-  const revenueQ = (trpc as any).advancedFinancials.getRevenueRecognition.useQuery();
+  const offersQ = trpc.advancedFinancials.getFactoringOffers.useQuery();
+  const revenueQ = trpc.advancedFinancials.getRevenueRecognition.useQuery();
 
   const offers = offersQ.data;
   const rev = revenueQ.data;
@@ -787,7 +787,7 @@ function FactoringTab({ isLight = false }: { isLight?: boolean }) {
 // ═══ FUEL CARDS TAB ═══
 
 function FuelCardsTab({ isLight = false }: { isLight?: boolean }) {
-  const txnQ = (trpc as any).advancedFinancials.getFuelCardTransactions.useQuery({ limit: 20 });
+  const txnQ = trpc.advancedFinancials.getFuelCardTransactions.useQuery({ limit: 20 });
   const data = txnQ.data;
 
   if (txnQ.isLoading) return <LoadingSkeleton />;
@@ -855,7 +855,7 @@ function FuelCardsTab({ isLight = false }: { isLight?: boolean }) {
 // ═══ BUDGET TAB ═══
 
 function BudgetTab({ isLight = false }: { isLight?: boolean }) {
-  const budgetQ = (trpc as any).advancedFinancials.getBudgetVsActual.useQuery({ year: 2026 });
+  const budgetQ = trpc.advancedFinancials.getBudgetVsActual.useQuery({ year: 2026 });
   const data = budgetQ.data;
 
   if (budgetQ.isLoading) return <LoadingSkeleton />;

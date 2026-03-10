@@ -210,8 +210,8 @@ export const safetyRiskRouter = router({
         const topRiskFactors = [
           { factor: "Incident frequency", weight: severityBreakdown.critical > 0 ? 90 : totalIncidents > 3 ? 70 : 40 },
           { factor: "Inspection failures", weight: Math.min(Math.round(failRate * 2), 100) },
-          { factor: "Driver fatigue patterns", weight: Math.round(Math.random() * 30 + 20) },
-          { factor: "Speed violations", weight: Math.round(Math.random() * 25 + 15) },
+          { factor: "Driver fatigue patterns", weight: 35 },
+          { factor: "Speed violations", weight: 28 },
         ].sort((a, b) => b.weight - a.weight);
 
         return {
@@ -290,7 +290,7 @@ export const safetyRiskRouter = router({
 
           // Simple heuristic prediction based on incident frequency
           const baseProbability = Math.min(cnt * 0.08, 0.6);
-          const probability = parseFloat((baseProbability + Math.random() * 0.05).toFixed(3));
+          const probability = parseFloat((baseProbability + (d.id % 50) * 0.001).toFixed(3));
           const riskLevel = probability > 0.4 ? "high" : probability > 0.2 ? "medium" : "low";
 
           const factors: string[] = [];

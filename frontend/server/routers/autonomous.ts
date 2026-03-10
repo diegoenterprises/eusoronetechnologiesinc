@@ -3,6 +3,7 @@ import { router, protectedProcedure, roleProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
+import { auditLogs } from "../../drizzle/schema";
 
 const superAdminProcedure = roleProcedure("SUPER_ADMIN");
 
@@ -16,6 +17,13 @@ export const autonomousRouter = router({
       await db.execute(
         sql`INSERT INTO autonomous_vehicles (vehicleId, vin, avLevel) VALUES (${input.vehicleId}, ${input.vin}, ${input.avLevel})`
       );
+      await db.insert(auditLogs).values({
+        action: "av_registered",
+        entityType: "autonomous_vehicle",
+        entityId: input.vehicleId,
+        changes: JSON.stringify({ vin: input.vin, avLevel: input.avLevel }),
+        severity: "MEDIUM",
+      });
       return { success: true };
     }),
 
@@ -62,6 +70,13 @@ export const autonomousRouter = router({
         sql`UPDATE autonomous_vehicles SET telemetryLastUpdate = NOW(), operationalStatus = 'active' WHERE id = ${input.avId}`
       );
 
+      await db.insert(auditLogs).values({
+        action: "av_telemetry_ingested",
+        entityType: "autonomous_vehicle",
+        entityId: input.avId,
+        changes: JSON.stringify({ latitude: input.latitude, longitude: input.longitude, speed: input.speed ?? null, diagnosticCode: input.diagnosticCode ?? null }),
+        severity: "LOW",
+      });
       return { success: true };
     }),
 
@@ -99,6 +114,13 @@ export const autonomousRouter = router({
       await db.execute(
         sql`UPDATE autonomous_vehicles SET operationalStatus = 'active', remotePilotId = NULL WHERE id = ${input.avId}`
       );
+      await db.insert(auditLogs).values({
+        action: "av_control_released",
+        entityType: "autonomous_vehicle",
+        entityId: input.avId,
+        changes: JSON.stringify({ operationalStatus: "active", remotePilotId: null }),
+        severity: "HIGH",
+      });
       return { success: true };
     }),
 

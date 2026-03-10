@@ -80,7 +80,7 @@ function EmptyState({ icon: Icon, message }: { icon: any; message: string }) {
 function DashboardPanel() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  const dashQuery = (trpc as any).fuelManagement.getFuelDashboard.useQuery({});
+  const dashQuery = trpc.fuelManagement.getFuelDashboard.useQuery({});
   const d = dashQuery.data;
   const loading = dashQuery.isLoading;
 
@@ -165,7 +165,7 @@ function DashboardPanel() {
 function FuelPricesPanel() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  const pricesQuery = (trpc as any).fuelManagement.getFuelPrices.useQuery({});
+  const pricesQuery = trpc.fuelManagement.getFuelPrices.useQuery({});
   const p = pricesQuery.data;
 
   return (
@@ -255,7 +255,7 @@ function TransactionsPanel() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [searchTerm, setSearchTerm] = useState("");
-  const txQuery = (trpc as any).fuelManagement.getFuelTransactions.useQuery({ limit: 50 });
+  const txQuery = trpc.fuelManagement.getFuelTransactions.useQuery({ limit: 50 });
   const txData = txQuery.data;
 
   const filtered = (txData?.transactions || []).filter((tx: any) => {
@@ -325,7 +325,7 @@ function TransactionsPanel() {
 function FuelCardsPanel() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  const cardsQuery = (trpc as any).fuelManagement.getFuelCardManagement.useQuery({});
+  const cardsQuery = trpc.fuelManagement.getFuelCardManagement.useQuery({});
   const data = cardsQuery.data;
 
   return (
@@ -401,7 +401,7 @@ function IftaPanel() {
   const isLight = theme === "light";
   const [quarter, setQuarter] = useState(1);
   const [year, setYear] = useState(2026);
-  const iftaQuery = (trpc as any).fuelManagement.getIftaReporting.useQuery({ quarter, year });
+  const iftaQuery = trpc.fuelManagement.getIftaReporting.useQuery({ quarter, year });
   const iftaData = iftaQuery.data;
 
   return (
@@ -500,8 +500,8 @@ function SurchargePanel() {
   const [miles, setMiles] = useState(1000);
   const [mpg, setMpg] = useState(6.0);
 
-  const calcQuery = (trpc as any).fuelManagement.getFuelSurchargeCalculator.useQuery({ miles, avgMpg: mpg });
-  const historyQuery = (trpc as any).fuelManagement.getFuelSurchargeHistory.useQuery({});
+  const calcQuery = trpc.fuelManagement.getFuelSurchargeCalculator.useQuery({ miles, avgMpg: mpg });
+  const historyQuery = trpc.fuelManagement.getFuelSurchargeHistory.useQuery({});
   const calc = calcQuery.data;
 
   return (
@@ -595,8 +595,8 @@ function SurchargePanel() {
 function EfficiencyPanel() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  const rankQuery = (trpc as any).fuelManagement.getFuelEfficiencyRanking.useQuery({});
-  const tipsQuery = (trpc as any).fuelManagement.getFuelEfficiencyTips.useQuery();
+  const rankQuery = trpc.fuelManagement.getFuelEfficiencyRanking.useQuery({});
+  const tipsQuery = trpc.fuelManagement.getFuelEfficiencyTips.useQuery();
   const rankData = rankQuery.data;
 
   return (
@@ -700,7 +700,7 @@ function EfficiencyPanel() {
 function DefPanel() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  const defQuery = (trpc as any).fuelManagement.getDefManagement.useQuery({});
+  const defQuery = trpc.fuelManagement.getDefManagement.useQuery({});
   const def = defQuery.data;
 
   return (
@@ -819,7 +819,7 @@ function DefPanel() {
 function IdlingPanel() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  const idlingQuery = (trpc as any).fuelManagement.getIdlingReport.useQuery({});
+  const idlingQuery = trpc.fuelManagement.getIdlingReport.useQuery({});
   const idling = idlingQuery.data;
 
   return (
@@ -906,7 +906,7 @@ function IdlingPanel() {
 function TheftDetectionPanel() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  const theftQuery = (trpc as any).fuelManagement.getFuelTheftDetection.useQuery({});
+  const theftQuery = trpc.fuelManagement.getFuelTheftDetection.useQuery({});
   const theft = theftQuery.data;
 
   return (
@@ -979,7 +979,7 @@ function TheftDetectionPanel() {
 function EmissionsPanel() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  const emQuery = (trpc as any).fuelManagement.getEmissionsFromFuel.useQuery({});
+  const emQuery = trpc.fuelManagement.getEmissionsFromFuel.useQuery({});
   const em = emQuery.data;
 
   return (

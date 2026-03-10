@@ -17,9 +17,9 @@
  *   - Auto-translation (English/Spanish)
  *
  * DB-BACKED: conversations, messages, and notifications use the real database.
- * IN-MEMORY: broadcasts, rules, templates, escalations, scheduled messages,
- *            voice calls, and preferences remain in-memory until DB migrations
- *            are created for them.
+ * DB-BACKED (via auditLogs): broadcasts, rules, templates, escalations,
+ *            scheduled messages, voice calls, and preferences are persisted
+ *            in the auditLogs table with custom entityType values.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  */
@@ -29,7 +29,7 @@ import { eq, and, desc, asc, sql, isNull } from "drizzle-orm";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { conversations, messages, notifications, users } from "../../drizzle/schema";
+import { conversations, messages, notifications, users, auditLogs } from "../../drizzle/schema";
 
 // ─── Shared Enums & Schemas ──────────────────────────────────────────────────
 
@@ -101,11 +101,8 @@ async function resolveUserId(ctxUser: any): Promise<number> {
   }
 }
 
-// ─── In-Memory Stores (TODO: migrate to DB tables) ──────────────────────────
-// These features have no corresponding DB tables yet. They remain in-memory
-// until proper migrations are created. Each store is clearly marked.
+// ─── Interfaces ──────────────────────────────────────────────────────────────
 
-// TODO: needs DB migration — create `comm_broadcasts` table
 interface Broadcast {
   id: string;
   senderId: number;
@@ -124,7 +121,6 @@ interface Broadcast {
   createdAt: string;
 }
 
-// TODO: needs DB migration — create `comm_notification_rules` table
 interface NotificationRule {
   id: string;
   name: string;
@@ -142,7 +138,6 @@ interface NotificationRule {
   triggerCount: number;
 }
 
-// TODO: needs DB migration — create `comm_templates` table
 interface CommTemplate {
   id: string;
   name: string;
@@ -159,7 +154,6 @@ interface CommTemplate {
   usageCount: number;
 }
 
-// TODO: needs DB migration — create `comm_escalation_workflows` table
 interface EscalationWorkflow {
   id: string;
   name: string;
@@ -182,7 +176,6 @@ interface EscalationStep {
   message: string;
 }
 
-// TODO: needs DB migration — create `comm_scheduled_messages` table
 interface ScheduledMessage {
   id: string;
   conversationId: string | null;
@@ -196,7 +189,6 @@ interface ScheduledMessage {
   createdAt: string;
 }
 
-// TODO: needs DB migration — create `comm_voice_calls` table
 interface VoiceCallEntry {
   id: string;
   callerId: number;
@@ -213,7 +205,6 @@ interface VoiceCallEntry {
   endedAt: string | null;
 }
 
-// TODO: needs DB migration — create `comm_notification_preferences` table
 interface NotifPreference {
   userId: number;
   channels: {
@@ -227,52 +218,135 @@ interface NotifPreference {
   language: string;
 }
 
-// In-memory storage (lost on restart — needs DB migration)
-const broadcastsStore: Broadcast[] = [];
-const rulesStore: NotificationRule[] = [];
-const templatesStore: CommTemplate[] = [];
-const escalationsStore: EscalationWorkflow[] = [];
-const scheduledStore: ScheduledMessage[] = [];
-const voiceCallsStore: VoiceCallEntry[] = [];
-const preferencesStore: Map<number, NotifPreference> = new Map();
-const activeEscalations: { id: string; workflowId: string; messageId: string; currentLevel: number; status: string; startedAt: string; acknowledgedBy: number | null; resolvedAt: string | null }[] = [];
+// Active escalation instances (lightweight runtime state, also persisted)
+interface ActiveEscalation {
+  id: string;
+  workflowId: string;
+  messageId: string;
+  currentLevel: number;
+  status: string;
+  startedAt: string;
+  acknowledgedBy: number | null;
+  resolvedAt: string | null;
+}
 
 let idCounter = 1000;
 function nextId(prefix: string) { return `${prefix}_${++idCounter}`; }
 
-// ─── Seed In-Memory Data (only for features without DB tables) ───────────────
+// ─── DB-backed helpers (auditLogs generic store) ─────────────────────────────
 
-function ensureInMemorySeeded() {
-  if (broadcastsStore.length > 0) return;
+async function queryByEntityType<T>(entityType: string): Promise<T[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata, action: auditLogs.action })
+      .from(auditLogs)
+      .where(eq(auditLogs.entityType, entityType))
+      .orderBy(desc(auditLogs.createdAt));
+    // Deduplicate by action (stores the entity id), keep latest version
+    const seen = new Set<string>();
+    const result: T[] = [];
+    for (const r of rows) {
+      if (seen.has(r.action)) continue;
+      seen.add(r.action);
+      result.push(r.metadata as T);
+    }
+    return result;
+  } catch { return []; }
+}
+
+async function queryOneByAction<T>(entityType: string, action: string): Promise<T | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, entityType), eq(auditLogs.action, action)))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(1);
+    return rows[0] ? (rows[0].metadata as T) : null;
+  } catch { return null; }
+}
+
+async function persistEntity(entityType: string, id: string, data: unknown): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(auditLogs).values({
+      action: id,
+      entityType,
+      metadata: data as any,
+      severity: "LOW",
+    } as any);
+  } catch { /* non-critical */ }
+}
+
+// Typed wrappers
+async function getBroadcasts(): Promise<Broadcast[]> { return queryByEntityType<Broadcast>("comm_broadcast"); }
+async function getRules(): Promise<NotificationRule[]> { return queryByEntityType<NotificationRule>("comm_rule"); }
+async function getTemplates(): Promise<CommTemplate[]> { return queryByEntityType<CommTemplate>("comm_template"); }
+async function getEscalations(): Promise<EscalationWorkflow[]> { return queryByEntityType<EscalationWorkflow>("comm_escalation"); }
+async function getScheduledMessages(): Promise<ScheduledMessage[]> { return queryByEntityType<ScheduledMessage>("comm_scheduled"); }
+async function getVoiceCalls(): Promise<VoiceCallEntry[]> { return queryByEntityType<VoiceCallEntry>("comm_voice_call"); }
+async function getActiveEscalations(): Promise<ActiveEscalation[]> { return queryByEntityType<ActiveEscalation>("comm_active_escalation"); }
+
+async function getPreferences(userId: number): Promise<NotifPreference | null> {
+  return queryOneByAction<NotifPreference>("comm_preferences", String(userId));
+}
+
+// ─── Seed DB data if empty ──────────────────────────────────────────────────
+
+let _seeded = false;
+async function ensureDbSeeded() {
+  if (_seeded) return;
+  _seeded = true;
+
+  const db = await getDb();
+  if (!db) return;
+
+  try {
+    // Check if any broadcast exists already
+    const [existing] = await db
+      .select({ id: auditLogs.id })
+      .from(auditLogs)
+      .where(eq(auditLogs.entityType, "comm_broadcast"))
+      .limit(1);
+    if (existing) return; // Already seeded
+  } catch { return; }
 
   const now = new Date().toISOString();
 
-  // Sample broadcasts (in-memory — TODO: migrate to DB)
-  broadcastsStore.push(
+  // Seed broadcasts
+  const seedBroadcasts: Broadcast[] = [
     { id: "bcast_1", senderId: 1, senderName: "Diego Usoro", title: "Winter Storm Warning - I-40 Corridor", content: "WINTER STORM WARNING: I-40 from Memphis to Nashville expecting 4-6 inches of snow tonight. All drivers on this corridor should secure safe parking before 8 PM CST. Contact dispatch if you need rerouting.", channel: "in_app", priority: "emergency", targetGroup: "all_drivers", targetFilters: { corridor: "I-40" }, recipientCount: 45, deliveredCount: 42, readCount: 38, isEmergency: true, expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date(Date.now() - 3600000).toISOString() },
     { id: "bcast_2", senderId: 2, senderName: "Maria Garcia", title: "Weekly Safety Reminder", content: "Reminder: Pre-trip inspections are mandatory. Check tires, brakes, lights, and fluid levels before departure. Safety is everyone's responsibility.", channel: "in_app", priority: "normal", targetGroup: "all_drivers", targetFilters: {}, recipientCount: 120, deliveredCount: 115, readCount: 89, isEmergency: false, expiresAt: null, createdAt: new Date(Date.now() - 86400000).toISOString() },
-  );
+  ];
+  for (const b of seedBroadcasts) await persistEntity("comm_broadcast", b.id, b);
 
-  // Sample notification rules (in-memory — TODO: migrate to DB)
-  rulesStore.push(
+  // Seed rules
+  const seedRules: NotificationRule[] = [
     { id: "rule_1", name: "Load Pickup Confirmation", description: "Notify dispatch when driver confirms pickup", condition: "load_assigned", channels: ["in_app", "sms"], templateId: "tmpl_1", recipients: "dispatch_team", isActive: true, cooldownMinutes: 0, metadata: {}, createdBy: 1, createdAt: now, lastTriggeredAt: new Date(Date.now() - 600000).toISOString(), triggerCount: 234 },
     { id: "rule_2", name: "Driver Offline Alert", description: "Alert if driver goes offline for more than 30 minutes during active load", condition: "driver_offline", channels: ["in_app", "sms", "push"], templateId: null, recipients: "dispatch_team", isActive: true, cooldownMinutes: 30, metadata: { offlineThresholdMinutes: 30 }, createdBy: 1, createdAt: now, lastTriggeredAt: new Date(Date.now() - 1200000).toISOString(), triggerCount: 56 },
     { id: "rule_3", name: "Document Expiration Warning", description: "Send reminder 30 days before CDL/insurance/medical card expiration", condition: "document_expiring", channels: ["email", "in_app", "push"], templateId: "tmpl_2", recipients: "document_owner", isActive: true, cooldownMinutes: 1440, metadata: { daysBeforeExpiry: 30 }, createdBy: 1, createdAt: now, lastTriggeredAt: new Date(Date.now() - 86400000).toISOString(), triggerCount: 89 },
     { id: "rule_4", name: "HOS Violation Alert", description: "Immediate alert on HOS violation detection", condition: "hos_violation", channels: ["in_app", "sms", "push", "email"], templateId: null, recipients: "safety_team", isActive: true, cooldownMinutes: 0, metadata: {}, createdBy: 1, createdAt: now, lastTriggeredAt: new Date(Date.now() - 43200000).toISOString(), triggerCount: 12 },
     { id: "rule_5", name: "Temperature Alert", description: "Alert when reefer temperature goes out of range", condition: "temperature_alert", channels: ["in_app", "sms", "push"], templateId: null, recipients: "driver_and_dispatch", isActive: true, cooldownMinutes: 15, metadata: { minTemp: 32, maxTemp: 40 }, createdBy: 1, createdAt: now, lastTriggeredAt: null, triggerCount: 0 },
-  );
+  ];
+  for (const r of seedRules) await persistEntity("comm_rule", r.id, r);
 
-  // Sample templates (in-memory — TODO: migrate to DB)
-  templatesStore.push(
+  // Seed templates
+  const seedTemplates: CommTemplate[] = [
     { id: "tmpl_1", name: "Load Pickup Confirmation", category: "operations", channel: "sms", subject: null, body: "Hi {{driverName}}, Load #{{loadId}} has been assigned to you. Pickup at {{pickupAddress}} on {{pickupDate}}. Confirm receipt.", mergeFields: ["driverName", "loadId", "pickupAddress", "pickupDate"], isActive: true, language: "en", createdBy: 1, createdAt: now, updatedAt: now, usageCount: 234 },
     { id: "tmpl_2", name: "Document Expiration Warning", category: "compliance", channel: "email", subject: "Action Required: {{documentType}} expiring on {{expiryDate}}", body: "Dear {{driverName}},\n\nYour {{documentType}} is set to expire on {{expiryDate}}. Please renew it before the expiration date to maintain compliance.\n\nUpload your renewed document at: {{uploadLink}}\n\nThank you,\nEusoTrip Compliance Team", mergeFields: ["driverName", "documentType", "expiryDate", "uploadLink"], isActive: true, language: "en", createdBy: 1, createdAt: now, updatedAt: now, usageCount: 89 },
     { id: "tmpl_3", name: "Emergency Broadcast", category: "safety", channel: "in_app", subject: null, body: "EMERGENCY: {{emergencyType}} reported in {{location}}. All drivers in the {{region}} area should {{action}}. Contact dispatch immediately at {{dispatchPhone}}.", mergeFields: ["emergencyType", "location", "region", "action", "dispatchPhone"], isActive: true, language: "en", createdBy: 1, createdAt: now, updatedAt: now, usageCount: 3 },
     { id: "tmpl_4", name: "Confirmacion de Recogida", category: "operations", channel: "sms", subject: null, body: "Hola {{driverName}}, Carga #{{loadId}} asignada. Recogida en {{pickupAddress}} el {{pickupDate}}. Confirme recibo.", mergeFields: ["driverName", "loadId", "pickupAddress", "pickupDate"], isActive: true, language: "es", createdBy: 1, createdAt: now, updatedAt: now, usageCount: 67 },
     { id: "tmpl_5", name: "Payment Received", category: "billing", channel: "email", subject: "Payment of ${{amount}} received for Load #{{loadId}}", body: "Hi {{driverName}},\n\nWe've processed your payment of ${{amount}} for Load #{{loadId}} ({{route}}). The funds will be in your account within {{businessDays}} business days.\n\nView details: {{paymentLink}}\n\nThank you for hauling with EusoTrip!", mergeFields: ["driverName", "amount", "loadId", "route", "businessDays", "paymentLink"], isActive: true, language: "en", createdBy: 1, createdAt: now, updatedAt: now, usageCount: 156 },
-  );
+  ];
+  for (const t of seedTemplates) await persistEntity("comm_template", t.id, t);
 
-  // Sample escalation workflows (in-memory — TODO: migrate to DB)
-  escalationsStore.push(
+  // Seed escalation workflows
+  const seedEscalations: EscalationWorkflow[] = [
     {
       id: "esc_1", name: "Driver No Response", description: "Escalate when driver does not respond to dispatch within timeframes", triggerCondition: "no_response", isActive: true, createdBy: 1, createdAt: now, updatedAt: now,
       steps: [
@@ -290,20 +364,23 @@ function ensureInMemorySeeded() {
         { level: 3, delayMinutes: 120, notifyRoles: ["ADMIN", "BROKER"], notifyUserIds: [], channel: "email", templateId: null, message: "URGENT: Load #{{loadId}} is 2+ hours delayed. Customer {{customerName}} should be contacted." },
       ],
     },
-  );
+  ];
+  for (const e of seedEscalations) await persistEntity("comm_escalation", e.id, e);
 
-  // Sample scheduled messages (in-memory — TODO: migrate to DB)
-  scheduledStore.push(
+  // Seed scheduled messages
+  const seedScheduled: ScheduledMessage[] = [
     { id: "sched_1", conversationId: null, senderId: 1, senderName: "Diego Usoro", channel: "sms", content: "Good morning team! Remember: safety meeting at 8 AM today at Houston terminal.", recipientIds: [3, 4, 5, 6], scheduledFor: new Date(Date.now() + 43200000).toISOString(), status: "scheduled", createdAt: now },
     { id: "sched_2", conversationId: "conv_3", senderId: 2, senderName: "Maria Garcia", channel: "in_app", content: "Reminder: Quarterly equipment inspections start next Monday. Make sure your trucks are ready.", recipientIds: [4, 5, 6], scheduledFor: new Date(Date.now() + 172800000).toISOString(), status: "scheduled", createdAt: now },
-  );
+  ];
+  for (const s of seedScheduled) await persistEntity("comm_scheduled", s.id, s);
 
-  // Sample voice calls (in-memory — TODO: migrate to DB)
-  voiceCallsStore.push(
+  // Seed voice calls
+  const seedCalls: VoiceCallEntry[] = [
     { id: "call_1", callerId: 2, callerName: "Maria Garcia", receiverId: 3, receiverName: "James Wilson", direction: "outbound", status: "completed", durationSeconds: 185, outcome: "Confirmed ETA and delivery instructions", notes: "Driver confirmed 2:30 PM arrival. Will call receiver 30 min before.", recordingUrl: null, startedAt: new Date(Date.now() - 7200000).toISOString(), endedAt: new Date(Date.now() - 7015000).toISOString() },
     { id: "call_2", callerId: 5, callerName: "Robert Johnson", receiverId: 2, receiverName: "Maria Garcia", direction: "inbound", status: "completed", durationSeconds: 92, outcome: "Reported road construction delay", notes: "I-10 construction near Katy. 20 min delay. Rerouted via 99.", recordingUrl: null, startedAt: new Date(Date.now() - 7200000).toISOString(), endedAt: new Date(Date.now() - 7108000).toISOString() },
     { id: "call_3", callerId: 2, callerName: "Maria Garcia", receiverId: 7, receiverName: "Tom Patel", direction: "outbound", status: "missed", durationSeconds: 0, outcome: "No answer", notes: "", recordingUrl: null, startedAt: new Date(Date.now() - 5400000).toISOString(), endedAt: null },
-  );
+  ];
+  for (const c of seedCalls) await persistEntity("comm_voice_call", c.id, c);
 }
 
 // ─── Simple Translation Map ──────────────────────────────────────────────────

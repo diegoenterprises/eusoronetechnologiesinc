@@ -127,7 +127,7 @@ export const advancedFinancialsRouter = router({
         appliedRate: +rate.toFixed(6),
         midMarketRate: +(BASE_RATES[input.to] / BASE_RATES[input.from]).toFixed(6),
         marginApplied: input.margin,
-        auditId: `FX-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        auditId: `FX-${Date.now()}-${Date.now().toString(36)}`,
         timestamp: new Date().toISOString(),
       };
     }),

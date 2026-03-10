@@ -4,21 +4,16 @@
  */
 
 import { z } from "zod";
+import { eq, and, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import * as rssService from "../services/rssService";
+import { getDb } from "../db";
+import { auditLogs } from "../../drizzle/schema";
 
 const feedCategorySchema = z.enum([
   "all", "chemical", "oil_gas", "bulk", "refrigerated", "logistics",
   "supply_chain", "hazmat", "marine", "energy", "equipment", "trucking", "government",
 ]);
-
-// In-memory bookmark store (per-user saved article IDs)
-const savedArticles: Map<string, Set<string>> = new Map();
-
-function getUserSaved(userId: string): Set<string> {
-  if (!savedArticles.has(userId)) savedArticles.set(userId, new Set());
-  return savedArticles.get(userId)!;
-}
 
 export const newsRouter = router({
   /**
@@ -148,10 +143,35 @@ export const newsRouter = router({
    */
   saveArticle: protectedProcedure
     .input(z.object({ articleId: z.string() }))
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       const userId = (ctx as any).user?.id || "anonymous";
-      getUserSaved(userId).add(input.articleId);
-      return { success: true, articleId: input.articleId, savedAt: new Date().toISOString() };
+      const db = await getDb();
+      const now = new Date().toISOString();
+      if (db) {
+        try {
+          // Check if already saved
+          const [existing] = await db
+            .select({ id: auditLogs.id })
+            .from(auditLogs)
+            .where(
+              and(
+                eq(auditLogs.entityType, "saved_article"),
+                eq(auditLogs.action, input.articleId),
+                sql`JSON_EXTRACT(${auditLogs.metadata}, '$.userId') = ${userId}`,
+              )
+            )
+            .limit(1);
+          if (!existing) {
+            await db.insert(auditLogs).values({
+              action: input.articleId,
+              entityType: "saved_article",
+              metadata: { userId, articleId: input.articleId, savedAt: now },
+              severity: "LOW",
+            } as any);
+          }
+        } catch { /* non-critical */ }
+      }
+      return { success: true, articleId: input.articleId, savedAt: now };
     }),
 
   /**
@@ -159,18 +179,44 @@ export const newsRouter = router({
    */
   unsaveArticle: protectedProcedure
     .input(z.object({ articleId: z.string() }))
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       const userId = (ctx as any).user?.id || "anonymous";
-      getUserSaved(userId).delete(input.articleId);
+      const db = await getDb();
+      if (db) {
+        try {
+          await db.delete(auditLogs).where(
+            and(
+              eq(auditLogs.entityType, "saved_article"),
+              eq(auditLogs.action, input.articleId),
+              sql`JSON_EXTRACT(${auditLogs.metadata}, '$.userId') = ${userId}`,
+            )
+          );
+        } catch { /* non-critical */ }
+      }
       return { success: true, articleId: input.articleId };
     }),
 
   /**
    * Get saved article IDs for current user (lightweight)
    */
-  getSavedArticleIds: protectedProcedure.query(({ ctx }) => {
+  getSavedArticleIds: protectedProcedure.query(async ({ ctx }) => {
     const userId = (ctx as any).user?.id || "anonymous";
-    return { ids: Array.from(getUserSaved(userId)) };
+    const db = await getDb();
+    if (db) {
+      try {
+        const rows = await db
+          .select({ action: auditLogs.action })
+          .from(auditLogs)
+          .where(
+            and(
+              eq(auditLogs.entityType, "saved_article"),
+              sql`JSON_EXTRACT(${auditLogs.metadata}, '$.userId') = ${userId}`,
+            )
+          );
+        return { ids: rows.map((r) => r.action) };
+      } catch { /* fallback */ }
+    }
+    return { ids: [] };
   }),
 
   /**
@@ -178,10 +224,25 @@ export const newsRouter = router({
    */
   getSavedArticles: protectedProcedure.query(async ({ ctx }) => {
     const userId = (ctx as any).user?.id || "anonymous";
-    const ids = getUserSaved(userId);
-    if (ids.size === 0) return { articles: [] };
+    const db = await getDb();
+    let savedIds: Set<string> = new Set();
+    if (db) {
+      try {
+        const rows = await db
+          .select({ action: auditLogs.action })
+          .from(auditLogs)
+          .where(
+            and(
+              eq(auditLogs.entityType, "saved_article"),
+              sql`JSON_EXTRACT(${auditLogs.metadata}, '$.userId') = ${userId}`,
+            )
+          );
+        savedIds = new Set(rows.map((r) => r.action));
+      } catch { /* fallback */ }
+    }
+    if (savedIds.size === 0) return { articles: [] };
     const result = await rssService.getArticles({ limit: 1000 });
-    const saved = result.articles.filter((a) => ids.has(a.id));
+    const saved = result.articles.filter((a) => savedIds.has(a.id));
     return { articles: saved };
   }),
 });

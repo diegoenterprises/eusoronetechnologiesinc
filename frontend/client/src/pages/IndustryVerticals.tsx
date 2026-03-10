@@ -50,14 +50,14 @@ export default function IndustryVerticals() {
   const [pricingMiles, setPricingMiles] = useState(800);
 
   // ── tRPC queries ───────────────────────────────────────────────────────────
-  const configQ = (trpc as any).industryVerticals?.getVerticalConfig?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
-  const complianceQ = (trpc as any).industryVerticals?.getComplianceRequirements?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
-  const equipmentQ = (trpc as any).industryVerticals?.getSpecializedEquipment?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
-  const seasonalQ = (trpc as any).industryVerticals?.getSeasonalFactors?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
-  const analyticsQ = (trpc as any).industryVerticals?.getVerticalAnalytics?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
-  const certsQ = (trpc as any).industryVerticals?.getCarrierCertifications?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
-  const tempQ = (trpc as any).industryVerticals?.getTemperatureProtocols?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
-  const pricingQ = (trpc as any).industryVerticals?.calculateVerticalPricing?.useQuery?.({
+  const configQ = trpc.industryVerticals?.getVerticalConfig?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
+  const complianceQ = trpc.industryVerticals?.getComplianceRequirements?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
+  const equipmentQ = trpc.industryVerticals?.getSpecializedEquipment?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
+  const seasonalQ = trpc.industryVerticals?.getSeasonalFactors?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
+  const analyticsQ = trpc.industryVerticals?.getVerticalAnalytics?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
+  const certsQ = trpc.industryVerticals?.getCarrierCertifications?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
+  const tempQ = trpc.industryVerticals?.getTemperatureProtocols?.useQuery?.({ verticalId: selectedVertical }) ?? { data: null, isLoading: false };
+  const pricingQ = trpc.industryVerticals?.calculateVerticalPricing?.useQuery?.({
     verticalId: selectedVertical,
     baseRate,
     miles: pricingMiles,
@@ -66,7 +66,7 @@ export default function IndustryVerticals() {
     hazmatClass: ["chemical", "hazmat", "petroleum"].includes(selectedVertical) ? "3" : undefined,
     oversized: ["construction", "heavy_haul"].includes(selectedVertical),
   }) ?? { data: null, isLoading: false };
-  const hazmatQ = (trpc as any).industryVerticals?.getHazmatSegregation?.useQuery?.({}) ?? { data: null, isLoading: false };
+  const hazmatQ = trpc.industryVerticals?.getHazmatSegregation?.useQuery?.({}) ?? { data: null, isLoading: false };
 
   // ── Derived data ───────────────────────────────────────────────────────────
   const config = configQ.data as any;

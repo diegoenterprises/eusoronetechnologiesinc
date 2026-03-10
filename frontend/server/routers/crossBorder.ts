@@ -441,7 +441,7 @@ export const crossBorderRouter = router({
           averageWaitMinutes: p.averageWaitMinutes,
           fastLaneWaitMinutes: p.fastLane ? Math.max(5, Math.round(p.currentWaitMinutes * 0.4)) : null,
           severity: p.waitSeverity,
-          trend: Math.random() > 0.5 ? ("increasing" as const) : ("decreasing" as const),
+          trend: p.currentWaitMinutes > p.averageWaitMinutes ? ("increasing" as const) : ("decreasing" as const),
           lat: p.lat,
           lng: p.lng,
           lastUpdated: p.lastUpdated,

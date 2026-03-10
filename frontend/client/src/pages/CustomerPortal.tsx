@@ -185,7 +185,7 @@ function Section({ title, description, children, action, isLight }: {
 function DashboardTab({ customerId }: { customerId?: string }) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const dashQ = (trpc as any).customerPortal.getCustomerDashboard.useQuery(
+  const dashQ = trpc.customerPortal.getCustomerDashboard.useQuery(
     customerId ? { customerId } : undefined
   );
 
@@ -229,7 +229,7 @@ function DirectoryTab({ onSelectCustomer }: { onSelectCustomer: (id: string) => 
   const [search, setSearch] = useState("");
 
   // Uses the existing portal token list as the "directory" of customers
-  const tokensQ = (trpc as any).customerPortal.listPortalAccess.useQuery();
+  const tokensQ = trpc.customerPortal.listPortalAccess.useQuery();
 
   const tokens = useMemo(() => {
     const list = tokensQ.data?.tokens || [];
@@ -310,8 +310,8 @@ function DirectoryTab({ onSelectCustomer }: { onSelectCustomer: (id: string) => 
 function OnboardingTab({ customerId }: { customerId: string }) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const obQ = (trpc as any).customerPortal.getCustomerOnboarding.useQuery({ customerId });
-  const completeMut = (trpc as any).customerPortal.completeOnboardingStep.useMutation({
+  const obQ = trpc.customerPortal.getCustomerOnboarding.useQuery({ customerId });
+  const completeMut = trpc.customerPortal.completeOnboardingStep.useMutation({
     onSuccess: () => obQ.refetch(),
   });
 
@@ -383,7 +383,7 @@ function OnboardingTab({ customerId }: { customerId: string }) {
 function RatesTab({ customerId }: { customerId?: string }) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const ratesQ = (trpc as any).customerPortal.getRateManagement.useQuery(
+  const ratesQ = trpc.customerPortal.getRateManagement.useQuery(
     customerId ? { customerId } : undefined
   );
 
@@ -455,7 +455,7 @@ function RatesTab({ customerId }: { customerId?: string }) {
 function ContractsTab({ customerId }: { customerId?: string }) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const contractsQ = (trpc as any).customerPortal.getContractManagement.useQuery(
+  const contractsQ = trpc.customerPortal.getContractManagement.useQuery(
     customerId ? { customerId } : undefined
   );
 
@@ -520,7 +520,7 @@ function ShipmentsTab({ customerId }: { customerId?: string }) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const [statusFilter, setStatusFilter] = useState("all");
-  const shipmentsQ = (trpc as any).customerPortal.getShipmentVisibility.useQuery(
+  const shipmentsQ = trpc.customerPortal.getShipmentVisibility.useQuery(
     { customerId, status: statusFilter !== "all" ? statusFilter : undefined }
   );
 
@@ -602,7 +602,7 @@ function ShipmentsTab({ customerId }: { customerId?: string }) {
 function ClaimsTab({ customerId }: { customerId?: string }) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const claimsQ = (trpc as any).customerPortal.getClaimsManagement.useQuery(
+  const claimsQ = trpc.customerPortal.getClaimsManagement.useQuery(
     customerId ? { customerId } : undefined
   );
 
@@ -662,7 +662,7 @@ function ClaimsTab({ customerId }: { customerId?: string }) {
 function ScorecardTab({ customerId }: { customerId: string }) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const scorecardQ = (trpc as any).customerPortal.getCustomerScorecard.useQuery({ customerId });
+  const scorecardQ = trpc.customerPortal.getCustomerScorecard.useQuery({ customerId });
 
   if (scorecardQ.isLoading) {
     return <Skeleton className={isLight ? "h-64 bg-slate-100" : "h-64 bg-gray-800"} />;
@@ -731,7 +731,7 @@ function ScorecardTab({ customerId }: { customerId: string }) {
 function CommunicationsTab({ customerId }: { customerId: string }) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const commsQ = (trpc as any).customerPortal.getCustomerCommunications.useQuery({
+  const commsQ = trpc.customerPortal.getCustomerCommunications.useQuery({
     customerId,
     type: "all",
     page: 1,
@@ -789,7 +789,7 @@ function CommunicationsTab({ customerId }: { customerId: string }) {
 function FeedbackTab({ customerId }: { customerId?: string }) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const fbQ = (trpc as any).customerPortal.getCustomerFeedback.useQuery(
+  const fbQ = trpc.customerPortal.getCustomerFeedback.useQuery(
     customerId ? { customerId } : undefined
   );
 
@@ -846,7 +846,7 @@ function FeedbackTab({ customerId }: { customerId?: string }) {
 function DocumentsTab({ customerId }: { customerId: string }) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const docsQ = (trpc as any).customerPortal.getCustomerDocuments.useQuery({
+  const docsQ = trpc.customerPortal.getCustomerDocuments.useQuery({
     customerId,
     type: "all",
     page: 1,
@@ -904,7 +904,7 @@ function DocumentsTab({ customerId }: { customerId: string }) {
 function BillingTab({ customerId }: { customerId?: string }) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const billingQ = (trpc as any).customerPortal.getCustomerBilling.useQuery(
+  const billingQ = trpc.customerPortal.getCustomerBilling.useQuery(
     customerId ? { customerId } : undefined
   );
 

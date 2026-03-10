@@ -176,7 +176,7 @@ function LoadingSkeleton({ rows = 5 }: { rows?: number }) {
 function DashboardTab() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const { data, isLoading } = (trpc as any).fleetMaintenance.getMaintenanceDashboard.useQuery();
+  const { data, isLoading } = trpc.fleetMaintenance.getMaintenanceDashboard.useQuery();
 
   if (isLoading) return <LoadingSkeleton rows={8} />;
   if (!data) return <p className="text-zinc-500 text-sm">No dashboard data available.</p>;
@@ -266,16 +266,16 @@ function WorkOrdersTab() {
     priority: "medium" as const, estimatedCost: 0,
   });
 
-  const { data, isLoading, refetch } = (trpc as any).fleetMaintenance.getWorkOrders.useQuery({
+  const { data, isLoading, refetch } = trpc.fleetMaintenance.getWorkOrders.useQuery({
     status: statusFilter, priority: priorityFilter, page: 1, limit: 50,
   });
 
-  const createMut = (trpc as any).fleetMaintenance.createWorkOrder.useMutation({
+  const createMut = trpc.fleetMaintenance.createWorkOrder.useMutation({
     onSuccess: () => { toast.success("Work order created"); setShowCreate(false); refetch(); },
     onError: (err: any) => toast.error("Failed", { description: err.message }),
   });
 
-  const updateMut = (trpc as any).fleetMaintenance.updateWorkOrder.useMutation({
+  const updateMut = trpc.fleetMaintenance.updateWorkOrder.useMutation({
     onSuccess: () => { toast.success("Work order updated"); refetch(); },
     onError: (err: any) => toast.error("Failed", { description: err.message }),
   });
@@ -435,7 +435,7 @@ function PMScheduleTab() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const [dueSoonOnly, setDueSoonOnly] = useState(false);
-  const { data, isLoading } = (trpc as any).fleetMaintenance.getPreventiveSchedule.useQuery({
+  const { data, isLoading } = trpc.fleetMaintenance.getPreventiveSchedule.useQuery({
     dueSoon: dueSoonOnly, page: 1, limit: 100,
   });
 
@@ -505,11 +505,11 @@ function PartsTab() {
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [category, setCategory] = useState<string | undefined>(undefined);
 
-  const { data, isLoading } = (trpc as any).fleetMaintenance.getPartsInventory.useQuery({
+  const { data, isLoading } = trpc.fleetMaintenance.getPartsInventory.useQuery({
     search: search || undefined, lowStock: lowStockOnly, category, page: 1, limit: 50,
   });
 
-  const orderMut = (trpc as any).fleetMaintenance.orderPart.useMutation({
+  const orderMut = trpc.fleetMaintenance.orderPart.useMutation({
     onSuccess: (res: any) => toast.success(`Purchase order ${res.purchaseOrderId} created`),
     onError: (err: any) => toast.error("Failed", { description: err.message }),
   });
@@ -606,7 +606,7 @@ function PartsTab() {
 function TiresTab() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const { data, isLoading } = (trpc as any).fleetMaintenance.getTireManagement.useQuery({ page: 1, limit: 100 });
+  const { data, isLoading } = trpc.fleetMaintenance.getTireManagement.useQuery({ page: 1, limit: 100 });
 
   if (isLoading) return <LoadingSkeleton rows={8} />;
   if (!data) return <p className="text-zinc-500 text-sm">No tire data available.</p>;
@@ -676,7 +676,7 @@ function TiresTab() {
 function LifecycleTab() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const { data, isLoading } = (trpc as any).fleetMaintenance.getVehicleLifecycle.useQuery({ page: 1, limit: 50 });
+  const { data, isLoading } = trpc.fleetMaintenance.getVehicleLifecycle.useQuery({ page: 1, limit: 50 });
 
   if (isLoading) return <LoadingSkeleton rows={8} />;
   if (!data) return <p className="text-zinc-500 text-sm">No vehicle lifecycle data.</p>;
@@ -751,7 +751,7 @@ function InspectionPrepTab() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const [vehicleId, setVehicleId] = useState(1);
-  const { data, isLoading } = (trpc as any).fleetMaintenance.getDotInspectionPrep.useQuery({ vehicleId });
+  const { data, isLoading } = trpc.fleetMaintenance.getDotInspectionPrep.useQuery({ vehicleId });
 
   return (
     <div className="space-y-4">
@@ -847,7 +847,7 @@ function InspectionPrepTab() {
 function CostAnalysisTab() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const { data, isLoading } = (trpc as any).fleetMaintenance.getMaintenanceCostAnalysis.useQuery({
+  const { data, isLoading } = trpc.fleetMaintenance.getMaintenanceCostAnalysis.useQuery({
     periodMonths: 12, groupBy: "category",
   });
 
@@ -957,9 +957,9 @@ function CostAnalysisTab() {
 function RecallsAlertsTab() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const recallsQuery = (trpc as any).fleetMaintenance.getRecallAlerts.useQuery();
-  const predictiveQuery = (trpc as any).fleetMaintenance.getPredictiveAlerts.useQuery({ severity: "all", limit: 15 });
-  const complianceQuery = (trpc as any).fleetMaintenance.getComplianceCalendar.useQuery({ daysAhead: 60 });
+  const recallsQuery = trpc.fleetMaintenance.getRecallAlerts.useQuery();
+  const predictiveQuery = trpc.fleetMaintenance.getPredictiveAlerts.useQuery({ severity: "all", limit: 15 });
+  const complianceQuery = trpc.fleetMaintenance.getComplianceCalendar.useQuery({ daysAhead: 60 });
 
   const isLoading = recallsQuery.isLoading || predictiveQuery.isLoading || complianceQuery.isLoading;
 
@@ -1085,9 +1085,9 @@ function RecallsAlertsTab() {
 function UtilizationTab() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const { data, isLoading } = (trpc as any).fleetMaintenance.getFleetUtilization.useQuery({ periodDays: 30 });
-  const fuelQuery = (trpc as any).fleetMaintenance.getFuelEfficiency.useQuery({ periodDays: 90 });
-  const vendorQuery = (trpc as any).fleetMaintenance.getVendorManagement.useQuery();
+  const { data, isLoading } = trpc.fleetMaintenance.getFleetUtilization.useQuery({ periodDays: 30 });
+  const fuelQuery = trpc.fleetMaintenance.getFuelEfficiency.useQuery({ periodDays: 90 });
+  const vendorQuery = trpc.fleetMaintenance.getVendorManagement.useQuery();
 
   if (isLoading) return <LoadingSkeleton rows={8} />;
   if (!data) return <p className="text-zinc-500 text-sm">No utilization data.</p>;

@@ -24,6 +24,7 @@ import {
   documentTemplates,
   docComplianceStatus,
   loads,
+  auditLogs,
 } from "../../drizzle/schema";
 
 // ============================================================================
@@ -123,10 +124,102 @@ interface StoredSignatureRequest {
   message: string;
 }
 
-// Workflows & signature requests genuinely need no persistence for the current
-// feature scope (ephemeral approval flows created during a session).
-const workflowStore = new Map<string, StoredWorkflow>();
-const signatureRequestStore = new Map<string, StoredSignatureRequest>();
+// ── DB-backed helpers for workflow & signature stores via auditLogs ──
+
+async function getWorkflowsFromDb(): Promise<StoredWorkflow[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata, action: auditLogs.action })
+      .from(auditLogs)
+      .where(eq(auditLogs.entityType, "doc_workflow"))
+      .orderBy(desc(auditLogs.createdAt));
+    // Deduplicate by id (action column stores the workflow id), keep latest
+    const seen = new Set<string>();
+    const result: StoredWorkflow[] = [];
+    for (const r of rows) {
+      if (seen.has(r.action)) continue;
+      seen.add(r.action);
+      result.push(r.metadata as any);
+    }
+    return result;
+  } catch { return []; }
+}
+
+async function getWorkflowById(id: string): Promise<StoredWorkflow | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, "doc_workflow"), eq(auditLogs.action, id)))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(1);
+    return rows[0] ? (rows[0].metadata as any) : null;
+  } catch { return null; }
+}
+
+async function upsertWorkflow(workflow: StoredWorkflow): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(auditLogs).values({
+      action: workflow.id,
+      entityType: "doc_workflow",
+      metadata: workflow as any,
+      severity: "LOW",
+    } as any);
+  } catch { /* non-critical */ }
+}
+
+async function getSignaturesFromDb(): Promise<StoredSignatureRequest[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata, action: auditLogs.action })
+      .from(auditLogs)
+      .where(eq(auditLogs.entityType, "doc_signature"))
+      .orderBy(desc(auditLogs.createdAt));
+    const seen = new Set<string>();
+    const result: StoredSignatureRequest[] = [];
+    for (const r of rows) {
+      if (seen.has(r.action)) continue;
+      seen.add(r.action);
+      result.push(r.metadata as any);
+    }
+    return result;
+  } catch { return []; }
+}
+
+async function getSignatureById(id: string): Promise<StoredSignatureRequest | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, "doc_signature"), eq(auditLogs.action, id)))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(1);
+    return rows[0] ? (rows[0].metadata as any) : null;
+  } catch { return null; }
+}
+
+async function upsertSignature(request: StoredSignatureRequest): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(auditLogs).values({
+      action: request.id,
+      entityType: "doc_signature",
+      metadata: request as any,
+      severity: "LOW",
+    } as any);
+  } catch { /* non-critical */ }
+}
 
 // ============================================================================
 // DB helpers — map a raw documents row to the shape the frontend expects
@@ -251,10 +344,10 @@ export const documentManagementRouter = router({
           byCategory: Object.entries(byCategory).map(([category, count]) => ({ category, count })),
           byType,
           byStatus,
-          activeWorkflows: Array.from(workflowStore.values()).filter(
+          activeWorkflows: (await getWorkflowsFromDb()).filter(
             (w) => w.status === "pending" || w.status === "in_progress"
           ).length,
-          pendingSignatures: Array.from(signatureRequestStore.values()).filter(
+          pendingSignatures: (await getSignaturesFromDb()).filter(
             (s) => s.status === "pending"
           ).length,
           templatesAvailable,
@@ -1058,7 +1151,7 @@ export const documentManagementRouter = router({
         message: input.message,
       };
 
-      signatureRequestStore.set(requestId, request);
+      await upsertSignature(request);
 
       return {
         success: true,
@@ -1079,7 +1172,7 @@ export const documentManagementRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const request = signatureRequestStore.get(input.requestId);
+      const request = await getSignatureById(input.requestId);
       if (!request) {
         return { success: false, error: "Signature request not found" };
       }
@@ -1102,6 +1195,9 @@ export const documentManagementRouter = router({
         request.completedAt = now;
       }
 
+      // Persist updated state
+      await upsertSignature(request);
+
       return {
         success: true,
         signerId: input.signerId,
@@ -1114,7 +1210,7 @@ export const documentManagementRouter = router({
   getSignatureStatus: protectedProcedure
     .input(z.object({ requestId: z.string() }))
     .query(async ({ input }) => {
-      const request = signatureRequestStore.get(input.requestId);
+      const request = await getSignatureById(input.requestId);
       if (!request) {
         return null;
       }
@@ -1158,7 +1254,7 @@ export const documentManagementRouter = router({
       }).optional()
     )
     .query(async ({ input }) => {
-      let workflows = Array.from(workflowStore.values());
+      let workflows = await getWorkflowsFromDb();
       if (input?.status) workflows = workflows.filter((w) => w.status === input.status);
       if (input?.documentId) workflows = workflows.filter((w) => w.documentId === input.documentId);
       return workflows;
@@ -1222,7 +1318,7 @@ export const documentManagementRouter = router({
         dueDate: input.dueDate || null,
       };
 
-      workflowStore.set(workflowId, workflow);
+      await upsertWorkflow(workflow);
 
       // Update document status in DB
       if (db) {
@@ -1245,7 +1341,7 @@ export const documentManagementRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const workflow = workflowStore.get(input.workflowId);
+      const workflow = await getWorkflowById(input.workflowId);
       if (!workflow) {
         return { success: false, error: "Workflow not found" };
       }
@@ -1273,6 +1369,9 @@ export const documentManagementRouter = router({
           workflow.status = "in_progress";
         }
       }
+
+      // Persist updated workflow state
+      await upsertWorkflow(workflow);
 
       // Update document status in DB
       const db = await getDb();
@@ -1679,18 +1778,24 @@ export const documentManagementRouter = router({
           typeBreakdown,
           uploadTrend,
           topCategories,
-          signatureMetrics: {
-            totalRequests: signatureRequestStore.size,
-            completed: Array.from(signatureRequestStore.values()).filter((s) => s.status === "signed").length,
-            pending: Array.from(signatureRequestStore.values()).filter((s) => s.status === "pending").length,
-            averageCompletionTime: "4.2 hours",
-          },
-          workflowMetrics: {
-            totalWorkflows: workflowStore.size,
-            completed: Array.from(workflowStore.values()).filter((w) => w.status === "approved" || w.status === "rejected").length,
-            active: Array.from(workflowStore.values()).filter((w) => w.status === "pending" || w.status === "in_progress").length,
-            averageApprovalTime: "6.8 hours",
-          },
+          signatureMetrics: await (async () => {
+            const sigs = await getSignaturesFromDb();
+            return {
+              totalRequests: sigs.length,
+              completed: sigs.filter((s) => s.status === "signed").length,
+              pending: sigs.filter((s) => s.status === "pending").length,
+              averageCompletionTime: "4.2 hours",
+            };
+          })(),
+          workflowMetrics: await (async () => {
+            const wfs = await getWorkflowsFromDb();
+            return {
+              totalWorkflows: wfs.length,
+              completed: wfs.filter((w) => w.status === "approved" || w.status === "rejected").length,
+              active: wfs.filter((w) => w.status === "pending" || w.status === "in_progress").length,
+              averageApprovalTime: "6.8 hours",
+            };
+          })(),
         };
       } catch (e) {
         logger.error("[DocumentManagement] getDocumentAnalytics error:", e);

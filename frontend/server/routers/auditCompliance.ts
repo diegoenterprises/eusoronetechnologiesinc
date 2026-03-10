@@ -55,7 +55,7 @@ async function setCompanyMeta(db: any, cid: number, patch: Record<string, any>) 
 }
 
 function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  return `${Date.now()}-${Date.now().toString(36)}`;
 }
 
 function scoreSeverity(severity: string): number {

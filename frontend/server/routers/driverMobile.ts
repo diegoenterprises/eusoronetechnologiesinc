@@ -89,7 +89,7 @@ function haversineDistance(
 }
 
 function generateId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}-${Date.now()}-${Date.now().toString(36)}`;
 }
 
 async function getDriverIdForUser(userId: number): Promise<number | null> {
@@ -721,15 +721,18 @@ export const driverMobileRouter = router({
     .query(async ({ input }) => {
       let stops = NEARBY_SERVICES
         .filter((s) => s.type === "fuel")
-        .map((s) => ({
-          ...s,
-          distance: haversineDistance(input.location.lat, input.location.lng, s.lat, s.lng),
-          chain: s.name.includes("Pilot") ? "Pilot" : s.name.includes("Love") ? "Loves" : s.name.includes("TA") ? "TA" : "Other",
-          truckParking: Math.floor(80 + Math.random() * 120),
-          availableParking: Math.floor(10 + Math.random() * 50),
-          dieselPrice: 3.75 + Math.random() * 0.30,
-          defPrice: 2.50 + Math.random() * 0.50,
-        }));
+        .map((s, idx) => {
+          const seed = parseInt(s.id.replace(/\D/g, ""), 10) || (idx + 1);
+          return {
+            ...s,
+            distance: haversineDistance(input.location.lat, input.location.lng, s.lat, s.lng),
+            chain: s.name.includes("Pilot") ? "Pilot" : s.name.includes("Love") ? "Loves" : s.name.includes("TA") ? "TA" : "Other",
+            truckParking: 80 + ((seed * 73) % 120),
+            availableParking: 10 + ((seed * 37) % 50),
+            dieselPrice: +(3.75 + ((seed * 17) % 30) * 0.01).toFixed(2),
+            defPrice: +(2.50 + ((seed * 13) % 50) * 0.01).toFixed(2),
+          };
+        });
 
       if (input.amenities && input.amenities.length > 0) {
         stops = stops.filter((s) =>

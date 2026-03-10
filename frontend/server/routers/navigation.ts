@@ -6,7 +6,7 @@ import { z } from "zod";
 import { eq, desc, and } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { routes, routeWaypoints, etaHistory, loads } from "../../drizzle/schema";
+import { routes, routeWaypoints, etaHistory, loads, auditLogs } from "../../drizzle/schema";
 
 const vehicleProfileSchema = z.object({
   height: z.number().optional(),
@@ -223,6 +223,13 @@ export const navigationRouter = router({
       ...(input.actualDeparture && { actualDeparture: new Date(input.actualDeparture) }),
     }).where(eq(routeWaypoints.id, input.waypointId));
 
+    await db.insert(auditLogs).values({
+      action: "waypoint_status_updated",
+      entityType: "route_waypoint",
+      entityId: input.waypointId,
+      changes: JSON.stringify({ status: input.status, actualArrival: input.actualArrival ?? null, actualDeparture: input.actualDeparture ?? null }),
+      severity: "LOW",
+    });
     return { success: true };
   }),
 
@@ -231,6 +238,13 @@ export const navigationRouter = router({
     const db = await getDb();
     if (!db) throw new Error("Database unavailable");
     await db.update(routes).set({ status: "active" }).where(eq(routes.id, input.routeId));
+    await db.insert(auditLogs).values({
+      action: "route_activated",
+      entityType: "route",
+      entityId: input.routeId,
+      changes: JSON.stringify({ status: "active" }),
+      severity: "LOW",
+    });
     return { success: true };
   }),
 
@@ -239,6 +253,13 @@ export const navigationRouter = router({
     const db = await getDb();
     if (!db) throw new Error("Database unavailable");
     await db.update(routes).set({ status: "completed" }).where(eq(routes.id, input.routeId));
+    await db.insert(auditLogs).values({
+      action: "route_completed",
+      entityType: "route",
+      entityId: input.routeId,
+      changes: JSON.stringify({ status: "completed" }),
+      severity: "LOW",
+    });
     return { success: true };
   }),
 });

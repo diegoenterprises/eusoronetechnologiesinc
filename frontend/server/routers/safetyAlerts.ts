@@ -7,7 +7,7 @@ import { eq, desc, and } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { safetyAlerts, speedEvents, users } from "../../drizzle/schema";
+import { safetyAlerts, speedEvents, users, auditLogs } from "../../drizzle/schema";
 
 export const safetyAlertsRouter = router({
   // Trigger SOS alert
@@ -268,6 +268,14 @@ export const safetyAlertsRouter = router({
       acknowledgedAt: new Date(),
     }).where(eq(safetyAlerts.id, input.alertId));
 
+    await db.insert(auditLogs).values({
+      action: "safety_alert_acknowledged",
+      entityType: "safety_alert",
+      entityId: input.alertId,
+      userId: userId ? Number(userId) : null,
+      changes: JSON.stringify({ status: "acknowledged" }),
+      severity: "MEDIUM",
+    });
     return { success: true };
   }),
 
@@ -281,6 +289,13 @@ export const safetyAlertsRouter = router({
       resolvedAt: new Date(),
     }).where(eq(safetyAlerts.id, input.alertId));
 
+    await db.insert(auditLogs).values({
+      action: "safety_alert_resolved",
+      entityType: "safety_alert",
+      entityId: input.alertId,
+      changes: JSON.stringify({ status: "resolved", resolution: input.resolution ?? null }),
+      severity: "MEDIUM",
+    });
     return { success: true };
   }),
 
@@ -291,6 +306,13 @@ export const safetyAlertsRouter = router({
 
     await db.update(safetyAlerts).set({ status: "false_alarm", resolvedAt: new Date() }).where(eq(safetyAlerts.id, input.alertId));
 
+    await db.insert(auditLogs).values({
+      action: "safety_alert_false_alarm",
+      entityType: "safety_alert",
+      entityId: input.alertId,
+      changes: JSON.stringify({ status: "false_alarm" }),
+      severity: "LOW",
+    });
     return { success: true };
   }),
 

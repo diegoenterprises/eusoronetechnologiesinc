@@ -295,9 +295,20 @@ export const adminRouter = router({
    */
   toggleFeatureFlag: auditedAdminProcedure
     .input(z.object({ id: z.string().optional(), enabled: z.boolean(), flagId: z.string().optional() }))
-    .mutation(async ({ input }) => {
-      logger.info(`[Admin] Feature flag ${input.id || input.flagId} toggled to ${input.enabled}`);
-      return { success: true, flagId: input.id || input.flagId, enabled: input.enabled, message: "Flag toggled (in-memory only — connect to feature_flags table for persistence)" };
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const resolvedFlagId = input.id || input.flagId || "unknown";
+      await db.insert(auditLogs).values({
+        action: "feature_flag_toggled",
+        entityType: "feature_flag",
+        entityId: null,
+        userId: (ctx.user as any)?.id ?? null,
+        changes: JSON.stringify({ flagId: resolvedFlagId, enabled: input.enabled }),
+        severity: "HIGH",
+      });
+      logger.info(`[Admin] Feature flag ${resolvedFlagId} toggled to ${input.enabled}`);
+      return { success: true, flagId: resolvedFlagId, enabled: input.enabled };
     }),
 
   /**

@@ -657,22 +657,38 @@ export const loadBiddingRouter = router({
   /** Toggle auto-accept rule active/inactive */
   toggleAutoAcceptRule: protectedProcedure
     .input(z.object({ id: z.number(), isActive: z.boolean() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       await db.update(bidAutoAcceptRules)
         .set({ isActive: input.isActive })
         .where(eq(bidAutoAcceptRules.id, input.id));
+      await db.insert(auditLogs).values({
+        action: "auto_accept_rule_toggled",
+        entityType: "bid_auto_accept_rule",
+        entityId: input.id,
+        userId: ctx.user?.id ?? null,
+        changes: JSON.stringify({ isActive: input.isActive }),
+        severity: "LOW",
+      });
       return { success: true };
     }),
 
   /** Delete auto-accept rule */
   deleteAutoAcceptRule: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       await db.delete(bidAutoAcceptRules).where(eq(bidAutoAcceptRules.id, input.id));
+      await db.insert(auditLogs).values({
+        action: "auto_accept_rule_deleted",
+        entityType: "bid_auto_accept_rule",
+        entityId: input.id,
+        userId: ctx.user?.id ?? null,
+        changes: JSON.stringify({ deleted: true }),
+        severity: "MEDIUM",
+      });
       return { success: true };
     }),
 });
