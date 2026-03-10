@@ -78,14 +78,14 @@ export const multiModalRouter = router({
     .query(async () => {
       // Default summary in case DB is unavailable
       let summary = {
-        activeShipments: 247,
-        byMode: { truck: 142, rail: 58, ocean: 32, intermodal: 15 } as Record<string, number>,
-        containersTracked: 189,
-        chassisInUse: 94,
-        drayageOrders: 37,
-        transloadOrders: 12,
-        pendingCustomsClearance: 8,
-        alertCount: 14,
+        activeShipments: 0,
+        byMode: { truck: 0, rail: 0, ocean: 0, intermodal: 0 } as Record<string, number>,
+        containersTracked: 0,
+        chassisInUse: 0,
+        drayageOrders: 0,
+        transloadOrders: 0,
+        pendingCustomsClearance: 0,
+        alertCount: 0,
       };
 
       try {
@@ -1211,22 +1211,22 @@ export const multiModalRouter = router({
   getMultiModalAnalytics: protectedProcedure
     .input(dateRangeInput.optional())
     .query(async () => {
-      // Default analytics
+      // Default analytics — zeroed out, overwritten by real DB data when available
       let kpis = {
-        totalShipments: 247,
-        totalRevenue: 1_845_000,
-        avgCostPerShipment: 3_250,
-        onTimeDelivery: 91.2,
-        avgDwellTime: 28.4,
-        emptyMilesRatio: 12.8,
-        intermodalConversionRate: 18.5,
-        co2Saved: 142_000,
+        totalShipments: 0,
+        totalRevenue: 0,
+        avgCostPerShipment: 0,
+        onTimeDelivery: 0,
+        avgDwellTime: 0,
+        emptyMilesRatio: 0,
+        intermodalConversionRate: 0,
+        co2Saved: 0,
       };
       let modeBreakdown = [
-        { mode: "truck", shipments: 142, revenue: 985000, avgCost: 4275, onTime: 94.2, co2PerShipment: 2450 },
-        { mode: "rail", shipments: 58, revenue: 412000, avgCost: 2400, onTime: 87.5, co2PerShipment: 620 },
-        { mode: "ocean", shipments: 32, revenue: 298000, avgCost: 3800, onTime: 82.1, co2PerShipment: 180 },
-        { mode: "intermodal", shipments: 15, revenue: 150000, avgCost: 3200, onTime: 89.3, co2PerShipment: 940 },
+        { mode: "truck", shipments: 0, revenue: 0, avgCost: 0, onTime: 0, co2PerShipment: 0 },
+        { mode: "rail", shipments: 0, revenue: 0, avgCost: 0, onTime: 0, co2PerShipment: 0 },
+        { mode: "ocean", shipments: 0, revenue: 0, avgCost: 0, onTime: 0, co2PerShipment: 0 },
+        { mode: "intermodal", shipments: 0, revenue: 0, avgCost: 0, onTime: 0, co2PerShipment: 0 },
       ];
 
       try {
@@ -1273,22 +1273,8 @@ export const multiModalRouter = router({
       return {
         kpis,
         modeBreakdown,
-        monthlyTrend: Array.from({ length: 6 }, (_, i) => ({
-          month: new Date(2026, 9 - i, 1).toISOString().split("T")[0],
-          truck: 120 + i * 4,
-          rail: 48 + i * 2,
-          ocean: 26 + i * 1,
-          intermodal: 10 + i * 1,
-          totalCost: 420000 + i * 25000,
-          onTimeRate: 89 + i * 0.5,
-        })).reverse(),
-        portPerformance: PORTS.slice(0, 5).map((p, i) => ({
-          port: p,
-          throughput: 800 + i * 150,
-          avgDwell: 36 + i * 4,
-          turnTime: 55 + i * 8,
-          onTime: 85 + i * 2,
-        })),
+        monthlyTrend: [],
+        portPerformance: [],
       };
     }),
 });

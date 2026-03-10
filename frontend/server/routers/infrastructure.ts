@@ -66,21 +66,14 @@ const backupRouter = router({
 
 // ── Uptime & SLA Sub-Router (Task 2.2.2) ──
 const uptimeRouter = router({
-  getDashboard: protectedProcedure.query(() => {
-    const now = Date.now();
-    const services = [
-      { name: "API Server", status: "UP", uptime30d: 99.94, latencyP99: 142, lastIncident: new Date(now - 14 * 86400000).toISOString() },
-      { name: "WebSocket", status: "UP", uptime30d: 99.87, latencyP99: 23, lastIncident: new Date(now - 7 * 86400000).toISOString() },
-      { name: "Load Board", status: "UP", uptime30d: 99.96, latencyP99: 210, lastIncident: new Date(now - 30 * 86400000).toISOString() },
-      { name: "Payment Processing", status: "UP", uptime30d: 99.99, latencyP99: 385, lastIncident: new Date(now - 45 * 86400000).toISOString() },
-      { name: "Database (Primary)", status: "UP", uptime30d: 99.97, latencyP99: 12, lastIncident: new Date(now - 21 * 86400000).toISOString() },
-      { name: "Redis Cache", status: "UP", uptime30d: 99.99, latencyP99: 2, lastIncident: new Date(now - 60 * 86400000).toISOString() },
-      { name: "Document Generation", status: "UP", uptime30d: 99.82, latencyP99: 4200, lastIncident: new Date(now - 3 * 86400000).toISOString() },
-      { name: "FMCSA Integration", status: "DEGRADED", uptime30d: 98.5, latencyP99: 1850, lastIncident: new Date(now - 86400000).toISOString() },
-    ];
-    const overallUptime = services.reduce((s, svc) => s + svc.uptime30d, 0) / services.length;
-    return { services, overallUptime: Math.round(overallUptime * 100) / 100, slaTarget: 99.5, slaMet: overallUptime >= 99.5, period: "30 days", asOf: new Date().toISOString() };
-  }),
+  getDashboard: protectedProcedure.query(() => ({
+    services: [],
+    metrics: { uptime: 0, avgLatency: 0 },
+    slaTarget: 99.5,
+    slaMet: false,
+    period: "30 days",
+    asOf: new Date().toISOString(),
+  })),
 
   getUptimeTrend: protectedProcedure
     .input(z.object({ days: z.number().default(30) }))
@@ -94,14 +87,10 @@ const uptimeRouter = router({
 
   getIncidents: protectedProcedure
     .input(z.object({ limit: z.number().default(30) }))
-    .query(({ input }) => {
-      const incidents = [
-        { id: "INC-001", service: "FMCSA Integration", type: "degraded", startTime: new Date(Date.now() - 86400000).toISOString(), endTime: new Date(Date.now() - 82800000).toISOString(), duration: "1h 0m", cause: "FMCSA API rate limiting", impact: "Carrier lookups delayed by ~2s" },
-        { id: "INC-002", service: "Document Generation", type: "outage", startTime: new Date(Date.now() - 3 * 86400000).toISOString(), endTime: new Date(Date.now() - 3 * 86400000 + 1800000).toISOString(), duration: "30m", cause: "PDF rendering service OOM", impact: "BOL generation unavailable" },
-        { id: "INC-003", service: "WebSocket", type: "degraded", startTime: new Date(Date.now() - 7 * 86400000).toISOString(), endTime: new Date(Date.now() - 7 * 86400000 + 2700000).toISOString(), duration: "45m", cause: "Connection pool exhaustion during peak", impact: "Real-time updates delayed for ~200 users" },
-      ];
-      return incidents.slice(0, input.limit);
-    }),
+    .query(() => ({
+      incidents: [],
+      total: 0,
+    })),
 
   getSLACredits: protectedProcedure
     .input(z.object({ month: z.string().optional() }))
@@ -114,23 +103,14 @@ const uptimeRouter = router({
 // ── Weather/Disaster Sub-Router (Tasks 2.4.1 + 2.4.2) ──
 const disasterRouter = router({
   getActiveThreats: protectedProcedure.query(() => ({
-    updatedAt: new Date().toISOString(),
-    threats: [
-      { id: "WT-1", type: "hurricane", name: "Hurricane Elaine", severity: "WARNING", location: { lat: 28.5, lng: -95.2 }, radius: 150, affectedStates: ["TX", "LA"], eta: "36 hours", affectedLoads: 3, windSpeed: "85 mph", category: 1 },
-      { id: "WT-2", type: "wildfire", name: "Davis Mountains Fire", severity: "WATCH", location: { lat: 30.6, lng: -104.1 }, radius: 25, affectedStates: ["TX"], eta: null, affectedLoads: 0, acresBurned: 12000, containment: 35 },
-      { id: "WT-3", type: "flood", name: "Red River Flooding", severity: "ADVISORY", location: { lat: 33.7, lng: -95.5 }, radius: 40, affectedStates: ["TX", "OK"], eta: null, affectedLoads: 1, floodStage: "Major" },
-    ],
-    source: "National Weather Service API",
+    threats: [],
+    lastChecked: new Date().toISOString(),
   })),
 
   getAffectedLoads: protectedProcedure
     .input(z.object({ threatId: z.string().optional() }))
-    .query(({ input }) => ({
-      loads: [
-        { loadId: "LD-9421", origin: "Houston, TX", destination: "Lake Charles, LA", hazmatClass: "3", status: "in_transit", threatType: "hurricane", etaImpact: "+4h", driverName: "J. Rodriguez", recommendedAction: "REROUTE" },
-        { loadId: "LD-9433", origin: "Beaumont, TX", destination: "Baton Rouge, LA", hazmatClass: "3", status: "at_pickup", threatType: "hurricane", etaImpact: "N/A", driverName: "M. Chen", recommendedAction: "HOLD" },
-        { loadId: "LD-9445", origin: "Dallas, TX", destination: "Tulsa, OK", hazmatClass: "8", status: "in_transit", threatType: "flood", etaImpact: "+2h", driverName: "R. Patel", recommendedAction: "REROUTE" },
-      ],
+    .query(() => ({
+      loads: [],
     })),
 
   suggestReroute: protectedProcedure

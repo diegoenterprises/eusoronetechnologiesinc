@@ -19,17 +19,27 @@ export default function CurrentJob() {
     );
   }
 
-  const job = jobQuery.data || {
-    id: "JOB-45901",
-    loadNumber: "45901",
-    status: "in_transit",
-    progress: 65,
-    pickup: { location: "Houston Ship Channel Terminal", address: "123 Terminal Road, Houston, TX", scheduledTime: "2026-01-25 08:00", completed: true },
-    delivery: { location: "Dallas Distribution Center", address: "456 Industrial Blvd, Dallas, TX", scheduledTime: "2026-01-25 16:00", eta: "15:30" },
-    cargo: { description: "Gasoline", unNumber: "UN1203", hazClass: "Class 3", weight: "54,000 lbs" },
-    pay: 367.50,
-    miles: 239,
-  };
+  const job = jobQuery.data;
+
+  if (!job) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Current Job</h1>
+          <p className="text-slate-400">Your active assignment</p>
+        </div>
+        <Card className="bg-slate-800/50 border-slate-700 p-12 text-center">
+          <Truck className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">No active job</h2>
+          <p className="text-slate-400 mb-6">You don't have an active job assignment right now.</p>
+          <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => window.location.href = '/load-board'}>
+            <Package className="w-4 h-4 mr-2" />
+            Browse Load Board
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

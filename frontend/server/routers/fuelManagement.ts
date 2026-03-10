@@ -9,9 +9,8 @@ import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { fuelTransactions, tripStateMiles } from "../../drizzle/schema";
+import { fuelTransactions, tripStateMiles, hzFuelPrices } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
-// TODO: import { hzFuelPrices } for real-time fuel price queries once data pipeline is live
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -194,30 +193,66 @@ export const fuelManagementRouter = router({
       region: z.string().optional(),
       fuelType: z.enum(["diesel", "gasoline", "def"]).default("diesel"),
     }).optional())
-    .query(async () => {
-      // Real-world pricing would integrate EIA API; return structured sample data
-      const regions = [
-        { region: "East Coast", price: 3.89, change: -0.03, low: 3.62, high: 4.15 },
-        { region: "Midwest", price: 3.72, change: 0.02, low: 3.45, high: 3.98 },
-        { region: "Gulf Coast", price: 3.55, change: -0.05, low: 3.32, high: 3.78 },
-        { region: "Rocky Mountain", price: 3.95, change: 0.01, low: 3.70, high: 4.22 },
-        { region: "West Coast", price: 4.35, change: 0.04, low: 4.05, high: 4.65 },
-        { region: "California", price: 4.89, change: -0.02, low: 4.55, high: 5.25 },
-        { region: "New England", price: 4.02, change: 0.03, low: 3.78, high: 4.28 },
-      ];
+    .query(async ({ input }) => {
+      const fuelType = input?.fuelType ?? "diesel";
+      const regionFilter = input?.region;
 
-      const nationalAvg = regions.reduce((sum, r) => sum + r.price, 0) / regions.length;
+      try {
+        const db = await getDb();
+        if (!db) return { regions: [], tips: [], lastUpdated: null, nationalAverage: null, optimizationSuggestions: [] };
 
-      return {
-        nationalAverage: Math.round(nationalAvg * 100) / 100,
-        regions,
-        lastUpdated: new Date().toISOString(),
-        optimizationSuggestions: [
-          { tip: "Gulf Coast prices are $0.34 below national average", savingsPotential: 0.34 },
-          { tip: "Bulk purchasing contracts available for 3%+ discount", savingsPotential: 0.12 },
-          { tip: "Consider route adjustment through Midwest for lower fuel costs", savingsPotential: 0.17 },
-        ],
-      };
+        // Get the most recent fuel prices grouped by PADD region
+        const priceColumn = fuelType === "gasoline"
+          ? hzFuelPrices.gasolineRetail
+          : hzFuelPrices.dieselRetail;
+
+        const conditions = [sql`${priceColumn} IS NOT NULL`];
+        if (regionFilter) {
+          conditions.push(eq(hzFuelPrices.paddRegion, regionFilter));
+        }
+
+        const rows = await db
+          .select({
+            region: hzFuelPrices.paddRegion,
+            price: sql<string>`AVG(${priceColumn})`.as("price"),
+            change: sql<string>`AVG(${hzFuelPrices.dieselChange1w})`.as("change"),
+            low: sql<string>`MIN(${priceColumn})`.as("low"),
+            high: sql<string>`MAX(${priceColumn})`.as("high"),
+            lastReport: sql<string>`MAX(${hzFuelPrices.reportDate})`.as("lastReport"),
+          })
+          .from(hzFuelPrices)
+          .where(and(...conditions))
+          .groupBy(hzFuelPrices.paddRegion)
+          .orderBy(hzFuelPrices.paddRegion);
+
+        const regions = rows
+          .filter((r: { region: string | null }) => r.region != null)
+          .map((r: { region: string | null; price: string; change: string; low: string; high: string }) => ({
+            region: String(r.region),
+            price: Math.round(Number(r.price) * 100) / 100,
+            change: Math.round(Number(r.change || 0) * 100) / 100,
+            low: Math.round(Number(r.low) * 100) / 100,
+            high: Math.round(Number(r.high) * 100) / 100,
+          }));
+
+        const nationalAvg = regions.length > 0
+          ? Math.round(regions.reduce((sum: number, r: { price: number }) => sum + r.price, 0) / regions.length * 100) / 100
+          : null;
+
+        const lastUpdated = rows.length > 0
+          ? String(rows.reduce((latest: string, r: { lastReport: string }) => (r.lastReport > latest ? r.lastReport : latest), rows[0].lastReport))
+          : null;
+
+        return {
+          nationalAverage: nationalAvg,
+          regions,
+          lastUpdated,
+          optimizationSuggestions: [],
+        };
+      } catch (error) {
+        logger.error("[FuelManagement] getFuelPrices error:", error);
+        return { regions: [], tips: [], lastUpdated: null, nationalAverage: null, optimizationSuggestions: [] };
+      }
     }),
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -1417,33 +1452,15 @@ export const fuelManagementRouter = router({
         }
       }
 
-      // Fill with deterministic sample data if no DB results
+      // No fake fallback — return empty when no DB results
       if (trends.length === 0) {
-        // TODO: Query hzFuelPrices for historical state-level diesel prices
-        const trendRng = seededRandom(hashSeed(ctx.user?.companyId || 0, "fuelTrend", new Date().getFullYear()));
-        for (let i = 11; i >= 0; i--) {
-          const d = new Date();
-          d.setMonth(d.getMonth() - i);
-          const month = d.toISOString().slice(0, 7);
-          const gallons = Math.round(3000 + trendRng() * 2000);
-          const price = 3.50 + Math.sin(i / 4) * 0.30 + trendRng() * 0.10;
-          const cost = Math.round(gallons * price * 100) / 100;
-          const miles = gallons * 6.5;
-          trends.push({
-            month,
-            avgPrice: Math.round(price * 1000) / 1000,
-            totalGallons: gallons,
-            totalCost: cost,
-            avgMpg: Math.round(miles / gallons * 10) / 10,
-            costPerMile: Math.round(cost / miles * 100) / 100,
-          });
-        }
+        return { trends: [], summary: null };
       }
 
       return {
         trends,
         summary: {
-          avgPriceOverPeriod: trends.length > 0 ? Math.round(trends.reduce((s, t) => s + t.avgPrice, 0) / trends.length * 1000) / 1000 : 0,
+          avgPriceOverPeriod: Math.round(trends.reduce((s, t) => s + t.avgPrice, 0) / trends.length * 1000) / 1000,
           priceDirection: trends.length >= 2 && trends[trends.length - 1].avgPrice > trends[0].avgPrice ? "rising" : "falling",
           efficiencyDirection: "stable" as const,
         },

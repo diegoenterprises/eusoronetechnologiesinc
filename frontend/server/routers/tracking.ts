@@ -605,19 +605,6 @@ export const trackingRouter = router({
           }
         }
 
-        // If no real GPS data found, provide role-appropriate seed locations
-        // so the map is never empty/dead
-        if (locations.length === 0) {
-          const seedLocations = getSeedMapLocations(userRole);
-          return {
-            locations: seedLocations,
-            lastUpdated: new Date().toISOString(),
-            role: userRole,
-            totalCount: seedLocations.length,
-            isDemo: true,
-          };
-        }
-
         return {
           locations,
           lastUpdated: new Date().toISOString(),
@@ -626,14 +613,11 @@ export const trackingRouter = router({
         };
       } catch (error) {
         logger.error('[Tracking] getRoleMapLocations error:', error);
-        // Return seed data on error so map is never dead
-        const seedLocations = getSeedMapLocations(userRole);
         return {
-          locations: seedLocations,
+          locations: [],
           lastUpdated: new Date().toISOString(),
           role: userRole,
-          totalCount: seedLocations.length,
-          isDemo: true,
+          totalCount: 0,
         };
       }
     }),
@@ -694,46 +678,3 @@ export const trackingRouter = router({
     }),
 });
 
-/**
- * Seed map locations by role — provides realistic demo data so the Live Map
- * is never empty. These represent typical positions for each role's view.
- */
-function getSeedMapLocations(role: string) {
-  const now = new Date().toISOString();
-  const base: Array<{
-    id: string; lat: number; lng: number; title: string;
-    type: 'truck' | 'job' | 'terminal' | 'warehouse' | 'driver';
-    status: 'active' | 'pending' | 'completed' | 'idle';
-    details?: string; vehicleId?: string; loadNumber?: string;
-    speed?: number; heading?: number; updatedAt?: string;
-  }> = [
-    { id: 'demo-truck-1', lat: 32.78, lng: -96.80, title: 'TRK-2201 — Dallas, TX', type: 'truck', status: 'active', details: 'I-35 South → Houston', speed: 62, heading: 180, updatedAt: now, loadNumber: 'LOAD-44210' },
-    { id: 'demo-truck-2', lat: 29.76, lng: -95.37, title: 'TRK-1847 — Houston, TX', type: 'truck', status: 'active', details: 'US-59 North → Dallas', speed: 58, heading: 0, updatedAt: now, loadNumber: 'LOAD-44215' },
-    { id: 'demo-truck-3', lat: 30.27, lng: -97.74, title: 'TRK-3392 — Austin, TX', type: 'truck', status: 'idle', details: 'Stopped — Rest break', speed: 0, heading: 90, updatedAt: now },
-    { id: 'demo-truck-4', lat: 29.42, lng: -98.49, title: 'TRK-4501 — San Antonio, TX', type: 'truck', status: 'active', details: 'I-10 West → El Paso', speed: 71, heading: 270, updatedAt: now, loadNumber: 'LOAD-44220' },
-    { id: 'demo-truck-5', lat: 33.45, lng: -112.07, title: 'TRK-5102 — Phoenix, AZ', type: 'truck', status: 'active', details: 'I-10 East → Tucson', speed: 65, heading: 120, updatedAt: now, loadNumber: 'LOAD-44225' },
-    { id: 'demo-job-1', lat: 34.05, lng: -118.24, title: 'Load #44230 — Los Angeles, CA', type: 'job', status: 'pending', details: 'Awaiting pickup — Dry Van', updatedAt: now, loadNumber: 'LOAD-44230' },
-    { id: 'demo-job-2', lat: 41.88, lng: -87.63, title: 'Load #44235 — Chicago, IL', type: 'job', status: 'pending', details: 'Scheduled — Flatbed', updatedAt: now, loadNumber: 'LOAD-44235' },
-    { id: 'demo-terminal-1', lat: 29.95, lng: -95.05, title: 'Baytown Terminal', type: 'terminal', status: 'active', details: '8 docks active · 3 available', updatedAt: now },
-    { id: 'demo-terminal-2', lat: 32.35, lng: -95.30, title: 'Tyler Distribution Hub', type: 'terminal', status: 'active', details: '12 docks active · 5 available', updatedAt: now },
-    { id: 'demo-truck-6', lat: 35.47, lng: -97.52, title: 'TRK-6780 — Oklahoma City, OK', type: 'truck', status: 'active', details: 'I-35 South → Dallas', speed: 68, heading: 180, updatedAt: now, loadNumber: 'LOAD-44240' },
-    { id: 'demo-truck-7', lat: 36.15, lng: -95.99, title: 'TRK-7890 — Tulsa, OK', type: 'truck', status: 'idle', details: 'Loading at warehouse', speed: 0, heading: 0, updatedAt: now },
-    { id: 'demo-job-3', lat: 39.10, lng: -94.58, title: 'Load #44250 — Kansas City, MO', type: 'job', status: 'pending', details: 'Available — Tanker Hazmat', updatedAt: now, loadNumber: 'LOAD-44250' },
-  ];
-
-  switch (role) {
-    case 'SHIPPER':
-      return base.filter(l => l.type === 'truck' || l.type === 'job');
-    case 'CATALYST':
-    case 'DISPATCH':
-      return base.filter(l => l.type === 'truck' || l.type === 'terminal');
-    case 'BROKER':
-      return base;
-    case 'DRIVER':
-      return base.slice(0, 3).map(l => ({ ...l, type: 'job' as const }));
-    case 'TERMINAL_MANAGER':
-      return base.filter(l => l.type === 'terminal' || l.type === 'truck');
-    default:
-      return base;
-  }
-}

@@ -102,17 +102,27 @@ export default function TerminalSCADA() {
     },
   });
 
-  const overview = overviewData || {
-    terminalName: "Houston Distribution Terminal",
-    status: "operational",
-    racks: { total: 12, available: 6, loading: 4, maintenance: 1, offline: 1 },
-    throughput: { today: 450000, target: 500000, percentOfTarget: 90 },
-    inventory: {
-      unleaded: { level: 805000, capacity: 1000000, percent: 80.5 },
-      premium: { level: 175000, capacity: 250000, percent: 70 },
-      diesel: { level: 620000, capacity: 750000, percent: 82.7 },
-    },
-  };
+  if (!overviewData) {
+    return (
+      <div className="p-4 md:p-6 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Terminal SCADA</h1>
+          <p className="text-slate-400 mt-1">Real-time terminal operations monitoring</p>
+        </div>
+        <Card className="bg-slate-800/50 border-slate-700 p-12 text-center">
+          <Gauge className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">No terminal data available</h2>
+          <p className="text-slate-400 mb-6">Terminal overview data is not available. This may be loading or the terminal may not be configured.</p>
+          <Button variant="outline" className="border-slate-600" onClick={() => refetchOverview()}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Retry
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  const overview = overviewData;
 
   const racks = (racksData?.racks || []) as Rack[];
   const tanks = ((tanksData?.tanks || []) as any[]).map((t: any) => ({

@@ -1416,8 +1416,8 @@ export const reportingEngineRouter = router({
               value: safeNum(r.total) > 0 ? pct(safeNum(r.delivered), safeNum(r.total)) : 0,
             }));
           } else {
-            // TODO: fallback — no loads in range; deterministic placeholder
-            dataPoints = [{ period: start.toISOString().split("T")[0], value: 85 }];
+            // No loads in date range — return zero indicating no data
+            dataPoints = [{ period: start.toISOString().split("T")[0], value: 0 }];
           }
         } else if (input.metric === "empty_miles_pct") {
           // Empty miles %: approximate from loads with zero distance vs total
@@ -1437,8 +1437,8 @@ export const reportingEngineRouter = router({
               return { period: String(r.period), value: total > 0 ? pct(total - withDist, total) : 0 };
             });
           } else {
-            // TODO: fallback — no loads in range
-            dataPoints = [{ period: start.toISOString().split("T")[0], value: 12 }];
+            // No loads in date range — return zero indicating no data
+            dataPoints = [{ period: start.toISOString().split("T")[0], value: 0 }];
           }
         } else if (input.metric === "fleet_utilization") {
           // Fleet utilization: active vehicles with assigned loads / total vehicles per period
@@ -1457,8 +1457,8 @@ export const reportingEngineRouter = router({
               value: Math.min(100, pct(safeNum(r.activeVehicles), totalVehicles)),
             }));
           } else {
-            // TODO: fallback — no loads in range
-            dataPoints = [{ period: start.toISOString().split("T")[0], value: 78 }];
+            // No loads in date range — return zero indicating no data
+            dataPoints = [{ period: start.toISOString().split("T")[0], value: 0 }];
           }
         } else if (input.metric === "dwell_time_min") {
           // Dwell time: difference between actual delivery and pickup dates
@@ -1481,21 +1481,12 @@ export const reportingEngineRouter = router({
               value: Math.max(0, safeNum(r.avgDwell)),
             }));
           } else {
-            // TODO: fallback — no delivery data in range
-            dataPoints = [{ period: start.toISOString().split("T")[0], value: 140 }];
+            // No delivery data in date range — return zero indicating no data
+            dataPoints = [{ period: start.toISOString().split("T")[0], value: 0 }];
           }
         } else {
-          // TODO: fallback for unrecognized metrics — deterministic baseline
-          const baseValue = 50;
-          const days = Math.ceil((end.getTime() - start.getTime()) / 86400000);
-          for (let i = 0; i < Math.min(days, 90); i++) {
-            const d = new Date(start);
-            d.setDate(d.getDate() + i);
-            dataPoints.push({
-              period: d.toISOString().split("T")[0],
-              value: baseValue,  // TODO: implement DB query for this metric
-            });
-          }
+          // Unrecognized metric — no DB query implemented; return empty with zero value
+          dataPoints = [{ period: start.toISOString().split("T")[0], value: 0 }];
         }
 
         const values = dataPoints.map((d) => d.value);

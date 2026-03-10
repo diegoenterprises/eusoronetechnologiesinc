@@ -54,6 +54,13 @@ function resolveDriverIdString(ctx: any, inputDriverId?: string): string {
   return inputDriverId || String((ctx.user as any)?.id || "1");
 }
 
+// ── Public crisis resources (verified real hotlines) ──
+const CRISIS_RESOURCES = [
+  { name: "988 Suicide & Crisis Lifeline", phone: "988", available: "24/7" },
+  { name: "Crisis Text Line", phone: "Text HOME to 741741", available: "24/7" },
+  { name: "SAMHSA National Helpline", phone: "1-800-662-4357", available: "24/7" },
+] as const;
+
 // ── Mood / sleep / stress enums ──
 const moodSchema = z.enum(["excellent", "good", "neutral", "poor", "very_poor"]);
 const sleepQualitySchema = z.enum(["excellent", "good", "fair", "poor", "very_poor"]);
@@ -510,30 +517,41 @@ export const driverWellnessRouter = router({
   // MENTAL HEALTH RESOURCES — static content (no DB needed)
   // ═══════════════════════════════════════════════════════════════
   getMentalHealthResources: protectedProcedure
-    .query(() => {
+    .query(async ({ ctx }) => {
+      // Query last wellness check-in from audit logs for this driver
+      let lastCheckIn: string | null = null;
+      try {
+        const db = await getDb();
+        if (db) {
+          const userId = (ctx.user as any)?.id ? Number((ctx.user as any).id) : null;
+          if (userId) {
+            const [recent] = await db
+              .select({ createdAt: auditLogs.createdAt })
+              .from(auditLogs)
+              .where(
+                and(
+                  eq(auditLogs.action, "wellness_checkin"),
+                  eq(auditLogs.entityType, "driver_wellness"),
+                  eq(auditLogs.entityId, userId),
+                ),
+              )
+              .orderBy(desc(auditLogs.createdAt))
+              .limit(1);
+            lastCheckIn = recent?.createdAt?.toISOString() ?? null;
+          }
+        }
+      } catch {
+        // Non-critical — fall through with null
+      }
+
       return {
-        eapContact: {
-          name: "Driver Assistance Program (DAP)",
-          phone: "1-800-555-0199",
-          available: "24/7",
-          description: "Confidential counseling for drivers and families covering stress, anxiety, depression, substance abuse, and relationship issues.",
-        },
-        crisisLines: [
-          { name: "National Suicide Prevention Lifeline", phone: "988", available: "24/7" },
-          { name: "Crisis Text Line", phone: "Text HOME to 741741", available: "24/7" },
-          { name: "SAMHSA National Helpline", phone: "1-800-662-4357", available: "24/7" },
-          { name: "Trucker Path Peer Support", phone: "1-800-555-0177", available: "Mon-Fri 8am-8pm EST" },
-        ],
-        resources: [
-          { id: "mh-1", title: "Managing Stress on the Road", type: "article", url: "/resources/stress-management", readTime: "8 min" },
-          { id: "mh-2", title: "Sleep Hygiene for Truck Drivers", type: "video", url: "/resources/sleep-hygiene", readTime: "12 min" },
-          { id: "mh-3", title: "Staying Connected with Family", type: "article", url: "/resources/family-connection", readTime: "6 min" },
-          { id: "mh-4", title: "Mindfulness Exercises for the Cab", type: "audio", url: "/resources/mindfulness", readTime: "15 min" },
-          { id: "mh-5", title: "Recognizing Signs of Burnout", type: "article", url: "/resources/burnout", readTime: "10 min" },
-          { id: "mh-6", title: "Healthy Eating at Truck Stops", type: "guide", url: "/resources/nutrition", readTime: "7 min" },
-        ],
+        // No EAP provider configured in company profile — return null until company EAP data is available
+        eapContact: null,
+        crisisLines: [...CRISIS_RESOURCES],
+        // Articles/videos should come from a CMS or resource table — return empty until populated
+        resources: [],
         selfAssessmentAvailable: true,
-        lastCheckIn: new Date(Date.now() - 86400000 * 3).toISOString(),
+        lastCheckIn,
       };
     }),
 

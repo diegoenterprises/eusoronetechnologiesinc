@@ -13,9 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import DatePicker from "@/components/DatePicker";
+import { Badge } from "@/components/ui/badge";
 import {
   Package, MapPin, Truck, DollarSign, Calendar, ArrowRight,
-  Send, Loader2
+  Send, Loader2, Globe, UserCheck, Briefcase, Building2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
@@ -35,7 +36,15 @@ export default function CreateLoad() {
     rate: "",
     commodity: "",
     notes: "",
+    assignmentType: "open_market" as "open_market" | "direct_catalyst" | "broker" | "own_fleet",
   });
+
+  const ASSIGNMENT_OPTIONS = [
+    { value: "open_market" as const, label: "Open Market", desc: "Post to all catalysts for bidding", icon: Globe },
+    { value: "direct_catalyst" as const, label: "Direct Catalyst", desc: "Assign to a specific catalyst", icon: UserCheck },
+    { value: "broker" as const, label: "Via Broker", desc: "Let a broker coordinate", icon: Briefcase },
+    { value: "own_fleet" as const, label: "Own Fleet", desc: "Use your own trucks", icon: Building2 },
+  ];
 
   const createMutation = (trpc as any).loads.create.useMutation({
     onSuccess: (data: any) => {
@@ -59,6 +68,7 @@ export default function CreateLoad() {
       rate: formData.rate || undefined,
       equipment: formData.equipmentType || undefined,
       productName: formData.commodity || undefined,
+      assignmentType: formData.assignmentType,
     } as any);
   };
 
@@ -187,6 +197,45 @@ export default function CreateLoad() {
             <div className="space-y-2">
               <Label className="text-slate-400">Commodity</Label>
               <Input value={formData.commodity} onChange={(e: any) => setFormData({ ...formData, commodity: e.target.value })} placeholder="What's being shipped?" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Posting Type */}
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-white text-lg flex items-center gap-2">
+              <div className="p-2 rounded-full bg-purple-500/20">
+                <Send className="w-5 h-5 text-purple-400" />
+              </div>
+              Posting Type *
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
+              {ASSIGNMENT_OPTIONS.map(opt => {
+                const Icon = opt.icon;
+                const isSelected = formData.assignmentType === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, assignmentType: opt.value })}
+                    className={cn(
+                      "p-4 rounded-xl border text-left transition-all",
+                      isSelected
+                        ? "border-[#1473FF] bg-[#1473FF]/10 ring-1 ring-[#1473FF]/30"
+                        : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon className={cn("w-4 h-4", isSelected ? "text-[#1473FF]" : "text-slate-400")} />
+                      <span className={cn("text-sm font-semibold", isSelected ? "text-white" : "text-slate-300")}>{opt.label}</span>
+                    </div>
+                    <p className="text-xs text-slate-500">{opt.desc}</p>
+                  </button>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

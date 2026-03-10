@@ -219,58 +219,24 @@ export const marketIntelligenceRouter = router({
     }),
 
   // ── Seasonal Disruption Calendar ───────────────────────────
+  // Reference data should be stored in DB. No suitable config table exists,
+  // so return empty until a seasonal_calendar table/config is created.
   getSeasonalCalendar: protectedProcedure.query(() => {
     return {
-      year: 2026,
-      events: [
-        { month: "February", event: "Lunar New Year Shutdown", impact: "MODERATE", sector: "Ocean/Import", description: "Asia manufacturing shutdown 2-3 weeks", action: "Pre-ship before Feb 10" },
-        { month: "March", event: "USMCA 2026 Review", impact: "MODERATE", sector: "Cross-border", description: "Trade review may disrupt US-MX-CA flows", action: "Monitor trade policy daily" },
-        { month: "March", event: "Produce Season Start", impact: "MODERATE", sector: "Reefer", description: "CA/AZ/FL reefer demand surge", action: "Lock reefer capacity 4 weeks early" },
-        { month: "May", event: "CVSA Roadcheck Week", impact: "HIGH", sector: "All TL", description: "72hr DOT inspection blitz — capacity drops 8-12%", action: "Avoid scheduling during Roadcheck week" },
-        { month: "June", event: "Hurricane Season Start", impact: "HIGH", sector: "Gulf/Southeast", description: "Capacity disruptions possible through Nov", action: "Build contingency routes" },
-        { month: "July", event: "EPA 2027 Pre-Buy Wave", impact: "HIGH", sector: "All TL", description: "Carriers front-loading 2026 equipment orders", action: "Prioritize stable carriers" },
-        { month: "July", event: "Back-to-School Surge", impact: "MODERATE", sector: "Retail/Dry Van", description: "Retail inventory buildup Jul-Aug", action: "Secure capacity 3-4 weeks ahead" },
-        { month: "September", event: "Peak Shipping Season", impact: "HIGH", sector: "All modes", description: "Holiday pre-positioning — peak demand", action: "Lock rates in Q2, diversify carriers" },
-        { month: "November", event: "Holiday Surge", impact: "HIGH", sector: "Parcel/LTL", description: "E-commerce peak + GRI increases (5.9% UPS/FedEx/DHL)", action: "Negotiate parcel discounts via 3PL" },
-        { month: "Q4", event: "Carrier Attrition Acceleration", impact: "HIGH", sector: "All TL", description: "High costs + 2027 regs pushing small carriers out", action: "Build strategic carrier relationships now" },
-      ],
+      year: new Date().getFullYear(),
+      events: [],
     };
   }),
 
-  // ── 2026 Industry Outlook Summary ──────────────────────────
+  // ── Industry Outlook Summary ───────────────────────────────
+  // Reference data should be stored in DB. No suitable config table exists,
+  // so return empty until a market_outlook table/config is created.
   get2026Outlook: protectedProcedure.query(() => {
     return {
-      title: "2026 Freight Market Intelligence Briefing",
-      sources: [
-        "C.H. Robinson 2026 Freight Market Outlook",
-        "WWEX Group 2026 State of the Industry Report",
-        "C.H. Robinson Edge — January 2026",
-        "Magaya/Adelante State of the Industry 2025",
-      ],
-      keyThemes: [
-        { theme: "Market Transition", detail: "Soft-to-balanced shift — spot rates rising slowly, low single-digit increases expected for 2026" },
-        { theme: "Cargo Theft Surge", detail: "U.S. cargo theft +29% YoY in Q3 2025 (645 incidents). Electronics, F&B, auto parts top targets. CA & TX hotspots." },
-        { theme: "Tariff Volatility", detail: "IEEPA tariffs under Supreme Court review. USMCA renegotiation. Mexico 5-50% tariffs on Asian imports." },
-        { theme: "EPA 2027 Emission Standards", detail: "New heavy-duty truck emission requirements. Pre-buy wave expected H2 2026. Accelerated carrier attrition." },
-        { theme: "Seasonal Disruption Intensity", detail: "DOT Roadcheck, produce season, hurricanes, holiday peaks — disruptions more volatile in oversupplied market" },
-        { theme: "Parcel GRI", detail: "UPS, FedEx, DHL all announced 5.9% general rate increases for 2026" },
-        { theme: "LTL Normalization", detail: "Yellow closure ripple continuing. Rates up 6-10%. Density-driven classification changes settling in." },
-        { theme: "Technology Imperative", detail: "Only 23% of forwarders 75%+ digitized. AI, predictive analytics, real-time visibility are baseline expectations." },
-        { theme: "Supply Chain Resilience", detail: "Resilience is 2026's competitive edge. Multi-modal, nearshoring, scenario planning, carrier diversification." },
-        { theme: "Driver Wellness", detail: "Fatigue-monitoring wearables, mental health, predictive scheduling — lower turnover, better safety performance" },
-        { theme: "RFID & Smart Labels", detail: "Mainstream adoption of RFID-embedded labels for near-real-time visibility without manual scans" },
-        { theme: "Agentic Supply Chain", detail: "AI-driven lean agents that give instant supply chain intelligence — the new competitive advantage" },
-      ],
-      actionItems: [
-        "Rationalize carrier base — fewer, stronger partnerships outperform fragmented networks",
-        "Blend procurement: core lanes via contracts, spot freight for opportunistic buying",
-        "Build modal flexibility — monitor truckload as bellwether for all modes",
-        "Map critical supply chain vulnerabilities and pre-negotiate contingencies",
-        "Invest in real-time visibility, predictive analytics, and AI-driven decision tools",
-        "Verify carrier fleet 2027 EPA compliance plans",
-        "Strengthen driver retention with wellness programs and predictive scheduling",
-        "Assess tariff exposure and preserve refund options via protective filings",
-      ],
+      title: "",
+      sources: [],
+      keyThemes: [],
+      actionItems: [],
     };
   }),
 });

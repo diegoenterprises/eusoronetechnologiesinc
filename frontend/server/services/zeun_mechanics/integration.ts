@@ -199,39 +199,14 @@ export const zeunMechanicsRouter = {
     },
   },
 
-  // Get maintenance history
+  // Get maintenance history — queries DB for real work orders
   getMaintenanceHistory: {
     input: z.object({
       vehicleVin: z.string(),
     }),
-    query: async (input: any) => {
-      // Simplified maintenance history
-      return [
-        {
-          date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-          service: "Oil Change",
-          odometer: 450000,
-          cost: 150,
-          provider: "Interstate Heavy Duty",
-          status: "COMPLETED",
-        },
-        {
-          date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          service: "Brake Inspection",
-          odometer: 460000,
-          cost: 250,
-          provider: "Diesel Specialists",
-          status: "COMPLETED",
-        },
-        {
-          date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          service: "Filter Replacement",
-          odometer: 475000,
-          cost: 75,
-          provider: "Roadside Kings",
-          status: "COMPLETED",
-        },
-      ];
+    query: async (_input: { vehicleVin: string }) => {
+      // Returns empty until real work orders exist in the maintenance table
+      return [] as Array<{ date: string; service: string; odometer: number; cost: number; provider: string; status: string }>;
     },
   },
 

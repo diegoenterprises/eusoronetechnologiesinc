@@ -58,21 +58,30 @@ export default function ShipmentPage() {
     distance: '0 miles',
   }));
 
-  // Add placeholder if no shipments
+  // Show empty state if no shipments
   if (shipments.length === 0) {
-    shipments.push({
-      id: "SH-DEMO",
-      origin: "Houston, TX",
-      destination: "Denver, CO",
-      status: "PENDING",
-      weight: "0 lbs",
-      rate: "$0",
-      eta: "TBD",
-      type: "standard",
-      catalyst: "No catalyst assigned",
-      progress: 0,
-      distance: "0 miles",
-    });
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Shipments</h1>
+            <p className="text-slate-400">Manage and track all shipments with real-time analytics</p>
+          </div>
+          {(userRole === "shipper" || userRole === "broker") && (
+            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold transition-all">
+              <Plus size={18} className="mr-2" />
+              Create Shipment
+            </Button>
+          )}
+        </div>
+        <Card className="bg-slate-800 border-slate-700 p-12 text-center">
+          <Truck size={48} className="mx-auto text-slate-500 mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">No active shipments</h2>
+          <p className="text-slate-400">When shipments are created, they will appear here with real-time tracking and analytics.</p>
+        </Card>
+      </div>
+    );
   }
 
   // Calculate analytics

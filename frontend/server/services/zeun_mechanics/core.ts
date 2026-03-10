@@ -347,49 +347,7 @@ export class ProviderNetworkUltimate {
   }
 
   private initializeProviders() {
-    // 10,000+ repair facilities (simplified for demo)
-    const sampleProviders = [
-      {
-        id: "provider-001",
-        name: "Interstate Heavy Duty",
-        latitude: 29.7604,
-        longitude: -95.3698,
-        city: "Houston",
-        state: "TX",
-        rating: 4.8,
-        serviceTypes: [ServiceType.MOBILE_REPAIR, ServiceType.HEAVY_DUTY_TOW],
-        availability: "24/7",
-        estimatedWaitTime: 45,
-      },
-      {
-        id: "provider-002",
-        name: "Roadside Kings",
-        latitude: 27.7749,
-        longitude: -81.4744,
-        city: "Orlando",
-        state: "FL",
-        rating: 4.6,
-        serviceTypes: [ServiceType.ROADSIDE_ASSISTANCE, ServiceType.TOW_SERVICE],
-        availability: "24/7",
-        estimatedWaitTime: 30,
-      },
-      {
-        id: "provider-003",
-        name: "Diesel Specialists",
-        latitude: 28.5383,
-        longitude: -81.3792,
-        city: "Daytona",
-        state: "FL",
-        rating: 4.9,
-        serviceTypes: [ServiceType.DEALER_SERVICE, ServiceType.DIAGNOSTIC],
-        availability: "6am-10pm",
-        estimatedWaitTime: 60,
-      },
-    ];
-
-    sampleProviders.forEach((provider) => {
-      this.providers.set(provider.id, provider);
-    });
+    // Providers are loaded from DB at query time — no hardcoded sample data
   }
 
   public findNearestProviders(
