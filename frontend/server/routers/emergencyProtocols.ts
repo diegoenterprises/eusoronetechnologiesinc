@@ -510,7 +510,8 @@ export const emergencyProtocolsRouter = router({
       fatalitiesReported: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const emergencyId = `EM-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      const ts = Date.now();
+      const emergencyId = `EM-${ts}-${ts.toString(36).slice(-6).toUpperCase()}`;
       const userId = (ctx.user as any)?.id;
 
       try {
@@ -722,7 +723,8 @@ export const emergencyProtocolsRouter = router({
       description: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const incidentId = `HZ-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      const ts = Date.now();
+      const incidentId = `HZ-${ts}-${ts.toString(36).slice(-4).toUpperCase()}`;
       const userId = (ctx.user as any)?.id;
       const protocol = HAZMAT_PROTOCOLS[input.hazmatClass];
 
@@ -1006,7 +1008,8 @@ export const emergencyProtocolsRouter = router({
       affectedDriverIds: z.array(z.number()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const broadcastId = `BC-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      const ts = Date.now();
+      const broadcastId = `BC-${ts}-${ts.toString(36).slice(-4).toUpperCase()}`;
       const userId = (ctx.user as any)?.id;
 
       logger.info(`[EmergencyProtocols] Emergency broadcast sent: ${broadcastId} by user ${userId}, severity: ${input.severity}, audience: ${input.audience}`);

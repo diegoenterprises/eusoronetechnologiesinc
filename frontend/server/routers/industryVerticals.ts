@@ -6,7 +6,10 @@
  */
 
 import { z } from "zod";
+import { sql, desc } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { loads, companies, inspections } from "../../drizzle/schema";
 import {
   getAllVerticals,
   getVertical,
@@ -16,6 +19,29 @@ import {
   getVerticalPricing,
   validateLoadForVertical,
 } from "../services/IndustryVerticals";
+import { logger } from "../_core/logger";
+
+// Map vertical IDs to corresponding cargoType enum values in the loads table
+const VERTICAL_CARGO_MAP: Record<string, string[]> = {
+  petroleum: ["petroleum"],
+  tanker: ["petroleum", "liquid", "water"],
+  chemical: ["chemicals", "hazmat"],
+  hazmat: ["hazmat", "chemicals"],
+  food: ["food_grade", "refrigerated"],
+  refrigerated: ["refrigerated", "food_grade"],
+  construction: ["oversized"],
+  heavy_haul: ["oversized"],
+  livestock: ["livestock"],
+  intermodal: ["intermodal"],
+  auto_transport: ["vehicles"],
+  automotive: ["vehicles"],
+  general_freight: ["general"],
+  flatbed: ["general", "oversized"],
+  ltl: ["general"],
+  bulk_dry: ["dry_bulk", "grain"],
+  pharma: ["refrigerated"],
+  environmental: ["hazmat", "chemicals"],
+};
 
 // ── Vertical IDs ─────────────────────────────────────────────────────────────
 const verticalIdSchema = z.enum([
@@ -633,16 +659,39 @@ export const industryVerticalsRouter = router({
   // ── 1. getAll — List all available industry verticals ──────────────────────
   getAll: protectedProcedure.query(async () => {
     const verticals = getAllVerticals();
-    return verticals.map(v => ({
-      id: v.id,
-      name: v.name,
-      icon: v.icon,
-      description: v.description,
-      equipmentCount: v.equipmentTypes.length,
-      cargoTypes: v.cargoTypes,
-      temperatureControlled: v.temperatureControlled,
-      hazmatApplicable: v.hazmatApplicable,
-    }));
+
+    // Try to pull real load counts by cargoType from DB
+    let loadCountsByCargoType: Record<string, number> = {};
+    try {
+      const db = await getDb();
+      if (db) {
+        const [rows] = await db.execute(
+          sql`SELECT cargoType, COUNT(*) as cnt FROM loads WHERE deletedAt IS NULL GROUP BY cargoType`
+        );
+        for (const row of (rows as unknown as any[])) {
+          loadCountsByCargoType[row.cargoType as string] = Number(row.cnt);
+        }
+      }
+    } catch (e) {
+      logger.warn("[IndustryVerticals] getAll DB query failed:", e);
+    }
+
+    return verticals.map(v => {
+      // Sum load counts for all cargo types relevant to this vertical
+      const cargoKeys = VERTICAL_CARGO_MAP[v.id] || [];
+      const activeLoads = cargoKeys.reduce((sum, key) => sum + (loadCountsByCargoType[key] || 0), 0);
+      return {
+        id: v.id,
+        name: v.name,
+        icon: v.icon,
+        description: v.description,
+        equipmentCount: v.equipmentTypes.length,
+        cargoTypes: v.cargoTypes,
+        temperatureControlled: v.temperatureControlled,
+        hazmatApplicable: v.hazmatApplicable,
+        activeLoads,
+      };
+    });
   }),
 
   // ── 2. getVerticalConfig — Full configuration for a specific vertical ─────
@@ -677,6 +726,60 @@ export const industryVerticalsRouter = router({
         }
       }
 
+      // Query real compliance stats from inspections + companies tables
+      let complianceStats: {
+        totalInspections: number;
+        passedInspections: number;
+        failedInspections: number;
+        oosViolations: number;
+        passRate: number;
+        companiesCompliant: number;
+        companiesTotal: number;
+      } | null = null;
+
+      try {
+        const db = await getDb();
+        if (db) {
+          // Inspection pass/fail rates
+          const [inspRows] = await db.execute(
+            sql`SELECT COUNT(*) as total,
+                       SUM(CASE WHEN status = 'passed' THEN 1 ELSE 0 END) as passed,
+                       SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+                       SUM(CASE WHEN oosViolation = 1 THEN 1 ELSE 0 END) as oos
+                FROM inspections`
+          );
+          const inspRow = (inspRows as unknown as any[])[0];
+          const total = Number(inspRow?.total ?? 0);
+          const passed = Number(inspRow?.passed ?? 0);
+          const failed = Number(inspRow?.failed ?? 0);
+          const oos = Number(inspRow?.oos ?? 0);
+
+          // Company compliance status
+          const [compRows] = await db.execute(
+            sql`SELECT COUNT(*) as total,
+                       SUM(CASE WHEN complianceStatus = 'compliant' THEN 1 ELSE 0 END) as compliant
+                FROM companies`
+          );
+          const compRow = (compRows as unknown as any[])[0];
+          const compTotal = Number(compRow?.total ?? 0);
+          const compCompliant = Number(compRow?.compliant ?? 0);
+
+          if (total > 0 || compTotal > 0) {
+            complianceStats = {
+              totalInspections: total,
+              passedInspections: passed,
+              failedInspections: failed,
+              oosViolations: oos,
+              passRate: total > 0 ? Math.round((passed / total) * 1000) / 10 : 0,
+              companiesCompliant: compCompliant,
+              companiesTotal: compTotal,
+            };
+          }
+        }
+      } catch (e) {
+        logger.warn(`[IndustryVerticals] Compliance DB query failed for ${input.verticalId}:`, e);
+      }
+
       return {
         verticalId: input.verticalId,
         verticalName: vertical?.name || input.verticalId,
@@ -684,6 +787,7 @@ export const industryVerticalsRouter = router({
         environmentalCompliance: envCompliance,
         requiredDocuments: vertical?.requiredDocuments || [],
         specialRequirements: vertical?.specialRequirements || [],
+        complianceStats,
       };
     }),
 
@@ -1040,10 +1144,53 @@ export const industryVerticalsRouter = router({
   getVerticalAnalytics: protectedProcedure
     .input(z.object({ verticalId: z.string() }))
     .query(async ({ input }) => {
+      const resolved = resolveVerticalId(input.verticalId);
+      const cargoTypes = VERTICAL_CARGO_MAP[input.verticalId] || VERTICAL_CARGO_MAP[resolved] || ["general"];
+
+      // Try to pull real aggregates from DB
+      try {
+        const db = await getDb();
+        if (db) {
+          const placeholders = cargoTypes.map(c => `'${c}'`).join(",");
+          const [rows] = await db.execute(sql.raw(
+            `SELECT COUNT(*) as totalLoads, COALESCE(SUM(rate), 0) as totalRevenue,
+                    COALESCE(AVG(rate), 0) as avgRate,
+                    SUM(CASE WHEN status = 'delivered' OR status = 'complete' OR status = 'paid' THEN 1 ELSE 0 END) as completedLoads,
+                    SUM(CASE WHEN status IN ('en_route_pickup','at_pickup','loading','loaded','in_transit','at_delivery','unloading') THEN 1 ELSE 0 END) as activeLoads
+             FROM loads WHERE cargoType IN (${placeholders}) AND deletedAt IS NULL`
+          ));
+          const row = (rows as unknown as any[])[0];
+          const totalLoads = Number(row?.totalLoads ?? 0);
+          const totalRevenue = Number(row?.totalRevenue ?? 0);
+          const avgRate = Number(row?.avgRate ?? 0);
+          const completedLoads = Number(row?.completedLoads ?? 0);
+          const activeLoads = Number(row?.activeLoads ?? 0);
+
+          if (totalLoads > 0) {
+            // Get reference KPIs for benchmarks
+            const staticData = VERTICAL_ANALYTICS[input.verticalId] || VERTICAL_ANALYTICS[resolved];
+            const benchmarkKpis = staticData?.kpis || [];
+            return {
+              vertical: staticData?.vertical || input.verticalId,
+              kpis: [
+                { metric: "Total Loads", value: totalLoads, unit: "loads", trend: 0, benchmark: benchmarkKpis[0]?.benchmark || 0, benchmarkLabel: "DB Aggregate" },
+                { metric: "Avg Revenue per Load", value: Math.round(avgRate * 100) / 100, unit: "$", trend: 0, benchmark: benchmarkKpis.find(k => k.metric.includes("Revenue"))?.benchmark || 3000, benchmarkLabel: "Industry Avg" },
+                { metric: "Active Loads", value: activeLoads, unit: "loads", trend: 0, benchmark: 0, benchmarkLabel: "Current" },
+                { metric: "Completed Loads", value: completedLoads, unit: "loads", trend: 0, benchmark: 0, benchmarkLabel: "Historical" },
+                { metric: "Total Revenue", value: Math.round(totalRevenue), unit: "$", trend: 0, benchmark: 0, benchmarkLabel: "Cumulative" },
+                ...(benchmarkKpis.filter(k => k.metric.includes("Compliance") || k.metric.includes("On-Time") || k.metric.includes("Score"))),
+              ],
+            };
+          }
+        }
+      } catch (e) {
+        logger.warn(`[IndustryVerticals] Analytics DB query failed for ${input.verticalId}:`, e);
+      }
+
+      // Fallback to static KPIs
       const data = VERTICAL_ANALYTICS[input.verticalId];
       if (data) return data;
 
-      const resolved = resolveVerticalId(input.verticalId);
       if (VERTICAL_ANALYTICS[resolved]) {
         return { ...VERTICAL_ANALYTICS[resolved], vertical: `${input.verticalId}` };
       }
