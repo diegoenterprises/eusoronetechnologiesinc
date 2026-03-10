@@ -20,9 +20,9 @@ import { randomBytes } from "crypto";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
-import { settlementBatches, settlementBatchItems, settlements, loads } from "../../drizzle/schema";
+import { settlementBatches, settlementBatchItems, settlements, loads, notifications } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { emitDispatchEvent } from "../_core/websocket";
+import { emitDispatchEvent, emitNotification } from "../_core/websocket";
 import { unsafeCast } from "../_core/types/unsafe";
 
 function generateBatchNumber(type: string): string {
@@ -194,6 +194,61 @@ export const settlementBatchingRouter = router({
         .set({ status: "approved", approvedBy: userId, approvedAt: new Date() })
         .where(eq(settlementBatches.id, input.batchId));
 
+      // ── Notifications: settlement batch approved ──
+      try {
+        // Fetch batch items to identify carrier/shipper from linked settlements
+        const batchItems = await db.select({ settlementId: settlementBatchItems.settlementId, loadId: settlementBatchItems.loadId, loadNumber: settlementBatchItems.loadNumber })
+          .from(settlementBatchItems).where(eq(settlementBatchItems.batchId, input.batchId));
+        const carrierIds = new Set<number>();
+        const shipperIds = new Set<number>();
+        for (const item of batchItems) {
+          if (item.settlementId) {
+            const [s] = await db.select({ carrierId: settlements.carrierId, shipperId: settlements.shipperId }).from(settlements).where(eq(settlements.id, item.settlementId)).limit(1);
+            if (s?.carrierId) carrierIds.add(s.carrierId);
+            if (s?.shipperId) shipperIds.add(s.shipperId);
+          }
+        }
+        const totalAmt = batch.totalAmount || "0.00";
+        const firstLoadNumber = batchItems[0]?.loadNumber || "N/A";
+
+        for (const carrierId of Array.from(carrierIds)) {
+          await db.insert(notifications).values({
+            userId: carrierId,
+            type: "payment_received",
+            title: "Settlement Batch Approved",
+            message: `Settlement #${batch.batchNumber} approved — $${totalAmt} will be deposited`,
+            data: { batchId: input.batchId, batchNumber: batch.batchNumber, amount: totalAmt },
+          });
+          emitNotification(carrierId.toString(), {
+            id: `notif_batch_${input.batchId}_carrier_${carrierId}`,
+            type: "payment_received",
+            title: "Settlement Batch Approved",
+            message: `Settlement #${batch.batchNumber} approved — $${totalAmt} will be deposited`,
+            priority: "high",
+            data: { batchId: input.batchId, batchNumber: batch.batchNumber },
+            timestamp: new Date().toISOString(),
+          });
+        }
+        for (const shipperId of Array.from(shipperIds)) {
+          await db.insert(notifications).values({
+            userId: shipperId,
+            type: "payment_received",
+            title: "Settlement Processed",
+            message: `Settlement #${batch.batchNumber} for load #${firstLoadNumber} has been processed`,
+            data: { batchId: input.batchId, batchNumber: batch.batchNumber, loadNumber: firstLoadNumber },
+          });
+          emitNotification(shipperId.toString(), {
+            id: `notif_batch_${input.batchId}_shipper_${shipperId}`,
+            type: "payment_received",
+            title: "Settlement Processed",
+            message: `Settlement #${batch.batchNumber} for load #${firstLoadNumber} has been processed`,
+            priority: "medium",
+            data: { batchId: input.batchId, batchNumber: batch.batchNumber },
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (_notifErr) { /* notification failure must not break primary operation */ }
+
       return { batchId: input.batchId, status: "approved", approvedAt: new Date().toISOString() };
     }),
 
@@ -264,6 +319,58 @@ export const settlementBatchingRouter = router({
           timestamp: new Date().toISOString(),
         });
       } catch {}
+
+      // ── Notifications: settlement batch paid ──
+      try {
+        const paidItems = await db.select({ settlementId: settlementBatchItems.settlementId, loadNumber: settlementBatchItems.loadNumber })
+          .from(settlementBatchItems).where(eq(settlementBatchItems.batchId, input.batchId));
+        const paidCarrierIds = new Set<number>();
+        const paidShipperIds = new Set<number>();
+        for (const item of paidItems) {
+          if (item.settlementId) {
+            const [s] = await db.select({ carrierId: settlements.carrierId, shipperId: settlements.shipperId }).from(settlements).where(eq(settlements.id, item.settlementId)).limit(1);
+            if (s?.carrierId) paidCarrierIds.add(s.carrierId);
+            if (s?.shipperId) paidShipperIds.add(s.shipperId);
+          }
+        }
+        const paidAmt = batch.totalAmount || "0.00";
+        for (const cid of Array.from(paidCarrierIds)) {
+          await db.insert(notifications).values({
+            userId: cid,
+            type: "payment_received",
+            title: "Settlement Payment Sent",
+            message: `Settlement #${batch.batchNumber} paid — $${paidAmt} deposited`,
+            data: { batchId: input.batchId, batchNumber: batch.batchNumber, amount: paidAmt, transactionId: stripePaymentId },
+          });
+          emitNotification(cid.toString(), {
+            id: `notif_paid_${input.batchId}_${cid}`,
+            type: "payment_received",
+            title: "Settlement Payment Sent",
+            message: `Settlement #${batch.batchNumber} paid — $${paidAmt} deposited`,
+            priority: "high",
+            data: { batchId: input.batchId, transactionId: stripePaymentId },
+            timestamp: new Date().toISOString(),
+          });
+        }
+        for (const sid of Array.from(paidShipperIds)) {
+          await db.insert(notifications).values({
+            userId: sid,
+            type: "payment_received",
+            title: "Settlement Payment Completed",
+            message: `Settlement #${batch.batchNumber} has been paid — $${paidAmt}`,
+            data: { batchId: input.batchId, batchNumber: batch.batchNumber, amount: paidAmt },
+          });
+          emitNotification(sid.toString(), {
+            id: `notif_paid_${input.batchId}_shipper_${sid}`,
+            type: "payment_received",
+            title: "Settlement Payment Completed",
+            message: `Settlement #${batch.batchNumber} has been paid — $${paidAmt}`,
+            priority: "medium",
+            data: { batchId: input.batchId },
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (_notifErr) { /* notification failure must not break primary operation */ }
 
       return {
         batchId: input.batchId,

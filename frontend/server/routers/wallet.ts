@@ -11,6 +11,7 @@ import { eq, and, desc, gte, lte, sql, or, inArray } from "drizzle-orm";
 import { router, isolatedApprovedProcedure as auditedProtectedProcedure, isolatedAdminProcedure as auditedAdminProcedure, sensitiveData, pci } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { emitWalletUpdate, emitPaymentSent, emitPaymentReceived } from "../services/socketService";
+import { emitNotification } from "../_core/websocket";
 import { getDb } from "../db";
 import {
   wallets,
@@ -22,6 +23,7 @@ import {
   instantPayRequests,
   users,
   conversations,
+  notifications,
 } from "../../drizzle/schema";
 import { feeCalculator } from "../services/feeCalculator";
 import { requireAccess } from "../services/security/rbac/access-check";
@@ -609,6 +611,26 @@ export const walletRouter = router({
 
       try { emitWalletUpdate(userId, { type: "payout", amount: -input.amount, currency: "USD", timestamp: new Date().toISOString() }); } catch {}
 
+      // ── Notification: wallet withdrawal ──
+      try {
+        await db.insert(notifications).values({
+          userId,
+          type: "payment_received",
+          title: "EusoWallet Withdrawal",
+          message: `EusoWallet: $${input.amount.toFixed(2)} withdrawn${input.instant ? " (instant)" : ""}`,
+          data: { transactionType: "withdrawal", amount: input.amount.toFixed(2), fee: fee.toFixed(2), netAmount: netAmount.toFixed(2) },
+        });
+        emitNotification(userId.toString(), {
+          id: `notif_withdrawal_${txn.id}`,
+          type: "payment_received",
+          title: "EusoWallet Withdrawal",
+          message: `EusoWallet: $${input.amount.toFixed(2)} withdrawn${input.instant ? " (instant)" : ""}`,
+          priority: "medium",
+          data: { transactionType: "withdrawal", amount: input.amount },
+          timestamp: new Date().toISOString(),
+        });
+      } catch (_notifErr) { /* notification failure must not break primary operation */ }
+
       return {
         id: `payout_${txn.id}`,
         amount: input.amount,
@@ -883,6 +905,43 @@ export const walletRouter = router({
         emitWalletUpdate(userId, { type: "p2p_transfer", amount: -input.amount, currency: "USD", timestamp: new Date().toISOString() });
         emitWalletUpdate(Number(input.recipientId), { type: "p2p_transfer", amount: netAmount, currency: "USD", timestamp: new Date().toISOString() });
       } catch {}
+
+      // ── Notifications: P2P transfer ──
+      try {
+        await db.insert(notifications).values({
+          userId,
+          type: "payment_received",
+          title: "EusoWallet Transfer Sent",
+          message: `EusoWallet: $${input.amount.toFixed(2)} transferred to user #${input.recipientId}`,
+          data: { transactionType: "transfer_sent", amount: input.amount.toFixed(2), recipientId: input.recipientId },
+        });
+        emitNotification(userId.toString(), {
+          id: `notif_transfer_sent_${result.insertId}`,
+          type: "payment_received",
+          title: "EusoWallet Transfer Sent",
+          message: `EusoWallet: $${input.amount.toFixed(2)} transferred`,
+          priority: "medium",
+          data: { transactionType: "transfer_sent", amount: input.amount },
+          timestamp: new Date().toISOString(),
+        });
+        const recipientId = Number(input.recipientId);
+        await db.insert(notifications).values({
+          userId: recipientId,
+          type: "payment_received",
+          title: "EusoWallet Transfer Received",
+          message: `EusoWallet: $${netAmount.toFixed(2)} received from user #${userId}`,
+          data: { transactionType: "transfer_received", amount: netAmount.toFixed(2), senderId: userId },
+        });
+        emitNotification(recipientId.toString(), {
+          id: `notif_transfer_recv_${result.insertId}`,
+          type: "payment_received",
+          title: "EusoWallet Transfer Received",
+          message: `EusoWallet: $${netAmount.toFixed(2)} received`,
+          priority: "medium",
+          data: { transactionType: "transfer_received", amount: netAmount },
+          timestamp: new Date().toISOString(),
+        });
+      } catch (_notifErr) { /* notification failure must not break primary operation */ }
 
       return {
         id: `transfer_${result.insertId}`,

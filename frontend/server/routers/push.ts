@@ -8,8 +8,10 @@
 import { z } from "zod";
 import { eq, desc, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { notificationPreferences, notifications, pushTokens } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const pushRouter = router({
   getSettings: protectedProcedure.query(async ({ ctx }) => {
@@ -41,11 +43,45 @@ export const pushRouter = router({
     } catch (e) { return []; }
   }),
 
-  toggleSetting: protectedProcedure.input(z.object({ category: z.string().optional(), enabled: z.boolean(), settingId: z.string().optional() })).mutation(async ({ input }) => ({
-    success: true,
-    category: input.category,
-    enabled: input.enabled,
-  })),
+  toggleSetting: protectedProcedure.input(z.object({ category: z.string().optional(), enabled: z.boolean(), settingId: z.string().optional() })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    const userId = ctx.user?.id || 0;
+
+    if (!db || !userId) return { success: true, category: input.category, enabled: input.enabled };
+
+    try {
+      // Map category to the DB column
+      const categoryColumnMap: Record<string, string> = {
+        loads: "loadUpdates",
+        bids: "bidAlerts",
+        payments: "paymentAlerts",
+        messages: "messageAlerts",
+        missions: "missionAlerts",
+        promotions: "promotionalAlerts",
+        system: "pushNotifications",
+      };
+
+      const column = categoryColumnMap[input.category || ""] || input.settingId || "pushNotifications";
+
+      // Upsert: try update first, insert if no rows affected
+      const updateResult = await db.update(notificationPreferences)
+        .set({ [column]: input.enabled, updatedAt: new Date() } as any)
+        .where(eq(notificationPreferences.userId, userId));
+
+      const affectedRows = unsafeCast(updateResult)[0]?.affectedRows ?? 0;
+      if (affectedRows === 0) {
+        await db.insert(notificationPreferences).values({
+          userId,
+          [column]: input.enabled,
+        } as any);
+      }
+
+      return { success: true, category: input.category, enabled: input.enabled };
+    } catch (error) {
+      logger.error('[Push] toggleSetting error:', error);
+      return { success: false, category: input.category, enabled: input.enabled };
+    }
+  }),
 
   getRecent: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
     const db = await getDb(); if (!db) return [];

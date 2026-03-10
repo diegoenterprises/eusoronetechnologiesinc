@@ -8,8 +8,9 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
+import { emailService } from "../_core/email";
 import { getDb } from "../db";
-import { users, companies } from "../../drizzle/schema";
+import { users, companies, auditLogs } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
 
 export const teamRouter = router({
@@ -83,10 +84,37 @@ export const teamRouter = router({
       const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing) throw new Error('User with this email already exists');
       const openId = `invite_${Date.now()}_${randomBytes(4).toString('hex')}`;
+      // Generate verification token
+      const verification = emailService.generateVerificationToken(input.email);
       const [result] = await db.insert(users).values({
         openId, email: input.email, role: unsafeCast(input.role),
         companyId, isActive: true, isVerified: false,
+        metadata: JSON.stringify({
+          verificationToken: verification.token,
+          verificationExpiry: verification.expiresAt.toISOString(),
+        }),
       }).$returningId();
+
+      // Send verification email (don't break user creation on failure)
+      try {
+        await emailService.sendVerificationEmail(input.email, verification.token);
+      } catch (emailErr) {
+        logger.error('[Team] invite email failed:', emailErr);
+      }
+
+      // Audit log
+      try {
+        await db.insert(auditLogs).values({
+          userId: ctx.user?.id ?? null,
+          action: 'invite_team_member',
+          entityType: 'team_invite',
+          entityId: result.id,
+          metadata: { email: input.email, role: input.role, companyId } as unknown as Record<string, unknown>,
+        });
+      } catch (auditErr) {
+        logger.error('[Team] audit log failed:', auditErr);
+      }
+
       return { success: true, inviteId: String(result.id), email: input.email, sentAt: new Date().toISOString() };
     }),
 
@@ -104,6 +132,52 @@ export const teamRouter = router({
         eq(users.id, memberId), eq(users.companyId, ctx.user?.companyId || 0),
       ));
       return { success: true, removedId: input.memberId };
+    }),
+
+  /**
+   * Resend invite to an unverified team member
+   */
+  resendInvite: protectedProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error('Database unavailable');
+      const companyId = ctx.user?.companyId || 0;
+      // Find the unverified user in the same company
+      const [target] = await db.select({ id: users.id, email: users.email, name: users.name, isVerified: users.isVerified })
+        .from(users)
+        .where(and(eq(users.id, input.userId), eq(users.companyId, companyId)))
+        .limit(1);
+      if (!target) throw new Error('User not found in your company');
+      if (target.isVerified) throw new Error('User is already verified');
+
+      // Generate new verification token
+      const verification = emailService.generateVerificationToken(target.email || '', target.id);
+      await db.update(users)
+        .set({
+          metadata: JSON.stringify({
+            verificationToken: verification.token,
+            verificationExpiry: verification.expiresAt.toISOString(),
+          }),
+        })
+        .where(eq(users.id, target.id));
+
+      // Send verification email
+      await emailService.sendVerificationEmail(target.email || '', verification.token, target.name || undefined);
+
+      // Audit log
+      try {
+        await db.insert(auditLogs).values({
+          userId: ctx.user?.id ?? null,
+          action: 'resend_invite',
+          entityType: 'team_invite',
+          entityId: target.id,
+          metadata: { email: target.email, companyId } as unknown as Record<string, unknown>,
+        });
+      } catch (auditErr) {
+        logger.error('[Team] resend invite audit log failed:', auditErr);
+      }
+
+      return { success: true, email: target.email, resentAt: new Date().toISOString() };
     }),
 
   /**

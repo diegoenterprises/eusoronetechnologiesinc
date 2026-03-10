@@ -11,6 +11,7 @@ import { getDb } from "../db";
 import { groupChannels, channelMembers, messages, users, messageAttachments } from "../../drizzle/schema";
 import { sql, eq, desc, and, count, inArray } from "drizzle-orm";
 import { unsafeCast } from "../_core/types/unsafe";
+import { emitNotification } from "../_core/websocket";
 
 async function resolveUserId(ctxUser: any): Promise<number> {
   if (typeof ctxUser?.id === "number") return ctxUser.id;
@@ -176,6 +177,15 @@ export const channelsRouter = router({
         if (!ch || ch.companyId !== companyId) throw new Error("Access denied");
       }
 
+      // Verify sender is a member of the channel
+      const [membership] = await db.select({ id: channelMembers.id })
+        .from(channelMembers)
+        .where(and(eq(channelMembers.channelId, channelNumericId), eq(channelMembers.userId, userId)))
+        .limit(1);
+      if (!membership) {
+        throw new Error("You are not a member of this channel");
+      }
+
       const result = await db.insert(messages).values({
         conversationId: channelNumericId,
         senderId: userId,
@@ -183,6 +193,38 @@ export const channelsRouter = router({
         createdAt: new Date(),
       });
       const insertId = unsafeCast(result)[0]?.insertId || Date.now();
+
+      // Fix 4: Broadcast notification to channel members
+      try {
+        const members = await db.select({ userId: channelMembers.userId, isMuted: channelMembers.isMuted })
+          .from(channelMembers)
+          .where(eq(channelMembers.channelId, channelNumericId));
+
+        // Get channel name for notification
+        const [ch] = await db.select({ name: groupChannels.name })
+          .from(groupChannels).where(eq(groupChannels.id, channelNumericId)).limit(1);
+        const channelName = ch?.name || 'Channel';
+        const senderName = ctx.user?.name || 'Someone';
+        const preview = input.content.substring(0, 100);
+
+        for (const member of members) {
+          if (member.userId === userId) continue; // skip sender
+          if (member.isMuted) continue; // skip muted members
+
+          emitNotification(String(member.userId), {
+            id: `ch_${insertId}`,
+            type: 'message',
+            title: `#${channelName}`,
+            message: `${senderName}: ${preview}`,
+            priority: 'low',
+            data: { channelId: String(channelNumericId), messageId: String(insertId) },
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (notifErr) {
+        logger.error("[channels] Failed to broadcast message notification:", notifErr);
+      }
+
       return {
         success: true,
         messageId: String(insertId),
@@ -295,8 +337,25 @@ export const channelsRouter = router({
    */
   markRead: protectedProcedure
     .input(z.object({ channelId: z.string() }))
-    .mutation(async ({ input }) => {
-      return { success: true, channelId: input.channelId };
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: true, channelId: input.channelId, readAt: new Date().toISOString() };
+
+      const userId = await resolveUserId(ctx.user);
+      const chId = parseInt(input.channelId) || 0;
+      if (!chId || !userId) return { success: true, channelId: input.channelId, readAt: new Date().toISOString() };
+
+      try {
+        const now = new Date();
+        await db.update(channelMembers)
+          .set({ lastReadAt: now })
+          .where(and(eq(channelMembers.channelId, chId), eq(channelMembers.userId, userId)));
+
+        return { success: true, channelId: input.channelId, readAt: now.toISOString() };
+      } catch (error) {
+        logger.error('[Channels] markRead error:', error);
+        return { success: true, channelId: input.channelId, readAt: new Date().toISOString() };
+      }
     }),
 
   /**

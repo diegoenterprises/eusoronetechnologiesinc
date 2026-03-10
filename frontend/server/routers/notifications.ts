@@ -9,7 +9,7 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { notifications, users } from "../../drizzle/schema";
+import { notifications, users, notificationPreferences, pushTokens } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
 
 const notificationTypeSchema = z.enum(["alert", "info", "success", "warning", "action_required"]);
@@ -276,29 +276,59 @@ export const notificationsRouter = router({
    */
   getPreferences: protectedProcedure
     .query(async ({ ctx }) => {
-      return {
-        email: {
-          loads: true,
-          compliance: true,
-          safety: true,
-          billing: true,
-          system: false,
-        },
-        push: {
-          loads: true,
-          compliance: true,
-          safety: true,
-          billing: false,
-          system: false,
-        },
-        sms: {
-          loads: false,
-          compliance: true,
-          safety: true,
-          billing: false,
-          system: false,
-        },
+      const db = await getDb();
+      const userId = ctx.user?.id || 0;
+
+      const defaults = {
+        email: { loads: true, compliance: true, safety: true, billing: true, system: false, drivers: false },
+        push: { loads: true, compliance: true, safety: true, billing: false, system: false, drivers: false },
+        sms: { loads: false, compliance: true, safety: true, billing: false, system: false, drivers: false },
       };
+
+      if (!db || !userId) return defaults;
+
+      try {
+        const [pref] = await db.select().from(notificationPreferences).where(eq(notificationPreferences.userId, userId)).limit(1);
+
+        if (!pref) {
+          // Create default record for the user
+          await db.insert(notificationPreferences).values({ userId }).catch(() => {
+            // Ignore duplicate entry errors
+          });
+          return defaults;
+        }
+
+        // Map DB columns to per-channel/per-category structure
+        return {
+          email: {
+            loads: pref.emailNotifications ?? true,
+            compliance: pref.emailNotifications ?? true,
+            safety: pref.emailNotifications ?? true,
+            billing: pref.paymentAlerts ?? true,
+            system: false,
+            drivers: pref.emailNotifications ?? false,
+          },
+          push: {
+            loads: pref.loadUpdates ?? true,
+            compliance: pref.pushNotifications ?? true,
+            safety: pref.pushNotifications ?? true,
+            billing: pref.paymentAlerts ?? false,
+            system: false,
+            drivers: pref.pushNotifications ?? false,
+          },
+          sms: {
+            loads: pref.smsNotifications ?? false,
+            compliance: pref.smsNotifications ?? true,
+            safety: pref.smsNotifications ?? true,
+            billing: false,
+            system: false,
+            drivers: false,
+          },
+        };
+      } catch (error) {
+        logger.error('[Notifications] getPreferences error:', error);
+        return defaults;
+      }
     }),
 
   /**
@@ -310,8 +340,63 @@ export const notificationsRouter = router({
       category: notificationCategorySchema,
       enabled: z.boolean(),
     }))
-    .mutation(async ({ input }) => {
-      return { success: true, ...input };
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = ctx.user?.id || 0;
+
+      if (!db || !userId) return { success: true, ...input };
+
+      try {
+        // Map channel+category to the DB column name
+        const columnMap: Record<string, Record<string, string>> = {
+          email: {
+            loads: "emailNotifications",
+            compliance: "emailNotifications",
+            safety: "emailNotifications",
+            billing: "paymentAlerts",
+            system: "emailNotifications",
+            drivers: "emailNotifications",
+          },
+          push: {
+            loads: "loadUpdates",
+            compliance: "pushNotifications",
+            safety: "pushNotifications",
+            billing: "paymentAlerts",
+            system: "pushNotifications",
+            drivers: "pushNotifications",
+          },
+          sms: {
+            loads: "smsNotifications",
+            compliance: "smsNotifications",
+            safety: "smsNotifications",
+            billing: "smsNotifications",
+            system: "smsNotifications",
+            drivers: "smsNotifications",
+          },
+        };
+
+        const column = columnMap[input.channel]?.[input.category];
+        if (!column) return { success: true, ...input };
+
+        // Upsert: try update first, insert if no rows affected
+        const updateResult = await db.update(notificationPreferences)
+          .set({ [column]: input.enabled, updatedAt: new Date() } as any)
+          .where(eq(notificationPreferences.userId, userId));
+
+        const affectedRows = unsafeCast(updateResult)[0]?.affectedRows ?? 0;
+        if (affectedRows === 0) {
+          // No row exists yet — insert defaults with the requested override
+          await db.insert(notificationPreferences).values({
+            userId,
+            [column]: input.enabled,
+          } as any);
+        }
+
+        return { success: true, ...input };
+      } catch (error) {
+        logger.error('[Notifications] updatePreferences error:', error);
+        return { success: false, ...input };
+      }
     }),
 
   // Additional notification procedures — wired to DB + real services
@@ -387,7 +472,42 @@ export const notificationsRouter = router({
   }),
 
   // Push notifications
-  getPushStats: protectedProcedure.query(async () => ({ sent: 0, delivered: 0, opened: 0, openRate: 0, registeredDevices: 0, sentThisMonth: 0, deliveryRate: 0 })),
+  getPushStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { sent: 0, delivered: 0, opened: 0, openRate: 0, registeredDevices: 0, sentThisMonth: 0, deliveryRate: 0 };
+    try {
+      const userId = ctx.user?.id || 0;
+      const [total] = await db.select({ count: sql<number>`count(*)` })
+        .from(notifications).where(eq(notifications.userId, userId));
+      const [read] = await db.select({ count: sql<number>`count(*)` })
+        .from(notifications).where(and(eq(notifications.userId, userId), eq(notifications.isRead, true)));
+      const [devices] = await db.select({ count: sql<number>`count(*)` })
+        .from(pushTokens).where(eq(pushTokens.userId, userId));
+      const [thisMonth] = await db.select({ count: sql<number>`count(*)` })
+        .from(notifications).where(and(
+          eq(notifications.userId, userId),
+          sql`${notifications.createdAt} >= DATE_FORMAT(NOW(), '%Y-%m-01')`
+        ));
+
+      const totalCount = total?.count || 0;
+      const readCount = read?.count || 0;
+      const deviceCount = devices?.count || 0;
+      const monthCount = thisMonth?.count || 0;
+
+      return {
+        sent: totalCount,
+        delivered: totalCount,
+        opened: readCount,
+        openRate: totalCount > 0 ? Math.round((readCount / totalCount) * 100) : 0,
+        registeredDevices: deviceCount,
+        sentThisMonth: monthCount,
+        deliveryRate: totalCount > 0 ? 100 : 0,
+      };
+    } catch (error) {
+      logger.error('[Notifications] getPushStats error:', error);
+      return { sent: 0, delivered: 0, opened: 0, openRate: 0, registeredDevices: 0, sentThisMonth: 0, deliveryRate: 0 };
+    }
+  }),
   getPushSettings: protectedProcedure.query(async () => ({ 
     enabled: true, 
     deviceToken: "abc123",

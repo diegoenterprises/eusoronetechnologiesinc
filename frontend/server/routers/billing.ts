@@ -9,10 +9,11 @@ import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedApprovedProcedure, isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { payments, loads, users, vehicles, companies, detentionClaims, factoringInvoices, wallets, walletTransactions, auditLogs } from "../../drizzle/schema";
+import { payments, loads, users, vehicles, companies, detentionClaims, factoringInvoices, wallets, walletTransactions, auditLogs, notifications } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { unsafeCast } from "../_core/types/unsafe";
+import { emitNotification } from "../_core/websocket";
 
 const invoiceStatusSchema = z.enum(["draft", "pending", "paid", "overdue", "cancelled"]);
 const transactionTypeSchema = z.enum(["payment", "receipt", "refund", "fee", "withdrawal"]);
@@ -749,6 +750,33 @@ export const billingRouter = router({
           finErr?.message,
         );
       }
+
+      // ── Notification: detention charge approved ──
+      try {
+        const [detNotif] = await db.select().from(detentionClaims).where(eq(detentionClaims.id, input.detentionId)).limit(1);
+        if (detNotif) {
+          const detAmt = input.adjustedAmount ?? parseFloat(String(detNotif.totalAmount || "0"));
+          const carrierId = detNotif.claimedByUserId;
+          if (carrierId && detAmt > 0) {
+            await db.insert(notifications).values({
+              userId: carrierId,
+              type: "payment_received",
+              title: "Detention Charge Approved",
+              message: `Detention charge of $${detAmt.toFixed(2)} approved for load #${detNotif.loadId}`,
+              data: { detentionId: input.detentionId, loadId: detNotif.loadId, amount: detAmt.toFixed(2) },
+            });
+            emitNotification(carrierId.toString(), {
+              id: `notif_detention_${input.detentionId}`,
+              type: "payment_received",
+              title: "Detention Charge Approved",
+              message: `Detention charge of $${detAmt.toFixed(2)} approved for load #${detNotif.loadId}`,
+              priority: "high",
+              data: { detentionId: input.detentionId, loadId: detNotif.loadId },
+              timestamp: new Date().toISOString(),
+            });
+          }
+        }
+      } catch (_notifErr) { /* notification failure must not break primary operation */ }
 
       return { success: true };
     }),

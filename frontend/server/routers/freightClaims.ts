@@ -10,7 +10,8 @@ import { eq, and, desc, sql, gte, lte, like } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { incidents, payments, wallets, walletTransactions, auditLogs } from "../../drizzle/schema";
+import { incidents, payments, wallets, walletTransactions, auditLogs, notifications } from "../../drizzle/schema";
+import { emitNotification } from "../_core/websocket";
 import { unsafeCast } from "../_core/types/unsafe";
 
 // ---------------------------------------------------------------------------
@@ -641,6 +642,48 @@ export const freightClaimsRouter = router({
           }
         }
       }
+
+      // ── Notifications: claim decision ──
+      try {
+        const claimantId = input.payeeId || (Number(ctx.user?.id) || 0);
+        const claimNum = claimNumber(numId);
+        if (input.decision === "approve" || input.decision === "partial") {
+          const approvedAmt = (input.approvedAmount || 0).toFixed(2);
+          await db?.insert(notifications).values({
+            userId: claimantId,
+            type: "payment_received",
+            title: "Freight Claim Approved",
+            message: `Your freight claim ${claimNum} has been approved — $${approvedAmt}`,
+            data: { claimId: input.claimId, decision: input.decision, amount: approvedAmt },
+          });
+          emitNotification(claimantId.toString(), {
+            id: `notif_claim_${numId}_approved`,
+            type: "payment_received",
+            title: "Freight Claim Approved",
+            message: `Your freight claim ${claimNum} has been approved — $${approvedAmt}`,
+            priority: "high",
+            data: { claimId: input.claimId, decision: input.decision },
+            timestamp: new Date().toISOString(),
+          });
+        } else if (input.decision === "deny") {
+          await db?.insert(notifications).values({
+            userId: claimantId,
+            type: "system",
+            title: "Freight Claim Denied",
+            message: `Your freight claim ${claimNum} has been denied — Reason: ${input.reason}`,
+            data: { claimId: input.claimId, decision: "deny", reason: input.reason },
+          });
+          emitNotification(claimantId.toString(), {
+            id: `notif_claim_${numId}_denied`,
+            type: "system",
+            title: "Freight Claim Denied",
+            message: `Your freight claim ${claimNum} has been denied — Reason: ${input.reason}`,
+            priority: "high",
+            data: { claimId: input.claimId, reason: input.reason },
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (_notifErr) { /* notification failure must not break primary operation */ }
 
       return {
         success: true,

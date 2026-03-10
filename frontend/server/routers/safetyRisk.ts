@@ -10,8 +10,9 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { drivers, incidents, inspections, users, vehicles, loads } from "../../drizzle/schema";
-import { eq, and, desc, sql, gte, lte, asc, or, like, count as drizzleCount } from "drizzle-orm";
+import { drivers, incidents, inspections, users, vehicles, loads, notifications } from "../../drizzle/schema";
+import { eq, and, desc, sql, gte, lte, asc, or, like, count as drizzleCount, inArray } from "drizzle-orm";
+import { emitNotification } from "../_core/websocket";
 
 // ─── Shared Schemas ────────────────────────────────────────────────────────────
 
@@ -846,6 +847,37 @@ export const safetyRiskRouter = router({
         fatalities: 0,
       }).$returningId();
 
+      // ── Notifications: safety incident reported — notify SAFETY_MANAGER, COMPLIANCE_OFFICER, ADMIN ──
+      try {
+        const safetyRoles = ["SAFETY_MANAGER", "COMPLIANCE_OFFICER", "ADMIN"];
+        const roleUsers = await db.select({ id: users.id, role: users.role })
+          .from(users)
+          .where(and(
+            eq(users.companyId, companyId),
+            inArray(users.role, safetyRoles as any),
+          ));
+        const notifTitle = "Safety Incident Reported";
+        const notifMsg = `Safety incident reported: ${input.nearMissType} — ${input.severity}`;
+        for (const u of roleUsers) {
+          await db.insert(notifications).values({
+            userId: u.id,
+            type: "system",
+            title: notifTitle,
+            message: notifMsg,
+            data: { incidentId: result.id, type: input.nearMissType, severity: input.severity, location: input.location },
+          });
+          emitNotification(u.id.toString(), {
+            id: `notif_safety_${result.id}_${u.id}`,
+            type: "system",
+            title: notifTitle,
+            message: notifMsg,
+            priority: input.severity === "critical" ? "critical" : input.severity === "major" ? "high" : "medium",
+            data: { incidentId: result.id, type: input.nearMissType },
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (_notifErr) { /* notification failure must not break primary operation */ }
+
       return { success: true, id: result.id };
     }),
 
@@ -927,6 +959,37 @@ export const safetyRiskRouter = router({
         injuries: 0,
         fatalities: 0,
       }).$returningId();
+
+      // ── Notifications: at-risk BBS observation — notify safety roles ──
+      if (input.observationType === "at_risk") {
+        try {
+          const bbsRoleUsers = await db.select({ id: users.id })
+            .from(users)
+            .where(and(
+              eq(users.companyId, companyId),
+              inArray(users.role, ["SAFETY_MANAGER", "COMPLIANCE_OFFICER", "ADMIN"] as any),
+            ));
+          const bbsMsg = `Safety incident reported: ${input.category} — minor`;
+          for (const u of bbsRoleUsers) {
+            await db.insert(notifications).values({
+              userId: u.id,
+              type: "system",
+              title: "Safety Incident Reported",
+              message: bbsMsg,
+              data: { incidentId: result.id, type: input.category, severity: "minor", observationType: input.observationType },
+            });
+            emitNotification(u.id.toString(), {
+              id: `notif_bbs_${result.id}_${u.id}`,
+              type: "system",
+              title: "Safety Incident Reported",
+              message: bbsMsg,
+              priority: "medium",
+              data: { incidentId: result.id, type: input.category },
+              timestamp: new Date().toISOString(),
+            });
+          }
+        } catch (_notifErr) { /* notification failure must not break primary operation */ }
+      }
 
       return { success: true, id: result.id };
     }),

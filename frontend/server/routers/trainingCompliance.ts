@@ -10,6 +10,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
+import { emitNotification } from "../_core/websocket";
 
 // ── Helpers ──
 
@@ -420,6 +421,79 @@ export const trainingComplianceRouter = router({
       } catch (e) {
         logger.warn("[TrainingCompliance] renewCertification DB error:", e);
       }
+
+      // ── Notifications: certification renewed — notify driver and compliance officer ──
+      try {
+        const { getDb: getDbNotif } = await import("../db");
+        const { certifications: certsTable, users: usersTable, notifications: notificationsTable } = await import("../../drizzle/schema");
+        const { eq: eqOp, inArray: inArrayOp } = await import("drizzle-orm");
+        const nDb = await getDbNotif();
+        if (nDb) {
+          const [cert] = await nDb.select().from(certsTable).where(eqOp(certsTable.id, input.certificationId)).limit(1);
+          if (cert) {
+            const certType = cert.type || "Certification";
+            const daysLeft = daysUntil(input.newExpiryDate);
+            const isExpired = daysLeft < 0;
+            const severity = isExpired ? "warning" : daysLeft < 30 ? "warning" : "info";
+            const notifType = "compliance_expiring" as const;
+            const certOwnerId = cert.userId;
+
+            // Notify the driver/cert owner
+            if (certOwnerId) {
+              const statusMsg = isExpired
+                ? `Your ${certType} is EXPIRED — please renew immediately`
+                : `Your ${certType} expires in ${daysLeft} days`;
+              await nDb.insert(notificationsTable).values({
+                userId: certOwnerId,
+                type: notifType,
+                title: isExpired ? "Certification EXPIRED" : "Certification Renewed",
+                message: statusMsg,
+                data: { certificationId: input.certificationId, certType, daysUntilExpiry: daysLeft, severity },
+              });
+              emitNotification(certOwnerId.toString(), {
+                id: `notif_cert_${input.certificationId}_driver`,
+                type: notifType,
+                title: isExpired ? "Certification EXPIRED" : "Certification Renewed",
+                message: statusMsg,
+                priority: isExpired ? "critical" : "medium",
+                data: { certificationId: input.certificationId, certType },
+                timestamp: new Date().toISOString(),
+              });
+            }
+
+            // Notify COMPLIANCE_OFFICER and ADMIN users in the same company
+            const { companyId: currentCompanyId } = await resolveUserContext(ctx.user);
+            if (currentCompanyId) {
+              const coUsers = await nDb.select({ id: usersTable.id, role: usersTable.role })
+                .from(usersTable)
+                .where(eqOp(usersTable.companyId, currentCompanyId));
+              const filteredOfficers = coUsers.filter((u: any) => u.role === "COMPLIANCE_OFFICER" || u.role === "ADMIN");
+              const driverName = cert.name || `User #${certOwnerId}`;
+              const officerMsg = isExpired
+                ? `Driver ${driverName}'s ${certType} EXPIRED`
+                : `Driver ${driverName}'s ${certType} expiring in ${daysLeft} days`;
+              for (const officer of filteredOfficers) {
+                await nDb.insert(notificationsTable).values({
+                  userId: officer.id,
+                  type: notifType,
+                  title: isExpired ? "Certification EXPIRED" : "Certification Expiring",
+                  message: officerMsg,
+                  data: { certificationId: input.certificationId, driverName, certType, daysUntilExpiry: daysLeft, severity },
+                });
+                emitNotification(officer.id.toString(), {
+                  id: `notif_cert_${input.certificationId}_officer_${officer.id}`,
+                  type: notifType,
+                  title: isExpired ? "Certification EXPIRED" : "Certification Expiring",
+                  message: officerMsg,
+                  priority: isExpired ? "critical" : "medium",
+                  data: { certificationId: input.certificationId, driverName, certType },
+                  timestamp: new Date().toISOString(),
+                });
+              }
+            }
+          }
+        }
+      } catch (_notifErr) { /* notification failure must not break primary operation */ }
 
       return {
         success: true,

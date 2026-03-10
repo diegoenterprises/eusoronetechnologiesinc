@@ -2236,6 +2236,55 @@ export const loadLifecycleRouter = router({
               }
 
               logger.info(`[Settlement] Load ${numericLoadId} settled: rate=$${loadRate}, accessorials=$${accessorialTotal.toFixed(2)}, hazmat=$${hazmatSurcharge.toFixed(2)}, total=$${totalShipperCharge.toFixed(2)}, fee=$${platformFee.toFixed(2)}, carrier=$${carrierPay.toFixed(2)}`);
+
+              // ── Notifications: settlement created on DELIVERED ──
+              try {
+                const loadNum = load.loadNumber || String(numericLoadId);
+                // Notify carrier
+                if (carrierId) {
+                  await _sDb.insert(notifications).values({
+                    userId: carrierId,
+                    type: "payment_received",
+                    title: "Settlement Created",
+                    message: `Load #${loadNum} delivered — Settlement of $${carrierPay.toFixed(2)} created`,
+                    data: { loadId: numericLoadId, loadNumber: loadNum, amount: carrierPay.toFixed(2), totalShipperCharge: totalShipperCharge.toFixed(2) },
+                  });
+                  try {
+                    const { emitNotification: emitSettleNotif } = await import("../_core/websocket");
+                    emitSettleNotif(carrierId.toString(), {
+                      id: `notif_settle_carrier_${numericLoadId}`,
+                      type: "payment_received",
+                      title: "Settlement Created",
+                      message: `Load #${loadNum} delivered — Settlement of $${carrierPay.toFixed(2)} created`,
+                      priority: "high",
+                      data: { loadId: numericLoadId, loadNumber: loadNum },
+                      timestamp: new Date().toISOString(),
+                    });
+                  } catch {}
+                }
+                // Notify driver
+                if (load.driverId && load.driverId !== carrierId) {
+                  await _sDb.insert(notifications).values({
+                    userId: load.driverId,
+                    type: "payment_received",
+                    title: "Trip Complete",
+                    message: `Trip complete — Earnings of $${carrierPay.toFixed(2)} recorded for load #${loadNum}`,
+                    data: { loadId: numericLoadId, loadNumber: loadNum, earnings: carrierPay.toFixed(2) },
+                  });
+                  try {
+                    const { emitNotification: emitDriverNotif } = await import("../_core/websocket");
+                    emitDriverNotif(load.driverId.toString(), {
+                      id: `notif_settle_driver_${numericLoadId}`,
+                      type: "payment_received",
+                      title: "Trip Complete",
+                      message: `Trip complete — Earnings of $${carrierPay.toFixed(2)} recorded`,
+                      priority: "high",
+                      data: { loadId: numericLoadId, loadNumber: loadNum },
+                      timestamp: new Date().toISOString(),
+                    });
+                  } catch {}
+                }
+              } catch (_notifErr) { /* notification failure must not break settlement */ }
             }
           }
         } catch (settleErr: any) {

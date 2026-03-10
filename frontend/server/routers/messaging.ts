@@ -5,12 +5,13 @@
  */
 
 import { z } from "zod";
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, like } from "drizzle-orm";
 import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { conversations, messages, users } from "../../drizzle/schema";
+import { conversations, messages, users, auditLogs, messageAttachments, notifications } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
+import { emitNotification } from "../_core/websocket";
 
 async function resolveUserId(ctxUser: any): Promise<number> {
   const db = await getDb();
@@ -174,6 +175,23 @@ export const messagingRouter = router({
           for (const s of senders) senderMap.set(s.id, s.name || '');
         }
 
+        // Fix 3: Mark unread messages as read by the current user
+        const userId = await resolveUserId(ctx.user);
+        if (userId) {
+          const unreadIds = rows
+            .filter(m => !(m.readBy as number[] || []).includes(userId))
+            .map(m => m.id);
+          if (unreadIds.length > 0) {
+            try {
+              await db.execute(
+                sql`UPDATE messages SET readBy = JSON_ARRAY_APPEND(COALESCE(readBy, '[]'), '$', CAST(${userId} AS JSON)) WHERE id IN (${sql.join(unreadIds.map(id => sql`${id}`), sql`,`)}) AND NOT JSON_CONTAINS(COALESCE(readBy, '[]'), CAST(${userId} AS JSON))`
+              );
+            } catch (readErr) {
+              logger.error("[messaging] Failed to update readBy:", readErr);
+            }
+          }
+        }
+
         return {
           items: rows.reverse().map(m => ({
             id: String(m.id),
@@ -242,6 +260,43 @@ export const messagingRouter = router({
       await db.update(conversations).set({ lastMessageAt: new Date() })
         .where(eq(conversations.id, convId));
 
+      // Fix 2: Real-time DM notifications
+      try {
+        const [conv] = await db.select({ participants: conversations.participants, name: conversations.name })
+          .from(conversations).where(eq(conversations.id, convId)).limit(1);
+        const participants = (conv?.participants as number[]) || [];
+        const senderName = ctx.user?.name || 'Someone';
+        const preview = input.content.substring(0, 100);
+        const messageId = result[0]?.id;
+
+        for (const recipientId of participants) {
+          if (recipientId === senderId) continue;
+
+          // Emit real-time WebSocket notification
+          emitNotification(String(recipientId), {
+            id: `dm_${messageId}`,
+            type: 'message',
+            title: senderName,
+            message: preview,
+            priority: 'medium',
+            data: { conversationId: String(convId), messageId: String(messageId) },
+            timestamp: new Date().toISOString(),
+          });
+
+          // Persist notification record
+          await db.insert(notifications).values({
+            userId: recipientId,
+            type: 'message',
+            title: `New message from ${senderName}`,
+            message: preview,
+            data: { conversationId: String(convId), messageId: String(messageId) },
+            isRead: false,
+          });
+        }
+      } catch (notifErr) {
+        logger.error("[messaging] Failed to send DM notifications:", notifErr);
+      }
+
       return { success: true, id: String(result[0]?.id), conversationId: String(convId) };
     }),
 
@@ -291,16 +346,155 @@ export const messagingRouter = router({
     } catch (e) { return { items: [] }; }
   }),
 
-  // Remaining stubs — these endpoints exist for UI compatibility
-  // Real implementations require additional schema (drafts table, templates table, etc.)
-  getArchive: protectedProcedure.query(async () => ({ items: [] })),
-  getAttachments: protectedProcedure.query(async () => ({ items: [] })),
+  /**
+   * messaging.getArchive
+   * Returns conversations the user has archived (tracked via auditLogs entityType='archived_conversations').
+   */
+  getArchive: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { items: [] };
+    try {
+      const userId = await resolveUserId(ctx.user);
+      if (!userId) return { items: [] };
+
+      // Get archived conversation IDs from audit logs
+      const archiveRecords = await db.select({ entityId: auditLogs.entityId })
+        .from(auditLogs)
+        .where(and(
+          eq(auditLogs.userId, userId),
+          eq(auditLogs.entityType, 'archived_conversations'),
+          eq(auditLogs.action, 'archive'),
+        ))
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(50);
+
+      if (archiveRecords.length === 0) return { items: [] };
+      const archivedIds = archiveRecords.map(r => r.entityId).filter((id): id is number => id !== null);
+      if (archivedIds.length === 0) return { items: [] };
+
+      const convos = await db.select().from(conversations)
+        .where(inArray(conversations.id, archivedIds))
+        .orderBy(desc(conversations.lastMessageAt));
+
+      return {
+        items: convos.map(c => ({
+          id: String(c.id),
+          type: c.type,
+          name: c.name || 'Conversation',
+          participants: (c.participants as number[]) || [],
+          lastMessageAt: c.lastMessageAt?.toISOString() || '',
+          createdAt: c.createdAt?.toISOString() || '',
+        })),
+      };
+    } catch (e) {
+      logger.error("[messaging] getArchive error:", e);
+      return { items: [] };
+    }
+  }),
+
+  /**
+   * messaging.getAttachments
+   * Returns attachments from conversations the user is in.
+   */
+  getAttachments: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { items: [] };
+    try {
+      const userId = await resolveUserId(ctx.user);
+      if (!userId) return { items: [] };
+
+      // Get user's conversation IDs
+      const convos = await db.select({ id: conversations.id }).from(conversations)
+        .where(sql`JSON_CONTAINS(${conversations.participants}, CAST(${userId} AS JSON))`)
+        .limit(50);
+      if (convos.length === 0) return { items: [] };
+      const convIds = convos.map(c => c.id);
+
+      // Get attachments from those conversations
+      const attachments = await db.select({
+        id: messageAttachments.id,
+        messageId: messageAttachments.messageId,
+        type: messageAttachments.type,
+        fileName: messageAttachments.fileName,
+        fileUrl: messageAttachments.fileUrl,
+        fileSize: messageAttachments.fileSize,
+        mimeType: messageAttachments.mimeType,
+        createdAt: messageAttachments.createdAt,
+        senderId: messages.senderId,
+        conversationId: messages.conversationId,
+      })
+        .from(messageAttachments)
+        .innerJoin(messages, eq(messageAttachments.messageId, messages.id))
+        .where(inArray(messages.conversationId, convIds))
+        .orderBy(desc(messageAttachments.createdAt))
+        .limit(50);
+
+      return {
+        items: attachments.map(a => ({
+          id: String(a.id),
+          messageId: String(a.messageId),
+          type: a.type,
+          fileName: a.fileName || '',
+          fileUrl: a.fileUrl,
+          fileSize: a.fileSize || 0,
+          mimeType: a.mimeType || '',
+          senderId: String(a.senderId),
+          conversationId: String(a.conversationId),
+          createdAt: a.createdAt?.toISOString() || '',
+        })),
+      };
+    } catch (e) {
+      logger.error("[messaging] getAttachments error:", e);
+      return { items: [] };
+    }
+  }),
   getBroadcast: protectedProcedure.query(async () => ({ items: [] })),
   getChannelDirectory: protectedProcedure.query(async () => ({ items: [] })),
   getChannelSettings: protectedProcedure.query(async () => ({ settings: {} })),
   getChannels: protectedProcedure.query(async () => ({ items: [] })),
   getCompose: protectedProcedure.query(async () => ({})),
-  getDrafts: protectedProcedure.query(async () => ({ items: [] })),
+  /**
+   * messaging.getDrafts
+   * Retrieve draft messages stored via auditLogs entityType='message_draft'.
+   */
+  getDrafts: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { items: [] };
+    try {
+      const userId = await resolveUserId(ctx.user);
+      if (!userId) return { items: [] };
+
+      const drafts = await db.select({
+        id: auditLogs.id,
+        entityId: auditLogs.entityId,
+        changes: auditLogs.changes,
+        metadata: auditLogs.metadata,
+        createdAt: auditLogs.createdAt,
+      })
+        .from(auditLogs)
+        .where(and(
+          eq(auditLogs.userId, userId),
+          eq(auditLogs.entityType, 'message_draft'),
+          eq(auditLogs.action, 'create'),
+        ))
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(20);
+
+      return {
+        items: drafts.map(d => {
+          const meta = d.metadata as Record<string, unknown> | null;
+          const changes = d.changes as Record<string, unknown> | null;
+          return {
+            id: String(d.id),
+            conversationId: String(d.entityId || ''),
+            content: (changes?.content as string) || '',
+            recipientId: (meta?.recipientId as string) || '',
+            createdAt: d.createdAt?.toISOString() || '',
+          };
+        }),
+      };
+    } catch (e) {
+      logger.error("[messaging] getDrafts error:", e);
+      return { items: [] };
+    }
+  }),
   getFileSharing: protectedProcedure.query(async () => ({ items: [] })),
   getGroupChat: protectedProcedure.query(async () => ({ items: [] })),
   getGroupCreate: protectedProcedure.query(async () => ({})),
@@ -416,18 +610,263 @@ export const messagingRouter = router({
 
       return { messageId: result.id, conversationId: lobby.id };
     }),
-  getMessageSearch: protectedProcedure.query(async () => ({ items: [] })),
+  /**
+   * messaging.getMessageSearch
+   * Search messages by content across user's conversations.
+   */
+  getMessageSearch: protectedProcedure
+    .input(z.object({ query: z.string(), limit: z.number().default(20) }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { items: [] };
+      if (!input?.query || input.query.trim().length === 0) return { items: [] };
+      try {
+        const userId = await resolveUserId(ctx.user);
+        if (!userId) return { items: [] };
+
+        // Get user's conversation IDs
+        const convos = await db.select({ id: conversations.id }).from(conversations)
+          .where(sql`JSON_CONTAINS(${conversations.participants}, CAST(${userId} AS JSON))`)
+          .limit(100);
+        if (convos.length === 0) return { items: [] };
+        const convIds = convos.map(c => c.id);
+
+        const searchTerm = `%${input.query}%`;
+        const results = await db.select({
+          id: messages.id,
+          conversationId: messages.conversationId,
+          senderId: messages.senderId,
+          content: messages.content,
+          createdAt: messages.createdAt,
+          senderName: users.name,
+        })
+          .from(messages)
+          .leftJoin(users, eq(messages.senderId, users.id))
+          .where(and(
+            inArray(messages.conversationId, convIds),
+            like(messages.content, searchTerm),
+          ))
+          .orderBy(desc(messages.createdAt))
+          .limit(input.limit);
+
+        return {
+          items: results.map(m => ({
+            id: String(m.id),
+            conversationId: String(m.conversationId),
+            senderId: String(m.senderId),
+            senderName: m.senderName || '',
+            content: m.content || '',
+            createdAt: m.createdAt?.toISOString() || '',
+          })),
+        };
+      } catch (e) {
+        logger.error("[messaging] getMessageSearch error:", e);
+        return { items: [] };
+      }
+    }),
   getMessageTemplates: protectedProcedure.query(async () => ({ items: [] })),
   getMuted: protectedProcedure.query(async () => ({ items: [] })),
   getNotificationSettings: protectedProcedure.query(async () => ({ settings: {} })),
   getPinned: protectedProcedure.query(async () => ({ items: [] })),
   getQuickResponses: protectedProcedure.query(async () => ({ items: [] })),
-  getReadReceipts: protectedProcedure.query(async () => ({ items: [] })),
+  /**
+   * messaging.getReadReceipts
+   * For a given messageId, return who has read the message.
+   */
+  getReadReceipts: protectedProcedure
+    .input(z.object({ messageId: z.string() }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { items: [] };
+      if (!input?.messageId) return { items: [] };
+      try {
+        const msgId = parseInt(input.messageId, 10);
+        const [msg] = await db.select({ readBy: messages.readBy, conversationId: messages.conversationId })
+          .from(messages).where(eq(messages.id, msgId)).limit(1);
+        if (!msg) return { items: [] };
+
+        // Verify current user is a participant in the conversation
+        const userId = await resolveUserId(ctx.user);
+        const [conv] = await db.select({ participants: conversations.participants })
+          .from(conversations).where(eq(conversations.id, msg.conversationId)).limit(1);
+        if (!conv || !(conv.participants as number[])?.includes(userId)) return { items: [] };
+
+        const readByIds = (msg.readBy as number[]) || [];
+        if (readByIds.length === 0) return { items: [] };
+
+        const readers = await db.select({ id: users.id, name: users.name, email: users.email })
+          .from(users).where(inArray(users.id, readByIds));
+
+        return {
+          items: readers.map(r => ({
+            userId: String(r.id),
+            name: r.name || '',
+            email: r.email || '',
+          })),
+        };
+      } catch (e) {
+        logger.error("[messaging] getReadReceipts error:", e);
+        return { items: [] };
+      }
+    }),
   getScheduled: protectedProcedure.query(async () => ({ items: [] })),
-  getSent: protectedProcedure.query(async () => ({ items: [] })),
+  /**
+   * messaging.getSent
+   * Returns messages sent by the current user, paginated.
+   */
+  getSent: protectedProcedure
+    .input(z.object({ limit: z.number().default(30), offset: z.number().default(0) }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { items: [] };
+      try {
+        const userId = await resolveUserId(ctx.user);
+        if (!userId) return { items: [] };
+
+        const limit = input?.limit || 30;
+        const offset = input?.offset || 0;
+
+        const sentMessages = await db.select({
+          id: messages.id,
+          conversationId: messages.conversationId,
+          content: messages.content,
+          messageType: messages.messageType,
+          createdAt: messages.createdAt,
+          readBy: messages.readBy,
+        })
+          .from(messages)
+          .where(eq(messages.senderId, userId))
+          .orderBy(desc(messages.createdAt))
+          .limit(limit)
+          .offset(offset);
+
+        return {
+          items: sentMessages.map(m => ({
+            id: String(m.id),
+            conversationId: String(m.conversationId),
+            content: m.content?.substring(0, 200) || '',
+            messageType: m.messageType,
+            readBy: (m.readBy as number[]) || [],
+            createdAt: m.createdAt?.toISOString() || '',
+          })),
+        };
+      } catch (e) {
+        logger.error("[messaging] getSent error:", e);
+        return { items: [] };
+      }
+    }),
   getSettings: protectedProcedure.query(async () => ({ settings: {} })),
-  getStarred: protectedProcedure.query(async () => ({ items: [] })),
-  getThreadView: protectedProcedure.query(async () => ({ items: [] })),
+  /**
+   * messaging.getStarred
+   * Returns messages the user has starred (tracked via auditLogs entityType='starred_message').
+   */
+  getStarred: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { items: [] };
+    try {
+      const userId = await resolveUserId(ctx.user);
+      if (!userId) return { items: [] };
+
+      // Get starred message IDs from audit logs
+      const starRecords = await db.select({ entityId: auditLogs.entityId })
+        .from(auditLogs)
+        .where(and(
+          eq(auditLogs.userId, userId),
+          eq(auditLogs.entityType, 'starred_message'),
+          eq(auditLogs.action, 'star'),
+        ))
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(50);
+
+      if (starRecords.length === 0) return { items: [] };
+      const starredIds = starRecords.map(r => r.entityId).filter((id): id is number => id !== null);
+      if (starredIds.length === 0) return { items: [] };
+
+      const starredMessages = await db.select({
+        id: messages.id,
+        conversationId: messages.conversationId,
+        senderId: messages.senderId,
+        content: messages.content,
+        messageType: messages.messageType,
+        createdAt: messages.createdAt,
+        senderName: users.name,
+      })
+        .from(messages)
+        .leftJoin(users, eq(messages.senderId, users.id))
+        .where(inArray(messages.id, starredIds))
+        .orderBy(desc(messages.createdAt));
+
+      return {
+        items: starredMessages.map(m => ({
+          id: String(m.id),
+          conversationId: String(m.conversationId),
+          senderId: String(m.senderId),
+          senderName: m.senderName || '',
+          content: m.content || '',
+          messageType: m.messageType,
+          createdAt: m.createdAt?.toISOString() || '',
+        })),
+      };
+    } catch (e) {
+      logger.error("[messaging] getStarred error:", e);
+      return { items: [] };
+    }
+  }),
+  /**
+   * messaging.getThreadView
+   * For a given parent messageId, return threaded replies (metadata.parentMessageId).
+   */
+  getThreadView: protectedProcedure
+    .input(z.object({ messageId: z.string() }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { items: [] };
+      if (!input?.messageId) return { items: [] };
+      try {
+        const parentId = parseInt(input.messageId, 10);
+
+        // Get the parent message first
+        const [parent] = await db.select({
+          id: messages.id, conversationId: messages.conversationId,
+          senderId: messages.senderId, content: messages.content,
+          createdAt: messages.createdAt,
+        }).from(messages).where(eq(messages.id, parentId)).limit(1);
+        if (!parent) return { items: [] };
+
+        // Verify current user is a participant
+        const userId = await resolveUserId(ctx.user);
+        const [conv] = await db.select({ participants: conversations.participants })
+          .from(conversations).where(eq(conversations.id, parent.conversationId)).limit(1);
+        if (!conv || !(conv.participants as number[])?.includes(userId)) return { items: [] };
+
+        // Get threaded replies: messages whose metadata.parentMessageId matches
+        const replies = await db.select({
+          id: messages.id,
+          senderId: messages.senderId,
+          content: messages.content,
+          messageType: messages.messageType,
+          createdAt: messages.createdAt,
+          senderName: users.name,
+        })
+          .from(messages)
+          .leftJoin(users, eq(messages.senderId, users.id))
+          .where(and(
+            eq(messages.conversationId, parent.conversationId),
+            sql`JSON_EXTRACT(${messages.metadata}, '$.parentMessageId') = ${parentId}`,
+          ))
+          .orderBy(messages.createdAt)
+          .limit(100);
+
+        return {
+          items: replies.map(r => ({
+            id: String(r.id),
+            senderId: String(r.senderId),
+            senderName: r.senderName || '',
+            content: r.content || '',
+            messageType: r.messageType,
+            createdAt: r.createdAt?.toISOString() || '',
+          })),
+        };
+      } catch (e) {
+        logger.error("[messaging] getThreadView error:", e);
+        return { items: [] };
+      }
+    }),
   getTypingIndicators: protectedProcedure.query(async () => ({ typing: [] })),
   getVoiceMessages: protectedProcedure.query(async () => ({ items: [] })),
 });
