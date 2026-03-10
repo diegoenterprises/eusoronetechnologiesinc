@@ -451,7 +451,7 @@ export const dashboardRouter = router({
         const change = prevAvg > 0 ? `${currentAvg >= prevAvg ? '+' : ''}${(((currentAvg - prevAvg) / prevAvg) * 100).toFixed(1)}%` : null;
         return { lane, rate: Math.round(currentAvg * 100) / 100, change, volume: s.count > 10 ? 'High' : s.count > 3 ? 'Medium' : 'Low' };
       });
-    } catch (e) { return []; }
+    } catch (e) { logger.error("[dashboard] Failed to load market rate trends:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Dashboard data temporarily unavailable' }); }
   }),
 
   /**
@@ -474,7 +474,7 @@ export const dashboardRouter = router({
       const [throughputToday] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.destinationTerminalId, termId), sql`${loads.status} = 'delivered'`, gte(loads.updatedAt, today), lte(loads.updatedAt, tomorrow)));
       const [throughputMtd] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.destinationTerminalId, termId), sql`${loads.status} = 'delivered'`, gte(loads.updatedAt, monthStart)));
       return { docks: { total: dockCount, active: Math.min(dockCount, todayAppts?.count || 0), available: Math.max(0, dockCount - (todayAppts?.count || 0)) }, appointments: { today: todayAppts?.count || 0, pending: Math.max(0, (todayAppts?.count || 0) - (completedAppts?.count || 0)), completed: completedAppts?.count || 0 }, tankLevels: [], throughput: { today: throughputToday?.count || 0, mtd: throughputMtd?.count || 0, unit: 'loads' } };
-    } catch { return { docks: { total: 0, active: 0, available: 0 }, appointments: { today: 0, pending: 0, completed: 0 }, tankLevels: [], throughput: { today: null, mtd: null, unit: 'loads' } }; }
+    } catch (e) { logger.error("[dashboard] Failed to load terminal ops:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Dashboard data temporarily unavailable' }); }
   }),
 
   /**
@@ -1239,7 +1239,7 @@ export const dashboardRouter = router({
       return { permits, allValid, pendingCount };
     } catch (error) {
       logger.error("[Dashboard] getPermitVerification error:", error);
-      return { permits: [], allValid: false, pendingCount: 0 };
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Dashboard data temporarily unavailable' });
     }
   }),
 
@@ -1285,7 +1285,7 @@ export const dashboardRouter = router({
       };
     } catch (error) {
       logger.error("[Dashboard] getOversizedLoads error:", error);
-      return { active: [], totalActive: 0, requiresEscort: 0 };
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Dashboard data temporarily unavailable' });
     }
   }),
 
@@ -1315,7 +1315,7 @@ export const dashboardRouter = router({
       return { protocols, complianceScore: score };
     } catch (error) {
       logger.error("[Dashboard] getSafetyProtocols error:", error);
-      return { protocols: [], complianceScore: 0 };
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Dashboard data temporarily unavailable' });
     }
   }),
 
@@ -1351,7 +1351,7 @@ export const dashboardRouter = router({
       };
     } catch (error) {
       logger.error("[Dashboard] getCoordinationMap error:", error);
-      return { total: 0, escorts: 0, drivers: 0, enRoute: 0 };
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Dashboard data temporarily unavailable' });
     }
   }),
 
@@ -1396,7 +1396,7 @@ export const dashboardRouter = router({
       };
     } catch (error) {
       logger.error("[Dashboard] getIncidentReports error:", error);
-      return { incidents: [], totalThisMonth: 0, totalThisYear: 0 };
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Dashboard data temporarily unavailable' });
     }
   }),
 
@@ -1430,7 +1430,7 @@ export const dashboardRouter = router({
       return { items, allGood: issueCount === 0, issueCount };
     } catch (error) {
       logger.error("[Dashboard] getEquipmentChecklist error:", error);
-      return { items: [], allGood: true, issueCount: 0 };
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Dashboard data temporarily unavailable' });
     }
   }),
 });
@@ -1829,21 +1829,58 @@ async function getAdminStats(db: any) {
 }
 
 function getProgressFromStatus(status: string | null): number {
-  const statusProgress: Record<string, number> = {
+  // Progress based on checkpoint completion through the load lifecycle.
+  // Each status maps to its position in the 37-state pipeline.
+  // Creation phase: 0-10%, Assignment: 10-25%, Pickup: 25-45%, Transit: 45-75%, Delivery: 75-95%, Financial: 95-100%
+  const STATUS_PROGRESS: Record<string, number> = {
+    // Creation
     draft: 0,
-    posted: 5,
-    bidding: 10,
+    posted: 3,
+    bidding: 6,
+    expired: 0,
+    // Assignment
+    awarded: 10,
+    declined: 10,
+    lapsed: 10,
+    accepted: 15,
     assigned: 20,
-    in_transit: 60,
-    delivered: 100,
+    confirmed: 25,
+    // Pickup
+    en_route_pickup: 30,
+    at_pickup: 35,
+    pickup_checkin: 38,
+    loading: 40,
+    loading_exception: 40,
+    loaded: 45,
+    // Transit
+    in_transit: 55,
+    transit_hold: 55,
+    transit_exception: 55,
+    // Delivery
+    at_delivery: 75,
+    delivery_checkin: 78,
+    unloading: 80,
+    unloading_exception: 80,
+    unloaded: 85,
+    // POD & Completion
+    pod_pending: 90,
+    pod_rejected: 88,
+    delivered: 95,
+    // Financial
+    invoiced: 97,
+    disputed: 95,
+    paid: 99,
+    complete: 100,
+    // Terminal
     cancelled: 0,
-    disputed: 50,
-    temp_excursion: 55,
-    reefer_breakdown: 55,
-    contamination_reject: 55,
-    seal_breach: 55,
+    on_hold: 50,
+    // Cargo exceptions (progress stays at transit/delivery position)
+    temp_excursion: 60,
+    reefer_breakdown: 60,
+    contamination_reject: 82,
+    seal_breach: 78,
     weight_violation: 55,
   };
-  return statusProgress[status || 'draft'] || 0;
+  return STATUS_PROGRESS[status || 'draft'] ?? 0;
 }
 
