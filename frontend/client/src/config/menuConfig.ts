@@ -141,18 +141,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Digital truck stop — lobby, missions, rewards"
     },
     {
-      icon: "Wrench",
-      label: "Zeun™ Fleet",
-      path: "/fleet-maintenance",
-      badge: 0,
-      description: "Fleet maintenance, fuel & document management",
-      children: [
-        { icon: "Wrench", label: "Fleet Maintenance", path: "/fleet-maintenance", badge: 0, description: "PM scheduling & DOT prep" },
-        { icon: "Fuel", label: "Fuel Management", path: "/fuel-management", badge: 0, description: "Fuel analytics & FSC engine" },
-        { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "BOLs, invoices & e-signatures" },
-      ],
-    },
-    {
       icon: "Settings",
       label: "Settings",
       path: "/settings",
@@ -1782,8 +1770,9 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(pricingInsertIdx, 0, pricingItem);
   }
 
-  // ─── Intelligence category injections (all roles) ───
-  if (!result.some(m => m.path === '/competitive-intelligence')) {
+  // ─── Intelligence category injections (ROLE-GATED) ───
+  const compIntelRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN'];
+  if (compIntelRoles.includes(normalizedRole) && !result.some(m => m.path === '/competitive-intelligence')) {
     const item: MenuItem = {
       icon: "BarChart3",
       label: "Competitive Intelligence",
@@ -1797,7 +1786,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/reporting-engine')) {
+  const reportingRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'ADMIN', 'SUPER_ADMIN'];
+  if (reportingRoles.includes(normalizedRole) && !result.some(m => m.path === '/reporting-engine')) {
     const item: MenuItem = {
       icon: "FileBarChart",
       label: "Reporting Engine",
@@ -1811,7 +1801,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/asset-tracking')) {
+  const assetTrackRoles = ['CATALYST', 'DISPATCH', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
+  if (assetTrackRoles.includes(normalizedRole) && !result.some(m => m.path === '/asset-tracking')) {
     const item: MenuItem = {
       icon: "Radio",
       label: "Asset Tracking & IoT",
@@ -1825,7 +1816,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/industry-verticals')) {
+  const verticalRoles = ['CATALYST', 'SHIPPER', 'BROKER', 'DISPATCH', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
+  if (verticalRoles.includes(normalizedRole) && !result.some(m => m.path === '/industry-verticals')) {
     const item: MenuItem = {
       icon: "Factory",
       label: "Industry Verticals",
@@ -1839,8 +1831,9 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  // ─── Financial category injections (EusoWallet™ — all roles) ───
-  if (!result.some(m => m.path === '/advanced-financials')) {
+  // ─── Financial category injections (EusoWallet™ — ROLE-GATED) ───
+  const advFinRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'FACTORING', 'ADMIN', 'SUPER_ADMIN'];
+  if (advFinRoles.includes(normalizedRole) && !result.some(m => m.path === '/advanced-financials')) {
     const item: MenuItem = {
       icon: "Landmark",
       label: "Advanced Financials",
@@ -1854,7 +1847,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/freight-claims')) {
+  const freightClaimRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN'];
+  if (freightClaimRoles.includes(normalizedRole) && !result.some(m => m.path === '/freight-claims')) {
     const item: MenuItem = {
       icon: "FileWarning",
       label: "Freight Claims",
@@ -1868,7 +1862,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/detention-accessorials')) {
+  const detentionRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'DRIVER', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
+  if (detentionRoles.includes(normalizedRole) && !result.some(m => m.path === '/detention-accessorials')) {
     const item: MenuItem = {
       icon: "Timer",
       label: "Detention & Accessorials",
@@ -1882,8 +1877,9 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  // ─── Compliance category injections (all roles) ───
-  if (!result.some(m => m.path === '/training-compliance')) {
+  // ─── Compliance category injections (ROLE-GATED) ───
+  const trainingRoles = ['CATALYST', 'DISPATCH', 'DRIVER', 'ESCORT', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
+  if (trainingRoles.includes(normalizedRole) && !result.some(m => m.path === '/training-compliance')) {
     const item: MenuItem = {
       icon: "GraduationCap",
       label: "Training & Compliance",
@@ -1897,7 +1893,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/emergency-protocols')) {
+  const emergencyRoles = ['CATALYST', 'DISPATCH', 'DRIVER', 'ESCORT', 'TERMINAL_MANAGER', 'SAFETY_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
+  if (emergencyRoles.includes(normalizedRole) && !result.some(m => m.path === '/emergency-protocols')) {
     const item: MenuItem = {
       icon: "Siren",
       label: "Emergency Protocols",
@@ -1911,7 +1908,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/cross-border')) {
+  const crossBorderRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'COMPLIANCE_OFFICER', 'ADMIN', 'SUPER_ADMIN'];
+  if (crossBorderRoles.includes(normalizedRole) && !result.some(m => m.path === '/cross-border')) {
     const item: MenuItem = {
       icon: "Globe",
       label: "Cross-Border Shipping",
@@ -1925,7 +1923,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/safety-risk')) {
+  const safetyRiskRoles = ['CATALYST', 'DISPATCH', 'DRIVER', 'SAFETY_MANAGER', 'COMPLIANCE_OFFICER', 'ADMIN', 'SUPER_ADMIN'];
+  if (safetyRiskRoles.includes(normalizedRole) && !result.some(m => m.path === '/safety-risk')) {
     const item: MenuItem = {
       icon: "ShieldAlert",
       label: "Safety & Risk",
@@ -1939,7 +1938,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/audit-compliance')) {
+  const auditRoles = ['COMPLIANCE_OFFICER', 'SAFETY_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
+  if (auditRoles.includes(normalizedRole) && !result.some(m => m.path === '/audit-compliance')) {
     const item: MenuItem = {
       icon: "ClipboardCheck",
       label: "Audit & Compliance",
@@ -1953,8 +1953,9 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  // ─── Optimization category injections (all roles) ───
-  if (!result.some(m => m.path === '/route-optimization')) {
+  // ─── Optimization category injections (ROLE-GATED) ───
+  const routeOptRoles = ['CATALYST', 'DISPATCH', 'DRIVER', 'BROKER', 'ADMIN', 'SUPER_ADMIN'];
+  if (routeOptRoles.includes(normalizedRole) && !result.some(m => m.path === '/route-optimization')) {
     const item: MenuItem = {
       icon: "Route",
       label: "Route Optimization",
@@ -1968,7 +1969,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/capacity-planning')) {
+  const capacityRoles = ['CATALYST', 'DISPATCH', 'BROKER', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
+  if (capacityRoles.includes(normalizedRole) && !result.some(m => m.path === '/capacity-planning')) {
     const item: MenuItem = {
       icon: "LayoutGrid",
       label: "Capacity Planning",
@@ -1982,7 +1984,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/yard-management')) {
+  const yardRoles = ['CATALYST', 'DISPATCH', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
+  if (yardRoles.includes(normalizedRole) && !result.some(m => m.path === '/yard-management')) {
     const item: MenuItem = {
       icon: "Warehouse",
       label: "Yard Management",
@@ -1996,7 +1999,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/multi-modal')) {
+  const multiModalRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN'];
+  if (multiModalRoles.includes(normalizedRole) && !result.some(m => m.path === '/multi-modal')) {
     const item: MenuItem = {
       icon: "Ship",
       label: "Multi-Modal Transport",
@@ -2010,7 +2014,9 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/future-vision')) {
+  // Future Vision — admin-only (deferred — to be built collaboratively)
+  const futureVisionRoles = ['ADMIN', 'SUPER_ADMIN'];
+  if (futureVisionRoles.includes(normalizedRole) && !result.some(m => m.path === '/future-vision')) {
     const item: MenuItem = {
       icon: "Sparkles",
       label: "Future Vision",
