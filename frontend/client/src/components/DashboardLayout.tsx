@@ -113,6 +113,7 @@ import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { AmbientGlow, DominoPage } from "./animations";
 import { trpc } from "@/lib/trpc";
+import { useIsMobile } from "@/hooks/useMobile";
 import EsangFloatingButton from "./EsangFloatingButton";
 import EmergencyFAB from "./driver/EmergencyFAB";
 
@@ -498,11 +499,17 @@ export default function DashboardLayout({
   });
   const badgeCounts: Record<string, number> = badgeQuery?.data || {};
 
-  // Merge dynamic badge counts into menu items
-  const menuItems = staticMenuItems.map((item) => ({
-    ...item,
-    badge: badgeCounts[item.path] || 0,
-  }));
+  const isMobile = useIsMobile();
+
+  // Merge dynamic badge counts and filter mobile-only items on desktop
+  const menuItems = staticMenuItems
+    .filter((item) => !item.mobileOnly || isMobile)
+    .map((item) => ({
+      ...item,
+      badge: badgeCounts[item.path] || 0,
+      // Also filter mobileOnly children
+      children: item.children?.filter((c) => !c.mobileOnly || isMobile),
+    }));
 
   // Determine active menu item based on current location (includes children)
   const activeMenuItem = menuItems.find((item) => 

@@ -25,6 +25,7 @@ export interface MenuItem {
   description?: string; // Tooltip description
   requiresAuth?: boolean; // Default true
   requiresApproval?: boolean; // If true, item is locked until account is approved
+  mobileOnly?: boolean; // If true, item is hidden on viewports wider than 768px
   children?: MenuItem[]; // Sub-menu items (collapsible)
 }
 
@@ -419,7 +420,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Vehicle info, hazmat safety, spill & fire response",
       children: [
-        { icon: "Wrench", label: "ZEUN Mechanics", path: "/zeun-breakdown", badge: 0, description: "Breakdown reporting and diagnostics" },
+        { icon: "Wrench", label: "ZEUN Mechanics", path: "/zeun-breakdown", badge: 0, mobileOnly: true, description: "Breakdown reporting and diagnostics" },
         { icon: "ShieldCheck", label: "Insurance Verification", path: "/insurance/verification", badge: 0, description: "AI document scanning & FMCSA cross-verification" },
         { icon: "Navigation", label: "Live Tracking", path: "/live-tracking", badge: 0, description: "GPS navigation, route compliance & tracking" },
       ],
@@ -1601,6 +1602,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       label: "Mobile Command Center",
       path: "/mobile-command",
       badge: 0,
+      mobileOnly: true,
       description: "Mobile-optimized driver operations dashboard",
     };
     // Insert near top for drivers, at end for others
