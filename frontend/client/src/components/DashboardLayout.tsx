@@ -105,6 +105,7 @@ import {
   Flag,
   Gauge,
   Combine,
+  MoreHorizontal,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -200,6 +201,7 @@ const iconMap: Record<string, React.ReactNode> = {
   Flag: <Flag size={20} />,
   Gauge: <Gauge size={20} />,
   Combine: <Combine size={20} />,
+  MoreHorizontal: <MoreHorizontal size={20} />,
 };
 
 // --- Notification Bell Component ---

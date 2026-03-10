@@ -128,15 +128,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "DollarSign", label: "Settlements", path: "/settlements", badge: 0, description: "Settlement statements & payment status" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
-      ],
-    },
-    {
-      icon: "TrendingUp",
-      label: "Market Intelligence",
-      path: "/market-pricing",
-      badge: 0,
-      description: "Rates, commodities, hot zones & freight intelligence",
-      children: [
         { icon: "TrendingUp", label: "Market Pricing", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
         { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
       ],
@@ -156,8 +147,17 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Profile, preferences & security"
     },
     { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
-    { icon: "AlertTriangle", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
-    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help and documentation" },
+    {
+      icon: "MoreHorizontal",
+      label: "More",
+      path: "/support",
+      badge: 0,
+      description: "Additional tools & support",
+      children: [
+        { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
+        { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & documentation" },
+      ],
+    },
   ],
 
   // CATALYST: Load bidding, fleet management, earnings
@@ -243,15 +243,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "DollarSign", label: "Settlements", path: "/settlements", badge: 0, description: "Settlement statements & payment status" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
-      ],
-    },
-    {
-      icon: "TrendingUp",
-      label: "Market Intelligence",
-      path: "/market-pricing",
-      badge: 0,
-      description: "Rates, commodities, hot zones & freight intelligence",
-      children: [
         { icon: "TrendingUp", label: "Market Pricing", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
         { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
       ],
@@ -271,8 +262,17 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Profile, preferences & security"
     },
     { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
-    { icon: "AlertTriangle", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
-    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+    {
+      icon: "MoreHorizontal",
+      label: "More",
+      path: "/support",
+      badge: 0,
+      description: "Additional tools & support",
+      children: [
+        { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
+        { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
+      ],
+    },
   ],
 
   // BROKER: Marketplace management, load distribution
@@ -344,15 +344,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "DollarSign", label: "Settlements", path: "/settlements", badge: 0, description: "Settlement statements & payment status" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates, surcharges & reconciliation" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
-      ],
-    },
-    {
-      icon: "TrendingUp",
-      label: "Market Intelligence",
-      path: "/market-pricing",
-      badge: 0,
-      description: "Rates, commodities, hot zones & freight intelligence",
-      children: [
         { icon: "TrendingUp", label: "Market Pricing", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
         { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
       ],
@@ -372,8 +363,17 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Profile, preferences & security"
     },
     { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
-    { icon: "AlertTriangle", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
-    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+    {
+      icon: "MoreHorizontal",
+      label: "More",
+      path: "/support",
+      badge: 0,
+      description: "Additional tools & support",
+      children: [
+        { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
+        { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
+      ],
+    },
   ],
 
   // DRIVER: Job assignments, tracking, earnings
@@ -456,6 +456,8 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Truck", label: "Earnings & Trip Pay", path: "/driver/earnings", badge: 0, description: "Earnings summary & per-trip pay breakdown" },
         { icon: "DollarSign", label: "Settlement History", path: "/driver/settlement-history", badge: 0, description: "Weekly/bi-weekly settlement statements" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
+        { icon: "TrendingUp", label: "Market Pricing", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
+        { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
       ],
     },
     {
@@ -466,17 +468,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Communication & emergency alerts",
       children: [
         { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
-      ],
-    },
-    {
-      icon: "TrendingUp",
-      label: "Market Intelligence",
-      path: "/market-pricing",
-      badge: 0,
-      description: "Rates, commodities, hot zones & freight intelligence",
-      children: [
-        { icon: "TrendingUp", label: "Market Pricing", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
-        { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
       ],
     },
     {
@@ -494,8 +485,17 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Profile setup, CDL, availability & preferences"
     },
     { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
-    { icon: "AlertTriangle", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, vehicle, or roadside incident" },
-    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+    {
+      icon: "MoreHorizontal",
+      label: "More",
+      path: "/support",
+      badge: 0,
+      description: "Additional tools & support",
+      children: [
+        { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, vehicle, or roadside incident" },
+        { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
+      ],
+    },
   ],
 
   // DISPATCH: Fleet operations nerve center
@@ -515,21 +515,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Dispatch Center",
       path: "/dispatch",
       badge: 0,
-      description: "Dispatch command center — drivers, Kanban board, activity feed"
-    },
-    {
-      icon: "CalendarDays",
-      label: "Dispatch Planner",
-      path: "/dispatch/planner",
-      badge: 0,
-      description: "Drag-and-drop load assignment to driver timelines"
-    },
-    {
-      icon: "Droplet",
-      label: "Allocation Tracker",
-      path: "/dispatch/allocations",
-      badge: 0,
-      description: "Daily barrel allocation tracking & contract fulfillment"
+      description: "Command center, planning, allocations & exceptions",
+      children: [
+        { icon: "Monitor", label: "Command Center", path: "/dispatch", badge: 0, description: "Drivers, Kanban board & activity feed" },
+        { icon: "CalendarDays", label: "Dispatch Planner", path: "/dispatch/planner", badge: 0, description: "Drag-and-drop load assignment to driver timelines" },
+        { icon: "Droplet", label: "Allocation Tracker", path: "/dispatch/allocations", badge: 0, description: "Daily barrel allocation tracking & contract fulfillment" },
+        { icon: "AlertTriangle", label: "Exceptions", path: "/dispatch/exceptions", badge: 0, description: "Active exceptions, delays, stale loads & compliance issues" },
+      ],
     },
     {
       icon: "Package",
@@ -555,13 +547,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "ShieldCheck", label: "Insurance Verification", path: "/insurance/verification", badge: 0, description: "AI document scanning & FMCSA cross-verification" },
         { icon: "MapPin", label: "Fleet Tracking", path: "/fleet-tracking", badge: 0, description: "Real-time fleet GPS tracking & geofencing" },
       ],
-    },
-    {
-      icon: "AlertTriangle",
-      label: "Exceptions",
-      path: "/dispatch/exceptions",
-      badge: 0,
-      description: "Active exceptions, delays, stale loads & compliance issues"
     },
     // ─── BUSINESS ───
     {
@@ -622,14 +607,8 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU & accessorial fees" },
         { icon: "BookOpen", label: "Pricebook", path: "/dispatch/pricebook", badge: 0, description: "Rate sheets with cascading lookup priority" },
         { icon: "Fuel", label: "FSC Engine", path: "/dispatch/fsc-engine", badge: 0, description: "Per-contract fuel surcharge calculator" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Rates, commodities, hot zones & freight intelligence" },
       ],
-    },
-    {
-      icon: "TrendingUp",
-      label: "Market Intelligence",
-      path: "/market-pricing",
-      badge: 0,
-      description: "Rates, commodities, hot zones & 2026 freight intelligence"
     },
     {
       icon: "Trophy",
@@ -645,27 +624,17 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Profile, preferences & security"
     },
-    // ─── UTILITY (visually de-emphasized) ───
+    { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
     {
-      icon: "Newspaper",
-      label: "News",
-      path: "/news",
-      badge: 0,
-      description: "Platform news and updates"
-    },
-    {
-      icon: "Flag",
-      label: "Report Incident",
-      path: "/hazmat/incident-report",
-      badge: 0,
-      description: "Report a safety, cargo, or roadside incident"
-    },
-    {
-      icon: "HelpCircle",
-      label: "Support",
+      icon: "MoreHorizontal",
+      label: "More",
       path: "/support",
       badge: 0,
-      description: "Help and documentation"
+      description: "Additional tools & support",
+      children: [
+        { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
+        { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & documentation" },
+      ],
     },
   ],
 
@@ -749,14 +718,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
-      description: "Earnings, invoices, payouts & account balance"
-    },
-    {
-      icon: "TrendingUp",
-      label: "Market Intelligence",
-      path: "/market-pricing",
-      badge: 0,
-      description: "Rates, commodities, hot zones & freight intelligence"
+      description: "Earnings, invoices, payouts & market rates",
+      children: [
+        { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, earnings & payouts" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
+      ],
     },
     {
       icon: "Truck",
@@ -773,8 +739,17 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Profile, preferences & security"
     },
     { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
-    { icon: "AlertTriangle", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety or roadside incident" },
-    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+    {
+      icon: "MoreHorizontal",
+      label: "More",
+      path: "/support",
+      badge: 0,
+      description: "Additional tools & support",
+      children: [
+        { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety or roadside incident" },
+        { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
+      ],
+    },
   ],
 
   // FACTORING: Invoice factoring, funding, risk
@@ -812,13 +787,16 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "TrendingUp", label: "Reports", path: "/factoring/reports", badge: 0, description: "Factoring reports" },
     // ─── PLATFORM FOOTER ───
     { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Messaging" },
-    { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Funding disbursements & payments" },
     {
-      icon: "TrendingUp",
-      label: "Market Intelligence",
-      path: "/market-pricing",
+      icon: "Wallet",
+      label: "EusoWallet",
+      path: "/wallet",
       badge: 0,
-      description: "Freight rates & demand heatmaps"
+      description: "Funding disbursements, payments & market rates",
+      children: [
+        { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Funding disbursements & payments" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates & demand heatmaps" },
+      ],
     },
     { icon: "Settings", label: "Settings", path: "/factoring/settings", badge: 0, description: "Account settings" },
     { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
@@ -925,14 +903,8 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, invoices & payments" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU & accessorial fees" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates & demand heatmaps" },
       ],
-    },
-    {
-      icon: "TrendingUp",
-      label: "Market Intelligence",
-      path: "/market-pricing",
-      badge: 0,
-      description: "Freight rates & demand heatmaps"
     },
     {
       icon: "Truck",
@@ -949,8 +921,17 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Profile, preferences & security"
     },
     { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
-    { icon: "AlertTriangle", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, environmental, or facility incident" },
-    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+    {
+      icon: "MoreHorizontal",
+      label: "More",
+      path: "/support",
+      badge: 0,
+      description: "Additional tools & support",
+      children: [
+        { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, environmental, or facility incident" },
+        { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
+      ],
+    },
   ],
 
   // COMPLIANCE_OFFICER: Regulatory compliance and safety oversight
@@ -1037,14 +1018,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
-      description: "Account balance & payments"
-    },
-    {
-      icon: "TrendingUp",
-      label: "Market Intelligence",
-      path: "/market-pricing",
-      badge: 0,
-      description: "Freight rates, demand heatmaps & surge pricing"
+      description: "Balance, payments & market rates",
+      children: [
+        { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance & payments" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, demand heatmaps & surge pricing" },
+      ],
     },
     {
       icon: "Settings",
@@ -1135,14 +1113,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
-      description: "Account balance & payments"
-    },
-    {
-      icon: "TrendingUp",
-      label: "Market Intelligence",
-      path: "/market-pricing",
-      badge: 0,
-      description: "Freight rates, demand heatmaps & surge pricing"
+      description: "Balance, payments & market rates",
+      children: [
+        { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance & payments" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, demand heatmaps & surge pricing" },
+      ],
     },
     {
       icon: "Settings",
@@ -1199,6 +1174,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "DollarSign", label: "Payments & Fees", path: "/admin/payments", badge: 0, description: "Payment processing & platform fees" },
         { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Platform wallet & escrow oversight" },
         { icon: "AlertTriangle", label: "Disputes", path: "/admin/disputes", badge: 0, description: "Dispute resolution" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates & demand heatmaps" },
       ],
     },
     {
@@ -1214,13 +1190,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/admin/analytics",
       badge: 0,
       description: "Platform analytics"
-    },
-    {
-      icon: "TrendingUp",
-      label: "Market Intelligence",
-      path: "/market-pricing",
-      badge: 0,
-      description: "Freight rates & demand heatmaps"
     },
     {
       icon: "MessageSquare",
