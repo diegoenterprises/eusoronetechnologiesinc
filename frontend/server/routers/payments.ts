@@ -13,12 +13,13 @@ import { getDb } from "../db";
 import { payments, loads, users } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
 import { requireAccess } from "../services/security/rbac/access-check";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // Helper: safe Stripe call (returns null if Stripe not configured)
 async function safeStripe<T>(fn: () => Promise<T>): Promise<T | null> {
-  try { return await fn(); } catch (err: any) {
-    if (err.message?.includes("STRIPE_SECRET_KEY")) return null;
-    logger.warn("[payments] Stripe error:", err.message);
+  try { return await fn(); } catch (err: unknown) {
+    if ((err as Error).message?.includes("STRIPE_SECRET_KEY")) return null;
+    logger.warn("[payments] Stripe error:", (err as Error).message);
     return null;
   }
 }
@@ -168,7 +169,7 @@ export const paymentsRouter = router({
       });
       try { emitPaymentSent(ctx.user.id, { type: "load_payment", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch (e) { logger.warn("[Payments] createPayment sent event emission failed:", e); }
       try { emitPaymentReceived(input.recipientId, { type: "load_payment", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch (e) { logger.warn("[Payments] createPayment received event emission failed:", e); }
-      return { success: true, clientSecret: (pi as any)?.client_secret || null, paymentIntentId: stripeId };
+      return { success: true, clientSecret: unsafeCast(pi)?.client_secret || null, paymentIntentId: stripeId };
     }),
 
   // ════════════════════════════════════════════════════════════════
@@ -287,8 +288,8 @@ export const paymentsRouter = router({
           description: `${inv.customer_name || "Customer"} — ${inv.number || ""}`,
           amount: (inv.amount_paid || 0) / 100,
           paidDate: inv.status_transitions?.paid_at ? new Date(inv.status_transitions.paid_at * 1000).toLocaleDateString() : new Date(inv.created * 1000).toLocaleDateString(),
-          paymentMethod: (inv as any).payment_intent ? "Stripe" : "Manual",
-          stripeChargeId: (inv as any).charge || null,
+          paymentMethod: unsafeCast(inv).payment_intent ? "Stripe" : "Manual",
+          stripeChargeId: unsafeCast(inv).charge || null,
         });
       }
     }
@@ -396,7 +397,7 @@ export const paymentsRouter = router({
     }),
 
   getPaymentStats: protectedProcedure.query(async ({ ctx }) => {
-    await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'PAYMENT' }, (ctx as any).req);
+    await requireAccess({ userId: ctx.user?.id, role: ctx.user!.role || 'SHIPPER', companyId: ctx.user!.companyId, action: 'READ', resource: 'PAYMENT' }, unsafeCast(ctx).req);
     const db = await getDb();
     if (!db) return { totalProcessed: 0, avgPaymentTime: 0, successRate: 0 };
     try {
@@ -454,7 +455,7 @@ export const paymentsRouter = router({
         invoiceNumber: inv.number || inv.id,
         amount: (inv.amount_due || 0) / 100,
         subtotal: (inv.subtotal || 0) / 100,
-        tax: ((inv as any).tax || 0) / 100,
+        tax: (unsafeCast(inv).tax || 0) / 100,
         discount: 0,
         total: (inv.total || 0) / 100,
         status: inv.status === "open" ? (daysOverdue > 0 ? "overdue" : "outstanding") : inv.status,
@@ -462,7 +463,7 @@ export const paymentsRouter = router({
         invoiceDate: new Date(inv.created * 1000).toLocaleDateString(),
         dueDate: dueTs ? new Date(dueTs).toLocaleDateString() : "N/A",
         daysOverdue,
-        terms: inv.collection_method === "send_invoice" ? `Net ${(inv as any).days_until_due || 30}` : "Auto-charge",
+        terms: inv.collection_method === "send_invoice" ? `Net ${unsafeCast(inv).days_until_due || 30}` : "Auto-charge",
         reference: inv.metadata?.loadRef || "",
         billTo: {
           name: inv.customer_name || "Unknown",
@@ -507,7 +508,7 @@ export const paymentsRouter = router({
       // If paying a Stripe invoice, use Stripe API
       if (input.invoiceId) {
         const result = await safeStripe(() => stripe.invoices.pay(input.invoiceId!));
-        if (result) return { success: true, transactionId: (result as any).payment_intent || result.id };
+        if (result) return { success: true, transactionId: unsafeCast(result).payment_intent || result.id };
       }
       // Fallback: record in DB
       const db = await getDb();
@@ -519,7 +520,7 @@ export const paymentsRouter = router({
           paymentMethod: input.method || "card",
         });
         try { emitPaymentSent(ctx.user.id, { type: "load_payment", amount: input.amount, currency: "USD", timestamp: new Date().toISOString() }); } catch (e) { logger.warn("[Payments] processPayment event emission failed:", e); }
-        return { success: true, transactionId: `txn_${(row as any).insertId || Date.now()}` };
+        return { success: true, transactionId: `txn_${unsafeCast(row).insertId || Date.now()}` };
       }
       return { success: false, transactionId: null };
     }),

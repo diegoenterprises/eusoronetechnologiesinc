@@ -5,6 +5,7 @@ import { logger } from "../_core/logger";
 import crypto from "crypto";
 import { getDb } from "../db";
 import { users, auditLogs, notificationPreferences, companies } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // Ensure the current user exists in DB — uses EMAIL as primary lookup
 // (openId column may not exist in actual DB so we never query by it)
@@ -19,7 +20,7 @@ async function ensureUserExists(ctxUser: Record<string, unknown> | null | undefi
   if (email) {
     try {
       const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
-      if (row) return row.id;
+      if (row) return unsafeCast(row).id;
     } catch (err) {
       logger.warn("[ensureUserExists] email lookup failed:", err);
     }
@@ -60,7 +61,7 @@ async function ensureUserExists(ctxUser: Record<string, unknown> | null | undefi
     if (email) {
       try {
         const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
-        if (row) return row.id;
+        if (row) return unsafeCast(row).id;
       } catch (e) { logger.warn("[ensureUserExists] fallback email lookup failed:", e); }
     }
     return 0;
@@ -206,8 +207,8 @@ export const usersRouter = router({
       const userId = Number(ctx.user?.id) || 0;
       if (!userId) return defaults;
       const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
-      if (!row?.metadata) return defaults;
-      const meta = typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata;
+      if (!unsafeCast(row)?.metadata) return defaults;
+      const meta = typeof unsafeCast(row).metadata === "string" ? JSON.parse(unsafeCast(row).metadata) : unsafeCast(row).metadata;
       const np = meta.notificationPreferences || {};
       const dp = meta.displayPreferences || {};
       return {
@@ -252,7 +253,7 @@ export const usersRouter = router({
       // Read existing metadata, merge
       const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
       let meta: Record<string, unknown> = {};
-      try { meta = row?.metadata ? (typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata) : {}; } catch { meta = {}; }
+      try { meta = unsafeCast(row)?.metadata ? (typeof unsafeCast(row).metadata === "string" ? JSON.parse(unsafeCast(row).metadata) : unsafeCast(row).metadata) : {}; } catch { meta = {}; }
 
       // Notification preferences
       if (!meta.notificationPreferences) meta.notificationPreferences = {};
@@ -891,8 +892,8 @@ export const usersRouter = router({
         const userId = Number(ctx.user?.id) || 0;
         const [row] = await db.execute(sql`SELECT enabled, lastVerified, backupCodes FROM mfa_secrets WHERE userId = ${userId} LIMIT 1`) as unknown as Record<string, unknown>[];
         if (!row) return { enabled: false, method: null, lastUpdated: null, backupCodes: [] as string[], usedBackupCodes: [] as string[], remainingBackupCodes: 0 };
-        const codes = row.backupCodes ? JSON.parse(String(row.backupCodes)) : [];
-        return { enabled: !!row.enabled, method: row.enabled ? 'authenticator' : null, lastUpdated: row.lastVerified ? new Date(row.lastVerified as string).toISOString() : null, backupCodes: codes, usedBackupCodes: [] as string[], remainingBackupCodes: codes.length };
+        const codes = unsafeCast(row).backupCodes ? JSON.parse(String(unsafeCast(row).backupCodes)) : [];
+        return { enabled: !!unsafeCast(row).enabled, method: unsafeCast(row).enabled ? 'authenticator' : null, lastUpdated: unsafeCast(row).lastVerified ? new Date(unsafeCast(row).lastVerified as string).toISOString() : null, backupCodes: codes, usedBackupCodes: [] as string[], remainingBackupCodes: codes.length };
       } catch { return { enabled: false, method: null, lastUpdated: null, backupCodes: [] as string[], usedBackupCodes: [] as string[], remainingBackupCodes: 0 }; }
     }),
 
@@ -1241,7 +1242,7 @@ export const usersRouter = router({
 
       const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
       let meta: Record<string, unknown> = {};
-      try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch { /* metadata parse failed — use default */ }
+      try { meta = unsafeCast(row)?.metadata ? JSON.parse(unsafeCast(row).metadata as string) : {}; } catch { /* metadata parse failed — use default */ }
       meta.tokenVersion = (Number(meta.tokenVersion) || 0) + 1;
       meta.deletedReason = input.reason || 'admin_action';
       meta.deletedBy = 'admin';
@@ -1495,7 +1496,7 @@ export const usersRouter = router({
         const [recentCount] = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM password_reset_tokens WHERE userId = ${user.id} AND createdAt > ${oneHourAgo}`
         ) as unknown as Record<string, unknown>[];
-        if (Number(recentCount?.cnt || 0) >= 3) return { success: true }; // Silent rate limit
+        if (Number(unsafeCast(recentCount)?.cnt || 0) >= 3) return { success: true }; // Silent rate limit
 
         // 3. Generate secure token
         const token = crypto.randomBytes(32).toString("hex");
@@ -1544,10 +1545,10 @@ export const usersRouter = router({
         sql`SELECT id, userId, expiresAt, usedAt FROM password_reset_tokens WHERE token = ${input.token} LIMIT 1`
       ) as unknown as Record<string, unknown>[];
       if (!tokenRow) throw new Error("Invalid or expired reset token");
-      if (tokenRow.usedAt) throw new Error("This reset token has already been used");
+      if (unsafeCast(tokenRow).usedAt) throw new Error("This reset token has already been used");
 
       // 2. Check not expired
-      if (new Date(tokenRow.expiresAt as string) < new Date()) {
+      if (new Date(unsafeCast(tokenRow).expiresAt as string) < new Date()) {
         throw new Error("Reset token has expired. Please request a new one.");
       }
 
@@ -1556,23 +1557,23 @@ export const usersRouter = router({
       const newHash = await bcryptMod.default.hash(input.newPassword, 12);
 
       // 4. Update user password
-      await db.update(users).set({ passwordHash: newHash, updatedAt: new Date() }).where(eq(users.id, tokenRow.userId as number));
+      await db.update(users).set({ passwordHash: newHash, updatedAt: new Date() }).where(eq(users.id, unsafeCast(tokenRow).userId as number));
 
       // 5. Mark token as used & delete all tokens for this user
-      await db.execute(sql`UPDATE password_reset_tokens SET usedAt = NOW() WHERE id = ${tokenRow.id as number}`);
-      await db.execute(sql`DELETE FROM password_reset_tokens WHERE userId = ${tokenRow.userId as number} AND id != ${tokenRow.id as number}`);
+      await db.execute(sql`UPDATE password_reset_tokens SET usedAt = NOW() WHERE id = ${unsafeCast(tokenRow).id as number}`);
+      await db.execute(sql`DELETE FROM password_reset_tokens WHERE userId = ${unsafeCast(tokenRow).userId as number} AND id != ${unsafeCast(tokenRow).id as number}`);
 
       // 6. Log to audit
       try {
         await db.insert(auditLogs).values({
-          userId: tokenRow.userId as number, action: 'PASSWORD_RESET', entityType: 'user', entityId: tokenRow.userId as number,
+          userId: unsafeCast(tokenRow).userId as number, action: 'PASSWORD_RESET', entityType: 'user', entityId: unsafeCast(tokenRow).userId as number,
           changes: { method: 'token_reset' } as Record<string, unknown>,
         } as typeof auditLogs.$inferInsert);
       } catch (e) { logger.warn("[Users] password reset audit log failed:", e); }
 
       // 7. Send confirmation email
       try {
-        const [user] = await db.select({ email: users.email, name: users.name }).from(users).where(eq(users.id, tokenRow.userId as number)).limit(1);
+        const [user] = await db.select({ email: users.email, name: users.name }).from(users).where(eq(users.id, unsafeCast(tokenRow).userId as number)).limit(1);
         if (user?.email) {
           const { notifyPasswordChanged } = await import("../services/notifications");
           notifyPasswordChanged({ email: user.email, name: user.name || "" });

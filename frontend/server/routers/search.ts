@@ -13,10 +13,11 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, drivers, users, documents, companies } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const searchRouter = router({
   global: protectedProcedure.input(z.object({ query: z.string(), type: z.string().optional(), filters: z.any().optional() }).optional()).query(async ({ ctx, input }) => {
-    const empty = { loads: [], drivers: [], catalysts: [], invoices: [], total: 0, counts: { loads: 0, drivers: 0, catalysts: 0, invoices: 0 }, results: [] as any[] };
+    const empty = { loads: [], drivers: [], catalysts: [], invoices: [], total: 0, counts: { loads: 0, drivers: 0, catalysts: 0, invoices: 0 }, results: [] as never[][] };
     if (!input?.query || input.query.trim().length < 2) return empty;
     const db = await getDb();
     if (!db) return empty;
@@ -71,8 +72,8 @@ export const searchRouter = router({
       }
 
       for (const l of loadResults) {
-        const origin = (l.pickupLocation as any)?.city || "";
-        const dest = (l.deliveryLocation as any)?.city || "";
+        const origin = unsafeCast(l.pickupLocation)?.city || "";
+        const dest = unsafeCast(l.deliveryLocation)?.city || "";
         const commodity = l.commodityName ? ` · ${l.commodityName}` : "";
         results.push({
           id: String(l.id), type: "load",
@@ -224,13 +225,13 @@ export const searchRouter = router({
     try {
       const q = `%${input.query.trim()}%`;
       const conds: any[] = [or(sql`${loads.loadNumber} LIKE ${q}`, sql`${loads.commodityName} LIKE ${q}`, sql`${loads.cargoType} LIKE ${q}`)];
-      if (input.status) conds.push(eq(loads.status, input.status as any));
+      if (input.status) conds.push(eq(loads.status, unsafeCast(input.status)));
       const rows = await db.select({ id: loads.id, loadNumber: loads.loadNumber, status: loads.status, cargoType: loads.cargoType, commodityName: loads.commodityName, pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation })
         .from(loads).where(and(...conds)).orderBy(desc(loads.createdAt)).limit(input.limit || 20);
       const results = rows.map(l => ({
         id: String(l.id), loadNumber: l.loadNumber || `LOAD-${l.id}`, status: l.status,
         cargoType: l.cargoType, commodity: l.commodityName || "",
-        origin: (l.pickupLocation as any)?.city || "", destination: (l.deliveryLocation as any)?.city || "",
+        origin: unsafeCast(l.pickupLocation)?.city || "", destination: unsafeCast(l.deliveryLocation)?.city || "",
       }));
       // Augment with AI semantic search if few results
       if (results.length < 5) {
@@ -239,7 +240,7 @@ export const searchRouter = router({
           const hits = await semanticSearchLoads(input.query, 8);
           const existingIds = new Set(results.map(r => r.id));
           for (const hit of hits.filter(h => h.score > 0.3 && !existingIds.has(h.entityId))) {
-            results.push({ id: hit.entityId, loadNumber: `AI-${hit.entityId}`, status: null as any, cargoType: null as any, commodity: hit.text.slice(0, 60), origin: "", destination: "" });
+            results.push({ id: hit.entityId, loadNumber: `AI-${hit.entityId}`, status: unsafeCast(null), cargoType: unsafeCast(null), commodity: hit.text.slice(0, 60), origin: "", destination: "" });
           }
         } catch {}
       }
@@ -255,7 +256,7 @@ export const searchRouter = router({
       const companyId = ctx.user?.companyId;
       const conds: any[] = [or(sql`${users.name} LIKE ${q}`, sql`${users.email} LIKE ${q}`, sql`${users.phone} LIKE ${q}`)];
       if (companyId) conds.push(eq(users.companyId, companyId));
-      conds.push(eq(users.role, "DRIVER" as any));
+      conds.push(eq(users.role, unsafeCast("DRIVER")));
       const rows = await db.select({ id: users.id, name: users.name, email: users.email, phone: users.phone }).from(users).where(and(...conds)).limit(input.limit || 10);
       return rows.map(u => ({ id: String(u.id), name: u.name || "", email: u.email || "", phone: u.phone || "" }));
     } catch { return []; }
@@ -283,7 +284,7 @@ export const searchRouter = router({
           const hits = await semanticSearchDocs(input.query, 5);
           const existingIds = new Set(results.map(r => r.id));
           for (const hit of hits.filter(h => h.score > 0.3 && !existingIds.has(h.entityId))) {
-            const meta = (hit.metadata || {}) as any;
+            const meta = (hit.metadata || {}) as Record<string, string>;
             results.push({ id: hit.entityId, name: hit.text.slice(0, 80), type: meta.type || "unknown", status: "active", expiresAt: "" });
           }
         } catch {}
@@ -308,7 +309,7 @@ export const searchRouter = router({
           const hits = await semanticSearchCarriers(input.query, 8);
           const existingIds = new Set(results.map(r => r.id));
           for (const hit of hits.filter(h => h.score > 0.3 && !existingIds.has(h.entityId))) {
-            const meta = (hit.metadata || {}) as any;
+            const meta = (hit.metadata || {}) as Record<string, string>;
             results.push({ id: hit.entityId, name: hit.text.slice(0, 60), mcNumber: meta.mcNumber || '', dotNumber: meta.dotNumber || '', status: 'active' });
           }
         } catch {}
@@ -356,7 +357,7 @@ export const searchRouter = router({
             placardName: m.hazardClass === "3" ? "FLAMMABLE" : m.hazardClass === "8" ? "CORROSIVE" : m.hazardClass.startsWith("2.1") ? "FLAMMABLE GAS" : m.hazardClass.startsWith("2.3") ? "POISON GAS" : `CLASS ${m.hazardClass}`,
             isTIH: m.isTIH || false,
             isWR: m.isWR || false,
-            packingGroup: (m as any).packingGroup || "",
+            packingGroup: unsafeCast(m).packingGroup || "",
             emergencyGuide: info.guide ? {
               title: info.guide.title,
               potentialHazards: info.guide.potentialHazards,
@@ -381,7 +382,7 @@ export const searchRouter = router({
             placardName: m.hazardClass === "3" ? "FLAMMABLE" : m.hazardClass === "8" ? "CORROSIVE" : `CLASS ${m.hazardClass}`,
             isTIH: m.isTIH || false,
             isWR: m.isWR || false,
-            packingGroup: (m as any).packingGroup || "",
+            packingGroup: unsafeCast(m).packingGroup || "",
             emergencyGuide: info?.guide ? {
               title: info.guide.title,
               potentialHazards: info.guide.potentialHazards,

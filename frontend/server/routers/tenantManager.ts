@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
 import crypto from "crypto";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const superAdminProcedure = roleProcedure("SUPER_ADMIN");
 
@@ -32,8 +33,8 @@ export const tenantManagerRouter = router({
   list: superAdminProcedure.query(async () => {
     const db = await getDb();
     if (!db) return [];
-    const [rows] = await db.execute(sql`SELECT * FROM tenants ORDER BY id DESC LIMIT 200`) as any;
-    return (rows || []).map((r: any) => ({
+    const [rows] = await db.execute(sql`SELECT * FROM tenants ORDER BY id DESC LIMIT 200`);
+    return unsafeCast(rows || []).map((r: any) => ({
       ...r,
       features: typeof r.features === "string" ? JSON.parse(r.features) : r.features,
       tenantKeyPreview: r.tenantKey ? `${r.tenantKey.substring(0, 8)}...` : null,
@@ -46,16 +47,16 @@ export const tenantManagerRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return null;
-      const [rows] = await db.execute(sql`SELECT * FROM tenants WHERE id = ${input.id} LIMIT 1`) as any;
-      if (!rows?.[0]) return null;
-      const t = rows[0];
+      const [rows] = await db.execute(sql`SELECT * FROM tenants WHERE id = ${input.id} LIMIT 1`);
+      if (!unsafeCast(rows)?.[0]) return null;
+      const t = unsafeCast(rows)[0];
       t.features = typeof t.features === "string" ? JSON.parse(t.features) : t.features;
 
       // Get user count
       const [userRows] = await db.execute(
         sql`SELECT COUNT(*) as cnt FROM tenant_data_isolation WHERE tenantId = ${input.id}`
-      ) as any;
-      t.userCount = Number(userRows?.[0]?.cnt || 0);
+      );
+      t.userCount = Number(unsafeCast(userRows)?.[0]?.cnt || 0);
       return t;
     }),
 
@@ -114,9 +115,9 @@ export const tenantManagerRouter = router({
     if (!db) return { total: 0, active: 0, suspended: 0 };
     const [rows] = await db.execute(
       sql`SELECT status, COUNT(*) as cnt FROM tenants GROUP BY status`
-    ) as any;
+    );
     const counts: Record<string, number> = {};
-    (rows || []).forEach((r: any) => { counts[r.status] = Number(r.cnt); });
+    unsafeCast(rows || []).forEach((r: any) => { counts[r.status] = Number(r.cnt); });
     return {
       total: Object.values(counts).reduce((a, b) => a + b, 0),
       active: counts.active || 0,

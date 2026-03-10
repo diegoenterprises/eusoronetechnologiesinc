@@ -17,6 +17,7 @@ import { notifyRegistration } from "../services/notifications";
 import { emailService } from "../_core/email";
 import { fmcsaService } from "../services/fmcsa";
 import { getInstantVerification, crossReferenceInputs, extractMLFeatures, storeVerificationEvent, auditPlatformCompanies, inferEquipmentFromCargo } from "../services/instantVerification";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const hazmatClassSchema = z.enum(["2", "3", "4", "5", "6", "7", "8", "9"]);
 
@@ -295,8 +296,8 @@ async function autoCreateProductProfiles(userId: number, companyId: number | nul
       );
     }
     logger.info(`[Registration] Auto-created ${products.length} product profiles for user ${userId}`);
-  } catch (e: any) {
-    logger.warn("[Registration] product_profiles auto-create skip:", e?.message?.slice(0, 120));
+  } catch (e: unknown) {
+    logger.warn("[Registration] product_profiles auto-create skip:", (e as Error)?.message?.slice(0, 120));
   }
 }
 
@@ -1487,7 +1488,7 @@ export const registrationRouter = router({
         email: input.email,
         phone: input.phone,
         passwordHash,
-        role: role as any,
+        role: unsafeCast(role),
         isVerified: true,
         isActive: true,
       }).$returningId();
@@ -2001,7 +2002,7 @@ async function verifyUSDOT(usdotNumber: string): Promise<{
           };
         }
       } catch (bulkErr) {
-        logger.warn("[Registration] Bulk data lookup failed, falling back to live API:", (bulkErr as any)?.message?.slice(0, 100));
+        logger.warn("[Registration] Bulk data lookup failed, falling back to live API:", unsafeCast(bulkErr)?.message?.slice(0, 100));
       }
     }
 

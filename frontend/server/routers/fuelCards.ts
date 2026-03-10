@@ -9,6 +9,7 @@ import { isolatedApprovedProcedure as protectedProcedure, router } from "../_cor
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { drivers } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const fuelCardsRouter = router({
   list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
@@ -18,8 +19,8 @@ export const fuelCardsRouter = router({
       const companyId = Number(ctx.user?.companyId) || 0;
       const statusFilter = input?.status || null;
       const lim = input?.limit || 50;
-      const [rows] = await db.execute(sql`SELECT * FROM fuel_cards WHERE companyId = ${companyId} AND (${statusFilter} IS NULL OR status = ${statusFilter}) ORDER BY createdAt DESC LIMIT ${lim}`) as any;
-      return (rows || []).map((r: any) => ({
+      const [rows] = await db.execute(sql`SELECT * FROM fuel_cards WHERE companyId = ${companyId} AND (${statusFilter} IS NULL OR status = ${statusFilter}) ORDER BY createdAt DESC LIMIT ${lim}`);
+      return unsafeCast(rows || []).map((r: any) => ({
         id: String(r.id), cardNumber: `****${(r.cardNumber || '').slice(-4)}`, cardType: r.cardType,
         status: r.status, driverId: r.driverId, nameOnCard: r.nameOnCard,
         monthlyLimit: Number(r.monthlyLimit) || 0, dailyLimit: Number(r.dailyLimit) || 0,
@@ -43,15 +44,15 @@ export const fuelCardsRouter = router({
           COALESCE(SUM(monthlyLimit), 0) as monthlyLimit,
           COALESCE(SUM(monthlySpent), 0) as monthlySpend
         FROM fuel_cards WHERE companyId = ${companyId}
-      `) as any;
-      const cs = (cardStats || [])[0] || {};
+      `);
+      const cs = unsafeCast(cardStats || [])[0] || {};
       const [txnStats] = await db.execute(sql`
         SELECT COALESCE(SUM(gallons), 0) as gal, stationName
         FROM fuel_transactions WHERE companyId = ${companyId}
           AND transactionDate >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         GROUP BY stationName ORDER BY COUNT(*) DESC LIMIT 1
-      `) as any;
-      const ts = (txnStats || [])[0] || {};
+      `);
+      const ts = unsafeCast(txnStats || [])[0] || {};
       return {
         totalCards: Number(cs.total) || 0, activeCards: Number(cs.active) || 0,
         totalSpent: Number(cs.totalSpent) || 0, monthlyLimit: Number(cs.monthlyLimit) || 0,
@@ -72,8 +73,8 @@ export const fuelCardsRouter = router({
         LEFT JOIN fuel_cards fc ON fc.id = ft.cardId
         WHERE ft.companyId = ${companyId}
         ORDER BY ft.transactionDate DESC LIMIT ${lim}
-      `) as any;
-      return (rows || []).map((r: any) => ({
+      `);
+      return unsafeCast(rows || []).map((r: any) => ({
         id: String(r.id), cardNumber: `****${(r.cardNumber || '').slice(-4)}`,
         stationName: r.stationName, stationCity: r.stationCity, stationState: r.stationState,
         gallons: Number(r.gallons) || 0, pricePerGallon: Number(r.pricePerGallon) || 0,
@@ -110,8 +111,8 @@ export const fuelCardsRouter = router({
         VALUES (${input.cardNumber}, ${input.cardType}, 'active', ${input.driverId || null}, ${companyId},
           ${input.nameOnCard || null}, ${input.monthlyLimit}, ${input.dailyLimit}, ${input.fuelOnly})
       `);
-    } catch (e: any) {
-      if (e?.message?.includes('Duplicate')) throw new Error("Card number already exists");
+    } catch (e: unknown) {
+      if ((e as Error)?.message?.includes('Duplicate')) throw new Error("Card number already exists");
       throw e;
     }
     return { success: true, cardNumber: `****${input.cardNumber.slice(-4)}` };

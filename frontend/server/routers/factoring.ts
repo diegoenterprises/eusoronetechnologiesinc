@@ -10,6 +10,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { factoringInvoices, loads, users, companies, hzCarrierSafety } from "../../drizzle/schema";
 import { like } from "drizzle-orm";
+import { unsafeCast } from "../_core/types/unsafe";
 
 /**
  * Platform-internal credit scoring algorithm.
@@ -83,8 +84,8 @@ async function computeCreditScore(db: any, entityName: string, mcNumber?: string
             SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
             MIN(createdAt) as firstLoad
           FROM loads WHERE shipperName LIKE ${`%${entityName}%`} OR pickupCompany LIKE ${`%${entityName}%`}`
-    ) as any;
-    const ls = Array.isArray(loadStats) ? loadStats[0] : loadStats;
+    );
+    const ls = Array.isArray(loadStats) ? unsafeCast(loadStats)[0] : loadStats;
     const totalLoads = Number(ls?.total || 0);
     const deliveredLoads = Number(ls?.delivered || 0);
     if (totalLoads > 0) {
@@ -102,8 +103,8 @@ async function computeCreditScore(db: any, entityName: string, mcNumber?: string
             SUM(CASE WHEN status IN ('collected', 'closed') THEN 1 ELSE 0 END) as paid,
             SUM(CASE WHEN status IN ('chargedback', 'disputed', 'short_paid') THEN 1 ELSE 0 END) as problems
           FROM factoring_invoices WHERE shipperName LIKE ${`%${entityName}%`}`
-    ) as any;
-    const ps = Array.isArray(payStats) ? payStats[0] : payStats;
+    );
+    const ps = Array.isArray(payStats) ? unsafeCast(payStats)[0] : payStats;
     const invoiceTotal = Number(ps?.total || 0);
     if (invoiceTotal > 0) {
       avgDaysToPay = Math.round(Number(ps?.avgDays || 30));
@@ -257,7 +258,7 @@ export const factoringRouter = router({
       try {
         const userId = Number(ctx.user?.id) || 0;
         const conds: any[] = [eq(factoringInvoices.catalystUserId, userId)];
-        if (input.status) conds.push(eq(factoringInvoices.status, input.status as any));
+        if (input.status) conds.push(eq(factoringInvoices.status, unsafeCast(input.status)));
         const rows = await db.select().from(factoringInvoices).where(and(...conds)).orderBy(desc(factoringInvoices.submittedAt)).limit(input.limit);
         return rows.map(r => ({
           id: String(r.id), invoiceNumber: r.invoiceNumber, loadId: r.loadId,
@@ -308,7 +309,7 @@ export const factoringRouter = router({
         reserveAmount: String(reserveAmount.toFixed(2)),
         status: 'submitted',
         supportingDocs: input.documents.map(d => ({ type: d.type, url: '', name: d.documentId })),
-      } as any).$returningId();
+      } as never).$returningId();
       return {
         factoringId: String(result[0]?.id), invoiceNumber,
         invoiceAmount: input.invoiceAmount, advanceAmount, estimatedFee: feeAmount,
@@ -395,7 +396,7 @@ export const factoringRouter = router({
         avgDaysToPay: scored.avgDaysToPay,
         yearsInBusiness: scored.yearsInBusiness,
         publicRecords: scored.publicRecords,
-        recommendation: scored.recommendation as any,
+        recommendation: unsafeCast(scored.recommendation),
         resultData: JSON.stringify(scored.resultData),
       }).$returningId();
       return {
@@ -553,7 +554,7 @@ export const factoringRouter = router({
       const docs = (Array.isArray(inv.supportingDocs) ? inv.supportingDocs : []) as Array<{ type: string; url: string; name: string }>;
       const docId = `doc_${Date.now()}`;
       docs.push({ type: input.documentType, url: `/api/factoring/${input.factoringId}/documents/${docId}`, name: input.fileName });
-      await db.update(factoringInvoices).set({ supportingDocs: docs } as any).where(eq(factoringInvoices.id, id));
+      await db.update(factoringInvoices).set({ supportingDocs: docs } as never).where(eq(factoringInvoices.id, id));
       return {
         documentId: docId,
         uploadUrl: `/api/factoring/${input.factoringId}/documents/${docId}`,
@@ -577,7 +578,7 @@ export const factoringRouter = router({
       const [inv] = await db.select().from(factoringInvoices).where(eq(factoringInvoices.id, id)).limit(1);
       if (!inv) throw new Error("Factoring invoice not found");
       await db.update(factoringInvoices).set({
-        status: "disputed" as any,
+        status: unsafeCast("disputed"),
         notes: sql`CONCAT(COALESCE(${factoringInvoices.notes}, ''), '\n[DISPUTE] ', ${input.reason})`,
       }).where(eq(factoringInvoices.id, id));
       return {
@@ -836,7 +837,7 @@ export const factoringRouter = router({
         avgDaysToPay: result.avgDaysToPay,
         yearsInBusiness: result.yearsInBusiness,
         publicRecords: result.publicRecords,
-        recommendation: result.recommendation as any,
+        recommendation: unsafeCast(result.recommendation),
         resultData: JSON.stringify(result.resultData),
       });
 

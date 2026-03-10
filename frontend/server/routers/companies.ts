@@ -5,6 +5,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { companies, vehicles, users } from "../../drizzle/schema";
 import { getInstantVerification } from "../services/instantVerification";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // Ensure the current user has a company — creates one if needed, returns companyId
 async function ensureCompanyForUser(ctxUser: any): Promise<number> {
@@ -43,7 +44,7 @@ async function ensureCompanyForUser(ctxUser: any): Promise<number> {
       isActive: true,
       complianceStatus: "pending",
     });
-    const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
+    const insertedId = unsafeCast(result).insertId || unsafeCast(result)[0]?.insertId;
     const companyId = insertedId || 0;
 
     // Link user to this company
@@ -197,9 +198,9 @@ export const companiesRouter = router({
 
       const updateData: Record<string, any> = {};
       for (const key of allowedFields) {
-        if (key in input && (input as any)[key] !== undefined) {
+        if (key in input && unsafeCast(input)[key] !== undefined) {
           // Convert null to empty string for varchar/text columns
-          updateData[key] = (input as any)[key] ?? "";
+          updateData[key] = unsafeCast(input)[key] ?? "";
         }
       }
 
@@ -210,7 +211,7 @@ export const companiesRouter = router({
       // Re-index carrier for AI semantic search on every update (fire-and-forget)
       try {
         const { indexCarrier } = await import("../services/embeddings/aiTurbocharge");
-        indexCarrier({ id: targetId, name: (input as any).name || "", dotNumber: (input as any).dotNumber || "", mcNumber: (input as any).mcNumber || "", description: (input as any).description || "" });
+        indexCarrier({ id: targetId, name: unsafeCast(input).name || "", dotNumber: unsafeCast(input).dotNumber || "", mcNumber: unsafeCast(input).mcNumber || "", description: unsafeCast(input).description || "" });
       } catch {}
 
       return { success: true };

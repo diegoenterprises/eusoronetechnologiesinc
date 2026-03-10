@@ -12,6 +12,7 @@ import { isolatedProcedure as protectedProcedure, publicProcedure, router } from
 import { logger } from "../_core/logger";
 import { getDb, getPool } from "../db";
 import { users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const ticketStatusSchema = z.enum(["open", "in_progress", "pending_customer", "resolved", "closed"]);
 const ticketPrioritySchema = z.enum(["low", "normal", "high", "urgent"]);
@@ -39,8 +40,8 @@ async function rawQuery(sqlStr: string, params: any[] = []): Promise<any[]> {
   try {
     const [rows] = await pool.query(sqlStr, params);
     return Array.isArray(rows) ? rows : [];
-  } catch (e: any) {
-    logger.error("[Support] Query error:", e?.message?.slice(0, 200));
+  } catch (e: unknown) {
+    logger.error("[Support] Query error:", (e as Error)?.message?.slice(0, 200));
     return [];
   }
 }
@@ -296,7 +297,7 @@ export const supportRouter = router({
         [ticketNumber, userId, userName, userEmail, ctx.user?.role || "", input.subject, messageBody, finalCategory, input.priority, input.loadId ? parseInt(input.loadId) : null]
       );
 
-      const ticketId = (result as any)?.insertId || 0;
+      const ticketId = unsafeCast(result)?.insertId || 0;
 
       // Notify user via email + SMS
       notifyTicketEvent({
@@ -436,7 +437,7 @@ export const supportRouter = router({
       }
 
       return {
-        id: String((result as any)?.insertId || 0),
+        id: String(unsafeCast(result)?.insertId || 0),
         ticketId: input.ticketId,
         sentBy: userId,
         sentAt: new Date().toISOString(),

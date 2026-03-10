@@ -11,6 +11,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { runTickets, runTicketExpenses, loads } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const runTicketsRouter = router({
   /**
@@ -30,7 +31,7 @@ export const runTicketsRouter = router({
         const companyId = ctx.user?.companyId || 0;
         if (!userId) return [];
         const conds: any[] = [eq(runTickets.companyId, companyId)];
-        if (input.status) conds.push(eq(runTickets.status, input.status as any));
+        if (input.status) conds.push(eq(runTickets.status, unsafeCast(input.status)));
         if (input.loadId) conds.push(eq(runTickets.loadId, input.loadId));
         const rows = await db.select().from(runTickets).where(and(...conds)).orderBy(desc(runTickets.createdAt)).limit(input.limit);
         return rows.map(r => ({
@@ -106,8 +107,8 @@ export const runTicketsRouter = router({
           const [load] = await db.select().from(loads).where(eq(loads.loadNumber, input.loadNumber)).limit(1);
           if (load) {
             resolvedLoadId = load.id;
-            const pickup = load.pickupLocation as any;
-            const delivery = load.deliveryLocation as any;
+            const pickup = unsafeCast(load.pickupLocation);
+            const delivery = unsafeCast(load.deliveryLocation);
             origin = pickup?.city ? `${pickup.city}${pickup.state ? ', ' + pickup.state : ''}` : '';
             destination = delivery?.city ? `${delivery.city}${delivery.state ? ', ' + delivery.state : ''}` : '';
           }
@@ -123,7 +124,7 @@ export const runTicketsRouter = router({
           destination,
         });
         return {
-          id: (result as any).insertId,
+          id: unsafeCast(result).insertId,
           ticketNumber,
           loadNumber: input.loadNumber,
           status: "active",
@@ -156,7 +157,7 @@ export const runTicketsRouter = router({
         // Insert expense
         const [result] = await db.insert(runTicketExpenses).values({
           ticketId: input.ticketId,
-          type: input.type as any,
+          type: unsafeCast(input.type),
           amount: String(input.amount),
           description: input.description || null,
           receiptUrl: input.receiptUrl || null,
@@ -173,7 +174,7 @@ export const runTicketsRouter = router({
           totalTolls: String(totals?.totalTolls || 0),
         }).where(eq(runTickets.id, input.ticketId));
         return {
-          id: (result as any).insertId,
+          id: unsafeCast(result).insertId,
           ticketId: input.ticketId,
           type: input.type,
           amount: input.amount,

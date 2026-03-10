@@ -12,6 +12,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, drivers, users, companies, loads } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const truckPostingRouter = router({
   /**
@@ -176,7 +177,7 @@ export const truckPostingRouter = router({
         const companyId = ctx.user?.companyId || 0;
         const conds: any[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
         if (input?.status && input.status !== "all") {
-          conds.push(eq(vehicles.status, input.status as any));
+          conds.push(eq(vehicles.status, unsafeCast(input.status)));
         }
 
         const rows = await db.select().from(vehicles).where(and(...conds)).orderBy(desc(vehicles.lastGPSUpdate));

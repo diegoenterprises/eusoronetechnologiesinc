@@ -34,7 +34,7 @@ import { fireGamificationEvent } from "../services/gamificationDispatcher";
 
 /** Row shape returned by raw `db.execute(sql`...`)` queries (MySQL2 RowDataPacket). */
 type RawRow = Record<string, unknown>;
-/** Tuple shape from `db.execute()`: [rows[], fieldPackets]. */
+/** Tuple shape from `db.execute()`: [unsafeCast(rows)[], fieldPackets]. */
 type RawQueryResult = [RawRow[], unknown];
 
 import {
@@ -64,6 +64,7 @@ import { createGeotag } from "../_core/locationEngine";
 import { getHOSSummary, canDriverAcceptLoad } from "../services/hosEngine";
 import { resolveComplianceMatrix, PRODUCT_CATALOG, TRAILER_PRODUCT_MAP } from "../seeds/complianceMatrix";
 import { SEGREGATION_TABLE } from "../_core/hazmatConstants";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ═══════════════════════════════════════════════════════════════
 // NOTIFICATION DISPATCHER — centralized load lifecycle notifications
@@ -122,7 +123,7 @@ export async function emitLoadNotifications(
 
   // Add specific users from load fields
   for (const field of config.userFields) {
-    const uid = (load as Record<string, unknown>)[field];
+    const uid = (load as unknown as Record<string, unknown>)[field];
     if (uid && typeof uid === "number") targetUserIds.push(uid);
   }
 
@@ -359,11 +360,11 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
             AND expirationDate > NOW()
         `) as unknown as RawQueryResult;
         const rows = policies || [];
-        const liabilityOk = rows.some((p: RawRow) =>
+        const liabilityOk = unsafeCast(rows).some((p: RawRow) =>
           (p.policyType === 'auto_liability' || p.policyType === 'general_liability')
           && parseFloat(String(p.coverageAmount || "0")) >= minLiability
         );
-        const cargoOk = rows.some((p: RawRow) =>
+        const cargoOk = unsafeCast(rows).some((p: RawRow) =>
           p.policyType === 'cargo'
           && parseFloat(String(p.coverageAmount || "0")) >= minCargo
         );
@@ -951,7 +952,7 @@ function verifyHOSForAcceptance(driverId: number | null | undefined): { allowed:
   if (!driverId) return { allowed: true };
   try {
     const result = canDriverAcceptLoad(driverId);
-    return { allowed: result.allowed, reason: result.reason };
+    return { allowed: unsafeCast(result).allowed, reason: unsafeCast(result).reason };
   } catch (e) {
     logger.error(`[HOS] Acceptance verification failed for driver ${driverId}:`, (e as Error).message);
     return { allowed: false, reason: "HOS verification unavailable — cannot confirm driver eligibility" };
@@ -2428,7 +2429,7 @@ export const loadLifecycleRouter = router({
       if (DISPATCH_STATES.includes(resolvedTo)) {
         try {
           const { emitDispatchEvent } = await import("../_core/websocket");
-          const dispatchCompanyId = (load as Record<string, unknown>).companyId || load?.shipperId || 0;
+          const dispatchCompanyId = (load as unknown as Record<string, unknown>).companyId || load?.shipperId || 0;
           if (dispatchCompanyId) {
             emitDispatchEvent(String(dispatchCompanyId), {
               loadId: String(numericLoadId),
@@ -2447,7 +2448,7 @@ export const loadLifecycleRouter = router({
       if (resolvedTo === "WEIGHT_VIOLATION") {
         try {
           const { emitComplianceAlert } = await import("../_core/websocket");
-          const complianceCompanyId = (load as Record<string, unknown>).companyId || load?.shipperId || 0;
+          const complianceCompanyId = (load as unknown as Record<string, unknown>).companyId || load?.shipperId || 0;
           if (complianceCompanyId) {
             emitComplianceAlert(String(complianceCompanyId), {
               entityType: "vehicle",

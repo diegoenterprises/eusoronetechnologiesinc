@@ -224,7 +224,7 @@ export const fuelRouter = router({
         pricePerGallon: String(input.pricePerGallon),
         totalAmount: String(totalAmount.toFixed(2)),
         transactionDate: new Date(),
-      } as any).$returningId();
+      } as never).$returningId();
       return { id: String(result[0]?.id), totalAmount, reportedBy: userId, reportedAt: new Date().toISOString() };
     }),
 

@@ -55,7 +55,7 @@ export const customersRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ input }) => {
-      const db = await getDb(); if (!db) return Object.assign([] as any[], { customers: [] as any[], total: 0 });
+      const db = await getDb(); if (!db) return Object.assign([] as never[][], { customers: [] as never[][], total: 0 });
       try {
         const conds: any[] = [];
         if (input.status === 'active') conds.push(eq(companies.isActive, true));
@@ -72,7 +72,7 @@ export const customersRouter = router({
           createdAt: c.createdAt?.toISOString() || '',
         }));
         return Object.assign(customers, { customers, total: countRow?.count || 0 });
-      } catch { return Object.assign([] as any[], { customers: [] as any[], total: 0 }); }
+      } catch { return Object.assign([] as never[][], { customers: [] as never[][], total: 0 }); }
     }),
 
   /**

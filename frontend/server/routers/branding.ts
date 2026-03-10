@@ -3,6 +3,7 @@ import { router, protectedProcedure, roleProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const superAdminProcedure = roleProcedure("SUPER_ADMIN");
 
@@ -15,8 +16,8 @@ export const brandingRouter = router({
       if (!db) return null;
       const [rows] = await db.execute(
         sql`SELECT * FROM tenant_branding WHERE tenantId = ${input.tenantId} LIMIT 1`
-      ) as any;
-      return rows?.[0] || null;
+      );
+      return unsafeCast(rows)?.[0] || null;
     }),
 
   // Upsert branding config
@@ -37,9 +38,9 @@ export const brandingRouter = router({
 
       const [existing] = await db.execute(
         sql`SELECT id FROM tenant_branding WHERE tenantId = ${input.tenantId} LIMIT 1`
-      ) as any;
+      );
 
-      if (existing?.[0]) {
+      if (unsafeCast(existing)?.[0]) {
         await db.execute(sql`UPDATE tenant_branding SET
           logoUrl = COALESCE(${input.logoUrl || null}, logoUrl),
           faviconUrl = COALESCE(${input.faviconUrl || null}, faviconUrl),
@@ -61,7 +62,7 @@ export const brandingRouter = router({
   list: superAdminProcedure.query(async () => {
     const db = await getDb();
     if (!db) return [];
-    const [rows] = await db.execute(sql`SELECT * FROM tenant_branding ORDER BY id DESC LIMIT 100`) as any;
+    const [rows] = await db.execute(sql`SELECT * FROM tenant_branding ORDER BY id DESC LIMIT 100`);
     return rows || [];
   }),
 });

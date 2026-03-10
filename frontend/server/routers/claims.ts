@@ -10,6 +10,7 @@ import { isolatedApprovedProcedure as protectedProcedure, router } from "../_cor
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { incidents, loads, users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const claimTypeSchema = z.enum([
   "damage", "shortage", "loss", "delay", "contamination", "other"
@@ -144,10 +145,10 @@ export const claimsRouter = router({
       const typeMap: Record<string, string> = { damage: 'property_damage', shortage: 'property_damage', loss: 'property_damage', delay: 'near_miss', contamination: 'hazmat_spill', other: 'near_miss' };
       const [result] = await db.insert(incidents).values({
         companyId: ctx.user?.companyId || 0,
-        type: (typeMap[input.type] || 'near_miss') as any,
-        status: 'reported' as any,
+        type: (typeMap[input.type] || 'near_miss') as never,
+        status: unsafeCast('reported'),
         description: `[Claim: ${input.type}] Load ${input.loadId} - $${input.amount} - ${input.description}`,
-        severity: 'moderate' as any,
+        severity: unsafeCast('moderate'),
         occurredAt: new Date(),
       }).$returningId();
       // Auto-index claim for AI semantic search (fire-and-forget)
@@ -214,7 +215,7 @@ export const claimsRouter = router({
       if (db) {
         const numId = parseInt(input.id.replace('claim_', ''));
         const statusMap: Record<string, string> = { submitted: 'reported', under_review: 'investigating', investigating: 'investigating', approved: 'resolved', denied: 'resolved', settled: 'resolved', closed: 'resolved' };
-        await db.update(incidents).set({ status: (statusMap[input.status] || 'reported') as any }).where(eq(incidents.id, numId));
+        await db.update(incidents).set({ status: (statusMap[input.status] || 'reported') as never }).where(eq(incidents.id, numId));
       }
       return { success: true, id: input.id, newStatus: input.status, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
@@ -274,7 +275,7 @@ export const claimsRouter = router({
       if (db) {
         const numId = parseInt(input.claimId.replace('claim_', ''));
         const newStatus = input.response === 'accept' ? 'resolved' : 'investigating';
-        await db.update(incidents).set({ status: newStatus as any, description: sql`CONCAT(COALESCE(${incidents.description}, ''), '\n[Response: ${input.response}] ', ${input.explanation})` }).where(eq(incidents.id, numId));
+        await db.update(incidents).set({ status: unsafeCast(newStatus), description: sql`CONCAT(COALESCE(${incidents.description}, ''), '\n[Response: ${input.response}] ', ${input.explanation})` }).where(eq(incidents.id, numId));
       }
       return { success: true, claimId: input.claimId, response: input.response, respondedBy: ctx.user?.id, respondedAt: new Date().toISOString() };
     }),
@@ -317,7 +318,7 @@ export const claimsRouter = router({
       const db = await getDb();
       if (db) {
         const numId = parseInt(input.claimId.replace('claim_', ''));
-        await db.update(incidents).set({ status: 'resolved' as any }).where(eq(incidents.id, numId));
+        await db.update(incidents).set({ status: unsafeCast('resolved') }).where(eq(incidents.id, numId));
       }
       return { success: true, claimId: input.claimId, settledAmount: input.settledAmount, settledBy: ctx.user?.id, settledAt: new Date().toISOString() };
     }),

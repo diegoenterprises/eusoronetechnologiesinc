@@ -13,6 +13,7 @@ import { getDb } from "../db";
 import { documents, users } from "../../drizzle/schema";
 import { digitizeDocument } from "../services/documentOCR";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const documentCategorySchema = z.enum(["compliance", "insurance", "permits", "contracts", "invoices", "bols", "receipts", "run_tickets", "agreements", "freight", "operations", "financial", "company", "vehicle", "other"]);
 const documentStatusSchema = z.enum(["active", "expired", "expiring_soon", "pending_review"]);
@@ -142,10 +143,9 @@ export const documentsRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ ctx, input }) => {
-      const result = [] as any;
-      result.documents = [];
-      result.total = 0;
-      result.stats = { total: 0, expired: 0, expiringSoon: 0, storageUsed: 0 };
+      const result: { documents: any[]; total: number; stats: { total: number; expired: number; expiringSoon: number; storageUsed: number } } = {
+        documents: [], total: 0, stats: { total: 0, expired: 0, expiringSoon: 0, storageUsed: 0 },
+      };
       return result;
     }),
 
@@ -199,7 +199,7 @@ export const documentsRouter = router({
             expiryDate: input.expirationDate ? new Date(input.expirationDate) : null,
             status: "active",
           });
-          logger.info(`[Documents] upload SUCCESS: insertId=${(result as any).insertId} stored ${input.fileData.length} chars`);
+          logger.info(`[Documents] upload SUCCESS: insertId=${unsafeCast(result).insertId} stored ${input.fileData.length} chars`);
           const uid = typeof userId === "number" ? userId : parseInt(String(userId), 10) || 0;
           if (uid) { fireGamificationEvent({ userId: uid, type: "document_uploaded", value: 1 }); fireGamificationEvent({ userId: uid, type: "platform_action", value: 1 }); }
           // Standard load:document_uploaded event
@@ -207,23 +207,23 @@ export const documentsRouter = router({
             const { wsService, WS_EVENTS, WS_CHANNELS } = await import("../_core/websocket");
             if (input.relatedToType === "load" && input.relatedToId) {
               const ch = WS_CHANNELS.LOAD(input.relatedToId);
-              wsService.broadcastToChannel(ch, { type: WS_EVENTS.LOAD_DOCUMENT_UPLOADED, data: { loadId: input.relatedToId, documentId: String((result as any).insertId), name: input.name, category: input.category, uploadedBy: String(uid), timestamp: new Date().toISOString() }, timestamp: new Date().toISOString() });
+              wsService.broadcastToChannel(ch, { type: WS_EVENTS.LOAD_DOCUMENT_UPLOADED, data: { loadId: input.relatedToId, documentId: String(unsafeCast(result).insertId), name: input.name, category: input.category, uploadedBy: String(uid), timestamp: new Date().toISOString() }, timestamp: new Date().toISOString() });
             }
           } catch { /* non-critical */ }
           // Auto-index document for AI semantic search (fire-and-forget)
           try {
             const { indexDocument } = await import("../services/embeddings/aiTurbocharge");
-            indexDocument({ id: (result as any).insertId, title: input.name, type: input.category, content: input.name });
+            indexDocument({ id: unsafeCast(result).insertId, title: input.name, type: input.category, content: input.name });
           } catch {}
           return {
-            id: `d${(result as any).insertId}`,
+            id: `d${unsafeCast(result).insertId}`,
             name: input.name,
             category: input.category,
             uploadedAt: new Date().toISOString(),
             status: "active",
           };
-        } catch (err: any) {
-          logger.error("[Documents] upload insert error:", err?.message?.slice(0, 200));
+        } catch (err: unknown) {
+          logger.error("[Documents] upload insert error:", (err as Error)?.message?.slice(0, 200));
         }
       }
 
@@ -268,15 +268,15 @@ export const documentsRouter = router({
                 : null,
               status: "active",
             });
-            savedId = `d${(insertResult as any).insertId}`;
+            savedId = `d${unsafeCast(insertResult).insertId}`;
             logger.info(`[Documents] digitize save SUCCESS: id=${savedId} stored ${input.fileData.length} chars`);
             // Auto-index digitized doc for AI semantic search (fire-and-forget)
             try {
               const { indexDocument } = await import("../services/embeddings/aiTurbocharge");
-              indexDocument({ id: (insertResult as any).insertId, title: result.classification.documentTitle || input.filename, type: result.classification.category, content: `${result.classification.documentTitle || ""} ${result.classification.category} ${result.ocr.text?.slice(0, 500) || ""}`.trim() });
+              indexDocument({ id: unsafeCast(insertResult).insertId, title: result.classification.documentTitle || input.filename, type: result.classification.category, content: `${result.classification.documentTitle || ""} ${result.classification.category} ${result.ocr.text?.slice(0, 500) || ""}`.trim() });
             } catch {}
-          } catch (err: any) {
-            logger.error("[Documents] digitize save error:", err?.message?.slice(0, 200));
+          } catch (err: unknown) {
+            logger.error("[Documents] digitize save error:", (err as Error)?.message?.slice(0, 200));
           }
         }
       }

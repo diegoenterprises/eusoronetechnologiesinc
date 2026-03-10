@@ -8,6 +8,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { safetyAlerts, speedEvents, users, auditLogs } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const safetyAlertsRouter = router({
   // Trigger SOS alert
@@ -61,7 +62,7 @@ export const safetyAlertsRouter = router({
           .from(users)
           .where(and(
             eq(users.companyId, companyId),
-            inArray(users.role, ["admin", "owner", "dispatcher", "safety_officer"] as any),
+            inArray(users.role, ["admin", "owner", "dispatcher", "safety_officer"] as never[]),
           ))
           .limit(10);
 
@@ -211,8 +212,8 @@ export const safetyAlertsRouter = router({
     let conditions = [eq(safetyAlerts.status, "active")];
     if (input.userId) conditions.push(eq(safetyAlerts.userId, input.userId));
     if (input.loadId) conditions.push(eq(safetyAlerts.loadId, input.loadId));
-    if (input.type) conditions.push(eq(safetyAlerts.type, input.type as any));
-    if (input.severity) conditions.push(eq(safetyAlerts.severity, input.severity as any));
+    if (input.type) conditions.push(eq(safetyAlerts.type, unsafeCast(input.type)));
+    if (input.severity) conditions.push(eq(safetyAlerts.severity, unsafeCast(input.severity)));
 
     const alerts = await db.select({
       id: safetyAlerts.id,

@@ -9,6 +9,7 @@ import { isolatedProcedure as protectedProcedure, publicProcedure, router } from
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, vehicles } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const lanesRouter = router({
   /**
@@ -39,8 +40,8 @@ export const lanesRouter = router({
         }).from(loads).where(eq(loads.status, 'delivered')).limit(200);
         const laneMap = new Map<string, { count: number; totalRate: number; origin: string; dest: string; oState: string; dState: string }>();
         for (const r of rows) {
-          const p = r.pickupLocation as any || {};
-          const d = r.deliveryLocation as any || {};
+          const p = unsafeCast(r.pickupLocation) || {};
+          const d = unsafeCast(r.deliveryLocation) || {};
           if (!p.state || !d.state) continue;
           if (input.origin.state && p.state !== input.origin.state) continue;
           if (input.destination?.state && d.state !== input.destination.state) continue;
@@ -66,7 +67,7 @@ export const lanesRouter = router({
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      const empty = { id: input.id, origin: { city: '', state: '', region: '' }, destination: { city: '', state: '', region: '' }, distance: 0, transitTime: { min: 0, avg: 0, max: 0 }, pricing: { current: 0, low: 0, high: 0, trend: 'stable', change: 0 }, volume: { daily: 0, weekly: 0, monthly: 0, trend: 'stable' }, topShippers: [] as any[], topCatalysts: [] as any[], seasonality: { peakMonths: [] as string[], lowMonths: [] as string[] }, restrictions: [] as string[] };
+      const empty = { id: input.id, origin: { city: '', state: '', region: '' }, destination: { city: '', state: '', region: '' }, distance: 0, transitTime: { min: 0, avg: 0, max: 0 }, pricing: { current: 0, low: 0, high: 0, trend: 'stable', change: 0 }, volume: { daily: 0, weekly: 0, monthly: 0, trend: 'stable' }, topShippers: [] as never[][], topCatalysts: [] as never[][], seasonality: { peakMonths: [] as string[], lowMonths: [] as string[] }, restrictions: [] as string[] };
       if (!db) return empty;
       try {
         const [stats] = await db.select({
@@ -148,13 +149,13 @@ export const lanesRouter = router({
             catalystId: ctx.user?.companyId || 0,
             loadNumber: `CAP-${Date.now().toString(36).toUpperCase()}`,
             status: 'posted',
-            cargoType: 'general' as any,
+            cargoType: unsafeCast('general'),
             pickupLocation: { city: input.origin.city, state: input.origin.state },
             deliveryLocation: input.destination ? { city: input.destination.city, state: input.destination.state } : null,
             pickupDate: new Date(input.availableDate),
             rate: input.desiredRate ? String(input.desiredRate) : null,
             specialInstructions: input.notes || null,
-          } as any).$returningId();
+          } as never).$returningId();
           return { id: String(result.id), status: 'active', postedBy: ctx.user?.id, postedAt: new Date().toISOString(), expiresAt: input.availableUntil || new Date(Date.now() + 7 * 86400000).toISOString() };
         } catch (e) { logger.error('[Lanes] postCapacity error:', e); }
       }
@@ -176,8 +177,8 @@ export const lanesRouter = router({
         if (input.status === 'active') conds.push(eq(loads.status, 'posted'));
         const rows = await db.select().from(loads).where(and(...conds)).orderBy(desc(loads.createdAt)).limit(50);
         return rows.map(l => {
-          const p = l.pickupLocation as any || {};
-          const d = l.deliveryLocation as any || {};
+          const p = unsafeCast(l.pickupLocation) || {};
+          const d = unsafeCast(l.deliveryLocation) || {};
           return { id: String(l.id), origin: `${p.city || ''}, ${p.state || ''}`, destination: d?.city ? `${d.city}, ${d.state}` : 'Open', status: l.status, rate: l.rate ? parseFloat(String(l.rate)) : 0, postedAt: l.createdAt?.toISOString() || '' };
         });
       } catch { return []; }
@@ -199,8 +200,8 @@ export const lanesRouter = router({
           .groupBy(loads.pickupLocation, loads.deliveryLocation)
           .orderBy(sql`COUNT(*) DESC`).limit(10);
         return rows.map((r, i) => {
-          const p = r.pickupLocation as any || {};
-          const d = r.deliveryLocation as any || {};
+          const p = unsafeCast(r.pickupLocation) || {};
+          const d = unsafeCast(r.deliveryLocation) || {};
           return { id: `pref_${i}`, origin: `${p.city || ''}, ${p.state || ''}`, destination: `${d.city || ''}, ${d.state || ''}`, volume: r.count, avgRate: Math.round(r.avgRate), preferenceLevel: r.count > 10 ? 'high' : r.count > 5 ? 'medium' : 'low' };
         });
       } catch { return []; }
@@ -237,8 +238,8 @@ export const lanesRouter = router({
         const recentLoads = await db.select({ id: loads.id, loadNumber: loads.loadNumber, pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation, rate: loads.rate, createdAt: loads.createdAt })
           .from(loads).where(eq(loads.status, 'posted')).orderBy(desc(loads.createdAt)).limit(10);
         return recentLoads.map(l => {
-          const p = l.pickupLocation as any || {};
-          const d = l.deliveryLocation as any || {};
+          const p = unsafeCast(l.pickupLocation) || {};
+          const d = unsafeCast(l.deliveryLocation) || {};
           return { id: `alert_${l.id}`, type: 'new_load', message: `New load ${l.loadNumber}: ${p.city || ''}, ${p.state || ''} to ${d.city || ''}, ${d.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0, createdAt: l.createdAt?.toISOString() || '' };
         });
       } catch { return []; }

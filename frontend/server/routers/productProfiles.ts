@@ -8,6 +8,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getPool } from "../db";
 import { TRPCError } from "@trpc/server";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // Helper: resolve numeric user ID from context
 function resolveUserId(user: any): number {
@@ -117,7 +118,7 @@ export const productProfilesRouter = router({
       }
 
       for (const key of WRITABLE_COLUMNS) {
-        const val = (input as any)[key];
+        const val = unsafeCast(input)[key];
         if (val !== undefined) {
           cols.push(key);
           vals.push(serializeValue(key, val));
@@ -177,7 +178,7 @@ export const productProfilesRouter = router({
         params
       );
 
-      let results = (rows as any[]).map(parseJsonFields);
+      let results = (rows as never[]).map(parseJsonFields);
 
       if (opts.search) {
         const q = opts.search.toLowerCase();
@@ -233,7 +234,7 @@ export const productProfilesRouter = router({
       const vals: any[] = [];
 
       for (const key of WRITABLE_COLUMNS) {
-        const val = (input as any)[key];
+        const val = unsafeCast(input)[key];
         if (val !== undefined) {
           updates.push(`${key} = ?`);
           vals.push(serializeValue(key, val));

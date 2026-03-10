@@ -24,6 +24,7 @@ import {
   users,
 } from "../../drizzle/schema";
 import crypto from "crypto";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ─── Shared Types ────────────────────────────────────────────────────────────
 
@@ -592,7 +593,7 @@ export const advancedIntegrationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       logger.info("[EDI] Processing inbound 204 (Motor Carrier Load Tender)");
       const result = parseEdi204(input.rawData);
@@ -667,7 +668,7 @@ export const advancedIntegrationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       logger.info("[EDI] Generating outbound 210 (Motor Carrier Freight Invoice)");
       const ediContent = generateEdi210Payload(input);
@@ -729,7 +730,7 @@ export const advancedIntegrationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       logger.info("[EDI] Generating outbound 214 (Shipment Status Update)");
       const ediContent = generateEdi214Payload(input);
@@ -779,7 +780,7 @@ export const advancedIntegrationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       logger.info("[EDI] Processing inbound 990 (Response to Load Tender)");
 
@@ -897,7 +898,7 @@ export const advancedIntegrationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       const [inserted] = await db.insert(auditLogs).values({
         userId,
@@ -912,7 +913,7 @@ export const advancedIntegrationsRouter = router({
         severity: "MEDIUM",
       });
 
-      const partnerId = `partner-${(inserted as any).insertId || Date.now()}`;
+      const partnerId = `partner-${unsafeCast(inserted).insertId || Date.now()}`;
       const partner = {
         id: partnerId,
         ...input,
@@ -1002,7 +1003,7 @@ export const advancedIntegrationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       logger.info(`[FUEL] Syncing transactions from ${input.providerId}`);
 
@@ -1201,7 +1202,7 @@ export const advancedIntegrationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       logger.info(`[ELD] Syncing ${input.dataType} data from ${input.providerId}`);
 
@@ -1450,7 +1451,7 @@ export const advancedIntegrationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       logger.info(`[ACCOUNTING] Syncing ${input.syncType} to ${input.systemId}`);
 
@@ -1593,7 +1594,7 @@ export const advancedIntegrationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       const rawKey = `euso_live_${randomHex(16)}`;
       const maskedKey = `euso_live_${"*".repeat(24)}${rawKey.slice(-4)}`;
@@ -1615,7 +1616,7 @@ export const advancedIntegrationsRouter = router({
         severity: "HIGH",
       });
 
-      const keyId = `key-${(inserted as any).insertId || Date.now()}`;
+      const keyId = `key-${unsafeCast(inserted).insertId || Date.now()}`;
       logger.info(`[API] New API key created: ${input.name}`);
 
       return {
@@ -1696,7 +1697,7 @@ export const advancedIntegrationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       const secret = `whsec_${randomHex(16)}`;
 
@@ -1716,7 +1717,7 @@ export const advancedIntegrationsRouter = router({
         severity: "MEDIUM",
       });
 
-      const webhookId = `wh-${(inserted as any).insertId || Date.now()}`;
+      const webhookId = `wh-${unsafeCast(inserted).insertId || Date.now()}`;
       const webhook = {
         id: webhookId,
         url: input.url,
@@ -1737,7 +1738,7 @@ export const advancedIntegrationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       logger.info(`[WEBHOOK] Testing webhook delivery: ${input.webhookId}`);
 
@@ -1831,7 +1832,7 @@ export const advancedIntegrationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = (ctx.user as any)?.id || 0;
+      const userId = ctx.user!.id || 0;
 
       logger.info(`[LOADBOARD] Posting load ${input.loadId} to ${input.boardId}`);
 

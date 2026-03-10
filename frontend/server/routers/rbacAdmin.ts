@@ -13,6 +13,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 import { eq, desc, sql, gte } from "drizzle-orm";
 import {
   getPermissionsForRole,
@@ -173,8 +174,8 @@ export const rbacAdminRouter = router({
               ORDER BY created_at DESC
               LIMIT ${input?.limit || 50}`
         );
-        const results = Array.isArray(rows) ? (Array.isArray(rows[0]) ? rows[0] : rows) : [];
-        return (results as any[]).map((r: any) => ({
+        const results = Array.isArray(rows) ? (Array.isArray(unsafeCast(rows)[0]) ? unsafeCast(rows)[0] : rows) : [];
+        return unsafeCast(results).map((r: any) => ({
           userId: r.user_id,
           action: r.action,
           entityType: r.entity_type,

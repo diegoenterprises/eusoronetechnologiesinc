@@ -53,7 +53,7 @@ export const demurrageChargesRouter = router({
             ORDER BY ft.stopped_at DESC
             LIMIT 200
           `);
-          timerRows = ((result as unknown as any[][])[0]) || [];
+          timerRows = ((result as unknown as never[][])[0]) || [];
         } catch {
           // financial_timers table may not exist yet — return empty
           timerRows = [];
@@ -153,7 +153,7 @@ export const demurrageChargesRouter = router({
             ORDER BY ft.stopped_at DESC
             LIMIT 500
           `);
-          timerRows = ((result as unknown as any[][])[0]) || [];
+          timerRows = ((result as unknown as never[][])[0]) || [];
         } catch {
           // financial_timers table may not exist yet — return empty
           timerRows = [];
@@ -165,7 +165,7 @@ export const demurrageChargesRouter = router({
           loadId: t.load_id || i,
           loadReference: `LOAD-${t.load_id || i}`,
           timerId: t.id || i,
-          chargeType: (t.type || "DEMURRAGE") as any,
+          chargeType: (t.type || "DEMURRAGE") as never,
           status: "pending" as ChargeStatus,
           carrierId: t.catalystId || 0,
           carrierName: "Carrier",

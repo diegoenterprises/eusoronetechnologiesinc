@@ -9,6 +9,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, users, geofences, geofenceEvents, locationHistory, gpsTracking } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const geolocationRouter = router({
   /**
@@ -156,7 +157,7 @@ export const geolocationRouter = router({
       const typeMap: Record<string, string> = { terminal: 'terminal', yard: 'warehouse', customer: 'customer_site', restricted: 'hazmat_restricted', custom: 'custom' };
       const [result] = await db.insert(geofences).values({
         name: input.name,
-        type: (typeMap[input.type] || 'custom') as any,
+        type: (typeMap[input.type] || 'custom') as never,
         center: input.center,
         radius: String(input.radius),
         radiusMeters: Math.round(input.radius),
@@ -358,10 +359,10 @@ export const geolocationRouter = router({
         }).from(users).where(eq(users.id, userId));
 
         return user?.currentLocation ? {
-          lat: (user.currentLocation as any).lat,
-          lng: (user.currentLocation as any).lng,
-          city: (user.currentLocation as any).city,
-          state: (user.currentLocation as any).state,
+          lat: unsafeCast(user.currentLocation).lat,
+          lng: unsafeCast(user.currentLocation).lng,
+          city: unsafeCast(user.currentLocation).city,
+          state: unsafeCast(user.currentLocation).state,
           lastUpdated: user.lastGPSUpdate?.toISOString() || null,
         } : null;
       } catch {

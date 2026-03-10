@@ -10,6 +10,7 @@ import { randomBytes } from "crypto";
 import { eq, sql, and, desc } from "drizzle-orm";
 import { getDb } from "../db";
 import { auditLogs, loads } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 function generateId(prefix: string): string {
   return `${prefix}-${Date.now()}-${randomBytes(3).toString("hex")}`;
@@ -86,7 +87,7 @@ async function getDecisionById(decisionId: string): Promise<any | null> {
       .where(and(eq(auditLogs.entityType, "ai_decision"), eq(auditLogs.action, decisionId)))
       .orderBy(desc(auditLogs.createdAt))
       .limit(1);
-    return rows[0] ? (rows[0].metadata as any) : null;
+    return rows[0] ? unsafeCast(rows[0]).metadata : null;
   } catch { return null; }
 }
 
@@ -97,9 +98,9 @@ async function upsertDecision(decision: any): Promise<void> {
     await db.insert(auditLogs).values({
       action: decision.decisionId,
       entityType: "ai_decision",
-      metadata: decision as any,
+      metadata: unsafeCast(decision),
       severity: "LOW",
-    } as any);
+    } as never);
   } catch { /* ignore */ }
 }
 
@@ -116,7 +117,7 @@ async function getDisabledTypes(): Promise<Set<string>> {
       .orderBy(desc(auditLogs.createdAt))
       .limit(1);
     if (rows[0] && rows[0].metadata) {
-      const arr = (rows[0].metadata as any).types;
+      const arr = unsafeCast(rows[0].metadata).types;
       return new Set<string>(Array.isArray(arr) ? arr : []);
     }
     return new Set();
@@ -130,9 +131,9 @@ async function saveDisabledTypes(types: Set<string>): Promise<void> {
     await db.insert(auditLogs).values({
       action: "disabled_types",
       entityType: "ai_config",
-      metadata: { types: Array.from(types) } as any,
+      metadata: { types: Array.from(types) } as never,
       severity: "LOW",
-    } as any);
+    } as never);
   } catch { /* ignore */ }
 }
 
@@ -148,7 +149,7 @@ async function getAutoDispatchEnabled(): Promise<boolean> {
       .where(and(eq(auditLogs.entityType, "ai_config"), eq(auditLogs.action, "auto_dispatch_enabled")))
       .orderBy(desc(auditLogs.createdAt))
       .limit(1);
-    if (rows[0] && rows[0].metadata) return (rows[0].metadata as any).enabled ?? true;
+    if (rows[0] && rows[0].metadata) return unsafeCast(rows[0].metadata).enabled ?? true;
     return true;
   } catch { return true; }
 }
@@ -160,9 +161,9 @@ async function saveAutoDispatchEnabled(enabled: boolean): Promise<void> {
     await db.insert(auditLogs).values({
       action: "auto_dispatch_enabled",
       entityType: "ai_config",
-      metadata: { enabled } as any,
+      metadata: { enabled } as never,
       severity: "LOW",
-    } as any);
+    } as never);
   } catch { /* ignore */ }
 }
 
@@ -176,7 +177,7 @@ async function getDailyAutoDispatchQuota(): Promise<number> {
       .where(and(eq(auditLogs.entityType, "ai_config"), eq(auditLogs.action, "daily_auto_dispatch_quota")))
       .orderBy(desc(auditLogs.createdAt))
       .limit(1);
-    if (rows[0] && rows[0].metadata) return (rows[0].metadata as any).quota ?? 0.05;
+    if (rows[0] && rows[0].metadata) return unsafeCast(rows[0].metadata).quota ?? 0.05;
     return 0.05;
   } catch { return 0.05; }
 }
@@ -188,9 +189,9 @@ async function saveDailyAutoDispatchQuota(quota: number): Promise<void> {
     await db.insert(auditLogs).values({
       action: "daily_auto_dispatch_quota",
       entityType: "ai_config",
-      metadata: { quota } as any,
+      metadata: { quota } as never,
       severity: "LOW",
-    } as any);
+    } as never);
   } catch { /* ignore */ }
 }
 

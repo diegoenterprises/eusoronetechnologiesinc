@@ -450,7 +450,7 @@ export const loadsRouter = router({
           insertedId = (result as unknown as [ResultSetHeader, unknown])[0]?.insertId || 0;
           break; // success
         } catch (err: unknown) {
-          if ((err as Record<string, unknown>)?.code === "ER_DUP_ENTRY" && attempt < 2) {
+          if ((err as unknown as Record<string, unknown>)?.code === "ER_DUP_ENTRY" && attempt < 2) {
             loadNumber = generateLoadNumber(); // regenerate and retry
             continue;
           }

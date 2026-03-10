@@ -10,6 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, zeunMaintenanceSchedules } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const maintenanceRouter = router({
   /**
@@ -195,8 +196,8 @@ export const maintenanceRouter = router({
         serviceType: input.type,
         nextDueDate: new Date(input.scheduledDate),
         estimatedCostMin: input.estimatedCost ? String(input.estimatedCost) : '0',
-        priority: 'MEDIUM' as any,
-      } as any).$returningId();
+        priority: unsafeCast('MEDIUM'),
+      } as never).$returningId();
       // Auto-index maintenance for AI semantic search (fire-and-forget)
       try { const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge"); indexComplianceRecord({ id: result[0]?.id, type: "maintenance", description: `${input.type} maintenance for vehicle ${input.vehicleId}. Scheduled: ${input.scheduledDate}. ${input.description || ""}`, status: "scheduled", severity: "minor" }); } catch {}
       return { success: true, maintenanceId: String(result[0]?.id), scheduledDate: input.scheduledDate };

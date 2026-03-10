@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
 import { ExperimentService } from "../services/ExperimentService";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const superAdminProcedure = roleProcedure("SUPER_ADMIN");
 
@@ -16,9 +17,9 @@ export const experimentsRouter = router({
       if (!db) return [];
       const status = input?.status;
       const [rows] = status
-        ? await db.execute(sql`SELECT * FROM experiments WHERE status = ${status} ORDER BY createdAt DESC LIMIT 100`) as any
-        : await db.execute(sql`SELECT * FROM experiments ORDER BY createdAt DESC LIMIT 100`) as any;
-      return (rows || []).map((r: any) => ({
+        ? await db.execute(sql`SELECT * FROM experiments WHERE status = ${status} ORDER BY createdAt DESC LIMIT 100`) as never
+        : await db.execute(sql`SELECT * FROM experiments ORDER BY createdAt DESC LIMIT 100`);
+      return unsafeCast(rows || []).map((r: any) => ({
         ...r,
         variants: typeof r.variants === "string" ? JSON.parse(r.variants) : r.variants,
       }));
@@ -30,22 +31,22 @@ export const experimentsRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return null;
-      const [rows] = await db.execute(sql`SELECT * FROM experiments WHERE id = ${input.id} LIMIT 1`) as any;
-      if (!rows?.[0]) return null;
-      const exp = rows[0];
+      const [rows] = await db.execute(sql`SELECT * FROM experiments WHERE id = ${input.id} LIMIT 1`);
+      if (!unsafeCast(rows)?.[0]) return null;
+      const exp = unsafeCast(rows)[0];
       exp.variants = typeof exp.variants === "string" ? JSON.parse(exp.variants) : exp.variants;
 
       // Get assignment counts
       const [assignRows] = await db.execute(
         sql`SELECT variantId, COUNT(*) as cnt FROM variant_assignments WHERE experimentId = ${input.id} GROUP BY variantId`
-      ) as any;
+      );
       const assignmentCounts: Record<string, number> = {};
-      (assignRows || []).forEach((r: any) => { assignmentCounts[r.variantId] = Number(r.cnt); });
+      unsafeCast(assignRows || []).forEach((r: any) => { assignmentCounts[r.variantId] = Number(r.cnt); });
 
       // Get results
       const [resultRows] = await db.execute(
         sql`SELECT * FROM experiment_results WHERE experimentId = ${input.id} ORDER BY metricName, variantId`
-      ) as any;
+      );
 
       return { ...exp, assignmentCounts, results: resultRows || [] };
     }),
@@ -69,7 +70,7 @@ export const experimentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
 
       await db.execute(
         sql`INSERT INTO experiments (name, description, hypothesisStatement, variants, targetUserSegment, minSampleSize, startDate, endDate, createdBy, status)
@@ -93,8 +94,8 @@ export const experimentsRouter = router({
   assignMe: protectedProcedure
     .input(z.object({ experimentId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
-      const role = (ctx.user as any)?.role || "unknown";
+      const userId = Number(ctx.user!.id);
+      const role = ctx.user!.role || "unknown";
       const variantId = await ExperimentService.assignUserToVariant(input.experimentId, userId, "NA", role);
       return { variantId };
     }),
@@ -107,17 +108,17 @@ export const experimentsRouter = router({
       metricValue: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       const db = await getDb();
       if (!db) return { success: false };
 
       // Get user's variant assignment
       const [rows] = await db.execute(
         sql`SELECT variantId FROM variant_assignments WHERE experimentId = ${input.experimentId} AND userId = ${userId} LIMIT 1`
-      ) as any;
-      if (!rows?.[0]) throw new Error("User not assigned to experiment variant");
+      );
+      if (!unsafeCast(rows)?.[0]) throw new Error("User not assigned to experiment variant");
 
-      await ExperimentService.trackMetricEvent(input.experimentId, userId, rows[0].variantId, input.metricName, input.metricValue);
+      await ExperimentService.trackMetricEvent(input.experimentId, userId, unsafeCast(rows)[0].variantId, input.metricName, input.metricValue);
       return { success: true };
     }),
 
@@ -137,7 +138,7 @@ export const experimentsRouter = router({
       if (!db) return [];
       const [rows] = await db.execute(
         sql`SELECT * FROM experiment_results WHERE experimentId = ${input.experimentId} ORDER BY metricName, variantId`
-      ) as any;
+      );
       return rows || [];
     }),
 

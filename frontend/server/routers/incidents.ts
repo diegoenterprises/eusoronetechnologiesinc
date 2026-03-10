@@ -11,6 +11,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { incidents, users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const incidentTypeSchema = z.enum([
   "accident", "spill", "violation", "injury", "near_miss", "equipment_failure", "theft", "other"
@@ -47,9 +48,9 @@ export const incidentsRouter = router({
       if (!companyId) return { incidents: [], total: 0, summary: { total: 0, open: 0, critical: 0, thisMonth: 0 } };
       try {
         const filters: any[] = [eq(incidents.companyId, companyId)];
-        if (input.status) filters.push(eq(incidents.status, input.status as any));
-        if (input.type) filters.push(eq(incidents.type, input.type as any));
-        if (input.severity) filters.push(eq(incidents.severity, input.severity as any));
+        if (input.status) filters.push(eq(incidents.status, unsafeCast(input.status)));
+        if (input.type) filters.push(eq(incidents.type, unsafeCast(input.type)));
+        if (input.severity) filters.push(eq(incidents.severity, unsafeCast(input.severity)));
         if (input.driverId) filters.push(eq(incidents.driverId, parseInt(input.driverId, 10)));
         if (input.startDate) filters.push(gte(incidents.occurredAt, new Date(input.startDate)));
         if (input.endDate) filters.push(lte(incidents.occurredAt, new Date(input.endDate)));
@@ -126,8 +127,8 @@ export const incidentsRouter = router({
 
       const result = await db.insert(incidents).values({
         companyId,
-        type: input.type as any,
-        severity: input.severity as any,
+        type: unsafeCast(input.type),
+        severity: unsafeCast(input.severity),
         occurredAt: new Date(`${input.date}T${input.time}`),
         location: input.location,
         description: input.description,
@@ -136,8 +137,8 @@ export const incidentsRouter = router({
         injuries: input.injuries ? 1 : 0,
         fatalities: 0,
         status: "reported",
-      } as any);
-      const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+      } as never);
+      const insertedId = unsafeCast(result).insertId || unsafeCast(result)[0]?.insertId || 0;
 
       // Auto-index incident for AI semantic search (fire-and-forget)
       try {
@@ -154,7 +155,7 @@ export const incidentsRouter = router({
             id: users.id, email: users.email, phone: users.phone, name: users.name,
           }).from(users).where(and(
             eq(users.companyId, companyId),
-            eq(users.role, "SAFETY_MANAGER" as any),
+            eq(users.role, unsafeCast("SAFETY_MANAGER")),
           )).limit(3);
 
           // Also get driver name for the alert
@@ -165,7 +166,7 @@ export const incidentsRouter = router({
             if (driver) driverName = driver.name || "";
           }
 
-          const reporterName = (ctx.user as any)?.name || (ctx.user as any)?.email || "Unknown";
+          const reporterName = ctx.user!.name || ctx.user!.email || "Unknown";
 
           for (const sm of safetyManagers) {
             if (sm.email) {
@@ -185,8 +186,8 @@ export const incidentsRouter = router({
               });
             }
           }
-        } catch (err: any) {
-          logger.warn("[incidents.report] Safety alert failed:", err?.message?.slice(0, 80));
+        } catch (err: unknown) {
+          logger.warn("[incidents.report] Safety alert failed:", (err as Error)?.message?.slice(0, 80));
         }
       }
 
@@ -214,7 +215,7 @@ export const incidentsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       const companyId = await resolveCompanyId(ctx.user);
-      await db.update(incidents).set({ status: input.status as any }).where(and(eq(incidents.id, parseInt(input.id, 10)), eq(incidents.companyId, companyId)));
+      await db.update(incidents).set({ status: unsafeCast(input.status) }).where(and(eq(incidents.id, parseInt(input.id, 10)), eq(incidents.companyId, companyId)));
       return { success: true, id: input.id, newStatus: input.status, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
 
@@ -295,7 +296,7 @@ export const incidentsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       const companyId = await resolveCompanyId(ctx.user);
-      await db.update(incidents).set({ status: "resolved" as any }).where(and(eq(incidents.id, parseInt(input.id, 10)), eq(incidents.companyId, companyId)));
+      await db.update(incidents).set({ status: unsafeCast("resolved") }).where(and(eq(incidents.id, parseInt(input.id, 10)), eq(incidents.companyId, companyId)));
       return { success: true, id: input.id, closedBy: ctx.user?.id, closedAt: new Date().toISOString() };
     }),
 });

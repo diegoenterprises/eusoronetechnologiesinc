@@ -11,6 +11,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { drugTests, drivers, users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const testTypeSchema = z.enum([
   "pre_employment", "random", "post_accident", "reasonable_suspicion", "return_to_duty", "follow_up"
@@ -51,8 +52,8 @@ export const drugTestingRouter = router({
       try {
         const filters: any[] = [eq(drugTests.companyId, companyId)];
         if (input.driverId) filters.push(eq(drugTests.driverId, parseInt(input.driverId, 10)));
-        if (input.testType) filters.push(eq(drugTests.type, input.testType as any));
-        if (input.result) filters.push(eq(drugTests.result, input.result as any));
+        if (input.testType) filters.push(eq(drugTests.type, unsafeCast(input.testType)));
+        if (input.result) filters.push(eq(drugTests.result, unsafeCast(input.result)));
         if (input.startDate) filters.push(gte(drugTests.testDate, new Date(input.startDate)));
         if (input.endDate) filters.push(lte(drugTests.testDate, new Date(input.endDate)));
 
@@ -137,11 +138,11 @@ export const drugTestingRouter = router({
       const result = await db.insert(drugTests).values({
         driverId: parseInt(input.driverId, 10),
         companyId,
-        type: input.testType as any,
+        type: unsafeCast(input.testType),
         testDate: new Date(input.scheduledDate),
         result: "pending",
-      } as any);
-      const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+      } as never);
+      const insertedId = unsafeCast(result).insertId || unsafeCast(result)[0]?.insertId || 0;
 
       // Auto-index drug test for AI semantic search (fire-and-forget)
       try { const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge"); indexComplianceRecord({ id: insertedId, type: `drug_test_${input.testType}`, description: `${input.testType} drug test scheduled for driver ${input.driverId} on ${input.scheduledDate}`, status: "scheduled", severity: "minor" }); } catch {}
@@ -178,7 +179,7 @@ export const drugTestingRouter = router({
       if (!db) throw new Error("Database not available");
       const companyId = await resolveCompanyId(ctx.user);
       await db.update(drugTests)
-        .set({ result: input.result as any, testDate: new Date(input.collectionDate) })
+        .set({ result: unsafeCast(input.result), testDate: new Date(input.collectionDate) })
         .where(and(eq(drugTests.id, parseInt(input.testId, 10)), eq(drugTests.companyId, companyId)));
       return { success: true, testId: input.testId, result: input.result, recordedBy: ctx.user?.id, recordedAt: new Date().toISOString() };
     }),
@@ -199,7 +200,7 @@ export const drugTestingRouter = router({
       if (!db) throw new Error("Database not available");
       const companyId = await resolveCompanyId(ctx.user);
       await db.update(drugTests)
-        .set({ result: input.verifiedResult as any })
+        .set({ result: unsafeCast(input.verifiedResult) })
         .where(and(eq(drugTests.id, parseInt(input.testId, 10)), eq(drugTests.companyId, companyId)));
       return { success: true, testId: input.testId, recordedBy: ctx.user?.id, recordedAt: new Date().toISOString() };
     }),
@@ -273,13 +274,13 @@ export const drugTestingRouter = router({
         if (db && driverIdNum) {
           const [d] = await db.select().from(drivers).where(eq(drivers.id, driverIdNum)).limit(1);
           if (d) {
-            const nameParts = ((d as any).name || "").split(" ");
+            const nameParts = (unsafeCast(d).name || "").split(" ");
             driverInfo = {
               firstName: nameParts[0] || "",
               lastName: nameParts.slice(1).join(" ") || "",
-              cdlNumber: (d as any).cdlNumber || "",
-              cdlState: (d as any).licenseState || "",
-              dateOfBirth: (d as any).dateOfBirth?.toISOString?.() || "",
+              cdlNumber: unsafeCast(d).cdlNumber || "",
+              cdlState: unsafeCast(d).licenseState || "",
+              dateOfBirth: unsafeCast(d).dateOfBirth?.toISOString?.() || "",
             };
           }
         }
@@ -290,9 +291,9 @@ export const drugTestingRouter = router({
 
         if (!query) return { queryId: null, driverId: input.driverId, queryType: input.queryType, status: "api_error", result: null, submittedBy: ctx.user?.id, submittedAt: new Date().toISOString(), error: "Clearinghouse API returned no result" };
         return { queryId: query.queryId, driverId: input.driverId, queryType: input.queryType, status: query.status, result: query.result, submittedBy: ctx.user?.id, submittedAt: query.requestedAt };
-      } catch (e: any) {
+      } catch (e: unknown) {
         logger.error("[DrugTesting] queryClearinghouse error:", e);
-        return { queryId: null, driverId: input.driverId, queryType: input.queryType, status: "error", result: null, submittedBy: ctx.user?.id, submittedAt: new Date().toISOString(), error: e?.message };
+        return { queryId: null, driverId: input.driverId, queryType: input.queryType, status: "error", result: null, submittedBy: ctx.user?.id, submittedAt: new Date().toISOString(), error: (e as Error)?.message };
       }
     }),
 

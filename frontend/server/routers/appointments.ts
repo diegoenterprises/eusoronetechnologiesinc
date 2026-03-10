@@ -9,6 +9,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { appointments, loads, users, companies } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const appointmentStatusSchema = z.enum([
   "scheduled", "confirmed", "checked_in", "loading", "unloading", "completed", "cancelled", "no_show"
@@ -44,8 +45,8 @@ export const appointmentsRouter = router({
       try {
         const filters: any[] = [];
         if (input.facilityId) filters.push(eq(appointments.terminalId, parseInt(input.facilityId, 10)));
-        if (input.status) filters.push(eq(appointments.status, input.status as any));
-        if (input.type) filters.push(eq(appointments.type, input.type as any));
+        if (input.status) filters.push(eq(appointments.status, unsafeCast(input.status)));
+        if (input.type) filters.push(eq(appointments.type, unsafeCast(input.type)));
         if (input.date) {
           const dayStart = new Date(input.date); dayStart.setHours(0,0,0,0);
           const dayEnd = new Date(input.date); dayEnd.setHours(23,59,59,999);
@@ -116,11 +117,11 @@ export const appointmentsRouter = router({
         terminalId: parseInt(input.facilityId, 10),
         loadId: parseInt(input.loadId, 10) || null,
         driverId: input.driverId ? parseInt(input.driverId, 10) : null,
-        type: input.type as any,
+        type: unsafeCast(input.type),
         scheduledAt: new Date(`${input.scheduledDate}T${input.scheduledTime}`),
         status: "scheduled",
-      } as any);
-      const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+      } as never);
+      const insertedId = unsafeCast(result).insertId || unsafeCast(result)[0]?.insertId || 0;
       return { id: String(insertedId), confirmationNumber: `CONF-${String(insertedId).padStart(6, "0")}`, status: "scheduled", createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
     }),
 
@@ -150,7 +151,7 @@ export const appointmentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      await db.update(appointments).set({ status: input.status as any }).where(eq(appointments.id, parseInt(input.id, 10)));
+      await db.update(appointments).set({ status: unsafeCast(input.status) }).where(eq(appointments.id, parseInt(input.id, 10)));
       return { success: true, id: input.id, newStatus: input.status, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
 
@@ -167,7 +168,7 @@ export const appointmentsRouter = router({
       const apptId = parseInt(input.appointmentId, 10);
       const [appt] = await db.select({ driverId: appointments.driverId, terminalId: appointments.terminalId }).from(appointments).where(eq(appointments.id, apptId)).limit(1);
       if (!appt || (appt.driverId !== userId && companyId === 0)) throw new Error("Appointment not found");
-      await db.update(appointments).set({ status: "checked_in" as any }).where(eq(appointments.id, apptId));
+      await db.update(appointments).set({ status: unsafeCast("checked_in") }).where(eq(appointments.id, apptId));
       return { success: true, appointmentId: input.appointmentId, checkInTime: new Date().toISOString(), queuePosition: 0, estimatedWait: 0 };
     }),
 
@@ -179,7 +180,7 @@ export const appointmentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      await db.update(appointments).set({ status: "cancelled" as any }).where(eq(appointments.id, parseInt(input.id, 10)));
+      await db.update(appointments).set({ status: unsafeCast("cancelled") }).where(eq(appointments.id, parseInt(input.id, 10)));
       return { success: true, id: input.id, cancelledBy: ctx.user?.id, cancelledAt: new Date().toISOString() };
     }),
 
@@ -269,7 +270,7 @@ export const appointmentsRouter = router({
     const apptId = parseInt(input.appointmentId, 10);
     const [appt] = await db.select({ driverId: appointments.driverId }).from(appointments).where(eq(appointments.id, apptId)).limit(1);
     if (!appt || (appt.driverId !== userId && companyId === 0)) throw new Error("Appointment not found");
-    await db.update(appointments).set({ status: "loading" as any }).where(eq(appointments.id, apptId));
+    await db.update(appointments).set({ status: unsafeCast("loading") }).where(eq(appointments.id, apptId));
     return { success: true, appointmentId: input.appointmentId };
   }),
   complete: protectedProcedure.input(z.object({ appointmentId: z.string() })).mutation(async ({ ctx, input }) => {
@@ -280,7 +281,7 @@ export const appointmentsRouter = router({
     const apptId = parseInt(input.appointmentId, 10);
     const [appt] = await db.select({ driverId: appointments.driverId }).from(appointments).where(eq(appointments.id, apptId)).limit(1);
     if (!appt || (appt.driverId !== userId && companyId === 0)) throw new Error("Appointment not found");
-    await db.update(appointments).set({ status: "completed" as any }).where(eq(appointments.id, apptId));
+    await db.update(appointments).set({ status: unsafeCast("completed") }).where(eq(appointments.id, apptId));
     return { success: true, appointmentId: input.appointmentId, completedAt: new Date().toISOString() };
   }),
 

@@ -16,6 +16,7 @@ import {
   generateTankForecast,
   generateTerminalSummary,
 } from "../services/TankLevelMonitor";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const tankMonitorRouter = router({
   /**
@@ -42,8 +43,8 @@ export const tankMonitorRouter = router({
           const [vol] = await db.execute(sql`
             SELECT COALESCE(SUM(actualGallons), 0) as dispatched
             FROM scada_transactions WHERE terminalId = ${input.terminalId} AND status = 'completed'
-          `) as any;
-          dispatchedGallons = Number((vol || [])[0]?.dispatched) || 0;
+          `);
+          dispatchedGallons = Number(unsafeCast(vol || [])[0]?.dispatched) || 0;
         } catch { /* scada_transactions may not exist */ }
 
         const readings = [];
@@ -78,7 +79,7 @@ export const tankMonitorRouter = router({
       const db = await getDb();
       if (!db) return [];
       try {
-        const companyId = (ctx.user as any)?.companyId;
+        const companyId = ctx.user!.companyId;
         let terminalRows: any[] = [];
 
         if (input.terminalId) {
@@ -186,7 +187,7 @@ export const tankMonitorRouter = router({
       const db = await getDb();
       if (!db) return { terminals: [], totals: { totalTanks: 0, totalCapacity: 0, totalInventory: 0, overallUtilization: 0, alerts: { critical: 0, warning: 0, info: 0 } } };
       try {
-        const companyId = (ctx.user as any)?.companyId;
+        const companyId = ctx.user!.companyId;
         let terminalRows: any[] = [];
 
         if (input?.terminalIds && input.terminalIds.length > 0) {

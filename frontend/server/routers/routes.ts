@@ -9,6 +9,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { routes as routesTable, loads } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const routesRouter = router({
   /**
@@ -48,7 +49,7 @@ export const routesRouter = router({
             vehicleProfile: input.vehicleType,
             hazmatRestrictions: input.hazmat,
             status: 'planned',
-          } as any).$returningId();
+          } as never).$returningId();
           return {
             routeId: String(result.id),
             distance: 0, duration: 0, estimatedFuel: 0, tollCost: 0,
@@ -195,7 +196,7 @@ export const routesRouter = router({
             durationMinutes: Math.round(dist / 55 * 60),
             vehicleProfile: 'truck',
             status: 'planned',
-          } as any).$returningId();
+          } as never).$returningId();
           return { id: String(result.id), name: input.name, createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
         } catch {}
       }
@@ -210,7 +211,7 @@ export const routesRouter = router({
       const db = await getDb(); if (!db) return [];
       try {
         const rows = await db.select().from(routesTable).where(eq(routesTable.status, 'planned')).orderBy(desc(routesTable.createdAt)).limit(20);
-        return rows.map(r => ({
+        return unsafeCast(rows).map((r: any) => ({
           id: String(r.id), distance: parseFloat(String(r.distanceMiles)) || 0,
           duration: (r.durationMinutes || 0) / 60, vehicleProfile: r.vehicleProfile,
           createdAt: r.createdAt?.toISOString() || '',
@@ -253,8 +254,8 @@ export const routesRouter = router({
               AND ABS(CAST(latitude AS DECIMAL(10,6)) - ${input.currentPosition.lat}) < 1.0
               AND ABS(CAST(longitude AS DECIMAL(10,6)) - ${input.currentPosition.lng}) < 1.0
               AND expires > NOW()
-          `) as any;
-          const alertData = (alerts || [])[0];
+          `);
+          const alertData = unsafeCast(alerts || [])[0];
           if (alertData && Number(alertData.cnt) > 0) {
             const sev = String(alertData.maxSev || '').toLowerCase();
             if (sev.includes('extreme') || sev.includes('severe')) { trafficCondition = 'severe'; delayMinutes = 45; }
@@ -322,8 +323,8 @@ export const routesRouter = router({
             AND CAST(longitude AS DECIMAL(10,6)) BETWEEN ${input.bounds.west} AND ${input.bounds.east}
           ORDER BY severity DESC, expires ASC
           LIMIT 50
-        `) as any;
-        return (rows || []).map((r: any) => ({
+        `);
+        return unsafeCast(rows || []).map((r: any) => ({
           id: String(r.id),
           type: r.event || 'weather',
           headline: r.headline || r.event || 'Road Condition Alert',

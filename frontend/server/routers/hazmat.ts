@@ -14,6 +14,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, drivers, companies, incidents, vehicles } from "../../drizzle/schema";
 import { searchMaterials, getGuide, getFullERGInfo, EMERGENCY_CONTACTS } from "../_core/ergDatabaseDB";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // All 9 DOT hazard classes + divisions
 const HAZARD_CLASSES: Record<string, { name: string; placard: string; color: string; subsidiaryHazards: string[]; packingGroups: string[] }> = {
@@ -106,7 +107,7 @@ export const hazmatRouter = router({
         const cid = ctx.user?.companyId || 0;
         const ht = ["hazmat","liquid","gas","chemicals","petroleum"] as const;
         const conds = [eq(loads.shipperId, cid), inArray(loads.cargoType, [...ht])];
-        if (input?.status) conds.push(eq(loads.status, input.status as any));
+        if (input?.status) conds.push(eq(loads.status, unsafeCast(input.status)));
         if (input?.hazmatClass) conds.push(eq(loads.hazmatClass, input.hazmatClass));
         const rows = await db.select().from(loads).where(and(...conds)).orderBy(desc(loads.createdAt)).limit(input?.limit || 50);
         return rows.map(r => ({ id: r.id, loadNumber: r.loadNumber, status: r.status, cargoType: r.cargoType, hazmatClass: r.hazmatClass, unNumber: r.unNumber, commodityName: r.commodityName, weight: r.weight, pickupLocation: r.pickupLocation, deliveryLocation: r.deliveryLocation, pickupDate: r.pickupDate, deliveryDate: r.deliveryDate, placard: r.hazmatClass ? HAZARD_CLASSES[r.hazmatClass]?.placard || "Unknown" : null, createdAt: r.createdAt }));
@@ -360,7 +361,7 @@ export const hazmatRouter = router({
           if (mat.unNumber) {
             const info = await getFullERGInfo(mat.unNumber);
             if (info?.guide?.emergencyResponse) {
-              const er = info.guide.emergencyResponse as any;
+              const er = unsafeCast(info.guide.emergencyResponse);
               if (er.fire) emergencyActions.push(`[UN${mat.unNumber}] Fire: ${Array.isArray(er.fire) ? er.fire[0] : er.fire}`);
               if (er.spill) emergencyActions.push(`[UN${mat.unNumber}] Spill: ${Array.isArray(er.spill) ? er.spill[0] : er.spill}`);
             }
@@ -818,7 +819,7 @@ export const hazmatRouter = router({
 
           const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
           if (resp.ok) {
-            const data = await resp.json() as any;
+            const data = await resp.json();
             if (data.routes?.length > 0) {
               // Primary route (with avoidance)
               const primary = data.routes[0];

@@ -13,6 +13,7 @@ import {
   users,
   companies,
 } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const laneContractsRouter = router({
   /** List lane contracts for current user */
@@ -41,7 +42,7 @@ export const laneContractsRouter = router({
             )
           );
         }
-        if (input.status) conditions.push(eq(laneContracts.status, input.status as any));
+        if (input.status) conditions.push(eq(laneContracts.status, unsafeCast(input.status)));
         if (input.agreementId) conditions.push(eq(laneContracts.agreementId, input.agreementId));
         if (input.originState) conditions.push(eq(laneContracts.originState, input.originState));
         if (input.destinationState) conditions.push(eq(laneContracts.destinationState, input.destinationState));

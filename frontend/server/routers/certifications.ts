@@ -10,6 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { documents, drivers, users, certifications } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const certTypeSchema = z.enum([
   "cdl", "hazmat", "tanker", "doubles_triples", "passenger", "school_bus",
@@ -160,8 +161,8 @@ export const certificationsRouter = router({
       const userId = parseInt(input.entityId, 10);
       const result = await db.insert(certifications).values({
         userId, type: input.type, name: input.name,
-        expiryDate: new Date(input.expiresAt), status: 'pending' as any,
-      } as any).$returningId();
+        expiryDate: new Date(input.expiresAt), status: unsafeCast('pending'),
+      } as never).$returningId();
       // Auto-index certification for AI semantic search (fire-and-forget)
       try { const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge"); indexComplianceRecord({ id: result[0]?.id, type: `cert_${input.type}`, description: `${input.name} certification for user ${userId}. Expires: ${input.expiresAt}`, status: "pending", severity: "minor" }); } catch {}
       return { id: `cert_${result[0]?.id}`, status: 'pending', createdBy: ctx.user?.id, createdAt: new Date().toISOString() };

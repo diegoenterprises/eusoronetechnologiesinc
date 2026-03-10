@@ -10,6 +10,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, users } from "../../drizzle/schema";
 import { eq, sql, desc, and, gte, lte, count, sum, avg, or, isNotNull } from "drizzle-orm";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -44,7 +45,7 @@ async function getUserCompanyId(ctxUser: any): Promise<number> {
     const userId = await resolveNumericUserId(ctxUser);
     if (!userId) return 0;
     const [row] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
-    return (row as any)?.companyId || 0;
+    return unsafeCast(row)?.companyId || 0;
   } catch { return 0; }
 }
 
@@ -297,7 +298,7 @@ export const competitiveIntelRouter = router({
           const lane = `${oState} -> ${dState}`;
           if (!laneStats[lane]) laneStats[lane] = { recent: 0, older: 0, rates: [] };
           if (ld.rate) laneStats[lane].rates.push(Number(ld.rate));
-          const created = ld.createdAt instanceof Date ? ld.createdAt : new Date(ld.createdAt as any);
+          const created = ld.createdAt instanceof Date ? ld.createdAt : new Date(unsafeCast(ld.createdAt));
           if (created.getTime() > Date.now() - 30 * 86400000) {
             laneStats[lane].recent++;
           } else {
@@ -472,7 +473,7 @@ export const competitiveIntelRouter = router({
           }).from(loads).where(eq(loads.shipperId, shipper.id));
 
           const rev = Number(stats?.rev) || 0;
-          const created = shipper.createdAt instanceof Date ? shipper.createdAt : new Date(shipper.createdAt as any);
+          const created = shipper.createdAt instanceof Date ? shipper.createdAt : new Date(unsafeCast(shipper.createdAt));
           const tenure = Math.max(1, Math.round((Date.now() - created.getTime()) / (30 * 86400000)));
 
           const tier = rev > 200000 ? "Enterprise" : rev > 50000 ? "Mid-Market" : "SMB";

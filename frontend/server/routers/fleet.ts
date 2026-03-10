@@ -440,7 +440,7 @@ export const fleetRouter = router({
         });
         return { id: String(result[0].insertId), ...input, status: 'active', createdAt: new Date().toISOString() };
       } catch (e) {
-        if ((e as Record<string, unknown>)?.code === 'ER_DUP_ENTRY') return { id: '', success: false, error: 'VIN already exists' };
+        if ((e as unknown as Record<string, unknown>)?.code === 'ER_DUP_ENTRY') return { id: '', success: false, error: 'VIN already exists' };
         logger.error('[Fleet] create error:', e); return { id: '', success: false };
       }
     }),

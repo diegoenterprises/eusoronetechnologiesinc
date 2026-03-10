@@ -10,6 +10,7 @@ import { sql, desc } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, companies, inspections } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 import {
   getAllVerticals,
   getVertical,
@@ -668,7 +669,7 @@ export const industryVerticalsRouter = router({
         const [rows] = await db.execute(
           sql`SELECT cargoType, COUNT(*) as cnt FROM loads WHERE deletedAt IS NULL GROUP BY cargoType`
         );
-        for (const row of (rows as unknown as any[])) {
+        for (const row of unsafeCast(rows)) {
           loadCountsByCargoType[row.cargoType as string] = Number(row.cnt);
         }
       }
@@ -748,7 +749,7 @@ export const industryVerticalsRouter = router({
                        SUM(CASE WHEN oosViolation = 1 THEN 1 ELSE 0 END) as oos
                 FROM inspections`
           );
-          const inspRow = (inspRows as unknown as any[])[0];
+          const inspRow = unsafeCast(inspRows)[0];
           const total = Number(inspRow?.total ?? 0);
           const passed = Number(inspRow?.passed ?? 0);
           const failed = Number(inspRow?.failed ?? 0);
@@ -760,7 +761,7 @@ export const industryVerticalsRouter = router({
                        SUM(CASE WHEN complianceStatus = 'compliant' THEN 1 ELSE 0 END) as compliant
                 FROM companies`
           );
-          const compRow = (compRows as unknown as any[])[0];
+          const compRow = unsafeCast(compRows)[0];
           const compTotal = Number(compRow?.total ?? 0);
           const compCompliant = Number(compRow?.compliant ?? 0);
 
@@ -1159,7 +1160,7 @@ export const industryVerticalsRouter = router({
                     SUM(CASE WHEN status IN ('en_route_pickup','at_pickup','loading','loaded','in_transit','at_delivery','unloading') THEN 1 ELSE 0 END) as activeLoads
              FROM loads WHERE cargoType IN (${placeholders}) AND deletedAt IS NULL`
           ));
-          const row = (rows as unknown as any[])[0];
+          const row = unsafeCast(rows)[0];
           const totalLoads = Number(row?.totalLoads ?? 0);
           const totalRevenue = Number(row?.totalRevenue ?? 0);
           const avgRate = Number(row?.avgRate ?? 0);

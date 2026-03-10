@@ -23,6 +23,7 @@ import {
   insurancePolicies,
 } from "../../drizzle/schema";
 import { fmcsaService } from "../services/fmcsa";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // Map platform roles to valid load_bids.bidderRole enum values
 function roleToBidderRole(role?: string): "catalyst" | "broker" | "driver" | "escort" {
@@ -49,7 +50,7 @@ export const loadBiddingRouter = router({
       if (!db) return [];
       try {
         const conditions: any[] = [eq(loadBids.loadId, input.loadId)];
-        if (input.status) conditions.push(eq(loadBids.status, input.status as any));
+        if (input.status) conditions.push(eq(loadBids.status, unsafeCast(input.status)));
 
         const bids = await db.select().from(loadBids)
           .where(and(...conditions))
@@ -87,7 +88,7 @@ export const loadBiddingRouter = router({
         if (!userId) return { bids: [], total: 0 };
 
         const conditions: any[] = [eq(loadBids.bidderUserId, userId)];
-        if (input.status) conditions.push(eq(loadBids.status, input.status as any));
+        if (input.status) conditions.push(eq(loadBids.status, unsafeCast(input.status)));
 
         const whereClause = and(...conditions);
         const [results, countResult] = await Promise.all([
@@ -123,7 +124,7 @@ export const loadBiddingRouter = router({
         if (loadIds.length === 0) return [];
 
         const conditions: any[] = [];
-        if (input.status) conditions.push(eq(loadBids.status, input.status as any));
+        if (input.status) conditions.push(eq(loadBids.status, unsafeCast(input.status)));
 
         // Get bids on those loads
         const bids = await db.select().from(loadBids)
@@ -222,7 +223,7 @@ export const loadBiddingRouter = router({
       expiresInHours: z.number().default(24),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'BID' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'CATALYST', companyId: ctx.user!.companyId, action: 'CREATE', resource: 'BID' }, unsafeCast(ctx).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
@@ -376,7 +377,7 @@ export const loadBiddingRouter = router({
   accept: protectedProcedure
     .input(z.object({ bidId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'APPROVE', resource: 'BID' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'SHIPPER', companyId: ctx.user!.companyId, action: 'APPROVE', resource: 'BID' }, unsafeCast(ctx).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
@@ -385,7 +386,7 @@ export const loadBiddingRouter = router({
 
       // === WS-P0-005R: COMPLIANCE GATE — FMCSA Safety + Operating Authority ===
       const [bidderUser] = await db.select().from(users).where(eq(users.id, bid.bidderUserId)).limit(1);
-      const bidderCompanyId = (bidderUser as any)?.companyId;
+      const bidderCompanyId = unsafeCast(bidderUser)?.companyId;
       let bidderCompany: any = null;
 
       if (bidderCompanyId) {
@@ -449,8 +450,8 @@ export const loadBiddingRouter = router({
         }
 
         // For hazmat loads, require hazmat endorsement
-        const isHazmat = (load as any)?.[0]?.hazmatClass || (load as any)?.hazmatClass;
-        const cargoType = (load as any)?.cargoType?.toLowerCase?.() || '';
+        const isHazmat = unsafeCast(load)?.[0]?.hazmatClass || unsafeCast(load)?.hazmatClass;
+        const cargoType = unsafeCast(load)?.cargoType?.toLowerCase?.() || '';
         if (isHazmat || cargoType.includes('crude') || cargoType.includes('hazmat')) {
           const hasHazmatIns = activePolicies.some(p =>
             p.policyType === 'hazmat_endorsement' || p.hazmatCoverage ||

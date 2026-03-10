@@ -24,7 +24,7 @@ export const documentVerificationRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { verifyDocument } = await import("../services/ai/documentVerifier");
 
-      const userId = (ctx as any).user?.id ? parseInt(String((ctx as any).user.id), 10) : undefined;
+      const userId = ctx.user!?.id ? parseInt(String(ctx.user!.id), 10) : undefined;
 
       const result = await verifyDocument(
         input.imageBase64,

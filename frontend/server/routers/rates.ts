@@ -9,6 +9,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const equipmentTypeSchema = z.enum(["tanker", "flatbed", "reefer", "van", "specialized"]);
 const hazmatClassSchema = z.enum(["1", "2", "3", "4", "5", "6", "7", "8", "9", "none"]);
@@ -305,12 +306,12 @@ export const ratesRouter = router({
             catalystId: 0,
             loadNumber: `QT-${Date.now().toString(36).toUpperCase()}`,
             status: 'posted',
-            cargoType: 'general' as any,
+            cargoType: unsafeCast('general'),
             pickupLocation: { address: input.origin },
             deliveryLocation: { address: input.destination },
             rate: String(input.rate),
             specialInstructions: input.notes || null,
-          } as any).$returningId();
+          } as never).$returningId();
           return { id: String(result.id), ...input, createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
         } catch (e) { logger.error('[Rates] saveQuote error:', e); }
       }
@@ -328,8 +329,8 @@ export const ratesRouter = router({
         const companyId = ctx.user?.companyId || 0;
         const rows = await db.select().from(loads).where(and(eq(loads.shipperId, companyId), sql`${loads.loadNumber} LIKE 'QT-%'`)).orderBy(desc(loads.createdAt)).limit(input.limit);
         return rows.map(l => {
-          const p = l.pickupLocation as any || {};
-          const d = l.deliveryLocation as any || {};
+          const p = unsafeCast(l.pickupLocation) || {};
+          const d = unsafeCast(l.deliveryLocation) || {};
           return { id: String(l.id), origin: p.address || '', destination: d.address || '', rate: l.rate ? parseFloat(String(l.rate)) : 0, createdAt: l.createdAt?.toISOString() || '' };
         });
       } catch (e) { logger.error("[rates] Failed to fetch quote history:", e); return []; }
@@ -381,8 +382,8 @@ export const ratesRouter = router({
       const companyId = ctx.user?.companyId || 0;
       const rows = await db.select().from(loads).where(eq(loads.shipperId, companyId)).orderBy(desc(loads.createdAt)).limit(50);
       return rows.map(l => {
-        const pickup = l.pickupLocation as any || {};
-        const delivery = l.deliveryLocation as any || {};
+        const pickup = unsafeCast(l.pickupLocation) || {};
+        const delivery = unsafeCast(l.deliveryLocation) || {};
         return { id: String(l.id), lane: `${pickup.city || ''}, ${pickup.state || ''} → ${delivery.city || ''}, ${delivery.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0, distance: l.distance ? parseFloat(String(l.distance)) : 0, date: l.createdAt?.toISOString() || '' };
       });
     } catch (e) { return []; }
@@ -402,8 +403,8 @@ export const ratesRouter = router({
     try {
       const rows = await db.select().from(loads).where(sql`${loads.rate} > 0 AND ${loads.status} = 'delivered'`).orderBy(desc(loads.createdAt)).limit(input?.limit || 20);
       return rows.map(l => {
-        const pickup = l.pickupLocation as any || {};
-        const delivery = l.deliveryLocation as any || {};
+        const pickup = unsafeCast(l.pickupLocation) || {};
+        const delivery = unsafeCast(l.deliveryLocation) || {};
         return { id: String(l.id), origin: `${pickup.city || ''}, ${pickup.state || ''}`, destination: `${delivery.city || ''}, ${delivery.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0, distance: l.distance ? parseFloat(String(l.distance)) : 0, ratePerMile: (l.rate && l.distance) ? Math.round((parseFloat(String(l.rate)) / parseFloat(String(l.distance))) * 100) / 100 : 0, date: l.createdAt?.toISOString() || '' };
       });
     } catch (e) { return []; }
@@ -413,8 +414,8 @@ export const ratesRouter = router({
     try {
       const rows = await db.select().from(loads).where(sql`${loads.rate} > 0`).orderBy(desc(loads.createdAt)).limit(input?.limit || 10);
       return rows.map(l => {
-        const pickup = l.pickupLocation as any || {};
-        const delivery = l.deliveryLocation as any || {};
+        const pickup = unsafeCast(l.pickupLocation) || {};
+        const delivery = unsafeCast(l.deliveryLocation) || {};
         return { id: String(l.id), lane: `${pickup.city || ''}, ${pickup.state || ''} → ${delivery.city || ''}, ${delivery.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0, date: l.createdAt?.toISOString() || '' };
       });
     } catch (e) { return []; }
@@ -462,7 +463,7 @@ export const ratesRouter = router({
           rate: loads.rate,
           distance: loads.distance,
         }).from(loads).where(and(
-          eq(loads.status, "delivered" as any),
+          eq(loads.status, unsafeCast("delivered")),
           gte(loads.createdAt, since),
           sql`CAST(${loads.rate} AS DECIMAL) > 0`,
           sql`CAST(${loads.distance} AS DECIMAL) > 0`,

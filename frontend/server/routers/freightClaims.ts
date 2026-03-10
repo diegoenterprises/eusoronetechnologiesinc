@@ -11,6 +11,7 @@ import { isolatedApprovedProcedure as protectedProcedure, router } from "../_cor
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { incidents } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -338,10 +339,10 @@ export const freightClaimsRouter = router({
         .insert(incidents)
         .values({
           companyId: ctx.user?.companyId || 0,
-          type: (typeMap[input.type] || "near_miss") as any,
-          status: "reported" as any,
+          type: (typeMap[input.type] || "near_miss") as never,
+          status: unsafeCast("reported"),
           description: `[FreightClaim:${input.type}] Load ${input.loadId} — $${input.amount.toLocaleString()} — ${input.description}`,
-          severity: "moderate" as any,
+          severity: unsafeCast("moderate"),
           occurredAt: input.discoveredAt ? new Date(input.discoveredAt) : new Date(),
         })
         .$returningId();
@@ -401,7 +402,7 @@ export const freightClaimsRouter = router({
 
       await db
         .update(incidents)
-        .set({ status: (statusMap[input.status] || "reported") as any })
+        .set({ status: (statusMap[input.status] || "reported") as never })
         .where(eq(incidents.id, numId));
 
       return {
@@ -503,7 +504,7 @@ export const freightClaimsRouter = router({
         const numId = parseNumericId(input.claimId);
         await db
           .update(incidents)
-          .set({ status: "investigating" as any })
+          .set({ status: unsafeCast("investigating") })
           .where(eq(incidents.id, numId));
       }
 
@@ -540,7 +541,7 @@ export const freightClaimsRouter = router({
               : "investigating";
         await db
           .update(incidents)
-          .set({ status: finalStatus as any })
+          .set({ status: unsafeCast(finalStatus) })
           .where(eq(incidents.id, numId));
       }
 
@@ -675,10 +676,10 @@ export const freightClaimsRouter = router({
         .insert(incidents)
         .values({
           companyId: ctx.user?.companyId || 0,
-          type: "near_miss" as any,
-          status: "reported" as any,
+          type: unsafeCast("near_miss"),
+          status: unsafeCast("reported"),
           description: `[Dispute:${input.type}] Invoice ${input.invoiceNumber} — $${input.amount.toLocaleString()} — ${input.description}`,
-          severity: "moderate" as any,
+          severity: unsafeCast("moderate"),
           occurredAt: new Date(),
         })
         .$returningId();
@@ -857,7 +858,7 @@ export const freightClaimsRouter = router({
       const [lossCount] = await db
         .select({ count: sql<number>`count(*)` })
         .from(incidents)
-        .where(eq(incidents.type, "property_damage" as any));
+        .where(eq(incidents.type, unsafeCast("property_damage")));
 
       return {
         metrics: {

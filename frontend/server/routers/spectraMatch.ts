@@ -26,6 +26,7 @@ import {
   classifyAPI, classifySulfur, getCountryName, getMetadata as getCrudeMetadata,
   type CrudeOilSpec, type MatchResult, type MatchInput,
 } from "../_core/crudeOilSpecsDB";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const spectraMatchRouter = router({
   // Identify crude oil origin based on parameters — HYBRID: Static + ESANG AI
@@ -364,7 +365,7 @@ export const spectraMatchRouter = router({
         bsw: input.parameters.bsw,
         sulfur: input.parameters.sulfur,
         flashPoint: input.parameters.flashPoint,
-        verifiedBy: (ctx.user as any)?.id || 0,
+        verifiedBy: ctx.user!.id || 0,
         verifiedAt,
         esangVerified: input.esangVerified || false,
       };
@@ -372,9 +373,9 @@ export const spectraMatchRouter = router({
       try {
         await db.update(loads)
           .set({
-            spectraMatchResult: spectraMatchResult as any,
+            spectraMatchResult: unsafeCast(spectraMatchResult),
             commodityName: productName,
-          } as any)
+          } as never)
           .where(eq(loads.id, loadId));
 
         return {
@@ -385,7 +386,7 @@ export const spectraMatchRouter = router({
             crudeId: input.crudeId,
             productName,
             confidence: input.confidence,
-            verifiedBy: (ctx.user as any)?.id,
+            verifiedBy: ctx.user!.id,
             verifiedAt,
           },
           message: "SpectraMatch identification saved to load",
@@ -414,14 +415,14 @@ export const spectraMatchRouter = router({
           .orderBy(desc(loads.createdAt))
           .limit(input.limit);
 
-        const verified = history.filter(l => !!(l as any).spectraMatchResult);
+        const verified = history.filter(l => !!unsafeCast(l).spectraMatchResult);
         return {
           identifications: verified.map((load) => {
-            const sm = (load as any).spectraMatchResult as any;
+            const sm = unsafeCast(load).spectraMatchResult;
             return {
               id: `SM-${String(load.id).padStart(3, '0')}`,
               timestamp: sm?.verifiedAt || load.createdAt?.toISOString() || new Date().toISOString(),
-              crudeType: sm?.productName || (load as any).commodityName || "Unknown",
+              crudeType: sm?.productName || unsafeCast(load).commodityName || "Unknown",
               confidence: sm?.confidence || 0,
               apiGravity: sm?.apiGravity || 0,
               bsw: sm?.bsw || 0,
@@ -456,12 +457,12 @@ export const spectraMatchRouter = router({
         // Check integration keys for TAS providers
         const keysResult = await db.execute(
           sql`SELECT provider, configured, external_id FROM integration_keys
-              WHERE company_id = (SELECT company_id FROM users WHERE id = ${Number((ctx.user as any)?.id) || 0} LIMIT 1)
+              WHERE company_id = (SELECT company_id FROM users WHERE id = ${Number(ctx.user!.id) || 0} LIMIT 1)
               AND provider IN ('dtn', 'buckeye_tas', 'dearman')
               AND configured = true
               LIMIT 1`
         );
-        const tasKey = (keysResult as any)?.[0]?.[0];
+        const tasKey = unsafeCast(keysResult)?.[0]?.[0];
 
         if (!tasKey) {
           return { products: [], source: "none" as const, connected: false };
@@ -476,24 +477,24 @@ export const spectraMatchRouter = router({
               FROM dtn_inventory_cache
               WHERE facility_id IN (
                 SELECT id FROM facilities WHERE claimed_by_company_id = (
-                  SELECT company_id FROM users WHERE id = ${Number((ctx.user as any)?.id) || 0} LIMIT 1
+                  SELECT company_id FROM users WHERE id = ${Number(ctx.user!.id) || 0} LIMIT 1
                 )
               )
               ORDER BY product`
         );
-        const inventory = ((inventoryResult as any)?.[0] || []) as any[];
+        const inventory: any[] = unsafeCast(inventoryResult)?.[0] || [];
 
         const pricingResult = await db.execute(
           sql`SELECT DISTINCT product, supplier_name, gross_price, net_price
               FROM dtn_pricing_cache
               WHERE facility_id IN (
                 SELECT id FROM facilities WHERE claimed_by_company_id = (
-                  SELECT company_id FROM users WHERE id = ${Number((ctx.user as any)?.id) || 0} LIMIT 1
+                  SELECT company_id FROM users WHERE id = ${Number(ctx.user!.id) || 0} LIMIT 1
                 )
               )
               ORDER BY product`
         );
-        const pricing = ((pricingResult as any)?.[0] || []) as any[];
+        const pricing: any[] = unsafeCast(pricingResult)?.[0] || [];
 
         // Build unified product catalog from TAS data
         const productMap = new Map<string, any>();
@@ -630,7 +631,7 @@ export const spectraMatchRouter = router({
               ORDER BY p.gross_price ASC
               LIMIT 20`
         );
-        const pricing = ((pricingResult as any)?.[0] || []) as any[];
+        const pricing: any[] = unsafeCast(pricingResult)?.[0] || [];
 
         // Aggregate
         const prices = pricing.map((p: any) => parseFloat(p.gross_price)).filter(Boolean);

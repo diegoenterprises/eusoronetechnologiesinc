@@ -26,6 +26,7 @@ import {
   loads,
   auditLogs,
 } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ============================================================================
 // HELPER TYPES
@@ -173,7 +174,7 @@ async function getWorkflowById(id: string): Promise<StoredWorkflow | null> {
       .where(and(eq(auditLogs.entityType, "doc_workflow"), eq(auditLogs.action, id)))
       .orderBy(desc(auditLogs.createdAt))
       .limit(1);
-    return rows[0] ? (rows[0].metadata as StoredWorkflow) : null;
+    return unsafeCast(rows)[0] ? (unsafeCast(rows)[0].metadata as StoredWorkflow) : null;
   } catch { return null; }
 }
 
@@ -220,7 +221,7 @@ async function getSignatureById(id: string): Promise<StoredSignatureRequest | nu
       .where(and(eq(auditLogs.entityType, "doc_signature"), eq(auditLogs.action, id)))
       .orderBy(desc(auditLogs.createdAt))
       .limit(1);
-    return rows[0] ? (rows[0].metadata as StoredSignatureRequest) : null;
+    return unsafeCast(rows)[0] ? (unsafeCast(rows)[0].metadata as StoredSignatureRequest) : null;
   } catch { return null; }
 }
 
@@ -554,7 +555,7 @@ export const documentManagementRouter = router({
           VALUES (${userId}, ${companyId || null}, ${loadId}, ${input.type}, ${input.name}, ${fileUrl},
                   ${input.expiresAt ? new Date(input.expiresAt) : null}, 'active', ${now})
         `) as unknown as RawMutationResult;
-        const docId = String(insertRes?.insertId ?? 0);
+        const docId = String(unsafeCast(insertRes)?.insertId ?? 0);
 
         // Also insert into user_documents for rich tracking
         await db.execute(sql`
@@ -841,7 +842,7 @@ export const documentManagementRouter = router({
             (${input.type}, ${input.name}, ${input.description}, '1', ${`/templates/${randomBytes(8).toString("hex")}`},
              1, ${JSON.stringify(input.mergeFields)}, 1, ${now}, ${now})
         `) as unknown as RawMutationResult;
-        const tplId = String(insertRes?.insertId ?? 0);
+        const tplId = String(unsafeCast(insertRes)?.insertId ?? 0);
 
         return { id: tplId, message: "Template created successfully" };
       } catch (e) {
@@ -887,7 +888,7 @@ export const documentManagementRouter = router({
           INSERT INTO documents (userId, companyId, loadId, type, name, fileUrl, status, createdAt)
           VALUES (${userId}, ${companyId || null}, ${loadId}, ${template.documentTypeId}, ${docName}, ${fileUrl}, 'active', ${now})
         `) as unknown as RawMutationResult;
-        const docId = String(insertRes?.insertId ?? 0);
+        const docId = String(unsafeCast(insertRes)?.insertId ?? 0);
 
         return {
           success: true,
@@ -994,7 +995,7 @@ export const documentManagementRouter = router({
             INSERT INTO documents (userId, companyId, loadId, type, name, fileUrl, status, createdAt)
             VALUES (${userId}, ${companyId || null}, ${loadId}, 'bol', ${`BOL-${proNumber}`}, ${fileUrl}, 'active', ${now})
           `) as unknown as RawMutationResult;
-          bolId = String(insertRes?.insertId ?? bolId);
+          bolId = String(unsafeCast(insertRes)?.insertId ?? bolId);
         } catch (e) {
           logger.error("[DocumentManagement] generateBol insert error:", e);
         }
@@ -1090,7 +1091,7 @@ export const documentManagementRouter = router({
             VALUES (${userId}, ${companyId || null}, ${loadId}, 'rate_confirmation',
                     ${`Rate Confirmation - ${input.loadNumber}`}, ${fileUrl}, 'active', ${now})
           `) as unknown as RawMutationResult;
-          rcId = String(insertRes?.insertId ?? rcId);
+          rcId = String(unsafeCast(insertRes)?.insertId ?? rcId);
         } catch (e) {
           logger.error("[DocumentManagement] generateRateConfirmation insert error:", e);
         }

@@ -10,6 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, payments, users, vehicles, companies, drivers, inspections, certifications, bids, insurancePolicies } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const periodSchema = z.enum(["day", "week", "month", "quarter", "year"]);
 
@@ -222,7 +223,7 @@ export const analyticsRouter = router({
       try {
         const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
         const companyId = ctx.user?.companyId || 0;
-        const role = ((ctx.user as any)?.role || "").toLowerCase();
+        const role = (ctx.user!.role || "").toLowerCase();
 
         // Period date ranges
         const now = new Date();
@@ -405,7 +406,7 @@ export const analyticsRouter = router({
       if (!db) return [];
       try {
         const companyId = ctx.user?.companyId || 0;
-        const role = ((ctx.user as any)?.role || "").toLowerCase();
+        const role = (ctx.user!.role || "").toLowerCase();
         const isShipper = role === "shipper";
         const ownerCol = isShipper ? loads.shipperId : loads.catalystId;
 
@@ -448,7 +449,7 @@ export const analyticsRouter = router({
         const laneRows = await db.select().from(loads).where(eq(loads.catalystId, companyId)).orderBy(desc(loads.createdAt)).limit(50);
         const laneMap: Record<string, { count: number; rev: number }> = {};
         for (const l of laneRows) {
-          const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {};
+          const p = unsafeCast(l.pickupLocation) || {}; const d = unsafeCast(l.deliveryLocation) || {};
           const lane = `${p.state || '?'} -> ${d.state || '?'}`;
           if (!laneMap[lane]) laneMap[lane] = { count: 0, rev: 0 };
           laneMap[lane].count++;
@@ -473,7 +474,7 @@ export const analyticsRouter = router({
     .input(z.object({ period: periodSchema.default("month") }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
-      const empty = { period: input.period, spending: { total: 0, change: 0, trend: "stable" as const }, loads: { total: 0, delivered: 0, inTransit: 0, change: 0 }, savings: { vsMarketRate: 0, percentSavings: 0 }, catalystPerformance: { avgDeliveryTime: 0, onTimeRate: 0, avgRating: 0 }, topCatalysts: [] as any[] };
+      const empty = { period: input.period, spending: { total: 0, change: 0, trend: "stable" as const }, loads: { total: 0, delivered: 0, inTransit: 0, change: 0 }, savings: { vsMarketRate: 0, percentSavings: 0 }, catalystPerformance: { avgDeliveryTime: 0, onTimeRate: 0, avgRating: 0 }, topCatalysts: [] as never[][] };
       if (!db) return empty;
       try {
         const companyId = ctx.user?.companyId || 0;
@@ -507,7 +508,7 @@ export const analyticsRouter = router({
     .input(z.object({ period: periodSchema.default("month") }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
-      const empty = { period: input.period, commission: { total: 0, change: 0, trend: "stable" as const }, volume: { totalLoads: 0, totalRevenue: 0, avgMargin: 0 }, performance: { matchRate: 0, avgTimeToMatch: 0, catalystRetention: 0 }, topShippers: [] as any[] };
+      const empty = { period: input.period, commission: { total: 0, change: 0, trend: "stable" as const }, volume: { totalLoads: 0, totalRevenue: 0, avgMargin: 0 }, performance: { matchRate: 0, avgTimeToMatch: 0, catalystRetention: 0 }, topShippers: [] as never[][] };
       if (!db) return empty;
       try {
         const userId = ctx.user?.id;
@@ -589,7 +590,7 @@ export const analyticsRouter = router({
         const rows = await db.select().from(loads).where(eq(loads.status, 'delivered')).orderBy(desc(loads.createdAt)).limit(200);
         const laneMap: Record<string, { count: number; rev: number }> = {};
         for (const l of rows) {
-          const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {};
+          const p = unsafeCast(l.pickupLocation) || {}; const d = unsafeCast(l.deliveryLocation) || {};
           const lane = `${p.state || '?'} -> ${d.state || '?'}`;
           if (!laneMap[lane]) laneMap[lane] = { count: 0, rev: 0 };
           laneMap[lane].count++;
@@ -609,7 +610,7 @@ export const analyticsRouter = router({
     .input(z.object({ period: periodSchema.default("month") }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
-      const empty = { period: input.period, overallScore: 0, incidents: { total: 0, accidents: 0, violations: 0, nearMisses: 0, change: 0 }, inspections: { total: 0, passed: 0, passRate: 0 }, csaScores: { unsafeDriving: 0, hos: 0, vehicleMaintenance: 0, hazmat: 0 }, topConcerns: [] as any[] };
+      const empty = { period: input.period, overallScore: 0, incidents: { total: 0, accidents: 0, violations: 0, nearMisses: 0, change: 0 }, inspections: { total: 0, passed: 0, passRate: 0 }, csaScores: { unsafeDriving: 0, hos: 0, vehicleMaintenance: 0, hazmat: 0 }, topConcerns: [] as never[][] };
       if (!db) return empty;
       try {
         const companyId = ctx.user?.companyId || 0;
@@ -753,7 +754,7 @@ export const analyticsRouter = router({
       const rows = await db.select().from(loads).where(eq(loads.shipperId, companyId)).orderBy(desc(loads.createdAt)).limit(20);
       const laneMap: Record<string, { total: number; delivered: number }> = {};
       for (const l of rows) {
-        const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {};
+        const p = unsafeCast(l.pickupLocation) || {}; const d = unsafeCast(l.deliveryLocation) || {};
         const lane = `${p.state || '?'} -> ${d.state || '?'}`;
         if (!laneMap[lane]) laneMap[lane] = { total: 0, delivered: 0 };
         laneMap[lane].total++;

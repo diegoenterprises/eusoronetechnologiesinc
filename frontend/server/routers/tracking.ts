@@ -12,6 +12,7 @@ import { getDb } from "../db";
 import { loads, vehicles, users, companies, gpsTracking, geofences, geofenceEvents, safetyAlerts } from "../../drizzle/schema";
 import { emitGPSUpdate, wsService, WS_CHANNELS } from "../_core/websocket";
 import { WS_EVENTS } from "@shared/websocket-events";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const trackingRouter = router({
   /**
@@ -34,8 +35,8 @@ export const trackingRouter = router({
 
         if (!load) return null;
 
-        const pickup = load.pickupLocation as any || {};
-        const delivery = load.deliveryLocation as any || {};
+        const pickup = unsafeCast(load.pickupLocation) || {};
+        const delivery = unsafeCast(load.deliveryLocation) || {};
 
         // Get driver info if assigned
         let driverInfo = { name: "Not assigned", phone: "" };
@@ -130,7 +131,7 @@ export const trackingRouter = router({
         let currentLoad = null;
         const [load] = await db.select().from(loads).where(and(eq(loads.vehicleId, vehicleId), eq(loads.status, 'in_transit'))).limit(1);
         if (load) {
-          const delivery = load.deliveryLocation as any || {};
+          const delivery = unsafeCast(load.deliveryLocation) || {};
           currentLoad = { loadNumber: load.loadNumber, status: load.status, destination: delivery.city ? `${delivery.city}, ${delivery.state}` : 'Unknown', eta: load.deliveryDate?.toISOString() || '' };
         }
 
@@ -191,7 +192,7 @@ export const trackingRouter = router({
             const [driver] = await db.select({ name: users.name }).from(users).where(eq(users.id, activeLoad.driverId)).limit(1);
             if (driver) driverName = driver.name || 'Driver';
             loadNumber = activeLoad.loadNumber;
-            const delivery = activeLoad.deliveryLocation as any || {};
+            const delivery = unsafeCast(activeLoad.deliveryLocation) || {};
             destination = delivery.city ? `${delivery.city}, ${delivery.state}` : null;
           }
 
@@ -307,8 +308,8 @@ export const trackingRouter = router({
       const db = await getDb(); if (!db) throw new Error('Database unavailable');
       const [result] = await db.insert(geofences).values({
         name: input.name,
-        type: 'custom' as any,
-        shape: input.type as any,
+        type: unsafeCast('custom'),
+        shape: unsafeCast(input.type),
         center: input.center || null,
         radius: input.radius ? String(input.radius) : null,
         radiusMeters: input.radius ? Math.round(input.radius) : null,
@@ -393,7 +394,7 @@ export const trackingRouter = router({
         const companyId = ctx.user?.companyId || 0;
         // Filter by type
         const typeMap: Record<string, string> = { speeding: 'speeding', idle: 'no_signal', deviation: 'deviation', geofence: 'geofence_violation' };
-        if (input.type !== 'all' && typeMap[input.type]) conds.push(eq(safetyAlerts.type, typeMap[input.type] as any));
+        if (input.type !== 'all' && typeMap[input.type]) conds.push(eq(safetyAlerts.type, typeMap[input.type] as never));
         if (input.acknowledged === true) conds.push(eq(safetyAlerts.status, 'acknowledged'));
         if (input.acknowledged === false) conds.push(eq(safetyAlerts.status, 'active'));
         const rows = await db.select().from(safetyAlerts)
@@ -506,7 +507,7 @@ export const trackingRouter = router({
             ? eq(loads.catalystId, companyId)
             : userRole === 'DRIVER' && userId
             ? eq(loads.driverId, userId)
-            : undefined as any
+            : unsafeCast(undefined)
         )
         .limit(50);
 
@@ -520,8 +521,8 @@ export const trackingRouter = router({
               .limit(1);
 
             if (gps) {
-              const pickup = load.pickupLocation as any || {};
-              const delivery = load.deliveryLocation as any || {};
+              const pickup = unsafeCast(load.pickupLocation) || {};
+              const delivery = unsafeCast(load.deliveryLocation) || {};
               
               locations.push({
                 id: `load-${load.id}`,
@@ -554,7 +555,7 @@ export const trackingRouter = router({
           .limit(20);
 
           for (const load of availableLoads) {
-            const pickup = load.pickupLocation as any || {};
+            const pickup = unsafeCast(load.pickupLocation) || {};
             if (pickup.lat && pickup.lng) {
               locations.push({
                 id: `available-${load.id}`,

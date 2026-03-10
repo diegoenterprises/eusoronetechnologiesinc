@@ -43,6 +43,7 @@ import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
 import { fmcsaService } from "../services/fmcsa";
 import { emailService } from "../_core/email";
 import { sendSms } from "../services/eusosms";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // All authenticated users can manage their own partnerships
 const partnershipProcedure = auditedProtectedProcedure;
@@ -657,9 +658,9 @@ export const supplyChainRouter = router({
         try {
           const result = await sendSms({ to: input.contact, message, userId: ctx.user?.id });
           return { success: result.status !== "FAILED", method: "sms", messageId: result.id };
-        } catch (err: any) {
+        } catch (err: unknown) {
           logger.error("[SupplyChain] invitePartner SMS error:", err);
-          return { success: false, method: "sms", error: err?.message || "SMS failed" };
+          return { success: false, method: "sms", error: (err as Error)?.message || "SMS failed" };
         }
       } else {
         // Email invite with branded template
@@ -679,9 +680,9 @@ export const supplyChainRouter = router({
             html,
           });
           return { success: sent, method: "email" };
-        } catch (err: any) {
+        } catch (err: unknown) {
           logger.error("[SupplyChain] invitePartner email error:", err);
-          return { success: false, method: "email", error: err?.message || "Email failed" };
+          return { success: false, method: "email", error: (err as Error)?.message || "Email failed" };
         }
       }
     }),
@@ -809,7 +810,7 @@ export const supplyChainRouter = router({
         ],
       },
     };
-    const fallback = { heading: "My Partners", subheading: "Your supply chain connections", partnerTypes: [] as any[] };
+    const fallback = { heading: "My Partners", subheading: "Your supply chain connections", partnerTypes: [] as never[][] };
     return configs[role] || fallback;
   }),
 
@@ -852,7 +853,7 @@ export const supplyChainRouter = router({
           .where(and(
             eq(supplyChainPartnerships.fromCompanyId, companyId),
             input?.status ? eq(supplyChainPartnerships.status, input.status) : undefined,
-            input?.toRole ? eq(supplyChainPartnerships.toRole, input.toRole as any) : undefined,
+            input?.toRole ? eq(supplyChainPartnerships.toRole, unsafeCast(input.toRole)) : undefined,
           ))
           .orderBy(desc(supplyChainPartnerships.createdAt));
 
@@ -1005,9 +1006,9 @@ export const supplyChainRouter = router({
         fromCompanyId: companyId,
         toCompanyId: input.toCompanyId,
         initiatorUserId: userId,
-        fromRole: fromRole as any,
-        toRole: input.toRole as any,
-        relationshipType: input.relationshipType as any,
+        fromRole: unsafeCast(fromRole),
+        toRole: unsafeCast(input.toRole),
+        relationshipType: unsafeCast(input.relationshipType),
         status: "active",
         notes: input.notes || null,
         terminalId: input.terminalId || null,
@@ -1074,8 +1075,8 @@ export const supplyChainRouter = router({
         try {
           const result = await sendSms({ to: input.contact, message, userId: ctx.user?.id });
           return { success: result.status !== "FAILED", method: "sms" };
-        } catch (err: any) {
-          return { success: false, method: "sms", error: err?.message || "SMS failed" };
+        } catch (err: unknown) {
+          return { success: false, method: "sms", error: (err as Error)?.message || "SMS failed" };
         }
       } else {
         const html = buildPartnerInviteEmail({
@@ -1093,8 +1094,8 @@ export const supplyChainRouter = router({
             html,
           });
           return { success: sent, method: "email" };
-        } catch (err: any) {
-          return { success: false, method: "email", error: err?.message || "Email failed" };
+        } catch (err: unknown) {
+          return { success: false, method: "email", error: (err as Error)?.message || "Email failed" };
         }
       }
     }),

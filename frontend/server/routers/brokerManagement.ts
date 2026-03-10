@@ -13,6 +13,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, bids, companies, users, insurancePolicies, incidents } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ── Helper: resolve broker user ID from context ──
 async function resolveBrokerId(ctxUser: any): Promise<number> {
@@ -336,9 +337,9 @@ export const brokerManagementRouter = router({
           insurancePolicies: activePolicies,
           overallScore: Math.round((safetyScore + (authorityActive ? 100 : 0) + (insuranceValid ? 100 : 0)) / 3),
         };
-      } catch (e: any) {
+      } catch (e: unknown) {
         logger.error("vetCarrier error", e);
-        throw new Error(`Vetting failed: ${e.message}`);
+        throw new Error(`Vetting failed: ${(e as Error).message}`);
       }
     }),
 
@@ -454,7 +455,7 @@ export const brokerManagementRouter = router({
             evidence: input.evidence || [],
             flaggedAt: new Date().toISOString(),
           }),
-        } as any);
+        } as never);
 
         return {
           success: true,
@@ -462,9 +463,9 @@ export const brokerManagementRouter = router({
           carrierId: input.carrierId,
           message: "Double-brokering flag recorded. Investigation initiated.",
         };
-      } catch (e: any) {
+      } catch (e: unknown) {
         logger.error("flagDoubleBrokering error", e);
-        throw new Error(`Failed to flag: ${e.message}`);
+        throw new Error(`Failed to flag: ${(e as Error).message}`);
       }
     }),
 
@@ -493,13 +494,13 @@ export const brokerManagementRouter = router({
           return days <= 30 && days > 0;
         });
 
-        const bondActive = activePolicies.some((p) => (p.policyType as string) === "surety_bond" || (p as any).policyType?.includes("bond"));
+        const bondActive = activePolicies.some((p) => (p.policyType as string) === "surety_bond" || unsafeCast(p).policyType?.includes("bond"));
         const authorityActive = !!company.mcNumber;
         const insuranceActive = activePolicies.length > 0;
 
         // UCR (Unified Carrier Registration) — check metadata
         let meta: any = {};
-        try { meta = (company as any).metadata ? JSON.parse((company as any).metadata as string) : {}; } catch { /* */ }
+        try { meta = unsafeCast(company).metadata ? JSON.parse(unsafeCast(company).metadata as string) : {}; } catch { /* */ }
         const ucrRegistered = !!meta.ucrRegistered;
 
         const complianceItems = [

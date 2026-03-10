@@ -10,6 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, users, inspections, documents, drivers } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 async function resolveCompanyId(ctxUser: any): Promise<number> {
   const db = await getDb();
@@ -29,8 +30,8 @@ export const vehiclesRouter = router({
     if (!companyId) return [];
     try {
       const filters: any[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
-      if (input?.status) filters.push(eq(vehicles.status, input.status as any));
-      if (input?.type) filters.push(eq(vehicles.vehicleType, input.type as any));
+      if (input?.status) filters.push(eq(vehicles.status, unsafeCast(input.status)));
+      if (input?.type) filters.push(eq(vehicles.vehicleType, unsafeCast(input.type)));
       if (input?.search) {
         const q = `%${input.search}%`;
         filters.push(sql`(${vehicles.vin} LIKE ${q} OR ${vehicles.make} LIKE ${q} OR ${vehicles.model} LIKE ${q} OR ${vehicles.licensePlate} LIKE ${q})`);
@@ -102,8 +103,8 @@ export const vehiclesRouter = router({
         status: "available", isActive: true,
       });
       return { success: true, id: String(result[0].insertId) };
-    } catch (e: any) {
-      if (e?.code === "ER_DUP_ENTRY") return { success: false, error: "VIN already exists" };
+    } catch (e: unknown) {
+      if (unsafeCast(e)?.code === "ER_DUP_ENTRY") return { success: false, error: "VIN already exists" };
       logger.error("[vehicles.create]", e); return { success: false, error: "Failed to create vehicle" };
     }
   }),

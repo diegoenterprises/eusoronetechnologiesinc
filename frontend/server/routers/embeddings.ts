@@ -15,6 +15,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { embeddingService, EmbeddingService } from "../services/embeddings/embeddingService";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const ENTITY_TYPES = [
   "load", "document", "knowledge", "carrier",
@@ -73,7 +74,7 @@ export const embeddingsRouter = router({
           .select({ contentHash: embeddings.contentHash })
           .from(embeddings)
           .where(and(
-            eq(embeddings.entityType, item.entityType as any),
+            eq(embeddings.entityType, unsafeCast(item.entityType)),
             eq(embeddings.entityId, item.entityId),
           ))
           .limit(1);
@@ -97,7 +98,7 @@ export const embeddingsRouter = router({
         if (!emb) continue;
 
         const row = {
-          entityType: item.entityType as any,
+          entityType: unsafeCast(item.entityType),
           entityId: item.entityId,
           contentHash: item.contentHash,
           embedding: emb.embedding.values,
@@ -110,7 +111,7 @@ export const embeddingsRouter = router({
 
         // Upsert: delete + insert (MySQL-friendly)
         await db.delete(embeddings).where(and(
-          eq(embeddings.entityType, item.entityType as any),
+          eq(embeddings.entityType, unsafeCast(item.entityType)),
           eq(embeddings.entityId, item.entityId),
         ));
         await db.insert(embeddings).values({ ...row, createdAt: new Date() });
@@ -133,7 +134,7 @@ export const embeddingsRouter = router({
     .query(async ({ input }) => {
       const { semanticSearch } = await import("../services/embeddings/aiTurbocharge");
       const results = await semanticSearch(input.query, {
-        entityTypes: input.entityTypes.length > 0 ? input.entityTypes as any : undefined,
+        entityTypes: input.entityTypes.length > 0 ? unsafeCast(input.entityTypes) : undefined,
         topK: input.topK,
         threshold: input.threshold,
       });
@@ -168,7 +169,7 @@ export const embeddingsRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       await db.delete(embeddings).where(and(
-        eq(embeddings.entityType, input.entityType as any),
+        eq(embeddings.entityType, unsafeCast(input.entityType)),
         inArray(embeddings.entityId, input.entityIds),
       ));
 

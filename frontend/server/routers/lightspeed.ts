@@ -93,14 +93,14 @@ export const lightspeedRouter = router({
         const isNumeric = /^\d+$/.test(trimmed);
         const isMC = /^mc[#\s-]*\d+/i.test(trimmed);
 
-        let rows: any[];
+        let rows: any;
         if (isNumeric) {
           [rows] = await pool.query(
             `SELECT dot_number, legal_name, dba_name, phy_state, nbr_power_unit
              FROM fmcsa_census WHERE dot_number LIKE ? AND nbr_power_unit > 0
              ORDER BY nbr_power_unit DESC LIMIT ?`,
             [`${trimmed}%`, limit]
-          ) as any;
+          );
         } else if (isMC) {
           const mcNum = trimmed.replace(/^mc[#\s-]*/i, "");
           [rows] = await pool.query(
@@ -109,7 +109,7 @@ export const lightspeedRouter = router({
              WHERE a.docket_number LIKE ? AND c.nbr_power_unit > 0
              ORDER BY c.nbr_power_unit DESC LIMIT ?`,
             [`%${mcNum}%`, limit]
-          ) as any;
+          );
         } else {
           const ftQuery = trimmed.split(/\s+/).map(w => `+${w}*`).join(" ");
           [rows] = await pool.query(
@@ -119,7 +119,7 @@ export const lightspeedRouter = router({
              WHERE MATCH(legal_name, dba_name) AGAINST(? IN BOOLEAN MODE) AND nbr_power_unit > 0
              ORDER BY score DESC LIMIT ?`,
             [ftQuery, ftQuery, limit]
-          ) as any;
+          );
         }
 
         const censusPayload = {
@@ -140,8 +140,8 @@ export const lightspeedRouter = router({
         };
         cacheSet("SEARCH", cacheKey, censusPayload, 60).catch(() => {});
         return { ...censusPayload, ms: Date.now() - start };
-      } catch (err: any) {
-        logger.warn("[LIGHTSPEED] Typeahead fallback error:", err.message?.slice(0, 100));
+      } catch (err: unknown) {
+        logger.warn("[LIGHTSPEED] Typeahead fallback error:", (err as Error).message?.slice(0, 100));
         return { results: [], source: "error" as const, ms: Date.now() - start };
       }
     }),

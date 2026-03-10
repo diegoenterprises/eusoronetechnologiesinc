@@ -35,6 +35,7 @@ import {
 import { eq, and, desc, sql, gte, lte, count, sum } from "drizzle-orm";
 import { getSafetyScores, getCrashSummary, getInsuranceStatus, getAuthority, getOOSStatus } from "../services/fmcsaBulkLookup";
 import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // Helper to get date ranges
 const getDateRange = (days: number) => {
@@ -127,8 +128,8 @@ export const dashboardRouter = router({
 
       return results.map(load => ({
         id: load.loadNumber,
-        origin: typeof load.pickupLocation === 'object' ? (load.pickupLocation as any)?.city : 'Unknown',
-        destination: typeof load.deliveryLocation === 'object' ? (load.deliveryLocation as any)?.city : 'Unknown',
+        origin: typeof load.pickupLocation === 'object' ? unsafeCast(load.pickupLocation)?.city : 'Unknown',
+        destination: typeof load.deliveryLocation === 'object' ? unsafeCast(load.deliveryLocation)?.city : 'Unknown',
         status: load.status,
         progress: getProgressFromStatus(load.status),
         eta: load.deliveryDate?.toISOString() || 'TBD',
@@ -215,8 +216,8 @@ export const dashboardRouter = router({
 
         return results.map(load => ({
           id: load.loadNumber,
-          origin: typeof load.pickupLocation === 'object' ? (load.pickupLocation as any) : { city: 'Unknown', state: '' },
-          destination: typeof load.deliveryLocation === 'object' ? (load.deliveryLocation as any) : { city: 'Unknown', state: '' },
+          origin: typeof load.pickupLocation === 'object' ? (unsafeCast(load.pickupLocation)) : { city: 'Unknown', state: '' },
+          destination: typeof load.deliveryLocation === 'object' ? (unsafeCast(load.deliveryLocation)) : { city: 'Unknown', state: '' },
           rate: parseFloat(load.rate || '0'),
           weight: load.weight,
           cargoType: load.cargoType,
@@ -304,7 +305,7 @@ export const dashboardRouter = router({
           .orderBy(desc(loads.createdAt)).limit(200);
         const laneRevenue: Record<string, number> = {};
         for (const l of laneRows) {
-          const p = (l.pickupLocation as any) || {}; const d = (l.deliveryLocation as any) || {};
+          const p = (unsafeCast(l.pickupLocation)) || {}; const d = (unsafeCast(l.deliveryLocation)) || {};
           const lane = `${(p.city || p.state || '').slice(0, 3).toUpperCase()} → ${(d.city || d.state || '').slice(0, 3).toUpperCase()}`;
           if (lane === ' → ') continue;
           laneRevenue[lane] = (laneRevenue[lane] || 0) + parseFloat(String(l.rate || 0));
@@ -437,7 +438,7 @@ export const dashboardRouter = router({
       const rows = await db.select().from(loads).where(and(eq(loads.status, 'delivered'), gte(loads.createdAt, sixtyDaysAgo))).orderBy(desc(loads.createdAt)).limit(500);
       const laneMap: Record<string, { count: number; totalRate: number; prevCount: number; prevTotalRate: number }> = {};
       for (const l of rows) {
-        const p = (l.pickupLocation as any) || {}; const d = (l.deliveryLocation as any) || {};
+        const p = (unsafeCast(l.pickupLocation)) || {}; const d = (unsafeCast(l.deliveryLocation)) || {};
         const lane = `${(p.city || p.state || '?').slice(0, 3).toUpperCase()} → ${(d.city || d.state || '?').slice(0, 3).toUpperCase()}`;
         if (!laneMap[lane]) laneMap[lane] = { count: 0, totalRate: 0, prevCount: 0, prevTotalRate: 0 };
         const created = new Date(l.createdAt!);
@@ -752,7 +753,7 @@ export const dashboardRouter = router({
     try {
       const userId = ctx.user?.id || 0;
       const recentLoads = await db.select({ id: loads.id, loadNumber: loads.loadNumber, status: loads.status, createdAt: loads.createdAt, pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation }).from(loads).where(sql`${loads.shipperId} = ${userId} OR ${loads.catalystId} = ${userId} OR ${loads.driverId} = ${userId}`).orderBy(sql`${loads.createdAt} DESC`).limit(10);
-      return recentLoads.map(l => ({ id: `act_${l.id}`, type: 'load', action: l.status === 'delivered' ? 'delivered' : l.status === 'in_transit' ? 'in_transit' : 'updated', description: `${l.loadNumber || `LOAD-${l.id}`}: ${((l.pickupLocation as any)?.city || '?')} to ${((l.deliveryLocation as any)?.city || '?')}`, timestamp: l.createdAt?.toISOString() || '' }));
+      return recentLoads.map(l => ({ id: `act_${l.id}`, type: 'load', action: l.status === 'delivered' ? 'delivered' : l.status === 'in_transit' ? 'in_transit' : 'updated', description: `${l.loadNumber || `LOAD-${l.id}`}: ${(unsafeCast(l.pickupLocation)?.city || '?')} to ${(unsafeCast(l.deliveryLocation)?.city || '?')}`, timestamp: l.createdAt?.toISOString() || '' }));
     } catch (e) { logger.error("[dashboard] Failed to load recent activity:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
@@ -803,7 +804,7 @@ export const dashboardRouter = router({
     try {
       const companyId = ctx.user?.companyId || 0;
       const rows = await db.select({ id: loads.id, loadNumber: loads.loadNumber, status: loads.status, deliveryDate: loads.deliveryDate, pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation }).from(loads).where(sql`${loads.status} IN ('in_transit','assigned','loading') AND (${loads.catalystId} = ${companyId} OR ${loads.shipperId} = ${companyId})`).orderBy(loads.deliveryDate).limit(10);
-      return rows.map(r => ({ id: r.loadNumber || String(r.id), status: r.status, origin: ((r.pickupLocation as any)?.city || 'Unknown'), destination: ((r.deliveryLocation as any)?.city || 'Unknown'), eta: r.deliveryDate?.toISOString() || 'TBD' }));
+      return rows.map(r => ({ id: r.loadNumber || String(r.id), status: r.status, origin: (unsafeCast(r.pickupLocation)?.city || 'Unknown'), destination: (unsafeCast(r.deliveryLocation)?.city || 'Unknown'), eta: r.deliveryDate?.toISOString() || 'TBD' }));
     } catch (e) { logger.error("[dashboard] Failed to load inbound shipments:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
@@ -878,7 +879,7 @@ export const dashboardRouter = router({
       const rows = await db.select().from(loads).where(eq(loads.status, 'delivered')).orderBy(desc(loads.createdAt)).limit(200);
       const laneMap: Record<string, { count: number; rev: number }> = {};
       for (const l of rows) {
-        const p = (l.pickupLocation as any) || {}; const d = (l.deliveryLocation as any) || {};
+        const p = (unsafeCast(l.pickupLocation)) || {}; const d = (unsafeCast(l.deliveryLocation)) || {};
         const lane = `${p.state || '?'} → ${d.state || '?'}`;
         if (!laneMap[lane]) laneMap[lane] = { count: 0, rev: 0 };
         laneMap[lane].count++;
@@ -1270,8 +1271,8 @@ export const dashboardRouter = router({
       const needsEscort = rows.filter(r => r.requiresEscort).length;
       return {
         active: rows.map(r => {
-          const pickup = r.pickupLocation as any || {};
-          const delivery = r.deliveryLocation as any || {};
+          const pickup = unsafeCast(r.pickupLocation) || {};
+          const delivery = unsafeCast(r.deliveryLocation) || {};
           return {
             loadNumber: r.loadNumber,
             status: r.status,
@@ -1719,7 +1720,7 @@ async function getComplianceStats(db: any, companyId: number) {
     const [company] = await db.select({ dotNumber: companies.dotNumber }).from(companies).where(eq(companies.id, companyId)).limit(1);
     if (company?.dotNumber) {
       const safety = await getSafetyScores(String(company.dotNumber));
-      csaScore = (safety as any)?.safetyRating || (safety as any)?.overallRating || null;
+      csaScore = unsafeCast(safety)?.safetyRating || unsafeCast(safety)?.overallRating || null;
     }
   } catch { /* FMCSA API unavailable */ }
 

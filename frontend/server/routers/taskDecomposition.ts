@@ -17,7 +17,7 @@ export const taskDecompositionRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const report = await decomposeAndExecute(db, input.loadId, companyId);
       return { success: true, report };

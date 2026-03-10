@@ -10,6 +10,7 @@ import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { conversations, messages, users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 async function resolveUserId(ctxUser: any): Promise<number> {
   const db = await getDb();
@@ -223,7 +224,7 @@ export const messagingRouter = router({
             type: 'direct',
             participants: [senderId, toId],
             lastMessageAt: new Date(),
-          } as any).$returningId();
+          } as never).$returningId();
           convId = result[0]?.id;
         }
       } else {
@@ -233,10 +234,10 @@ export const messagingRouter = router({
       const result = await db.insert(messages).values({
         conversationId: convId,
         senderId,
-        messageType: input.messageType as any,
+        messageType: unsafeCast(input.messageType),
         content: input.content,
         readBy: [senderId],
-      } as any).$returningId();
+      }).$returningId();
 
       await db.update(conversations).set({ lastMessageAt: new Date() })
         .where(eq(conversations.id, convId));
@@ -283,7 +284,7 @@ export const messagingRouter = router({
     const db = await getDb(); if (!db) return { items: [] };
     try {
       const userId = await resolveUserId(ctx.user);
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
       const rows = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role })
         .from(users).where(companyId ? eq(users.companyId, companyId) : sql`1=1`).limit(50);
       return { items: rows.filter(u => u.id !== userId).map(u => ({ id: String(u.id), name: u.name || '', email: u.email || '', role: u.role })) };
@@ -317,7 +318,7 @@ export const messagingRouter = router({
       try {
         // Get user's company
         const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
-        const companyId = (user as any)?.companyId;
+        const companyId = unsafeCast(user)?.companyId;
         if (!companyId) return { conversation: null, messages: [] };
 
         // Find or create lobby conversation for this company
@@ -371,7 +372,7 @@ export const messagingRouter = router({
 
       // Get user's company
       const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
-      const companyId = (user as any)?.companyId;
+      const companyId = unsafeCast(user)?.companyId;
       if (!companyId) throw new Error("No company assigned");
 
       // Find lobby

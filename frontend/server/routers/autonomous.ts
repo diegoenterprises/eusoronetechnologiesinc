@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
 import { auditLogs } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const superAdminProcedure = roleProcedure("SUPER_ADMIN");
 
@@ -31,7 +32,7 @@ export const autonomousRouter = router({
   list: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) return [];
-    const [rows] = await db.execute(sql`SELECT * FROM autonomous_vehicles ORDER BY id DESC LIMIT 200`) as any;
+    const [rows] = await db.execute(sql`SELECT * FROM autonomous_vehicles ORDER BY id DESC LIMIT 200`);
     return rows || [];
   }),
 
@@ -41,8 +42,8 @@ export const autonomousRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return null;
-      const [rows] = await db.execute(sql`SELECT * FROM autonomous_vehicles WHERE id = ${input.id} LIMIT 1`) as any;
-      return rows?.[0] || null;
+      const [rows] = await db.execute(sql`SELECT * FROM autonomous_vehicles WHERE id = ${input.id} LIMIT 1`);
+      return unsafeCast(rows)?.[0] || null;
     }),
 
   // Ingest telemetry data
@@ -88,7 +89,7 @@ export const autonomousRouter = router({
       if (!db) return [];
       const [rows] = await db.execute(
         sql`SELECT * FROM av_telemetry WHERE avId = ${input.avId} ORDER BY id DESC LIMIT ${input.limit}`
-      ) as any;
+      );
       return rows || [];
     }),
 
@@ -98,7 +99,7 @@ export const autonomousRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       await db.execute(
         sql`UPDATE autonomous_vehicles SET operationalStatus = 'emergency_control', remotePilotId = ${userId} WHERE id = ${input.avId}`
       );
@@ -130,9 +131,9 @@ export const autonomousRouter = router({
     if (!db) return { total: 0, active: 0, idle: 0, emergency: 0, offline: 0 };
     const [rows] = await db.execute(
       sql`SELECT operationalStatus, COUNT(*) as cnt FROM autonomous_vehicles GROUP BY operationalStatus`
-    ) as any;
+    );
     const counts: Record<string, number> = {};
-    (rows || []).forEach((r: any) => { counts[r.operationalStatus] = Number(r.cnt); });
+    unsafeCast(rows || []).forEach((r: any) => { counts[r.operationalStatus] = Number(r.cnt); });
     return {
       total: Object.values(counts).reduce((a, b) => a + b, 0),
       active: counts.active || 0,

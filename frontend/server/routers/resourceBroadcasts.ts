@@ -16,7 +16,7 @@ export const resourceBroadcastsRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       // Return alerts from last hour
       const [rows]: any = await db.execute(sql`
@@ -34,7 +34,7 @@ export const resourceBroadcastsRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return [];
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
       const hours = input?.hours || 24;
 
       const [rows]: any = await db.execute(sql`
@@ -51,7 +51,7 @@ export const resourceBroadcastsRouter = router({
     .mutation(async ({ ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const alerts = await broadcastResourceAlerts(db, companyId);
       return { success: true, alertCount: alerts.length, alerts };
@@ -61,7 +61,7 @@ export const resourceBroadcastsRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      const userId = Number((ctx.user as any)?.id) || 0;
+      const userId = Number(ctx.user!.id) || 0;
 
       return db.select().from(resourceBroadcastSubscriptions)
         .where(eq(resourceBroadcastSubscriptions.userId, userId));
@@ -79,8 +79,8 @@ export const resourceBroadcastsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = Number((ctx.user as any)?.id) || 0;
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const userId = Number(ctx.user!.id) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       // Upsert subscription
       await db.insert(resourceBroadcastSubscriptions).values({

@@ -9,6 +9,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, vehicles } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const marketRouter = router({
   /**
@@ -67,7 +68,7 @@ export const marketRouter = router({
         const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
         const rows = await db.select({ pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation, count: sql<number>`count(*)`, avgRate: sql<number>`COALESCE(AVG(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(gte(loads.createdAt, monthAgo)).groupBy(loads.pickupLocation, loads.deliveryLocation).orderBy(desc(sql`count(*)`)).limit(input.limit);
         return rows.map((r, idx) => {
-          const p = r.pickupLocation as any || {}; const d = r.deliveryLocation as any || {};
+          const p = unsafeCast(r.pickupLocation) || {}; const d = unsafeCast(r.deliveryLocation) || {};
           return { rank: idx + 1, origin: p.city && p.state ? `${p.city}, ${p.state}` : 'Unknown', destination: d.city && d.state ? `${d.city}, ${d.state}` : 'Unknown', volume: r.count || 0, avgRate: Math.round(r.avgRate || 0) };
         });
       } catch (e) { return []; }

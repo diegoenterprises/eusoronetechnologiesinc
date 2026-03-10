@@ -12,6 +12,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { companies, loads, bids, drivers, users, vehicles, incidents, insurancePolicies } from "../../drizzle/schema";
 import { getCarrierSafetyIntel, batchSafetyScores, batchCrashCounts, batchOOSStatus } from "../services/fmcsaBulkLookup";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const carrierScorecardRouter = router({
   /**
@@ -268,7 +269,7 @@ export const carrierScorecardRouter = router({
             const sms = safetyMap.get(dot);
             const crash = crashMap.get(dot);
             const oos = oosMap.get(dot);
-            (r as any).fmcsa = {
+            unsafeCast(r).fmcsa = {
               basics: sms ? {
                 unsafeDriving: { score: sms.unsafeDrivingScore, alert: sms.unsafeDrivingAlert },
                 hos: { score: sms.hosScore, alert: sms.hosAlert },
@@ -382,7 +383,7 @@ export const carrierScorecardRouter = router({
             if (!s.dotNumber) continue;
             const sms = safetyMap.get(s.dotNumber);
             const oos = oosMap.get(s.dotNumber);
-            (s as any).fmcsa = {
+            unsafeCast(s).fmcsa = {
               unsafeDrivingAlert: sms?.unsafeDrivingAlert || false,
               hosAlert: sms?.hosAlert || false,
               vehicleMaintenanceAlert: sms?.vehicleMaintenanceAlert || false,

@@ -10,6 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, inspections, users, drivers, documents } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 async function resolveCompanyId(ctxUser: any): Promise<number> {
   const db = await getDb();
@@ -31,7 +32,7 @@ export const vehicleRouter = router({
       if (!companyId) return [];
       try {
         const conds: any[] = [eq(inspections.companyId, companyId)];
-        if (input.filter && input.filter !== "all") conds.push(eq(inspections.status, input.filter as any));
+        if (input.filter && input.filter !== "all") conds.push(eq(inspections.status, unsafeCast(input.filter)));
         const rows = await db.select({
           id: inspections.id, vehicleId: inspections.vehicleId, driverId: inspections.driverId,
           type: inspections.type, status: inspections.status, defectsFound: inspections.defectsFound,

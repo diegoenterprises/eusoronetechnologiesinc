@@ -7,6 +7,7 @@ import { eq, desc, and, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { convoys, locationHistory, users, escortAssignments, loads } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 import { emitConvoyFormed, emitConvoyUpdate, emitEscortJobAssigned, emitEscortJobStarted, emitEscortJobCompleted } from "../_core/websocket";
 
 export const convoyRouter = router({
@@ -547,8 +548,8 @@ export const convoyRouter = router({
             AVG(TIMESTAMPDIFF(MINUTE, startedAt, completedAt)) as avgDuration
           FROM convoys WHERE status = 'completed' AND completedAt IS NOT NULL
             AND completedAt > DATE_SUB(NOW(), INTERVAL 90 DAY)
-        `) as any;
-        const h = (histRows || [])[0];
+        `);
+        const h = unsafeCast(histRows || [])[0];
         if (h && Number(h.total) >= 3) {
           // Use historical averages to refine predictions
           const histAvgLead = Number(h.avgLead) || baseLeadDistance;

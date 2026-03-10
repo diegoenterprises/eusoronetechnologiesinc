@@ -9,6 +9,7 @@ import { getDb } from "../db";
 import { loadStops, loads } from "../../drizzle/schema";
 import { eq, and, asc, desc, gte, sql } from "drizzle-orm";
 import { requireAccess } from "../services/security/rbac/access-check";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const stopTypeEnum = z.enum([
   "pickup", "delivery", "fuel", "rest", "scale",
@@ -44,7 +45,7 @@ export const loadStopsRouter = router({
   getByLoadId: protectedProcedure
     .input(z.object({ loadId: z.number() }))
     .query(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DRIVER", companyId: (ctx.user as any)?.companyId, action: "READ", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DRIVER", companyId: ctx.user!.companyId, action: "READ", resource: "LOAD" }, unsafeCast(ctx).req);
       const db = await getDb();
       if (!db) return [];
       const rows = await db
@@ -72,7 +73,7 @@ export const loadStopsRouter = router({
       stop: stopInput,
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DISPATCH", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DISPATCH", companyId: ctx.user!.companyId, action: "UPDATE", resource: "LOAD" }, unsafeCast(ctx).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
@@ -110,7 +111,7 @@ export const loadStopsRouter = router({
         referenceNumber: input.stop.referenceNumber || null,
         estimatedWeight: input.stop.estimatedWeight ? String(input.stop.estimatedWeight) : null,
         status: "pending",
-      } as any).$returningId();
+      } as never).$returningId();
 
       return { id: result.id, sequence: seq };
     }),
@@ -124,7 +125,7 @@ export const loadStopsRouter = router({
       stops: z.array(stopInput).min(2).max(30),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DISPATCH", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DISPATCH", companyId: ctx.user!.companyId, action: "UPDATE", resource: "LOAD" }, unsafeCast(ctx).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
@@ -153,7 +154,7 @@ export const loadStopsRouter = router({
         status: "pending" as const,
       }));
 
-      await db.insert(loadStops).values(values as any);
+      await db.insert(loadStops).values(unsafeCast(values));
 
       // Sync first/last stop to load's pickupLocation/deliveryLocation
       const first = input.stops[0];
@@ -208,7 +209,7 @@ export const loadStopsRouter = router({
       }),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DISPATCH", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DISPATCH", companyId: ctx.user!.companyId, action: "UPDATE", resource: "LOAD" }, unsafeCast(ctx).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
@@ -260,7 +261,7 @@ export const loadStopsRouter = router({
       newSequence: z.number().min(1),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DISPATCH", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DISPATCH", companyId: ctx.user!.companyId, action: "UPDATE", resource: "LOAD" }, unsafeCast(ctx).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
@@ -294,7 +295,7 @@ export const loadStopsRouter = router({
   remove: protectedProcedure
     .input(z.object({ stopId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DISPATCH", companyId: (ctx.user as any)?.companyId, action: "UPDATE", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DISPATCH", companyId: ctx.user!.companyId, action: "UPDATE", resource: "LOAD" }, unsafeCast(ctx).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
@@ -317,7 +318,7 @@ export const loadStopsRouter = router({
   getSummary: protectedProcedure
     .input(z.object({ loadId: z.number() }))
     .query(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DRIVER", companyId: (ctx.user as any)?.companyId, action: "READ", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || "DRIVER", companyId: ctx.user!.companyId, action: "READ", resource: "LOAD" }, unsafeCast(ctx).req);
       const db = await getDb();
       if (!db) return { totalStops: 0, completedStops: 0, pickups: 0, deliveries: 0, progress: 0 };
 

@@ -17,6 +17,7 @@ import { requireAccess } from "../services/security/rbac/access-check";
 import { loads, documents, companies, users, drivers, vehicles } from "../../drizzle/schema";
 import { bolService } from "../services/bol";
 import { esangAI } from "../_core/esangAI";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SCHEMAS
@@ -419,7 +420,7 @@ export const bolRouter = router({
       useAI: z.boolean().default(true),
     }))
     .mutation(async ({ input, ctx }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'CREATE', resource: 'BOL' }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user!.role || 'SHIPPER', companyId: ctx.user!.companyId, action: 'CREATE', resource: 'BOL' }, unsafeCast(ctx).req);
       const db = await getDb();
       const bolNumber = generateBOLNumber();
       
@@ -451,7 +452,7 @@ export const bolRouter = router({
         try {
           // Use ESANG AI ERG lookup for hazmat info from UN number
           const ergResult = await esangAI.ergLookup({ unNumber: input.unNumber });
-          const ergData = ergResult as any;
+          const ergData = unsafeCast(ergResult);
           if (ergData?.hazardClass || ergData?.message) {
             hazmatInfo = [{
               hazardClass: ergData.hazardClass || "3",
@@ -510,7 +511,7 @@ export const bolRouter = router({
       };
       
       // Generate HTML for PDF
-      const html = bolService.generateBOLHTML(bolDoc as any);
+      const html = bolService.generateBOLHTML(unsafeCast(bolDoc));
       
       // Store in documents table (metadata stored as JSON in fileUrl since no metadata column)
       if (db) {
@@ -936,8 +937,8 @@ export const bolRouter = router({
         driverName: input.driverName || null,
         driverId: input.driverId || null,
         carrierName: input.carrierName || null,
-        origin: input.origin || (load.pickupLocation as any)?.address || null,
-        destination: input.destination || (load.deliveryLocation as any)?.address || null,
+        origin: input.origin || unsafeCast(load.pickupLocation)?.address || null,
+        destination: input.destination || unsafeCast(load.deliveryLocation)?.address || null,
         miles: input.miles || (load.distance ? Number(load.distance) : null),
         arriveTime: input.arriveTime || null,
         departTime: input.departTime || null,
@@ -1045,7 +1046,7 @@ export const bolRouter = router({
           name: `${isLiquid ? "Run Ticket" : isReefer ? "Temp Delivery Receipt" : isFlatbed ? "Oversize Delivery Receipt" : "Delivery Receipt"} ${ticketNumber}`,
           status: "active",
           fileUrl: JSON.stringify(ticket),
-        } as any);
+        } as never);
       } catch (e) {
         logger.error("[CompletionTicket] DB insert error:", e);
       }
@@ -1096,8 +1097,8 @@ export const bolRouter = router({
       const isHazmat = cargoType === "hazmat";
       const isReefer = cargoType === "refrigerated";
       const bolNumber = generateBOLNumber();
-      const pickup = load.pickupLocation as any;
-      const delivery = load.deliveryLocation as any;
+      const pickup = unsafeCast(load.pickupLocation);
+      const delivery = unsafeCast(load.deliveryLocation);
 
       const bolType = isHazmat ? "hazmat" : isLiquid ? "tanker" : "straight";
 
@@ -1150,7 +1151,7 @@ export const bolRouter = router({
           name: `BOL ${bolNumber} - ${load.loadNumber}`,
           status: "active",
           fileUrl: JSON.stringify(bolDoc),
-        } as any);
+        } as never);
       } catch (e) {
         logger.error("[BOL] auto-generate from load error:", e);
       }

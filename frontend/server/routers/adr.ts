@@ -56,7 +56,7 @@ export const adrRouter = router({
       if (!db) return [];
       const [rows] = await db.execute(
         sql`SELECT * FROM adr_driver_certifications WHERE driverId = ${input.driverId} ORDER BY expiryDate DESC`
-      ) as any;
+      );
       return rows || [];
     }),
 

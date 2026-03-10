@@ -22,6 +22,7 @@ import {
   users,
   vehicles,
 } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const issueCategoryEnum = z.enum(["ENGINE", "BRAKES", "TRANSMISSION", "ELECTRICAL", "TIRES", "FUEL_SYSTEM", "COOLING", "EXHAUST", "STEERING", "SUSPENSION", "HVAC", "LIGHTING", "SIGNAGE", "COMMUNICATIONS", "HEIGHT_POLE", "OTHER"]);
 const severityEnum = z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
@@ -479,7 +480,7 @@ export const zeunMechanicsRouter = router({
 
     let conditions = [eq(zeunRepairProviders.isActive, true)];
     if (input.providerType) {
-      conditions.push(eq(zeunRepairProviders.providerType, input.providerType as any));
+      conditions.push(eq(zeunRepairProviders.providerType, unsafeCast(input.providerType)));
     }
 
     let providers = await db.select().from(zeunRepairProviders).where(and(...conditions)).limit(100);
@@ -707,7 +708,7 @@ export const zeunMechanicsRouter = router({
             rating: "0",
           });
           results.push({
-            id: (inserted as any)?.insertId || null,
+            id: unsafeCast(inserted)?.insertId || null,
             name: op.name, type: pType, chainName: null,
             address: op.address || null, city: op.city || null, state: op.state || null,
             phone: op.phone || null, distance: Number(distance.toFixed(1)),

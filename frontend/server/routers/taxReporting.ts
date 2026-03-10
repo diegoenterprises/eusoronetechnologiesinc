@@ -11,6 +11,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { payments, users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const TAX_YEAR_SCHEMA = z.number().min(2020).max(2099);
 const FORM_TYPE_SCHEMA = z.enum(["1099-NEC", "1099-MISC"]);
@@ -49,9 +50,9 @@ export const taxReportingRouter = router({
             AND p.payeeId IS NOT NULL
           GROUP BY p.payeeId, u.name, u.email, u.phone, u.role
           ORDER BY totalPaid DESC
-        `) as any;
+        `);
 
-        const contractors = (rows[0] || []).map((r: any) => ({
+        const contractors = (unsafeCast(rows)[0] || []).map((r: any) => ({
           payeeId: r.payeeId,
           name: r.contractorName || "Unknown",
           email: r.contractorEmail || "",
@@ -71,8 +72,8 @@ export const taxReportingRouter = router({
           totalPaid: contractors.reduce((s: number, c: any) => s + c.totalPaid, 0),
           qualifyingCount: contractors.filter((c: any) => c.meetsThreshold).length,
         };
-      } catch (e: any) {
-        logger.error("[TaxReporting] getContractorSummary error:", e?.message?.slice(0, 200));
+      } catch (e: unknown) {
+        logger.error("[TaxReporting] getContractorSummary error:", (e as Error)?.message?.slice(0, 200));
         return { contractors: [], totalPaid: 0, qualifyingCount: 0, taxYear: input.taxYear };
       }
     }),
@@ -108,9 +109,9 @@ export const taxReportingRouter = router({
           AND p.payeeId IS NOT NULL
         GROUP BY p.payeeId, u.name, u.email, u.phone, u.role
         HAVING totalPaid >= 600
-      `) as any;
+      `);
 
-      const qualifying = rows[0] || [];
+      const qualifying = unsafeCast(rows)[0] || [];
       const generated: any[] = [];
 
       for (const contractor of qualifying) {
@@ -137,8 +138,8 @@ export const taxReportingRouter = router({
             name: contractor.name,
             amount: parseFloat(contractor.totalPaid || "0"),
           });
-        } catch (e: any) {
-          logger.warn("[TaxReporting] generate1099 skip for payee", contractor.payeeId, e?.message?.slice(0, 80));
+        } catch (e: unknown) {
+          logger.warn("[TaxReporting] generate1099 skip for payee", contractor.payeeId, (e as Error)?.message?.slice(0, 80));
         }
       }
 
@@ -171,17 +172,17 @@ export const taxReportingRouter = router({
 
         const [countResult] = await db.execute(sql`
           SELECT COUNT(*) as cnt FROM tax_1099_records WHERE ${whereClause}
-        `) as any;
-        const total = (countResult?.[0] || [])[0]?.cnt || 0;
+        `);
+        const total = (unsafeCast(countResult)?.[0] || [])[0]?.cnt || 0;
 
         const rows = await db.execute(sql`
           SELECT * FROM tax_1099_records
           WHERE ${whereClause}
           ORDER BY nonemployeeCompensation DESC
           LIMIT ${input.limit} OFFSET ${input.offset}
-        `) as any;
+        `);
 
-        const records = (rows[0] || []).map((r: any) => ({
+        const records = (unsafeCast(rows)[0] || []).map((r: any) => ({
           id: r.id,
           recordId: r.recordId,
           taxYear: r.taxYear,
@@ -196,8 +197,8 @@ export const taxReportingRouter = router({
         }));
 
         return { records, total: Number(total) };
-      } catch (e: any) {
-        logger.error("[TaxReporting] list1099s error:", e?.message?.slice(0, 200));
+      } catch (e: unknown) {
+        logger.error("[TaxReporting] list1099s error:", (e as Error)?.message?.slice(0, 200));
         return { records: [], total: 0 };
       }
     }),
@@ -213,8 +214,8 @@ export const taxReportingRouter = router({
       try {
         const rows = await db.execute(sql`
           SELECT * FROM tax_1099_records WHERE recordId = ${input.recordId} LIMIT 1
-        `) as any;
-        const r = (rows[0] || [])[0];
+        `);
+        const r = (unsafeCast(rows)[0] || [])[0];
         if (!r) return null;
         return {
           id: r.id,
@@ -306,8 +307,8 @@ export const taxReportingRouter = router({
             AND p.createdAt >= ${yearStart}
             AND p.createdAt <= ${yearEnd}
             AND p.payeeId IS NOT NULL
-        `) as any;
-        const ps = (paymentStats || [])[0] || {};
+        `);
+        const ps = unsafeCast(paymentStats || [])[0] || {};
 
         // Qualifying (>= $600)
         const [qualStats] = await db.execute(sql`
@@ -319,7 +320,7 @@ export const taxReportingRouter = router({
               AND p.payeeId IS NOT NULL
             GROUP BY p.payeeId HAVING total >= 600
           ) sub
-        `) as any;
+        `);
 
         // 1099 record stats
         const [recStats] = await db.execute(sql`
@@ -328,21 +329,21 @@ export const taxReportingRouter = router({
             SUM(CASE WHEN status = 'filed' THEN 1 ELSE 0 END) AS filed,
             SUM(CASE WHEN status IN ('generated', 'reviewed') THEN 1 ELSE 0 END) AS pendingReview
           FROM tax_1099_records WHERE taxYear = ${input.taxYear}
-        `) as any;
-        const rs = (recStats || [])[0] || {};
+        `);
+        const rs = unsafeCast(recStats || [])[0] || {};
 
         return {
           taxYear: input.taxYear,
           totalContractors: Number(ps.totalContractors) || 0,
-          qualifying1099: Number((qualStats || [])[0]?.cnt) || 0,
+          qualifying1099: Number(unsafeCast(qualStats || [])[0]?.cnt) || 0,
           totalPaid: parseFloat(ps.totalPaid || "0"),
           generated: Number(rs.total) || 0,
           filed: Number(rs.filed) || 0,
           pendingReview: Number(rs.pendingReview) || 0,
           deadline: `${input.taxYear + 1}-01-31`,
         };
-      } catch (e: any) {
-        logger.error("[TaxReporting] getDashboard error:", e?.message?.slice(0, 200));
+      } catch (e: unknown) {
+        logger.error("[TaxReporting] getDashboard error:", (e as Error)?.message?.slice(0, 200));
         return {
           taxYear: input.taxYear, totalContractors: 0, qualifying1099: 0,
           totalPaid: 0, generated: 0, filed: 0, pendingReview: 0,

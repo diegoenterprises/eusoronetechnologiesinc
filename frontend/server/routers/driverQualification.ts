@@ -9,6 +9,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { drivers, documents, users, certifications } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const dqDocumentTypeSchema = z.enum([
   "application", "mvr", "road_test", "medical_card", "cdl_copy", "employment_history",
@@ -276,7 +277,7 @@ export const driverQualificationRouter = router({
           const { notifications } = await import('../../drizzle/schema');
           await db.insert(notifications).values({
             userId: parseInt(input.driverId, 10),
-            type: 'system' as any,
+            type: unsafeCast('system'),
             title: `DQ File Reminder: ${input.documentType}`,
             message: input.message || `Your ${input.documentType.replace(/_/g, ' ')} document needs attention. Please update your Driver Qualification file.`,
             isRead: false,

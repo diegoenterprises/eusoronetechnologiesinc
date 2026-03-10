@@ -9,6 +9,7 @@ import { sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // Valid CDL endorsements
 const CDL_ENDORSEMENTS = ["H", "N", "T", "P", "S", "X"] as const;
@@ -30,7 +31,7 @@ export async function checkCDLForLoadInternal(driverId: number, loadId: number):
     // Get driver's CDL record
     const [cdl] = await db.execute(
       sql`SELECT id, cdlNumber, stateOfIssuance, expirationDate, endorsements, restrictions, verified FROM cdl_records WHERE driverId = ${driverId} ORDER BY createdAt DESC LIMIT 1`
-    ) as any[];
+    );
 
     if (!cdl) {
       reasons.push("No CDL record on file. Driver must submit CDL verification first.");
@@ -38,7 +39,7 @@ export async function checkCDLForLoadInternal(driverId: number, loadId: number):
     }
 
     // Check CDL expiration (must be > 30 days from now)
-    const expirationDate = new Date(cdl.expirationDate);
+    const expirationDate = new Date(unsafeCast(cdl).expirationDate);
     const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     if (expirationDate < new Date()) {
       reasons.push(`CDL expired on ${expirationDate.toISOString().split("T")[0]}. Renewal required.`);
@@ -55,7 +56,7 @@ export async function checkCDLForLoadInternal(driverId: number, loadId: number):
         .from(loads).where(eq(loads.id, loadId)).limit(1);
 
       if (load?.cargoType === 'hazmat' || load?.hazmatClass) {
-        const endorsements: string[] = cdl.endorsements ? (typeof cdl.endorsements === 'string' ? JSON.parse(cdl.endorsements) : cdl.endorsements) : [];
+        const endorsements: string[] = unsafeCast(cdl).endorsements ? (typeof unsafeCast(cdl).endorsements === 'string' ? JSON.parse(unsafeCast(cdl).endorsements) : unsafeCast(cdl).endorsements) : [];
         const hasHazmat = endorsements.some((e: string) => HAZMAT_ENDORSEMENTS.includes(e));
         if (!hasHazmat) {
           reasons.push(`Hazmat load requires H or X endorsement. Driver has: [${endorsements.join(", ")}]`);
@@ -64,12 +65,12 @@ export async function checkCDLForLoadInternal(driverId: number, loadId: number):
     } catch {}
 
     // Check verification status
-    if (!cdl.verified) {
+    if (!unsafeCast(cdl).verified) {
       reasons.push("CDL has not been verified. Manual verification required.");
     }
 
-  } catch (err: any) {
-    logger.error("[CDL] Check error:", err?.message?.slice(0, 100));
+  } catch (err: unknown) {
+    logger.error("[CDL] Check error:", (err as Error)?.message?.slice(0, 100));
     // Fail open on DB error — don't block dispatch for infra issues
     return { eligible: true, reasons: [] };
   }
@@ -111,7 +112,7 @@ export const cdlVerificationRouter = router({
       if (expDate < thirtyDays) warnings.push("CDL expires within 30 days — renewal recommended");
 
       // 3. Validate endorsements
-      const validEndorsements = input.endorsements.filter(e => CDL_ENDORSEMENTS.includes(e as any));
+      const validEndorsements = input.endorsements.filter(e => CDL_ENDORSEMENTS.includes(unsafeCast(e)));
       if (validEndorsements.length !== input.endorsements.length) {
         warnings.push("Some endorsement codes were not recognized");
       }
@@ -135,7 +136,7 @@ export const cdlVerificationRouter = router({
         await db.insert(auditLogs).values({
           userId: verifierId, action: 'CDL_VERIFIED', entityType: 'driver', entityId: input.driverId,
           changes: { cdlNumber: input.cdlNumber, state: input.stateOfIssuance, endorsements: validEndorsements },
-        } as any);
+        } as never);
       } catch {}
 
       return {
@@ -168,20 +169,20 @@ export const cdlVerificationRouter = router({
       try {
         const [cdl] = await db.execute(
           sql`SELECT id, driverId, cdlNumber, stateOfIssuance, expirationDate, endorsements, restrictions, verified, verifiedAt, nextVerificationDue, createdAt, updatedAt FROM cdl_records WHERE driverId = ${input.driverId} ORDER BY createdAt DESC LIMIT 1`
-        ) as any[];
+        );
         if (!cdl) return null;
         return {
-          id: cdl.id,
-          driverId: cdl.driverId,
-          cdlNumber: cdl.cdlNumber,
-          stateOfIssuance: cdl.stateOfIssuance,
-          expirationDate: cdl.expirationDate?.toISOString?.()?.split("T")[0] || cdl.expirationDate,
-          endorsements: cdl.endorsements ? (typeof cdl.endorsements === 'string' ? JSON.parse(cdl.endorsements) : cdl.endorsements) : [],
-          restrictions: cdl.restrictions ? (typeof cdl.restrictions === 'string' ? JSON.parse(cdl.restrictions) : cdl.restrictions) : [],
-          verified: !!cdl.verified,
-          verifiedAt: cdl.verifiedAt?.toISOString?.() || null,
-          nextVerificationDue: cdl.nextVerificationDue?.toISOString?.()?.split("T")[0] || null,
-          createdAt: cdl.createdAt?.toISOString?.() || '',
+          id: unsafeCast(cdl).id,
+          driverId: unsafeCast(cdl).driverId,
+          cdlNumber: unsafeCast(cdl).cdlNumber,
+          stateOfIssuance: unsafeCast(cdl).stateOfIssuance,
+          expirationDate: unsafeCast(cdl).expirationDate?.toISOString?.()?.split("T")[0] || unsafeCast(cdl).expirationDate,
+          endorsements: unsafeCast(cdl).endorsements ? (typeof unsafeCast(cdl).endorsements === 'string' ? JSON.parse(unsafeCast(cdl).endorsements) : unsafeCast(cdl).endorsements) : [],
+          restrictions: unsafeCast(cdl).restrictions ? (typeof unsafeCast(cdl).restrictions === 'string' ? JSON.parse(unsafeCast(cdl).restrictions) : unsafeCast(cdl).restrictions) : [],
+          verified: !!unsafeCast(cdl).verified,
+          verifiedAt: unsafeCast(cdl).verifiedAt?.toISOString?.() || null,
+          nextVerificationDue: unsafeCast(cdl).nextVerificationDue?.toISOString?.()?.split("T")[0] || null,
+          createdAt: unsafeCast(cdl).createdAt?.toISOString?.() || '',
         };
       } catch { return null; }
     }),
@@ -202,7 +203,7 @@ export const cdlVerificationRouter = router({
               FROM cdl_records c LEFT JOIN users u ON c.driverId = u.id
               WHERE c.expirationDate <= ${cutoff.toISOString().split("T")[0]} OR c.nextVerificationDue <= CURDATE()
               ORDER BY c.expirationDate ASC LIMIT 50`
-        ) as any[];
+        );
         return (rows || []).map((r: any) => ({
           id: r.id, driverId: r.driverId, driverName: r.driverName || 'Unknown',
           cdlNumber: r.cdlNumber, state: r.stateOfIssuance,

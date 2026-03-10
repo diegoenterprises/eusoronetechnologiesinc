@@ -13,6 +13,7 @@ import { getDb } from "../db";
 import { users, companies, auditLogs, adminVerificationCodes, integrationWebhooks } from "../../drizzle/schema";
 import { cleanupDeletedUser } from "../services/gamificationDispatcher";
 import { randomBytes } from "crypto";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const userStatusSchema = z.enum(["active", "pending", "suspended", "inactive"]);
 const verificationStatusSchema = z.enum(["pending", "approved", "rejected", "needs_info"]);
@@ -159,7 +160,7 @@ export const adminRouter = router({
         const [newThisMonth] = await db.select({ count: sql<number>`count(*)` }).from(users).where(gte(users.createdAt, monthStart));
 
         return {
-          total: total?.count || 0,
+          total: unsafeCast(total)?.count || 0,
           active: active?.count || 0,
           pending: pending?.count || 0,
           suspended: suspended?.count || 0,
@@ -457,10 +458,10 @@ export const adminRouter = router({
         const conditions = [eq(auditLogs.entityType, "system_backup")];
         if (input.type) conditions.push(eq(auditLogs.action, input.type));
         const rows = await db.select().from(auditLogs).where(and(...conditions)).orderBy(desc(auditLogs.createdAt)).limit(50);
-        if (rows.length === 0) {
+        if (unsafeCast(rows).length === 0) {
           return [{ id: "azure-auto", type: "automatic", provider: "Azure MySQL", schedule: "Daily (Azure-managed)", retention: "7 days", status: "active", note: "Azure MySQL flexible server provides automatic daily backups with 7-day retention" }];
         }
-        return rows.map(r => {
+        return unsafeCast(rows).map((r: any) => {
           const meta = (r.metadata || {}) as Record<string, any>;
           return { id: String(r.id), type: meta.type || r.action || "automatic", provider: meta.provider || "Azure MySQL", schedule: meta.schedule || "Daily", retention: meta.retention || "7 days", status: meta.status || "active", note: meta.note || "", createdAt: r.createdAt?.toISOString() || "" };
         });
@@ -796,7 +797,7 @@ export const adminRouter = router({
           count: sql<number>`count(*)`,
         }).from(users).groupBy(users.role);
 
-        const roleBreakdown = roleRows.map(r => ({ role: r.role || 'UNKNOWN', count: r.count }));
+        const roleBreakdown: { role: string; count: number }[] = unsafeCast(roleRows).map((r: any) => ({ role: r.role || 'UNKNOWN', count: r.count }));
 
         // Pending approvals (users with pending_review in metadata)
         let pendingApprovals = 0;
@@ -905,10 +906,10 @@ export const adminRouter = router({
       try {
         const rows = await db.select({ id: users.id, name: users.name, email: users.email, phone: users.phone, role: users.role, isActive: users.isActive, isVerified: users.isVerified, createdAt: users.createdAt, lastSignedIn: users.lastSignedIn, companyName: companies.name })
           .from(users).leftJoin(companies, eq(users.companyId, companies.id)).orderBy(desc(users.createdAt)).limit(input.limit).offset(input.offset);
-        let mapped = rows.map(u => ({ id: String(u.id), name: u.name || '', email: u.email || '', phone: u.phone || '', role: u.role?.toLowerCase() || '', status: u.isActive ? (u.isVerified ? 'active' : 'pending') : 'suspended', companyName: u.companyName || '', createdAt: u.createdAt?.toISOString() || '', lastLogin: u.lastSignedIn?.toISOString() || null }));
-        if (input.search) { const q = input.search.toLowerCase(); mapped = mapped.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)); }
-        if (input.role && input.role !== 'all') { const r = input.role.toLowerCase(); mapped = mapped.filter(u => u.role === r); }
-        if (input.status) mapped = mapped.filter(u => u.status === input.status);
+        let mapped: any[] = unsafeCast(rows).map((u: any) => ({ id: String(u.id), name: u.name || '', email: u.email || '', phone: u.phone || '', role: u.role?.toLowerCase() || '', status: u.isActive ? (u.isVerified ? 'active' : 'pending') : 'suspended', companyName: u.companyName || '', createdAt: u.createdAt?.toISOString() || '', lastLogin: u.lastSignedIn?.toISOString() || null }));
+        if (input.search) { const q = input.search.toLowerCase(); mapped = mapped.filter((u: any) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)); }
+        if (input.role && input.role !== 'all') { const r = input.role.toLowerCase(); mapped = mapped.filter((u: any) => u.role === r); }
+        if (input.status) mapped = mapped.filter((u: any) => u.status === input.status);
         const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(users);
         return { users: mapped, total: countRow?.count || 0 };
       } catch (e) { logger.error('[Admin] listUsers error:', e); return { users: [], total: 0 }; }
@@ -972,8 +973,8 @@ export const adminRouter = router({
         const limit = input?.limit || 20;
         const rows = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt, companyName: companies.name })
           .from(users).leftJoin(companies, eq(users.companyId, companies.id)).where(eq(users.isVerified, false)).orderBy(desc(users.createdAt)).limit(limit);
-        let results = rows.map(u => ({ id: String(u.id), type: 'user' as const, name: u.name || '', email: u.email || '', role: u.role || '', companyName: u.companyName || '', submittedAt: u.createdAt?.toISOString() || '', status: 'pending' }));
-        if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(r => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q)); }
+        let results: any[] = unsafeCast(rows).map((u: any) => ({ id: String(u.id), type: 'user' as const, name: u.name || '', email: u.email || '', role: u.role || '', companyName: u.companyName || '', submittedAt: u.createdAt?.toISOString() || '', status: 'pending' }));
+        if (input?.search) { const q = input.search.toLowerCase(); results = results.filter((r: any) => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q)); }
         return results;
       } catch (e) { logger.warn("[Admin] getPendingVerifications query failed:", e); return []; }
     }),
@@ -1096,13 +1097,13 @@ export const adminRouter = router({
       try {
         const rows = await db.select({ id: auditLogs.id, userId: auditLogs.userId, action: auditLogs.action, entityType: auditLogs.entityType, entityId: auditLogs.entityId, createdAt: auditLogs.createdAt })
           .from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(input.limit);
-        const userIds = Array.from(new Set(rows.map(r => r.userId).filter(Boolean))) as number[];
+        const userIds = Array.from(new Set(unsafeCast(rows).map((r: any) => r.userId).filter(Boolean))) as number[];
         const userMap: Record<number, string> = {};
         if (userIds.length > 0) {
           const userRows = await db.select({ id: users.id, name: users.name }).from(users).where(sql`${users.id} IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})`);
           for (const u of userRows) userMap[u.id] = u.name || `User #${u.id}`;
         }
-        return rows.map(r => ({ id: String(r.id), action: r.action, user: r.userId ? (userMap[r.userId] || `User #${r.userId}`) : 'System', entity: r.entityType, entityId: r.entityId ? String(r.entityId) : '', timestamp: r.createdAt?.toISOString() || '' }));
+        return unsafeCast(rows).map((r: any) => ({ id: String(r.id), action: r.action, user: r.userId ? (userMap[r.userId] || `User #${r.userId}`) : 'System', entity: r.entityType, entityId: r.entityId ? String(r.entityId) : '', timestamp: r.createdAt?.toISOString() || '' }));
       } catch (e) { logger.warn("[Admin] getAuditLogsCompact query failed:", e); return []; }
     }),
 
@@ -1205,14 +1206,14 @@ export const adminRouter = router({
       }).from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(limit);
 
       // Batch resolve user names
-      const userIds = Array.from(new Set(rows.map(r => r.userId).filter(Boolean))) as number[];
+      const userIds = Array.from(new Set(unsafeCast(rows).map((r: any) => r.userId).filter(Boolean))) as number[];
       const userMap: Record<number, string> = {};
       if (userIds.length > 0) {
         const userRows = await db.select({ id: users.id, name: users.name, email: users.email }).from(users).where(sql`${users.id} IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})`);
         for (const u of userRows) userMap[u.id] = u.name || u.email || "Unknown";
       }
 
-      let results = rows.map(r => ({
+      let results: any[] = unsafeCast(rows).map((r: any) => ({
         id: String(r.id),
         action: r.action,
         description: `${r.action.replace(/_/g, " ")} on ${r.entityType} #${r.entityId || ""}`,
@@ -1224,11 +1225,11 @@ export const adminRouter = router({
       }));
 
       if (input?.action && input.action !== "all") {
-        results = results.filter(r => r.action.includes(input.action!));
+        results = results.filter((r: any) => r.action.includes(input.action!));
       }
       if (input?.search) {
         const q = input.search.toLowerCase();
-        results = results.filter(r => r.description.toLowerCase().includes(q) || r.userName.toLowerCase().includes(q) || r.action.toLowerCase().includes(q));
+        results = results.filter((r: any) => r.description.toLowerCase().includes(q) || r.userName.toLowerCase().includes(q) || r.action.toLowerCase().includes(q));
       }
       return results;
     } catch (error) {
@@ -1246,7 +1247,7 @@ export const adminRouter = router({
       const [uniqueUsers] = await db.select({ count: sql<number>`COUNT(DISTINCT userId)` }).from(auditLogs);
       const [critical] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(sql`${auditLogs.action} IN ('user_deactivated','user_suspended','delete')`);
       return {
-        total: total?.count || 0, totalLogs: total?.count || 0,
+        total: unsafeCast(total)?.count || 0, totalLogs: unsafeCast(total)?.count || 0,
         today: today?.count || 0, todayLogs: today?.count || 0,
         uniqueUsers: uniqueUsers?.count || 0,
         criticalActions: critical?.count || 0,
@@ -1269,9 +1270,9 @@ export const adminRouter = router({
     const db = await getDb(); if (!db) return [];
     try {
       const rows = await db.select().from(companies).orderBy(desc(companies.createdAt)).limit(50);
-      let results = rows.map(c => ({ id: String(c.id), name: c.name || '', status: c.complianceStatus || 'pending', type: '', dotNumber: c.dotNumber || '', mcNumber: c.mcNumber || '', createdAt: c.createdAt?.toISOString() || '' }));
-      if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(c => c.name.toLowerCase().includes(q) || c.dotNumber.includes(q)); }
-      if (input?.status && input.status !== 'all') results = results.filter(c => c.status === input.status);
+      let results: any[] = unsafeCast(rows).map((c: any) => ({ id: String(c.id), name: c.name || '', status: c.complianceStatus || 'pending', type: '', dotNumber: c.dotNumber || '', mcNumber: c.mcNumber || '', createdAt: c.createdAt?.toISOString() || '' }));
+      if (input?.search) { const q = input.search.toLowerCase(); results = results.filter((c: any) => c.name.toLowerCase().includes(q) || c.dotNumber.includes(q)); }
+      if (input?.status && input.status !== 'all') results = results.filter((c: any) => c.status === input.status);
       return results;
     } catch (e) { logger.error('[Admin] getCompanies error:', e); return []; }
   }),
@@ -1286,7 +1287,7 @@ export const adminRouter = router({
     const db = await getDb(); if (!db) return [];
     try {
       const rows = await db.select().from(companies).where(eq(companies.complianceStatus, 'pending')).orderBy(desc(companies.createdAt)).limit(input?.limit || 20);
-      return rows.map(c => ({ id: String(c.id), name: c.name || '', dotNumber: c.dotNumber || '', mcNumber: c.mcNumber || '', createdAt: c.createdAt?.toISOString() || '' }));
+      return unsafeCast(rows).map((c: any) => ({ id: String(c.id), name: c.name || '', dotNumber: c.dotNumber || '', mcNumber: c.mcNumber || '', createdAt: c.createdAt?.toISOString() || '' }));
     } catch (e) { logger.warn("[Admin] getPendingCompanies query failed:", e); return []; }
   }),
   verifyCompany: auditedAdminProcedure.input(z.object({ companyId: z.string() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
@@ -1311,7 +1312,7 @@ export const adminRouter = router({
       const [total] = await db.execute(sql`SELECT COALESCE(SUM(heldAmount),0) as amt FROM disputes WHERE status IN ('open','under_review')`) as unknown as Record<string, number>[];
       const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
       const [thisMonth] = await db.execute(sql`SELECT COUNT(*) as cnt FROM disputes WHERE status = 'resolved' AND resolvedAt >= ${monthAgo}`) as unknown as Record<string, number>[];
-      return { open: open?.cnt || 0, investigating: review?.cnt || 0, resolved: resolved?.cnt || 0, totalAmount: Number(total?.amt || 0), inReview: review?.cnt || 0, resolvedThisMonth: thisMonth?.cnt || 0 };
+      return { open: unsafeCast(open)?.cnt || 0, investigating: unsafeCast(review)?.cnt || 0, resolved: unsafeCast(resolved)?.cnt || 0, totalAmount: Number(unsafeCast(total)?.amt || 0), inReview: unsafeCast(review)?.cnt || 0, resolvedThisMonth: unsafeCast(thisMonth)?.cnt || 0 };
     } catch { return { open: 0, investigating: 0, resolved: 0, totalAmount: 0, inReview: 0, resolvedThisMonth: 0 }; }
   }),
   resolveDispute: auditedAdminProcedure.input(z.object({
@@ -1336,10 +1337,10 @@ export const adminRouter = router({
     const [dispute] = await db.execute(sql`SELECT settlementId, disputerId, respondentId, heldAmount FROM disputes WHERE id = ${disputeId}`) as unknown as Record<string, unknown>[];
 
     // 3. Update settlement status back to appropriate state
-    if (dispute?.settlementId) {
+    if (unsafeCast(dispute)?.settlementId) {
       const { payments } = await import("../../drizzle/schema");
       const newStatus = resolution === 'carrier_wins' ? 'approved' : resolution === 'shipper_wins' ? 'refunded' : 'approved';
-      await db.update(payments).set({ status: newStatus } as Record<string, unknown>).where(eq(payments.id, dispute.settlementId as number));
+      await db.update(payments).set({ status: newStatus } as Record<string, unknown>).where(eq(payments.id, unsafeCast(dispute).settlementId as number));
     }
 
     // 4. Audit log
@@ -1425,7 +1426,7 @@ export const adminRouter = router({
         blocked: sql<number>`SUM(CASE WHEN ${auditLogs.action} = 'blocked' THEN 1 ELSE 0 END)`,
         throttled: sql<number>`SUM(CASE WHEN ${auditLogs.action} = 'throttled' THEN 1 ELSE 0 END)`,
       }).from(auditLogs).where(eq(auditLogs.entityType, "rate_limit_block"));
-      const s = rows[0] || {};
+      const s = unsafeCast(rows)[0] || {};
       const total = Number(s.total) || 0;
       const blocked = Number(s.blocked) || 0;
       const throttled = Number(s.throttled) || 0;
@@ -1443,8 +1444,8 @@ export const adminRouter = router({
     if (!db) return defaults;
     try {
       const rows = await db.select().from(auditLogs).where(eq(auditLogs.entityType, "rate_limit_config")).orderBy(desc(auditLogs.createdAt)).limit(1);
-      if (rows.length === 0) return defaults;
-      const meta = (rows[0].metadata || {}) as Record<string, any>;
+      if (unsafeCast(rows).length === 0) return defaults;
+      const meta = (unsafeCast(rows)[0].metadata || {}) as Record<string, any>;
       return {
         defaultLimit: meta.defaultLimit ?? meta.limit ?? defaults.defaultLimit,
         windowMs: meta.windowMs ?? defaults.windowMs,
@@ -1516,7 +1517,7 @@ export const adminRouter = router({
         .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(desc(auditLogs.createdAt))
         .limit(lim);
-      return rows.map(r => ({
+      return unsafeCast(rows).map((r: any) => ({
         id: String(r.id),
         level: (r.severity || "LOW").toLowerCase(),
         message: r.action || "",
@@ -1554,7 +1555,7 @@ export const adminRouter = router({
     const db = await getDb(); if (!db) return [];
     try {
       const rows = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt }).from(users).where(eq(users.isVerified, false)).orderBy(desc(users.createdAt)).limit(20);
-      return rows.map(u => ({ id: String(u.id), name: u.name || '', email: u.email || '', role: u.role || '', createdAt: u.createdAt?.toISOString() || '' }));
+      return unsafeCast(rows).map((u: any) => ({ id: String(u.id), name: u.name || '', email: u.email || '', role: u.role || '', createdAt: u.createdAt?.toISOString() || '' }));
     } catch (e) { logger.warn("[Admin] getOnboardingUsers query failed:", e); return []; }
   }),
   getOnboardingStats: auditedAdminProcedure.query(async () => {
@@ -1593,8 +1594,8 @@ export const adminRouter = router({
       const lid = parseInt(input.logId, 10);
       if (!lid) return fallback;
       const rows = await db.select().from(auditLogs).where(eq(auditLogs.id, lid)).limit(1);
-      if (rows.length === 0) return fallback;
-      const r = rows[0];
+      if (unsafeCast(rows).length === 0) return fallback;
+      const r = unsafeCast(rows)[0];
       return {
         id: String(r.id),
         userId: r.userId ? String(r.userId) : "",
@@ -1622,7 +1623,7 @@ export const adminRouter = router({
         successful: sql<number>`SUM(CASE WHEN ${auditLogs.severity} != 'HIGH' AND ${auditLogs.severity} != 'CRITICAL' THEN 1 ELSE 0 END)`,
         failed: sql<number>`SUM(CASE WHEN ${auditLogs.severity} = 'HIGH' OR ${auditLogs.severity} = 'CRITICAL' THEN 1 ELSE 0 END)`,
       }).from(auditLogs).where(and(eq(auditLogs.entityType, "api_call"), gte(auditLogs.createdAt, since)));
-      const s = rows[0] || {};
+      const s = unsafeCast(rows)[0] || {};
       const totalRequests = Number(s.total) || 0;
       const successfulRequests = Number(s.successful) || 0;
       const failedRequests = Number(s.failed) || 0;

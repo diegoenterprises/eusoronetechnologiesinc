@@ -11,6 +11,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { inspections, vehicles, users } from "../../drizzle/schema";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const inspectionItemSchema = z.object({
   id: z.string(),
@@ -153,14 +154,14 @@ export const inspectionsRouter = router({
         vehicleId: parseInt(input.vehicleId, 10),
         driverId: userId,
         companyId,
-        type: input.type as any,
+        type: unsafeCast(input.type),
         status: input.defectsFound ? (input.safeToOperate ? "passed" : "failed") : "passed",
         defectsFound: input.items.filter(i => i.status === "fail").length,
         oosViolation: !input.safeToOperate,
         completedAt: new Date(),
         location: input.notes || null,
-      } as any);
-      const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+      } as never);
+      const insertedId = unsafeCast(result).insertId || unsafeCast(result)[0]?.insertId || 0;
 
       // WS-E2E-005: Fire safety_inspection_passed gamification event
       if (input.safeToOperate) {
@@ -254,7 +255,7 @@ export const inspectionsRouter = router({
     try { const [u] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1); companyId = u?.companyId || 0; } catch {}
     try {
       const filters: any[] = [eq(inspections.companyId, companyId)];
-      if (input.type) filters.push(eq(inspections.type, input.type as any));
+      if (input.type) filters.push(eq(inspections.type, unsafeCast(input.type)));
       const results = await db.select().from(inspections).where(and(...filters)).orderBy(desc(inspections.createdAt)).limit(input.limit || 10);
       return results.map(r => ({ id: String(r.id), vehicleId: String(r.vehicleId), type: r.type, date: r.completedAt?.toISOString()?.split("T")[0] || "", status: r.status || "pending" }));
     } catch { return []; }

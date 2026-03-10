@@ -10,6 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { notifications, users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const severitySchema = z.enum(["info", "warning", "critical", "error"]);
 
@@ -135,7 +136,7 @@ export const alertsRouter = router({
       if (db) {
         const userId = ctx.user?.id || 0;
         const result = await db.update(notifications).set({ isRead: true }).where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
-        count = (result as any)[0]?.affectedRows || 0;
+        count = unsafeCast(result)[0]?.affectedRows || 0;
       }
       return { success: true, count, dismissedAt: new Date().toISOString() };
     }),

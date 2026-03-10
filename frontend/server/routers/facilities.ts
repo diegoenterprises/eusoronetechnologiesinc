@@ -8,6 +8,7 @@ import { eq, and, desc, sql, like } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { terminals } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const facilityTypeSchema = z.enum([
   "terminal", "refinery", "distribution_center", "truck_stop", "yard", "warehouse", "customer"
@@ -144,7 +145,7 @@ export const facilitiesRouter = router({
       const result = await db.insert(terminals).values({
         companyId, name: input.name, address: input.address.street,
         city: input.address.city, state: input.address.state,
-      } as any).$returningId();
+      }).$returningId();
       return { id: String(result[0]?.id), name: input.name, type: input.type, address: input.address, createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
     }),
 

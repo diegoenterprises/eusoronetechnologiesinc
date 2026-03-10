@@ -10,6 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { drivers, drugTests, users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const queryTypeSchema = z.enum(["pre_employment", "annual", "follow_up"]);
 const violationTypeSchema = z.enum([
@@ -87,7 +88,7 @@ export const clearinghouseRouter = router({
       const [result] = await db.insert(drugTests).values({
         driverId,
         companyId,
-        type: testType as any,
+        type: unsafeCast(testType),
         testDate: new Date(),
         result: 'pending',
       }).$returningId();
@@ -183,7 +184,7 @@ export const clearinghouseRouter = router({
       const driverId = parseInt(input.driverId, 10) || 0;
       const [result] = await db.insert(drugTests).values({
         driverId, companyId,
-        type: 'random' as any,
+        type: unsafeCast('random'),
         testDate: new Date(),
         result: 'pending',
       }).$returningId();
@@ -217,7 +218,7 @@ export const clearinghouseRouter = router({
       const driverId = parseInt(input.driverId, 10) || 0;
       const [result] = await db.insert(drugTests).values({
         driverId, companyId,
-        type: 'random' as any,
+        type: unsafeCast('random'),
         testDate: new Date(input.consentDate),
         result: 'negative',
       }).$returningId();
@@ -274,10 +275,10 @@ export const clearinghouseRouter = router({
       const driverId = parseInt(input.driverId, 10) || 0;
       const validTypes = ['pre_employment', 'random', 'post_accident', 'reasonable_suspicion'] as const;
       const rawType = input.testType || 'random';
-      const testType = validTypes.includes(rawType as any) ? rawType : 'random';
+      const testType = validTypes.includes(unsafeCast(rawType)) ? rawType : 'random';
       const [result] = await db.insert(drugTests).values({
         driverId, companyId,
-        type: testType as any,
+        type: unsafeCast(testType),
         testDate: new Date(input.violationDate),
         result: 'positive',
       }).$returningId();
@@ -391,7 +392,7 @@ export const clearinghouseRouter = router({
         try {
           await db.insert(drugTests).values({
             driverId: parseInt(dId, 10) || 0, companyId,
-            type: testType as any, testDate: new Date(), result: 'pending',
+            type: unsafeCast(testType), testDate: new Date(), result: 'pending',
           });
           submitted++;
         } catch { failed++; }

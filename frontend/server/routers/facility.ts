@@ -8,6 +8,7 @@ import { eq, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { terminals, loads } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const facilityRouter = router({
   getStats: protectedProcedure.query(async ({ ctx }) => {
@@ -31,8 +32,8 @@ export const facilityRouter = router({
       const companyId = ctx.user?.companyId || 0;
       const rows = await db.select().from(loads).where(eq(loads.shipperId, companyId)).limit(20);
       return rows.map(l => {
-        const pickup = l.pickupLocation as any || {};
-        const delivery = l.deliveryLocation as any || {};
+        const pickup = unsafeCast(l.pickupLocation) || {};
+        const delivery = unsafeCast(l.deliveryLocation) || {};
         return { id: String(l.id), loadNumber: l.loadNumber, status: l.status, origin: `${pickup.city || ''}, ${pickup.state || ''}`, destination: `${delivery.city || ''}, ${delivery.state || ''}` };
       });
     } catch (e) { return []; }

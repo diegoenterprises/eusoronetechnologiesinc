@@ -10,6 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { fuelTransactions, tripStateMiles } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 // TODO: import { hzFuelPrices } for real-time fuel price queries once data pipeline is live
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -414,9 +415,9 @@ export const fuelManagementRouter = router({
             COALESCE(SUM(totalSpent), 0) as totalSpent,
             COALESCE(SUM(monthlyLimit), 0) as monthlyLimit
           FROM fuel_cards WHERE companyId = ${companyId}
-        `) as any;
+        `);
 
-        const cs = (cardStats || [])[0] || {};
+        const cs = unsafeCast(cardStats || [])[0] || {};
 
         const [cards] = await db.execute(sql`
           SELECT fc.*, u.firstName, u.lastName
@@ -424,10 +425,10 @@ export const fuelManagementRouter = router({
           LEFT JOIN users u ON u.id = fc.driverId
           WHERE fc.companyId = ${companyId}
           ORDER BY fc.createdAt DESC LIMIT 50
-        `) as any;
+        `);
 
         return {
-          cards: (cards || []).map((c: any) => ({
+          cards: unsafeCast(cards || []).map((c: any) => ({
             id: String(c.id),
             cardNumber: `****${(c.cardNumber || "").slice(-4)}`,
             cardType: c.cardType || "comdata",
@@ -528,9 +529,9 @@ export const fuelManagementRouter = router({
             AND (ft.gallons > 200 OR ft.pricePerGallon < 2.00 OR ft.pricePerGallon > 6.00)
           ORDER BY ft.transactionDate DESC
           LIMIT 50
-        `) as any;
+        `);
 
-        const alerts = (anomalies || []).map((a: any, idx: number) => ({
+        const alerts = unsafeCast(anomalies || []).map((a: any, idx: number) => ({
           id: `theft-${a.id || idx}`,
           type: a.anomalyType || "pattern_anomaly",
           severity: a.gallons > 300 ? "high" as const : a.gallons > 200 ? "medium" as const : "low" as const,

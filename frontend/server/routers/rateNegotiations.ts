@@ -16,6 +16,7 @@ import {
   companies,
 } from "../../drizzle/schema";
 import { encryptField, decryptField, encryptJSON, decryptJSON } from "../_core/encryption";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const ENC_VERSION = "v1";
 
@@ -76,10 +77,10 @@ export const rateNegotiationsRouter = router({
               )
             );
           } else {
-            conditions.push(eq(negotiations.status, input.status as any));
+            conditions.push(eq(negotiations.status, unsafeCast(input.status)));
           }
         }
-        if (input.type) conditions.push(eq(negotiations.negotiationType, input.type as any));
+        if (input.type) conditions.push(eq(negotiations.negotiationType, unsafeCast(input.type)));
 
         const whereClause = and(...conditions);
         const [results, countResult] = await Promise.all([
@@ -232,7 +233,7 @@ export const rateNegotiationsRouter = router({
         respondentCompanyId: input.respondentCompanyId,
         subject: input.subject,
         description: input.description ? encryptField(input.description) : null,
-        currentOffer: currentOffer ? (encryptJSON(currentOffer) as any) : null,
+        currentOffer: currentOffer ? (encryptJSON(currentOffer) as never) : null,
         totalRounds: 1,
         status: "awaiting_response",
         responseDeadline,
@@ -251,7 +252,7 @@ export const rateNegotiationsRouter = router({
         content: encryptField(input.message || `Initial offer: $${input.initialOffer || 0}`),
         offerAmount: input.initialOffer?.toString(),
         offerRateType: input.offerRateType,
-        offerTerms: encryptJSON(input.offerTerms || {}) as any,
+        offerTerms: encryptJSON(input.offerTerms || {}) as never,
         isEncrypted: true,
       });
 
@@ -286,7 +287,7 @@ export const rateNegotiationsRouter = router({
       };
 
       await db.update(negotiations).set({
-        currentOffer: encryptJSON(currentOffer) as any,
+        currentOffer: encryptJSON(currentOffer) as never,
         totalRounds: newRound,
         status: "counter_offered",
         responseDeadline: new Date(Date.now() + 48 * 60 * 60 * 1000),
@@ -303,7 +304,7 @@ export const rateNegotiationsRouter = router({
         content: encryptField(input.message || `Counter offer: $${input.amount}`),
         offerAmount: input.amount.toString(),
         offerRateType: input.rateType,
-        offerTerms: encryptJSON(input.terms || {}) as any,
+        offerTerms: encryptJSON(input.terms || {}) as never,
         isEncrypted: true,
       });
 
@@ -326,7 +327,7 @@ export const rateNegotiationsRouter = router({
       await db.update(negotiations).set({
         status: "agreed",
         outcome: "accepted",
-        agreedTerms: encryptJSON(neg.currentOffer) as any,
+        agreedTerms: encryptJSON(neg.currentOffer) as never,
         resolvedAt: new Date(),
         isEncrypted: true,
       }).where(eq(negotiations.id, input.negotiationId));

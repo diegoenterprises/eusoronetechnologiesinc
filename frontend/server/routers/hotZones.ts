@@ -16,6 +16,7 @@ import { getSmartCacheStats } from "../services/cache/smartCache";
 import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 import { syncOrchestrator } from "../services/sync/syncOrchestrator";
 import { dataEvents } from "../services/events/dataEventEmitter";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ── EXTERNAL DATA CACHE ──
 interface ExtCache {
@@ -28,10 +29,10 @@ const TTL: Record<string, number> = { fuelPrices: 6 * 3600000, weatherAlerts: 5 
 
 async function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
   const now = Date.now();
-  if (now - (extCache.lastRefresh[key] || 0) < (TTL[key] || 300000)) return (extCache as any)[key];
+  if (now - (extCache.lastRefresh[key] || 0) < (TTL[key] || 300000)) return unsafeCast(extCache)[key];
   try {
-    const d = await fn(); (extCache as any)[key] = d; extCache.lastRefresh[key] = now; return d;
-  } catch (e) { logger.error(`[HotZones] ${key}:`, e); return (extCache as any)[key]; }
+    const d = await fn(); unsafeCast(extCache)[key] = d; extCache.lastRefresh[key] = now; return d;
+  } catch (e) { logger.error(`[HotZones] ${key}:`, e); return unsafeCast(extCache)[key]; }
 }
 
 const PADD_TO_STATES: Record<string, string[]> = {
@@ -368,7 +369,7 @@ async function getZoneIntelligenceData(): Promise<Record<string, any> | null> {
     if (!db) return null;
 
     const rows = await db.select().from(hzZoneIntelligence);
-    if (!rows || rows.length === 0) return null;
+    if (!rows || unsafeCast(rows).length === 0) return null;
 
     const map: Record<string, any> = {};
     for (const row of rows) {
@@ -393,9 +394,9 @@ async function getDbWeatherAlerts(): Promise<ExtCache["weatherAlerts"]> {
     if (!db) return [];
 
     const rows = await db.select().from(hzWeatherAlerts).where(sql`expires_at > NOW() OR expires_at IS NULL`).limit(500);
-    if (!rows || rows.length === 0) return [];
+    if (!rows || unsafeCast(rows).length === 0) return [];
 
-    const alerts: ExtCache["weatherAlerts"] = rows.map((r: any) => {
+    const alerts: ExtCache["weatherAlerts"] = unsafeCast(rows).map((r: any) => {
       let states: string[] = [];
       try {
         states = typeof r.stateCodes === "string" ? JSON.parse(r.stateCodes) : r.stateCodes || [];
@@ -426,7 +427,7 @@ async function getDbFuelPrices(): Promise<ExtCache["fuelPrices"]> {
     if (!db) return {};
 
     const rows = await db.select().from(hzFuelPrices).orderBy(sql`report_date DESC`).limit(100);
-    if (!rows || rows.length === 0) return {};
+    if (!rows || unsafeCast(rows).length === 0) return {};
 
     const prices: ExtCache["fuelPrices"] = {};
     const seen = new Set<string>();
@@ -498,7 +499,7 @@ async function _fetchDbEnhancement(): Promise<DbEnhancement> {
     const rows = await db.execute(
       sql`SELECT JSON_EXTRACT(pickupLocation, '$.state') as st, COUNT(*) as cnt, AVG(rate / NULLIF(distance, 0)) as avgRpm FROM loads WHERE status IN ('posted','bidding','assigned','in_transit') AND deletedAt IS NULL GROUP BY st`
     );
-    ((rows as any[]) || []).forEach((r: any) => {
+    (unsafeCast(rows) || []).forEach((r: any) => {
       const st = (r.st || '').replace(/"/g, '');
       if (st) {
         result.loadsByState[st] = Number(r.cnt);
@@ -510,7 +511,7 @@ async function _fetchDbEnhancement(): Promise<DbEnhancement> {
     const truckRows = await db.execute(
       sql`SELECT JSON_EXTRACT(pickupLocation, '$.state') as st, COUNT(DISTINCT driverId) as cnt FROM loads WHERE status IN ('assigned','in_transit') AND driverId IS NOT NULL AND deletedAt IS NULL GROUP BY st`
     );
-    ((truckRows as any[]) || []).forEach((r: any) => {
+    (unsafeCast(truckRows) || []).forEach((r: any) => {
       const st = (r.st || '').replace(/"/g, '');
       if (st) result.trucksByState[st] = Number(r.cnt);
     });
@@ -527,8 +528,8 @@ async function _fetchDbEnhancement(): Promise<DbEnhancement> {
             FROM fmcsa_census
             WHERE phy_state IS NOT NULL AND phy_state != '' AND nbr_power_unit > 0
             GROUP BY phy_state`
-      ) as any;
-      for (const r of censusRows || []) {
+      );
+      for (const r of unsafeCast(censusRows) || []) {
         const st = r.state;
         result.fmcsaCarriersByState[st] = Number(r.carriers);
         result.fmcsaPowerUnitsByState[st] = Number(r.power_units);
@@ -548,8 +549,8 @@ async function _fetchDbEnhancement(): Promise<DbEnhancement> {
             GROUP BY phy_state, cargo_carried
             ORDER BY cnt DESC
             LIMIT 500`
-      ) as any;
-      for (const r of cargoRows || []) {
+      );
+      for (const r of unsafeCast(cargoRows) || []) {
         if (!result.fmcsaEquipByState[r.state]) result.fmcsaEquipByState[r.state] = [];
         result.fmcsaEquipByState[r.state].push({ type: r.cargo, count: Number(r.cnt) });
       }
@@ -564,8 +565,8 @@ async function _fetchDbEnhancement(): Promise<DbEnhancement> {
             FROM fmcsa_crashes
             WHERE state IS NOT NULL AND report_date > DATE_SUB(NOW(), INTERVAL 90 DAY)
             GROUP BY state`
-      ) as any;
-      for (const r of crashRows || []) {
+      );
+      for (const r of unsafeCast(crashRows) || []) {
         result.fmcsaCrashesByState[r.state] = {
           count: Number(r.cnt), fatalities: Number(r.fat), injuries: Number(r.inj),
         };
@@ -581,8 +582,8 @@ async function _fetchDbEnhancement(): Promise<DbEnhancement> {
             FROM fmcsa_inspections
             WHERE report_state IS NOT NULL AND inspection_date > DATE_SUB(NOW(), INTERVAL 30 DAY)
             GROUP BY report_state`
-      ) as any;
-      for (const r of inspRows || []) {
+      );
+      for (const r of unsafeCast(inspRows) || []) {
         const cnt = Number(r.cnt);
         result.fmcsaInspByState[r.state] = {
           count: cnt, violations: Number(r.viols),
@@ -1049,7 +1050,7 @@ export const hotZonesRouter = router({
             GROUP BY hr ORDER BY hr`
           );
           const hourMap: Record<string, { loads: number; trucks: number; rate: number }> = {};
-          for (const r of (rows as any[]) || []) {
+          for (const r of unsafeCast(rows) || []) {
             if (r.hr) hourMap[r.hr] = { loads: Number(r.loads), trucks: Math.max(Number(r.trucks), 1), rate: Number(r.avgRpm) || zone.avgRate };
           }
           // Build full timeline with DB data where available, flat baseline otherwise
@@ -1231,7 +1232,7 @@ export const hotZonesRouter = router({
     .query(async ({ input }) => {
       let events;
       if (input.type) {
-        events = dataEvents.getEventsByType(input.type as any, input.limit);
+        events = dataEvents.getEventsByType(unsafeCast(input.type), input.limit);
       } else if (input.state) {
         events = dataEvents.getEventsByState(input.state, input.limit);
       } else {
@@ -1734,7 +1735,7 @@ export const hotZonesRouter = router({
           .where(condition)
           .orderBy(sql`started_at DESC`)
           .limit(input.limit);
-        return { logs: rows, total: rows.length };
+        return { logs: rows, total: unsafeCast(rows).length };
       } catch { return { logs: [], total: 0 }; }
     }),
 });

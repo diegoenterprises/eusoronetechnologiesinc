@@ -19,6 +19,7 @@ import { router, isolatedApprovedProcedure as protectedProcedure } from "../_cor
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, documents, users, vehicles, runTickets } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // Run Ticket schema
 const runTicketSchema = z.object({
@@ -196,7 +197,7 @@ export const eusoTicketRouter = router({
           };
         }
 
-        const smResult = (load as any).spectraMatchResult as any;
+        const smResult = unsafeCast(load).spectraMatchResult;
         return {
           ticketNumber: input.ticketNumber,
           status: load.status || "pending",
@@ -205,8 +206,8 @@ export const eusoTicketRouter = router({
           driverId: String(load.driverId || ""),
           vehicleId: "",
           originTerminalId: "",
-          productName: (load as any).commodityName || smResult?.productName || "Unknown Product",
-          crudeType: smResult?.crudeId || (load as any).commodityName || "",
+          productName: unsafeCast(load).commodityName || smResult?.productName || "Unknown Product",
+          crudeType: smResult?.crudeId || unsafeCast(load).commodityName || "",
           apiGravity: smResult?.apiGravity || 0,
           bsw: smResult?.bsw || 0,
           sulfurContent: smResult?.sulfur || 0,
@@ -253,11 +254,11 @@ export const eusoTicketRouter = router({
 
         return {
           tickets: loadsList.map(load => {
-            const smResult = (load as any).spectraMatchResult as any;
+            const smResult = unsafeCast(load).spectraMatchResult;
             return {
               ticketNumber: `RT-${load.id}`,
               status: load.status || "pending",
-              productName: (load as any).commodityName || smResult?.productName || "Unknown",
+              productName: unsafeCast(load).commodityName || smResult?.productName || "Unknown",
               netVolume: parseFloat(String(load.weight)) || 0,
               apiGravity: smResult?.apiGravity || 0,
               driverName: "Driver",

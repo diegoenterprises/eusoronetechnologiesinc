@@ -10,6 +10,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, channelMembers, groupChannels } from "../../drizzle/schema";
 import { eq, and, inArray, sql } from "drizzle-orm";
+import { unsafeCast } from "../_core/types/unsafe";
 
 async function resolveUserId(ctxUser: any): Promise<number> {
   if (typeof ctxUser?.id === "number") return ctxUser.id;
@@ -17,7 +18,7 @@ async function resolveUserId(ctxUser: any): Promise<number> {
   if (!db || !ctxUser?.email) return 0;
   try {
     const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, ctxUser.email)).limit(1);
-    return row?.id || 0;
+    return unsafeCast(row)?.id || 0;
   } catch { return 0; }
 }
 
@@ -56,7 +57,7 @@ export const encryptionRouter = router({
       const [row] = await db.execute(
         sql`SELECT publicKey FROM users WHERE id = ${userId} LIMIT 1`
       );
-      return { publicKey: (row as any)?.publicKey || null };
+      return { publicKey: unsafeCast(row)?.publicKey || null };
     }),
 
   /**
@@ -75,7 +76,7 @@ export const encryptionRouter = router({
           sql`SELECT id, publicKey FROM users WHERE id IN (${sql.join(input.userIds.map(id => sql`${id}`), sql`,`)}) AND publicKey IS NOT NULL`
         );
 
-        return (rows as any[]).map((r: any) => ({
+        return unsafeCast(rows).map((r: any) => ({
           userId: r.id,
           publicKey: r.publicKey,
         }));
@@ -98,7 +99,7 @@ export const encryptionRouter = router({
         const [row] = await db.execute(
           sql`SELECT publicKey FROM users WHERE id = ${input.userId} LIMIT 1`
         );
-        return { publicKey: (row as any)?.publicKey || null };
+        return { publicKey: unsafeCast(row)?.publicKey || null };
       } catch {
         return { publicKey: null };
       }
@@ -154,8 +155,8 @@ export const encryptionRouter = router({
         );
 
         return {
-          encryptedGroupKey: (membership as any)?.encryptedGroupKey || null,
-          creatorId: (channel as any)?.groupKeyCreatorId || null,
+          encryptedGroupKey: unsafeCast(membership)?.encryptedGroupKey || null,
+          creatorId: unsafeCast(channel)?.groupKeyCreatorId || null,
         };
       } catch {
         return { encryptedGroupKey: null, creatorId: null };
@@ -203,7 +204,7 @@ export const encryptionRouter = router({
           sql`SELECT publicKey FROM users WHERE id = ${userId} LIMIT 1`
         );
         return {
-          hasPublicKey: !!(row as any)?.publicKey,
+          hasPublicKey: !!unsafeCast(row)?.publicKey,
           keyCreatedAt: null,
         };
       } catch {

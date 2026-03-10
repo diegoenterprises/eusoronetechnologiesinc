@@ -12,6 +12,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, users, escortAssignments, convoys, locationHistory } from "../../drizzle/schema";
 import { eq, and, desc, asc, sql, gte, or, ne } from "drizzle-orm";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const positionSchema = z.enum(["lead", "chase", "both"]);
 const assignmentStatusSchema = z.enum(["pending", "accepted", "en_route", "on_site", "escorting", "completed", "cancelled"]);
@@ -469,7 +470,7 @@ export const escortsRouter = router({
         const userId = await resolveEscortUserId(ctx.user);
         if (!userId) return [];
         const filters: any[] = [eq(escortAssignments.escortUserId, userId)];
-        if (input?.status) filters.push(eq(escortAssignments.status, input.status as any));
+        if (input?.status) filters.push(eq(escortAssignments.status, unsafeCast(input.status)));
         const rows = await db.select({
           aId: escortAssignments.id, aStatus: escortAssignments.status, position: escortAssignments.position,
           rate: escortAssignments.rate, rateType: escortAssignments.rateType,
@@ -1079,7 +1080,7 @@ export const escortsRouter = router({
           cargoType: load.cargoType, hazmatClass: load.hazmatClass,
           weight: load.weight ? parseFloat(String(load.weight)) : 0,
           distance: load.distance ? parseFloat(String(load.distance)) : 0,
-          equipmentType: (load as any).equipmentType || null,
+          equipmentType: unsafeCast(load).equipmentType || null,
           specialInstructions: load.specialInstructions || '',
           origin, destination: dest,
           pickupDate: load.pickupDate?.toISOString() || '',
@@ -1377,9 +1378,9 @@ export const escortsRouter = router({
           name: user.name || '',
           email: user.email || '',
           phone: user.phone || '',
-          profilePhoto: (user as any).profileImageUrl || '',
+          profilePhoto: unsafeCast(user).profileImageUrl || '',
           role: user.role,
-          verificationStatus: (user as any).accountStatus || 'pending',
+          verificationStatus: unsafeCast(user).accountStatus || 'pending',
           createdAt: user.createdAt?.toISOString() || '',
 
           // Professional info from metadata

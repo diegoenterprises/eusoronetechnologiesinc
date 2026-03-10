@@ -15,6 +15,7 @@ import {
   companies, users, loads, payments, settlements,
   incidents, insurancePolicies, documents, auditLogs,
 } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────
 
@@ -646,8 +647,8 @@ export const vendorSupplierRouter = router({
           legalName: company.legalName || "",
           dba: company.name,
           taxId: company.ein || "",
-          category: roleToCategory(company.supplyChainRole) as any,
-          status: complianceToVendorStatus(company.complianceStatus, company.isActive) as any,
+          category: roleToCategory(company.supplyChainRole) as never,
+          status: complianceToVendorStatus(company.complianceStatus, company.isActive) as never,
           rating: Math.round(rating * 10) / 10,
           isPreferred: cScore >= 80 && allTimeSpend > 50000,
           primaryContact: {
@@ -738,12 +739,12 @@ export const vendorSupplierRouter = router({
           email: input.contactEmail,
           phone: input.contactPhone || null,
           complianceStatus: "pending",
-          supplyChainRole: role as any,
+          supplyChainRole: unsafeCast(role),
           isActive: true,
           description: input.notes || null,
         });
 
-        const insertedId = (result as any)[0]?.insertId;
+        const insertedId = unsafeCast(result)[0]?.insertId;
 
         return {
           id: insertedId ? String(insertedId) : `vendor_${Date.now()}`,
@@ -911,7 +912,7 @@ export const vendorSupplierRouter = router({
         return {
           vendorId: input.vendorId,
           vendorName: company.name,
-          currentStep: currentStep as any,
+          currentStep: unsafeCast(currentStep),
           completedSteps,
           steps,
           requirements,
@@ -1294,7 +1295,7 @@ export const vendorSupplierRouter = router({
             pending: "pending",
             terminated: "cancelled",
           };
-          conditions.push(eq(insurancePolicies.status, statusMap[input.status] as any));
+          conditions.push(eq(insurancePolicies.status, statusMap[input.status] as never));
         }
 
         const where = conditions.length > 0 ? and(...conditions) : undefined;
@@ -1983,7 +1984,7 @@ export const vendorSupplierRouter = router({
             completed: "succeeded",
             failed: "failed",
           };
-          conditions.push(eq(payments.status, statusMap[input.status] as any));
+          conditions.push(eq(payments.status, statusMap[input.status] as never));
         }
 
         if (input.startDate) conditions.push(gte(payments.createdAt, new Date(input.startDate)));
@@ -2217,7 +2218,7 @@ export const vendorSupplierRouter = router({
             nextExpiration = expDate.toISOString();
           }
 
-          const additionalInsureds = p.additionalInsureds as any[];
+          const additionalInsureds = unsafeCast(p.additionalInsureds);
 
           return {
             id: String(p.id),

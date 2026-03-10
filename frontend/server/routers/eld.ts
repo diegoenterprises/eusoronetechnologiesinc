@@ -17,6 +17,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { drivers, vehicles, companies } from "../../drizzle/schema";
 import { getSafetyScores, getCrashSummary, getOOSStatus } from "../services/fmcsaBulkLookup";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const SAMSARA_BASE = "https://api.samsara.com";
 const SAMSARA_TOKEN = process.env.SAMSARA_API_TOKEN || "";
@@ -522,9 +523,9 @@ export const eldRouter = router({
         const { eldService: svc } = await import("../services/eld");
         svc.clearCache?.();
         return { success: true, providerSlug: input.providerSlug };
-      } catch (e: any) {
+      } catch (e: unknown) {
         logger.error("[ELD] connectProvider error:", e);
-        throw new Error(`Failed to save connection: ${e.message}`);
+        throw new Error(`Failed to save connection: ${(e as Error).message}`);
       }
     }),
 
@@ -548,8 +549,8 @@ export const eldRouter = router({
         const { eldService: svc } = await import("../services/eld");
         svc.clearCache?.();
         return { success: true };
-      } catch (e: any) {
-        throw new Error(`Failed to disconnect: ${e.message}`);
+      } catch (e: unknown) {
+        throw new Error(`Failed to disconnect: ${(e as Error).message}`);
       }
     }),
 
@@ -610,8 +611,8 @@ export const eldRouter = router({
             sql`SELECT driverId, lat, lng, speed, heading, roadName, pingAt
                 FROM road_live_pings WHERE pingAt > ${pingCutoff}
                 ORDER BY pingAt DESC LIMIT 500`
-          ) as any;
-          const locations = (rows || []).map((p: any) => ({
+          );
+          const locations = unsafeCast(rows || []).map((p: any) => ({
             driverId: String(p.driverId || ""),
             vehicleId: "",
             lat: Number(p.lat), lng: Number(p.lng),
@@ -642,7 +643,7 @@ export const eldRouter = router({
             .where(sql`${locationBreadcrumbs.serverTimestamp} > ${cutoff}`)
             .orderBy(sql`${locationBreadcrumbs.serverTimestamp} DESC`)
             .limit(500);
-          const locations = rows.map(r => ({
+          const locations = unsafeCast(rows).map((r: any) => ({
             driverId: String(r.driverId || ""),
             vehicleId: "",
             lat: Number(r.lat), lng: Number(r.lng),
@@ -762,8 +763,8 @@ export const eldRouter = router({
                      lidarSource, lidarResolutionM, lidarEnrichedAt,
                      truckRiskScore, lastTraversedAt
               FROM road_segments WHERE id = ${input.segmentId} LIMIT 1`
-        ) as any;
-        const r = (rows || [])[0];
+        );
+        const r = unsafeCast(rows || [])[0];
         if (!r) return null;
         return {
           id: r.id,
@@ -941,8 +942,8 @@ export const eldRouter = router({
                      AVG(CASE WHEN truckRiskScore IS NOT NULL THEN truckRiskScore END) as avgRisk,
                      SUM(CASE WHEN truckRiskScore > 60 THEN 1 ELSE 0 END) as highRisk
               FROM road_segments`
-        ) as any;
-        const rs = (roadStats || [])[0] || {};
+        );
+        const rs = unsafeCast(roadStats || [])[0] || {};
         result.roads.totalSegments = Number(rs.cnt || 0);
         result.roads.totalMiles = Number(Number(rs.miles || 0).toFixed(1));
         result.roads.lidarEnriched = Number(rs.lidarCnt || 0);
@@ -959,16 +960,16 @@ export const eldRouter = router({
                      AVG(speed) as avgSpd
               FROM road_live_pings
               WHERE pingAt > ${new Date(Date.now() - 5 * 60 * 1000)}`
-        ) as any;
-        const lv = (liveRows || [])[0] || {};
+        );
+        const lv = unsafeCast(liveRows || [])[0] || {};
         result.liveFleet.count = Number(lv.cnt || 0);
         result.liveFleet.avgSpeedMph = lv.avgSpd ? Math.round(Number(lv.avgSpd)) : 0;
       } catch { /* table may not exist */ }
 
       // Platform-wide network effect stats
       try {
-        const [companyCount] = await db.execute(sql`SELECT COUNT(DISTINCT companyId) as cnt FROM vehicles WHERE companyId IS NOT NULL`) as any;
-        result.network.platformCompanies = Number((companyCount || [])[0]?.cnt || 0);
+        const [companyCount] = await db.execute(sql`SELECT COUNT(DISTINCT companyId) as cnt FROM vehicles WHERE companyId IS NOT NULL`);
+        result.network.platformCompanies = Number(unsafeCast(companyCount || [])[0]?.cnt || 0);
         result.network.platformDevices = result.eld.totalDevices;
         result.network.platformRoadMiles = result.roads.totalMiles;
       } catch { /* non-critical */ }
@@ -982,7 +983,7 @@ export const eldRouter = router({
             getCrashSummary(comp.dotNumber, 3),
             getOOSStatus(comp.dotNumber),
           ]);
-          (result as any).fmcsa = {
+          unsafeCast(result).fmcsa = {
             dotNumber: comp.dotNumber,
             outOfService: oos.outOfService,
             oosReason: oos.reason,
@@ -1035,19 +1036,19 @@ export const eldRouter = router({
     try {
       const [vStats] = await db.execute(
         sql`SELECT COUNT(*) as devices, COUNT(DISTINCT companyId) as companies FROM vehicles WHERE companyId IS NOT NULL`
-      ) as any;
+      );
       const [dStats] = await db.execute(
         sql`SELECT COUNT(*) as cnt FROM drivers WHERE status = 'active'`
-      ) as any;
+      );
       const [rStats] = await db.execute(
         sql`SELECT SUM(CAST(lengthMiles AS DECIMAL(10,3))) as miles,
                    SUM(CASE WHEN lidarEnrichedAt IS NOT NULL THEN 1 ELSE 0 END) as lidar
             FROM road_segments`
-      ) as any;
+      );
 
-      const v = (vStats || [])[0] || {};
-      const d = (dStats || [])[0] || {};
-      const r = (rStats || [])[0] || {};
+      const v = unsafeCast(vStats || [])[0] || {};
+      const d = unsafeCast(dStats || [])[0] || {};
+      const r = unsafeCast(rStats || [])[0] || {};
 
       base.totalCompaniesWithELD = Number(v.companies || 0);
       base.totalDevicesConnected = Number(v.devices || 0);

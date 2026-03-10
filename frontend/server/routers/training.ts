@@ -10,6 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { trainingModules, userTraining, trainingRecords, users, drivers } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const trainingStatusSchema = z.enum(["not_started", "in_progress", "completed", "expired"]);
 const courseCategorySchema = z.enum(["safety", "hazmat", "compliance", "equipment", "customer_service"]);
@@ -90,7 +91,7 @@ export const trainingRouter = router({
       if (!db) return [];
       try {
         const filters: any[] = [eq(trainingModules.isActive, true)];
-        if (input.category) filters.push(eq(trainingModules.type, input.category as any));
+        if (input.category) filters.push(eq(trainingModules.type, unsafeCast(input.category)));
         const results = await db.select().from(trainingModules).where(and(...filters)).orderBy(trainingModules.name);
         let mapped = results.map(m => ({
           id: String(m.id), title: m.name, category: m.type, duration: m.duration || 0,
@@ -145,8 +146,8 @@ export const trainingRouter = router({
         status: "not_started",
         progress: 0,
         expiresAt: new Date(input.dueDate),
-      } as any);
-      const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+      } as never);
+      const insertedId = unsafeCast(result).insertId || unsafeCast(result)[0]?.insertId || 0;
       // Auto-index training assignment for AI semantic search (fire-and-forget)
       try { const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge"); indexComplianceRecord({ id: insertedId, type: "training_assignment", description: `Training course ${input.courseId} assigned to driver ${input.driverId}. Due: ${input.dueDate}`, status: "assigned", severity: "minor" }); } catch {}
       return { success: true, assignmentId: String(insertedId), assignedBy: ctx.user?.id, assignedAt: new Date().toISOString() };
@@ -161,7 +162,7 @@ export const trainingRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       const status = input.progress >= 100 ? "completed" : "in_progress";
-      await db.update(userTraining).set({ progress: input.progress, status: status as any, startedAt: new Date() }).where(eq(userTraining.id, parseInt(input.assignmentId, 10)));
+      await db.update(userTraining).set({ progress: input.progress, status: unsafeCast(status), startedAt: new Date() }).where(eq(userTraining.id, parseInt(input.assignmentId, 10)));
       return { success: true, assignmentId: input.assignmentId, newProgress: input.progress, updatedAt: new Date().toISOString() };
     }),
 
@@ -242,8 +243,8 @@ export const trainingRouter = router({
     const db = await getDb();
     if (!db) throw new Error("Database not available");
     const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
-    const result = await db.insert(userTraining).values({ userId, moduleId: parseInt(input.courseId, 10), status: "in_progress", progress: 0, startedAt: new Date() } as any);
-    const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+    const result = await db.insert(userTraining).values({ userId, moduleId: parseInt(input.courseId, 10), status: "in_progress", progress: 0, startedAt: new Date() } as never);
+    const insertedId = unsafeCast(result).insertId || unsafeCast(result)[0]?.insertId || 0;
     return { success: true, enrollmentId: String(insertedId) };
   }),
 
@@ -268,9 +269,9 @@ export const trainingRouter = router({
 
       const trainingReqs = getRequirementsByCategory(
         "training",
-        input.trailerType as any,
+        unsafeCast(input.trailerType),
         "driver",
-        input.productCategory as any,
+        unsafeCast(input.productCategory),
       );
 
       // Map regulatory requirements to course catalog
@@ -346,7 +347,7 @@ export const trainingRouter = router({
           duration: 240,
           passingScore: 80,
           expirationMonths: 12,
-        } as any).$returningId();
+        }).$returningId();
         moduleId = mod.id;
       }
 
@@ -356,7 +357,7 @@ export const trainingRouter = router({
         moduleId,
         status: "not_started",
         progress: 0,
-      } as any).$returningId();
+      }).$returningId();
 
       // Record platform revenue
       if (input.price > 0) {
@@ -453,9 +454,9 @@ export const trainingRouter = router({
         const { getRequirementsByCategory } = await import("../services/regulatoryQueries");
         const trainingReqs = getRequirementsByCategory(
           "training",
-          input.trailerType as any,
+          unsafeCast(input.trailerType),
           "driver",
-          input.productCategory as any,
+          unsafeCast(input.productCategory),
         );
 
         const now = new Date();
@@ -526,7 +527,7 @@ export const trainingRouter = router({
         for (const r of rows) {
           revenue += parseFloat(String(r.grossAmount)) || 0;
           platRev += parseFloat(String(r.platformShare)) || 0;
-          const meta = r.metadata as any;
+          const meta = unsafeCast(r.metadata);
           if (meta?.courseTitle) courseCount[meta.courseTitle] = (courseCount[meta.courseTitle] || 0) + 1;
         }
 

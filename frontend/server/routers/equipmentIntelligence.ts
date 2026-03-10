@@ -26,6 +26,7 @@ import {
   type EquipmentRequirement,
   type SiteCondition,
 } from "../services/zeunMechanics";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ── vehicleType → relevant equipment categories ──────────────────────────
 const VEHICLE_TYPE_CATEGORIES: Record<string, string[]> = {
@@ -62,7 +63,7 @@ export const equipmentIntelligenceRouter = router({
   getMyVehicles: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return [];
-    const userId = Number((ctx.user as any)?.id);
+    const userId = Number(ctx.user!.id);
     if (!userId) return [];
     const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
     if (!user?.companyId) return [];
@@ -106,7 +107,7 @@ export const equipmentIntelligenceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return null;
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       if (!userId) return null;
       const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
       if (!user?.companyId) return null;
@@ -181,7 +182,7 @@ export const equipmentIntelligenceRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       if (!userId) throw new Error("Not authenticated");
       const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
       if (!user?.companyId) throw new Error("No company associated");
@@ -202,7 +203,7 @@ export const equipmentIntelligenceRouter = router({
         updatedAt: new Date().toISOString(),
       };
 
-      await db.update(companies).set({ supplyChainMeta: meta as any }).where(eq(companies.id, user.companyId));
+      await db.update(companies).set({ supplyChainMeta: unsafeCast(meta) }).where(eq(companies.id, user.companyId));
 
       return {
         success: true,
@@ -216,7 +217,7 @@ export const equipmentIntelligenceRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return { profileItems: 0, certifications: 0, readinessProducts: [] };
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       if (!userId) return { profileItems: 0, certifications: 0, readinessProducts: [] };
       const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
       if (!user?.companyId) return { profileItems: 0, certifications: 0, readinessProducts: [] };
@@ -270,7 +271,7 @@ export const equipmentIntelligenceRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       if (!userId) throw new Error("Not authenticated");
       const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
       if (!user?.companyId) throw new Error("No company");
@@ -399,8 +400,8 @@ Return JSON with this EXACT structure:
         } catch {
           return { error: null, sections: { vehicleSummary: text }, vehicleId: vehicle.id, scannedAt: new Date().toISOString() };
         }
-      } catch (err: any) {
-        logger.error("[ZEUN] Vehicle scan error:", err?.message);
+      } catch (err: unknown) {
+        logger.error("[ZEUN] Vehicle scan error:", (err as Error)?.message);
         return { error: "Scan failed", sections: null };
       }
     }),
@@ -418,7 +419,7 @@ Return JSON with this EXACT structure:
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       if (!userId) throw new Error("Not authenticated");
       const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
       if (!user?.companyId) throw new Error("No company");
@@ -516,7 +517,7 @@ Return JSON with this EXACT structure:
   getMyProfile: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return null;
-    const userId = Number((ctx.user as any)?.id);
+    const userId = Number(ctx.user!.id);
     if (!userId) return null;
 
     const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
@@ -552,7 +553,7 @@ Return JSON with this EXACT structure:
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       if (!userId) throw new Error("Not authenticated");
 
       const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
@@ -569,7 +570,7 @@ Return JSON with this EXACT structure:
       };
 
       meta.equipmentProfile = profile;
-      await db.update(companies).set({ supplyChainMeta: meta as any }).where(eq(companies.id, user.companyId));
+      await db.update(companies).set({ supplyChainMeta: unsafeCast(meta) }).where(eq(companies.id, user.companyId));
 
       return { success: true, itemCount: input.items.filter(i => i.available).length, certCount: input.certifications.length };
     }),
@@ -599,7 +600,7 @@ Return JSON with this EXACT structure:
       // Get carrier equipment profile
       let companyId = input.carrierCompanyId;
       if (!companyId) {
-        const userId = Number((ctx.user as any)?.id);
+        const userId = Number(ctx.user!.id);
         const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
         companyId = user?.companyId || undefined;
       }
@@ -648,7 +649,7 @@ Return JSON with this EXACT structure:
       const db = await getDb();
       if (!db) return { score: 0, readiness: "not_ready" as const, gaps: 0 };
 
-      const userId = Number((ctx.user as any)?.id);
+      const userId = Number(ctx.user!.id);
       const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
       if (!user?.companyId) return { score: 0, readiness: "not_ready" as const, gaps: 0 };
 
@@ -689,7 +690,7 @@ Return JSON with this EXACT structure:
       const db = await getDb();
       let carrierEquipment: EquipmentProfileItem[] = [];
       if (db) {
-        const userId = Number((ctx.user as any)?.id);
+        const userId = Number(ctx.user!.id);
         const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
         if (user?.companyId) {
           const [company] = await db.select({ supplyChainMeta: companies.supplyChainMeta }).from(companies).where(eq(companies.id, user.companyId)).limit(1);
@@ -715,7 +716,7 @@ Return JSON with this EXACT structure:
     const db = await getDb();
     if (!db) return { profileItems: 0, certifications: 0, readinessProducts: [] };
 
-    const userId = Number((ctx.user as any)?.id);
+    const userId = Number(ctx.user!.id);
     const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
     if (!user?.companyId) return { profileItems: 0, certifications: 0, readinessProducts: [] };
 

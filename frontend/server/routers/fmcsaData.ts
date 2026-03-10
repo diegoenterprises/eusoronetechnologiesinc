@@ -30,8 +30,8 @@ async function safeQuery(pool: any, sql: string, params: any[], timeoutMs = 8000
       pool.query(sql, params).then((r: any) => r[0] || []),
       new Promise<any[]>((_, reject) => setTimeout(() => reject(new Error(`Query timeout (${timeoutMs}ms)`)), timeoutMs)),
     ]);
-  } catch (err: any) {
-    logger.warn(`[fmcsaData] safeQuery timeout/error: ${err?.message}`);
+  } catch (err: unknown) {
+    logger.warn(`[fmcsaData] safeQuery timeout/error: ${(err as Error)?.message}`);
     return [];
   }
 }
@@ -242,8 +242,8 @@ export const fmcsaRouter = router({
           hazmatReleased: r.hazmat_released === "Y",
           severityWeight: r.severity_weight,
         }));
-      } catch (err: any) {
-        logger.error(`[FMCSA] getCrashes error for ${input.dotNumber}:`, err?.message);
+      } catch (err: unknown) {
+        logger.error(`[FMCSA] getCrashes error for ${input.dotNumber}:`, (err as Error)?.message);
         return [];
       }
     }),
@@ -286,8 +286,8 @@ export const fmcsaRouter = router({
             hazmat: r.hazmat_viol,
           },
         }));
-      } catch (err: any) {
-        logger.error(`[FMCSA] getInspections error for ${input.dotNumber}:`, err?.message);
+      } catch (err: unknown) {
+        logger.error(`[FMCSA] getInspections error for ${input.dotNumber}:`, (err as Error)?.message);
         return [];
       }
     }),
@@ -314,8 +314,8 @@ export const fmcsaRouter = router({
           oos: r.oos === "Y",
           severityWeight: r.severity_weight,
         }));
-      } catch (err: any) {
-        logger.error(`[FMCSA] getViolations error:`, err?.message);
+      } catch (err: unknown) {
+        logger.error(`[FMCSA] getViolations error:`, (err as Error)?.message);
         return [];
       }
     }),
@@ -726,8 +726,8 @@ export const fmcsaRouter = router({
           INDEX idx_name (legal_name(100))
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
         steps.push({ step: "create_table", ok: true, detail: "fmcsa_census exists/created" });
-      } catch (e: any) {
-        steps.push({ step: "create_table", ok: false, detail: e.message });
+      } catch (e: unknown) {
+        steps.push({ step: "create_table", ok: false, detail: (e as Error).message });
         return { steps };
       }
       
@@ -739,10 +739,10 @@ export const fmcsaRouter = router({
           signal: AbortSignal.timeout(30000),
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        sodaRecords = await resp.json() as any[];
+        sodaRecords = await resp.json();
         steps.push({ step: "soda_fetch", ok: true, detail: `Got ${sodaRecords.length} records. Keys: ${Object.keys(sodaRecords[0] || {}).slice(0, 10).join(",")}` });
-      } catch (e: any) {
-        steps.push({ step: "soda_fetch", ok: false, detail: e.message });
+      } catch (e: unknown) {
+        steps.push({ step: "soda_fetch", ok: false, detail: (e as Error).message });
         return { steps };
       }
       
@@ -771,8 +771,8 @@ export const fmcsaRouter = router({
           driver_total: parseInt(raw.total_drivers) || 0,
         };
         steps.push({ step: "transform", ok: !!transformed.dot_number, detail: `DOT=${transformed.dot_number} name=${transformed.legal_name} power=${transformed.nbr_power_unit}` });
-      } catch (e: any) {
-        steps.push({ step: "transform", ok: false, detail: e.message });
+      } catch (e: unknown) {
+        steps.push({ step: "transform", ok: false, detail: (e as Error).message });
         return { steps };
       }
       
@@ -786,8 +786,8 @@ export const fmcsaRouter = router({
           const values = keys.map(k => transformed[k]);
           await pool.query(sql, values);
           steps.push({ step: "insert", ok: true, detail: `Inserted DOT ${transformed.dot_number}` });
-        } catch (e: any) {
-          steps.push({ step: "insert", ok: false, detail: e.message });
+        } catch (e: unknown) {
+          steps.push({ step: "insert", ok: false, detail: (e as Error).message });
         }
       }
       
@@ -795,8 +795,8 @@ export const fmcsaRouter = router({
       try {
         const [rows]: any = await pool.query("SELECT COUNT(*) as cnt FROM fmcsa_census");
         steps.push({ step: "verify_count", ok: true, detail: `Census count: ${rows[0]?.cnt}` });
-      } catch (e: any) {
-        steps.push({ step: "verify_count", ok: false, detail: e.message });
+      } catch (e: unknown) {
+        steps.push({ step: "verify_count", ok: false, detail: (e as Error).message });
       }
       
       // Step 7: Check ETL log for ANY entries (not just SUCCESS)
@@ -821,8 +821,8 @@ export const fmcsaRouter = router({
         const [logRows]: any = await pool.query("SELECT id, dataset_name, status, error_message, started_at FROM fmcsa_etl_log ORDER BY id DESC LIMIT 10");
         const logSummary = (logRows || []).map((r: any) => `#${r.id} ${r.dataset_name} ${r.status} ${r.error_message ? r.error_message.substring(0, 80) : ''}`).join(' | ');
         steps.push({ step: "etl_log", ok: true, detail: logSummary || "NO ETL LOG ENTRIES" });
-      } catch (e: any) {
-        steps.push({ step: "etl_log", ok: false, detail: e.message });
+      } catch (e: unknown) {
+        steps.push({ step: "etl_log", ok: false, detail: (e as Error).message });
       }
       
       // Step 8: Batch insert test (50 records)
@@ -831,7 +831,7 @@ export const fmcsaRouter = router({
           headers: { "Accept": "application/json", "User-Agent": "EusoTrip-ETL/2.0" },
           signal: AbortSignal.timeout(30000),
         });
-        const batchData = await batchResp.json() as any[];
+        const batchData = await batchResp.json();
         const records = batchData.map((raw: any) => ({
           dot_number: raw.dot_number,
           legal_name: raw.legal_name || null,
@@ -857,8 +857,8 @@ export const fmcsaRouter = router({
         
         const [countRows]: any = await pool.query("SELECT COUNT(*) as cnt FROM fmcsa_census");
         steps.push({ step: "batch_insert_50", ok: true, detail: `Inserted ${records.length} records. Total census: ${countRows[0]?.cnt}` });
-      } catch (e: any) {
-        steps.push({ step: "batch_insert_50", ok: false, detail: e.message });
+      } catch (e: unknown) {
+        steps.push({ step: "batch_insert_50", ok: false, detail: (e as Error).message });
       }
       
       return { steps };
@@ -878,8 +878,8 @@ export const fmcsaRouter = router({
           logger.error("[FMCSA ETL] Triggered ETL failed:", err.message);
         });
         return { triggered: true, message: "ETL started in background. Check getStats in a few minutes." };
-      } catch (err: any) {
-        return { triggered: false, message: `Import failed: ${err.message}` };
+      } catch (err: unknown) {
+        return { triggered: false, message: `Import failed: ${(err as Error).message}` };
       }
     }),
   
@@ -1346,8 +1346,8 @@ export const fmcsaRouter = router({
           message: `Document uploaded. ${input.docType.replace(/_/g, " ")} is being verified by our AI system. You'll be notified when verification is complete.`,
           status: "PENDING" as const,
         };
-      } catch (err: any) {
-        return { success: false, message: `Upload failed: ${err?.message}` };
+      } catch (err: unknown) {
+        return { success: false, message: `Upload failed: ${(err as Error)?.message}` };
       }
     }),
 

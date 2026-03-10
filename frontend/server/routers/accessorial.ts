@@ -28,6 +28,7 @@ import {
   wallets,
   walletTransactions,
 } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ============================================================================
 // FEE SCHEDULE — configurable per company, defaults shown
@@ -239,7 +240,7 @@ export const accessorialRouter = router({
       try {
         const conditions = [];
         if (input?.loadId) conditions.push(eq(detentionClaims.loadId, input.loadId));
-        if (input?.status) conditions.push(eq(detentionClaims.status, input.status as any));
+        if (input?.status) conditions.push(eq(detentionClaims.status, unsafeCast(input.status)));
 
         // Show claims the user created or claims on their loads
         const claims = await db.select({
@@ -309,10 +310,10 @@ export const accessorialRouter = router({
         deny: "denied",
         dispute: "disputed",
         pay: "paid",
-        void: "voided" as any,
+        void: unsafeCast("voided"),
       };
 
-      const newStatus = statusMap[input.action] as any;
+      const newStatus = statusMap[input.action] as never;
       const updates: Record<string, any> = { status: newStatus };
 
       if (input.action === "approve") {

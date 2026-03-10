@@ -74,7 +74,7 @@ export const capacityPlanningRouter = router({
         demandTrend: "stable" as const, capacityStatus: "balanced" as const,
       };
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
 
         // Vehicle counts by status
         const vehicleCounts = await db.select({

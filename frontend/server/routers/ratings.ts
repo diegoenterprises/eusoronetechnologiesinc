@@ -11,6 +11,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { users, loads, drivers, companies, ratings, reviewResponses } from "../../drizzle/schema";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const entityTypeSchema = z.enum(["driver", "catalyst", "shipper", "broker", "facility"]);
 const ratingCategorySchema = z.enum([
@@ -125,7 +126,7 @@ export const ratingsRouter = router({
         }).from(ratings)
           .leftJoin(users, eq(ratings.fromUserId, users.id))
           .where(eq(ratings.toUserId, eid))
-          .orderBy(orderCol as any)
+          .orderBy(unsafeCast(orderCol))
           .offset(input.offset)
           .limit(input.limit);
 
@@ -231,7 +232,7 @@ export const ratingsRouter = router({
   getMySummary: protectedProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
-      const result = { asDriver: { overallRating: 0, totalReviews: 0, recentTrend: 'stable' }, asCatalyst: { overallRating: 0, totalReviews: 0, recentTrend: 'stable' }, pendingReviews: [] as any[], givenThisMonth: 0, receivedThisMonth: 0 };
+      const result = { asDriver: { overallRating: 0, totalReviews: 0, recentTrend: 'stable' }, asCatalyst: { overallRating: 0, totalReviews: 0, recentTrend: 'stable' }, pendingReviews: [] as never[][], givenThisMonth: 0, receivedThisMonth: 0 };
       if (!db) return result;
       try {
         const userId = Number(ctx.user?.id) || 0;

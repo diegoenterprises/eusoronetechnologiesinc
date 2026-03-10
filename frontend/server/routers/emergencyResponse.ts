@@ -39,6 +39,7 @@ import {
   emitZoneActivated,
   emitMobilizationResponse,
 } from "../_core/websocket";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ─── Types & Constants ────────────────────────────────────────────────────────
 
@@ -602,10 +603,10 @@ export const emergencyResponseRouter = router({
       emitMobilizationOrder({
         operationId: input.operationId,
         operationCode: op.codeName,
-        type: input.type as any,
+        type: unsafeCast(input.type),
         title: `${input.type === "I_WANT_YOU" ? "[MOBILIZATION] YOUR COUNTRY NEEDS YOU" : "[CALL TO HAUL]"}: ${input.title}`,
         message: `${input.message} | ${input.incentives.surgePayMultiplier}x surge pay | +${input.incentives.bonusXp} XP | +${input.incentives.bonusMiles} Haul Miles${input.incentives.cashBonus ? ` | $${input.incentives.cashBonus} bonus` : ""}`,
-        urgency: input.urgency as any,
+        urgency: unsafeCast(input.urgency),
         affectedStates: input.targetAudience.states,
         mobilizationOrderId: order.id,
         incentives: {

@@ -199,7 +199,7 @@ export const reportsRouter = router({
   getScheduled: protectedProcedure
     .query(async ({ ctx }) => {
       // No dedicated scheduled_reports table yet; return empty list
-      return [] as any[];
+      return [] as never[][];
     }),
 
   /**
@@ -254,7 +254,7 @@ export const reportsRouter = router({
   getCustomReports: protectedProcedure
     .query(async ({ ctx }) => {
       // No dedicated custom_reports table yet; return empty list
-      return [] as any[];
+      return [] as never[][];
     }),
 
   /**
@@ -294,7 +294,7 @@ export const reportsRouter = router({
 
   // Additional report procedures
   getPerformanceMetrics: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async ({ ctx }) => {
-    const fallback = { avgLoadTime: 0, totalReports: 0, mostPopular: '', revenue: 0, loads: 0, drivers: 0, avgScore: 0, loadsCompleted: 0, onTimeRate: 0, avgDeliveryTime: 0, acceptanceRate: 0, satisfaction: 0, fleetUtilization: 0, driverRetention: 0, revenueByCategory: [] as any[] };
+    const fallback = { avgLoadTime: 0, totalReports: 0, mostPopular: '', revenue: 0, loads: 0, drivers: 0, avgScore: 0, loadsCompleted: 0, onTimeRate: 0, avgDeliveryTime: 0, acceptanceRate: 0, satisfaction: 0, fleetUtilization: 0, driverRetention: 0, revenueByCategory: [] as never[][] };
     const db = await getDb(); if (!db) return fallback;
     try {
       const companyId = ctx.user?.companyId || 0;
@@ -316,7 +316,7 @@ export const reportsRouter = router({
     } catch (e) { return []; }
   }),
   getTrends: protectedProcedure.input(z.object({ metric: z.string().optional(), period: z.string().optional() }).optional()).query(async ({ ctx }) => {
-    const fallback = { revenue: 0, loads: 0, drivers: 0, onTime: 0, avgDelivery: 0, revenueData: [] as any[], loadsData: [] as any[], driversData: [] as any[] };
+    const fallback = { revenue: 0, loads: 0, drivers: 0, onTime: 0, avgDelivery: 0, revenueData: [] as never[][], loadsData: [] as never[][], driversData: [] as never[][] };
     const db = await getDb(); if (!db) return fallback;
     try {
       const companyId = ctx.user?.companyId || 0;

@@ -19,6 +19,7 @@ import {
   integrationSyncLogs,
   integrationSyncedRecords 
 } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const integrationsRouter = router({
   create: protectedProcedure
@@ -525,10 +526,10 @@ export const integrationsRouter = router({
         const conditions = [];
         
         if (input?.category) {
-          conditions.push(eq(integrationProviders.category, input.category as any));
+          conditions.push(eq(integrationProviders.category, unsafeCast(input.category)));
         }
         if (input?.status) {
-          conditions.push(eq(integrationProviders.status, input.status as any));
+          conditions.push(eq(integrationProviders.status, unsafeCast(input.status)));
         } else {
           conditions.push(inArray(integrationProviders.status, ["active", "beta"]));
         }
@@ -582,7 +583,7 @@ export const integrationsRouter = router({
           .select()
           .from(integrationProviders)
           .where(and(
-            eq(integrationProviders.category, input.category as any),
+            eq(integrationProviders.category, unsafeCast(input.category)),
             inArray(integrationProviders.status, ["active", "beta"])
           ))
           .orderBy(integrationProviders.displayName);
@@ -909,18 +910,18 @@ export const integrationsRouter = router({
             totalRecordsSynced: (connection.totalRecordsSynced || 0) + result.recordsCreated + result.recordsUpdated,
             lastRecordsSynced: result.recordsCreated + result.recordsUpdated,
           }).where(eq(integrationConnections.id, connection.id));
-        } catch (e: any) {
+        } catch (e: unknown) {
           logger.error(`[Integrations] Sync failed for ${input.providerSlug}:`, e);
           await db.update(integrationSyncLogs).set({
             status: "failed",
             completedAt: new Date(),
             durationMs: Date.now() - startTime,
-            errorMessage: e?.message || "Unknown sync error",
+            errorMessage: (e as Error)?.message || "Unknown sync error",
           }).where(eq(integrationSyncLogs.id, syncLog.id));
 
           await db.update(integrationConnections).set({
             status: "error",
-            lastError: e?.message || "Sync failed",
+            lastError: (e as Error)?.message || "Sync failed",
             errorCount: (connection.errorCount || 0) + 1,
           }).where(eq(integrationConnections.id, connection.id));
         }

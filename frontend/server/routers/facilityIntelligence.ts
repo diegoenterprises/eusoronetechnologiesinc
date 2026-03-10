@@ -15,6 +15,7 @@ import {
 } from "../../drizzle/schema";
 import { searchFacilities, getNearbyFacilities, getFacilityById, getFacilityCountsByState, seedFacilityDatabase, importPipelineStations } from "../services/facilities/facilityService";
 import { getDTNClient } from "../services/dtn/dtnClient";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ── Helper: resolve user ID from context ───────────────────────────
 async function resolveUserId(ctx: any): Promise<number> {
@@ -75,7 +76,7 @@ export const facilityIntelligenceRouter = router({
       const db = await getDb(); if (!db) return [];
       try {
         const conds: any[] = [eq(facilities.state, input.state.toUpperCase())];
-        if (input.facilityType) conds.push(eq(facilities.facilityType, input.facilityType as any));
+        if (input.facilityType) conds.push(eq(facilities.facilityType, unsafeCast(input.facilityType)));
         return db.select().from(facilities).where(and(...conds)).orderBy(facilities.facilityName).limit(input.limit);
       } catch { return []; }
     }),
@@ -166,7 +167,7 @@ export const facilityIntelligenceRouter = router({
         waitTimeMinutes: input.waitTimeMinutes || null,
         comment: input.comment || null,
         loadId: input.loadId || null,
-      } as any);
+      } as never);
       return { success: true };
     }),
 
@@ -175,7 +176,7 @@ export const facilityIntelligenceRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       await db.update(facilityRatings)
-        .set({ terminalResponse: input.response, terminalRespondedAt: new Date() } as any)
+        .set({ terminalResponse: input.response, terminalRespondedAt: new Date() } as never)
         .where(eq(facilityRatings.id, input.ratingId));
       return { success: true };
     }),
@@ -188,7 +189,7 @@ export const facilityIntelligenceRouter = router({
       const companyId = ctx.user?.companyId;
       if (!userId || !companyId) throw new Error("User/company not found");
       await db.update(facilities)
-        .set({ claimedByUserId: userId, claimedByCompanyId: parseInt(String(companyId)) } as any)
+        .set({ claimedByUserId: userId, claimedByCompanyId: parseInt(String(companyId)) } as never)
         .where(eq(facilities.id, input.facilityId));
       return { success: true, facilityId: input.facilityId };
     }),
@@ -243,7 +244,7 @@ export const facilityIntelligenceRouter = router({
         requirementValue: input.requirementValue || null,
         isRequired: input.isRequired,
         notes: input.notes || null,
-      } as any);
+      } as never);
       return { success: true };
     }),
 
@@ -306,7 +307,7 @@ export const facilityIntelligenceRouter = router({
         dtnEnvironment: input.dtnEnvironment,
         syncEnabled: true,
         syncConfigJson: input.syncConfig || {},
-      } as any);
+      } as never);
       return { success: true };
     }),
 
@@ -318,8 +319,8 @@ export const facilityIntelligenceRouter = router({
       try {
         const result = await client.authenticate({ terminalId: String(input.facilityId), apiKey: "test", environment: "sandbox" });
         return { success: true, token: result.token };
-      } catch (e: any) {
-        return { success: false, error: e?.message || "Connection failed" };
+      } catch (e: unknown) {
+        return { success: false, error: (e as Error)?.message || "Connection failed" };
       }
     }),
 
@@ -447,7 +448,7 @@ export const facilityIntelligenceRouter = router({
         // Calculate distances, filter by approach radius, add ETA estimates
         const approaching = [];
         for (const load of inTransitLoads) {
-          const loc = load.currentLocation as any;
+          const loc = unsafeCast(load.currentLocation);
           if (!loc?.lat || !loc?.lng) continue;
 
           const dLat = (parseFloat(String(fac.lat)) - loc.lat) * 111.32;
@@ -626,7 +627,7 @@ export const facilityIntelligenceRouter = router({
     .query(async ({ input }) => {
       const fac = await getFacilityById(input.facilityId);
       if (!fac) return null;
-      const f = fac as any;
+      const f = unsafeCast(fac);
       const operator = (f.operatorName || f.facilityName || "").toUpperCase();
       const state = f.state || "";
 

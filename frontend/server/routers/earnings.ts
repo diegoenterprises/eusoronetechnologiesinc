@@ -10,6 +10,7 @@ import { isolatedApprovedProcedure as protectedProcedure, router } from "../_cor
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, payments, users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const earningStatusSchema = z.enum(["pending", "approved", "paid"]);
 
@@ -104,8 +105,8 @@ export const earningsRouter = router({
           .offset(input.offset);
 
         return driverLoads.map(l => {
-          const pickup = l.pickupLocation as any || {};
-          const delivery = l.deliveryLocation as any || {};
+          const pickup = unsafeCast(l.pickupLocation) || {};
+          const delivery = unsafeCast(l.deliveryLocation) || {};
           return {
             id: `e${l.id}`,
             loadNumber: l.loadNumber,
@@ -184,7 +185,7 @@ export const earningsRouter = router({
         const results = await db.select().from(loads).where(and(...filters)).orderBy(desc(loads.createdAt)).limit(input.limit).offset(input.offset);
         const [totals] = await db.select({ totalPay: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)),0)`, totalMiles: sql<number>`COALESCE(SUM(CAST(distance AS DECIMAL)),0)`, cnt: sql<number>`count(*)` }).from(loads).where(and(...filters));
         return {
-          entries: results.map(l => { const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {}; return { id: `e${l.id}`, loadNumber: l.loadNumber, date: l.createdAt?.toISOString()?.split("T")[0] || "", origin: p.city ? `${p.city}, ${p.state || ""}` : "", destination: d.city ? `${d.city}, ${d.state || ""}` : "", miles: parseFloat(l.distance || "0"), basePay: parseFloat(l.rate || "0"), fuelBonus: 0, hazmatPremium: 0, detentionPay: 0, totalPay: parseFloat(l.rate || "0"), status: "paid" }; }),
+          entries: results.map(l => { const p = unsafeCast(l.pickupLocation) || {}; const d = unsafeCast(l.deliveryLocation) || {}; return { id: `e${l.id}`, loadNumber: l.loadNumber, date: l.createdAt?.toISOString()?.split("T")[0] || "", origin: p.city ? `${p.city}, ${p.state || ""}` : "", destination: d.city ? `${d.city}, ${d.state || ""}` : "", miles: parseFloat(l.distance || "0"), basePay: parseFloat(l.rate || "0"), fuelBonus: 0, hazmatPremium: 0, detentionPay: 0, totalPay: parseFloat(l.rate || "0"), status: "paid" }; }),
           total: totals?.cnt || 0,
           totals: { totalPay: totals?.totalPay || 0, totalMiles: totals?.totalMiles || 0 },
         };
@@ -242,7 +243,7 @@ export const earningsRouter = router({
       const db = await getDb();
       const userId = ctx.user?.id || 0;
       const year = new Date().getFullYear();
-      const empty = { year, totalEarnings: 0, totalLoads: 0, totalMiles: 0, avgPerMile: 0, avgPerLoad: 0, monthlyBreakdown: [] as any[], projectedAnnual: 0 };
+      const empty = { year, totalEarnings: 0, totalLoads: 0, totalMiles: 0, avgPerMile: 0, avgPerLoad: 0, monthlyBreakdown: [] as never[][], projectedAnnual: 0 };
       if (!db) return empty;
       try {
         const yearStart = new Date(year, 0, 1);
@@ -274,16 +275,16 @@ export const earningsRouter = router({
     const sid = parseInt(input.settlementId, 10);
     if (!sid) throw new Error("Invalid settlement ID");
     // Update payment status to approved
-    await db.update(payments).set({ status: 'approved' } as any).where(eq(payments.id, sid));
+    await db.update(payments).set({ status: 'approved' } as never).where(eq(payments.id, sid));
     // Generate settlement PDF (P0 Blocker 5)
     try {
       const { generateAndStoreSettlementPDF } = await import("../services/settlementPDF");
       await generateAndStoreSettlementPDF(sid);
-    } catch (e: any) { logger.error('[Earnings] PDF generation failed:', e?.message?.slice(0, 100)); }
+    } catch (e: unknown) { logger.error('[Earnings] PDF generation failed:', (e as Error)?.message?.slice(0, 100)); }
     // Audit log
     try {
       const { auditLogs } = await import("../../drizzle/schema");
-      await db.insert(auditLogs).values({ userId: ctx.user?.id || 0, action: 'SETTLEMENT_APPROVED', entityType: 'payment', entityId: sid, changes: {} } as any);
+      await db.insert(auditLogs).values({ userId: ctx.user?.id || 0, action: 'SETTLEMENT_APPROVED', entityType: 'payment', entityId: sid, changes: {} } as never);
     } catch {}
     return { success: true, settlementId: input.settlementId, approvedAt: new Date().toISOString() };
   }),
@@ -292,7 +293,7 @@ export const earningsRouter = router({
     if (!db) throw new Error("Database unavailable");
     const sid = parseInt(input.settlementId, 10);
     if (sid) {
-      await db.update(payments).set({ status: 'completed', completedAt: new Date() } as any).where(eq(payments.id, sid));
+      await db.update(payments).set({ status: 'completed', completedAt: new Date() } as never).where(eq(payments.id, sid));
     }
     return { success: true, paymentId: `pay_${sid || Date.now()}` };
   }),
@@ -312,7 +313,7 @@ export const earningsRouter = router({
       const userId = ctx.user?.id || 0;
 
       // 1. Set payment status to disputed
-      await db.update(payments).set({ status: 'disputed' } as any).where(eq(payments.id, sid));
+      await db.update(payments).set({ status: 'disputed' } as never).where(eq(payments.id, sid));
 
       // 2. Create dispute record
       const [payment] = await db.select({ payerId: payments.payerId, payeeId: payments.payeeId, amount: payments.amount })
@@ -327,7 +328,7 @@ export const earningsRouter = router({
       // 3. Audit log
       try {
         const { auditLogs } = await import("../../drizzle/schema");
-        await db.insert(auditLogs).values({ userId, action: 'SETTLEMENT_DISPUTED', entityType: 'payment', entityId: sid, changes: { reason: input.reason } } as any);
+        await db.insert(auditLogs).values({ userId, action: 'SETTLEMENT_DISPUTED', entityType: 'payment', entityId: sid, changes: { reason: input.reason } } as never);
       } catch {}
 
       return { success: true, settlementId: input.settlementId, status: 'disputed', disputeCreated: true };

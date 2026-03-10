@@ -86,7 +86,7 @@ export const auditComplianceRouter = router({
       scheduled: 0, inProgress: 0, completed: 0, cancelled: 0,
       totalFindings: 0, openFindings: 0, criticalFindings: 0,
       openCAPAs: 0, overdueCAPAs: 0, complianceScore: 0,
-      recentAudits: [] as any[], upcomingDeadlines: [] as any[],
+      recentAudits: [] as never[][], upcomingDeadlines: [] as never[][],
     };
     if (!db) return fallback;
 

@@ -10,6 +10,7 @@ import { randomBytes } from "crypto";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { users, companies } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // Helper: resolve numeric user ID
 async function resolveUserId(ctxUser: any): Promise<number> {
@@ -26,9 +27,9 @@ const DEFAULT_SETTINGS = {
   display: { theme: "dark", language: "en", timezone: "America/Chicago", dateFormat: "MM/DD/YYYY", distanceUnit: "miles", currency: "USD" },
   privacy: { shareLocation: true, showOnlineStatus: true, profileVisibility: "company" },
   accessibility: { fontSize: "medium", highContrast: false, reduceMotion: false },
-  apiKeys: [] as any[],
-  webhooks: [] as any[],
-  integrations: [] as any[],
+  apiKeys: [] as never[][],
+  webhooks: [] as never[][],
+  integrations: [] as never[][],
 };
 
 // Helper: read settings from DB
@@ -75,9 +76,9 @@ export const settingsRouter = router({
       const userId = await resolveUserId(ctx.user);
       const settings = await getUserSettings(userId);
       if (!settings.notifications[input.channel as keyof typeof settings.notifications]) {
-        (settings.notifications as any)[input.channel] = {};
+        unsafeCast(settings.notifications)[input.channel] = {};
       }
-      (settings.notifications as any)[input.channel][input.setting] = input.enabled;
+      unsafeCast(settings.notifications)[input.channel][input.setting] = input.enabled;
       await saveUserSettings(userId, settings);
       return { success: true, channel: input.channel, setting: input.setting, enabled: input.enabled, updatedAt: new Date().toISOString() };
     }),
@@ -97,7 +98,7 @@ export const settingsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = await resolveUserId(ctx.user);
       const settings = await getUserSettings(userId);
-      Object.entries(input).forEach(([k, v]) => { if (v !== undefined) (settings.display as any)[k] = v; });
+      Object.entries(input).forEach(([k, v]) => { if (v !== undefined) unsafeCast(settings.display)[k] = v; });
       await saveUserSettings(userId, settings);
       return { success: true, updatedFields: Object.keys(input).filter(k => input[k as keyof typeof input] !== undefined), updatedAt: new Date().toISOString() };
     }),
@@ -114,7 +115,7 @@ export const settingsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = await resolveUserId(ctx.user);
       const settings = await getUserSettings(userId);
-      Object.entries(input).forEach(([k, v]) => { if (v !== undefined) (settings.privacy as any)[k] = v; });
+      Object.entries(input).forEach(([k, v]) => { if (v !== undefined) unsafeCast(settings.privacy)[k] = v; });
       await saveUserSettings(userId, settings);
       return { success: true, updatedAt: new Date().toISOString() };
     }),

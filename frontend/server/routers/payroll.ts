@@ -9,6 +9,7 @@ import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { payrollRuns, payrollItems, drivers, users, payments } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 async function resolveCompanyId(ctxUser: any): Promise<number> {
   const db = await getDb();
@@ -92,8 +93,8 @@ export const payrollRouter = router({
       const now = new Date();
       const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      const result = await db.insert(payrollRuns).values({ companyId, periodStart, periodEnd, status: "processing", totalAmount: "0", employeeCount: input.driverIds?.length || 0 } as any);
-      const runId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+      const result = await db.insert(payrollRuns).values({ companyId, periodStart, periodEnd, status: "processing", totalAmount: "0", employeeCount: input.driverIds?.length || 0 } as never);
+      const runId = unsafeCast(result).insertId || unsafeCast(result)[0]?.insertId || 0;
       return { success: true, processedCount: input.driverIds?.length || 0, processedAt: now.toISOString(), payrollRunId: String(runId) };
     }),
 
@@ -145,7 +146,7 @@ export const payrollRouter = router({
       if (!db) throw new Error("Database not available");
       const companyId = await resolveCompanyId(ctx.user);
       const now = new Date();
-      await db.insert(payrollRuns).values({ companyId, periodStart: now, periodEnd: now, status: "processing", totalAmount: "0" } as any);
+      await db.insert(payrollRuns).values({ companyId, periodStart: now, periodEnd: now, status: "processing", totalAmount: "0" } as never);
       return { success: true, processedAt: now.toISOString(), period: input.period || "current" };
     }),
 

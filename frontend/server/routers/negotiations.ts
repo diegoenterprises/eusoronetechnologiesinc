@@ -17,6 +17,7 @@ import { eq, and, or, desc, sql } from "drizzle-orm";
 import { router, isolatedApprovedProcedure as protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { negotiations as negotiationsTable } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ── NEGOTIATION STATES ──
 const NEGOTIATION_STATES = ["INITIATED", "COUNTERED", "ACCEPTED", "SIGNED", "FAILED", "EXPIRED", "REJECTED"] as const;
@@ -107,13 +108,13 @@ export const negotiationsRouter = router({
           const userId = Number(ctx.user?.id) || 0;
           const negNum = `NEG-${Date.now().toString(36).toUpperCase()}`;
           const result = await db.insert(negotiationsTable).values({
-            negotiationNumber: negNum, negotiationType: 'load_rate' as any,
+            negotiationNumber: negNum, negotiationType: unsafeCast('load_rate'),
             loadId: input.loadId, initiatorUserId: userId, respondentUserId: 0,
             initiatorCompanyId: ctx.user?.companyId || null,
             subject: `Rate negotiation for Load #${input.loadId}`,
             currentOffer: { amount: input.proposedRate, proposedBy: userId, proposedAt: new Date().toISOString() },
-            totalRounds: 1, status: 'open' as any,
-          } as any).$returningId();
+            totalRounds: 1, status: unsafeCast('open'),
+          } as never).$returningId();
           // Auto-index negotiation for AI semantic search (fire-and-forget)
           try {
             const { indexLoad } = await import("../services/embeddings/aiTurbocharge");
@@ -170,8 +171,8 @@ export const negotiationsRouter = router({
           const [neg] = await db.select({ totalRounds: negotiationsTable.totalRounds }).from(negotiationsTable).where(eq(negotiationsTable.id, input.negotiationId)).limit(1);
           const newRound = (neg?.totalRounds || 1) + 1;
           await db.update(negotiationsTable).set({
-            status: 'counter_offered' as any,
-            currentOffer: { amount: input.amount, proposedBy: userId, proposedAt: new Date().toISOString() } as any,
+            status: unsafeCast('counter_offered'),
+            currentOffer: { amount: input.amount, proposedBy: userId, proposedAt: new Date().toISOString() } as never,
             totalRounds: newRound,
           }).where(eq(negotiationsTable.id, input.negotiationId));
         } catch { /* non-fatal */ }
@@ -207,10 +208,10 @@ export const negotiationsRouter = router({
       if (db) {
         try {
           await db.update(negotiationsTable).set({
-            status: 'agreed' as any,
-            outcome: 'accepted' as any,
+            status: unsafeCast('agreed'),
+            outcome: unsafeCast('accepted'),
             resolvedAt: new Date(),
-            currentOffer: { amount: input.finalRate, proposedBy: Number(ctx.user?.id) || 0, proposedAt: new Date().toISOString() } as any,
+            currentOffer: { amount: input.finalRate, proposedBy: Number(ctx.user?.id) || 0, proposedAt: new Date().toISOString() } as never,
           }).where(eq(negotiationsTable.id, input.negotiationId));
         } catch { /* non-fatal */ }
       }
@@ -239,8 +240,8 @@ export const negotiationsRouter = router({
       if (db) {
         try {
           await db.update(negotiationsTable).set({
-            status: 'rejected' as any,
-            outcome: 'rejected' as any,
+            status: unsafeCast('rejected'),
+            outcome: unsafeCast('rejected'),
             resolvedAt: new Date(),
           }).where(eq(negotiationsTable.id, input.negotiationId));
         } catch { /* non-fatal */ }
@@ -284,14 +285,14 @@ export const negotiationsRouter = router({
         try {
           // Update negotiation to signed
           await db.update(negotiationsTable).set({
-            status: 'agreed' as any,
-            outcome: 'accepted' as any,
+            status: unsafeCast('agreed'),
+            outcome: unsafeCast('accepted'),
             resolvedAt: new Date(),
           }).where(eq(negotiationsTable.id, input.negotiationId));
           // Assign load
           const { loads } = await import("../../drizzle/schema");
           await db.update(loads).set({
-            status: 'assigned' as any,
+            status: unsafeCast('assigned'),
             rate: String(input.finalRate),
             catalystId: input.catalystId,
           }).where(eq(loads.id, input.loadId));
@@ -337,7 +338,7 @@ export const negotiationsRouter = router({
         try {
           // Append message to the currentOffer JSON as a thread entry
           const [neg] = await db.select({ currentOffer: negotiationsTable.currentOffer, totalRounds: negotiationsTable.totalRounds }).from(negotiationsTable).where(eq(negotiationsTable.id, input.negotiationId)).limit(1);
-          const offer = (neg?.currentOffer as any) || {};
+          const offer = unsafeCast(neg)?.currentOffer || {};
           const messages = offer.messages || [];
           messages.push({ sender: Number(ctx.user?.id) || 0, message: input.message, at: new Date().toISOString() });
           await db.update(negotiationsTable).set({ currentOffer: { ...offer, messages } }).where(eq(negotiationsTable.id, input.negotiationId));

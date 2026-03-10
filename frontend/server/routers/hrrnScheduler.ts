@@ -20,7 +20,7 @@ export const hrrnSchedulerRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return { queue: [], stats: { total: 0, avgWait: 0, starvationCount: 0 } };
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
       if (!companyId) return { queue: [], stats: { total: 0, avgWait: 0, starvationCount: 0 } };
 
       const [rows]: any = await db.execute(sql`
@@ -52,7 +52,7 @@ export const hrrnSchedulerRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId)).limit(1);
       if (!load) throw new Error("Load not found");
@@ -65,7 +65,7 @@ export const hrrnSchedulerRouter = router({
     .mutation(async ({ ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const updated = await recalculateAllPriorities(db, companyId);
       return { success: true, updatedCount: updated };
@@ -75,7 +75,7 @@ export const hrrnSchedulerRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
       return getStarvationWarnings(db, companyId);
     }),
 

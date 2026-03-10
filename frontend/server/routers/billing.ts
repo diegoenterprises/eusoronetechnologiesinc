@@ -12,15 +12,16 @@ import { getDb } from "../db";
 import { payments, loads, users, vehicles, companies, detentionClaims, factoringInvoices, wallets, walletTransactions } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
 import { requireAccess } from "../services/security/rbac/access-check";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const invoiceStatusSchema = z.enum(["draft", "pending", "paid", "overdue", "cancelled"]);
 const transactionTypeSchema = z.enum(["payment", "receipt", "refund", "fee", "withdrawal"]);
 
 // Helper: safe Stripe call
 async function safeStripe<T>(fn: () => Promise<T>): Promise<T | null> {
-  try { return await fn(); } catch (err: any) {
-    if (err.message?.includes("STRIPE_SECRET_KEY")) return null;
-    logger.warn("[billing] Stripe error:", err.message);
+  try { return await fn(); } catch (err: unknown) {
+    if ((err as Error).message?.includes("STRIPE_SECRET_KEY")) return null;
+    logger.warn("[billing] Stripe error:", (err as Error).message);
     return null;
   }
 }
@@ -30,7 +31,7 @@ export const billingRouter = router({
   // SUBSCRIPTION — real company data
   // ════════════════════════════════════════════════════════════════
   getSubscription: protectedProcedure.query(async ({ ctx }) => {
-    await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'INVOICE' }, (ctx as any).req);
+    await requireAccess({ userId: ctx.user?.id, role: ctx.user!.role || 'SHIPPER', companyId: ctx.user!.companyId, action: 'READ', resource: 'INVOICE' }, unsafeCast(ctx).req);
     const db = await getDb();
     const fallback = { plan: "Starter", planId: "starter", planName: "Starter", status: "active", billingCycle: "monthly", nextBilling: "", nextBillingDate: "", renewalDate: "", price: 0 };
     if (!db) return fallback;
@@ -328,7 +329,7 @@ export const billingRouter = router({
           total: (li.amount || 0) / 100,
         })),
         subtotal: (inv.subtotal || 0) / 100,
-        tax: ((inv as any).tax || 0) / 100,
+        tax: (unsafeCast(inv).tax || 0) / 100,
         total: (inv.total || 0) / 100,
         status: inv.status === "open" ? (inv.due_date && inv.due_date * 1000 < Date.now() ? "overdue" : "pending") : inv.status,
         dueDate: inv.due_date ? new Date(inv.due_date * 1000).toLocaleDateString() : "N/A",

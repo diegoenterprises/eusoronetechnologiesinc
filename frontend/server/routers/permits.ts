@@ -9,6 +9,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { documents } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const permitStatusSchema = z.enum(["draft", "pending", "approved", "expired", "revoked"]);
 const permitTypeSchema = z.enum(["oversize", "overweight", "superload", "hazmat_route", "temporary"]);
@@ -26,10 +27,10 @@ export const permitsRouter = router({
         const userId = Number(ctx.user?.id) || 0;
         const statusFilter = input.status || null;
         const typeFilter = input.type || null;
-        const [countRes] = await db.execute(sql`SELECT COUNT(*) as cnt FROM permits_records WHERE userId = ${userId} AND (${statusFilter} IS NULL OR status = ${statusFilter}) AND (${typeFilter} IS NULL OR type = ${typeFilter})`) as any;
-        const total = Number((countRes || [])[0]?.cnt) || 0;
-        const [rows] = await db.execute(sql`SELECT * FROM permits_records WHERE userId = ${userId} AND (${statusFilter} IS NULL OR status = ${statusFilter}) AND (${typeFilter} IS NULL OR type = ${typeFilter}) ORDER BY createdAt DESC LIMIT ${input.limit} OFFSET ${input.offset}`) as any;
-        const permits = (rows || []).map((r: any) => ({
+        const [countRes] = await db.execute(sql`SELECT COUNT(*) as cnt FROM permits_records WHERE userId = ${userId} AND (${statusFilter} IS NULL OR status = ${statusFilter}) AND (${typeFilter} IS NULL OR type = ${typeFilter})`);
+        const total = Number(unsafeCast(countRes || [])[0]?.cnt) || 0;
+        const [rows] = await db.execute(sql`SELECT * FROM permits_records WHERE userId = ${userId} AND (${statusFilter} IS NULL OR status = ${statusFilter}) AND (${typeFilter} IS NULL OR type = ${typeFilter}) ORDER BY createdAt DESC LIMIT ${input.limit} OFFSET ${input.offset}`);
+        const permits = unsafeCast(rows || []).map((r: any) => ({
           id: String(r.id), permitNumber: r.permitNumber, type: r.type, status: r.status,
           states: r.states ? JSON.parse(r.states) : [], origin: r.origin, destination: r.destination,
           commodity: r.commodity, weight: Number(r.weight) || 0,
@@ -49,8 +50,8 @@ export const permitsRouter = router({
       const db = await getDb();
       if (!db) return null;
       try {
-        const [rows] = await db.execute(sql`SELECT * FROM permits_records WHERE id = ${parseInt(input.id, 10)} LIMIT 1`) as any;
-        const r = (rows || [])[0];
+        const [rows] = await db.execute(sql`SELECT * FROM permits_records WHERE id = ${parseInt(input.id, 10)} LIMIT 1`);
+        const r = unsafeCast(rows || [])[0];
         if (!r) return null;
         return {
           id: String(r.id), permitNumber: r.permitNumber, type: r.type, status: r.status,
@@ -112,8 +113,8 @@ export const permitsRouter = router({
             AND expirationDate IS NOT NULL
             AND expirationDate BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ${input.days} DAY)
           ORDER BY expirationDate ASC
-        `) as any;
-        return (rows || []).map((r: any) => ({
+        `);
+        return unsafeCast(rows || []).map((r: any) => ({
           id: String(r.id), permitNumber: r.permitNumber, type: r.type,
           expirationDate: r.expirationDate, daysRemaining: r.expirationDate ? Math.ceil((new Date(r.expirationDate).getTime() - Date.now()) / 86400000) : 0,
           states: r.states ? JSON.parse(r.states) : [],
@@ -191,8 +192,8 @@ export const permitsRouter = router({
     if (!db) { const p: any[] = []; return Object.assign(p, { total: 0, valid: 0, expiringSoon: 0, expired: 0 }); }
     try {
       const userId = Number(ctx.user?.id) || 0;
-      const [rows] = await db.execute(sql`SELECT * FROM permits_records WHERE userId = ${userId} AND status = 'approved' ORDER BY expirationDate ASC`) as any;
-      const permits = (rows || []).map((r: any) => ({
+      const [rows] = await db.execute(sql`SELECT * FROM permits_records WHERE userId = ${userId} AND status = 'approved' ORDER BY expirationDate ASC`);
+      const permits = unsafeCast(rows || []).map((r: any) => ({
         id: String(r.id), permitNumber: r.permitNumber, type: r.type, status: r.status,
         expirationDate: r.expirationDate, states: r.states ? JSON.parse(r.states) : [],
       }));
@@ -214,8 +215,8 @@ export const permitsRouter = router({
           SUM(CASE WHEN status='approved' AND expirationDate BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as expiring,
           SUM(CASE WHEN status='expired' OR (status='approved' AND expirationDate < CURDATE()) THEN 1 ELSE 0 END) as expired
         FROM permits_records WHERE userId = ${userId}
-      `) as any;
-      const s = (rows || [])[0] || {};
+      `);
+      const s = unsafeCast(rows || [])[0] || {};
       return { total: Number(s.total) || 0, active: Number(s.active) || 0, expiring: Number(s.expiring) || 0, expired: Number(s.expired) || 0 };
     } catch (e) { logger.error("[permits] Failed to fetch permit summary:", e); return { total: 0, active: 0, expiring: 0, expired: 0 }; }
   }),

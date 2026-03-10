@@ -10,10 +10,11 @@ import { isolatedApprovedProcedure as protectedProcedure, router } from "../_cor
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { documents, loads, users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const podRouter = router({
   getSummary: protectedProcedure.query(async ({ ctx }) => {
-    await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || 'SHIPPER', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'POD' }, (ctx as any).req);
+    await requireAccess({ userId: ctx.user?.id, role: ctx.user!.role || 'SHIPPER', companyId: ctx.user!.companyId, action: 'READ', resource: 'POD' }, unsafeCast(ctx).req);
     const db = await getDb();
     if (!db) return { pending: 0, completed: 0, avgUploadTime: 0, total: 0, received: 0, missing: 0 };
     const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
@@ -136,7 +137,7 @@ export const podRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
-      const userRole = (ctx.user as any)?.role || "";
+      const userRole = ctx.user!.role || "";
 
       // Validate load exists
       const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId));
@@ -177,7 +178,7 @@ export const podRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
-      const userRole = (ctx.user as any)?.role || "";
+      const userRole = ctx.user!.role || "";
 
       // Validate load exists
       const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId));

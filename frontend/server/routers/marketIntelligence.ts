@@ -17,6 +17,7 @@ import {
   assessDriverWellness,
   assessTariffImpact,
 } from "../services/futureReady2026";
+import { unsafeCast } from "../_core/types/unsafe";
 
 async function resolveNumericUserId(ctxUser: any): Promise<number> {
   const db = await getDb();
@@ -79,8 +80,8 @@ export const marketIntelligenceRouter = router({
       let totalWeight = 0, weightCount = 0;
 
       for (const l of userLoads) {
-        const p = l.pickupLocation as any;
-        const d = l.deliveryLocation as any;
+        const p = unsafeCast(l.pickupLocation);
+        const d = unsafeCast(l.deliveryLocation);
         if (p?.state) originCounts[p.state.toUpperCase()] = (originCounts[p.state.toUpperCase()] || 0) + 1;
         if (d?.state) destCounts[d.state.toUpperCase()] = (destCounts[d.state.toUpperCase()] || 0) + 1;
         if (l.distance) { totalDist += parseFloat(String(l.distance)); distCount++; }

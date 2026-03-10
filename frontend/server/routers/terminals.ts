@@ -12,6 +12,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { terminals, appointments, users, loads } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
+import { unsafeCast } from "../_core/types/unsafe";
 
 /** Loose record for accessing fields that may come from joined/extended rows */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1912,10 +1913,10 @@ export const terminalsRouter = router({
             sql`SELECT operating_hours FROM terminal_metadata WHERE terminal_id = ${tId} LIMIT 1`
           ) as unknown as [LooseRow[]];
 
-          if (meta?.[0]?.operating_hours) {
-            const stored = typeof meta[0].operating_hours === "string"
-              ? JSON.parse(meta[0].operating_hours)
-              : meta[0].operating_hours;
+          if (unsafeCast(meta)?.[0]?.operating_hours) {
+            const stored = typeof unsafeCast(meta)[0].operating_hours === "string"
+              ? JSON.parse(unsafeCast(meta)[0].operating_hours)
+              : unsafeCast(meta)[0].operating_hours;
             return { terminalId: input.terminalId, terminalName: terminal.name, ...stored };
           }
         } catch {

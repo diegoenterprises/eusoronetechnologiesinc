@@ -30,7 +30,7 @@ export const approvalRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const userRole = (ctx.user as any)?.role;
+      const userRole = ctx.user!.role;
       if (!["ADMIN", "SUPER_ADMIN"].includes(userRole)) {
         throw new Error("Unauthorized: Admin access required");
       }
@@ -164,7 +164,7 @@ export const approvalRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const userRole = (ctx.user as any)?.role;
+      const userRole = ctx.user!.role;
       if (!["ADMIN", "SUPER_ADMIN"].includes(userRole)) {
         throw new Error("Unauthorized: Admin access required");
       }
@@ -227,7 +227,7 @@ export const approvalRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const userRole = (ctx.user as any)?.role;
+      const userRole = ctx.user!.role;
       if (!["ADMIN", "SUPER_ADMIN"].includes(userRole)) {
         throw new Error("Unauthorized: Admin access required");
       }
@@ -247,7 +247,7 @@ export const approvalRouter = router({
 
       meta.approvalStatus = "approved";
       meta.approvedAt = new Date().toISOString();
-      meta.approvedBy = (ctx.user as any)?.email || "admin";
+      meta.approvedBy = ctx.user!.email || "admin";
       if (input.notes) meta.approvalNotes = input.notes;
 
       await db.update(users).set({
@@ -272,7 +272,7 @@ export const approvalRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const userRole = (ctx.user as any)?.role;
+      const userRole = ctx.user!.role;
       if (!["ADMIN", "SUPER_ADMIN"].includes(userRole)) {
         throw new Error("Unauthorized: Admin access required");
       }
@@ -290,7 +290,7 @@ export const approvalRouter = router({
 
       meta.approvalStatus = "suspended";
       meta.suspendedAt = new Date().toISOString();
-      meta.suspendedBy = (ctx.user as any)?.email || "admin";
+      meta.suspendedBy = ctx.user!.email || "admin";
       meta.suspensionReason = input.reason;
 
       await db.update(users).set({
@@ -312,7 +312,7 @@ export const approvalRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const userRole = (ctx.user as any)?.role;
+      const userRole = ctx.user!.role;
       if (userRole !== "SUPER_ADMIN") {
         throw new Error("Unauthorized: Super Admin access required");
       }
@@ -389,7 +389,7 @@ export const approvalRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const userRole = (ctx.user as any)?.role;
+      const userRole = ctx.user!.role;
       if (userRole !== "SUPER_ADMIN") {
         throw new Error("Unauthorized: Super Admin access required");
       }
@@ -426,7 +426,7 @@ export const approvalRouter = router({
           metadata: JSON.stringify(meta),
         }).where(eq(users.id, target.id));
 
-        logger.info(`[Approval] Reset ${email} (${target.role}) to pending_review by ${(ctx.user as any)?.email}`);
+        logger.info(`[Approval] Reset ${email} (${target.role}) to pending_review by ${ctx.user!.email}`);
         results.push({ email, status: "reset_to_pending" });
       }
 
@@ -442,7 +442,7 @@ export const approvalRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const userRole = (ctx.user as any)?.role;
+      const userRole = ctx.user!.role;
       if (!["ADMIN", "SUPER_ADMIN"].includes(userRole)) {
         throw new Error("Unauthorized: Admin access required");
       }

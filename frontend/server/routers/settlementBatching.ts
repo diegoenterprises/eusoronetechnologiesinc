@@ -23,6 +23,7 @@ import { requireAccess } from "../services/security/rbac/access-check";
 import { settlementBatches, settlementBatchItems, settlements, loads } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { emitDispatchEvent } from "../_core/websocket";
+import { unsafeCast } from "../_core/types/unsafe";
 
 function generateBatchNumber(type: string): string {
   const prefix = type === "shipper_payable" ? "SP" : type === "carrier_receivable" ? "CR" : "DP";
@@ -320,7 +321,7 @@ export const settlementBatchingRouter = router({
       const [totals] = await db.execute(
         sql`SELECT COUNT(*) as cnt, COALESCE(SUM(lineAmount),0) as sub, COALESCE(SUM(fscAmount),0) as fsc, COALESCE(SUM(accessorialAmount),0) as acc, COALESCE(SUM(deductions),0) as ded, COALESCE(SUM(netAmount),0) as tot FROM settlement_batch_items WHERE batchId = ${batch.id}`
       ) as unknown as [Record<string, string | number | null>[]];
-      const t = Array.isArray(totals) ? totals[0] : totals;
+      const t = Array.isArray(totals) ? unsafeCast(totals)[0] : totals;
 
       await db.update(settlementBatches).set({
         totalLoads: Number(t?.cnt) || 0,
@@ -367,7 +368,7 @@ export const settlementBatchingRouter = router({
       const [totals] = await db.execute(
         sql`SELECT COUNT(*) as cnt, COALESCE(SUM(lineAmount),0) as sub, COALESCE(SUM(fscAmount),0) as fsc, COALESCE(SUM(accessorialAmount),0) as acc, COALESCE(SUM(deductions),0) as ded, COALESCE(SUM(netAmount),0) as tot FROM settlement_batch_items WHERE batchId = ${input.batchId}`
       ) as unknown as [Record<string, string | number | null>[]];
-      const t = Array.isArray(totals) ? totals[0] : totals;
+      const t = Array.isArray(totals) ? unsafeCast(totals)[0] : totals;
 
       await db.update(settlementBatches).set({
         totalLoads: Number(t?.cnt) || 0,
@@ -411,7 +412,7 @@ export const settlementBatchingRouter = router({
         const [item] = await db.execute(
           sql`SELECT sbi.id FROM settlement_batch_items sbi JOIN settlements s ON sbi.settlementId = s.id WHERE sbi.batchId = ${b.id} AND s.driverId = ${driverId} LIMIT 1`
         ) as unknown as [Record<string, unknown>[]];
-        if (Array.isArray(item) && item.length > 0) {
+        if (Array.isArray(item) && unsafeCast(item).length > 0) {
           result.push({
             batchId: b.id,
             batchNumber: b.batchNumber,
@@ -469,7 +470,7 @@ export const settlementBatchingRouter = router({
         sql`SELECT s.* FROM settlements s LEFT JOIN settlement_batch_items sbi ON sbi.settlementId = s.id WHERE sbi.id IS NULL AND s.status = 'completed' AND s.settledAt >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND (s.carrierId IN (SELECT userId FROM drivers WHERE companyId = ${companyId}) OR s.shipperId IN (SELECT id FROM users WHERE companyId = ${companyId})) ORDER BY s.settledAt ASC`
       );
 
-      if (!Array.isArray(unbatched) || unbatched.length === 0) {
+      if (!Array.isArray(unbatched) || unsafeCast(unbatched).length === 0) {
         return { batchesCreated: 0, totalLoads: 0, totalAmount: 0 };
       }
 

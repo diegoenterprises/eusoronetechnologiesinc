@@ -11,6 +11,7 @@ import { dispatchProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, users, companies, vehicles, drivers } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const loadStatusSchema = z.enum([
   "draft", "posted", "bidding", "expired",
@@ -93,8 +94,8 @@ export const dispatchRoleRouter = router({
           .limit(20);
 
         return loadList.map(l => {
-          const pickup = l.pickupLocation as any || {};
-          const delivery = l.deliveryLocation as any || {};
+          const pickup = unsafeCast(l.pickupLocation) || {};
+          const delivery = unsafeCast(l.deliveryLocation) || {};
           return {
             id: `l${l.id}`,
             loadNumber: l.loadNumber,
@@ -210,12 +211,12 @@ export const dispatchRoleRouter = router({
       const db = await getDb();
       if (!db) return { loads: [], summary: { total: 0, byStatus: { unassigned: 0, inTransit: 0, loading: 0, issue: 0 } } };
       try {
-        const statusFilter = input.status ? eq(loads.status, input.status as any) : sql`${loads.status} IN ('posted','assigned','en_route_pickup','at_pickup','loading','in_transit','at_delivery','unloading')`;
+        const statusFilter = input.status ? eq(loads.status, unsafeCast(input.status)) : sql`${loads.status} IN ('posted','assigned','en_route_pickup','at_pickup','loading','in_transit','at_delivery','unloading')`;
         const loadList = await db.select().from(loads).where(statusFilter).orderBy(desc(loads.createdAt)).limit(50);
         const mapped = await Promise.all(loadList.map(async (l) => {
           const [shipper] = await db.select({ name: users.name }).from(users).where(eq(users.id, l.shipperId)).limit(1);
-          const pickup = l.pickupLocation as any || {};
-          const delivery = l.deliveryLocation as any || {};
+          const pickup = unsafeCast(l.pickupLocation) || {};
+          const delivery = unsafeCast(l.deliveryLocation) || {};
           return {
             id: String(l.id), loadNumber: l.loadNumber, status: l.status,
             shipper: shipper?.name || 'Unknown',
@@ -335,7 +336,7 @@ export const dispatchRoleRouter = router({
       const loadIdNum = parseInt(input.loadId, 10);
       const driverIdNum = parseInt(input.driverId, 10);
       if (isNaN(loadIdNum) || isNaN(driverIdNum)) throw new Error('Invalid load or driver ID');
-      await db.update(loads).set({ catalystId: driverIdNum, status: 'assigned' as any }).where(eq(loads.id, loadIdNum));
+      await db.update(loads).set({ catalystId: driverIdNum, status: unsafeCast('assigned') }).where(eq(loads.id, loadIdNum));
       return {
         success: true,
         loadId: input.loadId,
@@ -578,8 +579,8 @@ export const dispatchRoleRouter = router({
         pickupDate: loads.pickupDate, cargoType: loads.cargoType,
       }).from(loads).where(eq(loads.status, 'posted')).orderBy(desc(loads.createdAt)).limit(30);
       return posted.map(l => {
-        const p = l.pickupLocation as any || {};
-        const d = l.deliveryLocation as any || {};
+        const p = unsafeCast(l.pickupLocation) || {};
+        const d = unsafeCast(l.deliveryLocation) || {};
         return {
           id: String(l.id), loadNumber: l.loadNumber,
           origin: p.city && p.state ? `${p.city}, ${p.state}` : 'Unknown',
@@ -639,8 +640,8 @@ export const dispatchRoleRouter = router({
         distance: loads.distance, cargoType: loads.cargoType,
       }).from(loads).where(eq(loads.status, 'delivered')).orderBy(desc(loads.actualDeliveryDate)).limit(20);
       return delivered.map(l => {
-        const pickup = l.pickupLocation as any;
-        const delivery = l.deliveryLocation as any;
+        const pickup = unsafeCast(l.pickupLocation);
+        const delivery = unsafeCast(l.deliveryLocation);
         const route = [pickup?.city, pickup?.state, '→', delivery?.city, delivery?.state].filter(Boolean).join(' ') || 'N/A';
         const wasOnTime = l.actualDeliveryDate && l.deliveryDate ? l.actualDeliveryDate <= l.deliveryDate : true;
         const rating = wasOnTime ? 4.8 : 3.8;
@@ -656,7 +657,7 @@ export const dispatchRoleRouter = router({
   }),
   getPerformanceStats: protectedProcedure.query(async () => {
     const db = await getDb();
-    const empty = { avgScore: 0, topScore: 0, trend: 'stable' as const, loadsCompleted: 0, successRate: 0, rating: 0, onTimeRate: 0, totalEarnings: 0, achievements: [] as any[] };
+    const empty = { avgScore: 0, topScore: 0, trend: 'stable' as const, loadsCompleted: 0, successRate: 0, rating: 0, onTimeRate: 0, totalEarnings: 0, achievements: [] as never[][] };
     if (!db) return empty;
     try {
       const [stats] = await db.select({

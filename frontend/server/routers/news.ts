@@ -144,7 +144,7 @@ export const newsRouter = router({
   saveArticle: protectedProcedure
     .input(z.object({ articleId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const userId = (ctx as any).user?.id || "anonymous";
+      const userId = ctx.user!?.id || "anonymous";
       const db = await getDb();
       const now = new Date().toISOString();
       if (db) {
@@ -167,7 +167,7 @@ export const newsRouter = router({
               entityType: "saved_article",
               metadata: { userId, articleId: input.articleId, savedAt: now },
               severity: "LOW",
-            } as any);
+            } as never);
           }
         } catch { /* non-critical */ }
       }
@@ -180,7 +180,7 @@ export const newsRouter = router({
   unsaveArticle: protectedProcedure
     .input(z.object({ articleId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const userId = (ctx as any).user?.id || "anonymous";
+      const userId = ctx.user!?.id || "anonymous";
       const db = await getDb();
       if (db) {
         try {
@@ -200,7 +200,7 @@ export const newsRouter = router({
    * Get saved article IDs for current user (lightweight)
    */
   getSavedArticleIds: protectedProcedure.query(async ({ ctx }) => {
-    const userId = (ctx as any).user?.id || "anonymous";
+    const userId = ctx.user!?.id || "anonymous";
     const db = await getDb();
     if (db) {
       try {
@@ -223,7 +223,7 @@ export const newsRouter = router({
    * Get full saved articles for current user
    */
   getSavedArticles: protectedProcedure.query(async ({ ctx }) => {
-    const userId = (ctx as any).user?.id || "anonymous";
+    const userId = ctx.user!?.id || "anonymous";
     const db = await getDb();
     let savedIds: Set<string> = new Set();
     if (db) {

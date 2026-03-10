@@ -591,7 +591,7 @@ export const safetyRiskRouter = router({
         // Parse metadata for investigation details
         let meta: Record<string, unknown> = {};
         try {
-          const rawMeta = (incident as Record<string, unknown>).metadata;
+          const rawMeta = (incident as unknown as Record<string, unknown>).metadata;
           meta = rawMeta ? JSON.parse(typeof rawMeta === "string" ? rawMeta : JSON.stringify(rawMeta)) : {};
         } catch {}
 
@@ -784,7 +784,7 @@ export const safetyRiskRouter = router({
         return {
           reports: nearMisses.map((nm) => {
             let meta: Record<string, unknown> = {};
-            try { const rawMeta = (nm as Record<string, unknown>).metadata; meta = rawMeta ? JSON.parse(typeof rawMeta === "string" ? rawMeta : JSON.stringify(rawMeta)) : {}; } catch {}
+            try { const rawMeta = (nm as unknown as Record<string, unknown>).metadata; meta = rawMeta ? JSON.parse(typeof rawMeta === "string" ? rawMeta : JSON.stringify(rawMeta)) : {}; } catch {}
             return {
               id: nm.id,
               description: nm.description || "",

@@ -10,6 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, companies } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const teamRouter = router({
   /**
@@ -22,7 +23,7 @@ export const teamRouter = router({
       try {
         const companyId = ctx.user?.companyId || 0;
         const conds: any[] = [eq(users.companyId, companyId), eq(users.isActive, true)];
-        if (input.role) conds.push(eq(users.role, input.role as any));
+        if (input.role) conds.push(eq(users.role, unsafeCast(input.role)));
         const rows = await db.select({
           id: users.id, name: users.name, email: users.email, phone: users.phone,
           role: users.role, isActive: users.isActive, isVerified: users.isVerified,
@@ -83,7 +84,7 @@ export const teamRouter = router({
       if (existing) throw new Error('User with this email already exists');
       const openId = `invite_${Date.now()}_${randomBytes(4).toString('hex')}`;
       const [result] = await db.insert(users).values({
-        openId, email: input.email, role: input.role as any,
+        openId, email: input.email, role: unsafeCast(input.role),
         companyId, isActive: true, isVerified: false,
       }).$returningId();
       return { success: true, inviteId: String(result.id), email: input.email, sentAt: new Date().toISOString() };
@@ -113,7 +114,7 @@ export const teamRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error('Database unavailable');
       const memberId = parseInt(input.memberId);
-      await db.update(users).set({ role: input.role as any }).where(and(
+      await db.update(users).set({ role: unsafeCast(input.role) }).where(and(
         eq(users.id, memberId), eq(users.companyId, ctx.user?.companyId || 0),
       ));
       return { success: true, memberId: input.memberId, newRole: input.role };

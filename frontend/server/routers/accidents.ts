@@ -11,6 +11,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { incidents, users, vehicles, drivers, companies } from "../../drizzle/schema";
 import { getCrashSummary, getInspectionSummary, getSafetyScores } from "../services/fmcsaBulkLookup";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const accidentSeveritySchema = z.enum(["minor", "moderate", "severe", "fatal"]);
 const accidentTypeSchema = z.enum([
@@ -199,10 +200,10 @@ export const accidentsRouter = router({
       const severityMap: Record<string, string> = { minor: 'minor', moderate: 'moderate', severe: 'major', fatal: 'critical' };
       const result = await db.insert(incidents).values({
         companyId, driverId: parseInt(input.driverId, 10), vehicleId: parseInt(input.vehicleId, 10),
-        type: incidentType as any, severity: (severityMap[input.severity] || 'minor') as any,
+        type: unsafeCast(incidentType), severity: (severityMap[input.severity] || 'minor') as never,
         occurredAt: new Date(`${input.date}T${input.time}`), location: `${input.location.address}, ${input.location.city}, ${input.location.state}`,
         description: input.description, injuries: input.injuries, fatalities: input.fatalities,
-      } as any).$returningId();
+      } as never).$returningId();
       // Auto-index accident for AI semantic search (fire-and-forget)
       try {
         const { indexComplianceRecord } = await import("../services/embeddings/aiTurbocharge");
@@ -451,7 +452,7 @@ export const accidentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error('Database unavailable');
       const numId = parseInt(input.accidentId.replace('acc_', ''), 10);
-      await db.update(incidents).set({ status: 'resolved' as any }).where(eq(incidents.id, numId));
+      await db.update(incidents).set({ status: unsafeCast('resolved') }).where(eq(incidents.id, numId));
       return { success: true, accidentId: input.accidentId, status: 'closed', closedBy: ctx.user?.id, closedAt: new Date().toISOString() };
     }),
 });

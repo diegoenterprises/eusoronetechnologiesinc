@@ -16,6 +16,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loadRelayLegs, loads, users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const handoffTypeEnum = z.enum(["drop_and_hook", "live_transfer", "yard_relay", "terminal_swap"]);
 
@@ -144,19 +145,19 @@ export const relayRouter = router({
           originAddress: leg.originAddress || null,
           originCity: leg.originCity || null,
           originState: leg.originState || null,
-          originLat: leg.originLat !== undefined ? String(leg.originLat) as any : null,
-          originLng: leg.originLng !== undefined ? String(leg.originLng) as any : null,
+          originLat: leg.originLat !== undefined ? String(leg.originLat) : null,
+          originLng: leg.originLng !== undefined ? String(leg.originLng) : null,
           destFacility: leg.destFacility || null,
           destAddress: leg.destAddress || null,
           destCity: leg.destCity || null,
           destState: leg.destState || null,
-          destLat: leg.destLat !== undefined ? String(leg.destLat) as any : null,
-          destLng: leg.destLng !== undefined ? String(leg.destLng) as any : null,
+          destLat: leg.destLat !== undefined ? String(leg.destLat) : null,
+          destLng: leg.destLng !== undefined ? String(leg.destLng) : null,
           plannedStartAt: leg.plannedStartAt ? new Date(leg.plannedStartAt) : null,
           plannedEndAt: leg.plannedEndAt ? new Date(leg.plannedEndAt) : null,
-          handoffType: (leg.handoffType as any) || "drop_and_hook",
-          legDistance: leg.legDistance !== undefined ? String(leg.legDistance) as any : null,
-          legRate: leg.legRate !== undefined ? String(leg.legRate) as any : null,
+          handoffType: (unsafeCast(leg.handoffType)) || "drop_and_hook",
+          legDistance: leg.legDistance !== undefined ? String(leg.legDistance) : null,
+          legRate: leg.legRate !== undefined ? String(leg.legRate) : null,
           sealNumber: leg.sealNumber || null,
           notes: leg.notes || null,
         }).$returningId();
@@ -183,7 +184,7 @@ export const relayRouter = router({
       await db.update(loadRelayLegs).set({
         driverId: input.driverId,
         vehicleId: input.vehicleId || null,
-        status: "driver_assigned" as any,
+        status: unsafeCast("driver_assigned"),
       }).where(eq(loadRelayLegs.id, input.legId));
 
       return { success: true, legId: input.legId, driverId: input.driverId };
@@ -256,7 +257,7 @@ export const relayRouter = router({
           .limit(1);
         if (prevLeg) {
           await db.update(loadRelayLegs).set({
-            status: "handed_off" as any,
+            status: unsafeCast("handed_off"),
             actualEndAt: new Date(),
             handoffConfirmedByDriverId: userId || null,
             handoffConfirmedAt: new Date(),
@@ -267,7 +268,7 @@ export const relayRouter = router({
 
       // Mark this leg as en_route
       await db.update(loadRelayLegs).set({
-        status: "en_route" as any,
+        status: unsafeCast("en_route"),
         actualStartAt: new Date(),
         sealNumber: input.sealNumber || leg.sealNumber,
         sealVerified: input.sealVerified,
@@ -291,7 +292,7 @@ export const relayRouter = router({
 
       try {
         const conditions = [eq(loadRelayLegs.driverId, userId)];
-        if (input?.status) conditions.push(eq(loadRelayLegs.status, input.status as any));
+        if (input?.status) conditions.push(eq(loadRelayLegs.status, unsafeCast(input.status)));
 
         const rows = await db
           .select({

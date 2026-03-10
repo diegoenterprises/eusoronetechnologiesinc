@@ -7,6 +7,7 @@ import { eq, desc, and, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { geofences, geofenceEvents, locationHistory } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const geofenceSchema = z.object({
   name: z.string().min(1).max(255),
@@ -114,7 +115,7 @@ export const geofencingRouter = router({
 
     let conditions = [];
     if (input.activeOnly) conditions.push(eq(geofences.isActive, true));
-    if (input.type) conditions.push(eq(geofences.type, input.type as any));
+    if (input.type) conditions.push(eq(geofences.type, unsafeCast(input.type)));
     if (input.companyId) conditions.push(eq(geofences.companyId, input.companyId));
     if (input.loadId) conditions.push(eq(geofences.loadId, input.loadId));
 

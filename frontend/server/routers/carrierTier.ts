@@ -11,6 +11,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { companies, loads, bids, incidents, insurancePolicies, users } from "../../drizzle/schema";
 import { getCarrierSafetyIntel } from "../services/fmcsaBulkLookup";
+import { unsafeCast } from "../_core/types/unsafe";
 import {
   calculateCarrierTier,
   getAllTierDefinitions,
@@ -70,8 +71,8 @@ export const carrierTierRouter = router({
           const [ratingData] = await db.execute(sql`
             SELECT AVG(rating) as avg_rating, COUNT(*) as review_count
             FROM ratings WHERE target_id = ${input.carrierId} AND target_type = 'carrier'
-          `) as any;
-          const rd = (ratingData || [])[0];
+          `);
+          const rd = unsafeCast(ratingData || [])[0];
           if (rd && Number(rd.review_count) > 0) {
             avgRating = Number(rd.avg_rating) || 4.0;
             reviewCount = Number(rd.review_count) || 0;
@@ -243,8 +244,8 @@ export const carrierTierRouter = router({
           FROM companies
           WHERE dot_number IS NOT NULL
           ORDER BY id DESC LIMIT 500
-        `) as any;
-        let carrierRows: any[] = (rawRows || []).map((r: any) => ({
+        `);
+        let carrierRows: any[] = unsafeCast(rawRows || []).map((r: any) => ({
           id: r.id, name: r.name, dotNumber: r.dotNumber || r.dot_number,
           mcNumber: r.mcNumber || r.mc_number, email: r.email, phone: r.phone,
           createdAt: r.createdAt || r.created_at,

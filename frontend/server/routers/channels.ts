@@ -10,6 +10,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { groupChannels, channelMembers, messages, users, messageAttachments } from "../../drizzle/schema";
 import { sql, eq, desc, and, count, inArray } from "drizzle-orm";
+import { unsafeCast } from "../_core/types/unsafe";
 
 async function resolveUserId(ctxUser: any): Promise<number> {
   if (typeof ctxUser?.id === "number") return ctxUser.id;
@@ -181,7 +182,7 @@ export const channelsRouter = router({
         content: input.content,
         createdAt: new Date(),
       });
-      const insertId = (result as any)[0]?.insertId || Date.now();
+      const insertId = unsafeCast(result)[0]?.insertId || Date.now();
       return {
         success: true,
         messageId: String(insertId),
@@ -213,7 +214,7 @@ export const channelsRouter = router({
         companyId,
         createdBy: userId,
       });
-      const channelId = (result as any)[0]?.insertId;
+      const channelId = unsafeCast(result)[0]?.insertId;
 
       // Auto-add creator as OWNER
       if (channelId && userId) {
@@ -444,8 +445,8 @@ export const channelsRouter = router({
           role: input.role,
         });
         return { success: true };
-      } catch (error: any) {
-        if (error?.code === "ER_DUP_ENTRY") return { success: true, message: "Already a member" };
+      } catch (error: unknown) {
+        if (unsafeCast(error)?.code === "ER_DUP_ENTRY") return { success: true, message: "Already a member" };
         throw error;
       }
     }),
@@ -499,11 +500,11 @@ export const channelsRouter = router({
       const msgResult = await db.insert(messages).values({
         conversationId: channelNumericId,
         senderId: userId,
-        messageType: type as any,
+        messageType: unsafeCast(type),
         content: `[${type}] ${input.fileName}`,
         readBy: [userId],
       });
-      const messageId = (msgResult as any)[0]?.insertId || (msgResult as any).insertId || 0;
+      const messageId = unsafeCast(msgResult)[0]?.insertId || unsafeCast(msgResult).insertId || 0;
 
       // Store attachment via Drizzle ORM
       const attResult = await db.insert(messageAttachments).values({
@@ -514,7 +515,7 @@ export const channelsRouter = router({
         fileSize: input.fileSize,
         mimeType: input.mimeType,
       });
-      const attachmentId = (attResult as any)[0]?.insertId || (attResult as any).insertId || 0;
+      const attachmentId = unsafeCast(attResult)[0]?.insertId || unsafeCast(attResult).insertId || 0;
 
       return {
         success: true,

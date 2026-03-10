@@ -9,14 +9,15 @@ import { eq, and, or, desc, sql, gte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, payments } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 function resolveUserId(ctxUser: any): number {
   return typeof ctxUser?.id === "string" ? parseInt(ctxUser.id, 10) || 0 : (ctxUser?.id || 0);
 }
 
 function mapLoadToJob(l: any) {
-  const pickup = l.pickupLocation as any;
-  const delivery = l.deliveryLocation as any;
+  const pickup = unsafeCast(l.pickupLocation);
+  const delivery = unsafeCast(l.deliveryLocation);
   return {
     id: `JOB-${l.id}`, loadNumber: l.loadNumber || String(l.id), status: l.status,
     origin: pickup?.city ? `${pickup.city}, ${pickup.state || ""}` : "",
@@ -55,7 +56,7 @@ export const jobsRouter = router({
     const userId = resolveUserId(ctx.user);
     try {
       const filters: any[] = [eq(loads.driverId, userId)];
-      if (input?.status) filters.push(eq(loads.status, input.status as any));
+      if (input?.status) filters.push(eq(loads.status, unsafeCast(input.status)));
       const results = await db.select().from(loads).where(and(...filters)).orderBy(desc(loads.updatedAt)).limit(input?.limit || 20);
       return results.map(mapLoadToJob);
     } catch { return []; }
@@ -83,7 +84,7 @@ export const jobsRouter = router({
     if (!db) throw new Error("Database not available");
     const loadId = parseInt(input.jobId.replace("JOB-", ""), 10);
     const userId = resolveUserId(ctx.user);
-    await db.update(loads).set({ status: "accepted" as any, driverId: userId }).where(eq(loads.id, loadId));
+    await db.update(loads).set({ status: unsafeCast("accepted"), driverId: userId }).where(eq(loads.id, loadId));
     return { success: true, jobId: input.jobId, acceptedAt: new Date().toISOString() };
   }),
 
@@ -94,7 +95,7 @@ export const jobsRouter = router({
     const db = await getDb();
     if (!db) throw new Error("Database not available");
     const loadId = parseInt(input.jobId.replace("JOB-", ""), 10);
-    await db.update(loads).set({ status: "posted" as any, driverId: null }).where(eq(loads.id, loadId));
+    await db.update(loads).set({ status: unsafeCast("posted"), driverId: null }).where(eq(loads.id, loadId));
     return { success: true, jobId: input.jobId, declinedAt: new Date().toISOString() };
   }),
 
@@ -105,7 +106,7 @@ export const jobsRouter = router({
     const db = await getDb();
     if (!db) throw new Error("Database not available");
     const loadId = parseInt(input.jobId.replace("JOB-", ""), 10);
-    await db.update(loads).set({ status: input.status as any }).where(eq(loads.id, loadId));
+    await db.update(loads).set({ status: unsafeCast(input.status) }).where(eq(loads.id, loadId));
     return { success: true, jobId: input.jobId, status: input.status, updatedAt: new Date().toISOString() };
   }),
 

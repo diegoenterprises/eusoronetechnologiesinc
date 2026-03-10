@@ -8,6 +8,7 @@ import { sql, desc } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const laneRatesRouter = router({
   list: protectedProcedure.input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ input }) => {
@@ -15,8 +16,8 @@ export const laneRatesRouter = router({
     try {
       const rows = await db.select().from(loads).where(sql`${loads.rate} > 0 AND ${loads.status} = 'delivered'`).orderBy(desc(loads.createdAt)).limit(input?.limit || 20);
       return rows.map(l => {
-        const p = l.pickupLocation as any || {};
-        const d = l.deliveryLocation as any || {};
+        const p = unsafeCast(l.pickupLocation) || {};
+        const d = unsafeCast(l.deliveryLocation) || {};
         return { id: String(l.id), origin: `${p.city || ''}, ${p.state || ''}`, destination: `${d.city || ''}, ${d.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0, distance: l.distance ? parseFloat(String(l.distance)) : 0, ratePerMile: (l.rate && l.distance) ? Math.round((parseFloat(String(l.rate)) / parseFloat(String(l.distance))) * 100) / 100 : 0 };
       });
     } catch (e) { return []; }
@@ -46,8 +47,8 @@ export const laneRatesRouter = router({
     try {
       const rows = await db.select().from(loads).where(sql`${loads.rate} > 0 AND ${loads.status} = 'delivered'`).orderBy(sql`CAST(${loads.rate} AS DECIMAL) DESC`).limit(input?.limit || 10);
       return rows.map(l => {
-        const p = l.pickupLocation as any || {};
-        const d = l.deliveryLocation as any || {};
+        const p = unsafeCast(l.pickupLocation) || {};
+        const d = unsafeCast(l.deliveryLocation) || {};
         return { origin: `${p.city || ''}, ${p.state || ''}`, destination: `${d.city || ''}, ${d.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0, volume: 1 };
       });
     } catch (e) { return []; }

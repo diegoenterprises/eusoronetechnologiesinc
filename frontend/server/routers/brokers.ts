@@ -12,6 +12,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, users, companies } from "../../drizzle/schema";
 import { getCarrierSafetyIntel, batchSafetyScores, batchOOSStatus, getSafetyScores, getOOSStatus } from "../services/fmcsaBulkLookup";
+import { unsafeCast } from "../_core/types/unsafe";
 
 /** Resolve ctx.user (auth provider string) → numeric DB user id */
 async function resolveBrokerUserId(ctxUser: any): Promise<number> {
@@ -164,8 +165,8 @@ export const brokersRouter = router({
 
         return await Promise.all(loadList.map(async (l) => {
           const [shipper] = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, l.shipperId)).limit(1);
-          const pickup = l.pickupLocation as any || {};
-          const delivery = l.deliveryLocation as any || {};
+          const pickup = unsafeCast(l.pickupLocation) || {};
+          const delivery = unsafeCast(l.deliveryLocation) || {};
           return {
             id: `load_${l.id}`,
             loadNumber: l.loadNumber,
@@ -414,7 +415,7 @@ export const brokersRouter = router({
             if (!r.dotNumber) continue;
             const sms = safetyMap.get(r.dotNumber);
             const oos = oosMap.get(r.dotNumber);
-            (r as any).fmcsa = {
+            unsafeCast(r).fmcsa = {
               outOfService: oos || false,
               unsafeDrivingAlert: sms?.unsafeDrivingAlert || false,
               hosAlert: sms?.hosAlert || false,
@@ -599,7 +600,7 @@ export const brokersRouter = router({
         if (!userId) return [];
         const rows = await db.select().from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('assigned','in_transit')`)).orderBy(desc(loads.createdAt)).limit(input?.limit || 20);
         return rows.map(l => {
-          const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {};
+          const p = unsafeCast(l.pickupLocation) || {}; const d = unsafeCast(l.deliveryLocation) || {};
           return { id: `load_${l.id}`, loadNumber: l.loadNumber, origin: p.city ? `${p.city}, ${p.state}` : '', destination: d.city ? `${d.city}, ${d.state}` : '', status: l.status, rate: l.rate ? parseFloat(String(l.rate)) : 0, pickupDate: l.pickupDate?.toISOString()?.split('T')[0] || '' };
         });
       } catch { return []; }
@@ -684,8 +685,8 @@ export const brokersRouter = router({
 
         const mapped = await Promise.all(loadList.map(async (l) => {
           const [shipper] = await db.select({ name: users.name }).from(users).where(eq(users.id, l.shipperId)).limit(1);
-          const pickup = l.pickupLocation as any || {};
-          const delivery = l.deliveryLocation as any || {};
+          const pickup = unsafeCast(l.pickupLocation) || {};
+          const delivery = unsafeCast(l.deliveryLocation) || {};
           const origin = pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown';
           const destination = delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown';
           // Extract equipmentType from specialInstructions
@@ -974,7 +975,7 @@ export const brokersRouter = router({
     try {
       const rows = await db.select().from(loads).where(sql`${loads.rate} > 0 AND ${loads.status} = 'delivered'`).orderBy(desc(loads.createdAt)).limit(20);
       return rows.map(l => {
-        const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {};
+        const p = unsafeCast(l.pickupLocation) || {}; const d = unsafeCast(l.deliveryLocation) || {};
         return { id: String(l.id), origin: `${p.city || ''}, ${p.state || ''}`, destination: `${d.city || ''}, ${d.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0, distance: l.distance ? parseFloat(String(l.distance)) : 0 };
       });
     } catch (e) { return []; }

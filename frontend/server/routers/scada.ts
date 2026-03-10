@@ -9,6 +9,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { terminals } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const rackStatusSchema = z.enum(["available", "loading", "maintenance", "offline", "reserved"]);
 const productTypeSchema = z.enum(["unleaded", "premium", "diesel", "jet_fuel", "ethanol"]);
@@ -29,16 +30,16 @@ export const scadaRouter = router({
         const [tput] = await db.execute(sql`
           SELECT COALESCE(SUM(actualGallons), 0) as todayGal, COUNT(*) as txnCount
           FROM scada_transactions WHERE terminalId = ${tid} AND DATE(startTime) = CURDATE() AND status = 'completed'
-        `) as any;
-        const tp = (tput || [])[0] || {};
+        `);
+        const tp = unsafeCast(tput || [])[0] || {};
         // Get active alarms
         const [alarmStats] = await db.execute(sql`
           SELECT COUNT(*) as total,
             SUM(CASE WHEN severity='critical' THEN 1 ELSE 0 END) as critical,
             SUM(CASE WHEN severity='warning' THEN 1 ELSE 0 END) as warning
           FROM scada_alarms WHERE terminalId = ${tid} AND acknowledged = false
-        `) as any;
-        const as2 = (alarmStats || [])[0] || {};
+        `);
+        const as2 = unsafeCast(alarmStats || [])[0] || {};
         const dockCount = terminal?.dockCount || 0;
         return {
           terminalId: input.terminalId,
@@ -75,8 +76,8 @@ export const scadaRouter = router({
             SELECT id, status, product, loadId FROM scada_transactions
             WHERE terminalId = ${tid} AND rackId = ${'R' + String(i).padStart(2, '0')} AND status IN ('loading', 'pending')
             ORDER BY createdAt DESC LIMIT 1
-          `) as any;
-          const activeTxn = (active || [])[0];
+          `);
+          const activeTxn = unsafeCast(active || [])[0];
           racks.push({
             id: `R${String(i).padStart(2, '0')}`,
             terminalId: input.terminalId,
@@ -109,8 +110,8 @@ export const scadaRouter = router({
           const [vol] = await db.execute(sql`
             SELECT COALESCE(SUM(actualGallons), 0) as dispatched
             FROM scada_transactions WHERE terminalId = ${tid} AND status = 'completed'
-          `) as any;
-          const dispatched = Number((vol || [])[0]?.dispatched) || 0;
+          `);
+          const dispatched = Number(unsafeCast(vol || [])[0]?.dispatched) || 0;
           const level = Math.max(0, capacity - (dispatched / Math.max(tankCount, 1)));
           const product = i % 3 === 0 ? 'diesel' : i % 2 === 0 ? 'premium' : 'unleaded';
           tanks.push({
@@ -209,8 +210,8 @@ export const scadaRouter = router({
       try {
         const [rows] = await db.execute(sql`
           SELECT * FROM scada_transactions WHERE transactionId = ${input.transactionId} LIMIT 1
-        `) as any;
-        const r = (rows || [])[0];
+        `);
+        const r = unsafeCast(rows || [])[0];
         if (!r) return null;
         const target = Number(r.targetGallons) || 0;
         const actual = Number(r.actualGallons) || 0;
@@ -245,27 +246,27 @@ export const scadaRouter = router({
           SELECT COALESCE(SUM(actualGallons), 0) as totalGal, COUNT(*) as txnCount,
             AVG(TIMESTAMPDIFF(MINUTE, startTime, endTime)) as avgMin
           FROM scada_transactions WHERE terminalId = ${tid} AND DATE(startTime) = ${targetDate} AND status = 'completed'
-        `) as any;
-        const s = (stats || [])[0] || {};
+        `);
+        const s = unsafeCast(stats || [])[0] || {};
         // By product breakdown
         const [byProd] = await db.execute(sql`
           SELECT product, SUM(actualGallons) as total FROM scada_transactions
           WHERE terminalId = ${tid} AND DATE(startTime) = ${targetDate} AND status = 'completed'
           GROUP BY product
-        `) as any;
+        `);
         // By hour breakdown
         const [byHr] = await db.execute(sql`
           SELECT HOUR(startTime) as hr, SUM(actualGallons) as total FROM scada_transactions
           WHERE terminalId = ${tid} AND DATE(startTime) = ${targetDate} AND status = 'completed'
           GROUP BY HOUR(startTime) ORDER BY hr
-        `) as any;
-        const byHour = (byHr || []).map((h: any) => ({ hour: h.hr, gallons: Number(h.total) || 0 }));
+        `);
+        const byHour = unsafeCast(byHr || []).map((h: any) => ({ hour: h.hr, gallons: Number(h.total) || 0 }));
         const peakHour = byHour.length > 0 ? byHour.reduce((a: any, b: any) => a.gallons > b.gallons ? a : b).hour : '';
         return {
           date: targetDate,
           totalGallons: Number(s.totalGal) || 0,
           transactions: Number(s.txnCount) || 0,
-          byProduct: (byProd || []).map((p: any) => ({ product: p.product, gallons: Number(p.total) || 0 })),
+          byProduct: unsafeCast(byProd || []).map((p: any) => ({ product: p.product, gallons: Number(p.total) || 0 })),
           byHour,
           peakHour: peakHour !== '' ? `${peakHour}:00` : '',
           avgLoadTime: Math.round(Number(s.avgMin) || 0),
@@ -287,8 +288,8 @@ export const scadaRouter = router({
         const [rows] = await db.execute(sql`
           SELECT * FROM scada_alarms WHERE terminalId = ${tid} ${ackFilter}
           ORDER BY createdAt DESC LIMIT 50
-        `) as any;
-        const alarms = (rows || []).map((a: any) => ({
+        `);
+        const alarms = unsafeCast(rows || []).map((a: any) => ({
           id: String(a.id), severity: a.severity, type: a.type, message: a.message,
           rackId: a.rackId, tankId: a.tankId, acknowledged: !!a.acknowledged,
           createdAt: a.createdAt?.toISOString?.() || '',
@@ -392,10 +393,10 @@ export const scadaRouter = router({
         totalDocks: sql<number>`COALESCE(SUM(${terminals.dockCount}), 0)`,
       }).from(terminals).where(eq(terminals.companyId, companyId));
       return {
-        terminals: stats?.total || 0,
-        terminalsOnline: stats?.active || 0,
-        totalTanks: stats?.totalTanks || 0,
-        activeRacks: stats?.totalDocks || 0,
+        terminals: unsafeCast(stats)?.total || 0,
+        terminalsOnline: unsafeCast(stats)?.active || 0,
+        totalTanks: unsafeCast(stats)?.totalTanks || 0,
+        activeRacks: unsafeCast(stats)?.totalDocks || 0,
         totalThroughput: 0,
         alerts: 0,
         totalInventory: 0,
@@ -408,7 +409,7 @@ export const scadaRouter = router({
     try {
       const companyId = ctx.user?.companyId || 0;
       const rows = await db.select().from(terminals).where(eq(terminals.companyId, companyId)).limit(50);
-      return rows.map(t => ({
+      return unsafeCast(rows).map((t: any) => ({
         id: String(t.id),
         name: t.name,
         code: t.code || '',

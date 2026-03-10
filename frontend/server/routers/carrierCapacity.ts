@@ -15,6 +15,7 @@ import {
   type CapacitySearchParams,
 } from "../services/CarrierCapacity";
 import { calculateCarrierTier, type CarrierTierInput } from "../services/CarrierTierSystem";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const carrierCapacityRouter = router({
   // 1. Get capacity calendar for a specific carrier
@@ -289,8 +290,8 @@ async function buildCarrierProfile(db: any, carrierId: number): Promise<CarrierP
   const cargoSet = new Set<string>();
 
   for (const l of laneRows) {
-    const p = l.pickupLocation as any;
-    const d = l.deliveryLocation as any;
+    const p = unsafeCast(l.pickupLocation);
+    const d = unsafeCast(l.deliveryLocation);
     if (p?.state && d?.state) {
       const oState = String(p.state).toUpperCase().substring(0, 2);
       const dState = String(d.state).toUpperCase().substring(0, 2);

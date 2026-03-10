@@ -10,6 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { notifications, users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const notificationTypeSchema = z.enum(["alert", "info", "success", "warning", "action_required"]);
 const notificationCategorySchema = z.enum(["loads", "compliance", "safety", "billing", "system", "drivers"]);
@@ -319,7 +320,7 @@ export const notificationsRouter = router({
     if (!db) return { email: true, push: true, sms: false, quiet: { start: "22:00", end: "07:00" } };
     try {
       const userId = ctx.user?.id || 0;
-      const [row] = await db.select({ metadata: (users as any).metadata }).from(users).where(eq((users as any).id, userId)).limit(1);
+      const [row] = await db.select({ metadata: unsafeCast(users).metadata }).from(users).where(eq(unsafeCast(users).id, userId)).limit(1);
       const meta = row?.metadata ? (typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata) : {};
       const np = meta.notificationPreferences || {};
       return {
@@ -345,12 +346,12 @@ export const notificationsRouter = router({
     if (!db) return { success: true, key: settingKey };
     try {
       const userId = ctx.user?.id || 0;
-      const [row] = await db.select({ metadata: (users as any).metadata }).from(users).where(eq((users as any).id, userId)).limit(1);
+      const [row] = await db.select({ metadata: unsafeCast(users).metadata }).from(users).where(eq(unsafeCast(users).id, userId)).limit(1);
       let meta: any = {};
       try { meta = row?.metadata ? (typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata) : {}; } catch { meta = {}; }
       if (!meta.notificationPreferences) meta.notificationPreferences = {};
       meta.notificationPreferences[settingKey] = input.value;
-      await db.update(users).set({ metadata: JSON.stringify(meta) } as any).where(eq((users as any).id, userId));
+      await db.update(users).set({ metadata: JSON.stringify(meta) } as never).where(eq(unsafeCast(users).id, userId));
     } catch (e) { logger.error("[Notifications] updateSetting error:", e); }
     return { success: true, key: settingKey };
   }),
@@ -379,7 +380,7 @@ export const notificationsRouter = router({
     if (db) {
       try {
         const result = await db.update(notifications).set({ isRead: true }).where(and(eq(notifications.userId, ctx.user?.id || 0), eq(notifications.isRead, false)));
-        count = (result as any)[0]?.affectedRows || 0;
+        count = unsafeCast(result)[0]?.affectedRows || 0;
       } catch {}
     }
     return { success: true, markedCount: count };
@@ -437,8 +438,8 @@ export const notificationsRouter = router({
         userId: ctx.user?.id || undefined,
       });
       return { success: result.status !== "FAILED", messageId: `sms_${result.id}` };
-    } catch (e: any) {
-      return { success: false, messageId: null, error: e?.message || "SMS send failed" };
+    } catch (e: unknown) {
+      return { success: false, messageId: null, error: (e as Error)?.message || "SMS send failed" };
     }
   }),
   getSMSTemplates: protectedProcedure.query(async () => []),

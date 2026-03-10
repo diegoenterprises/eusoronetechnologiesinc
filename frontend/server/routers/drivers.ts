@@ -849,7 +849,7 @@ export const driversRouter = router({
         const updateSet: Record<string, unknown> = { status: input.status, updatedAt: new Date() };
         if (input.status === 'delivered') updateSet.actualDeliveryDate = new Date();
         if (input.notes) updateSet.specialInstructions = [(currentLoad.specialInstructions || ''), `[DRIVER ${input.status.toUpperCase()} ${new Date().toISOString()}] ${input.notes}`].filter(Boolean).join('\n');
-        await db.update(loads).set(updateSet as Record<string, unknown>).where(eq(loads.id, currentLoad.id));
+        await db.update(loads).set(updateSet as unknown as Record<string, unknown>).where(eq(loads.id, currentLoad.id));
 
         // ── ORGANIC HOS EVENT ── Trip lifecycle → automatic duty status
         // The driver doesn't need to separately toggle HOS; the trip status

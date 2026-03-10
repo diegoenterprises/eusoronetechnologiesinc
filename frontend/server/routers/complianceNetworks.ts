@@ -93,7 +93,7 @@ export const complianceNetworksRouter = router({
         .set({
           verificationStatus: input.status,
           verifiedAt: new Date(),
-          verifiedBy: (ctx.user as any)?.id || null,
+          verifiedBy: ctx.user!.id || null,
           verificationMethod: "manual_review",
         })
         .where(eq(complianceNetworkMemberships.id, input.membershipId));

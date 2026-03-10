@@ -20,6 +20,7 @@ import {
 import type { TrailerSpec, UserRoleType, ProductCategory } from "../services/regulatoryEngine";
 import { PRODUCT_CATALOG, COMPLIANCE_RULES, TRAILER_PRODUCT_MAP } from "../seeds/complianceMatrix";
 import { HAZARD_CLASSES } from "../_core/ergDatabase";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ═══════════════════════════════════════════════════════════════
 // PLATFORM → REGULATORY ENGINE RESOLVERS
@@ -464,8 +465,8 @@ export const regulatoryRouter = router({
         rule.endorsements?.forEach(e => endorsements.add(e));
       }
       for (const req of dedupedReg) {
-        if ((req as any).endorsements) {
-          ((req as any).endorsements as string[]).forEach(e => endorsements.add(e));
+        if (unsafeCast(req).endorsements) {
+          (unsafeCast(req).endorsements as string[]).forEach(e => endorsements.add(e));
         }
       }
 

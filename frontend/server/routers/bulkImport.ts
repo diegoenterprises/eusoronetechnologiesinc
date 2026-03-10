@@ -20,6 +20,7 @@ import { requireAccess } from "../services/security/rbac/access-check";
 import { bulkImportJobs, bulkImportRows, loads } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { ENV } from "../_core/env";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const REQUIRED_FIELDS = ["pickupLocation", "deliveryLocation", "pickupDate", "deliveryDate", "cargoType"];
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -177,11 +178,11 @@ export const bulkImportRouter = router({
       fileName: z.string().min(1),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || "DISPATCH", companyId: (ctx.user as any)?.companyId, action: "CREATE", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user!.role || "DISPATCH", companyId: ctx.user!.companyId, action: "CREATE", resource: "LOAD" }, unsafeCast(ctx).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
-      const userId = Number((ctx.user as any)?.id) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
+      const userId = Number(ctx.user!.id) || 0;
       if (!companyId) throw new Error("Company context required");
 
       const { headers, rows: rawRows } = parseCSV(input.csvText);
@@ -206,7 +207,7 @@ export const bulkImportRouter = router({
       }
 
       // Create job
-      await (db as any).execute(
+      await unsafeCast(db).execute(
         sql`INSERT INTO bulk_import_jobs (companyId, uploadedBy, fileName, totalRows, status) VALUES (${companyId}, ${userId}, ${input.fileName}, ${rows.length}, 'uploaded')`
       );
 
@@ -218,7 +219,7 @@ export const bulkImportRouter = router({
 
       // Insert rows
       for (let i = 0; i < rows.length; i++) {
-        await (db as any).execute(
+        await unsafeCast(db).execute(
           sql`INSERT INTO bulk_import_rows (jobId, rowNumber, rawData, status) VALUES (${job.id}, ${i + 1}, ${JSON.stringify(rows[i])}, 'pending')`
         );
       }
@@ -240,7 +241,7 @@ export const bulkImportRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const [job] = await db.select().from(bulkImportJobs)
         .where(and(eq(bulkImportJobs.id, input.jobId), eq(bulkImportJobs.companyId, companyId)))
@@ -289,10 +290,10 @@ export const bulkImportRouter = router({
       skipInvalid: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireAccess({ userId: ctx.user?.id, role: (ctx.user as any)?.role || "DISPATCH", companyId: (ctx.user as any)?.companyId, action: "CREATE", resource: "LOAD" }, (ctx as any).req);
+      await requireAccess({ userId: ctx.user?.id, role: ctx.user!.role || "DISPATCH", companyId: ctx.user!.companyId, action: "CREATE", resource: "LOAD" }, unsafeCast(ctx).req);
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const [job] = await db.select().from(bulkImportJobs)
         .where(and(eq(bulkImportJobs.id, input.jobId), eq(bulkImportJobs.companyId, companyId)))
@@ -314,7 +315,7 @@ export const bulkImportRouter = router({
           const raw = typeof row.rawData === "string" ? JSON.parse(row.rawData) : row.rawData;
           const loadNumber = `BLK-${input.jobId}-${row.rowNumber}-${Date.now().toString(36).toUpperCase()}`;
 
-          await (db as any).execute(
+          await unsafeCast(db).execute(
             sql`INSERT INTO loads (loadNumber, companyId, pickupLocation, deliveryLocation, pickupDate, deliveryDate, cargoType, hazmatClass, weight, rate, specialInstructions, status) VALUES (${loadNumber}, ${companyId}, ${raw.pickupLocation || ""}, ${raw.deliveryLocation || ""}, ${raw.pickupDate}, ${raw.deliveryDate}, ${raw.cargoType || ""}, ${raw.hazmatClass || null}, ${Number(raw.weight) || null}, ${Number(raw.rate) || null}, ${raw.specialInstructions || null}, 'pending')`
           );
 
@@ -326,11 +327,11 @@ export const bulkImportRouter = router({
             loadId: created?.id || null,
           }).where(eq(bulkImportRows.id, row.id));
           successCount++;
-        } catch (err: any) {
+        } catch (err: unknown) {
           failCount++;
           await db.update(bulkImportRows).set({
             status: "failed",
-            errors: [err.message],
+            errors: [(err as Error).message],
           }).where(eq(bulkImportRows.id, row.id));
         }
       }
@@ -354,7 +355,7 @@ export const bulkImportRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const [job] = await db.select().from(bulkImportJobs)
         .where(and(eq(bulkImportJobs.id, input.jobId), eq(bulkImportJobs.companyId, companyId)))
@@ -393,7 +394,7 @@ export const bulkImportRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const limit = input?.limit || 20;
       const offset = input?.offset || 0;
@@ -434,7 +435,7 @@ export const bulkImportRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const [job] = await db.select().from(bulkImportJobs)
         .where(and(eq(bulkImportJobs.id, input.jobId), eq(bulkImportJobs.companyId, companyId)))

@@ -23,6 +23,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, users, companies, documents, hzFuelPrices } from "../../drizzle/schema";
 import { digitizeRateSheet } from "../services/rateSheetDigitizer";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SCHEMAS
@@ -476,7 +477,7 @@ export const rateSheetRouter = router({
             name: `Rate Sheet: ${input.name}`,
             status: "active",
             fileUrl: "",
-          } as any);
+          } as never);
         } catch (e) { logger.error("[RateSheet] create error:", e); }
       }
 
@@ -640,7 +641,7 @@ export const rateSheetRouter = router({
               volume: loads.volume,
               actualDeliveryDate: loads.actualDeliveryDate,
             }).from(loads)
-              .where(eq(loads.status, status as any))
+              .where(eq(loads.status, unsafeCast(status)))
               .limit(500);
             allRows.push(...rows);
           } catch { /* skip status if column mismatch */ }
@@ -652,7 +653,7 @@ export const rateSheetRouter = router({
           const rate = parseFloat(r.rate) || 0;
           if (dist <= 0 || rate <= 0) return false;
           if (input?.state) {
-            const pickup = r.pickupLocation as any;
+            const pickup = unsafeCast(r.pickupLocation);
             if (pickup?.state?.toUpperCase() !== input.state.toUpperCase()) return false;
           }
           if (input?.cargoType && r.cargoType !== input.cargoType) return false;
@@ -695,7 +696,7 @@ export const rateSheetRouter = router({
         // Unique states with load counts
         const stateMap = new Map<string, number>();
         for (const row of filtered) {
-          const pickup = row.pickupLocation as any;
+          const pickup = unsafeCast(row.pickupLocation);
           const st = pickup?.state?.toUpperCase() || "UNK";
           stateMap.set(st, (stateMap.get(st) || 0) + 1);
         }
@@ -883,7 +884,7 @@ export const rateSheetRouter = router({
             name: `Reconciliation ${reconciliationId} — ${input.customerName}`,
             status: "active",
             fileUrl: "",
-          } as any);
+          } as never);
         } catch (e) { logger.error("[Reconciliation] save error:", e); }
       }
 
@@ -996,7 +997,7 @@ export const rateSheetRouter = router({
             const rows = await db.select().from(documents)
               .where(
                 and(
-                  eq(documents.type, dtype as any),
+                  eq(documents.type, unsafeCast(dtype)),
                   sql`(${documents.userId} = ${userId} OR ${documents.companyId} = ${companyId})`,
                 )
               )
@@ -1007,9 +1008,9 @@ export const rateSheetRouter = router({
               type: dtype,
               name: r.name,
               status: r.status,
-              fileUrl: (r as any).fileUrl || "",
+              fileUrl: unsafeCast(r).fileUrl || "",
               createdAt: r.createdAt?.toISOString() || "",
-              isOwner: (r as any).userId === userId,
+              isOwner: unsafeCast(r).userId === userId,
             })));
           } catch (e) { /* skip type if error */ }
         }
@@ -1322,11 +1323,11 @@ export const rateSheetRouter = router({
           name: input.name,
           status: "active",
           fileUrl: payload,
-        } as any).$returningId();
+        }).$returningId();
 
         const insertId = result?.[0]?.id || 0;
         return { success: true, id: insertId, name: input.name, tierCount: input.rateTiers.length };
-      } catch (e: any) {
+      } catch (e: unknown) {
         logger.error("[RateSheet] saveRateSheet error:", e);
         throw new Error("Failed to save rate sheet");
       }
@@ -1364,7 +1365,7 @@ export const rateSheetRouter = router({
           rateUnit: meta.rateUnit || "per_barrel",
           effectiveDate: meta.effectiveDate || null,
           expirationDate: meta.expirationDate || null,
-          agreementId: (row as any).agreementId || meta.agreementId || null,
+          agreementId: unsafeCast(row).agreementId || meta.agreementId || null,
           rateTiers: meta.rateTiers || [],
           surcharges: meta.surcharges || {},
           notes: meta.notes || null,
@@ -1424,7 +1425,7 @@ export const rateSheetRouter = router({
               snapshotAt: new Date().toISOString(),
               snapshotBy: ctx.user?.id,
             }),
-          } as any);
+          } as never);
         } catch (snapErr) { logger.error("[RateSheet] snapshot save error:", snapErr); }
 
         // Merge updates
@@ -1458,9 +1459,9 @@ export const rateSheetRouter = router({
           .where(eq(documents.id, input.id));
 
         return { success: true, id: input.id, version: updated.version };
-      } catch (e: any) {
+      } catch (e: unknown) {
         logger.error("[RateSheet] updateRateSheet error:", e);
-        throw new Error(e.message || "Failed to update rate sheet");
+        throw new Error((e as Error).message || "Failed to update rate sheet");
       }
     }),
 
@@ -1474,7 +1475,7 @@ export const rateSheetRouter = router({
       if (!db) throw new Error("Database unavailable");
       try {
         await db.update(documents)
-          .set({ status: "expired" } as any)
+          .set({ status: "expired" } as never)
           .where(and(
             eq(documents.id, input.id),
             eq(documents.type, "rate_sheet"),
@@ -1561,7 +1562,7 @@ export const rateSheetRouter = router({
             rateUnit: meta.rateUnit || "per_barrel",
             effectiveDate: meta.effectiveDate || null,
             expirationDate: meta.expirationDate || null,
-            agreementId: (r as any).agreementId || meta.agreementId || null,
+            agreementId: unsafeCast(r).agreementId || meta.agreementId || null,
             tierCount: meta.rateTiers?.length || 0,
             maxMiles: meta.rateTiers?.length > 0 ? meta.rateTiers[meta.rateTiers.length - 1]?.maxMiles || 0 : 0,
             notes: meta.notes || null,
@@ -1656,10 +1657,10 @@ export const rateSheetRouter = router({
               name,
               status: "active",
               fileUrl: payload,
-            } as any).$returningId();
+            }).$returningId();
             savedId = insertResult?.[0]?.id || null;
-          } catch (e: any) {
-            result.warnings.push(`Auto-save failed: ${e.message}`);
+          } catch (e: unknown) {
+            result.warnings.push(`Auto-save failed: ${(e as Error).message}`);
           }
         }
       }

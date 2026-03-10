@@ -37,7 +37,7 @@ export const inspectionFormsRouter = router({
         if (input.driverId) conds.push(eq(inspections.driverId, parseInt(input.driverId)));
         if (input.type) {
           const typeMap: Record<string, string> = { pre_trip: 'pre_trip', post_trip: 'post_trip', en_route: 'roadside', dot: 'dot', annual: 'annual' };
-          conds.push(eq(inspections.type, (typeMap[input.type] || input.type) as any));
+          conds.push(eq(inspections.type, (typeMap[input.type] || input.type) as never));
         }
         if (input.hasDefects === true) conds.push(sql`${inspections.defectsFound} > 0`);
         if (input.startDate) conds.push(gte(inspections.createdAt, new Date(input.startDate)));
@@ -104,7 +104,7 @@ export const inspectionFormsRouter = router({
         vehicleId: parseInt(input.vehicleId),
         driverId: ctx.user?.id || 0,
         companyId: ctx.user?.companyId || 0,
-        type: (typeMap[input.type] || 'pre_trip') as any,
+        type: (typeMap[input.type] || 'pre_trip') as never,
         status: hasOOS ? 'failed' : defects.length > 0 ? 'failed' : 'passed',
         location: input.location,
         defectsFound: defects.length,

@@ -17,7 +17,7 @@ export const resourcePreAnalysisRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const verdict = await analyzeLoadFeasibility(db, input.loadId, companyId);
       await storeVerdict(db, input.loadId, companyId, verdict);
@@ -28,7 +28,7 @@ export const resourcePreAnalysisRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return { canDispatch: [], partialMatch: [], cannotDispatch: [] };
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const [rows]: any = await db.execute(sql`
         SELECT rpa.*, l.loadNumber, l.originCity, l.originState,
@@ -52,7 +52,7 @@ export const resourcePreAnalysisRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const [rows]: any = await db.execute(sql`
         SELECT * FROM resource_capacity_snapshot
@@ -67,7 +67,7 @@ export const resourcePreAnalysisRouter = router({
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return { gaps: [], suggestions: [] };
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
 
       const [rows]: any = await db.execute(sql`
         SELECT gapAnalysis FROM resource_preanalysis
@@ -97,7 +97,7 @@ export const resourcePreAnalysisRouter = router({
     .mutation(async ({ ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
-      const companyId = Number((ctx.user as any)?.companyId) || 0;
+      const companyId = Number(ctx.user!.companyId) || 0;
       await captureResourceSnapshot(db, companyId);
       return { success: true };
     }),

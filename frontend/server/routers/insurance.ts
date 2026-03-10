@@ -21,6 +21,7 @@ import {
   catalystRiskScores,
   insuranceAlerts
 } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const insuranceRouter = router({
   create: protectedProcedure
@@ -41,7 +42,7 @@ export const insuranceRouter = router({
       const [result] = await db.insert(insurancePolicies).values({
         companyId,
         policyNumber: input.policyNumber,
-        policyType: input.policyType as any,
+        policyType: unsafeCast(input.policyType),
         providerName: input.providerName,
         effectiveDate: new Date(input.effectiveDate),
         expirationDate: new Date(input.expirationDate),
@@ -77,7 +78,7 @@ export const insuranceRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
-      await db.update(insurancePolicies).set({ status: "cancelled" as any }).where(eq(insurancePolicies.id, input.id));
+      await db.update(insurancePolicies).set({ status: unsafeCast("cancelled") }).where(eq(insurancePolicies.id, input.id));
       return { success: true, id: input.id };
     }),
 
@@ -169,7 +170,7 @@ export const insuranceRouter = router({
       const [policy] = await db.insert(insurancePolicies).values({
         companyId,
         policyNumber: input.policyNumber,
-        policyType: input.policyType as any,
+        policyType: unsafeCast(input.policyType),
         providerName: input.providerName,
         effectiveDate: new Date(input.effectiveDate),
         expirationDate: new Date(input.expirationDate),
@@ -418,7 +419,7 @@ export const insuranceRouter = router({
         policyId: input.policyId,
         loadId: input.loadId,
         claimNumber,
-        claimType: input.claimType as any,
+        claimType: unsafeCast(input.claimType),
         description: input.description,
         incidentDate: new Date(input.incidentDate),
         reportedDate: new Date(),
@@ -621,7 +622,7 @@ export const insuranceRouter = router({
         
         let conditions = [eq(insuranceAlerts.companyId, companyId)];
         if (input?.status) {
-          conditions.push(eq(insuranceAlerts.status, input.status as any));
+          conditions.push(eq(insuranceAlerts.status, unsafeCast(input.status)));
         }
         
         const alerts = await db.select().from(insuranceAlerts)
@@ -999,7 +1000,7 @@ export const insuranceRouter = router({
       try {
         const { platformRevenue } = await import("../../drizzle/schema");
         await db.insert(platformRevenue).values({
-          transactionId: (result as any).id || 0,
+          transactionId: unsafeCast(result).id || 0,
           transactionType: "insurance_commission",
           userId,
           grossAmount: String(input.premium.toFixed(2)),
@@ -1029,7 +1030,7 @@ export const insuranceRouter = router({
       try {
         const userId = Number(ctx.user?.id) || 0;
         const conds: any[] = [eq(perLoadInsurancePolicies.userId, userId)];
-        if (input.status) conds.push(eq(perLoadInsurancePolicies.status, input.status as any));
+        if (input.status) conds.push(eq(perLoadInsurancePolicies.status, unsafeCast(input.status)));
 
         const rows = await db.select().from(perLoadInsurancePolicies)
           .where(and(...conds))
@@ -1097,11 +1098,11 @@ export const insuranceRouter = router({
           success: true,
           extraction,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error("[Insurance] scanDocument error:", error);
         return {
           success: false,
-          error: error?.message || "Document scanning failed",
+          error: (error as Error)?.message || "Document scanning failed",
           extraction: null,
         };
       }
@@ -1183,7 +1184,7 @@ export const insuranceRouter = router({
         const [result] = await db.insert(insurancePolicies).values({
           companyId,
           policyNumber: extraction.policy.number,
-          policyType: policyType as any,
+          policyType: unsafeCast(policyType),
           providerName: extraction.policy.insurerName,
           effectiveDate: new Date(extraction.policy.effectiveDate),
           expirationDate: new Date(extraction.policy.expirationDate),
@@ -1270,7 +1271,7 @@ export const insuranceRouter = router({
         }
 
         // Check safety rating
-        const rating = (safetyRating as any)?.rating || "None";
+        const rating = unsafeCast(safetyRating)?.rating || "None";
         if (rating === "Unsatisfactory") {
           discrepancies.push("FMCSA safety rating: Unsatisfactory");
         } else if (rating === "Conditional") {
@@ -1278,7 +1279,7 @@ export const insuranceRouter = router({
         }
 
         // Check allowed to operate
-        const allowedToOperate = (carrier as any).allowedToOperate === "Y" || (carrier as any).allowedToOperate === true;
+        const allowedToOperate = unsafeCast(carrier).allowedToOperate === "Y" || unsafeCast(carrier).allowedToOperate === true;
         if (!allowedToOperate) {
           discrepancies.push("Carrier is NOT allowed to operate per FMCSA");
         }
@@ -1322,11 +1323,11 @@ export const insuranceRouter = router({
             verifiedAt: new Date().toISOString(),
           },
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error("[Insurance] verifyWithFMCSA error:", error);
         return {
           success: false,
-          error: error?.message || "FMCSA verification failed",
+          error: (error as Error)?.message || "FMCSA verification failed",
           result: null,
         };
       }
@@ -1384,9 +1385,9 @@ export const insuranceRouter = router({
           hasPollutionLiability: hasPollution,
           totalPolicies: policies.length,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error("[Insurance] checkLoadCompliance error:", error);
-        return { compliant: false, deficiencies: [error?.message || "Check failed"], requiredLiability: 0, currentLiability: 0 };
+        return { compliant: false, deficiencies: [(error as Error)?.message || "Check failed"], requiredLiability: 0, currentLiability: 0 };
       }
     }),
 });

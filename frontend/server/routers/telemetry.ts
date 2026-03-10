@@ -8,6 +8,7 @@ import { adminProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { locationHistory, geofences, geofenceEvents, routes, routeWaypoints, convoys, etaHistory, speedEvents, safetyAlerts, users } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const locationSchema = z.object({
   latitude: z.number().min(-90).max(90),
@@ -173,7 +174,7 @@ export const telemetryRouter = router({
         ORDER BY density DESC
         LIMIT 500
       `);
-      return ((rows as any)[0] || []).map((r: any) => ({
+      return (unsafeCast(rows)[0] || []).map((r: any) => ({
         lat: Number(r.lat), lng: Number(r.lng),
         density: Number(r.density), avgSpeed: Number(r.avgSpeed || 0), drivers: Number(r.drivers || 0),
       }));
@@ -206,7 +207,7 @@ export const telemetryRouter = router({
         ORDER BY trip_count DESC
         LIMIT ${input.limit}
       `);
-      return (rows as any)[0] || [];
+      return unsafeCast(rows)[0] || [];
     } catch { return []; }
   }),
 
@@ -280,7 +281,7 @@ export const telemetryRouter = router({
         ORDER BY trip_count DESC
         LIMIT ${input.limit}
       `);
-      return (rows as any)[0] || [];
+      return unsafeCast(rows)[0] || [];
     } catch { return []; }
   }),
 
@@ -298,8 +299,8 @@ export const telemetryRouter = router({
         SELECT COUNT(*) as routes, SUM(distance_miles) as miles, AVG(road_quality_score) as avgQuality
         FROM hz_driver_route_reports WHERE driver_id = ${driverId}
       `);
-      const ps = (pingStats as any)[0] || {};
-      const rs = (routeStats as any)[0] || {};
+      const ps = unsafeCast(pingStats)[0] || {};
+      const rs = unsafeCast(routeStats)[0] || {};
       return {
         totalPings: Number(ps.total || 0),
         totalRoutes: Number(rs.routes || 0),
@@ -320,10 +321,10 @@ export const telemetryRouter = router({
       const [grid] = await db.execute(sql`SELECT COUNT(DISTINCT CONCAT(grid_lat, ',', grid_lng)) as cells FROM hz_grid_heat`);
       const [lanes] = await db.execute(sql`SELECT COUNT(*) as cnt FROM hz_lane_learning WHERE trip_count >= 1`);
       const [routes] = await db.execute(sql`SELECT COUNT(*) as cnt, SUM(distance_miles) as miles FROM hz_driver_route_reports`);
-      const p = (pings as any)[0] || {};
-      const g = (grid as any)[0] || {};
-      const l = (lanes as any)[0] || {};
-      const r = (routes as any)[0] || {};
+      const p = unsafeCast(pings)[0] || {};
+      const g = unsafeCast(grid)[0] || {};
+      const l = unsafeCast(lanes)[0] || {};
+      const r = unsafeCast(routes)[0] || {};
       return {
         totalPings: Number(p.cnt || 0),
         uniqueDrivers: Number(p.drivers || 0),

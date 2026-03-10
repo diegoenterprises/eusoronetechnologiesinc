@@ -10,6 +10,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { vehicles, users, inspections } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const equipmentTypeSchema = z.enum([
   "tanker", "dry_van", "flatbed", "reefer", "lowboy", "step_deck", "container", "hopper"
@@ -39,8 +40,8 @@ export const equipmentRouter = router({
       try {
         const trailerTypes = ["trailer", "tanker", "flatbed", "refrigerated", "dry_van", "lowboy", "step_deck"];
         const filters: any[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true), sql`${vehicles.vehicleType} IN ('trailer','tanker','flatbed','refrigerated','dry_van','lowboy','step_deck')`];
-        if (input.type) filters.push(eq(vehicles.vehicleType, input.type as any));
-        if (input.status) filters.push(eq(vehicles.status, input.status as any));
+        if (input.type) filters.push(eq(vehicles.vehicleType, unsafeCast(input.type)));
+        if (input.status) filters.push(eq(vehicles.status, unsafeCast(input.status)));
 
         const results = await db.select().from(vehicles).where(and(...filters)).orderBy(desc(vehicles.createdAt)).limit(input.limit).offset(input.offset);
         const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(...filters));
@@ -97,10 +98,10 @@ export const equipmentRouter = router({
       if (!companyId) throw new Error("Company not found");
       const result = await db.insert(vehicles).values({
         companyId, vin: input.vin, make: input.make, model: input.model, year: input.year,
-        licensePlate: input.licensePlate, vehicleType: input.type as any,
+        licensePlate: input.licensePlate, vehicleType: unsafeCast(input.type),
         capacity: String(input.capacity), status: "available",
-      } as any);
-      const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+      } as never);
+      const insertedId = unsafeCast(result).insertId || unsafeCast(result)[0]?.insertId || 0;
       return { id: String(insertedId), ...input, status: "available", createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
     }),
 
@@ -127,7 +128,7 @@ export const equipmentRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      await db.update(vehicles).set({ status: "in_use" as any, currentDriverId: parseInt(input.vehicleId, 10) || null }).where(eq(vehicles.id, parseInt(input.equipmentId, 10)));
+      await db.update(vehicles).set({ status: unsafeCast("in_use"), currentDriverId: parseInt(input.vehicleId, 10) || null }).where(eq(vehicles.id, parseInt(input.equipmentId, 10)));
       return { success: true, equipmentId: input.equipmentId, vehicleId: input.vehicleId, assignedBy: ctx.user?.id, assignedAt: new Date().toISOString() };
     }),
 
@@ -139,7 +140,7 @@ export const equipmentRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      await db.update(vehicles).set({ status: "available" as any, currentDriverId: null }).where(eq(vehicles.id, parseInt(input.equipmentId, 10)));
+      await db.update(vehicles).set({ status: unsafeCast("available"), currentDriverId: null }).where(eq(vehicles.id, parseInt(input.equipmentId, 10)));
       return { success: true, equipmentId: input.equipmentId, unassignedBy: ctx.user?.id, unassignedAt: new Date().toISOString() };
     }),
 
@@ -151,7 +152,7 @@ export const equipmentRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      await db.update(vehicles).set({ status: "maintenance" as any, nextMaintenanceDate: new Date(input.scheduledDate) }).where(eq(vehicles.id, parseInt(input.equipmentId, 10)));
+      await db.update(vehicles).set({ status: unsafeCast("maintenance"), nextMaintenanceDate: new Date(input.scheduledDate) }).where(eq(vehicles.id, parseInt(input.equipmentId, 10)));
       return { maintenanceId: `maint_${Date.now()}`, equipmentId: input.equipmentId, scheduledBy: ctx.user?.id, scheduledAt: new Date().toISOString() };
     }),
 
@@ -167,11 +168,11 @@ export const equipmentRouter = router({
       const companyId = await resolveCompanyId(ctx.user);
       const result = await db.insert(inspections).values({
         vehicleId: parseInt(input.equipmentId, 10), driverId: userId, companyId,
-        type: input.type as any, status: input.result === "fail" ? "failed" : "passed",
+        type: unsafeCast(input.type), status: input.result === "fail" ? "failed" : "passed",
         defectsFound: input.defects?.length || 0, oosViolation: input.result === "fail",
         completedAt: new Date(), location: input.notes || null,
-      } as any);
-      const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+      } as never);
+      const insertedId = unsafeCast(result).insertId || unsafeCast(result)[0]?.insertId || 0;
       // Update vehicle nextInspectionDate
       const nextDate = new Date(); nextDate.setMonth(nextDate.getMonth() + 3);
       await db.update(vehicles).set({ nextInspectionDate: nextDate }).where(eq(vehicles.id, parseInt(input.equipmentId, 10)));
@@ -186,7 +187,7 @@ export const equipmentRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       const companyId = await resolveCompanyId(ctx.user);
-      const empty = { period: input.period, overall: { utilizationRate: 0, avgDaysInUse: 0, avgDaysIdle: 0, avgDaysMaintenance: 0 }, byEquipment: [] as any[], costAnalysis: { totalMaintenance: 0, avgPerUnit: 0, revenueGenerated: 0, roi: 0 } };
+      const empty = { period: input.period, overall: { utilizationRate: 0, avgDaysInUse: 0, avgDaysIdle: 0, avgDaysMaintenance: 0 }, byEquipment: [] as never[][], costAnalysis: { totalMaintenance: 0, avgPerUnit: 0, revenueGenerated: 0, roi: 0 } };
       if (!db || !companyId) return empty;
       try {
         const [total] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)));

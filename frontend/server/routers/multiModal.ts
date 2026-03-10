@@ -11,6 +11,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, vehicles, detentionRecords } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ── Shared Zod schemas ──────────────────────────────────────────────
 
@@ -103,7 +104,7 @@ export const multiModalRouter = router({
           ));
           const modeMap: Record<string, number> = { truck: 0, rail: 0, ocean: 0, intermodal: 0 };
           let total = 0;
-          for (const row of (modeRows as unknown as any[])) {
+          for (const row of unsafeCast(modeRows)) {
             const ct = row.cargoType as string;
             const count = Number(row.cnt);
             total += count;
@@ -120,7 +121,7 @@ export const multiModalRouter = router({
           const [chassisRows] = await db.execute(
             sql`SELECT COUNT(*) as cnt FROM vehicles WHERE vehicleType = 'container_chassis' AND status = 'active'`
           );
-          const chassisCount = Number((chassisRows as unknown as any[])[0]?.cnt ?? 0);
+          const chassisCount = Number(unsafeCast(chassisRows)[0]?.cnt ?? 0);
           if (chassisCount > 0) summary.chassisInUse = chassisCount;
         }
       } catch (e) {
@@ -1235,7 +1236,7 @@ export const multiModalRouter = router({
           const [totals] = await db.execute(
             sql`SELECT COUNT(*) as cnt, COALESCE(SUM(rate), 0) as revenue FROM loads WHERE deletedAt IS NULL`
           );
-          const row = (totals as unknown as any[])[0];
+          const row = unsafeCast(totals)[0];
           const totalCount = Number(row?.cnt ?? 0);
           const totalRev = Number(row?.revenue ?? 0);
 
@@ -1249,7 +1250,7 @@ export const multiModalRouter = router({
           const [interRows] = await db.execute(
             sql`SELECT COUNT(*) as cnt, COALESCE(SUM(rate), 0) as revenue FROM loads WHERE cargoType = 'intermodal' AND deletedAt IS NULL`
           );
-          const interRow = (interRows as unknown as any[])[0];
+          const interRow = unsafeCast(interRows)[0];
           const intermodalCount = Number(interRow?.cnt ?? 0);
           const intermodalRev = Number(interRow?.revenue ?? 0);
 

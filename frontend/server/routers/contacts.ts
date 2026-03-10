@@ -11,6 +11,7 @@ import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, companies } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 const contactTypeSchema = z.enum([
   "shipper", "catalyst", "broker", "driver", "terminal", "vendor", "other"
@@ -105,7 +106,7 @@ export const contactsRouter = router({
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      const empty = { id: input.id, type: '', name: '', company: '', title: '', email: '', phone: '', mobile: '', fax: '', address: null as any, website: '', notes: '', tags: [] as string[], favorite: false, createdAt: '', lastContact: '', history: [] as any[] };
+      const empty = { id: input.id, type: '', name: '', company: '', title: '', email: '', phone: '', mobile: '', fax: '', address: unsafeCast(null), website: '', notes: '', tags: [] as string[], favorite: false, createdAt: '', lastContact: '', history: [] as never[][] };
       const db = await getDb(); if (!db) return empty;
       try {
         const uid = parseInt(input.id.replace('con_', ''), 10);
@@ -144,7 +145,7 @@ export const contactsRouter = router({
         try {
           const roleMap: Record<string, string> = { shipper: 'SHIPPER', catalyst: 'CATALYST', broker: 'BROKER', driver: 'DRIVER', terminal: 'TERMINAL', vendor: 'CATALYST', other: 'SHIPPER' };
           const openId = `contact_${Date.now()}_${randomBytes(4).toString('hex')}`;
-          const [result] = await db.insert(users).values({ openId, name: input.name, email: input.email || `contact_${Date.now()}@noreply.eusotrip.com`, phone: input.phone || null, role: (roleMap[input.type] || 'SHIPPER') as any, isActive: true, isVerified: false }).$returningId();
+          const [result] = await db.insert(users).values({ openId, name: input.name, email: input.email || `contact_${Date.now()}@noreply.eusotrip.com`, phone: input.phone || null, role: (roleMap[input.type] || 'SHIPPER') as never, isActive: true, isVerified: false }).$returningId();
           return { id: `con_${result.id}`, ...input, createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
         } catch (e) { logger.error('[Contacts] create error:', e); }
       }

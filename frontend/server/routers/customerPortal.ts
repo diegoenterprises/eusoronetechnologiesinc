@@ -21,6 +21,7 @@ import { requireAccess } from "../services/security/rbac/access-check";
 import { portalAccessTokens, portalLoadLinks, portalAuditLog, loads } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 import crypto from "crypto";
+import { unsafeCast } from "../_core/types/unsafe";
 
 function generateToken(): string {
   return crypto.randomBytes(32).toString("hex"); // 64-char hex
@@ -112,7 +113,7 @@ export const customerPortalRouter = router({
         const [countRow] = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM portal_load_links WHERE portalTokenId = ${t.id}`
         );
-        const loadCount = Array.isArray(countRow) ? Number(countRow[0]?.cnt || 0) : 0;
+        const loadCount = Array.isArray(countRow) ? Number(unsafeCast(countRow)[0]?.cnt || 0) : 0;
         result.push({
           tokenId: t.id,
           customerName: t.customerName,
@@ -201,7 +202,7 @@ export const customerPortalRouter = router({
       const [trackingRows] = await db.execute(
         sql`SELECT DISTINCT loadId FROM allocation_daily_tracking WHERE contractId = ${input.allocationContractId} AND loadId IS NOT NULL`
       );
-      const loadIds = Array.isArray(trackingRows) ? trackingRows.map((r: Record<string, unknown>) => r.loadId).filter(Boolean) : [];
+      const loadIds = Array.isArray(trackingRows) ? unsafeCast(trackingRows).map((r: Record<string, unknown>) => r.loadId).filter(Boolean) : [];
 
       let linked = 0;
       for (const loadId of loadIds) {
@@ -237,7 +238,7 @@ export const customerPortalRouter = router({
         sql`SELECT l.id, l.loadNumber, l.pickupLocation, l.deliveryLocation, l.pickupDate, l.deliveryDate, l.cargoType, l.status, l.specialInstructions FROM loads l INNER JOIN portal_load_links pll ON pll.loadId = l.id WHERE pll.portalTokenId = ${token.id} ORDER BY l.pickupDate DESC`
       );
 
-      const loadList = Array.isArray(rows) ? rows.map((r: Record<string, unknown>) => ({
+      const loadList = Array.isArray(rows) ? unsafeCast(rows).map((r: Record<string, unknown>) => ({
         loadId: r.id,
         loadNumber: r.loadNumber,
         pickupLocation: r.pickupLocation,
@@ -277,7 +278,7 @@ export const customerPortalRouter = router({
       const [loadRows] = await db.execute(
         sql`SELECT l.id, l.loadNumber, l.pickupLocation, l.deliveryLocation, l.pickupDate, l.deliveryDate, l.cargoType, l.status, l.specialInstructions, l.weight, l.distance FROM loads l WHERE l.id = ${input.loadId} LIMIT 1`
       );
-      const load = Array.isArray(loadRows) ? loadRows[0] : null;
+      const load = Array.isArray(loadRows) ? unsafeCast(loadRows)[0] : null;
       if (!load) throw new Error("Load not found");
 
       // Get timeline events from load_events if available
@@ -643,7 +644,7 @@ export const customerPortalRouter = router({
           .orderBy(sql`${loads.createdAt} DESC`)
           .limit(50);
 
-        const rates = rows.map(l => {
+        const rates: any[] = unsafeCast(rows).map((l: any) => {
           const p = (l.pickupLocation as Record<string, string> | null) || {};
           const d = (l.deliveryLocation as Record<string, string> | null) || {};
           const rate = l.rate ? parseFloat(String(l.rate)) : 0;
@@ -741,7 +742,7 @@ export const customerPortalRouter = router({
           .limit(input.months);
 
         return {
-          history: rows.map(r => ({
+          history: unsafeCast(rows).map((r: any) => ({
             month: r.month,
             avgRate: Math.round((r.avgRate || 0) * 100) / 100,
             avgRatePerMile: Math.round((r.avgRpm || 0) * 100) / 100,
@@ -877,7 +878,7 @@ export const customerPortalRouter = router({
           .limit(limit)
           .offset((page - 1) * limit);
 
-        const shipments = rows.map(l => {
+        const shipments = unsafeCast(rows).map((l: any) => {
           const p = (l.pickupLocation as Record<string, string> | null) || {};
           const d = (l.deliveryLocation as Record<string, string> | null) || {};
           return {

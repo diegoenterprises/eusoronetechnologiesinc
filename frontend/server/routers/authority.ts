@@ -18,6 +18,7 @@ import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { users, companies, leaseAgreements, vehicles } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const authorityRouter = router({
   /**
@@ -265,9 +266,9 @@ export const authorityRouter = router({
         destinationState: input.destinationState || null,
         trailerTypes: input.trailerTypes || null,
         notes: input.notes || null,
-      } as any);
+      } as never);
 
-      return { success: true, leaseId: (result as any).insertId };
+      return { success: true, leaseId: unsafeCast(result).insertId };
     }),
 
   /**
@@ -349,7 +350,7 @@ export const authorityRouter = router({
       await db.update(leaseAgreements).set({
         status: "terminated",
         notes: input.reason ? `Terminated: ${input.reason}` : "Terminated by user",
-      } as any).where(eq(leaseAgreements.id, input.leaseId));
+      } as never).where(eq(leaseAgreements.id, input.leaseId));
 
       return { success: true };
     }),
@@ -475,8 +476,8 @@ export const authorityRouter = router({
         const result = await db.insert(companies).values({
           name: ctx.user.name ? `${ctx.user.name}'s Fleet` : "My Fleet",
           isActive: true,
-        } as any);
-        const companyId = (result as any).insertId || (result as any)[0]?.insertId;
+        } as never);
+        const companyId = unsafeCast(result).insertId || unsafeCast(result)[0]?.insertId;
         if (companyId) {
           await db.update(users).set({ companyId }).where(eq(users.id, userId));
           await db.insert(vehicles).values({
@@ -490,7 +491,7 @@ export const authorityRouter = router({
             capacity: input.capacity || null,
             status: "available",
             isActive: true,
-          } as any);
+          } as never);
           return { success: true, message: "Vehicle registered" };
         }
         throw new Error("Failed to create company");
@@ -507,7 +508,7 @@ export const authorityRouter = router({
         capacity: input.capacity || null,
         status: "available",
         isActive: true,
-      } as any);
+      } as never);
 
       return { success: true, message: "Vehicle registered" };
     }),
@@ -531,7 +532,7 @@ export const authorityRouter = router({
         .limit(1);
       if (!vehicle) throw new Error("Vehicle not found");
 
-      await db.update(vehicles).set({ isActive: false, deletedAt: new Date() } as any)
+      await db.update(vehicles).set({ isActive: false, deletedAt: new Date() } as never)
         .where(eq(vehicles.id, input.vehicleId));
 
       return { success: true, message: "Vehicle removed" };
@@ -677,9 +678,9 @@ export const authorityRouter = router({
           searchType: "name",
           query: q,
         };
-      } catch (err: any) {
-        logger.error("[Authority] FMCSA search error:", err.message);
-        return { results: [], error: err.message, searchType, query: q };
+      } catch (err: unknown) {
+        logger.error("[Authority] FMCSA search error:", (err as Error).message);
+        return { results: [], error: (err as Error).message, searchType, query: q };
       }
     }),
 
@@ -736,8 +737,8 @@ export const authorityRouter = router({
           phone: input.phone || null,
           complianceStatus: "pending",
           isActive: true,
-        } as any);
-        companyId = (newCompany as any).insertId;
+        } as never);
+        companyId = unsafeCast(newCompany).insertId;
       }
 
       // Create the lease agreement
@@ -759,11 +760,11 @@ export const authorityRouter = router({
         destinationState: input.destinationState || null,
         trailerTypes: input.trailerTypes || null,
         notes: input.notes || null,
-      } as any);
+      } as never);
 
       return {
         success: true,
-        leaseId: (result as any).insertId,
+        leaseId: unsafeCast(result).insertId,
         companyId,
         companyName: input.legalName,
       };

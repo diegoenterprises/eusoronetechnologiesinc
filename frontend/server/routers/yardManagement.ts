@@ -17,6 +17,7 @@ import {
   appointments, detentionRecords, detentionClaims, gpsTracking,
 } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte, asc, or, like, count as drizzleCount, isNull, isNotNull, ne } from "drizzle-orm";
+import { unsafeCast } from "../_core/types/unsafe";
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────
 
@@ -88,7 +89,7 @@ export const yardManagementRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       const locationId = input?.locationId || "default";
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       if (!db) {
         return {
@@ -260,7 +261,7 @@ export const yardManagementRouter = router({
       if (!db) return { locations: [], total: 0 };
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const search = input?.search;
         const statusFilter = input?.status || "active";
 
@@ -356,7 +357,7 @@ export const yardManagementRouter = router({
       const db = await getDb();
       const rows = 10;
       const cols = 12;
-      const companyId = (ctx.user as any)?.companyId || 0;
+      const companyId = ctx.user!.companyId || 0;
 
       // Get real trailer count for occupancy ratio
       let occupancyRatio = 0.65; // default
@@ -592,7 +593,7 @@ export const yardManagementRouter = router({
 
           return {
             success: true,
-            appointmentId: `APT-${(result as any).insertId}`,
+            appointmentId: `APT-${unsafeCast(result).insertId}`,
             dockId: input.dockId,
             scheduledStart: input.scheduledStart,
             scheduledEnd: input.scheduledEnd,
@@ -760,7 +761,7 @@ export const yardManagementRouter = router({
       if (!db) return { trailers: [], summary: { total: 0, available: 0, loaded: 0, empty: 0, inRepair: 0, reserved: 0 } };
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const limit = input?.limit || 50;
         const offset = input?.offset || 0;
 
@@ -777,7 +778,7 @@ export const yardManagementRouter = router({
         ];
 
         if (input?.type) {
-          conditions.push(eq(vehicles.vehicleType, input.type as any));
+          conditions.push(eq(vehicles.vehicleType, unsafeCast(input.type)));
         }
         if (input?.status) {
           // Map yard status back to vehicle status
@@ -785,7 +786,7 @@ export const yardManagementRouter = router({
             : input.status === "in_repair" ? "maintenance"
             : input.status === "available" || input.status === "empty" ? "available"
             : undefined;
-          if (vehicleStatus) conditions.push(eq(vehicles.status, vehicleStatus as any));
+          if (vehicleStatus) conditions.push(eq(vehicles.status, unsafeCast(vehicleStatus)));
         }
 
         const trailerRows = await db
@@ -985,7 +986,7 @@ export const yardManagementRouter = router({
       // Try to use intermodal_chassis / container_chassis vehicles as proxy
       if (db) {
         try {
-          const companyId = (ctx.user as any)?.companyId || 0;
+          const companyId = ctx.user!.companyId || 0;
           const containerVehicles = await db
             .select({
               id: vehicles.id,
@@ -1313,7 +1314,7 @@ export const yardManagementRouter = router({
       if (!db) return { trailers: [], summary: { total: 0, dropped: 0, awaitingPickup: 0, avgDwellHours: 0, sealIssues: 0 } };
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
 
         // Trailers that are available (dropped) and not currently assigned to a driver
         const droppedTrailers = await db
@@ -1393,7 +1394,7 @@ export const yardManagementRouter = router({
       if (!db) return { entries: [], summary: { totalEntries: 0, totalExits: 0, uniqueCarriers: 0, peakHour: "N/A" } };
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
         const limit = input?.limit || 50;
         const offset = input?.offset || 0;
         const date = input?.date || new Date().toISOString().split("T")[0];
@@ -1783,7 +1784,7 @@ export const yardManagementRouter = router({
       }
 
       try {
-        const companyId = (ctx.user as any)?.companyId || 0;
+        const companyId = ctx.user!.companyId || 0;
 
         // Build daily metrics from real data
         const dailyMetrics = [];

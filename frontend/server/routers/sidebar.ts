@@ -10,6 +10,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { sql, eq, and, count } from "drizzle-orm";
 import { loads, bids, notifications } from "../../drizzle/schema";
+import { unsafeCast } from "../_core/types/unsafe";
 
 export const sidebarRouter = router({
   /**
@@ -23,8 +24,8 @@ export const sidebarRouter = router({
 
     if (!db || !ctx.user) return badges;
 
-    const userId = (ctx.user as any).id;
-    const companyId = (ctx.user as any).companyId;
+    const userId = ctx.user!.id;
+    const companyId = ctx.user!.companyId;
     const role = ctx.user.role?.toUpperCase() || "";
 
     try {
@@ -56,7 +57,7 @@ export const sidebarRouter = router({
           const result = await db.execute(
             sql`SELECT COUNT(*) as cnt FROM bids b JOIN loads l ON b.loadId = l.id WHERE l.shipperId = ${userId} AND b.status = 'pending'`
           );
-          const v = Number((result as any)?.[0]?.cnt || 0);
+          const v = Number(unsafeCast(result)?.[0]?.cnt || 0);
           if (v > 0) badges["/catalysts"] = v;
         } catch {}
 
@@ -96,7 +97,7 @@ export const sidebarRouter = router({
         const result = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM messages WHERE recipient_id = ${userId} AND read_at IS NULL`
         );
-        const v = Number((result as any)?.[0]?.cnt || 0);
+        const v = Number(unsafeCast(result)?.[0]?.cnt || 0);
         if (v > 0) badges["/messages"] = v;
       } catch {}
 
@@ -105,7 +106,7 @@ export const sidebarRouter = router({
         const result = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM invoices WHERE (payer_id = ${userId} OR payee_id = ${userId}) AND status = 'pending'`
         );
-        const v = Number((result as any)?.[0]?.cnt || 0);
+        const v = Number(unsafeCast(result)?.[0]?.cnt || 0);
         if (v > 0) badges["/payments"] = v;
       } catch {}
 
@@ -114,7 +115,7 @@ export const sidebarRouter = router({
         const result = await db.execute(
           sql`SELECT COUNT(DISTINCT cm.channelId) as cnt FROM channel_members cm JOIN messages m ON m.channel_id = cm.channelId WHERE cm.userId = ${userId} AND m.createdAt > COALESCE(cm.lastReadAt, '1970-01-01')`
         );
-        const v = Number((result as any)?.[0]?.cnt || 0);
+        const v = Number(unsafeCast(result)?.[0]?.cnt || 0);
         if (v > 0) badges["/company-channels"] = v;
       } catch {}
 
@@ -123,7 +124,7 @@ export const sidebarRouter = router({
         const result = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM wallet_transactions WHERE user_id = ${userId} AND status = 'pending'`
         );
-        const v = Number((result as any)?.[0]?.cnt || 0);
+        const v = Number(unsafeCast(result)?.[0]?.cnt || 0);
         if (v > 0) badges["/wallet"] = v;
       } catch {}
 
@@ -132,7 +133,7 @@ export const sidebarRouter = router({
         const result = await db.execute(
           sql`SELECT COUNT(*) as cnt FROM documents WHERE (uploaded_by = ${userId} OR assigned_to = ${userId}) AND status = 'pending_review'`
         );
-        const v = Number((result as any)?.[0]?.cnt || 0);
+        const v = Number(unsafeCast(result)?.[0]?.cnt || 0);
         if (v > 0) badges["/documents"] = v;
       } catch {}
 
