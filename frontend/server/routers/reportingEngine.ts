@@ -13,7 +13,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   loads, payments, users, vehicles, companies, drivers,
-  inspections, settlements, bids,
+  inspections, incidents, settlements, bids,
 } from "../../drizzle/schema";
 
 // ---------------------------------------------------------------------------
@@ -773,9 +773,44 @@ export const reportingEngineRouter = router({
           const delivered = safeNum(stats?.delivered);
           const onTimePct = loadCount > 0 ? pct(delivered, loadCount) : 0;
 
-          // Scoring: safety (40%), efficiency (30%), reliability (30%)
-          const safetyScore = 85 + Math.random() * 15;
-          const efficiencyScore = onTimePct > 0 ? Math.min(100, onTimePct * 1.05) : 75 + Math.random() * 20;
+          // Safety score: derived from inspections pass rate + incident severity
+          const [inspData] = await db.select({
+            total: sql<number>`count(*)`,
+            passed: sql<number>`SUM(CASE WHEN ${inspections.status} = 'passed' THEN 1 ELSE 0 END)`,
+            defects: sql<number>`COALESCE(SUM(${inspections.defectsFound}), 0)`,
+          }).from(inspections).where(eq(inspections.driverId, d.id));
+
+          const [incidentData] = await db.select({
+            total: sql<number>`count(*)`,
+            majorOrCritical: sql<number>`SUM(CASE WHEN ${incidents.severity} IN ('major', 'critical') THEN 1 ELSE 0 END)`,
+          }).from(incidents).where(eq(incidents.driverId, d.id));
+
+          const inspTotal = safeNum(inspData?.total);
+          const inspPassed = safeNum(inspData?.passed);
+          const defectCount = safeNum(inspData?.defects);
+          const incidentTotal = safeNum(incidentData?.total);
+          const majorIncidents = safeNum(incidentData?.majorOrCritical);
+
+          let safetyScore: number;
+          if (inspTotal > 0 || incidentTotal > 0) {
+            // Base 100, deduct for failures, defects, and incidents
+            const passRate = inspTotal > 0 ? (inspPassed / inspTotal) * 100 : 100;
+            const defectPenalty = Math.min(15, defectCount * 1.5);
+            const incidentPenalty = Math.min(20, incidentTotal * 3 + majorIncidents * 5);
+            safetyScore = Math.max(50, Math.min(100, passRate - defectPenalty - incidentPenalty));
+          } else {
+            // No data: deterministic seed based on driver id
+            safetyScore = 85 + (d.id % 15); // TODO: fallback — no inspections/incidents for this driver
+          }
+
+          // Efficiency score: derived from on-time delivery percentage
+          let efficiencyScore: number;
+          if (onTimePct > 0) {
+            efficiencyScore = Math.min(100, onTimePct * 1.05);
+          } else {
+            // No loads: deterministic seed based on driver id
+            efficiencyScore = 75 + (d.id % 20); // TODO: fallback — no loads for this driver
+          }
           const reliabilityScore = loadCount > 0 ? Math.min(100, 70 + loadCount * 0.5) : 70;
           const overallScore = safetyScore * 0.4 + efficiencyScore * 0.3 + reliabilityScore * 0.3;
 
@@ -825,9 +860,34 @@ export const reportingEngineRouter = router({
           year: vehicles.year,
         }).from(vehicles).limit(50);
 
-        const vehicleData = vehicleRows.map((v) => {
-          const revenueMiles = 8000 + Math.floor(Math.random() * 4000);
-          const deadMiles = 800 + Math.floor(Math.random() * 1200);
+        const vehicleData = await Promise.all(vehicleRows.map(async (v) => {
+          // Query loads assigned to this vehicle for real distance and revenue data
+          const [vStats] = await db.select({
+            totalDistance: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)`,
+            totalRevenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+            loadCount: sql<number>`count(*)`,
+          }).from(loads).where(eq(loads.vehicleId, v.id));
+
+          const dbDistance = safeNum(vStats?.totalDistance);
+          const dbRevenue = safeNum(vStats?.totalRevenue);
+          const dbLoadCount = safeNum(vStats?.loadCount);
+
+          let revenueMiles: number;
+          let deadMiles: number;
+          let revenuePerMile: number;
+
+          if (dbLoadCount > 0 && dbDistance > 0) {
+            // Real data: revenue miles are loaded miles; estimate dead miles as ~10% of revenue miles
+            revenueMiles = Math.round(dbDistance);
+            deadMiles = Math.round(dbDistance * 0.1);
+            revenuePerMile = dbDistance > 0 ? Math.round((dbRevenue / dbDistance) * 100) / 100 : 0;
+          } else {
+            // TODO: fallback — no loads assigned to this vehicle; use deterministic seed
+            revenueMiles = 8000 + (v.id % 4000);
+            deadMiles = 800 + (v.id % 1200);
+            revenuePerMile = Math.round((2.15 + (v.id % 85) / 100) * 100) / 100;
+          }
+
           const totalMiles = revenueMiles + deadMiles;
           return {
             id: v.id,
@@ -841,9 +901,9 @@ export const reportingEngineRouter = router({
             deadMiles,
             totalMiles,
             utilization: pct(revenueMiles, totalMiles),
-            revenuePerMile: 2.15 + Math.random() * 0.85,
+            revenuePerMile,
           };
-        });
+        }));
 
         const totalRevenueMiles = vehicleData.reduce((s, v) => s + v.revenueMiles, 0);
         const totalDeadMiles = vehicleData.reduce((s, v) => s + v.deadMiles, 0);
@@ -898,16 +958,43 @@ export const reportingEngineRouter = router({
           .orderBy(sql`SUM(CAST(${loads.rate} AS DECIMAL)) DESC`)
           .limit(50);
 
-        const lanes = laneData.map((l) => ({
-          lane: `${l.originCity || "?"}, ${l.originState || "?"} → ${l.destCity || "?"}, ${l.destState || "?"}`,
-          origin: `${l.originCity}, ${l.originState}`,
-          destination: `${l.destCity}, ${l.destState}`,
-          loadCount: safeNum(l.loadCount),
-          totalRevenue: safeNum(l.totalRevenue),
-          avgRate: Math.round(safeNum(l.avgRate) * 100) / 100,
-          estimatedMargin: 14 + Math.random() * 6,
-          avgRatePerMile: safeNum(l.avgRate) / 650,
-        }));
+        // Compute total payments (cost) to derive margin
+        const [paymentTotals] = await db.select({
+          totalPaid: sql<number>`COALESCE(SUM(CAST(${payments.amount} AS DECIMAL)), 0)`,
+        }).from(payments)
+          .where(and(
+            eq(payments.paymentType, "load_payment"),
+            eq(payments.status, "succeeded"),
+          ));
+        const totalPaid = safeNum(paymentTotals?.totalPaid);
+
+        // Get total revenue across all loads for overall margin estimate
+        const [revTotals] = await db.select({
+          totalRev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+        }).from(loads);
+        const overallRev = safeNum(revTotals?.totalRev);
+        // Overall margin percentage: (revenue - cost) / revenue * 100
+        const overallMarginPct = overallRev > 0 && totalPaid > 0
+          ? Math.round(((overallRev - totalPaid) / overallRev) * 10000) / 100
+          : 0;
+
+        const lanes = laneData.map((l, idx) => {
+          const laneRevenue = safeNum(l.totalRevenue);
+          // Use overall margin if we have real data, else deterministic fallback
+          const estimatedMargin = overallRev > 0 && totalPaid > 0
+            ? overallMarginPct
+            : 14 + (idx % 6); // TODO: fallback — no payment data to compute margin
+          return {
+            lane: `${l.originCity || "?"}, ${l.originState || "?"} → ${l.destCity || "?"}, ${l.destState || "?"}`,
+            origin: `${l.originCity}, ${l.originState}`,
+            destination: `${l.destCity}, ${l.destState}`,
+            loadCount: safeNum(l.loadCount),
+            totalRevenue: laneRevenue,
+            avgRate: Math.round(safeNum(l.avgRate) * 100) / 100,
+            estimatedMargin,
+            avgRatePerMile: safeNum(l.avgRate) / 650,
+          };
+        });
 
         return { lanes, totalLanes: lanes.length };
       } catch (e) {
@@ -940,14 +1027,35 @@ export const reportingEngineRouter = router({
           .orderBy(sql`SUM(CAST(${loads.rate} AS DECIMAL)) DESC`)
           .limit(25);
 
-        const customers = customerData.map((c) => ({
-          customerId: c.shipperId,
-          loadCount: safeNum(c.loadCount),
-          totalRevenue: safeNum(c.totalRevenue),
-          avgRate: Math.round(safeNum(c.avgRate) * 100) / 100,
-          onTimePct: safeNum(c.loadCount) > 0 ? pct(safeNum(c.delivered), safeNum(c.loadCount)) : 0,
-          estimatedMargin: 14 + Math.random() * 6,
-        }));
+        // Compute per-customer margin from payments vs load revenue
+        const customerPayments = await db.select({
+          payerId: payments.payerId,
+          totalPaid: sql<number>`COALESCE(SUM(CAST(${payments.amount} AS DECIMAL)), 0)`,
+        }).from(payments)
+          .where(and(
+            eq(payments.paymentType, "load_payment"),
+            eq(payments.status, "succeeded"),
+          ))
+          .groupBy(payments.payerId);
+
+        const paymentByPayer = new Map(customerPayments.map((p) => [p.payerId, safeNum(p.totalPaid)]));
+
+        const customers = customerData.map((c, idx) => {
+          const custRevenue = safeNum(c.totalRevenue);
+          const custCost = paymentByPayer.get(c.shipperId) || 0;
+          // Margin: (revenue - cost) / revenue * 100
+          const estimatedMargin = custRevenue > 0 && custCost > 0
+            ? Math.round(((custRevenue - custCost) / custRevenue) * 10000) / 100
+            : (custRevenue > 0 ? 15 + (idx % 6) : 0); // TODO: fallback — no payment data for this customer
+          return {
+            customerId: c.shipperId,
+            loadCount: safeNum(c.loadCount),
+            totalRevenue: custRevenue,
+            avgRate: Math.round(safeNum(c.avgRate) * 100) / 100,
+            onTimePct: safeNum(c.loadCount) > 0 ? pct(safeNum(c.delivered), safeNum(c.loadCount)) : 0,
+            estimatedMargin,
+          };
+        });
 
         return { customers, totalCustomers: customers.length };
       } catch (e) {
@@ -981,7 +1089,7 @@ export const reportingEngineRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = (ctx.user as any)?.id || 0;
       const reportConfig = {
-        id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: `custom-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
         name: input.name,
         description: input.description || "",
         dataSource: input.dataSource,
@@ -1013,7 +1121,7 @@ export const reportingEngineRouter = router({
       return {
         success: true,
         template: {
-          id: `tpl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          id: `tpl-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
           name: input.name,
           description: input.description || "",
           category: input.category,
@@ -1053,7 +1161,7 @@ export const reportingEngineRouter = router({
       return {
         success: true,
         schedule: {
-          id: `sched-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          id: `sched-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
           reportId: input.reportId,
           name: input.name,
           frequency: input.frequency,
@@ -1130,7 +1238,7 @@ export const reportingEngineRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       // In production, this would generate the actual file and return a download URL
-      const exportId = `export-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const exportId = `export-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
       return {
         success: true,
         exportId,
@@ -1285,21 +1393,101 @@ export const reportingEngineRouter = router({
             .orderBy(sql`DATE_FORMAT(${loads.createdAt}, ${dateFormat})`);
 
           dataPoints = rows.map((r) => ({ period: String(r.period), value: safeNum(r.value) }));
-        } else {
-          // For other metrics, generate data points based on date range
-          const days = Math.ceil((end.getTime() - start.getTime()) / 86400000);
-          const baseValue = input.metric === "on_time_pct" ? 85
-            : input.metric === "empty_miles_pct" ? 12
-            : input.metric === "fleet_utilization" ? 78
-            : input.metric === "dwell_time_min" ? 140
-            : 50;
+        } else if (input.metric === "on_time_pct") {
+          // On-time %: delivered / total loads per period
+          const rows = await db.select({
+            period: sql<string>`DATE_FORMAT(${loads.createdAt}, ${dateFormat})`,
+            total: sql<number>`count(*)`,
+            delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`,
+          }).from(loads)
+            .where(and(gte(loads.createdAt, start), lte(loads.createdAt, end)))
+            .groupBy(sql`DATE_FORMAT(${loads.createdAt}, ${dateFormat})`)
+            .orderBy(sql`DATE_FORMAT(${loads.createdAt}, ${dateFormat})`);
 
+          if (rows.length > 0) {
+            dataPoints = rows.map((r) => ({
+              period: String(r.period),
+              value: safeNum(r.total) > 0 ? pct(safeNum(r.delivered), safeNum(r.total)) : 0,
+            }));
+          } else {
+            // TODO: fallback — no loads in range; deterministic placeholder
+            dataPoints = [{ period: start.toISOString().split("T")[0], value: 85 }];
+          }
+        } else if (input.metric === "empty_miles_pct") {
+          // Empty miles %: approximate from loads with zero distance vs total
+          const rows = await db.select({
+            period: sql<string>`DATE_FORMAT(${loads.createdAt}, ${dateFormat})`,
+            totalLoads: sql<number>`count(*)`,
+            loadsWithDistance: sql<number>`SUM(CASE WHEN CAST(${loads.distance} AS DECIMAL) > 0 THEN 1 ELSE 0 END)`,
+          }).from(loads)
+            .where(and(gte(loads.createdAt, start), lte(loads.createdAt, end)))
+            .groupBy(sql`DATE_FORMAT(${loads.createdAt}, ${dateFormat})`)
+            .orderBy(sql`DATE_FORMAT(${loads.createdAt}, ${dateFormat})`);
+
+          if (rows.length > 0) {
+            dataPoints = rows.map((r) => {
+              const total = safeNum(r.totalLoads);
+              const withDist = safeNum(r.loadsWithDistance);
+              return { period: String(r.period), value: total > 0 ? pct(total - withDist, total) : 0 };
+            });
+          } else {
+            // TODO: fallback — no loads in range
+            dataPoints = [{ period: start.toISOString().split("T")[0], value: 12 }];
+          }
+        } else if (input.metric === "fleet_utilization") {
+          // Fleet utilization: active vehicles with assigned loads / total vehicles per period
+          const totalVehicles = safeNum((await db.select({ c: sql<number>`count(*)` }).from(vehicles))[0]?.c) || 1;
+          const rows = await db.select({
+            period: sql<string>`DATE_FORMAT(${loads.createdAt}, ${dateFormat})`,
+            activeVehicles: sql<number>`COUNT(DISTINCT ${loads.vehicleId})`,
+          }).from(loads)
+            .where(and(gte(loads.createdAt, start), lte(loads.createdAt, end)))
+            .groupBy(sql`DATE_FORMAT(${loads.createdAt}, ${dateFormat})`)
+            .orderBy(sql`DATE_FORMAT(${loads.createdAt}, ${dateFormat})`);
+
+          if (rows.length > 0) {
+            dataPoints = rows.map((r) => ({
+              period: String(r.period),
+              value: Math.min(100, pct(safeNum(r.activeVehicles), totalVehicles)),
+            }));
+          } else {
+            // TODO: fallback — no loads in range
+            dataPoints = [{ period: start.toISOString().split("T")[0], value: 78 }];
+          }
+        } else if (input.metric === "dwell_time_min") {
+          // Dwell time: difference between actual delivery and pickup dates
+          const rows = await db.select({
+            period: sql<string>`DATE_FORMAT(${loads.createdAt}, ${dateFormat})`,
+            avgDwell: sql<number>`COALESCE(AVG(TIMESTAMPDIFF(MINUTE, ${loads.pickupDate}, ${loads.actualDeliveryDate})), 0)`,
+          }).from(loads)
+            .where(and(
+              gte(loads.createdAt, start),
+              lte(loads.createdAt, end),
+              sql`${loads.pickupDate} IS NOT NULL`,
+              sql`${loads.actualDeliveryDate} IS NOT NULL`,
+            ))
+            .groupBy(sql`DATE_FORMAT(${loads.createdAt}, ${dateFormat})`)
+            .orderBy(sql`DATE_FORMAT(${loads.createdAt}, ${dateFormat})`);
+
+          if (rows.length > 0) {
+            dataPoints = rows.map((r) => ({
+              period: String(r.period),
+              value: Math.max(0, safeNum(r.avgDwell)),
+            }));
+          } else {
+            // TODO: fallback — no delivery data in range
+            dataPoints = [{ period: start.toISOString().split("T")[0], value: 140 }];
+          }
+        } else {
+          // TODO: fallback for unrecognized metrics — deterministic baseline
+          const baseValue = 50;
+          const days = Math.ceil((end.getTime() - start.getTime()) / 86400000);
           for (let i = 0; i < Math.min(days, 90); i++) {
             const d = new Date(start);
             d.setDate(d.getDate() + i);
             dataPoints.push({
               period: d.toISOString().split("T")[0],
-              value: baseValue + (Math.random() - 0.5) * baseValue * 0.1,
+              value: baseValue,  // TODO: implement DB query for this metric
             });
           }
         }
@@ -1365,7 +1553,7 @@ export const reportingEngineRouter = router({
       return {
         success: true,
         alert: {
-          id: input.id || `alert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          id: input.id || `alert-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
           metric: input.metric,
           threshold: input.threshold,
           direction: input.direction,
@@ -1471,7 +1659,7 @@ export const reportingEngineRouter = router({
       message: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const shareId = `share-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const shareId = `share-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
       return {
         success: true,
         shareId,
