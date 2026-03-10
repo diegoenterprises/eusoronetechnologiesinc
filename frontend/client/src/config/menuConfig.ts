@@ -115,6 +115,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Communication with catalysts",
       children: [
+        { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
         { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
       ],
     },
@@ -241,6 +242,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Communication & team channels",
       children: [
+        { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
         { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
       ],
     },
@@ -354,6 +356,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Communication & team channels",
       children: [
+        { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
         { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
       ],
     },
@@ -489,6 +492,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Communication & emergency alerts",
       children: [
+        { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
         { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
       ],
     },
@@ -605,6 +609,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Driver messaging, broadcast & team channels",
       children: [
+        { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
         { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
       ],
     },
@@ -724,6 +729,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Communication",
       children: [
+        { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
         { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
       ],
     },
@@ -799,7 +805,17 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "EIN, W-9, NDA & compliance docs" },
     { icon: "TrendingUp", label: "Reports", path: "/factoring/reports", badge: 0, description: "Factoring reports" },
     // ─── PLATFORM FOOTER ───
-    { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Messaging" },
+    {
+      icon: "MessageSquare",
+      label: "Messages",
+      path: "/messages",
+      badge: 0,
+      description: "Messaging",
+      children: [
+        { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
+        { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+      ],
+    },
     {
       icon: "Wallet",
       label: "EusoWallet",
@@ -902,6 +918,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Communication",
       children: [
+        { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
         { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
       ],
     },
@@ -1021,6 +1038,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Communication",
       children: [
+        { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
         { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
       ],
     },
@@ -1115,6 +1133,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Communication",
       children: [
+        { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
         { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
       ],
     },
@@ -1206,6 +1225,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Platform messaging",
       children: [
+        { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
         { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
       ],
     },
@@ -1428,7 +1448,17 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Globe", label: "Cross-Border", path: "/cross-border", badge: 0, description: "Customs & international compliance" },
       ],
     },
-    { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Platform-wide messaging" },
+    {
+      icon: "MessageSquare",
+      label: "Messages",
+      path: "/messages",
+      badge: 0,
+      description: "Platform-wide messaging",
+      children: [
+        { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
+        { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+      ],
+    },
     { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
     { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & documentation" },
   ],
@@ -2009,8 +2039,10 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  // ─── Operations category injections (all roles) ───
-  if (!result.some(m => m.path === '/fleet-maintenance')) {
+  // ─── Operations category injections (ROLE-GATED) ───
+  // Fleet Maintenance — carriers, dispatchers, terminal managers, admins only
+  const fleetRoles = ['CATALYST', 'DISPATCH', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
+  if (fleetRoles.includes(normalizedRole) && !result.some(m => m.path === '/fleet-maintenance')) {
     const item: MenuItem = {
       icon: "Wrench",
       label: "Fleet Maintenance",
@@ -2024,7 +2056,9 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/fuel-management')) {
+  // Fuel Management — carriers, dispatchers, drivers, admins only
+  const fuelRoles = ['CATALYST', 'DISPATCH', 'DRIVER', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
+  if (fuelRoles.includes(normalizedRole) && !result.some(m => m.path === '/fuel-management')) {
     const item: MenuItem = {
       icon: "Fuel",
       label: "Fuel Management",
@@ -2038,7 +2072,9 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/communication-hub')) {
+  // Communication Hub — dispatchers, carriers, admins only (others use Messages)
+  const commHubRoles = ['CATALYST', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN'];
+  if (commHubRoles.includes(normalizedRole) && !result.some(m => m.path === '/communication-hub')) {
     const item: MenuItem = {
       icon: "MessageSquare",
       label: "Communication Hub",
@@ -2052,7 +2088,9 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/broker-management')) {
+  // Broker Management — brokers and admins only
+  const brokerMgmtRoles = ['BROKER', 'ADMIN', 'SUPER_ADMIN'];
+  if (brokerMgmtRoles.includes(normalizedRole) && !result.some(m => m.path === '/broker-management')) {
     const item: MenuItem = {
       icon: "Briefcase",
       label: "Broker Management",
@@ -2066,7 +2104,9 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/document-management')) {
+  // Document Management — carriers, dispatchers, compliance, terminal managers, admins
+  const docMgmtRoles = ['CATALYST', 'DISPATCH', 'COMPLIANCE_OFFICER', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
+  if (docMgmtRoles.includes(normalizedRole) && !result.some(m => m.path === '/document-management')) {
     const item: MenuItem = {
       icon: "FileStack",
       label: "Document Management",
@@ -2080,7 +2120,9 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/hr-workforce')) {
+  // HR & Workforce — carriers, dispatchers, admins only
+  const hrRoles = ['CATALYST', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN'];
+  if (hrRoles.includes(normalizedRole) && !result.some(m => m.path === '/hr-workforce')) {
     const item: MenuItem = {
       icon: "UserCog",
       label: "HR & Workforce",
@@ -2094,7 +2136,9 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/vendor-management')) {
+  // Vendor Management — carriers, shippers, terminal managers, admins
+  const vendorRoles = ['CATALYST', 'SHIPPER', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
+  if (vendorRoles.includes(normalizedRole) && !result.some(m => m.path === '/vendor-management')) {
     const item: MenuItem = {
       icon: "Store",
       label: "Vendor Management",
@@ -2123,8 +2167,9 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  // ─── Gamification / The Haul™ injections (all roles) ───
-  if (!result.some(m => m.path === '/advanced-gamification')) {
+  // ─── Gamification / The Haul™ injections (drivers, carriers, dispatchers, admins) ───
+  const haulRoles = ['DRIVER', 'CATALYST', 'DISPATCH', 'ESCORT', 'ADMIN', 'SUPER_ADMIN'];
+  if (haulRoles.includes(normalizedRole) && !result.some(m => m.path === '/advanced-gamification')) {
     const item: MenuItem = {
       icon: "Trophy",
       label: "Advanced Gamification",
@@ -2138,7 +2183,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/driver-wellness')) {
+  if (haulRoles.includes(normalizedRole) && !result.some(m => m.path === '/driver-wellness')) {
     const item: MenuItem = {
       icon: "Heart",
       label: "Driver Wellness",
@@ -2152,7 +2197,9 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     result.splice(idx, 0, item);
   }
 
-  if (!result.some(m => m.path === '/driver-mobile')) {
+  // Driver Mobile — drivers, carriers, dispatchers, admins
+  const driverMobileRoles = ['DRIVER', 'CATALYST', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN'];
+  if (driverMobileRoles.includes(normalizedRole) && !result.some(m => m.path === '/driver-mobile')) {
     const item: MenuItem = {
       icon: "Smartphone",
       label: "Driver Mobile",
