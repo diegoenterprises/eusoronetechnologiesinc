@@ -101,6 +101,10 @@ import {
   Mic,
   Sparkles,
   FlaskConical,
+  KeyRound,
+  Flag,
+  Gauge,
+  Combine,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -190,6 +194,11 @@ const iconMap: Record<string, React.ReactNode> = {
   Mic: <Mic size={20} />,
   Sparkles: <Sparkles size={20} />,
   FlaskConical: <FlaskConical size={20} />,
+  Monitor: <Monitor size={20} />,
+  KeyRound: <KeyRound size={20} />,
+  Flag: <Flag size={20} />,
+  Gauge: <Gauge size={20} />,
+  Combine: <Combine size={20} />,
 };
 
 // --- Notification Bell Component ---

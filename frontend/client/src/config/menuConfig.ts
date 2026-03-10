@@ -510,8 +510,8 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Dispatch dashboard overview"
     },
     {
-      icon: "LayoutDashboard",
-      label: "Command Center",
+      icon: "Monitor",
+      label: "Dispatch Center",
       path: "/dispatch",
       badge: 0,
       description: "Dispatch command center — drivers, Kanban board, activity feed"
@@ -564,7 +564,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
     // ─── BUSINESS ───
     {
-      icon: "Shield",
+      icon: "KeyRound",
       label: "Customer Portal",
       path: "/admin/portal",
       badge: 0,
@@ -578,13 +578,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Partners, agreements & network connections"
     },
     {
-      icon: "Shield",
+      icon: "ShieldCheck",
       label: "Compliance",
       path: "/authority",
       badge: 0,
       description: "Authority, facilities & documentation",
       children: [
-        { icon: "Shield", label: "Operating Authority", path: "/authority", badge: 0, description: "Verify carrier authority, MC/DOT & lease status" },
+        { icon: "ShieldCheck", label: "Operating Authority", path: "/authority", badge: 0, description: "Verify carrier authority, MC/DOT & lease status" },
         { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities nationwide" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Run tickets, BOLs, compliance docs & certifications" },
       ],
@@ -631,7 +631,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Rates, commodities, hot zones & 2026 freight intelligence"
     },
     {
-      icon: "Truck",
+      icon: "Trophy",
       label: "The Haul",
       path: "/the-haul",
       badge: 0,
@@ -653,7 +653,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Platform news and updates"
     },
     {
-      icon: "AlertTriangle",
+      icon: "Flag",
       label: "Report Incident",
       path: "/hazmat/incident-report",
       badge: 0,
@@ -1460,7 +1460,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   // GAP-063 Task 6.2: Inject Carrier Capacity & Similar Carriers for qualifying roles
   if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/carrier-capacity')) {
     const capItem: MenuItem = {
-      icon: "Calendar",
+      icon: "Gauge",
       label: "Carrier Capacity",
       path: "/carrier-capacity",
       badge: 0,
@@ -1474,7 +1474,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   // GAP-315: Inject Demurrage & Detention Charges for qualifying roles
   if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/demurrage-charges')) {
     const dmrItem: MenuItem = {
-      icon: "Timer",
+      icon: "Clock",
       label: "Demurrage Charges",
       path: "/demurrage-charges",
       badge: 0,
@@ -1582,7 +1582,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   const CONSOLIDATION_ROLES = new Set(['SHIPPER', 'BROKER', 'DISPATCH', 'CATALYST', 'ADMIN', 'SUPER_ADMIN']);
   if (CONSOLIDATION_ROLES.has(normalizedRole) && !result.some(m => m.path === '/load-consolidation')) {
     const consolItem: MenuItem = {
-      icon: "Layers",
+      icon: "Combine",
       label: "Load Consolidation",
       path: "/load-consolidation",
       badge: 0,
@@ -1598,7 +1598,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   if (MOBILE_CMD_ROLES.has(normalizedRole) && !result.some(m => m.path === '/mobile-command')) {
     const mobileItem: MenuItem = {
       icon: "Smartphone",
-      label: "Command Center",
+      label: "Mobile Command Center",
       path: "/mobile-command",
       badge: 0,
       description: "Mobile-optimized driver operations dashboard",
@@ -1613,7 +1613,7 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   const PRICING_ROLES = new Set(['SHIPPER', 'BROKER', 'CATALYST', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN']);
   if (PRICING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/contextual-pricing')) {
     const pricingItem: MenuItem = {
-      icon: "Zap",
+      icon: "Sparkles",
       label: "Smart Pricing",
       path: "/contextual-pricing",
       badge: 0,
