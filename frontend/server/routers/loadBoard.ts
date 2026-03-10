@@ -16,7 +16,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
-import { router, isolatedApprovedProcedure as protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, isolatedApprovedProcedure as protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, companies, vehicles, bids, drivers, users, loadBids, bidAutoAcceptRules, negotiations, negotiationMessages, laneContracts, agreements, loadStops } from "../../drizzle/schema";
@@ -638,7 +638,7 @@ export const loadBoardRouter = router({
   /**
    * Search available loads
    */
-  search: publicProcedure
+  search: protectedProcedure
     .input(z.object({
       origin: z.object({
         city: z.string().optional(),

@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
-import { isolatedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads, vehicles, users, companies, gpsTracking, geofences, geofenceEvents, safetyAlerts } from "../../drizzle/schema";
@@ -17,7 +17,7 @@ export const trackingRouter = router({
   /**
    * Track shipment by load number
    */
-  trackShipment: publicProcedure
+  trackShipment: protectedProcedure
     .input(z.object({
       loadNumber: z.string(),
       accessCode: z.string().optional(),

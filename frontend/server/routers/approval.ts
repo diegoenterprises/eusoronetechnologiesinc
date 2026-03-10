@@ -70,7 +70,7 @@ export const approvalRouter = router({
         let meta: any = {};
         try {
           meta = u.metadata ? JSON.parse(u.metadata as string) : {};
-        } catch {}
+        } catch { /* metadata parse failed — use default */ }
         const approvalStatus = meta.approvalStatus || "pending_review";
         return { ...u, approvalStatus, meta };
       });
@@ -191,7 +191,7 @@ export const approvalRouter = router({
 
       const parsed = allUsers.map(u => {
         let meta: any = {};
-        try { meta = u.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
+        try { meta = u.metadata ? JSON.parse(u.metadata as string) : {}; } catch { /* metadata parse failed — use default */ }
         return {
           ...u,
           approvalStatus: meta.approvalStatus || "pending_review",
@@ -243,7 +243,7 @@ export const approvalRouter = router({
 
       // Parse existing metadata and update approval status
       let meta: any = {};
-      try { meta = targetUser.metadata ? JSON.parse(targetUser.metadata as string) : {}; } catch {}
+      try { meta = targetUser.metadata ? JSON.parse(targetUser.metadata as string) : {}; } catch { /* metadata parse failed — use default */ }
 
       meta.approvalStatus = "approved";
       meta.approvedAt = new Date().toISOString();
@@ -286,7 +286,7 @@ export const approvalRouter = router({
       if (!targetUser) throw new Error("User not found");
 
       let meta: any = {};
-      try { meta = targetUser.metadata ? JSON.parse(targetUser.metadata as string) : {}; } catch {}
+      try { meta = targetUser.metadata ? JSON.parse(targetUser.metadata as string) : {}; } catch { /* metadata parse failed — use default */ }
 
       meta.approvalStatus = "suspended";
       meta.suspendedAt = new Date().toISOString();
@@ -331,7 +331,7 @@ export const approvalRouter = router({
       let rolesFixed = 0;
       for (const u of allUsers) {
         let meta: any = {};
-        try { meta = u.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
+        try { meta = u.metadata ? JSON.parse(u.metadata as string) : {}; } catch { /* metadata parse failed — use default */ }
 
         const updates: any = {};
 
@@ -415,7 +415,7 @@ export const approvalRouter = router({
         }
 
         let meta: any = {};
-        try { meta = target.metadata ? JSON.parse(target.metadata as string) : {}; } catch {}
+        try { meta = target.metadata ? JSON.parse(target.metadata as string) : {}; } catch { /* metadata parse failed — use default */ }
 
         meta.approvalStatus = "pending_review";
         delete meta.approvedAt;
@@ -456,7 +456,7 @@ export const approvalRouter = router({
       if (!user) throw new Error("User not found");
 
       let meta: any = {};
-      try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch {}
+      try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch { /* metadata parse failed — use default */ }
 
       // Get company details
       let company: any = null;
@@ -478,7 +478,7 @@ export const approvalRouter = router({
             .from(vehicles)
             .where(eq(vehicles.companyId, user.companyId));
           vehicleCount = vc?.count || 0;
-        } catch {}
+        } catch (e) { logger.warn("[Approval] vehicle count query failed:", e); }
       }
 
       return {

@@ -73,6 +73,11 @@ export const users = mysqlTable(
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
     lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
     deletedAt: timestamp("deletedAt"),
+    status: varchar("status", { length: 20 }).default("active"),
+    closedAt: timestamp("closedAt"),
+    closedReason: text("closedReason"),
+    deactivatedAt: timestamp("deactivatedAt"),
+    deactivatedBy: int("deactivatedBy"),
   },
   (table) => ({
     emailIdx: unique("email_unique").on(table.email),
@@ -614,6 +619,7 @@ export const payments = mysqlTable(
     failureReason: text("failureReason"),
     metadata: json("metadata"),
     isEncrypted: boolean("isEncrypted").default(false),
+    documentUrl: text("documentUrl"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -649,6 +655,8 @@ export const settlements = mysqlTable(
     totalShipperCharge: decimal("totalShipperCharge", { precision: 12, scale: 2 }).notNull(),
     status: mysqlEnum("status", ["pending", "processing", "completed", "failed", "disputed"]).default("pending").notNull(),
     stripeTransferId: varchar("stripeTransferId", { length: 255 }),
+    accessorialTotal: decimal("accessorialTotal", { precision: 12, scale: 2 }).default("0.00"),
+    hazmatSurcharge: decimal("hazmatSurcharge", { precision: 12, scale: 2 }).default("0.00"),
     settledAt: timestamp("settledAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -1465,6 +1473,7 @@ export const documents = mysqlTable(
     expiryDate: timestamp("expiryDate"),
     status: mysqlEnum("status", ["active", "expired", "pending"]).default("active"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
+    deletedAt: timestamp("deletedAt"),
   },
   (table) => ({
     userIdx: index("document_user_idx").on(table.userId),
@@ -1622,6 +1631,7 @@ export const wallets = mysqlTable(
     lastWithdrawalAt: timestamp("lastWithdrawalAt"),
     totalReceived: decimal("totalReceived", { precision: 14, scale: 2 }).default("0"),
     totalSpent: decimal("totalSpent", { precision: 14, scale: 2 }).default("0"),
+    isDefault: boolean("isDefault").default(false),
     isActive: boolean("isActive").default(true).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -8361,4 +8371,76 @@ export const blockchainAuditTrail = mysqlTable("blockchain_audit_trail", {
   previousBlockHash: varchar("previousBlockHash", { length: 256 }),
   timestamp: timestamp("timestamp").defaultNow(),
 });
+
+// ============================================================================
+// PRODUCT PROFILES — Reusable product/commodity configurations
+// ============================================================================
+
+export const productProfiles = mysqlTable(
+  "product_profiles",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    companyId: int("companyId"),
+    nickname: varchar("nickname", { length: 100 }),
+    description: text("description"),
+    isCompanyShared: boolean("isCompanyShared").default(false),
+    trailerType: varchar("trailerType", { length: 50 }),
+    equipment: varchar("equipment", { length: 50 }),
+    productName: varchar("productName", { length: 255 }),
+    cargoType: varchar("cargoType", { length: 30 }),
+    // Hazmat fields
+    unNumber: varchar("unNumber", { length: 10 }),
+    ergGuide: int("ergGuide"),
+    isTIH: boolean("isTIH").default(false),
+    isWR: boolean("isWR").default(false),
+    placardName: varchar("placardName", { length: 100 }),
+    properShippingName: varchar("properShippingName", { length: 255 }),
+    packingGroup: varchar("packingGroup", { length: 5 }),
+    technicalName: varchar("technicalName", { length: 255 }),
+    emergencyResponseNumber: varchar("emergencyResponseNumber", { length: 50 }),
+    emergencyPhone: varchar("emergencyPhone", { length: 20 }),
+    hazardClassNumber: varchar("hazardClassNumber", { length: 10 }),
+    subsidiaryHazards: json("subsidiaryHazards").$type<string[]>(),
+    specialPermit: varchar("specialPermit", { length: 100 }),
+    // Quantity & units
+    defaultQuantity: decimal("defaultQuantity", { precision: 12, scale: 2 }),
+    quantityUnit: varchar("quantityUnit", { length: 30 }),
+    weightUnit: varchar("weightUnit", { length: 30 }),
+    volumeUnit: varchar("volumeUnit", { length: 30 }),
+    // Equipment requirements
+    hoseType: varchar("hoseType", { length: 50 }),
+    hoseLength: varchar("hoseLength", { length: 50 }),
+    fittingType: varchar("fittingType", { length: 50 }),
+    pumpRequired: boolean("pumpRequired").default(false),
+    compressorRequired: boolean("compressorRequired").default(false),
+    bottomLoadRequired: boolean("bottomLoadRequired").default(false),
+    vaporRecoveryRequired: boolean("vaporRecoveryRequired").default(false),
+    // Lab / quality specs
+    apiGravity: decimal("apiGravity", { precision: 5, scale: 2 }),
+    bsw: decimal("bsw", { precision: 5, scale: 2 }),
+    sulfurContent: decimal("sulfurContent", { precision: 5, scale: 2 }),
+    flashPoint: int("flashPoint"),
+    viscosity: decimal("viscosity", { precision: 8, scale: 2 }),
+    pourPoint: int("pourPoint"),
+    reidVaporPressure: decimal("reidVaporPressure", { precision: 8, scale: 2 }),
+    appearance: varchar("appearance", { length: 100 }),
+    // Usage tracking
+    usageCount: int("usageCount").default(0),
+    lastUsedAt: timestamp("lastUsedAt"),
+    tags: json("tags").$type<string[]>(),
+    customNotes: text("customNotes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deletedAt"),
+  },
+  (table) => ({
+    userIdx: index("pp_user_idx").on(table.userId),
+    companyIdx: index("pp_company_idx").on(table.companyId),
+    productNameIdx: index("pp_product_name_idx").on(table.productName),
+  })
+);
+
+export type ProductProfile = typeof productProfiles.$inferSelect;
+export type InsertProductProfile = typeof productProfiles.$inferInsert;
 

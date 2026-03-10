@@ -61,7 +61,7 @@ async function ensureUserExists(ctxUser: any): Promise<number> {
       try {
         const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
         if (row) return row.id;
-      } catch {}
+      } catch (e) { logger.warn("[ensureUserExists] fallback email lookup failed:", e); }
     }
     return 0;
   }
@@ -319,7 +319,7 @@ export const usersRouter = router({
         const companyId = ctx.user?.companyId || 0;
         const rows = await db.select({ id: drivers.id, userId: drivers.userId, safetyScore: drivers.safetyScore, totalLoads: drivers.totalLoads, totalMiles: drivers.totalMiles, userName: users.name }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).orderBy(desc(drivers.safetyScore)).limit(input.limit || 20);
         return rows.map((d, idx) => ({ rank: idx + 1, id: String(d.id), name: d.userName || 'Unknown', score: d.safetyScore || 0, points: (d.safetyScore || 0) * 10, loads: d.totalLoads || 0, miles: parseFloat(d.totalMiles || '0') }));
-      } catch (e) { return []; }
+      } catch (e) { logger.warn("[Users] getLeaderboard query failed:", e); return []; }
     }),
 
   // Get my rank for Leaderboard page
@@ -339,7 +339,7 @@ export const usersRouter = router({
         const rank = (higher?.count || 0) + 1;
         const percentile = totalCount > 0 ? Math.round(((totalCount - rank) / totalCount) * 100) : 0;
         return { rank, points: score * 10, percentile, score, trend: 'flat', trendValue: 0 };
-      } catch (e) { return { rank: 0, points: 0, percentile: 0, score: 0, trend: 'flat', trendValue: 0 }; }
+      } catch (e) { logger.warn("[Users] getMyRank query failed:", e); return { rank: 0, points: 0, percentile: 0, score: 0, trend: 'flat', trendValue: 0 }; }
     }),
 
   // Get activity feed for ActivityFeed page
@@ -351,7 +351,7 @@ export const usersRouter = router({
         const userId = ctx.user?.id || 0;
         const rows = await db.select().from(auditLogs).where(eq(auditLogs.userId, userId)).orderBy(desc(auditLogs.createdAt)).limit(input.limit || 20);
         return rows.map(r => ({ id: String(r.id), type: r.action, description: `${r.action} on ${r.entityType} #${r.entityId || ''}`, timestamp: r.createdAt?.toISOString() || '', entityType: r.entityType, entityId: String(r.entityId || '') }));
-      } catch (e) { return []; }
+      } catch (e) { logger.warn("[Users] getActivityFeed query failed:", e); return []; }
     }),
 
   // Get activity stats for ActivityFeed page
@@ -368,7 +368,7 @@ export const usersRouter = router({
         const [loadsToday] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.entityType, 'load'), sql`${auditLogs.createdAt} >= ${todayStart}`));
         const [bidsToday] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.entityType, 'bid'), sql`${auditLogs.createdAt} >= ${todayStart}`));
         return { totalActivities: total?.count || 0, todayActivities: today?.count || 0, weekActivities: week?.count || 0, totalToday: today?.count || 0, loadsToday: loadsToday?.count || 0, bidsToday: bidsToday?.count || 0, thisWeek: week?.count || 0 };
-      } catch (e) { return { totalActivities: 0, todayActivities: 0, weekActivities: 0, totalToday: 0, loadsToday: 0, bidsToday: 0, thisWeek: 0 }; }
+      } catch (e) { logger.warn("[Users] getActivityStats query failed:", e); return { totalActivities: 0, todayActivities: 0, weekActivities: 0, totalToday: 0, loadsToday: 0, bidsToday: 0, thisWeek: 0 }; }
     }),
 
   // Get account info
@@ -428,7 +428,7 @@ export const usersRouter = router({
       // 4. Set status columns
       try {
         await db.execute(sql`UPDATE users SET status = 'closed', closedAt = NOW(), closedReason = ${input.reason || 'user_requested'} WHERE id = ${userId}`);
-      } catch {}
+      } catch (e) { logger.warn("[Users] closeAccount status update failed:", e); }
 
       // 5. Log to audit
       try {
@@ -436,7 +436,7 @@ export const usersRouter = router({
           userId, action: 'ACCOUNT_CLOSED', entityType: 'user', entityId: userId,
           changes: { reason: input.reason || 'user_requested' },
         } as any);
-      } catch {}
+      } catch (e) { logger.warn("[Users] closeAccount audit log failed:", e); }
 
       return { success: true, closedAt: closedAt.toISOString() };
     }),
@@ -470,7 +470,7 @@ export const usersRouter = router({
       // 2. Set deactivation columns
       try {
         await db.execute(sql`UPDATE users SET status = 'deactivated', deactivatedAt = NOW(), deactivatedBy = ${Number(adminUser.id)} WHERE id = ${input.userId}`);
-      } catch {}
+      } catch (e) { logger.warn("[Users] deactivateAccount status update failed:", e); }
 
       // 3. Log to audit
       try {
@@ -478,7 +478,7 @@ export const usersRouter = router({
           userId: Number(adminUser.id), action: 'ACCOUNT_DEACTIVATED', entityType: 'user', entityId: input.userId,
           changes: { targetUserId: input.userId, reason: input.reason },
         } as any);
-      } catch {}
+      } catch (e) { logger.warn("[Users] deactivateAccount audit log failed:", e); }
 
       return { success: true, userId: input.userId, deactivatedAt: new Date().toISOString() };
     }),
@@ -497,14 +497,14 @@ export const usersRouter = router({
       await db.update(users).set({ isActive: true, deletedAt: null } as any).where(eq(users.id, input.userId));
       try {
         await db.execute(sql`UPDATE users SET status = 'active', deactivatedAt = NULL, deactivatedBy = NULL WHERE id = ${input.userId}`);
-      } catch {}
+      } catch (e) { logger.warn("[Users] reactivateAccount status update failed:", e); }
 
       try {
         await db.insert(auditLogs).values({
           userId: Number(adminUser.id), action: 'ACCOUNT_REACTIVATED', entityType: 'user', entityId: input.userId,
           changes: { targetUserId: input.userId },
         } as any);
-      } catch {}
+      } catch (e) { logger.warn("[Users] reactivateAccount audit log failed:", e); }
 
       return { success: true, userId: input.userId, reactivatedAt: new Date().toISOString() };
     }),
@@ -582,7 +582,7 @@ export const usersRouter = router({
         const userId = ctx.user?.id || 0;
         const rows = await db.select().from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.action, 'login'))).orderBy(desc(auditLogs.createdAt)).limit(input.limit);
         return rows.map(r => ({ id: String(r.id), timestamp: r.createdAt?.toISOString() || '', ip: r.ipAddress || '', userAgent: (r.userAgent as string)?.slice(0, 80) || '', status: 'success', location: '' }));
-      } catch (e) { return []; }
+      } catch (e) { logger.warn("[Users] getLoginHistory query failed:", e); return []; }
     }),
 
   // Get login summary for LoginHistory page
@@ -595,7 +595,7 @@ export const usersRouter = router({
         const [latest] = await db.select({ createdAt: auditLogs.createdAt }).from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.action, 'login'))).orderBy(desc(auditLogs.createdAt)).limit(1);
         const count = total?.count || 0;
         return { totalLogins: count, successfulLogins: count, failedAttempts: 0, failedLogins: 0, lastLogin: latest?.createdAt?.toISOString() || new Date().toISOString() };
-      } catch (e) { return { totalLogins: 0, successfulLogins: 0, failedAttempts: 0, failedLogins: 0, lastLogin: new Date().toISOString() }; }
+      } catch (e) { logger.warn("[Users] getLoginSummary query failed:", e); return { totalLogins: 0, successfulLogins: 0, failedAttempts: 0, failedLogins: 0, lastLogin: new Date().toISOString() }; }
     }),
 
   // Get referrals list
@@ -613,7 +613,7 @@ export const usersRouter = router({
         const companyId = ctx.user?.companyId || 0;
         const rows = await db.select({ id: drivers.id, safetyScore: drivers.safetyScore, totalLoads: drivers.totalLoads, totalMiles: drivers.totalMiles, userName: users.name }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).orderBy(desc(drivers.safetyScore)).limit(input.limit || 20);
         return rows.map((d, idx) => ({ rank: idx + 1, id: String(d.id), name: d.userName || 'Unknown', score: d.safetyScore || 0, loads: d.totalLoads || 0, miles: parseFloat(d.totalMiles || '0') }));
-      } catch (e) { return []; }
+      } catch (e) { logger.warn("[Users] getLeaderboardDetailed query failed:", e); return []; }
     }),
 
   // Get my rank (detailed version)
@@ -632,7 +632,7 @@ export const usersRouter = router({
         const rank = (higher?.count || 0) + 1;
         const totalCount = total?.count || 1;
         return { rank, score, percentile: Math.round(((totalCount - rank) / totalCount) * 100) };
-      } catch (e) { return { rank: 0, score: 0, percentile: 0 }; }
+      } catch (e) { logger.warn("[Users] getMyRankDetailed query failed:", e); return { rank: 0, score: 0, percentile: 0 }; }
     }),
 
   // Get activity feed (detailed version)
@@ -644,7 +644,7 @@ export const usersRouter = router({
         const userId = ctx.user?.id || 0;
         const rows = await db.select().from(auditLogs).where(eq(auditLogs.userId, userId)).orderBy(desc(auditLogs.createdAt)).limit(input.limit || 20);
         return rows.map(r => ({ id: String(r.id), type: r.action, description: `${r.action} on ${r.entityType} #${r.entityId || ''}`, timestamp: r.createdAt?.toISOString() || '', entityType: r.entityType, entityId: String(r.entityId || '') }));
-      } catch (e) { return []; }
+      } catch (e) { logger.warn("[Users] getActivityFeedDetailed query failed:", e); return []; }
     }),
 
   // Get activity stats (detailed version)
@@ -660,7 +660,7 @@ export const usersRouter = router({
       const [week] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), sql`${auditLogs.createdAt} >= ${weekAgo}`));
       const [month] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), sql`${auditLogs.createdAt} >= ${monthAgo}`));
       return { today: today?.count || 0, thisWeek: week?.count || 0, thisMonth: month?.count || 0 };
-    } catch (e) { return { today: 0, thisWeek: 0, thisMonth: 0 }; }
+    } catch (e) { logger.warn("[Users] getActivityStatsDetailed query failed:", e); return { today: 0, thisWeek: 0, thisMonth: 0 }; }
   }),
 
   // Update user profile
@@ -838,10 +838,10 @@ export const usersRouter = router({
         // Record passwordChangedAt in metadata for security score
         try {
           let pwMeta: any = {};
-          try { pwMeta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch { pwMeta = {}; }
+          try { pwMeta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch { /* metadata parse failed — use default */ pwMeta = {}; }
           pwMeta.passwordChangedAt = new Date().toISOString();
           await db.update(users).set({ metadata: JSON.stringify(pwMeta) }).where(eq(users.id, userId));
-        } catch {}
+        } catch (e) { logger.warn("[Users] passwordChangedAt metadata update failed:", e); }
 
         // Notify user about password change
         try {
@@ -850,13 +850,13 @@ export const usersRouter = router({
             const { notifyPasswordChanged } = await import("../services/notifications");
             notifyPasswordChanged({ email: u.email, phone: u.phone || undefined, name: u.name || "" });
           }
-        } catch {}
+        } catch (e) { logger.warn("[Users] password change notification failed:", e); }
       }
 
       // 2FA toggle — store in metadata
       if (input.twoFactorEnabled !== undefined) {
         let meta: any = {};
-        try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch { meta = {}; }
+        try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch { /* metadata parse failed — use default */ meta = {}; }
         meta.twoFactorEnabled = input.twoFactorEnabled;
         await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
 
@@ -872,7 +872,7 @@ export const usersRouter = router({
               notify2FADisabled({ email: u.email, phone: u.phone || undefined, name: u.name || "" });
             }
           }
-        } catch {}
+        } catch (e) { logger.warn("[Users] 2FA change notification failed:", e); }
       }
 
       return { success: true };
@@ -908,9 +908,9 @@ export const usersRouter = router({
       const QRCode = await import("qrcode").catch(() => null);
       let qrCode = uri;
       if (QRCode) {
-        try { qrCode = await QRCode.toDataURL(uri, { width: 200, margin: 2 }); } catch {}
+        try { qrCode = await QRCode.toDataURL(uri, { width: 200, margin: 2 }); } catch (e) { logger.warn("[Users] QR code generation failed:", e); }
       }
-      
+
       return { qrCode, secret, backupCodes };
     }),
 
@@ -955,7 +955,7 @@ export const usersRouter = router({
       // Remove from mfa_secrets DB table
       const db = await getDb();
       if (db && userId) {
-        try { await db.execute(sql`DELETE FROM mfa_secrets WHERE userId = ${userId}`); } catch {}
+        try { await db.execute(sql`DELETE FROM mfa_secrets WHERE userId = ${userId}`); } catch (e) { logger.warn("[Users] MFA secret deletion failed:", e); }
       }
       return { success: true, disabledAt: new Date().toISOString() };
     }),
@@ -968,7 +968,7 @@ export const usersRouter = router({
     const { secret, uri, backupCodes } = generateTOTPSecret(email);
     const QRCode = await import("qrcode").catch(() => null);
     let qrCode = uri;
-    if (QRCode) { try { qrCode = await QRCode.toDataURL(uri, { width: 200, margin: 2 }); } catch {} }
+    if (QRCode) { try { qrCode = await QRCode.toDataURL(uri, { width: 200, margin: 2 }); } catch (e) { logger.warn("[Users] QR code generation failed:", e); } }
     return { qrCode, secret, backupCodes };
   }),
   enable: protectedProcedure.input(z.object({ code: z.string(), secret: z.string().optional() })).mutation(async ({ ctx, input }) => {
@@ -1013,7 +1013,7 @@ export const usersRouter = router({
         const { notifyPasswordChanged } = await import("../services/notifications");
         notifyPasswordChanged({ email: user.email, phone: user.phone || undefined, name: user.name || "" });
       }
-    } catch {}
+    } catch (e) { logger.warn("[Users] changePassword notification failed:", e); }
     return { success: true };
   }),
   getPasswordSecurity: protectedProcedure.query(async () => ({ lastChanged: "2025-01-01", strength: "strong", requiresChange: false, expiresIn: 60 })),
@@ -1030,7 +1030,7 @@ export const usersRouter = router({
       const [admins] = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(eq(users.companyId, companyId), sql`${users.role} IN ('ADMIN', 'SUPER_ADMIN')`));
       const [newMonth] = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(eq(users.companyId, companyId), sql`${users.createdAt} >= ${monthAgo}`));
       return { total: total?.count || 0, active: active?.count || 0, pending: pending?.count || 0, suspended: 0, admins: admins?.count || 0, newThisMonth: newMonth?.count || 0 };
-    } catch (e) { return { total: 0, active: 0, pending: 0, suspended: 0, admins: 0, newThisMonth: 0 }; }
+    } catch (e) { logger.warn("[Users] getStats query failed:", e); return { total: 0, active: 0, pending: 0, suspended: 0, admins: 0, newThisMonth: 0 }; }
   }),
   updateStatus: protectedProcedure.input(z.object({ userId: z.string().optional(), id: z.string().optional(), status: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId || input.id })),
 
@@ -1239,7 +1239,7 @@ export const usersRouter = router({
 
       const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
       let meta: any = {};
-      try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch {}
+      try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch { /* metadata parse failed — use default */ }
       meta.tokenVersion = (meta.tokenVersion || 0) + 1;
       meta.deletedReason = input.reason || 'admin_action';
       meta.deletedBy = 'admin';
@@ -1277,7 +1277,7 @@ export const usersRouter = router({
 
       const previousRole = user.role;
       let meta: any = {};
-      try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch {}
+      try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch { /* metadata parse failed — use default */ }
       if (!meta.roleHistory) meta.roleHistory = [];
       meta.roleHistory.push({
         from: previousRole,
@@ -1335,7 +1335,7 @@ export const usersRouter = router({
           ipAddress: l.ipAddress || '',
           timestamp: l.createdAt?.toISOString() || '',
         }));
-      } catch (e) { return []; }
+      } catch (e) { logger.warn("[Users] getAuditTrail query failed:", e); return []; }
     }),
 
   /**
@@ -1367,7 +1367,7 @@ export const usersRouter = router({
         promotionalAlerts: prefs.promotionalAlerts ?? false,
         weeklyDigest: prefs.weeklyDigest ?? true,
       };
-    } catch (e) { return { emailNotifications: true, pushNotifications: true, smsNotifications: false, inAppNotifications: true, loadUpdates: true, bidAlerts: true, paymentAlerts: true, messageAlerts: true, missionAlerts: true, promotionalAlerts: false, weeklyDigest: true }; }
+    } catch (e) { logger.warn("[Users] getNotificationPreferences query failed:", e); return { emailNotifications: true, pushNotifications: true, smsNotifications: false, inAppNotifications: true, loadUpdates: true, bidAlerts: true, paymentAlerts: true, messageAlerts: true, missionAlerts: true, promotionalAlerts: false, weeklyDigest: true }; }
   }),
 
   /**
@@ -1448,7 +1448,7 @@ export const usersRouter = router({
           changes: { detail: `Admin ${currentUser.email} impersonated user ${targetUser.email}` },
           ipAddress: (ctx as any).req?.ip || '',
         } as any);
-      } catch {}
+      } catch (e) { logger.warn("[Users] impersonation audit log failed:", e); }
 
       const { authService } = await import("../_core/auth");
       const impersonationToken = authService.createSessionToken({
@@ -1523,7 +1523,7 @@ export const usersRouter = router({
             userId: user.id, action: 'PASSWORD_RESET_REQUESTED', entityType: 'user', entityId: user.id,
             changes: { email: input.email },
           } as any);
-        } catch {}
+        } catch (e) { logger.warn("[Users] password reset request audit log failed:", e); }
       } catch (err: any) {
         logger.error("[PasswordReset] Request error:", err?.message?.slice(0, 200));
       }
@@ -1566,7 +1566,7 @@ export const usersRouter = router({
           userId: tokenRow.userId, action: 'PASSWORD_RESET', entityType: 'user', entityId: tokenRow.userId,
           changes: { method: 'token_reset' },
         } as any);
-      } catch {}
+      } catch (e) { logger.warn("[Users] password reset audit log failed:", e); }
 
       // 7. Send confirmation email
       try {
@@ -1575,7 +1575,7 @@ export const usersRouter = router({
           const { notifyPasswordChanged } = await import("../services/notifications");
           notifyPasswordChanged({ email: user.email, name: user.name || "" });
         }
-      } catch {}
+      } catch (e) { logger.warn("[Users] password reset confirmation notification failed:", e); }
 
       return { success: true };
     }),

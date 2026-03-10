@@ -399,7 +399,7 @@ async function getDbWeatherAlerts(): Promise<ExtCache["weatherAlerts"]> {
       let states: string[] = [];
       try {
         states = typeof r.stateCodes === "string" ? JSON.parse(r.stateCodes) : r.stateCodes || [];
-      } catch {}
+      } catch { /* stateCodes parse failed — use default */ }
       return {
         state: states.join(","),
         event: r.eventType || "",
@@ -479,7 +479,7 @@ async function getDbEnhancement(): Promise<DbEnhancement> {
       _dbEnhCache = { data: redisCached, ts: Date.now() };
       return redisCached;
     }
-  } catch {}
+  } catch (e) { logger.warn("[HotZones] Redis cache lookup failed:", e); }
 
   return await _fetchDbEnhancement();
 }
@@ -553,7 +553,7 @@ async function _fetchDbEnhancement(): Promise<DbEnhancement> {
         if (!result.fmcsaEquipByState[r.state]) result.fmcsaEquipByState[r.state] = [];
         result.fmcsaEquipByState[r.state].push({ type: r.cargo, count: Number(r.cnt) });
       }
-    } catch {}
+    } catch (e) { logger.warn("[HotZones] FMCSA equipment query failed:", e); }
 
     // ═══ FMCSA CRASHES (90-day by state) ═══
     try {
@@ -570,7 +570,7 @@ async function _fetchDbEnhancement(): Promise<DbEnhancement> {
           count: Number(r.cnt), fatalities: Number(r.fat), injuries: Number(r.inj),
         };
       }
-    } catch {}
+    } catch (e) { logger.warn("[HotZones] FMCSA crashes query failed:", e); }
 
     // ═══ FMCSA INSPECTIONS (30-day by state) ═══
     try {
@@ -589,7 +589,7 @@ async function _fetchDbEnhancement(): Promise<DbEnhancement> {
           oosRate: cnt > 0 ? +(Number(r.oos) / cnt * 100).toFixed(1) : 0,
         };
       }
-    } catch {}
+    } catch (e) { logger.warn("[HotZones] FMCSA inspections query failed:", e); }
 
   } catch (e) { /* DB may not be ready */ }
   _dbEnhCache = { data: result, ts: Date.now() };
@@ -637,7 +637,7 @@ async function getCachedAiTrends(dbData: DbEnhancement): Promise<Record<string, 
         map[zone.id] = { trend: trend.direction, anomaly: anomaly.isAnomaly };
       }
     }
-  } catch {}
+  } catch (e) { logger.warn("[HotZones] AI trend analysis failed:", e); }
   _aiTrendCache = { data: map, ts: Date.now() };
   return map;
 }
@@ -964,7 +964,7 @@ export const hotZonesRouter = router({
           zoneRadiusMiles: zone.radius,
           loadDensity: +(zone.loadCount / Math.max(Math.PI * zone.radius * zone.radius, 1)).toFixed(4),
         };
-      } catch {}
+      } catch (e) { logger.warn("[HotZones] geoIntelligence analysis failed:", e); }
 
       return {
         ...zone, roleContext: roleCtx,
@@ -1014,7 +1014,7 @@ export const hotZonesRouter = router({
           }
         }
         aiProximityRanked.sort((a, b) => b.aiProximityScore - a.aiProximityScore);
-      } catch {}
+      } catch (e) { logger.warn("[HotZones] AI proximity scoring failed:", e); }
 
       return {
         opportunities: aiProximityRanked,
@@ -1315,7 +1315,7 @@ export const hotZonesRouter = router({
       }));
       result.weatherAlerts = (rows(weatherR) || []).map((r: any) => {
         let states: string[] = [];
-        try { states = typeof r.state_codes === "string" ? JSON.parse(r.state_codes) : (r.state_codes || []); } catch {}
+        try { states = typeof r.state_codes === "string" ? JSON.parse(r.state_codes) : (r.state_codes || []); } catch { /* state_codes parse failed — use default */ }
         return { id: r.id, states, event: r.event_type, severity: r.severity, urgency: r.urgency, headline: r.headline };
       });
       result.hazmatIncidents = (rows(hazmatR) || []).map((r: any) => ({
@@ -1418,7 +1418,7 @@ export const hotZonesRouter = router({
       const wxRows = rows(wxR) || [];
       const weatherAlerts = wxRows.map((r: any) => {
         let st: string[] = [];
-        try { st = typeof r.state_codes === "string" ? JSON.parse(r.state_codes) : (r.state_codes || []); } catch {}
+        try { st = typeof r.state_codes === "string" ? JSON.parse(r.state_codes) : (r.state_codes || []); } catch { /* state_codes parse failed — use default */ }
         return { id: r.id, states: st, event: r.event_type, severity: r.severity, headline: r.headline };
       });
 

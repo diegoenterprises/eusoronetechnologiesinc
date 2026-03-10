@@ -33,7 +33,7 @@ async function resolveUserId(ctxUser: any): Promise<number> {
     try {
       const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
       if (row) return row.id;
-    } catch {}
+    } catch (e) { logger.warn("[Messages] resolveUserId lookup failed:", e); }
   }
   return 0;
 }
@@ -343,7 +343,7 @@ export const messagesRouter = router({
           messageType: input.type,
           timestamp: new Date().toISOString(),
         } as any);
-      } catch {}
+      } catch (e) { logger.warn("[Messages] WebSocket emit failed:", e); }
 
       // Create notifications for all OTHER participants + email/SMS
       try {
@@ -365,13 +365,13 @@ export const messagesRouter = router({
           // Email + SMS notification for the message
           lookupAndNotify(p.userId, { type: "new_message", senderName: sender?.name || "User", preview: input.content, conversationId: String(convId) });
         }
-      } catch {}
+      } catch (e) { logger.warn("[Messages] participant notification failed:", e); }
 
       // Auto-index message for AI semantic search (fire-and-forget)
       try {
         const { indexMessage } = await import("../services/embeddings/aiTurbocharge");
         indexMessage({ id: msgId, content: input.content, senderName: sender?.name, conversationId: convId, senderId: userId });
-      } catch {}
+      } catch (e) { logger.warn("[Messages] AI message indexing failed:", e); }
 
       return {
         id: String(msgId),
@@ -444,7 +444,7 @@ export const messagesRouter = router({
             data: { category: "system", conversationId: String(convId), actionUrl: "/messages" },
           });
         }
-      } catch {}
+      } catch (e) { logger.warn("[Messages] reply notification failed:", e); }
 
       return { success: true, messageId: String(msgId) };
     }),
@@ -724,7 +724,7 @@ export const messagesRouter = router({
               .where(eq(conversations.id, convId));
           }
         }
-      } catch {}
+      } catch (e) { logger.warn("[Messages] deleteConversation cleanup failed:", e); }
 
       return { success: true, conversationId: input.conversationId };
     }),
@@ -1070,7 +1070,7 @@ export const messagesRouter = router({
           messageType,
           timestamp: new Date().toISOString(),
         } as any);
-      } catch {}
+      } catch (e) { logger.warn("[Messages] payment WebSocket emit failed:", e); }
 
       // Create notification for recipient
       await createNotification({
@@ -1291,7 +1291,7 @@ export const messagesRouter = router({
           messageType: "payment_sent",
           timestamp: new Date().toISOString(),
         } as any);
-      } catch {}
+      } catch (e) { logger.warn("[Messages] payment fulfillment WebSocket emit failed:", e); }
 
       // Notify the requester that their payment request was fulfilled
       await createNotification({

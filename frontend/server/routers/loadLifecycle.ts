@@ -312,16 +312,16 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
       // Only enforce if load involves hazmat
       if (!ctx.load?.hazmatClass && ctx.load?.cargoType !== "hazmat") return null;
       const carrierId = ctx.load?.catalystId || (ctx.data?.carrierId as number | undefined);
-      if (!carrierId) return IS_PROD ? guard.errorMessage : null;
+      if (!carrierId) return guard.errorMessage;
       try {
         const db = await getDb();
-        if (!db) return IS_PROD ? guard.errorMessage : null;
+        if (!db) return guard.errorMessage;
         // Check user record for hazmat authorization
         const [carrier] = await db.execute(sql`
           SELECT hazmatLicense, hazmatExpiry FROM users WHERE id = ${carrierId} LIMIT 1
         `);
         const row = ((carrier as unknown as any[][])?.[0] || [])[0];
-        if (!row) return IS_PROD ? guard.errorMessage : null;
+        if (!row) return guard.errorMessage;
         if (!row.hazmatLicense) return guard.errorMessage;
         // Check expiry
         if (row.hazmatExpiry && new Date(row.hazmatExpiry) < new Date()) {
@@ -329,17 +329,17 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
         }
         return null;
       } catch {
-        return IS_PROD ? guard.errorMessage : null;
+        return guard.errorMessage;
       }
     }
 
     // ── Carrier insurance minimum guard (at AWARDED→ACCEPTED) ──
     case "carrier_insurance_minimum": {
       const insCarrierId = ctx.load?.catalystId || (ctx.data?.carrierId as number | undefined);
-      if (!insCarrierId) return IS_PROD ? guard.errorMessage : null;
+      if (!insCarrierId) return guard.errorMessage;
       try {
         const db = await getDb();
-        if (!db) return IS_PROD ? guard.errorMessage : null;
+        if (!db) return guard.errorMessage;
         // Check for active liability + cargo insurance
         const isHazmat = !!ctx.load?.hazmatClass || ctx.load?.cargoType === "hazmat";
         const minLiability = isHazmat ? 5000000 : 750000;
@@ -364,8 +364,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
         if (!cargoOk) return `Carrier cargo insurance below $${minCargo.toLocaleString()} minimum for this load type`;
         return null;
       } catch {
-        // Don't block on DB errors in non-prod
-        return IS_PROD ? guard.errorMessage : null;
+        return guard.errorMessage;
       }
     }
 
@@ -374,16 +373,16 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
       // Only enforce if load involves hazmat
       if (!ctx.load?.hazmatClass && ctx.load?.cargoType !== "hazmat") return null;
       const hazDriverId = ctx.load?.driverId || (ctx.data?.driverId as number | undefined);
-      if (!hazDriverId) return IS_PROD ? guard.errorMessage : null;
+      if (!hazDriverId) return guard.errorMessage;
       try {
         const db = await getDb();
-        if (!db) return IS_PROD ? guard.errorMessage : null;
+        if (!db) return guard.errorMessage;
         const [result] = await db.execute(sql`
           SELECT hazmatEndorsement, hazmatExpiry, cdlEndorsements
           FROM driver_profiles WHERE userId = ${hazDriverId} LIMIT 1
         `) as unknown as any[][];
         const driver = (result || [])[0];
-        if (!driver) return IS_PROD ? guard.errorMessage : null;
+        if (!driver) return guard.errorMessage;
         // Check H or X endorsement
         const endorsements: string = driver.cdlEndorsements || "";
         const hasH = endorsements.includes("H") || endorsements.includes("X");
@@ -394,7 +393,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
         }
         return null;
       } catch {
-        return IS_PROD ? guard.errorMessage : null;
+        return guard.errorMessage;
       }
     }
 
@@ -406,21 +405,21 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
         (trailerType.toLowerCase().includes("tanker") || trailerType.toLowerCase().includes("mc-") || trailerType.toLowerCase().includes("mc_"));
       if (!isTanker) return null;
       const tankDriverId = ctx.load?.driverId || (ctx.data?.driverId as number | undefined);
-      if (!tankDriverId) return IS_PROD ? guard.errorMessage : null;
+      if (!tankDriverId) return guard.errorMessage;
       try {
         const db = await getDb();
-        if (!db) return IS_PROD ? guard.errorMessage : null;
+        if (!db) return guard.errorMessage;
         const [result] = await db.execute(sql`
           SELECT cdlEndorsements FROM driver_profiles WHERE userId = ${tankDriverId} LIMIT 1
         `) as unknown as any[][];
         const driver = (result || [])[0];
-        if (!driver) return IS_PROD ? guard.errorMessage : null;
+        if (!driver) return guard.errorMessage;
         const endorsements: string = driver.cdlEndorsements || "";
         const hasN = endorsements.includes("N") || endorsements.includes("X");
         if (!hasN) return guard.errorMessage;
         return null;
       } catch {
-        return IS_PROD ? guard.errorMessage : null;
+        return guard.errorMessage;
       }
     }
 
@@ -588,15 +587,49 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
       return null;
     }
 
-    // ── Approval guards (handled by approval gate system) ──
-    case "rate_within_limit":
-    case "payment_amount_valid":
+    // ── Rate & payment validation guards ──
+    case "rate_within_limit": {
+      const rcRate = parseFloat(String(ctx.load?.rate || "0"));
+      const rcDistance = parseFloat(String(ctx.load?.distance || ctx.load?.miles || "0"));
+      // If rate is zero or negative, fail immediately
+      if (rcRate <= 0) return guard.errorMessage || "Load rate must be greater than $0";
+      // Hard ceiling: $500,000 total
+      if (rcRate > 500000) return guard.errorMessage || "Load rate exceeds maximum allowed ($500,000)";
+      // Per-mile check when distance is known
+      if (rcDistance > 0) {
+        const ratePerMile = rcRate / rcDistance;
+        if (ratePerMile < 0.50) return guard.errorMessage || `Rate per mile ($${ratePerMile.toFixed(2)}) is below minimum ($0.50/mi)`;
+        if (ratePerMile > 15.00) {
+          // Check for an approved rate_override before rejecting
+          try {
+            const rdb = await getDb();
+            if (rdb) {
+              const [overrideRows] = await rdb.execute(sql`
+                SELECT id FROM approval_requests
+                WHERE load_id = ${ctx.load?.id} AND gate_id = 'rate_override' AND status = 'APPROVED'
+                LIMIT 1
+              `) as unknown as any[][];
+              if ((overrideRows || []).length > 0) return null; // approved override — bypass
+            }
+          } catch { /* DB error — fall through to reject */ }
+          return guard.errorMessage || `Rate per mile ($${ratePerMile.toFixed(2)}) exceeds maximum ($15.00/mi) — approval required`;
+        }
+      }
       return null;
+    }
+    case "payment_amount_valid": {
+      const payRate = parseFloat(String(ctx.load?.rate || "0"));
+      if (!payRate || payRate <= 0) return guard.errorMessage || "Load must have a positive rate/amount set before proceeding";
+      return null;
+    }
 
     // ── Cargo-aware guards (tanker, hazmat, reefer, oversize, interstate, state-specific) ──
     case "tanker_inspection_valid":
     case "vapor_recovery_valid":
     case "tank_washout_valid":
+    case "tank_pressure_test":
+    case "product_compatibility_verified":
+    case "tanker_endorsement_valid":
     case "tanker_hose_inspection":
     case "tanker_compartment_segregation":
     case "tanker_residual_handling":
@@ -604,27 +637,38 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
     case "hazmat_security_plan_active":
     case "hazmat_placard_verified":
     case "hazmat_route_compliant":
+    case "emergency_response_plan":
     case "hazmat_placard_photo":
     case "hazmat_loading_sequence":
     case "hazmat_decontamination":
     case "reefer_temp_verified":
+    case "reefer_temp_set":
     case "reefer_pretrip_complete":
+    case "reefer_pre_cool_complete":
+    case "continuous_temp_monitoring":
     case "fsma_cert_valid":
     case "reefer_precool_verified":
     case "reefer_delivery_temp_verified":
     case "cold_chain_declaration":
     case "oversize_permit_valid":
+    case "escort_vehicle_confirmed":
     case "route_survey_complete":
     case "flatbed_securement_verified":
     case "flatbed_dimension_verified":
     case "oversize_escort_confirmed":
+    case "animal_welfare_check":
+    case "ventilation_verified":
+    case "28hr_rule_compliant":
     case "livestock_welfare_check":
     case "livestock_ventilation_verified":
     case "livestock_28hr_plan":
     case "livestock_count_verified":
+    case "vehicle_inventory_complete":
+    case "tie_down_inspection":
     case "auto_vin_verified":
     case "auto_condition_documented":
     case "auto_tiedown_verified":
+    case "chassis_inspection_valid":
     case "intermodal_twistlock_verified":
     case "intermodal_vgm_verified":
     case "ifta_valid":
@@ -632,7 +676,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
     case "carb_compliant":
     case "weight_distance_tax": {
       const profile = buildCargoProfile(ctx.load);
-      return evaluateCargoGuard(guard.check, profile, guard.errorMessage);
+      return await evaluateCargoGuard(guard.check, profile, guard.errorMessage, ctx.load?.id);
     }
 
     // ── Escort arrangement gate (async DB check) ──
@@ -992,18 +1036,61 @@ function buildCargoProfile(load: any): CargoProfile {
   };
 }
 
-function evaluateCargoGuard(check: string, profile: CargoProfile, errorMessage: string): string | null {
+/**
+ * Helper: check documents table for a matching document type on this load.
+ * Returns true if at least one matching document is found.
+ */
+async function hasDocumentOfType(loadId: number | undefined, docType: string): Promise<boolean> {
+  if (!loadId) return false;
+  try {
+    const db = await getDb();
+    if (!db) return false;
+    const [rows] = await db.execute(sql`
+      SELECT id FROM documents
+      WHERE load_id = ${loadId} AND type = ${docType}
+      LIMIT 1
+    `) as unknown as any[][];
+    return (rows || []).length > 0;
+  } catch { return false; }
+}
+
+async function evaluateCargoGuard(check: string, profile: CargoProfile, errorMessage: string, loadId?: number): Promise<string | null> {
   switch (check) {
     // ── Tanker-specific ──
-    case "tanker_inspection_valid":
+    case "tanker_inspection_valid": {
       if (!profile.isTanker) return null;
-      return IS_PROD ? errorMessage : null; // In prod, require explicit check
-    case "vapor_recovery_valid":
+      if (profile.complianceChecks?.tanker_inspection_valid?.passed) return null;
+      if (await hasDocumentOfType(loadId, "tanker_inspection")) return null;
+      return errorMessage;
+    }
+    case "vapor_recovery_valid": {
       if (!profile.isTanker || !HAZMAT_CARGO.has(profile.cargoType)) return null;
-      return IS_PROD ? errorMessage : null;
-    case "tank_washout_valid":
+      if (profile.complianceChecks?.vapor_recovery_valid?.passed) return null;
+      if (await hasDocumentOfType(loadId, "vapor_recovery")) return null;
+      return errorMessage;
+    }
+    case "tank_washout_valid": {
       if (!profile.isTanker) return null;
-      return IS_PROD ? errorMessage : null;
+      if (profile.complianceChecks?.tank_washout_valid?.passed) return null;
+      if (await hasDocumentOfType(loadId, "tank_washout")) return null;
+      return errorMessage;
+    }
+    case "tank_pressure_test": {
+      if (!profile.isTanker) return null;
+      if (profile.complianceChecks?.tank_pressure_test?.passed) return null;
+      if (await hasDocumentOfType(loadId, "pressure_test")) return null;
+      return errorMessage;
+    }
+    case "product_compatibility_verified": {
+      if (!profile.isTanker) return null;
+      if (profile.complianceChecks?.product_compatibility_verified?.passed) return null;
+      return errorMessage;
+    }
+    case "tanker_endorsement_valid": {
+      if (!profile.isTanker) return null;
+      if (profile.complianceChecks?.tanker_endorsement_valid?.passed) return null;
+      return errorMessage;
+    }
 
     // ── Tanker vertical guards (v2.2) ──
     case "tanker_hose_inspection":
@@ -1017,19 +1104,34 @@ function evaluateCargoGuard(check: string, profile: CargoProfile, errorMessage: 
       return profile.complianceChecks?.tanker_residual_handling?.passed ? null : errorMessage;
 
     // ── Hazmat-specific ──
-    case "hazmat_shipping_papers":
+    case "hazmat_placard_verified": {
       if (!profile.isHazmat) return null;
-      return IS_PROD ? errorMessage : null;
-    case "hazmat_security_plan_active":
+      if (profile.complianceChecks?.hazmat_placard_verified?.passed) return null;
+      return errorMessage;
+    }
+    case "hazmat_shipping_papers": {
       if (!profile.isHazmat) return null;
-      return IS_PROD ? errorMessage : null;
-    case "hazmat_placard_verified":
+      if (profile.complianceChecks?.hazmat_shipping_papers?.passed) return null;
+      if (await hasDocumentOfType(loadId, "shipping_papers")) return null;
+      return errorMessage;
+    }
+    case "hazmat_security_plan_active": {
       if (!profile.isHazmat) return null;
-      return IS_PROD ? errorMessage : null;
-    case "hazmat_route_compliant":
+      if (profile.complianceChecks?.hazmat_security_plan_active?.passed) return null;
+      return errorMessage;
+    }
+    case "hazmat_route_compliant": {
       if (!profile.isHazmat) return null;
-      // Hazmat route compliance — check for restricted routes
-      return null; // Always pass for now; route engine integration TBD
+      // Hazmat route compliance — route engine integration TBD
+      if (profile.complianceChecks?.hazmat_route_compliant?.passed) return null;
+      return errorMessage;
+    }
+    case "emergency_response_plan": {
+      if (!profile.isHazmat) return null;
+      if (profile.complianceChecks?.emergency_response_plan?.passed) return null;
+      if (await hasDocumentOfType(loadId, "emergency_response")) return null;
+      return errorMessage;
+    }
 
     // ── Hazmat vertical guards (v2.2) ──
     case "hazmat_placard_photo":
@@ -1043,15 +1145,37 @@ function evaluateCargoGuard(check: string, profile: CargoProfile, errorMessage: 
       return profile.complianceChecks?.hazmat_decontamination?.passed ? null : errorMessage;
 
     // ── Reefer / Temperature-controlled ──
-    case "reefer_temp_verified":
+    case "reefer_temp_verified": {
       if (!profile.isReefer) return null;
-      return IS_PROD ? errorMessage : null;
-    case "reefer_pretrip_complete":
+      if (profile.complianceChecks?.reefer_temp_verified?.passed) return null;
+      return errorMessage;
+    }
+    case "reefer_temp_set": {
       if (!profile.isReefer) return null;
-      return IS_PROD ? errorMessage : null;
-    case "fsma_cert_valid":
+      if (profile.complianceChecks?.reefer_temp_set?.passed) return null;
+      return errorMessage;
+    }
+    case "reefer_pretrip_complete": {
+      if (!profile.isReefer) return null;
+      if (profile.complianceChecks?.reefer_pretrip_complete?.passed) return null;
+      return errorMessage;
+    }
+    case "reefer_pre_cool_complete": {
+      if (!profile.isReefer) return null;
+      if (profile.complianceChecks?.reefer_pre_cool_complete?.passed) return null;
+      return errorMessage;
+    }
+    case "continuous_temp_monitoring": {
+      if (!profile.isReefer) return null;
+      if (profile.complianceChecks?.continuous_temp_monitoring?.passed) return null;
+      return errorMessage;
+    }
+    case "fsma_cert_valid": {
       if (!profile.isReefer && !profile.cargoType.includes("food")) return null;
-      return IS_PROD ? errorMessage : null;
+      if (profile.complianceChecks?.fsma_cert_valid?.passed) return null;
+      if (await hasDocumentOfType(loadId, "fsma_cert")) return null;
+      return errorMessage;
+    }
 
     // ── Reefer vertical guards (v2.2) ──
     case "reefer_precool_verified":
@@ -1065,12 +1189,22 @@ function evaluateCargoGuard(check: string, profile: CargoProfile, errorMessage: 
       return profile.complianceChecks?.cold_chain_declaration?.passed ? null : errorMessage;
 
     // ── Oversize ──
-    case "oversize_permit_valid":
+    case "oversize_permit_valid": {
       if (!profile.isOversize) return null;
-      return IS_PROD ? errorMessage : null;
-    case "route_survey_complete":
+      if (profile.complianceChecks?.oversize_permit_valid?.passed) return null;
+      if (await hasDocumentOfType(loadId, "oversize_permit")) return null;
+      return errorMessage;
+    }
+    case "escort_vehicle_confirmed": {
       if (!profile.isOversize) return null;
-      return IS_PROD ? errorMessage : null;
+      if (profile.complianceChecks?.escort_vehicle_confirmed?.passed) return null;
+      return errorMessage;
+    }
+    case "route_survey_complete": {
+      if (!profile.isOversize) return null;
+      if (profile.complianceChecks?.route_survey_complete?.passed) return null;
+      return errorMessage;
+    }
 
     // ── Flatbed / Oversize vertical guards (v2.2) ──
     case "flatbed_securement_verified":
@@ -1082,6 +1216,23 @@ function evaluateCargoGuard(check: string, profile: CargoProfile, errorMessage: 
     case "oversize_escort_confirmed":
       if (!profile.isOversize) return null;
       return profile.complianceChecks?.oversize_escort_confirmed?.passed ? null : errorMessage;
+
+    // ── Livestock guards ──
+    case "animal_welfare_check": {
+      if (!profile.isLivestock) return null;
+      if (profile.complianceChecks?.animal_welfare_check?.passed) return null;
+      return errorMessage;
+    }
+    case "ventilation_verified": {
+      if (!profile.isLivestock) return null;
+      if (profile.complianceChecks?.ventilation_verified?.passed) return null;
+      return errorMessage;
+    }
+    case "28hr_rule_compliant": {
+      if (!profile.isLivestock) return null;
+      if (profile.complianceChecks?.["28hr_rule_compliant"]?.passed) return null;
+      return errorMessage;
+    }
 
     // ── Livestock vertical guards (v2.2) ──
     case "livestock_welfare_check":
@@ -1097,6 +1248,18 @@ function evaluateCargoGuard(check: string, profile: CargoProfile, errorMessage: 
       if (!profile.isLivestock) return null;
       return profile.complianceChecks?.livestock_count_verified?.passed ? null : errorMessage;
 
+    // ── Auto Transport guards ──
+    case "vehicle_inventory_complete": {
+      if (!profile.isAutoTransport) return null;
+      if (profile.complianceChecks?.vehicle_inventory_complete?.passed) return null;
+      return errorMessage;
+    }
+    case "tie_down_inspection": {
+      if (!profile.isAutoTransport) return null;
+      if (profile.complianceChecks?.tie_down_inspection?.passed) return null;
+      return errorMessage;
+    }
+
     // ── Auto Transport vertical guards (v2.2) ──
     case "auto_vin_verified":
       if (!profile.isAutoTransport) return null;
@@ -1108,6 +1271,14 @@ function evaluateCargoGuard(check: string, profile: CargoProfile, errorMessage: 
       if (!profile.isAutoTransport) return null;
       return profile.complianceChecks?.auto_tiedown_verified?.passed ? null : errorMessage;
 
+    // ── Intermodal guards ──
+    case "chassis_inspection_valid": {
+      if (!profile.isIntermodal) return null;
+      if (profile.complianceChecks?.chassis_inspection_valid?.passed) return null;
+      if (await hasDocumentOfType(loadId, "chassis_inspection")) return null;
+      return errorMessage;
+    }
+
     // ── Intermodal vertical guards (v2.2) ──
     case "intermodal_twistlock_verified":
       if (!profile.isIntermodal) return null;
@@ -1117,20 +1288,32 @@ function evaluateCargoGuard(check: string, profile: CargoProfile, errorMessage: 
       return profile.complianceChecks?.intermodal_vgm_verified?.passed ? null : errorMessage;
 
     // ── Interstate compliance ──
-    case "ifta_valid":
+    case "ifta_valid": {
       if (!profile.isInterstate) return null;
-      return IS_PROD ? errorMessage : null;
-    case "irp_valid":
+      if (profile.complianceChecks?.ifta_valid?.passed) return null;
+      if (await hasDocumentOfType(loadId, "ifta_cert")) return null;
+      return errorMessage;
+    }
+    case "irp_valid": {
       if (!profile.isInterstate) return null;
-      return IS_PROD ? errorMessage : null;
+      if (profile.complianceChecks?.irp_valid?.passed) return null;
+      if (await hasDocumentOfType(loadId, "irp_cert")) return null;
+      return errorMessage;
+    }
 
     // ── State-specific ──
-    case "carb_compliant":
+    case "carb_compliant": {
       if (!profile.operatingStates.includes("CA")) return null;
-      return IS_PROD ? errorMessage : null;
-    case "weight_distance_tax":
+      if (profile.complianceChecks?.carb_compliant?.passed) return null;
+      if (await hasDocumentOfType(loadId, "carb_compliance")) return null;
+      return errorMessage;
+    }
+    case "weight_distance_tax": {
       if (!profile.operatingStates.some(s => ["OR", "NM", "NY", "KY"].includes(s))) return null;
-      return IS_PROD ? errorMessage : null;
+      if (profile.complianceChecks?.weight_distance_tax?.passed) return null;
+      if (await hasDocumentOfType(loadId, "weight_distance_tax")) return null;
+      return errorMessage;
+    }
 
     default:
       return null;
@@ -1347,7 +1530,34 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
                 `);
               }
               logger.info(`[Cancellation] Load ${loadId} TONU: $${tonuAmount.toFixed(2)} credited to carrier ${cancelCarrierId}`);
-            } catch (tonuErr: any) { logger.warn(`[Cancellation] TONU error:`, tonuErr?.message); }
+            } catch (tonuErr: any) {
+              logger.error(`[Cancellation] TONU effect FAILED for load ${loadId} (status=${cancelStatus}, amount=$${tonuAmount.toFixed(2)}, carrier=${cancelCarrierId}):`, tonuErr?.message);
+              // Record failed effect for admin review
+              try {
+                await db.execute(sql`
+                  INSERT INTO system_alerts (type, severity, title, message, metadata, created_at)
+                  VALUES ('failed_financial_effect', 'critical', ${`TONU payment failed — Load #${loadId}`},
+                    ${`TONU of $${tonuAmount.toFixed(2)} could not be credited to carrier ${cancelCarrierId}. Manual intervention required. Error: ${tonuErr?.message}`},
+                    ${JSON.stringify({ loadId, effectType: 'TONU', amount: tonuAmount, carrierId: cancelCarrierId, cancelStatus, error: tonuErr?.message })},
+                    NOW())
+                `);
+              } catch { /* alert insert best-effort */ }
+              // Notify admin/dispatch via WebSocket
+              try {
+                const { getIO } = await import("../services/socketService");
+                const io = getIO();
+                if (io) {
+                  io.to("role:ADMIN").to("role:DISPATCH").emit("system:alert", {
+                    type: "failed_financial_effect",
+                    severity: "critical",
+                    title: `TONU payment failed — Load #${loadId}`,
+                    message: `$${tonuAmount.toFixed(2)} TONU could not be credited to carrier ${cancelCarrierId}. Manual intervention required.`,
+                    loadId,
+                    timestamp: new Date().toISOString(),
+                  });
+                }
+              } catch { /* ws notification best-effort */ }
+            }
           }
           break;
         }
@@ -1373,7 +1583,32 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
                 `);
               }
               logger.info(`[Cancellation] Load ${loadId} TONU+Deadhead: $${totalTonu.toFixed(2)} credited to carrier ${cancelCarrierId}`);
-            } catch (tonuErr: any) { logger.warn(`[Cancellation] TONU error:`, tonuErr?.message); }
+            } catch (tonuErr: any) {
+              logger.error(`[Cancellation] TONU+Deadhead effect FAILED for load ${loadId} (status=${cancelStatus}, amount=$${totalTonu.toFixed(2)}, carrier=${cancelCarrierId}):`, tonuErr?.message);
+              try {
+                await db.execute(sql`
+                  INSERT INTO system_alerts (type, severity, title, message, metadata, created_at)
+                  VALUES ('failed_financial_effect', 'critical', ${`TONU+Deadhead payment failed — Load #${loadId}`},
+                    ${`TONU+Deadhead of $${totalTonu.toFixed(2)} could not be credited to carrier ${cancelCarrierId}. Manual intervention required. Error: ${tonuErr?.message}`},
+                    ${JSON.stringify({ loadId, effectType: 'TONU_DEADHEAD', amount: totalTonu, carrierId: cancelCarrierId, cancelStatus, error: tonuErr?.message })},
+                    NOW())
+                `);
+              } catch { /* alert insert best-effort */ }
+              try {
+                const { getIO } = await import("../services/socketService");
+                const io = getIO();
+                if (io) {
+                  io.to("role:ADMIN").to("role:DISPATCH").emit("system:alert", {
+                    type: "failed_financial_effect",
+                    severity: "critical",
+                    title: `TONU+Deadhead payment failed — Load #${loadId}`,
+                    message: `$${totalTonu.toFixed(2)} could not be credited to carrier ${cancelCarrierId}. Manual intervention required.`,
+                    loadId,
+                    timestamp: new Date().toISOString(),
+                  });
+                }
+              } catch { /* ws notification best-effort */ }
+            }
           }
           break;
         }
@@ -1400,7 +1635,21 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
                 `);
               }
               logger.info(`[Cancellation] Load ${loadId} partial rate (${Math.round(partialPercent * 100)}%): $${netPay.toFixed(2)} credited to carrier ${cancelCarrierId}`);
-            } catch (partErr: any) { logger.warn(`[Cancellation] Partial rate error:`, partErr?.message); }
+            } catch (partErr: any) {
+              logger.error(`[Cancellation] Partial settlement effect FAILED for load ${loadId} (${Math.round(partialPercent * 100)}%, amount=$${partialRate.toFixed(2)}, carrier=${cancelCarrierId}):`, partErr?.message);
+              try {
+                const pDb = await getDb();
+                if (pDb) {
+                  await pDb.execute(sql`
+                    INSERT INTO system_alerts (type, severity, title, message, metadata, created_at)
+                    VALUES ('failed_financial_effect', 'high', ${`Partial settlement failed — Load #${loadId}`},
+                      ${`Partial settlement of $${partialRate.toFixed(2)} (${Math.round(partialPercent * 100)}%) could not be processed for carrier ${cancelCarrierId}. Error: ${partErr?.message}`},
+                      ${JSON.stringify({ loadId, effectType: 'PARTIAL_SETTLEMENT', amount: partialRate, percent: partialPercent, carrierId: cancelCarrierId, error: partErr?.message })},
+                      NOW())
+                  `);
+                }
+              } catch { /* alert insert best-effort */ }
+            }
           }
           break;
         }
@@ -1426,7 +1675,33 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
           if ((escRows || []).length > 0) {
             logger.info(`[Escrow] Released ${(escRows || []).length} escrow hold(s) for load ${loadId}`);
           }
-        } catch (escErr: any) { logger.warn(`[Escrow] Release error:`, escErr?.message); }
+        } catch (escErr: any) {
+          logger.error(`[Escrow] Release effect FAILED for load ${loadId}:`, escErr?.message);
+          try {
+            await escDb.execute(sql`
+              INSERT INTO system_alerts (type, severity, title, message, metadata, created_at)
+              VALUES ('failed_financial_effect', 'critical', ${`Escrow release failed — Load #${loadId}`},
+                ${`Escrow holds could not be released for load ${loadId}. Shipper funds may remain locked. Manual intervention required. Error: ${escErr?.message}`},
+                ${JSON.stringify({ loadId, effectType: 'ESCROW_RELEASE', error: escErr?.message })},
+                NOW())
+            `);
+          } catch { /* alert insert best-effort */ }
+          // Notify admin/dispatch — escrow release failures need immediate attention
+          try {
+            const { getIO } = await import("../services/socketService");
+            const io = getIO();
+            if (io) {
+              io.to("role:ADMIN").to("role:DISPATCH").emit("system:alert", {
+                type: "failed_financial_effect",
+                severity: "critical",
+                title: `Escrow release failed — Load #${loadId}`,
+                message: `Escrow holds could not be released. Shipper funds may remain locked. Manual intervention required.`,
+                loadId,
+                timestamp: new Date().toISOString(),
+              });
+            }
+          } catch { /* ws notification best-effort */ }
+        }
         break;
       }
       case "start_tracking":
@@ -1437,7 +1712,19 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
         break;
     }
   } catch (e) {
-    logger.warn(`[LoadLifecycle] Financial effect error (${action}):`, (e as Error).message);
+    logger.error(`[LoadLifecycle] Financial effect FAILED (${action}) for load ${loadId}:`, (e as Error).message);
+    try {
+      const alertDb = await getDb();
+      if (alertDb) {
+        await alertDb.execute(sql`
+          INSERT INTO system_alerts (type, severity, title, message, metadata, created_at)
+          VALUES ('failed_financial_effect', 'high', ${`Financial effect failed: ${action} — Load #${loadId}`},
+            ${`Effect "${action}" failed for load ${loadId}. Error: ${(e as Error).message}`},
+            ${JSON.stringify({ loadId, effectType: action, error: (e as Error).message })},
+            NOW())
+        `);
+      }
+    } catch { /* alert insert best-effort */ }
   }
 }
 
@@ -1486,7 +1773,19 @@ async function generateRouteReport(loadId: number, userId: number) {
     `);
     logger.info(`[LoadLifecycle] Route report: ${pts.length} GPS points, ${dist.toFixed(1)}mi for load ${loadId}`);
   } catch (e) {
-    logger.warn(`[LoadLifecycle] Route report error for load ${loadId}:`, (e as Error).message);
+    logger.error(`[LoadLifecycle] Route report effect FAILED for load ${loadId}:`, (e as Error).message);
+    try {
+      const alertDb = await getDb();
+      if (alertDb) {
+        await alertDb.execute(sql`
+          INSERT INTO system_alerts (type, severity, title, message, metadata, created_at)
+          VALUES ('failed_financial_effect', 'medium', ${`Route report generation failed — Load #${loadId}`},
+            ${`Route report could not be generated for load ${loadId}. Error: ${(e as Error).message}`},
+            ${JSON.stringify({ loadId, effectType: 'route_report', driverId: userId, error: (e as Error).message })},
+            NOW())
+        `);
+      }
+    } catch { /* alert insert best-effort */ }
   }
 }
 
@@ -1514,7 +1813,19 @@ async function logTransition(
          ${JSON.stringify(metadata || {})}, ${success}, ${errorMessage || null})
     `);
   } catch (e) {
-    logger.warn(`[LoadLifecycle] Audit log error:`, (e as Error).message);
+    logger.error(`[LoadLifecycle] Audit log effect FAILED for load ${loadId} (${fromState} → ${toState}):`, (e as Error).message);
+    try {
+      const alertDb = await getDb();
+      if (alertDb) {
+        await alertDb.execute(sql`
+          INSERT INTO system_alerts (type, severity, title, message, metadata, created_at)
+          VALUES ('failed_financial_effect', 'medium', ${`Audit log failed — Load #${loadId}`},
+            ${`State transition audit log (${fromState} → ${toState}) could not be recorded for load ${loadId}. Error: ${(e as Error).message}`},
+            ${JSON.stringify({ loadId, effectType: 'audit_log', fromState, toState, transitionId: transition.id, error: (e as Error).message })},
+            NOW())
+        `);
+      }
+    } catch { /* alert insert best-effort */ }
   }
 }
 

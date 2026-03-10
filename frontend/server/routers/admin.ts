@@ -104,7 +104,7 @@ export const adminRouter = router({
 
         let filtered = userList.map(u => {
           let approvalStatus = "unknown";
-          try { const meta = u.metadata ? JSON.parse(u.metadata as string) : {}; approvalStatus = meta.approvalStatus || "unknown"; } catch {}
+          try { const meta = u.metadata ? JSON.parse(u.metadata as string) : {}; approvalStatus = meta.approvalStatus || "unknown"; } catch { /* metadata parse failed — use default */ }
           const loc = u.currentLocation as any;
           return {
             id: String(u.id),
@@ -200,7 +200,7 @@ export const adminRouter = router({
           entityId: targetId,
           changes: JSON.stringify({ isActive: newActive }),
         });
-      } catch {}
+      } catch (e) { logger.warn("[Admin] audit log insert for user status change failed:", e); }
 
       return { success: true, userId: String(targetId), newStatus: newActive ? "active" : "suspended" };
     }),
@@ -631,7 +631,7 @@ export const adminRouter = router({
         }).from(users).where(eq(users.isVerified, false)).orderBy(desc(users.createdAt)).limit(input?.limit || 50);
         return pending.map(u => {
           let approvalStatus = "pending";
-          try { const meta = u.metadata ? JSON.parse(u.metadata as string) : {}; approvalStatus = meta.approvalStatus || "pending"; } catch {}
+          try { const meta = u.metadata ? JSON.parse(u.metadata as string) : {}; approvalStatus = meta.approvalStatus || "pending"; } catch { /* metadata parse failed — use default */ }
           return {
             id: String(u.id), type: "user" as const, name: u.name || "Unknown",
             email: u.email || "", role: u.role || "DRIVER",
@@ -781,9 +781,9 @@ export const adminRouter = router({
             try {
               const meta = u.metadata ? JSON.parse(u.metadata as string) : {};
               return meta.approvalStatus === 'pending_review';
-            } catch { return false; }
+            } catch { /* metadata parse failed — use default */ return false; }
           }).length;
-        } catch {}
+        } catch (e) { logger.warn("[Admin] pendingApprovals query failed:", e); }
 
         // Recent users (last 10 signups)
         const recentUsers = await db.select({
@@ -807,7 +807,7 @@ export const adminRouter = router({
           monthStart.setHours(0, 0, 0, 0);
           const [monthLoads] = await db.select({ count: sql<number>`count(*)` }).from(loadsTable).where(gte(loadsTable.createdAt, monthStart));
           totalLoadsThisMonth = monthLoads?.count || 0;
-        } catch {}
+        } catch (e) { logger.warn("[Admin] load stats query failed:", e); }
 
         return {
           users: {
@@ -832,7 +832,7 @@ export const adminRouter = router({
           roleBreakdown,
           recentUsers: recentUsers.map(u => {
             let approvalStatus = "unknown";
-            try { const meta = u.metadata ? JSON.parse(u.metadata as string) : {}; approvalStatus = meta.approvalStatus || "unknown"; } catch {}
+            try { const meta = u.metadata ? JSON.parse(u.metadata as string) : {}; approvalStatus = meta.approvalStatus || "unknown"; } catch { /* metadata parse failed — use default */ }
             return {
               id: String(u.id),
               name: u.name || 'Unknown',
@@ -902,7 +902,7 @@ export const adminRouter = router({
           .from(users).leftJoin(companies, eq(users.companyId, companies.id)).where(eq(users.id, uid)).limit(1);
         if (!user) return empty;
         return { id: String(user.id), email: user.email || '', name: user.name || '', phone: user.phone || '', role: user.role || '', companyId: user.companyId, companyName: user.companyName || null, status: user.isActive ? (user.isVerified ? 'active' : 'pending') : 'suspended', verified: user.isVerified || false, createdAt: user.createdAt?.toISOString() || '', lastLogin: user.lastSignedIn?.toISOString() || null, loginCount: 0, permissions: [], notes: [] };
-      } catch (e) { return empty; }
+      } catch (e) { logger.warn("[Admin] getUserDetail query failed:", e); return empty; }
     }),
 
   /**
@@ -948,7 +948,7 @@ export const adminRouter = router({
         let results = rows.map(u => ({ id: String(u.id), type: 'user' as const, name: u.name || '', email: u.email || '', role: u.role || '', companyName: u.companyName || '', submittedAt: u.createdAt?.toISOString() || '', status: 'pending' }));
         if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(r => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q)); }
         return results;
-      } catch (e) { return []; }
+      } catch (e) { logger.warn("[Admin] getPendingVerifications query failed:", e); return []; }
     }),
 
   /**
@@ -1001,7 +1001,7 @@ export const adminRouter = router({
           revenue: { platformFees: Math.round((loadStats?.gmv || 0) * 0.05), subscriptions: 0, total: Math.round((loadStats?.gmv || 0) * 0.05) },
           performance: { avgLoadTime: 0, onTimeRate: 0, customerSatisfaction: 0 },
         };
-      } catch (e) { return empty; }
+      } catch (e) { logger.warn("[Admin] getAnalytics query failed:", e); return empty; }
     }),
 
   /**
@@ -1076,7 +1076,7 @@ export const adminRouter = router({
           for (const u of userRows) userMap[u.id] = u.name || `User #${u.id}`;
         }
         return rows.map(r => ({ id: String(r.id), action: r.action, user: r.userId ? (userMap[r.userId] || `User #${r.userId}`) : 'System', entity: r.entityType, entityId: r.entityId ? String(r.entityId) : '', timestamp: r.createdAt?.toISOString() || '' }));
-      } catch (e) { return []; }
+      } catch (e) { logger.warn("[Admin] getAuditLogsCompact query failed:", e); return []; }
     }),
 
   /**
@@ -1105,7 +1105,7 @@ export const adminRouter = router({
       try {
         const [stats] = await db.select({ total: sql<number>`count(*)`, verified: sql<number>`SUM(CASE WHEN ${users.isVerified} = true THEN 1 ELSE 0 END)`, pending: sql<number>`SUM(CASE WHEN ${users.isVerified} = false AND ${users.isActive} = true THEN 1 ELSE 0 END)`, rejected: sql<number>`SUM(CASE WHEN ${users.isActive} = false THEN 1 ELSE 0 END)` }).from(users);
         return { pending: stats?.pending || 0, approved: stats?.verified || 0, rejected: stats?.rejected || 0, avgProcessingTime: '', approvedToday: 0, rejectedToday: 0, totalVerified: stats?.verified || 0 };
-      } catch (e) { return { pending: 0, approved: 0, rejected: 0, avgProcessingTime: '', approvedToday: 0, rejectedToday: 0, totalVerified: 0 }; }
+      } catch (e) { logger.warn("[Admin] getVerificationStats query failed:", e); return { pending: 0, approved: 0, rejected: 0, avgProcessingTime: '', approvedToday: 0, rejectedToday: 0, totalVerified: 0 }; }
     }),
 
   /**
@@ -1253,14 +1253,14 @@ export const adminRouter = router({
     try {
       const [stats] = await db.select({ total: sql<number>`count(*)`, active: sql<number>`SUM(CASE WHEN ${companies.complianceStatus} = 'compliant' THEN 1 ELSE 0 END)`, pending: sql<number>`SUM(CASE WHEN ${companies.complianceStatus} = 'pending' THEN 1 ELSE 0 END)`, suspended: sql<number>`SUM(CASE WHEN ${companies.complianceStatus} = 'non_compliant' THEN 1 ELSE 0 END)`, verified: sql<number>`SUM(CASE WHEN ${companies.complianceStatus} = 'compliant' THEN 1 ELSE 0 END)` }).from(companies);
       return { total: stats?.total || 0, active: stats?.active || 0, pending: stats?.pending || 0, suspended: stats?.suspended || 0, verified: stats?.verified || 0 };
-    } catch (e) { return { total: 0, active: 0, pending: 0, suspended: 0, verified: 0 }; }
+    } catch (e) { logger.warn("[Admin] getCompanyStats query failed:", e); return { total: 0, active: 0, pending: 0, suspended: 0, verified: 0 }; }
   }),
   getPendingCompanies: auditedAdminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input }) => {
     const db = await getDb(); if (!db) return [];
     try {
       const rows = await db.select().from(companies).where(eq(companies.complianceStatus, 'pending')).orderBy(desc(companies.createdAt)).limit(input?.limit || 20);
       return rows.map(c => ({ id: String(c.id), name: c.name || '', dotNumber: c.dotNumber || '', mcNumber: c.mcNumber || '', createdAt: c.createdAt?.toISOString() || '' }));
-    } catch (e) { return []; }
+    } catch (e) { logger.warn("[Admin] getPendingCompanies query failed:", e); return []; }
   }),
   verifyCompany: auditedAdminProcedure.input(z.object({ companyId: z.string() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
   rejectCompany: auditedAdminProcedure.input(z.object({ companyId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
@@ -1318,11 +1318,11 @@ export const adminRouter = router({
     // 4. Audit log
     try {
       await db.insert(auditLogs).values({ userId: Number(adminId), action: 'DISPUTE_RESOLVED', entityType: 'dispute', entityId: disputeId, changes: { resolution, notes: input.notes } } as any);
-    } catch {}
+    } catch (e) { logger.warn("[Admin] dispute resolution audit log failed:", e); }
 
     // 5. Gamification event
     if (input.userId) {
-      try { const { fireGamificationEvent } = await import("../services/gamificationDispatcher"); fireGamificationEvent({ userId: input.userId, type: "dispute_resolved", value: 1 }); } catch {}
+      try { const { fireGamificationEvent } = await import("../services/gamificationDispatcher"); fireGamificationEvent({ userId: input.userId, type: "dispute_resolved", value: 1 }); } catch (e) { logger.warn("[Admin] gamification event for dispute_resolved failed:", e); }
     }
 
     return { success: true, disputeId: input.disputeId, resolution, resolvedAt: new Date().toISOString() };
@@ -1399,7 +1399,7 @@ export const adminRouter = router({
     try {
       const rows = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt }).from(users).where(eq(users.isVerified, false)).orderBy(desc(users.createdAt)).limit(20);
       return rows.map(u => ({ id: String(u.id), name: u.name || '', email: u.email || '', role: u.role || '', createdAt: u.createdAt?.toISOString() || '' }));
-    } catch (e) { return []; }
+    } catch (e) { logger.warn("[Admin] getOnboardingUsers query failed:", e); return []; }
   }),
   getOnboardingStats: auditedAdminProcedure.query(async () => {
     const db = await getDb(); if (!db) return { total: 0, completed: 0, inProgress: 0, abandoned: 0, avgCompletionTime: '' };
@@ -1408,7 +1408,7 @@ export const adminRouter = router({
       const total = stats?.total || 0;
       const completed = stats?.completed || 0;
       return { total, completed, inProgress: total - completed, abandoned: 0, avgCompletionTime: '' };
-    } catch (e) { return { total: 0, completed: 0, inProgress: 0, abandoned: 0, avgCompletionTime: '' }; }
+    } catch (e) { logger.warn("[Admin] getOnboardingStats query failed:", e); return { total: 0, completed: 0, inProgress: 0, abandoned: 0, avgCompletionTime: '' }; }
   }),
   sendOnboardingReminder: auditedAdminProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId })),
 
@@ -1482,7 +1482,7 @@ export const adminRouter = router({
               severity: sev, entity: "bid", entityId: String(b.id),
             });
           }
-        } catch {}
+        } catch (e) { logger.warn("[Admin] recent bids query failed:", e); }
 
         // Recent user registrations
         const recentUsers = await db.select({
@@ -1490,7 +1490,7 @@ export const adminRouter = router({
         }).from(users).orderBy(desc(users.createdAt)).limit(Math.min(limit, 10));
         for (const u of recentUsers) {
           let approvalStatus = "unknown";
-          try { const meta = u.metadata ? JSON.parse(u.metadata as string) : {}; approvalStatus = meta.approvalStatus || "unknown"; } catch {}
+          try { const meta = u.metadata ? JSON.parse(u.metadata as string) : {}; approvalStatus = meta.approvalStatus || "unknown"; } catch { /* metadata parse failed — use default */ }
           const sev = approvalStatus === "pending_review" ? "warning" as const : "info" as const;
           events.push({
             id: `user-${u.id}`, type: "user", title: `${u.name || "User"} registered`,
@@ -1514,7 +1514,7 @@ export const adminRouter = router({
               severity: "info", entity: "agreement", entityId: String(a.id),
             });
           }
-        } catch {}
+        } catch (e) { logger.warn("[Admin] recent agreements query failed:", e); }
 
         // Recent insurance claims
         try {
@@ -1531,14 +1531,14 @@ export const adminRouter = router({
               severity: sev, entity: "claim", entityId: String(c.id),
             });
           }
-        } catch {}
+        } catch (e) { logger.warn("[Admin] recent claims query failed:", e); }
 
         // Counts
         let loadCount = 0, bidCount = 0, agreementCount = 0, claimCount = 0;
-        try { const [r] = await db.select({ c: sql<number>`count(*)` }).from((await import("../../drizzle/schema")).loads); loadCount = r?.c || 0; } catch {}
-        try { const [r] = await db.select({ c: sql<number>`count(*)` }).from((await import("../../drizzle/schema")).bids); bidCount = r?.c || 0; } catch {}
-        try { const [r] = await db.select({ c: sql<number>`count(*)` }).from((await import("../../drizzle/schema")).agreements); agreementCount = r?.c || 0; } catch {}
-        try { const [r] = await db.select({ c: sql<number>`count(*)` }).from((await import("../../drizzle/schema")).insuranceClaims); claimCount = r?.c || 0; } catch {}
+        try { const [r] = await db.select({ c: sql<number>`count(*)` }).from((await import("../../drizzle/schema")).loads); loadCount = r?.c || 0; } catch (e) { logger.warn("[Admin] load count query failed:", e); }
+        try { const [r] = await db.select({ c: sql<number>`count(*)` }).from((await import("../../drizzle/schema")).bids); bidCount = r?.c || 0; } catch (e) { logger.warn("[Admin] bid count query failed:", e); }
+        try { const [r] = await db.select({ c: sql<number>`count(*)` }).from((await import("../../drizzle/schema")).agreements); agreementCount = r?.c || 0; } catch (e) { logger.warn("[Admin] agreement count query failed:", e); }
+        try { const [r] = await db.select({ c: sql<number>`count(*)` }).from((await import("../../drizzle/schema")).insuranceClaims); claimCount = r?.c || 0; } catch (e) { logger.warn("[Admin] claim count query failed:", e); }
 
         // Sort all events by timestamp desc
         events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -1637,21 +1637,21 @@ export const adminRouter = router({
           const [bidRejected] = await db.select({ c: sql<number>`count(*)` }).from(bids).where(eq(bids.status, "rejected"));
           const [bidPending] = await db.select({ c: sql<number>`count(*)` }).from(bids).where(eq(bids.status, "pending"));
           stats.bids = { total: bidTotal?.c || 0, accepted: bidAccepted?.c || 0, rejected: bidRejected?.c || 0, pending: bidPending?.c || 0 };
-        } catch {}
+        } catch (e) { logger.warn("[Admin] bid stats query failed:", e); }
 
         // ─── Terminal Stats ───
         try {
           const { appointments } = await import("../../drizzle/schema");
           const [apptTotal] = await db.select({ c: sql<number>`count(*)` }).from(appointments).where(gte(appointments.createdAt, since));
           stats.terminal.appointments = apptTotal?.c || 0;
-        } catch {}
+        } catch (e) { logger.warn("[Admin] terminal appointments query failed:", e); }
 
         // ─── Document Stats ───
         try {
           const { documents } = await import("../../drizzle/schema");
           const [docTotal] = await db.select({ c: sql<number>`count(*)` }).from(documents).where(gte(documents.createdAt, since));
           stats.documents.uploaded = docTotal?.c || 0;
-        } catch {}
+        } catch (e) { logger.warn("[Admin] document stats query failed:", e); }
 
         // ─── Fleet Stats (active drivers) ───
         const [activeDrivers] = await db.select({ c: sql<number>`count(*)` }).from(users).where(and(eq(users.role, "DRIVER" as any), eq(users.isActive, true)));
@@ -1668,7 +1668,7 @@ export const adminRouter = router({
           stats.integrations.hotZonesSyncs = syncCount?.c || 0;
           const lastSync = await db.select({ t: hzDataSyncLog.completedAt }).from(hzDataSyncLog).orderBy(desc(hzDataSyncLog.completedAt)).limit(1);
           stats.integrations.lastSyncTime = lastSync[0]?.t?.toISOString() || "";
-        } catch {}
+        } catch (e) { logger.warn("[Admin] integration sync stats query failed:", e); }
 
         return stats;
       } catch (error) {
@@ -1817,7 +1817,7 @@ export const adminRouter = router({
           }
           const [sourceCount] = await db.select({ c: sql<number>`COUNT(DISTINCT source_name)` }).from(hzDataSyncLog);
           health.integrations.hotZones.sources = sourceCount?.c || 0;
-        } catch {}
+        } catch (e) { logger.warn("[Admin] health check hotZones query failed:", e); }
 
       } catch (error) {
         health.status = "degraded";

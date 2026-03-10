@@ -58,7 +58,7 @@ async function resolveStripeCustomerId(ctxUser: any): Promise<string | null> {
   try {
     const [row] = await db.select({ stripeCustomerId: users.stripeCustomerId }).from(users).where(eq(users.id, userId)).limit(1);
     if (row?.stripeCustomerId) return row.stripeCustomerId;
-  } catch {}
+  } catch (e) { logger.warn("[Payments] resolveStripeCustomerId DB lookup failed:", e); }
   // Fallback: look up by email in Stripe
   if (email) {
     const result = await safeStripe(() => stripe.customers.list({ email, limit: 1 }));
@@ -122,7 +122,7 @@ export const paymentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database not available");
       await db.insert(payments).values({ payerId: ctx.user.id, payeeId: ctx.user.id, amount: input.amount, currency: "USD", paymentType: "subscription", status: "succeeded", paymentMethod: input.paymentMethod });
-      try { emitPaymentReceived(ctx.user.id, { type: "deposit", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch {}
+      try { emitPaymentReceived(ctx.user.id, { type: "deposit", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch (e) { logger.warn("[Payments] deposit event emission failed:", e); }
       return { success: true };
     }),
 
@@ -131,7 +131,7 @@ export const paymentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database not available");
       await db.insert(payments).values({ payerId: ctx.user.id, payeeId: ctx.user.id, amount: input.amount, currency: "USD", paymentType: "payout", status: "pending" });
-      try { emitPaymentSent(ctx.user.id, { type: "withdrawal", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch {}
+      try { emitPaymentSent(ctx.user.id, { type: "withdrawal", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch (e) { logger.warn("[Payments] withdrawal event emission failed:", e); }
       return { success: true };
     }),
 
@@ -166,8 +166,8 @@ export const paymentsRouter = router({
         status: "pending",
         stripePaymentIntentId: stripeId,
       });
-      try { emitPaymentSent(ctx.user.id, { type: "load_payment", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch {}
-      try { emitPaymentReceived(input.recipientId, { type: "load_payment", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch {}
+      try { emitPaymentSent(ctx.user.id, { type: "load_payment", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch (e) { logger.warn("[Payments] createPayment sent event emission failed:", e); }
+      try { emitPaymentReceived(input.recipientId, { type: "load_payment", amount: parseFloat(input.amount), currency: "USD", timestamp: new Date().toISOString() }); } catch (e) { logger.warn("[Payments] createPayment received event emission failed:", e); }
       return { success: true, clientSecret: (pi as any)?.client_secret || null, paymentIntentId: stripeId };
     }),
 
@@ -310,7 +310,7 @@ export const paymentsRouter = router({
             stripeChargeId: p.stripeChargeId || null,
           });
         }
-      } catch {}
+      } catch (e) { logger.warn("[Payments] getReceipts DB query failed:", e); }
     }
     return receipts;
   }),
@@ -518,7 +518,7 @@ export const paymentsRouter = router({
           paymentType: "load_payment", status: "succeeded",
           paymentMethod: input.method || "card",
         });
-        try { emitPaymentSent(ctx.user.id, { type: "load_payment", amount: input.amount, currency: "USD", timestamp: new Date().toISOString() }); } catch {}
+        try { emitPaymentSent(ctx.user.id, { type: "load_payment", amount: input.amount, currency: "USD", timestamp: new Date().toISOString() }); } catch (e) { logger.warn("[Payments] processPayment event emission failed:", e); }
         return { success: true, transactionId: `txn_${(row as any).insertId || Date.now()}` };
       }
       return { success: false, transactionId: null };

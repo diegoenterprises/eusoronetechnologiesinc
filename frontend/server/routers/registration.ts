@@ -139,7 +139,7 @@ async function seedUserOperatingStates(db: any, userId: number, homeState: strin
           isRegisteredState: sc === homeState?.toUpperCase(),
           isOperatingState: true,
         }).onDuplicateKeyUpdate({ set: { isOperatingState: true } });
-      } catch {}
+      } catch (e) { logger.warn("[Registration] seedUserOperatingStates upsert failed for state:", sc, e); }
     }
   } catch (e) {
     logger.warn("[Registration] Could not seed userOperatingStates:", e);
@@ -162,7 +162,7 @@ async function sendPostRegistrationNotifications(db: any, params: {
     // Merge token into existing metadata
     const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, params.userId)).limit(1);
     let meta: any = {};
-    try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch {}
+    try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch { /* metadata parse failed — use default */ }
     meta.verificationToken = verification.token;
     meta.verificationExpiry = verification.expiresAt.toISOString();
     await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, params.userId));
@@ -431,14 +431,14 @@ export const registrationRouter = router({
       try {
         const { indexCarrier } = await import("../services/embeddings/aiTurbocharge");
         indexCarrier({ id: companyId, companyName: input.companyName, serviceAreas: input.state });
-      } catch {}
+      } catch (e) { logger.warn("[Registration] shipper AI indexing failed:", e); }
 
       // AI Turbocharge: Registration fraud scoring
       let aiFraudCheck: any = null;
       try {
         const { scoreRegistration } = await import("../services/ai/fraudScorer");
         aiFraudCheck = scoreRegistration({ email: input.contactEmail, phone: input.contactPhone, companyName: input.companyName });
-      } catch {}
+      } catch (e) { logger.warn("[Registration] shipper fraud scoring failed:", e); }
 
       return {
         success: true,
@@ -639,21 +639,21 @@ export const registrationRouter = router({
       try {
         const { indexCarrier } = await import("../services/embeddings/aiTurbocharge");
         indexCarrier({ id: companyId, companyName: input.companyName, dotNumber: input.usdotNumber, mcNumber: input.mcNumber, equipmentTypes: input.equipmentTypes, hazmatCertified: input.hazmatEndorsed, serviceAreas: (input.processAgentStates || [input.state]).join(", "), specializations: input.catalystType });
-      } catch {}
+      } catch (e) { logger.warn("[Registration] catalyst AI indexing failed:", e); }
 
       // AI Turbocharge: Registration fraud scoring
       let aiFraudCheck: any = null;
       try {
         const { scoreRegistration } = await import("../services/ai/fraudScorer");
         aiFraudCheck = scoreRegistration({ email: input.contactEmail, phone: input.contactPhone, companyName: input.companyName, dotNumber: input.usdotNumber, mcNumber: input.mcNumber });
-      } catch {}
+      } catch (e) { logger.warn("[Registration] catalyst fraud scoring failed:", e); }
 
       // ── Store ML verification event (fire-and-forget) ──
       if (instantVerif && crossRef) {
         try {
           const mlFeatures = extractMLFeatures(instantVerif, crossRef);
           storeVerificationEvent(mlFeatures, "registration", userId, companyId).catch(() => {});
-        } catch {}
+        } catch (e) { logger.warn("[Registration] catalyst ML verification event failed:", e); }
       }
 
       return {
@@ -969,14 +969,14 @@ export const registrationRouter = router({
       try {
         const { indexCarrier } = await import("../services/embeddings/aiTurbocharge");
         indexCarrier({ id: companyId, companyName: input.companyName, dotNumber: input.usdotNumber, mcNumber: input.mcNumber, serviceAreas: input.state, specializations: "freight broker" });
-      } catch {}
+      } catch (e) { logger.warn("[Registration] broker AI indexing failed:", e); }
 
       // ── Store ML verification event (fire-and-forget) ──
       if (instantVerif && crossRef) {
         try {
           const mlFeatures = extractMLFeatures(instantVerif, crossRef);
           storeVerificationEvent(mlFeatures, "registration", userId, companyId).catch(() => {});
-        } catch {}
+        } catch (e) { logger.warn("[Registration] broker ML verification event failed:", e); }
       }
 
       return {
@@ -1062,7 +1062,7 @@ export const registrationRouter = router({
         try {
           const [co] = await db.select({ state: companies.state }).from(companies).where(eq(companies.id, companyId)).limit(1);
           if (co?.state) companyState = co.state;
-        } catch {}
+        } catch (e) { logger.warn("[Registration] company state lookup failed:", e); }
       }
 
       await storeRegistrationMetadata(db, userId, {
@@ -1280,7 +1280,7 @@ export const registrationRouter = router({
       try {
         const { indexCarrier } = await import("../services/embeddings/aiTurbocharge");
         indexCarrier({ id: companyId, companyName: input.facilityName, name: input.ownerCompany, serviceAreas: input.state, specializations: `terminal ${input.facilityType || "facility"}` });
-      } catch {}
+      } catch (e) { logger.warn("[Registration] terminal AI indexing failed:", e); }
 
       return { success: true, userId, companyId, verificationRequired: true };
     }),
@@ -1341,7 +1341,7 @@ export const registrationRouter = router({
         try {
           const [co] = await db.select({ state: companies.state }).from(companies).where(eq(companies.id, companyId)).limit(1);
           if (co?.state) coState = co.state;
-        } catch {}
+        } catch (e) { logger.warn("[Registration] compliance officer company state lookup failed:", e); }
       }
 
       await storeRegistrationMetadata(db, userId, {
@@ -1427,7 +1427,7 @@ export const registrationRouter = router({
         try {
           const [co] = await db.select({ state: companies.state }).from(companies).where(eq(companies.id, companyId)).limit(1);
           if (co?.state) smState = co.state;
-        } catch {}
+        } catch (e) { logger.warn("[Registration] safety manager company state lookup failed:", e); }
       }
 
       await storeRegistrationMetadata(db, userId, {
@@ -1841,7 +1841,7 @@ export const registrationRouter = router({
         try {
           const mlFeatures = extractMLFeatures(iv, crossRef);
           storeVerificationEvent(mlFeatures, "login", userId, companyId).catch(() => {});
-        } catch {}
+        } catch (e) { logger.warn("[Registration] login ML verification event failed:", e); }
 
         return {
           dotNumber: iv.dotNumber,
