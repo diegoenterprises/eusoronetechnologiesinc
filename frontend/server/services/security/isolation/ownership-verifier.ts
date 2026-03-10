@@ -16,6 +16,13 @@ import { getDb } from "../../../db";
 import { users } from "../../../../drizzle/schema";
 import { PrivacyLevel, getClassification } from "./privacy-classifier";
 
+/** Validate a SQL identifier (field/table name) to prevent SQL injection. */
+function validateSqlFieldName(name: string): void {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    throw new Error(`Invalid SQL field name: ${JSON.stringify(name)}`);
+  }
+}
+
 export type ResourceType =
   | "wallet" | "walletTransaction" | "notification" | "session"
   | "userDocument" | "message" | "conversation"
@@ -99,24 +106,30 @@ export function ownershipFilter(
 
   switch (classification.level) {
     case PrivacyLevel.L1_PRIVATE:
+      validateSqlFieldName(classification.ownerField);
       return sql`${sql.raw(classification.ownerField)} = ${uid}`;
 
     case PrivacyLevel.L2_ORGANIZATION:
+      validateSqlFieldName(classification.ownerField);
       if (organizationId && classification.orgField) {
+        validateSqlFieldName(classification.orgField);
         return sql`(${sql.raw(classification.ownerField)} = ${uid} OR ${sql.raw(classification.orgField)} = ${Number(organizationId)})`;
       }
       return sql`${sql.raw(classification.ownerField)} = ${uid}`;
 
     case PrivacyLevel.L3_RELATIONSHIP:
       if (classification.participantFields && classification.participantFields.length > 0) {
+        classification.participantFields.forEach(field => validateSqlFieldName(field));
         const conditions = classification.participantFields
           .map(field => `${field} = ${uid}`)
           .join(" OR ");
         if (organizationId && classification.orgField) {
+          validateSqlFieldName(classification.orgField);
           return sql`(${sql.raw(conditions)} OR ${sql.raw(classification.orgField)} = ${Number(organizationId)})`;
         }
         return sql`(${sql.raw(conditions)})`;
       }
+      validateSqlFieldName(classification.ownerField);
       return sql`${sql.raw(classification.ownerField)} = ${uid}`;
 
     case PrivacyLevel.L4_PUBLIC:
@@ -139,6 +152,8 @@ async function checkDirectOwnership(
   const ownerCol = getOwnerColumn(resourceType);
 
   try {
+    validateSqlFieldName(tableName);
+    validateSqlFieldName(ownerCol);
     const [row] = await db.execute(
       sql`SELECT 1 FROM ${sql.raw(tableName)} WHERE id = ${Number(resourceId)} AND ${sql.raw(ownerCol)} = ${Number(userId)} LIMIT 1`
     );
@@ -160,7 +175,10 @@ async function checkOrgOwnership(
   if (!classification) return false;
 
   try {
+    validateSqlFieldName(tableName);
+    validateSqlFieldName(classification.ownerField);
     if (organizationId && classification.orgField) {
+      validateSqlFieldName(classification.orgField);
       const [row] = await db.execute(
         sql`SELECT 1 FROM ${sql.raw(tableName)} WHERE id = ${Number(resourceId)} AND (${sql.raw(classification.ownerField)} = ${Number(userId)} OR ${sql.raw(classification.orgField)} = ${Number(organizationId)}) LIMIT 1`
       );
@@ -188,12 +206,15 @@ async function checkRelationshipAccess(
   if (!classification || !classification.participantFields) return false;
 
   try {
+    validateSqlFieldName(tableName);
+    classification.participantFields.forEach(field => validateSqlFieldName(field));
     const conditions = classification.participantFields
       .map(field => `${field} = ${Number(userId)}`)
       .join(" OR ");
 
     let query = `SELECT 1 FROM ${tableName} WHERE id = ${Number(resourceId)} AND (${conditions}`;
     if (organizationId && classification.orgField) {
+      validateSqlFieldName(classification.orgField);
       query += ` OR ${classification.orgField} = ${Number(organizationId)}`;
     }
     query += ") LIMIT 1";

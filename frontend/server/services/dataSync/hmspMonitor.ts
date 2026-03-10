@@ -12,7 +12,8 @@ import { getDb } from "../../db";
 import { logger } from "../../_core/logger";
 import { companies, notifications, insuranceAlerts, auditLogs } from "../../../drizzle/schema";
 
-const FMCSA_WEBKEY = process.env.FMCSA_WEBSERVICE_KEY || process.env.FMCSA_API_KEY || "891b0bbf613e9937bd584968467527aa1f29aec2";
+const FMCSA_WEBKEY = process.env.FMCSA_WEBSERVICE_KEY || process.env.FMCSA_API_KEY;
+if (!FMCSA_WEBKEY) throw new Error("FMCSA_WEBSERVICE_KEY or FMCSA_API_KEY environment variable is required");
 const FMCSA_BASE = "https://mobile.fmcsa.dot.gov/qc/services/carriers";
 
 interface FMCSAAuthority {

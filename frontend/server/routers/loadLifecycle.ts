@@ -657,12 +657,152 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
       }
     }
 
-    default:
-      // In production, unknown guards warn but pass (to avoid blocking on new guards)
-      if (IS_PROD) {
-        logger.warn(`[Guard] Unknown guard check: ${guard.check} — passing by default`);
+    // ── Cargo exception document guards (seal breach, temp excursion, reefer breakdown, weight, contamination, rejection) ──
+    case "temp_log_uploaded": {
+      const tlProfile = buildCargoProfile(ctx.load);
+      if (tlProfile.complianceChecks?.temp_log_uploaded?.passed) return null;
+      // Fallback: check documents table for a matching document
+      const tlLoadId = ctx.load?.id;
+      if (tlLoadId) {
+        try {
+          const db = await getDb();
+          if (db) {
+            const [rows] = await db.execute(sql`
+              SELECT id FROM documents
+              WHERE load_id = ${tlLoadId} AND type = 'temp_log'
+              LIMIT 1
+            `) as unknown as any[][];
+            if ((rows || []).length > 0) return null;
+          }
+        } catch { /* non-critical */ }
       }
-      return null;
+      return guard.errorMessage;
+    }
+
+    case "reefer_diagnostic_uploaded": {
+      const rdProfile = buildCargoProfile(ctx.load);
+      if (rdProfile.complianceChecks?.reefer_diagnostic_uploaded?.passed) return null;
+      const rdLoadId = ctx.load?.id;
+      if (rdLoadId) {
+        try {
+          const db = await getDb();
+          if (db) {
+            const [rows] = await db.execute(sql`
+              SELECT id FROM documents
+              WHERE load_id = ${rdLoadId} AND type = 'reefer_diagnostic'
+              LIMIT 1
+            `) as unknown as any[][];
+            if ((rows || []).length > 0) return null;
+          }
+        } catch { /* non-critical */ }
+      }
+      return guard.errorMessage;
+    }
+
+    case "seal_photos_uploaded": {
+      const spProfile = buildCargoProfile(ctx.load);
+      if (spProfile.complianceChecks?.seal_photos_uploaded?.passed) return null;
+      const spLoadId = ctx.load?.id;
+      if (spLoadId) {
+        try {
+          const db = await getDb();
+          if (db) {
+            const [rows] = await db.execute(sql`
+              SELECT id FROM documents
+              WHERE load_id = ${spLoadId} AND type = 'seal_photo'
+              LIMIT 1
+            `) as unknown as any[][];
+            if ((rows || []).length > 0) return null;
+          }
+        } catch { /* non-critical */ }
+      }
+      return guard.errorMessage;
+    }
+
+    case "cargo_inspection_complete": {
+      const ciProfile = buildCargoProfile(ctx.load);
+      if (ciProfile.complianceChecks?.cargo_inspection_complete?.passed) return null;
+      const ciLoadId = ctx.load?.id;
+      if (ciLoadId) {
+        try {
+          const db = await getDb();
+          if (db) {
+            const [rows] = await db.execute(sql`
+              SELECT id FROM documents
+              WHERE load_id = ${ciLoadId} AND type = 'cargo_inspection'
+              LIMIT 1
+            `) as unknown as any[][];
+            if ((rows || []).length > 0) return null;
+          }
+        } catch { /* non-critical */ }
+      }
+      return guard.errorMessage;
+    }
+
+    case "scale_ticket_uploaded": {
+      const stProfile = buildCargoProfile(ctx.load);
+      if (stProfile.complianceChecks?.scale_ticket_uploaded?.passed) return null;
+      const stLoadId = ctx.load?.id;
+      if (stLoadId) {
+        try {
+          const db = await getDb();
+          if (db) {
+            const [rows] = await db.execute(sql`
+              SELECT id FROM documents
+              WHERE load_id = ${stLoadId} AND type = 'scale_ticket'
+              LIMIT 1
+            `) as unknown as any[][];
+            if ((rows || []).length > 0) return null;
+          }
+        } catch { /* non-critical */ }
+      }
+      return guard.errorMessage;
+    }
+
+    case "lab_results_uploaded": {
+      const lrProfile = buildCargoProfile(ctx.load);
+      if (lrProfile.complianceChecks?.lab_results_uploaded?.passed) return null;
+      const lrLoadId = ctx.load?.id;
+      if (lrLoadId) {
+        try {
+          const db = await getDb();
+          if (db) {
+            const [rows] = await db.execute(sql`
+              SELECT id FROM documents
+              WHERE load_id = ${lrLoadId} AND type = 'lab_results'
+              LIMIT 1
+            `) as unknown as any[][];
+            if ((rows || []).length > 0) return null;
+          }
+        } catch { /* non-critical */ }
+      }
+      return guard.errorMessage;
+    }
+
+    case "inspection_report_uploaded": {
+      const irProfile = buildCargoProfile(ctx.load);
+      if (irProfile.complianceChecks?.inspection_report_uploaded?.passed) return null;
+      const irLoadId = ctx.load?.id;
+      if (irLoadId) {
+        try {
+          const db = await getDb();
+          if (db) {
+            const [rows] = await db.execute(sql`
+              SELECT id FROM documents
+              WHERE load_id = ${irLoadId} AND type = 'inspection_report'
+              LIMIT 1
+            `) as unknown as any[][];
+            if ((rows || []).length > 0) return null;
+          }
+        } catch { /* non-critical */ }
+      }
+      return guard.errorMessage;
+    }
+
+    default:
+      // In production, unknown guards block to prevent unchecked transitions
+      logger.warn(`[Guard] Unknown guard check: ${guard.check}`);
+      return IS_PROD ? guard.errorMessage : null;
   }
 }
 
@@ -764,8 +904,9 @@ function verifyHOSServerSide(driverId: number | null | undefined): { compliant: 
       return { compliant: false, reason: reasons.join("; ") || "HOS limits exceeded" };
     }
     return { compliant: true };
-  } catch {
-    return { compliant: true }; // If HOS engine errors, don't block — log it
+  } catch (e) {
+    logger.error(`[HOS] Server-side HOS verification failed for driver ${driverId}:`, (e as Error).message);
+    return { compliant: false, reason: "HOS verification unavailable — cannot confirm compliance" };
   }
 }
 
@@ -774,8 +915,9 @@ function verifyHOSForAcceptance(driverId: number | null | undefined): { allowed:
   try {
     const result = canDriverAcceptLoad(driverId);
     return { allowed: result.allowed, reason: result.reason };
-  } catch {
-    return { allowed: true };
+  } catch (e) {
+    logger.error(`[HOS] Acceptance verification failed for driver ${driverId}:`, (e as Error).message);
+    return { allowed: false, reason: "HOS verification unavailable — cannot confirm driver eligibility" };
   }
 }
 

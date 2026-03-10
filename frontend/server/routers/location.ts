@@ -28,9 +28,9 @@ import {
   checkRouteDeviation, getDetentionForLoad, getBillableDetention,
   getStateCrossingsForLoad, getIFTAReport, haversineDistance,
   getChannelsForUser, googleMapsConfig, detectSpoofing,
-  requiresTunnelAvoidance,
+  requiresTunnelAvoidance, pruneStaleSignalLossEntries,
 } from "../_core/locationEngine";
-import type { GeofenceAction } from "../_core/locationEngine";
+import type { GeofenceAction, TriggerResult } from "../_core/locationEngine";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // INPUT SCHEMAS
@@ -57,6 +57,53 @@ const locationPointSchema = z.object({
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// GEOFENCE TRIGGER NOTIFICATION HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TRIGGER_TITLES: Record<string, string> = {
+  DRIVER_APPROACHING: "Driver Approaching",
+  DRIVER_AT_GATE: "Driver at Gate",
+  ARRIVED_PICKUP: "Arrived at Pickup",
+  ARRIVED_DELIVERY: "Arrived at Delivery",
+  DEPARTED_PICKUP: "Departed Pickup",
+  DEPARTED_DELIVERY: "Departed Delivery",
+  IN_TRANSIT: "Load In Transit",
+  DELIVERY_COMPLETE: "Delivery Complete",
+  APPROACHING_PICKUP: "Approaching Pickup",
+  APPROACHING_DELIVERY: "Approaching Delivery",
+  DETENTION_STARTED: "Detention Started",
+  DETAINED_ALERT: "Detention Alert",
+  POD_AVAILABLE: "POD Available",
+  COMPLIANCE_ALERT: "Compliance Alert",
+};
+
+function formatTriggerTitle(eventName: string, loadNumber: string): string {
+  const base = TRIGGER_TITLES[eventName] || eventName.replace(/_/g, " ");
+  return loadNumber ? `${base} — ${loadNumber}` : base;
+}
+
+function formatTriggerMessage(eventName: string, loadNumber: string, facilityName?: string): string {
+  const facility = facilityName ? ` at ${facilityName}` : "";
+  switch (eventName) {
+    case "DRIVER_APPROACHING": return `Driver is approaching${facility} for load ${loadNumber}.`;
+    case "DRIVER_AT_GATE": return `Driver has arrived at the gate${facility} for load ${loadNumber}.`;
+    case "ARRIVED_PICKUP": return `Driver arrived at pickup${facility} for load ${loadNumber}.`;
+    case "ARRIVED_DELIVERY": return `Driver arrived at delivery${facility} for load ${loadNumber}.`;
+    case "DEPARTED_PICKUP": return `Load ${loadNumber} departed pickup${facility} and is now in transit.`;
+    case "DEPARTED_DELIVERY": return `Load ${loadNumber} departed delivery${facility}.`;
+    case "DELIVERY_COMPLETE": return `Load ${loadNumber} has been delivered${facility}.`;
+    case "APPROACHING_PICKUP": return `Driver approaching pickup${facility} for load ${loadNumber}.`;
+    case "APPROACHING_DELIVERY": return `Driver approaching delivery${facility} for load ${loadNumber}.`;
+    case "DETENTION_STARTED": return `Detention billing has started${facility} for load ${loadNumber}.`;
+    case "DETAINED_ALERT": return `Detention alert${facility} for load ${loadNumber} — free time expiring.`;
+    case "IN_TRANSIT": return `Load ${loadNumber} is now in transit.`;
+    case "POD_AVAILABLE": return `Proof of delivery is available for load ${loadNumber}.`;
+    case "COMPLIANCE_ALERT": return `Compliance alert for load ${loadNumber}.`;
+    default: return `Geofence event "${eventName}" for load ${loadNumber}${facility}.`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // TELEMETRY SUB-ROUTER (GPS ingestion, fleet positions, breadcrumb trails)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -76,6 +123,9 @@ const telemetrySubRouter = router({
         Number(driverId), input.locations,
         input.loadId, input.vehicleId, input.loadState,
       );
+
+      // Prune stale signalLossMap entries to prevent memory leaks (throttled to once/hour)
+      pruneStaleSignalLossEntries();
 
       // P0 Blocker 8: Emit real-time GPS tracking event after storing
       try {
@@ -139,6 +189,258 @@ const telemetrySubRouter = router({
           const evtType = input.action === "ENTER" ? WS_EVENTS.LOAD_GEOFENCE_ENTER : WS_EVENTS.LOAD_GEOFENCE_EXIT;
           wsService.broadcastToChannel(ch, { type: evtType, data: { loadId: String(input.loadId), geofenceId: input.geofenceId, geofenceType: input.geofenceType || "CUSTOM", facilityName: input.facilityName, lat: input.location.lat, lng: input.location.lng, timestamp: input.timestamp }, timestamp: input.timestamp });
         } catch { /* non-critical */ }
+      }
+
+      // ─── Consume TriggerResult[] → dispatch WebSocket notifications ───
+      if (triggers.length > 0) {
+        try {
+          const { wsService, emitLoadStatusChange, emitNotification, WS_EVENTS, WS_CHANNELS } = await import("../_core/websocket");
+          const now = new Date().toISOString();
+
+          // Fetch load context (shipperId, catalystId, loadNumber) for routing notifications
+          let shipperId: number | null = null;
+          let catalystId: number | null = null;
+          let loadNumber: string | null = null;
+          if (input.loadId) {
+            try {
+              const db = await getDb();
+              if (db) {
+                const [loadRow] = await db.select({
+                  shipperId: loads.shipperId,
+                  catalystId: loads.catalystId,
+                  loadNumber: loads.loadNumber,
+                }).from(loads).where(eq(loads.id, input.loadId)).limit(1);
+                if (loadRow) {
+                  shipperId = loadRow.shipperId;
+                  catalystId = loadRow.catalystId;
+                  loadNumber = loadRow.loadNumber;
+                }
+              }
+            } catch { /* non-critical — we'll still emit what we can */ }
+          }
+
+          const loadIdStr = input.loadId ? String(input.loadId) : "";
+          const loadNumStr = loadNumber || loadIdStr;
+
+          for (const trigger of triggers) {
+            const eventName = String(trigger.data?.event || trigger.type);
+
+            // ── load_status triggers → emitLoadStatusChange ──
+            if (trigger.type === "load_status" && input.loadId) {
+              const newStatus = String(trigger.data?.status || "");
+              emitLoadStatusChange({
+                loadId: loadIdStr,
+                loadNumber: loadNumStr,
+                previousStatus: "",
+                newStatus,
+                location: { lat: input.location.lat, lng: input.location.lng },
+                timestamp: now,
+                updatedBy: String(driverId),
+              });
+              continue;
+            }
+
+            // ── notification triggers → route to appropriate channels ──
+            if (trigger.type === "notification") {
+              const priority = (
+                eventName === "DETENTION_STARTED" || eventName === "DETAINED_ALERT"
+              ) ? "critical" as const : (
+                eventName === "ARRIVED_PICKUP" || eventName === "ARRIVED_DELIVERY"
+                || eventName === "DELIVERY_COMPLETE"
+              ) ? "high" as const : "medium" as const;
+
+              const notifPayload = {
+                id: `geo-${input.geofenceId}-${Date.now()}`,
+                type: eventName,
+                title: formatTriggerTitle(eventName, loadNumStr),
+                message: formatTriggerMessage(eventName, loadNumStr, input.facilityName),
+                priority,
+                data: { ...trigger.data, loadId: loadIdStr, geofenceType: input.geofenceType },
+                actionUrl: input.loadId ? `/loads/${input.loadId}` : undefined,
+                timestamp: now,
+              };
+
+              // DRIVER_APPROACHING → dispatch only
+              if (eventName === "DRIVER_APPROACHING" || eventName === "DRIVER_AT_GATE") {
+                if (catalystId) {
+                  wsService.broadcastToChannel(
+                    WS_CHANNELS.DISPATCH(String(catalystId)),
+                    { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                  );
+                }
+                wsService.broadcastToChannel(
+                  WS_CHANNELS.DISPATCH_UPDATES,
+                  { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                );
+              }
+
+              // ARRIVED_PICKUP / ARRIVED_DELIVERY → load room + dispatch
+              if (eventName === "ARRIVED_PICKUP" || eventName === "ARRIVED_DELIVERY") {
+                if (input.loadId) {
+                  wsService.broadcastToChannel(
+                    WS_CHANNELS.LOAD(loadIdStr),
+                    { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                  );
+                }
+                if (catalystId) {
+                  wsService.broadcastToChannel(
+                    WS_CHANNELS.DISPATCH(String(catalystId)),
+                    { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                  );
+                }
+              }
+
+              // DETENTION_STARTED / DETAINED_ALERT → load room + dispatch + shipper
+              if (eventName === "DETENTION_STARTED" || eventName === "DETAINED_ALERT") {
+                if (input.loadId) {
+                  wsService.broadcastToChannel(
+                    WS_CHANNELS.LOAD(loadIdStr),
+                    { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                  );
+                }
+                if (catalystId) {
+                  wsService.broadcastToChannel(
+                    WS_CHANNELS.DISPATCH(String(catalystId)),
+                    { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                  );
+                }
+                if (shipperId) {
+                  wsService.broadcastToChannel(
+                    WS_CHANNELS.COMPANY(String(shipperId)),
+                    { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                  );
+                }
+              }
+
+              // DEPARTED_PICKUP / IN_TRANSIT / DEPARTED_DELIVERY / DELIVERY_COMPLETE
+              // APPROACHING_PICKUP / APPROACHING_DELIVERY → load room + shipper + dispatch
+              if (
+                eventName === "DEPARTED_PICKUP" || eventName === "IN_TRANSIT"
+                || eventName === "DEPARTED_DELIVERY" || eventName === "DELIVERY_COMPLETE"
+                || eventName === "APPROACHING_PICKUP" || eventName === "APPROACHING_DELIVERY"
+              ) {
+                if (input.loadId) {
+                  wsService.broadcastToChannel(
+                    WS_CHANNELS.LOAD(loadIdStr),
+                    { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                  );
+                }
+                if (shipperId) {
+                  wsService.broadcastToChannel(
+                    WS_CHANNELS.COMPANY(String(shipperId)),
+                    { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                  );
+                }
+                if (catalystId) {
+                  wsService.broadcastToChannel(
+                    WS_CHANNELS.DISPATCH(String(catalystId)),
+                    { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                  );
+                }
+              }
+
+              // POD_AVAILABLE → target is factoring, broadcast to load channel
+              if (eventName === "POD_AVAILABLE" && input.loadId) {
+                wsService.broadcastToChannel(
+                  WS_CHANNELS.LOAD(loadIdStr),
+                  { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                );
+              }
+
+              // COMPLIANCE_ALERT → driver + dispatch
+              if (eventName === "COMPLIANCE_ALERT") {
+                emitNotification(String(driverId), notifPayload);
+                if (catalystId) {
+                  wsService.broadcastToChannel(
+                    WS_CHANNELS.DISPATCH(String(catalystId)),
+                    { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                  );
+                }
+              }
+
+              // target=all → load room + dispatch + shipper
+              if (trigger.target === "all" && input.loadId) {
+                wsService.broadcastToChannel(
+                  WS_CHANNELS.LOAD(loadIdStr),
+                  { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                );
+                if (catalystId) {
+                  wsService.broadcastToChannel(
+                    WS_CHANNELS.DISPATCH(String(catalystId)),
+                    { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                  );
+                }
+                if (shipperId) {
+                  wsService.broadcastToChannel(
+                    WS_CHANNELS.COMPANY(String(shipperId)),
+                    { type: WS_EVENTS.NOTIFICATION_NEW, data: notifPayload, timestamp: now },
+                  );
+                }
+              }
+
+              continue;
+            }
+
+            // ── websocket triggers → broadcast to load room ──
+            if (trigger.type === "websocket" && input.loadId) {
+              wsService.broadcastToChannel(
+                WS_CHANNELS.LOAD(loadIdStr),
+                {
+                  type: String(trigger.data?.event || "load:geofence_event"),
+                  data: { loadId: loadIdStr, ...trigger.data },
+                  timestamp: now,
+                },
+              );
+              continue;
+            }
+
+            // ── compliance triggers → compliance alerts channel ──
+            if (trigger.type === "compliance" && input.loadId) {
+              wsService.broadcastToChannel(
+                WS_CHANNELS.COMPLIANCE_ALERTS,
+                {
+                  type: WS_EVENTS.COMPLIANCE_ALERT,
+                  data: { loadId: loadIdStr, ...trigger.data },
+                  timestamp: now,
+                },
+              );
+              continue;
+            }
+
+            // ── detention_billing triggers → dispatch + shipper ──
+            if (trigger.type === "detention_billing" && input.loadId) {
+              const detentionPayload = {
+                type: WS_EVENTS.DISPATCH_EXCEPTION,
+                data: {
+                  exception: "detention_billing",
+                  loadId: loadIdStr,
+                  loadNumber: loadNumStr,
+                  ...trigger.data,
+                },
+                timestamp: now,
+              };
+              if (catalystId) {
+                wsService.broadcastToChannel(
+                  WS_CHANNELS.DISPATCH(String(catalystId)),
+                  detentionPayload,
+                );
+              }
+              if (shipperId) {
+                wsService.broadcastToChannel(
+                  WS_CHANNELS.COMPANY(String(shipperId)),
+                  detentionPayload,
+                );
+              }
+              continue;
+            }
+
+            // Other trigger types (geotag_created, tracking_profile, gamification,
+            // financial, signal_loss_suppressed, detention_start/stop) are internal —
+            // no WebSocket dispatch needed for these.
+          }
+        } catch (triggerErr) {
+          logger.warn("[Location] Geofence trigger dispatch failed:", (triggerErr as any)?.message);
+        }
       }
 
       return { success: true, triggersCount: triggers.length, triggers };

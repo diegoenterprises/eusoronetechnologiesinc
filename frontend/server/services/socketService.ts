@@ -38,6 +38,15 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
   io.on("connection", (socket) => {
     const userId = socket.handshake.auth?.userId;
     const userRole = socket.handshake.auth?.role;
+
+    // TODO: Add proper JWT validation for WebSocket auth.
+    // At minimum, validate userId is a number to prevent room-injection attacks.
+    if (userId !== undefined && (typeof userId !== "number" || !Number.isFinite(userId))) {
+      logger.warn(`[WS] Rejected connection ${socket.id}: invalid userId (${typeof userId}: ${userId})`);
+      socket.disconnect(true);
+      return;
+    }
+
     logger.info(`[WS] Connected: ${socket.id} (user=${userId}, role=${userRole})`);
 
     // ── Join load room ──

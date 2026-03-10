@@ -584,10 +584,21 @@ export const fmcsaRouter = router({
       const pool = getPool();
       if (!pool) return null;
       
+      // Whitelist of known FMCSA tables for safe counting
+      const ALLOWED_FMCSA_TABLES = new Set([
+        "fmcsa_census", "fmcsa_authority", "fmcsa_insurance", "fmcsa_crashes",
+        "fmcsa_inspections", "fmcsa_violations", "fmcsa_sms_scores",
+        "fmcsa_monitored_carriers", "fmcsa_oos_orders", "fmcsa_boc3",
+        "fmcsa_revocations", "fmcsa_etl_log",
+      ]);
+
       // Safe count helper — returns 0 if table doesn't exist yet
       const safeCount = async (table: string): Promise<number> => {
         try {
-          const [rows]: any = await pool.query(`SELECT COUNT(*) as count FROM ${table}`);
+          if (!ALLOWED_FMCSA_TABLES.has(table)) {
+            throw new Error(`Table not in FMCSA whitelist: ${table}`);
+          }
+          const [rows]: any = await pool.query(`SELECT COUNT(*) as count FROM \`${table}\``);
           return rows[0]?.count || 0;
         } catch {
           return 0; // Table doesn't exist yet — ETL will create it

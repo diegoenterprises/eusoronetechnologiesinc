@@ -606,6 +606,34 @@ export interface SignalLossState {
 // In-memory signal loss tracker (per driver)
 const signalLossMap = new Map<number, SignalLossState>();
 
+// Prune stale signalLossMap entries older than 24 hours to prevent memory leaks
+const SIGNAL_LOSS_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+let lastSignalLossCleanup = Date.now();
+const SIGNAL_LOSS_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // run at most once per hour
+
+export function pruneStaleSignalLossEntries(): number {
+  const now = Date.now();
+  // Throttle: only run cleanup once per hour
+  if (now - lastSignalLossCleanup < SIGNAL_LOSS_CLEANUP_INTERVAL_MS) return 0;
+  lastSignalLossCleanup = now;
+  let pruned = 0;
+  const keysToDelete: number[] = [];
+  signalLossMap.forEach((state, driverId) => {
+    const age = now - state.lastSignalTimestamp.getTime();
+    if (age > SIGNAL_LOSS_MAX_AGE_MS) {
+      keysToDelete.push(driverId);
+    }
+  });
+  for (let i = 0; i < keysToDelete.length; i++) {
+    signalLossMap.delete(keysToDelete[i]);
+    pruned++;
+  }
+  if (pruned > 0) {
+    logger.info(`[LocationEngine] Pruned ${pruned} stale signal-loss entries (older than 24h). Remaining: ${signalLossMap.size}`);
+  }
+  return pruned;
+}
+
 export function reportSignalLoss(driverId: number, loadId?: number): void {
   const existing = signalLossMap.get(driverId);
   if (existing && !existing.signalLostAt) {

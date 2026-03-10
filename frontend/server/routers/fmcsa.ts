@@ -12,7 +12,8 @@ import { router, publicProcedure } from "../_core/trpc";
 import { cacheGet, cacheSet } from "../services/cache/redisCache";
 
 const FMCSA_BASE = "https://mobile.fmcsa.dot.gov/qc/services";
-const FMCSA_KEY = process.env.FMCSA_WEBKEY || "891b0bbf613e9937bd584968467527aa1f29aec2";
+const FMCSA_KEY = process.env.FMCSA_WEBKEY;
+if (!FMCSA_KEY) throw new Error("FMCSA_WEBKEY environment variable is required");
 
 // LIGHTSPEED: Distributed Redis cache (24h TTL, WARM tier)
 // Falls back to in-memory automatically when Redis unavailable

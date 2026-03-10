@@ -129,7 +129,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "DollarSign", label: "Settlements", path: "/settlements", badge: 0, description: "Settlement statements & payment status" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
-        { icon: "TrendingUp", label: "Market Pricing", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
         { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
       ],
     },
@@ -244,7 +243,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "DollarSign", label: "Settlements", path: "/settlements", badge: 0, description: "Settlement statements & payment status" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
-        { icon: "TrendingUp", label: "Market Pricing", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
         { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
       ],
     },
@@ -345,7 +343,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "DollarSign", label: "Settlements", path: "/settlements", badge: 0, description: "Settlement statements & payment status" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates, surcharges & reconciliation" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
-        { icon: "TrendingUp", label: "Market Pricing", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
         { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
       ],
     },
@@ -457,7 +454,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Truck", label: "Earnings & Trip Pay", path: "/driver/earnings", badge: 0, description: "Earnings summary & per-trip pay breakdown" },
         { icon: "DollarSign", label: "Settlement History", path: "/driver/settlement-history", badge: 0, description: "Weekly/bi-weekly settlement statements" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
-        { icon: "TrendingUp", label: "Market Pricing", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
         { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
       ],
     },
@@ -608,7 +604,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU & accessorial fees" },
         { icon: "BookOpen", label: "Pricebook", path: "/dispatch/pricebook", badge: 0, description: "Rate sheets with cascading lookup priority" },
         { icon: "Fuel", label: "FSC Engine", path: "/dispatch/fsc-engine", badge: 0, description: "Per-contract fuel surcharge calculator" },
-        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Rates, commodities, hot zones & freight intelligence" },
       ],
     },
     {
@@ -722,7 +717,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Earnings, invoices, payouts & market rates",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, earnings & payouts" },
-        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities & hot zones" },
       ],
     },
     {
@@ -796,7 +790,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Funding disbursements, payments & market rates",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Funding disbursements & payments" },
-        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates & demand heatmaps" },
       ],
     },
     { icon: "Settings", label: "Settings", path: "/factoring/settings", badge: 0, description: "Account settings" },
@@ -904,7 +897,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, invoices & payments" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU & accessorial fees" },
-        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates & demand heatmaps" },
       ],
     },
     {
@@ -1022,7 +1014,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Balance, payments & market rates",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance & payments" },
-        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, demand heatmaps & surge pricing" },
       ],
     },
     {
@@ -1117,7 +1108,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Balance, payments & market rates",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance & payments" },
-        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, demand heatmaps & surge pricing" },
       ],
     },
     {
@@ -1175,7 +1165,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "DollarSign", label: "Payments & Fees", path: "/admin/payments", badge: 0, description: "Payment processing & platform fees" },
         { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Platform wallet & escrow oversight" },
         { icon: "AlertTriangle", label: "Disputes", path: "/admin/disputes", badge: 0, description: "Dispute resolution" },
-        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates & demand heatmaps" },
       ],
     },
     {
@@ -1276,7 +1265,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Activity", label: "Telemetry", path: "/admin/telemetry", badge: 0, description: "GPS tracking & system telemetry" },
         { icon: "MapPin", label: "Fleet Map", path: "/fleet-tracking", badge: 0, description: "System-wide fleet tracking" },
         { icon: "BarChart3", label: "Analytics", path: "/super-admin/monitoring", badge: 0, description: "Platform analytics & performance" },
-        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates & demand heatmaps" },
         { icon: "FileText", label: "Audit Logs", path: "/super-admin/logs", badge: 0, description: "System-wide audit trail" },
       ],
     },
@@ -1392,9 +1380,8 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
       category: "Intelligence",
       description: ELD_DESCRIPTIONS[normalizedRole] || "Fleet ELD health, HOS compliance & road intelligence",
     };
-    // Insert before Market Intelligence or before The Haul (organic position)
-    const miIdx = result.findIndex(m => m.path === '/market-pricing');
-    const insertIdx = miIdx >= 0 ? miIdx : result.findIndex(m => m.path === '/the-haul');
+    // Insert before The Haul (organic position)
+    const insertIdx = result.findIndex(m => m.path === '/the-haul');
     if (insertIdx >= 0) result.splice(insertIdx, 0, eldItem);
     else result.push(eldItem);
   }
@@ -1574,6 +1561,21 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
     const missionIdx = result.findIndex(m => m.path === '/mission-balancer');
     const consolInsertIdx = missionIdx >= 0 ? missionIdx + 1 : result.length;
     result.splice(consolInsertIdx, 0, consolItem);
+  }
+
+  // Move Market Intelligence under Optimization category for all roles
+  if (!result.some(m => m.path === '/market-pricing')) {
+    const marketIntelItem: MenuItem = {
+      icon: "TrendingUp",
+      label: "Market Intelligence",
+      path: "/market-pricing",
+      badge: 0,
+      category: "Optimization",
+      description: "Freight rates, commodities, hot zones & demand heatmaps",
+    };
+    const consolIdx = result.findIndex(m => m.path === '/load-consolidation');
+    const marketInsertIdx = consolIdx >= 0 ? consolIdx + 1 : result.length;
+    result.splice(marketInsertIdx, 0, marketIntelItem);
   }
 
   // Task 21.1: Inject Mobile Command Center for driver/carrier/dispatch roles

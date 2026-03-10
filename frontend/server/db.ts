@@ -107,6 +107,13 @@ async function runStartupCleanup(db: ReturnType<typeof drizzle>) {
   await runSchemaSync(db);
 }
 
+/** Validate a SQL identifier (table/column name) to prevent SQL injection. */
+function validateSqlIdentifier(name: string, context: string): void {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    throw new Error(`[SchemaSync] Invalid ${context}: ${JSON.stringify(name)}`);
+  }
+}
+
 /**
  * SCHEMA SYNC — adds missing columns to MySQL tables so Drizzle SELECT * queries don't fail.
  * Uses information_schema to check existence before ALTERing. Non-fatal on error.
@@ -117,6 +124,8 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
 
   async function addColIfMissing(table: string, col: string, definition: string) {
     try {
+      validateSqlIdentifier(table, "table name");
+      validateSqlIdentifier(col, "column name");
       const [rows]: any = await pool!.query(
         `SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
         [table, col]
@@ -974,7 +983,10 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       { name: "federal_state", def: "VARCHAR(50) AFTER return_to_service_date" },
       { name: "legal_name", def: "VARCHAR(255) AFTER federal_state" },
     ]) {
-      try { await pool!.query(`ALTER TABLE fmcsa_oos_orders ADD COLUMN ${col.name} ${col.def}`); } catch (_e: any) {}
+      try {
+        validateSqlIdentifier(col.name, "column name");
+        await pool!.query(`ALTER TABLE fmcsa_oos_orders ADD COLUMN \`${col.name}\` ${col.def}`);
+      } catch (_e: any) {}
     }
 
     await ensureTable("fmcsa_boc3", `CREATE TABLE fmcsa_boc3 (

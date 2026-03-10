@@ -12,6 +12,7 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { eq, and, desc, sql, or, gte } from "drizzle-orm";
 import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
@@ -547,10 +548,9 @@ export const authorityRouter = router({
     }))
     .query(async ({ input }) => {
       const FMCSA_BASE = "https://mobile.fmcsa.dot.gov/qc/services";
-      const FMCSA_KEY = process.env.FMCSA_WEBKEY || "891b0bbf613e9937bd584968467527aa1f29aec2";
-
+      const FMCSA_KEY = process.env.FMCSA_WEBKEY;
       if (!FMCSA_KEY) {
-        return { results: [], error: "FMCSA API key not configured" };
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "FMCSA_WEBKEY environment variable is required" });
       }
 
       const q = input.query.trim().replace(/^(MC|MX|DOT)[#\-\s]*/i, "");

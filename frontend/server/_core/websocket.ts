@@ -453,7 +453,7 @@ export function emitLoadStatusChange(payload: LoadStatusPayload): void {
     }
   );
   // Bridge → Socket.io canonical system
-  try { sioLoadStateChange({ loadId: payload.loadId, previousState: (payload as any).previousStatus || '', newState: (payload as any).newStatus || '', timestamp: payload.timestamp || new Date().toISOString(), actorId: parseInt((payload as any).updatedBy) || undefined }); } catch {}
+  try { sioLoadStateChange({ loadId: payload.loadId, previousState: (payload as any).previousStatus || '', newState: (payload as any).newStatus || '', timestamp: payload.timestamp || new Date().toISOString(), actorId: parseInt((payload as any).updatedBy) || undefined }); } catch (err) { logger.warn("[WebSocket] Socket.io bridge error (loadStateChange):", err); }
 }
 
 /**
@@ -469,7 +469,7 @@ export function emitBidReceived(payload: BidPayload): void {
     }
   );
   // Bridge → Socket.io
-  try { sioBidReceived({ bidId: (payload as any).bidId || '', loadId: payload.loadId, loadNumber: (payload as any).loadNumber || '', catalystId: (payload as any).catalystId || '', catalystName: (payload as any).catalystName || '', amount: (payload as any).amount || 0, status: (payload as any).status || 'pending', timestamp: new Date().toISOString() }); } catch {}
+  try { sioBidReceived({ bidId: (payload as any).bidId || '', loadId: payload.loadId, loadNumber: (payload as any).loadNumber || '', catalystId: (payload as any).catalystId || '', catalystName: (payload as any).catalystName || '', amount: (payload as any).amount || 0, status: (payload as any).status || 'pending', timestamp: new Date().toISOString() }); } catch (err) { logger.warn("[WebSocket] Socket.io bridge error (bidReceived):", err); }
 }
 
 /**
@@ -538,7 +538,7 @@ export function emitNotification(userId: string, payload: NotificationPayload): 
     }
   );
   // Bridge → Socket.io
-  try { sioUserNotification(parseInt(userId) || 0, { type: (payload as any).type || 'general', title: (payload as any).title || '', message: (payload as any).message || '', loadId: (payload as any).data?.loadId, actionUrl: (payload as any).actionUrl }); } catch {}
+  try { sioUserNotification(parseInt(userId) || 0, { type: (payload as any).type || 'general', title: (payload as any).title || '', message: (payload as any).message || '', loadId: (payload as any).data?.loadId, actionUrl: (payload as any).actionUrl }); } catch (err) { logger.warn("[WebSocket] Socket.io bridge error (userNotification):", err); }
 }
 
 /**
@@ -578,7 +578,7 @@ export function emitGamificationEvent(
  */
 export function emitComplianceAlert(companyId: string, payload: CompliancePayload): void {
   // Bridge → Socket.io
-  try { sioComplianceAlert({ entityType: 'company', entityId: companyId, alertType: (payload as any).alertType || 'compliance', severity: (payload as any).severity || 'warning', message: (payload as any).message || '', timestamp: new Date().toISOString() }); } catch {}
+  try { sioComplianceAlert({ entityType: 'company', entityId: companyId, alertType: (payload as any).alertType || 'compliance', severity: (payload as any).severity || 'warning', message: (payload as any).message || '', timestamp: new Date().toISOString() }); } catch (err) { logger.warn("[WebSocket] Socket.io bridge error (complianceAlert):", err); }
   wsService.broadcastToChannel(
     WS_CHANNELS.COMPANY(companyId),
     {
@@ -644,7 +644,7 @@ export function emitDispatchEvent(companyId: string, payload: DispatchPayload): 
     const sioPayload: import("../services/socketService").DispatchEventPayload = { loadId: (payload as any).loadId || '', eventType: payload.eventType || 'dispatch:update', priority: (payload.priority as any) || 'normal', message: (payload as any).message || '', driverId: (payload as any).driverId, timestamp: new Date().toISOString() };
     if (payload.eventType === 'dispatch:assignment') { sioDispatchAssignment(sioPayload); }
     else { sioDispatchBoardUpdate(sioPayload); }
-  } catch {}
+  } catch (err) { logger.warn("[WebSocket] Socket.io bridge error (dispatchEvent):", err); }
   wsService.broadcastToChannel(
     WS_CHANNELS.DISPATCH(companyId),
     {
@@ -684,7 +684,7 @@ export function emitFinancialEvent(userId: string, payload: FinancialPayload): v
     const sioPayload = { type: (payload as any).type || 'financial', amount: (payload as any).amount || 0, currency: 'USD', timestamp: new Date().toISOString() };
     if ((payload as any).type?.includes('payment')) { sioPaymentReceived(uid, sioPayload); }
     else { sioWalletUpdate(uid, sioPayload); }
-  } catch {}
+  } catch (err) { logger.warn("[WebSocket] Socket.io bridge error (financialEvent):", err); }
 }
 
 /**
@@ -773,7 +773,7 @@ export function emitDriverStatusChange(
  */
 export function emitBidAwarded(payload: BidPayload): void {
   // Bridge → Socket.io
-  try { sioBidAwarded({ bidId: (payload as any).bidId || '', loadId: payload.loadId, loadNumber: (payload as any).loadNumber || '', catalystId: payload.catalystId, catalystName: (payload as any).catalystName || '', amount: (payload as any).amount || 0, status: 'accepted', timestamp: new Date().toISOString() }); } catch {}
+  try { sioBidAwarded({ bidId: (payload as any).bidId || '', loadId: payload.loadId, loadNumber: (payload as any).loadNumber || '', catalystId: payload.catalystId, catalystName: (payload as any).catalystName || '', amount: (payload as any).amount || 0, status: 'accepted', timestamp: new Date().toISOString() }); } catch (err) { logger.warn("[WebSocket] Socket.io bridge error (bidAwarded):", err); }
   // Notify the winning catalyst
   wsService.broadcastToChannel(
     WS_CHANNELS.COMPANY(payload.catalystId),
@@ -808,7 +808,7 @@ export function emitEscortJobAvailable(data: Record<string, unknown>): void {
     }
   );
   // Bridge → Socket.io
-  try { sioEscortJobAvailable({ loadId: Number(data.loadId) || 0, status: 'available', timestamp: new Date().toISOString() }); } catch {}
+  try { sioEscortJobAvailable({ loadId: Number(data.loadId) || 0, status: 'available', timestamp: new Date().toISOString() }); } catch (err) { logger.warn("[WebSocket] Socket.io bridge error (escortJobAvailable):", err); }
 }
 
 /**
@@ -816,7 +816,7 @@ export function emitEscortJobAvailable(data: Record<string, unknown>): void {
  */
 export function emitEscortJobAssigned(payload: EscortPayload): void {
   // Bridge → Socket.io
-  try { sioEscortJobAssigned({ loadId: Number(payload.loadId) || 0, escortUserId: payload.escortUserId, status: 'assigned', timestamp: new Date().toISOString() }); } catch {}
+  try { sioEscortJobAssigned({ loadId: Number(payload.loadId) || 0, escortUserId: payload.escortUserId, status: 'assigned', timestamp: new Date().toISOString() }); } catch (err) { logger.warn("[WebSocket] Socket.io bridge error (escortJobAssigned):", err); }
   // Notify the load room
   wsService.broadcastToChannel(
     WS_CHANNELS.LOAD(String(payload.loadId)),

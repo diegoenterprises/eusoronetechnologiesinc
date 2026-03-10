@@ -1369,11 +1369,22 @@ export async function auditPlatformCompanies(limit = 100): Promise<{
         }
 
         // Auto-enrich: update company record with FMCSA data where gaps exist
+        // Whitelist of allowed company columns for auto-enrichment
+        const ALLOWED_ENRICH_COLUMNS = new Set([
+          "mcNumber", "phone", "email", "dotNumber", "name", "address",
+          "city", "state", "zip", "country", "legalName",
+        ]);
+        const validateEnrichColumn = (col: string) => {
+          if (!ALLOWED_ENRICH_COLUMNS.has(col) || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(col)) {
+            throw new Error(`Invalid enrichment column: ${col}`);
+          }
+        };
+
         const updateFields: string[] = [];
         const updateValues: any[] = [];
-        if (enrichments.mcNumber) { updateFields.push("mcNumber = ?"); updateValues.push(enrichments.mcNumber); }
-        if (enrichments.phone && !co.phone) { updateFields.push("phone = ?"); updateValues.push(enrichments.phone); }
-        if (enrichments.email && !co.email) { updateFields.push("email = ?"); updateValues.push(enrichments.email); }
+        if (enrichments.mcNumber) { validateEnrichColumn("mcNumber"); updateFields.push("mcNumber = ?"); updateValues.push(enrichments.mcNumber); }
+        if (enrichments.phone && !co.phone) { validateEnrichColumn("phone"); updateFields.push("phone = ?"); updateValues.push(enrichments.phone); }
+        if (enrichments.email && !co.email) { validateEnrichColumn("email"); updateFields.push("email = ?"); updateValues.push(enrichments.email); }
 
         if (updateFields.length > 0) {
           updateValues.push(co.id);
