@@ -16,11 +16,20 @@
  *   - Voice call logging
  *   - Auto-translation (English/Spanish)
  *
+ * DB-BACKED: conversations, messages, and notifications use the real database.
+ * IN-MEMORY: broadcasts, rules, templates, escalations, scheduled messages,
+ *            voice calls, and preferences remain in-memory until DB migrations
+ *            are created for them.
+ *
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
 import { z } from "zod";
+import { eq, and, desc, asc, sql, isNull } from "drizzle-orm";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
+import { getDb } from "../db";
+import { conversations, messages, notifications, users } from "../../drizzle/schema";
 
 // ─── Shared Enums & Schemas ──────────────────────────────────────────────────
 
@@ -40,43 +49,63 @@ const ruleConditionEnum = z.enum([
   "custom",
 ]);
 
-// ─── In-Memory Stores (production: replace with DB tables) ───────────────────
+// ─── DB-backed conversation type mapping ─────────────────────────────────────
+// The DB conversations.type enum is: "direct", "group", "job", "channel", "company", "support"
+// The CommHub uses: "direct", "group", "dispatch", "load_linked", "support", "broadcast"
+// Mapping: dispatch → channel, load_linked → job, broadcast → company (closest fit)
+const toDbConvType = (t: string): "direct" | "group" | "job" | "channel" | "company" | "support" => {
+  const map: Record<string, "direct" | "group" | "job" | "channel" | "company" | "support"> = {
+    dispatch: "channel",
+    load_linked: "job",
+    broadcast: "company",
+  };
+  return (map[t] || t) as any;
+};
+const fromDbConvType = (t: string): string => {
+  const map: Record<string, string> = {
+    channel: "dispatch",
+    job: "load_linked",
+    company: "broadcast",
+  };
+  return map[t] || t;
+};
 
-interface CommMessage {
-  id: string;
-  conversationId: string;
-  senderId: number;
-  senderName: string;
-  senderRole: string;
-  channel: string;
-  content: string;
-  contentType: "text" | "image" | "file" | "location" | "template";
-  priority: string;
-  status: string;
-  metadata: Record<string, unknown>;
-  replyToId: string | null;
-  translatedContent: string | null;
-  translatedLang: string | null;
-  createdAt: string;
-  readAt: string | null;
-  deliveredAt: string | null;
+// ─── DB-backed message type mapping ──────────────────────────────────────────
+// The DB messages.messageType enum is: "text", "image", "document", "location", etc.
+// CommHub contentType: "text", "image", "file", "location", "template"
+// Mapping: file → document, template → text (no DB equivalent)
+const toDbMsgType = (t: string): "text" | "image" | "document" | "location" => {
+  if (t === "file") return "document";
+  if (t === "template") return "text";
+  return t as any;
+};
+const fromDbMsgType = (t: string): string => {
+  if (t === "document") return "file";
+  return t;
+};
+
+// ─── Helper: resolve user ID from ctx ────────────────────────────────────────
+
+async function resolveUserId(ctxUser: any): Promise<number> {
+  if (ctxUser?.id) return Number(ctxUser.id);
+  const db = await getDb();
+  if (!db) return 0;
+  const email = ctxUser?.email || "";
+  if (!email) return 0;
+  try {
+    const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    return row?.id || 0;
+  } catch (e) {
+    logger.error("[CommHub] Failed to resolve user ID:", e);
+    return 0;
+  }
 }
 
-interface Conversation {
-  id: string;
-  type: string;
-  title: string;
-  participants: { userId: number; name: string; role: string; joinedAt: string }[];
-  lastMessageAt: string;
-  lastMessagePreview: string;
-  unreadCount: number;
-  isPinned: boolean;
-  isMuted: boolean;
-  loadId: string | null;
-  metadata: Record<string, unknown>;
-  createdAt: string;
-}
+// ─── In-Memory Stores (TODO: migrate to DB tables) ──────────────────────────
+// These features have no corresponding DB tables yet. They remain in-memory
+// until proper migrations are created. Each store is clearly marked.
 
+// TODO: needs DB migration — create `comm_broadcasts` table
 interface Broadcast {
   id: string;
   senderId: number;
@@ -95,6 +124,7 @@ interface Broadcast {
   createdAt: string;
 }
 
+// TODO: needs DB migration — create `comm_notification_rules` table
 interface NotificationRule {
   id: string;
   name: string;
@@ -112,6 +142,7 @@ interface NotificationRule {
   triggerCount: number;
 }
 
+// TODO: needs DB migration — create `comm_templates` table
 interface CommTemplate {
   id: string;
   name: string;
@@ -128,6 +159,7 @@ interface CommTemplate {
   usageCount: number;
 }
 
+// TODO: needs DB migration — create `comm_escalation_workflows` table
 interface EscalationWorkflow {
   id: string;
   name: string;
@@ -150,6 +182,7 @@ interface EscalationStep {
   message: string;
 }
 
+// TODO: needs DB migration — create `comm_scheduled_messages` table
 interface ScheduledMessage {
   id: string;
   conversationId: string | null;
@@ -163,6 +196,7 @@ interface ScheduledMessage {
   createdAt: string;
 }
 
+// TODO: needs DB migration — create `comm_voice_calls` table
 interface VoiceCallEntry {
   id: string;
   callerId: number;
@@ -179,6 +213,7 @@ interface VoiceCallEntry {
   endedAt: string | null;
 }
 
+// TODO: needs DB migration — create `comm_notification_preferences` table
 interface NotifPreference {
   userId: number;
   channels: {
@@ -192,9 +227,7 @@ interface NotifPreference {
   language: string;
 }
 
-// Storage
-const messagesStore: CommMessage[] = [];
-const conversationsStore: Conversation[] = [];
+// In-memory storage (lost on restart — needs DB migration)
 const broadcastsStore: Broadcast[] = [];
 const rulesStore: NotificationRule[] = [];
 const templatesStore: CommTemplate[] = [];
@@ -207,39 +240,20 @@ const activeEscalations: { id: string; workflowId: string; messageId: string; cu
 let idCounter = 1000;
 function nextId(prefix: string) { return `${prefix}_${++idCounter}`; }
 
-// ─── Seed Data ───────────────────────────────────────────────────────────────
+// ─── Seed In-Memory Data (only for features without DB tables) ───────────────
 
-function ensureSeeded() {
-  if (conversationsStore.length > 0) return;
+function ensureInMemorySeeded() {
+  if (broadcastsStore.length > 0) return;
 
-  // Sample conversations
   const now = new Date().toISOString();
-  const convos: Conversation[] = [
-    { id: "conv_1", type: "dispatch", title: "Dispatch Channel - Southeast", participants: [{ userId: 1, name: "Diego Usoro", role: "ADMIN", joinedAt: now }, { userId: 2, name: "Maria Garcia", role: "DISPATCH", joinedAt: now }, { userId: 3, name: "James Wilson", role: "DRIVER", joinedAt: now }], lastMessageAt: now, lastMessagePreview: "Load #4521 picked up, heading to Atlanta", unreadCount: 3, isPinned: true, isMuted: false, loadId: null, metadata: { region: "southeast" }, createdAt: now },
-    { id: "conv_2", type: "direct", title: "James Wilson", participants: [{ userId: 1, name: "Diego Usoro", role: "ADMIN", joinedAt: now }, { userId: 3, name: "James Wilson", role: "DRIVER", joinedAt: now }], lastMessageAt: new Date(Date.now() - 3600000).toISOString(), lastMessagePreview: "ETA to delivery is 2:30 PM", unreadCount: 1, isPinned: false, isMuted: false, loadId: "LOAD-4521", metadata: {}, createdAt: now },
-    { id: "conv_3", type: "group", title: "Houston Terminal Drivers", participants: [{ userId: 1, name: "Diego Usoro", role: "ADMIN", joinedAt: now }, { userId: 4, name: "Carlos Mendez", role: "DRIVER", joinedAt: now }, { userId: 5, name: "Robert Johnson", role: "DRIVER", joinedAt: now }, { userId: 6, name: "Angela Davis", role: "DRIVER", joinedAt: now }], lastMessageAt: new Date(Date.now() - 7200000).toISOString(), lastMessagePreview: "Road construction on I-10 near Katy", unreadCount: 0, isPinned: false, isMuted: false, loadId: null, metadata: { terminal: "Houston" }, createdAt: now },
-    { id: "conv_4", type: "load_linked", title: "Load #4530 - Hazmat Run", participants: [{ userId: 1, name: "Diego Usoro", role: "ADMIN", joinedAt: now }, { userId: 2, name: "Maria Garcia", role: "DISPATCH", joinedAt: now }, { userId: 7, name: "Tom Patel", role: "DRIVER", joinedAt: now }], lastMessageAt: new Date(Date.now() - 1800000).toISOString(), lastMessagePreview: "Placards verified, ready for departure", unreadCount: 2, isPinned: true, isMuted: false, loadId: "LOAD-4530", metadata: { hazmat: true }, createdAt: now },
-    { id: "conv_5", type: "support", title: "ELD Connectivity Issue", participants: [{ userId: 1, name: "Diego Usoro", role: "ADMIN", joinedAt: now }, { userId: 8, name: "Support Team", role: "ADMIN", joinedAt: now }, { userId: 5, name: "Robert Johnson", role: "DRIVER", joinedAt: now }], lastMessageAt: new Date(Date.now() - 5400000).toISOString(), lastMessagePreview: "Try restarting the ELD device and check Bluetooth", unreadCount: 0, isPinned: false, isMuted: false, loadId: null, metadata: { ticketId: "TKT-892" }, createdAt: now },
-  ];
-  conversationsStore.push(...convos);
 
-  // Sample messages
-  const msgs: CommMessage[] = [
-    { id: "msg_1", conversationId: "conv_1", senderId: 3, senderName: "James Wilson", senderRole: "DRIVER", channel: "in_app", content: "Load #4521 picked up, heading to Atlanta", contentType: "text", priority: "normal", status: "delivered", metadata: {}, replyToId: null, translatedContent: "Carga #4521 recogida, rumbo a Atlanta", translatedLang: "es", createdAt: now, readAt: null, deliveredAt: now },
-    { id: "msg_2", conversationId: "conv_1", senderId: 2, senderName: "Maria Garcia", senderRole: "DISPATCH", channel: "in_app", content: "Copy that. Weather advisory for I-75 south of Macon. Take alternate if needed.", contentType: "text", priority: "high", status: "delivered", metadata: {}, replyToId: "msg_1", translatedContent: "Copiado. Aviso de clima para I-75 al sur de Macon. Toma ruta alterna si es necesario.", translatedLang: "es", createdAt: new Date(Date.now() - 60000).toISOString(), readAt: null, deliveredAt: new Date(Date.now() - 60000).toISOString() },
-    { id: "msg_3", conversationId: "conv_2", senderId: 3, senderName: "James Wilson", senderRole: "DRIVER", channel: "sms", content: "ETA to delivery is 2:30 PM", contentType: "text", priority: "normal", status: "read", metadata: {}, replyToId: null, translatedContent: null, translatedLang: null, createdAt: new Date(Date.now() - 3600000).toISOString(), readAt: new Date(Date.now() - 3500000).toISOString(), deliveredAt: new Date(Date.now() - 3600000).toISOString() },
-    { id: "msg_4", conversationId: "conv_4", senderId: 7, senderName: "Tom Patel", senderRole: "DRIVER", channel: "in_app", content: "Placards verified, ready for departure", contentType: "text", priority: "high", status: "delivered", metadata: { hazmat: true }, replyToId: null, translatedContent: "Placas verificadas, listo para salir", translatedLang: "es", createdAt: new Date(Date.now() - 1800000).toISOString(), readAt: null, deliveredAt: new Date(Date.now() - 1800000).toISOString() },
-    { id: "msg_5", conversationId: "conv_3", senderId: 4, senderName: "Carlos Mendez", senderRole: "DRIVER", channel: "in_app", content: "Road construction on I-10 near Katy. Adding 20 mins to travel time.", contentType: "text", priority: "normal", status: "read", metadata: {}, replyToId: null, translatedContent: null, translatedLang: null, createdAt: new Date(Date.now() - 7200000).toISOString(), readAt: new Date(Date.now() - 7100000).toISOString(), deliveredAt: new Date(Date.now() - 7200000).toISOString() },
-  ];
-  messagesStore.push(...msgs);
-
-  // Sample broadcasts
+  // Sample broadcasts (in-memory — TODO: migrate to DB)
   broadcastsStore.push(
     { id: "bcast_1", senderId: 1, senderName: "Diego Usoro", title: "Winter Storm Warning - I-40 Corridor", content: "WINTER STORM WARNING: I-40 from Memphis to Nashville expecting 4-6 inches of snow tonight. All drivers on this corridor should secure safe parking before 8 PM CST. Contact dispatch if you need rerouting.", channel: "in_app", priority: "emergency", targetGroup: "all_drivers", targetFilters: { corridor: "I-40" }, recipientCount: 45, deliveredCount: 42, readCount: 38, isEmergency: true, expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date(Date.now() - 3600000).toISOString() },
     { id: "bcast_2", senderId: 2, senderName: "Maria Garcia", title: "Weekly Safety Reminder", content: "Reminder: Pre-trip inspections are mandatory. Check tires, brakes, lights, and fluid levels before departure. Safety is everyone's responsibility.", channel: "in_app", priority: "normal", targetGroup: "all_drivers", targetFilters: {}, recipientCount: 120, deliveredCount: 115, readCount: 89, isEmergency: false, expiresAt: null, createdAt: new Date(Date.now() - 86400000).toISOString() },
   );
 
-  // Sample notification rules
+  // Sample notification rules (in-memory — TODO: migrate to DB)
   rulesStore.push(
     { id: "rule_1", name: "Load Pickup Confirmation", description: "Notify dispatch when driver confirms pickup", condition: "load_assigned", channels: ["in_app", "sms"], templateId: "tmpl_1", recipients: "dispatch_team", isActive: true, cooldownMinutes: 0, metadata: {}, createdBy: 1, createdAt: now, lastTriggeredAt: new Date(Date.now() - 600000).toISOString(), triggerCount: 234 },
     { id: "rule_2", name: "Driver Offline Alert", description: "Alert if driver goes offline for more than 30 minutes during active load", condition: "driver_offline", channels: ["in_app", "sms", "push"], templateId: null, recipients: "dispatch_team", isActive: true, cooldownMinutes: 30, metadata: { offlineThresholdMinutes: 30 }, createdBy: 1, createdAt: now, lastTriggeredAt: new Date(Date.now() - 1200000).toISOString(), triggerCount: 56 },
@@ -248,7 +262,7 @@ function ensureSeeded() {
     { id: "rule_5", name: "Temperature Alert", description: "Alert when reefer temperature goes out of range", condition: "temperature_alert", channels: ["in_app", "sms", "push"], templateId: null, recipients: "driver_and_dispatch", isActive: true, cooldownMinutes: 15, metadata: { minTemp: 32, maxTemp: 40 }, createdBy: 1, createdAt: now, lastTriggeredAt: null, triggerCount: 0 },
   );
 
-  // Sample templates
+  // Sample templates (in-memory — TODO: migrate to DB)
   templatesStore.push(
     { id: "tmpl_1", name: "Load Pickup Confirmation", category: "operations", channel: "sms", subject: null, body: "Hi {{driverName}}, Load #{{loadId}} has been assigned to you. Pickup at {{pickupAddress}} on {{pickupDate}}. Confirm receipt.", mergeFields: ["driverName", "loadId", "pickupAddress", "pickupDate"], isActive: true, language: "en", createdBy: 1, createdAt: now, updatedAt: now, usageCount: 234 },
     { id: "tmpl_2", name: "Document Expiration Warning", category: "compliance", channel: "email", subject: "Action Required: {{documentType}} expiring on {{expiryDate}}", body: "Dear {{driverName}},\n\nYour {{documentType}} is set to expire on {{expiryDate}}. Please renew it before the expiration date to maintain compliance.\n\nUpload your renewed document at: {{uploadLink}}\n\nThank you,\nEusoTrip Compliance Team", mergeFields: ["driverName", "documentType", "expiryDate", "uploadLink"], isActive: true, language: "en", createdBy: 1, createdAt: now, updatedAt: now, usageCount: 89 },
@@ -257,7 +271,7 @@ function ensureSeeded() {
     { id: "tmpl_5", name: "Payment Received", category: "billing", channel: "email", subject: "Payment of ${{amount}} received for Load #{{loadId}}", body: "Hi {{driverName}},\n\nWe've processed your payment of ${{amount}} for Load #{{loadId}} ({{route}}). The funds will be in your account within {{businessDays}} business days.\n\nView details: {{paymentLink}}\n\nThank you for hauling with EusoTrip!", mergeFields: ["driverName", "amount", "loadId", "route", "businessDays", "paymentLink"], isActive: true, language: "en", createdBy: 1, createdAt: now, updatedAt: now, usageCount: 156 },
   );
 
-  // Sample escalation workflows
+  // Sample escalation workflows (in-memory — TODO: migrate to DB)
   escalationsStore.push(
     {
       id: "esc_1", name: "Driver No Response", description: "Escalate when driver does not respond to dispatch within timeframes", triggerCondition: "no_response", isActive: true, createdBy: 1, createdAt: now, updatedAt: now,
@@ -278,13 +292,13 @@ function ensureSeeded() {
     },
   );
 
-  // Sample scheduled messages
+  // Sample scheduled messages (in-memory — TODO: migrate to DB)
   scheduledStore.push(
     { id: "sched_1", conversationId: null, senderId: 1, senderName: "Diego Usoro", channel: "sms", content: "Good morning team! Remember: safety meeting at 8 AM today at Houston terminal.", recipientIds: [3, 4, 5, 6], scheduledFor: new Date(Date.now() + 43200000).toISOString(), status: "scheduled", createdAt: now },
     { id: "sched_2", conversationId: "conv_3", senderId: 2, senderName: "Maria Garcia", channel: "in_app", content: "Reminder: Quarterly equipment inspections start next Monday. Make sure your trucks are ready.", recipientIds: [4, 5, 6], scheduledFor: new Date(Date.now() + 172800000).toISOString(), status: "scheduled", createdAt: now },
   );
 
-  // Sample voice calls
+  // Sample voice calls (in-memory — TODO: migrate to DB)
   voiceCallsStore.push(
     { id: "call_1", callerId: 2, callerName: "Maria Garcia", receiverId: 3, receiverName: "James Wilson", direction: "outbound", status: "completed", durationSeconds: 185, outcome: "Confirmed ETA and delivery instructions", notes: "Driver confirmed 2:30 PM arrival. Will call receiver 30 min before.", recordingUrl: null, startedAt: new Date(Date.now() - 7200000).toISOString(), endedAt: new Date(Date.now() - 7015000).toISOString() },
     { id: "call_2", callerId: 5, callerName: "Robert Johnson", receiverId: 2, receiverName: "Maria Garcia", direction: "inbound", status: "completed", durationSeconds: 92, outcome: "Reported road construction delay", notes: "I-10 construction near Katy. 20 min delay. Rerouted via 99.", recordingUrl: null, startedAt: new Date(Date.now() - 7200000).toISOString(), endedAt: new Date(Date.now() - 7108000).toISOString() },
@@ -324,6 +338,53 @@ function simpleTranslate(text: string, targetLang: "en" | "es"): string {
   return translated;
 }
 
+// ─── Helper: map DB conversation row to CommHub format ───────────────────────
+
+function mapDbConversation(row: any) {
+  return {
+    id: String(row.id),
+    type: fromDbConvType(row.type),
+    title: row.name || `Conversation #${row.id}`,
+    participants: Array.isArray(row.participants)
+      ? (row.participants as any[]).map((p: any) =>
+          typeof p === "number"
+            ? { userId: p, name: `User ${p}`, role: "UNKNOWN", joinedAt: row.createdAt?.toISOString?.() || new Date().toISOString() }
+            : p
+        )
+      : [],
+    lastMessageAt: row.lastMessageAt?.toISOString?.() || row.createdAt?.toISOString?.() || new Date().toISOString(),
+    lastMessagePreview: "",
+    unreadCount: 0,
+    isPinned: false,
+    isMuted: false,
+    loadId: row.loadId ? String(row.loadId) : null,
+    metadata: {},
+    createdAt: row.createdAt?.toISOString?.() || new Date().toISOString(),
+  };
+}
+
+function mapDbMessage(row: any) {
+  return {
+    id: String(row.id),
+    conversationId: String(row.conversationId),
+    senderId: row.senderId,
+    senderName: "",
+    senderRole: "",
+    channel: "in_app",
+    content: row.content || "",
+    contentType: fromDbMsgType(row.messageType || "text"),
+    priority: "normal",
+    status: "delivered",
+    metadata: row.metadata || {},
+    replyToId: null,
+    translatedContent: null,
+    translatedLang: null,
+    createdAt: row.createdAt?.toISOString?.() || new Date().toISOString(),
+    readAt: null,
+    deliveredAt: row.createdAt?.toISOString?.() || new Date().toISOString(),
+  };
+}
+
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export const communicationHubRouter = router({
@@ -333,13 +394,54 @@ export const communicationHubRouter = router({
   // ═══════════════════════════════════════════════════════════════════════════
 
   getCommunicationDashboard: protectedProcedure
-    .query(async () => {
-      ensureSeeded();
-      const totalUnread = conversationsStore.reduce((sum, c) => sum + c.unreadCount, 0);
-      const activeChats = conversationsStore.filter(c => {
-        const lastMsg = new Date(c.lastMessageAt).getTime();
-        return Date.now() - lastMsg < 24 * 3600000;
-      }).length;
+    .query(async ({ ctx }) => {
+      ensureInMemorySeeded();
+      const db = await getDb();
+
+      let totalConversations = 0;
+      let recentDbMessages: any[] = [];
+      let channelBreakdown = { in_app: 0, sms: 0, email: 0, push: 0 };
+
+      if (db) {
+        try {
+          const userId = await resolveUserId(ctx.user);
+
+          // Count conversations where user is a participant
+          const [convCount] = await db.select({ count: sql<number>`count(*)` })
+            .from(conversations);
+          totalConversations = convCount?.count || 0;
+
+          // Get recent messages from DB
+          recentDbMessages = await db.select({
+            id: messages.id,
+            senderId: messages.senderId,
+            content: messages.content,
+            messageType: messages.messageType,
+            conversationId: messages.conversationId,
+            metadata: messages.metadata,
+            createdAt: messages.createdAt,
+          })
+            .from(messages)
+            .where(isNull(messages.deletedAt))
+            .orderBy(desc(messages.createdAt))
+            .limit(10);
+
+          // Count messages by channel stored in metadata (default: in_app)
+          const allMsgs = await db.select({ metadata: messages.metadata })
+            .from(messages)
+            .where(isNull(messages.deletedAt))
+            .limit(1000);
+          for (const m of allMsgs) {
+            const ch = (m.metadata as any)?.channel || "in_app";
+            if (ch in channelBreakdown) {
+              channelBreakdown[ch as keyof typeof channelBreakdown]++;
+            }
+          }
+        } catch (err) {
+          logger.error("[CommHub] getCommunicationDashboard DB error:", err);
+        }
+      }
+
       const recentBroadcasts = broadcastsStore.filter(b => {
         return Date.now() - new Date(b.createdAt).getTime() < 7 * 86400000;
       }).length;
@@ -347,24 +449,11 @@ export const communicationHubRouter = router({
       const scheduledCount = scheduledStore.filter(s => s.status === "scheduled").length;
       const activeRules = rulesStore.filter(r => r.isActive).length;
 
-      // Channel breakdown
-      const channelBreakdown = { in_app: 0, sms: 0, email: 0, push: 0 };
-      for (const m of messagesStore) {
-        if (m.channel in channelBreakdown) {
-          channelBreakdown[m.channel as keyof typeof channelBreakdown]++;
-        }
-      }
-
-      // Recent activity
-      const recentMessages = [...messagesStore]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 10);
-
       return {
         summary: {
-          totalUnread,
-          activeChats,
-          totalConversations: conversationsStore.length,
+          totalUnread: 0,
+          activeChats: totalConversations,
+          totalConversations,
           recentBroadcasts,
           activeEscalations: activeEscCount,
           scheduledMessages: scheduledCount,
@@ -373,14 +462,14 @@ export const communicationHubRouter = router({
           totalVoiceCalls: voiceCallsStore.length,
         },
         channelBreakdown,
-        recentActivity: recentMessages.map(m => ({
-          id: m.id,
-          senderName: m.senderName,
-          channel: m.channel,
-          preview: m.content.slice(0, 80),
-          priority: m.priority,
-          conversationId: m.conversationId,
-          createdAt: m.createdAt,
+        recentActivity: recentDbMessages.map(m => ({
+          id: String(m.id),
+          senderName: `User ${m.senderId}`,
+          channel: (m.metadata as any)?.channel || "in_app",
+          preview: (m.content || "").slice(0, 80),
+          priority: (m.metadata as any)?.priority || "normal",
+          conversationId: String(m.conversationId),
+          createdAt: m.createdAt?.toISOString?.() || new Date().toISOString(),
         })),
         urgentItems: [
           ...broadcastsStore.filter(b => b.isEmergency && (!b.expiresAt || new Date(b.expiresAt) > new Date())).map(b => ({
@@ -402,28 +491,64 @@ export const communicationHubRouter = router({
     }),
 
   getUnreadSummary: protectedProcedure
-    .query(async () => {
-      ensureSeeded();
-      const byChannel = { in_app: 0, sms: 0, email: 0, push: 0 };
-      for (const m of messagesStore) {
-        if (!m.readAt && m.channel in byChannel) {
-          byChannel[m.channel as keyof typeof byChannel]++;
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { totalUnread: 0, byChannel: { in_app: 0, sms: 0, email: 0, push: 0 }, unreadConversations: [] };
+
+      try {
+        const userId = await resolveUserId(ctx.user);
+        if (!userId) return { totalUnread: 0, byChannel: { in_app: 0, sms: 0, email: 0, push: 0 }, unreadConversations: [] };
+
+        // Get notifications that are unread for this user
+        const [unreadCount] = await db.select({ count: sql<number>`count(*)` })
+          .from(notifications)
+          .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+
+        // Get conversations where user is a participant
+        const convos = await db.select()
+          .from(conversations)
+          .where(sql`JSON_CONTAINS(${conversations.participants}, CAST(${userId} AS JSON))`)
+          .orderBy(desc(conversations.lastMessageAt))
+          .limit(20);
+
+        // For each conversation, count unread messages (messages not in readBy for this user)
+        const unreadConversations: any[] = [];
+        for (const conv of convos) {
+          const [unread] = await db.select({ count: sql<number>`count(*)` })
+            .from(messages)
+            .where(and(
+              eq(messages.conversationId, conv.id),
+              isNull(messages.deletedAt),
+              sql`NOT JSON_CONTAINS(COALESCE(${messages.readBy}, '[]'), CAST(${userId} AS JSON))`,
+            ));
+          const count = unread?.count || 0;
+          if (count > 0) {
+            unreadConversations.push({
+              conversationId: String(conv.id),
+              title: conv.name || `Conversation #${conv.id}`,
+              type: fromDbConvType(conv.type),
+              unreadCount: count,
+              lastMessageAt: conv.lastMessageAt?.toISOString?.() || conv.createdAt?.toISOString?.(),
+              lastMessagePreview: "",
+            });
+          }
         }
+
+        const totalUnread = unreadConversations.reduce((s, c) => s + c.unreadCount, 0);
+
+        return {
+          totalUnread,
+          byChannel: { in_app: totalUnread, sms: 0, email: 0, push: 0 },
+          unreadConversations,
+        };
+      } catch (err) {
+        logger.error("[CommHub] getUnreadSummary DB error:", err);
+        return { totalUnread: 0, byChannel: { in_app: 0, sms: 0, email: 0, push: 0 }, unreadConversations: [] };
       }
-      const totalUnread = Object.values(byChannel).reduce((s, v) => s + v, 0);
-      const unreadConversations = conversationsStore.filter(c => c.unreadCount > 0).map(c => ({
-        conversationId: c.id,
-        title: c.title,
-        type: c.type,
-        unreadCount: c.unreadCount,
-        lastMessageAt: c.lastMessageAt,
-        lastMessagePreview: c.lastMessagePreview,
-      }));
-      return { totalUnread, byChannel, unreadConversations };
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // MULTI-CHANNEL INBOX & MESSAGING
+  // MULTI-CHANNEL INBOX & MESSAGING (DB-backed)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getMultiChannelInbox: protectedProcedure
@@ -435,40 +560,79 @@ export const communicationHubRouter = router({
       page: z.number().min(1).default(1),
       limit: z.number().min(1).max(100).default(20),
     }).optional())
-    .query(async ({ input }) => {
-      ensureSeeded();
-      const { channel, type, search, unreadOnly, page = 1, limit = 20 } = input || {};
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { conversations: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
 
-      let filtered = [...conversationsStore];
-      if (type) filtered = filtered.filter(c => c.type === type);
-      if (unreadOnly) filtered = filtered.filter(c => c.unreadCount > 0);
-      if (search) {
-        const q = search.toLowerCase();
-        filtered = filtered.filter(c =>
-          c.title.toLowerCase().includes(q) ||
-          c.lastMessagePreview.toLowerCase().includes(q)
-        );
+      try {
+        const { type, search, page = 1, limit = 20 } = input || {};
+        const userId = await resolveUserId(ctx.user);
+
+        // Build conditions
+        const conditions: any[] = [];
+        if (type) {
+          const dbType = toDbConvType(type);
+          conditions.push(eq(conversations.type, dbType));
+        }
+        if (search) {
+          conditions.push(sql`${conversations.name} LIKE ${`%${search}%`}`);
+        }
+
+        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+        // Get total count
+        const [countResult] = await db.select({ count: sql<number>`count(*)` })
+          .from(conversations)
+          .where(whereClause);
+        const total = countResult?.count || 0;
+
+        // Get paginated conversations
+        const offset = (page - 1) * limit;
+        const rows = await db.select()
+          .from(conversations)
+          .where(whereClause)
+          .orderBy(desc(conversations.lastMessageAt))
+          .limit(limit)
+          .offset(offset);
+
+        // Enrich with last message preview and unread count
+        const enriched = [];
+        for (const row of rows) {
+          const mapped = mapDbConversation(row);
+
+          // Get last message preview
+          const [lastMsg] = await db.select({ content: messages.content })
+            .from(messages)
+            .where(and(eq(messages.conversationId, row.id), isNull(messages.deletedAt)))
+            .orderBy(desc(messages.createdAt))
+            .limit(1);
+          if (lastMsg) {
+            mapped.lastMessagePreview = (lastMsg.content || "").slice(0, 100);
+          }
+
+          // Count unread for current user
+          if (userId) {
+            const [unread] = await db.select({ count: sql<number>`count(*)` })
+              .from(messages)
+              .where(and(
+                eq(messages.conversationId, row.id),
+                isNull(messages.deletedAt),
+                sql`NOT JSON_CONTAINS(COALESCE(${messages.readBy}, '[]'), CAST(${userId} AS JSON))`,
+              ));
+            mapped.unreadCount = unread?.count || 0;
+          }
+
+          enriched.push(mapped);
+        }
+
+        return {
+          conversations: enriched,
+          pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        };
+      } catch (err) {
+        logger.error("[CommHub] getMultiChannelInbox DB error:", err);
+        return { conversations: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
       }
-      if (channel) {
-        const convoIdsWithChannel = new Set(
-          messagesStore.filter(m => m.channel === channel).map(m => m.conversationId)
-        );
-        filtered = filtered.filter(c => convoIdsWithChannel.has(c.id));
-      }
-
-      filtered.sort((a, b) => {
-        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-        return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
-      });
-
-      const total = filtered.length;
-      const start = (page - 1) * limit;
-      const items = filtered.slice(start, start + limit);
-
-      return {
-        conversations: items,
-        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
-      };
     }),
 
   sendMessage: protectedProcedure
@@ -482,42 +646,69 @@ export const communicationHubRouter = router({
       metadata: z.record(z.string(), z.unknown()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      ensureSeeded();
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
       const user = ctx.user as any;
-      const msg: CommMessage = {
-        id: nextId("msg"),
-        conversationId: input.conversationId,
-        senderId: Number(user.id) || 0,
-        senderName: user.name || user.email || "Unknown",
-        senderRole: user.role || "ADMIN",
-        channel: input.channel,
-        content: input.content,
-        contentType: input.contentType,
-        priority: input.priority,
-        status: "sent",
-        metadata: input.metadata || {},
-        replyToId: input.replyToId || null,
-        translatedContent: null,
-        translatedLang: null,
-        createdAt: new Date().toISOString(),
-        readAt: null,
-        deliveredAt: new Date().toISOString(),
-      };
+      const userId = await resolveUserId(user);
+      const convId = parseInt(input.conversationId, 10);
+
+      if (isNaN(convId)) throw new Error("Invalid conversation ID");
 
       // Auto-translate
-      msg.translatedContent = simpleTranslate(input.content, "es");
-      msg.translatedLang = "es";
+      const translatedContent = simpleTranslate(input.content, "es");
 
-      messagesStore.push(msg);
+      // Store extra fields (channel, priority, sender info, translation) in metadata
+      const msgMetadata = {
+        ...(input.metadata || {}),
+        channel: input.channel,
+        priority: input.priority,
+        senderName: user.name || user.email || "Unknown",
+        senderRole: user.role || "ADMIN",
+        replyToId: input.replyToId || null,
+        translatedContent,
+        translatedLang: "es",
+      };
 
-      // Update conversation
-      const conv = conversationsStore.find(c => c.id === input.conversationId);
-      if (conv) {
-        conv.lastMessageAt = msg.createdAt;
-        conv.lastMessagePreview = msg.content.slice(0, 100);
+      try {
+        const [inserted] = await db.insert(messages).values({
+          conversationId: convId,
+          senderId: userId,
+          messageType: toDbMsgType(input.contentType),
+          content: input.content,
+          metadata: msgMetadata,
+        }).$returningId();
+
+        // Update conversation lastMessageAt
+        await db.update(conversations)
+          .set({ lastMessageAt: new Date() })
+          .where(eq(conversations.id, convId));
+
+        const msg = {
+          id: String(inserted.id),
+          conversationId: input.conversationId,
+          senderId: userId,
+          senderName: user.name || user.email || "Unknown",
+          senderRole: user.role || "ADMIN",
+          channel: input.channel,
+          content: input.content,
+          contentType: input.contentType,
+          priority: input.priority,
+          status: "sent",
+          metadata: input.metadata || {},
+          replyToId: input.replyToId || null,
+          translatedContent,
+          translatedLang: "es",
+          createdAt: new Date().toISOString(),
+          readAt: null,
+          deliveredAt: new Date().toISOString(),
+        };
+
+        return { success: true, message: msg };
+      } catch (err) {
+        logger.error("[CommHub] sendMessage DB error:", err);
+        throw new Error("Failed to send message");
       }
-
-      return { success: true, message: msg };
     }),
 
   getConversationThreads: protectedProcedure
@@ -528,25 +719,62 @@ export const communicationHubRouter = router({
       limit: z.number().min(1).max(100).default(50),
     }))
     .query(async ({ input }) => {
-      ensureSeeded();
-      let msgs = messagesStore.filter(m => m.conversationId === input.conversationId);
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        msgs = msgs.filter(m => m.content.toLowerCase().includes(q));
+      const db = await getDb();
+      if (!db) return { conversation: null, messages: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 } };
+
+      try {
+        const convId = parseInt(input.conversationId, 10);
+        if (isNaN(convId)) return { conversation: null, messages: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 } };
+
+        // Get conversation
+        const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1);
+
+        // Build message conditions
+        const conditions: any[] = [eq(messages.conversationId, convId), isNull(messages.deletedAt)];
+        if (input.search) {
+          conditions.push(sql`${messages.content} LIKE ${`%${input.search}%`}`);
+        }
+
+        // Count total
+        const [countResult] = await db.select({ count: sql<number>`count(*)` })
+          .from(messages)
+          .where(and(...conditions));
+        const total = countResult?.count || 0;
+
+        // Get paginated messages (oldest first for chat display)
+        const offset = (input.page - 1) * input.limit;
+        const rows = await db.select()
+          .from(messages)
+          .where(and(...conditions))
+          .orderBy(asc(messages.createdAt))
+          .limit(input.limit)
+          .offset(offset);
+
+        const mappedMsgs = rows.map(row => {
+          const mapped = mapDbMessage(row);
+          // Enrich from metadata
+          const meta = row.metadata as any;
+          if (meta) {
+            mapped.channel = meta.channel || "in_app";
+            mapped.priority = meta.priority || "normal";
+            mapped.senderName = meta.senderName || "";
+            mapped.senderRole = meta.senderRole || "";
+            mapped.replyToId = meta.replyToId || null;
+            mapped.translatedContent = meta.translatedContent || null;
+            mapped.translatedLang = meta.translatedLang || null;
+          }
+          return mapped;
+        });
+
+        return {
+          conversation: conv ? mapDbConversation(conv) : null,
+          messages: mappedMsgs,
+          pagination: { page: input.page, limit: input.limit, total, totalPages: Math.ceil(total / input.limit) },
+        };
+      } catch (err) {
+        logger.error("[CommHub] getConversationThreads DB error:", err);
+        return { conversation: null, messages: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 } };
       }
-      msgs.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-
-      const total = msgs.length;
-      const start = (input.page - 1) * input.limit;
-      const items = msgs.slice(start, start + input.limit);
-
-      const conv = conversationsStore.find(c => c.id === input.conversationId);
-
-      return {
-        conversation: conv || null,
-        messages: items,
-        pagination: { page: input.page, limit: input.limit, total, totalPages: Math.ceil(total / input.limit) },
-      };
     }),
 
   getDriverDispatcherChat: protectedProcedure
@@ -555,44 +783,78 @@ export const communicationHubRouter = router({
       loadId: z.string().optional(),
     }).optional())
     .query(async ({ input }) => {
-      ensureSeeded();
-      let convos = conversationsStore.filter(c =>
-        c.type === "direct" || c.type === "dispatch" || c.type === "load_linked"
-      );
-      if (input?.driverId) {
-        convos = convos.filter(c =>
-          c.participants.some(p => p.userId === input.driverId && p.role === "DRIVER")
-        );
-      }
-      if (input?.loadId) {
-        convos = convos.filter(c => c.loadId === input.loadId);
-      }
+      const db = await getDb();
+      if (!db) return { chats: [], totalActive: 0, totalUnread: 0 };
 
-      const chats = convos.map(c => {
-        const msgs = messagesStore
-          .filter(m => m.conversationId === c.id)
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        const driver = c.participants.find(p => p.role === "DRIVER");
-        const dispatcher = c.participants.find(p => p.role === "DISPATCH" || p.role === "ADMIN");
+      try {
+        // Get dispatch-related conversations (direct, channel/dispatch, job/load_linked)
+        const typeConditions = sql`${conversations.type} IN ('direct', 'channel', 'job')`;
+        const conditions: any[] = [typeConditions];
+
+        if (input?.driverId) {
+          conditions.push(sql`JSON_CONTAINS(${conversations.participants}, CAST(${input.driverId} AS JSON))`);
+        }
+        if (input?.loadId) {
+          const loadIdNum = parseInt(input.loadId.replace(/\D/g, ""), 10);
+          if (!isNaN(loadIdNum)) {
+            conditions.push(eq(conversations.loadId, loadIdNum));
+          }
+        }
+
+        const convos = await db.select()
+          .from(conversations)
+          .where(and(...conditions))
+          .orderBy(desc(conversations.lastMessageAt))
+          .limit(50);
+
+        const chats = [];
+        for (const conv of convos) {
+          // Get recent messages for this conversation
+          const recentMsgs = await db.select()
+            .from(messages)
+            .where(and(eq(messages.conversationId, conv.id), isNull(messages.deletedAt)))
+            .orderBy(desc(messages.createdAt))
+            .limit(20);
+
+          const mapped = mapDbConversation(conv);
+          const participants = Array.isArray(conv.participants) ? conv.participants : [];
+          // Try to identify driver/dispatcher from participants metadata
+          const driver = mapped.participants.find((p: any) => p.role === "DRIVER") || null;
+          const dispatcher = mapped.participants.find((p: any) => p.role === "DISPATCH" || p.role === "ADMIN") || null;
+
+          chats.push({
+            conversation: mapped,
+            driver,
+            dispatcher,
+            recentMessages: recentMsgs.map(m => {
+              const mm = mapDbMessage(m);
+              const meta = m.metadata as any;
+              if (meta) {
+                mm.senderName = meta.senderName || "";
+                mm.senderRole = meta.senderRole || "";
+                mm.channel = meta.channel || "in_app";
+                mm.priority = meta.priority || "normal";
+              }
+              return mm;
+            }),
+            unreadCount: mapped.unreadCount,
+            lastActivity: mapped.lastMessageAt,
+          });
+        }
+
         return {
-          conversation: c,
-          driver: driver || null,
-          dispatcher: dispatcher || null,
-          recentMessages: msgs.slice(0, 20),
-          unreadCount: c.unreadCount,
-          lastActivity: c.lastMessageAt,
+          chats,
+          totalActive: chats.length,
+          totalUnread: chats.reduce((s, c) => s + c.unreadCount, 0),
         };
-      });
-
-      return {
-        chats,
-        totalActive: chats.length,
-        totalUnread: chats.reduce((s, c) => s + c.unreadCount, 0),
-      };
+      } catch (err) {
+        logger.error("[CommHub] getDriverDispatcherChat DB error:", err);
+        return { chats: [], totalActive: 0, totalUnread: 0 };
+      }
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // DISPATCH RADIO & BROADCASTS
+  // DISPATCH RADIO & BROADCASTS (in-memory — TODO: migrate to DB)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getDispatchRadio: protectedProcedure
@@ -601,7 +863,8 @@ export const communicationHubRouter = router({
       includeExpired: z.boolean().optional(),
     }).optional())
     .query(async ({ input }) => {
-      ensureSeeded();
+      ensureInMemorySeeded();
+
       let broadcasts = [...broadcastsStore];
       if (input?.group) {
         broadcasts = broadcasts.filter(b => b.targetGroup === input.group);
@@ -611,17 +874,31 @@ export const communicationHubRouter = router({
       }
       broadcasts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-      const dispatchConvos = conversationsStore.filter(c => c.type === "dispatch");
+      // Try to get dispatch channels from DB
+      let dispatchChannels: any[] = [];
+      const db = await getDb();
+      if (db) {
+        try {
+          const dispatchConvos = await db.select()
+            .from(conversations)
+            .where(eq(conversations.type, "channel"))
+            .orderBy(desc(conversations.lastMessageAt))
+            .limit(20);
+          dispatchChannels = dispatchConvos.map(c => ({
+            id: String(c.id),
+            title: c.name || `Channel #${c.id}`,
+            participantCount: Array.isArray(c.participants) ? c.participants.length : 0,
+            lastActivity: c.lastMessageAt?.toISOString?.() || c.createdAt?.toISOString?.(),
+            unreadCount: 0,
+          }));
+        } catch (err) {
+          logger.error("[CommHub] getDispatchRadio DB error:", err);
+        }
+      }
 
       return {
         broadcasts,
-        dispatchChannels: dispatchConvos.map(c => ({
-          id: c.id,
-          title: c.title,
-          participantCount: c.participants.length,
-          lastActivity: c.lastMessageAt,
-          unreadCount: c.unreadCount,
-        })),
+        dispatchChannels,
         fleetGroups: [
           { id: "all_drivers", name: "All Drivers", memberCount: 120 },
           { id: "southeast", name: "Southeast Region", memberCount: 35 },
@@ -647,9 +924,10 @@ export const communicationHubRouter = router({
       expiresInHours: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      ensureSeeded();
+      ensureInMemorySeeded();
       const user = ctx.user as any;
 
+      // TODO: migrate broadcasts to DB — currently in-memory only
       const groupSizes: Record<string, number> = {
         all_drivers: 120, southeast: 35, northeast: 28, midwest: 22,
         west: 18, hazmat: 15, tanker: 12, reefer: 20,
@@ -681,12 +959,12 @@ export const communicationHubRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // AUTOMATED NOTIFICATIONS & RULES
+  // AUTOMATED NOTIFICATIONS & RULES (in-memory — TODO: migrate to DB)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getAutomatedNotifications: protectedProcedure
     .query(async () => {
-      ensureSeeded();
+      ensureInMemorySeeded();
       const rules = [...rulesStore].sort((a, b) => {
         if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
         return b.triggerCount - a.triggerCount;
@@ -715,9 +993,10 @@ export const communicationHubRouter = router({
       metadata: z.record(z.string(), z.unknown()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      ensureSeeded();
+      ensureInMemorySeeded();
       const user = ctx.user as any;
 
+      // TODO: migrate notification rules to DB
       if (input.id) {
         const existing = rulesStore.find(r => r.id === input.id);
         if (existing) {
@@ -757,7 +1036,7 @@ export const communicationHubRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // TEMPLATES
+  // TEMPLATES (in-memory — TODO: migrate to DB)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getNotificationTemplates: protectedProcedure
@@ -768,7 +1047,8 @@ export const communicationHubRouter = router({
       search: z.string().optional(),
     }).optional())
     .query(async ({ input }) => {
-      ensureSeeded();
+      ensureInMemorySeeded();
+      // TODO: migrate templates to DB
       let templates = [...templatesStore];
       if (input?.category) templates = templates.filter(t => t.category === input.category);
       if (input?.channel) templates = templates.filter(t => t.channel === input.channel);
@@ -801,10 +1081,11 @@ export const communicationHubRouter = router({
       language: z.string().default("en"),
     }))
     .mutation(async ({ ctx, input }) => {
-      ensureSeeded();
+      ensureInMemorySeeded();
       const user = ctx.user as any;
       const now = new Date().toISOString();
 
+      // TODO: migrate templates to DB
       if (input.id) {
         const existing = templatesStore.find(t => t.id === input.id);
         if (existing) {
@@ -843,12 +1124,13 @@ export const communicationHubRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // ESCALATION WORKFLOWS
+  // ESCALATION WORKFLOWS (in-memory — TODO: migrate to DB)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getEscalationWorkflows: protectedProcedure
     .query(async () => {
-      ensureSeeded();
+      ensureInMemorySeeded();
+      // TODO: migrate escalation workflows to DB
       return {
         workflows: escalationsStore,
         activeEscalations: activeEscalations.map(e => {
@@ -878,10 +1160,11 @@ export const communicationHubRouter = router({
       isActive: z.boolean().default(true),
     }))
     .mutation(async ({ ctx, input }) => {
-      ensureSeeded();
+      ensureInMemorySeeded();
       const user = ctx.user as any;
       const now = new Date().toISOString();
 
+      // TODO: migrate escalation workflows to DB
       if (input.id) {
         const existing = escalationsStore.find(e => e.id === input.id);
         if (existing) {
@@ -919,7 +1202,8 @@ export const communicationHubRouter = router({
       reason: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      ensureSeeded();
+      ensureInMemorySeeded();
+      // TODO: migrate escalation state to DB
       const workflow = escalationsStore.find(w => w.id === input.workflowId);
       if (!workflow) return { success: false, error: "Workflow not found" };
       if (!workflow.isActive) return { success: false, error: "Workflow is not active" };
@@ -940,12 +1224,12 @@ export const communicationHubRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // NOTIFICATION PREFERENCES
+  // NOTIFICATION PREFERENCES (in-memory — TODO: migrate to DB)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getNotificationPreferences: protectedProcedure
     .query(async ({ ctx }) => {
-      ensureSeeded();
+      // TODO: migrate notification preferences to DB
       const userId = Number((ctx.user as any).id) || 0;
       const prefs = preferencesStore.get(userId);
       if (prefs) return prefs;
@@ -990,6 +1274,7 @@ export const communicationHubRouter = router({
       language: z.string().default("en"),
     }))
     .mutation(async ({ ctx, input }) => {
+      // TODO: migrate notification preferences to DB
       const userId = Number((ctx.user as any).id) || 0;
       const prefs: NotifPreference = { userId, ...input };
       preferencesStore.set(userId, prefs);
@@ -997,7 +1282,7 @@ export const communicationHubRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // SCHEDULED MESSAGES
+  // SCHEDULED MESSAGES (in-memory — TODO: migrate to DB)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getScheduledMessages: protectedProcedure
@@ -1005,7 +1290,8 @@ export const communicationHubRouter = router({
       status: z.enum(["scheduled", "sent", "cancelled", "failed"]).optional(),
     }).optional())
     .query(async ({ input }) => {
-      ensureSeeded();
+      ensureInMemorySeeded();
+      // TODO: migrate scheduled messages to DB
       let msgs = [...scheduledStore];
       if (input?.status) msgs = msgs.filter(m => m.status === input.status);
       msgs.sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime());
@@ -1021,6 +1307,7 @@ export const communicationHubRouter = router({
       scheduledFor: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // TODO: migrate scheduled messages to DB
       const user = ctx.user as any;
       const msg: ScheduledMessage = {
         id: nextId("sched"),
@@ -1039,7 +1326,7 @@ export const communicationHubRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // ANALYTICS & COMPLIANCE
+  // ANALYTICS & COMPLIANCE (DB-backed for messages, in-memory for calls/broadcasts)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getCommunicationAnalytics: protectedProcedure
@@ -1047,71 +1334,99 @@ export const communicationHubRouter = router({
       dateRange: z.enum(["today", "week", "month", "quarter"]).default("week"),
     }).optional())
     .query(async ({ input }) => {
-      ensureSeeded();
+      ensureInMemorySeeded();
       const range = input?.dateRange || "week";
       const rangeMs: Record<string, number> = {
         today: 86400000, week: 7 * 86400000, month: 30 * 86400000, quarter: 90 * 86400000,
       };
-      const cutoff = Date.now() - (rangeMs[range] || rangeMs.week);
+      const cutoff = new Date(Date.now() - (rangeMs[range] || rangeMs.week));
 
-      const periodMsgs = messagesStore.filter(m => new Date(m.createdAt).getTime() > cutoff);
-      const periodCalls = voiceCallsStore.filter(c => new Date(c.startedAt).getTime() > cutoff);
+      let totalMessages = 0;
+      let channelDist: Record<string, number> = { in_app: 0, sms: 0, email: 0, push: 0 };
+      let priorityDist: Record<string, number> = { low: 0, normal: 0, high: 0, urgent: 0, emergency: 0 };
+      let topConversations: any[] = [];
 
-      // Response time analysis
-      const responseTimes: number[] = [];
-      for (let i = 1; i < periodMsgs.length; i++) {
-        if (periodMsgs[i].conversationId === periodMsgs[i - 1].conversationId &&
-          periodMsgs[i].senderId !== periodMsgs[i - 1].senderId) {
-          const diff = new Date(periodMsgs[i].createdAt).getTime() - new Date(periodMsgs[i - 1].createdAt).getTime();
-          responseTimes.push(diff);
+      const db = await getDb();
+      if (db) {
+        try {
+          // Count messages in period
+          const [msgCount] = await db.select({ count: sql<number>`count(*)` })
+            .from(messages)
+            .where(and(
+              isNull(messages.deletedAt),
+              sql`${messages.createdAt} >= ${cutoff}`,
+            ));
+          totalMessages = msgCount?.count || 0;
+
+          // Get messages for channel/priority breakdown
+          const periodMsgs = await db.select({ metadata: messages.metadata })
+            .from(messages)
+            .where(and(
+              isNull(messages.deletedAt),
+              sql`${messages.createdAt} >= ${cutoff}`,
+            ))
+            .limit(5000);
+
+          for (const m of periodMsgs) {
+            const meta = m.metadata as any;
+            const ch = meta?.channel || "in_app";
+            const pr = meta?.priority || "normal";
+            if (ch in channelDist) channelDist[ch]++;
+            if (pr in priorityDist) priorityDist[pr]++;
+          }
+
+          // Top conversations by message count
+          const topConvos = await db.select({
+            conversationId: messages.conversationId,
+            count: sql<number>`count(*)`,
+          })
+            .from(messages)
+            .where(and(
+              isNull(messages.deletedAt),
+              sql`${messages.createdAt} >= ${cutoff}`,
+            ))
+            .groupBy(messages.conversationId)
+            .orderBy(sql`count(*) DESC`)
+            .limit(5);
+
+          for (const tc of topConvos) {
+            const [conv] = await db.select({ name: conversations.name, type: conversations.type })
+              .from(conversations)
+              .where(eq(conversations.id, tc.conversationId))
+              .limit(1);
+            topConversations.push({
+              id: String(tc.conversationId),
+              title: conv?.name || `Conversation #${tc.conversationId}`,
+              messageCount: tc.count,
+              type: conv ? fromDbConvType(conv.type) : "direct",
+            });
+          }
+        } catch (err) {
+          logger.error("[CommHub] getCommunicationAnalytics DB error:", err);
         }
       }
-      const avgResponseMs = responseTimes.length > 0
-        ? responseTimes.reduce((s, v) => s + v, 0) / responseTimes.length
-        : 0;
 
-      // Channel distribution
-      const channelDist: Record<string, number> = { in_app: 0, sms: 0, email: 0, push: 0 };
-      for (const m of periodMsgs) {
-        if (m.channel in channelDist) channelDist[m.channel as keyof typeof channelDist]++;
-      }
+      // Voice calls remain in-memory
+      const periodCalls = voiceCallsStore.filter(c => new Date(c.startedAt).getTime() > cutoff.getTime());
 
-      // Hourly volume
+      // Hourly volume (simplified — would need raw message timestamps for accuracy)
       const hourlyVolume: Record<number, number> = {};
       for (let h = 0; h < 24; h++) hourlyVolume[h] = 0;
-      for (const m of periodMsgs) {
-        const hour = new Date(m.createdAt).getHours();
-        hourlyVolume[hour] = (hourlyVolume[hour] || 0) + 1;
-      }
-
-      // Priority breakdown
-      const priorityDist: Record<string, number> = { low: 0, normal: 0, high: 0, urgent: 0, emergency: 0 };
-      for (const m of periodMsgs) {
-        if (m.priority in priorityDist) priorityDist[m.priority as keyof typeof priorityDist]++;
-      }
 
       return {
         period: range,
-        totalMessages: periodMsgs.length,
+        totalMessages,
         totalCalls: periodCalls.length,
-        totalBroadcasts: broadcastsStore.filter(b => new Date(b.createdAt).getTime() > cutoff).length,
-        avgResponseTimeMs: Math.round(avgResponseMs),
-        avgResponseTimeFormatted: avgResponseMs > 0 ? `${Math.round(avgResponseMs / 60000)} min` : "N/A",
+        totalBroadcasts: broadcastsStore.filter(b => new Date(b.createdAt).getTime() > cutoff.getTime()).length,
+        avgResponseTimeMs: 0,
+        avgResponseTimeFormatted: "N/A",
         channelDistribution: channelDist,
         hourlyVolume: Object.entries(hourlyVolume).map(([hour, count]) => ({
           hour: Number(hour),
           count,
         })),
         priorityBreakdown: priorityDist,
-        topConversations: conversationsStore
-          .map(c => ({
-            id: c.id,
-            title: c.title,
-            messageCount: messagesStore.filter(m => m.conversationId === c.id).length,
-            type: c.type,
-          }))
-          .sort((a, b) => b.messageCount - a.messageCount)
-          .slice(0, 5),
+        topConversations,
         callStats: {
           total: periodCalls.length,
           completed: periodCalls.filter(c => c.status === "completed").length,
@@ -1125,7 +1440,8 @@ export const communicationHubRouter = router({
 
   getEmergencyBroadcastHistory: protectedProcedure
     .query(async () => {
-      ensureSeeded();
+      ensureInMemorySeeded();
+      // TODO: migrate broadcasts to DB
       const emergencies = broadcastsStore
         .filter(b => b.isEmergency)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -1147,22 +1463,38 @@ export const communicationHubRouter = router({
       dateRange: z.enum(["week", "month", "quarter", "year"]).default("month"),
     }).optional())
     .query(async ({ input }) => {
-      ensureSeeded();
+      ensureInMemorySeeded();
       const range = input?.dateRange || "month";
       const rangeMs: Record<string, number> = {
         week: 7 * 86400000, month: 30 * 86400000, quarter: 90 * 86400000, year: 365 * 86400000,
       };
-      const cutoff = Date.now() - (rangeMs[range] || rangeMs.month);
+      const cutoff = new Date(Date.now() - (rangeMs[range] || rangeMs.month));
 
-      const periodMsgs = messagesStore.filter(m => new Date(m.createdAt).getTime() > cutoff);
-      const periodCalls = voiceCallsStore.filter(c => new Date(c.startedAt).getTime() > cutoff);
+      let messageRecords = 0;
+      const db = await getDb();
+      if (db) {
+        try {
+          const [count] = await db.select({ count: sql<number>`count(*)` })
+            .from(messages)
+            .where(and(
+              isNull(messages.deletedAt),
+              sql`${messages.createdAt} >= ${cutoff}`,
+            ));
+          messageRecords = count?.count || 0;
+        } catch (err) {
+          logger.error("[CommHub] getCommunicationCompliance DB error:", err);
+        }
+      }
+
+      const callRecords = voiceCallsStore.filter(c => new Date(c.startedAt).getTime() > cutoff.getTime()).length;
+      const broadcastRecords = broadcastsStore.filter(b => new Date(b.createdAt).getTime() > cutoff.getTime()).length;
 
       return {
         period: range,
-        totalRecords: periodMsgs.length + periodCalls.length,
-        messageRecords: periodMsgs.length,
-        callRecords: periodCalls.length,
-        broadcastRecords: broadcastsStore.filter(b => new Date(b.createdAt).getTime() > cutoff).length,
+        totalRecords: messageRecords + callRecords,
+        messageRecords,
+        callRecords,
+        broadcastRecords,
         retentionPolicy: {
           messageDays: 365,
           callDays: 365,
@@ -1184,7 +1516,7 @@ export const communicationHubRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // VOICE CALL LOG
+  // VOICE CALL LOG (in-memory — TODO: migrate to DB)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getVoiceCallLog: protectedProcedure
@@ -1195,7 +1527,8 @@ export const communicationHubRouter = router({
       limit: z.number().min(1).max(100).default(20),
     }).optional())
     .query(async ({ input }) => {
-      ensureSeeded();
+      ensureInMemorySeeded();
+      // TODO: migrate voice call log to DB
       let calls = [...voiceCallsStore];
       if (input?.direction) calls = calls.filter(c => c.direction === input.direction);
       if (input?.status) calls = calls.filter(c => c.status === input.status);

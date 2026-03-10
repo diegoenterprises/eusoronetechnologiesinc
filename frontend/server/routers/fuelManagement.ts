@@ -9,7 +9,8 @@ import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { fuelTransactions } from "../../drizzle/schema";
+import { fuelTransactions, tripStateMiles } from "../../drizzle/schema";
+// TODO: import { hzFuelPrices } for real-time fuel price queries once data pipeline is live
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -28,6 +29,31 @@ function quarterDeadline(quarter: number, year: number): string {
     4: `${year + 1}-01-31`,
   };
   return deadlines[quarter] || `${year}-04-30`;
+}
+
+/**
+ * Deterministic pseudo-random number generator (mulberry32).
+ * Use instead of Math.random() for fallback/seed data so results are
+ * reproducible for the same inputs (companyId, date, state, etc.).
+ */
+function seededRandom(seed: number): () => number {
+  let s = seed | 0;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Simple string-to-seed hash so we can seed from companyId+state+quarter etc. */
+function hashSeed(...parts: (string | number)[]): number {
+  let h = 0;
+  const str = parts.join("|");
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  }
+  return h;
 }
 
 const US_STATES = [
@@ -264,12 +290,17 @@ export const fuelManagementRouter = router({
       }> = [];
 
       if (gallonsNeeded > currentGallons) {
+        // TODO: Query hzFuelPrices for real-time state diesel prices along route
+        // For now, use deterministic seed based on origin/dest so prices are stable per route
+        const stopRng = seededRandom(hashSeed(
+          input.originLat, input.originLng, input.destLat, input.destLng
+        ));
         const numStops = Math.ceil((gallonsNeeded - currentGallons) / (input.tankCapacity * 0.7));
         for (let i = 0; i < numStops; i++) {
           const fraction = (i + 1) / (numStops + 1);
           const lat = input.originLat + (input.destLat - input.originLat) * fraction;
           const lng = input.originLng + (input.destLng - input.originLng) * fraction;
-          const price = 3.50 + Math.random() * 0.40;
+          const price = 3.50 + stopRng() * 0.40;
           const fillGallons = Math.min(input.tankCapacity * 0.85, gallonsNeeded / numStops);
 
           stops.push({
@@ -280,7 +311,7 @@ export const fuelManagementRouter = router({
             price: Math.round(price * 1000) / 1000,
             gallonsToFill: Math.round(fillGallons),
             cost: Math.round(fillGallons * price * 100) / 100,
-            detourMiles: Math.round(Math.random() * 3 * 10) / 10,
+            detourMiles: Math.round(stopRng() * 3 * 10) / 10,
             mileMarker: Math.round(totalDistanceMiles * fraction),
           });
         }
@@ -567,27 +598,89 @@ export const fuelManagementRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       const { start, end } = quarterDates(input.quarter, input.year);
+      const companyId = ctx.user?.companyId || 0;
 
-      // Build jurisdiction breakdown
-      const jurisdictions = US_STATES.slice(0, 15).map(state => {
-        const miles = Math.round(Math.random() * 5000 + 500);
-        const gallons = Math.round(miles / (5.5 + Math.random() * 2));
-        const taxRate = IFTA_TAX_RATES[state] || 0.25;
-        const taxPaid = Math.round(gallons * taxRate * 0.8 * 100) / 100; // 80% already paid at pump
-        const taxOwed = Math.round(gallons * taxRate * 100) / 100;
-        const netDue = Math.round((taxOwed - taxPaid) * 100) / 100;
+      // Query real IFTA mileage + fuel data from tripStateMiles
+      let jurisdictions: Array<{
+        state: string; miles: number; gallons: number; taxRate: number;
+        taxPaid: number; taxOwed: number; netDue: number; surcharge: number;
+      }> = [];
 
-        return {
-          state,
-          miles,
-          gallons,
-          taxRate,
-          taxPaid,
-          taxOwed,
-          netDue,
-          surcharge: state === "IN" || state === "KY" || state === "VA" ? Math.round(miles * 0.01 * 100) / 100 : 0,
-        };
-      });
+      if (db) {
+        try {
+          // Aggregate miles and fuel gallons per state for the quarter
+          const stateData = await db.select({
+            stateCode: tripStateMiles.stateCode,
+            totalMiles: sql<number>`SUM(${tripStateMiles.miles})`,
+            totalFuelGallons: sql<number>`SUM(${tripStateMiles.fuelGallons})`,
+          }).from(tripStateMiles)
+            .where(and(
+              gte(tripStateMiles.entryTime, start),
+              lte(tripStateMiles.exitTime, end),
+            ))
+            .groupBy(tripStateMiles.stateCode);
+
+          // Also get fuel purchased per state from fuel transactions (for tax-paid calculation)
+          const fuelPurchased = await db.select({
+            // TODO: fuelTransactions doesn't have a state column; correlate via driver/vehicle location or add state to schema
+            totalGallons: sql<number>`SUM(${fuelTransactions.gallons})`,
+          }).from(fuelTransactions)
+            .where(and(
+              eq(fuelTransactions.companyId, companyId),
+              gte(fuelTransactions.transactionDate, start),
+              lte(fuelTransactions.transactionDate, end),
+            ));
+
+          const totalPurchasedGallons = Number(fuelPurchased[0]?.totalGallons) || 0;
+          const totalStateGallons = stateData.reduce((s, r) => s + (Number(r.totalFuelGallons) || 0), 0);
+
+          if (stateData.length > 0) {
+            jurisdictions = stateData.map(r => {
+              const state = r.stateCode;
+              const miles = Math.round(Number(r.totalMiles) || 0);
+              const gallons = Math.round(Number(r.totalFuelGallons) || 0);
+              const taxRate = IFTA_TAX_RATES[state] || 0.25;
+              // Estimate tax already paid at pump: proportional share of total purchased gallons
+              const pumpShareRatio = totalStateGallons > 0 ? gallons / totalStateGallons : 0;
+              const estimatedPumpGallons = Math.round(totalPurchasedGallons * pumpShareRatio);
+              const taxPaid = Math.round(estimatedPumpGallons * taxRate * 100) / 100;
+              const taxOwed = Math.round(gallons * taxRate * 100) / 100;
+              const netDue = Math.round((taxOwed - taxPaid) * 100) / 100;
+
+              return {
+                state,
+                miles,
+                gallons,
+                taxRate,
+                taxPaid,
+                taxOwed,
+                netDue,
+                surcharge: state === "IN" || state === "KY" || state === "VA" ? Math.round(miles * 0.01 * 100) / 100 : 0,
+              };
+            });
+          }
+        } catch (error) {
+          logger.error("[FuelManagement] getIftaReporting DB error:", error);
+        }
+      }
+
+      // Fallback: deterministic seeded data if no DB results
+      if (jurisdictions.length === 0) {
+        const rng = seededRandom(hashSeed(companyId, input.quarter, input.year, "ifta"));
+        jurisdictions = US_STATES.slice(0, 15).map(state => {
+          const miles = Math.round(rng() * 5000 + 500);
+          const gallons = Math.round(miles / (5.5 + rng() * 2));
+          const taxRate = IFTA_TAX_RATES[state] || 0.25;
+          const taxPaid = Math.round(gallons * taxRate * 0.8 * 100) / 100;
+          const taxOwed = Math.round(gallons * taxRate * 100) / 100;
+          const netDue = Math.round((taxOwed - taxPaid) * 100) / 100;
+
+          return {
+            state, miles, gallons, taxRate, taxPaid, taxOwed, netDue,
+            surcharge: state === "IN" || state === "KY" || state === "VA" ? Math.round(miles * 0.01 * 100) / 100 : 0,
+          };
+        });
+      }
 
       const totalMiles = jurisdictions.reduce((s, j) => s + j.miles, 0);
       const totalGallons = jurisdictions.reduce((s, j) => s + j.gallons, 0);
@@ -626,28 +719,95 @@ export const fuelManagementRouter = router({
         gallonsAdjustment: z.number().optional(),
       })).optional(),
     }))
-    .query(async ({ input }) => {
-      const jurisdictions = US_STATES.slice(0, 12).map(state => {
-        const miles = Math.round(Math.random() * 4000 + 200);
-        const fleetMpg = 6.2 + Math.random() * 1.0;
-        const allocatedGallons = Math.round(miles / fleetMpg);
-        const purchasedGallons = Math.round(allocatedGallons * (0.7 + Math.random() * 0.5));
-        const taxRate = IFTA_TAX_RATES[state] || 0.25;
-        const taxOnAllocated = Math.round(allocatedGallons * taxRate * 100) / 100;
-        const creditForPurchased = Math.round(purchasedGallons * taxRate * 100) / 100;
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const { start, end } = quarterDates(input.quarter, input.year);
+      const companyId = ctx.user?.companyId || 0;
 
-        return {
-          state,
-          miles,
-          allocatedGallons,
-          purchasedGallons,
-          netGallons: allocatedGallons - purchasedGallons,
-          taxRate,
-          taxOnAllocated,
-          creditForPurchased,
-          netTax: Math.round((taxOnAllocated - creditForPurchased) * 100) / 100,
-        };
-      });
+      let jurisdictions: Array<{
+        state: string; miles: number; allocatedGallons: number; purchasedGallons: number;
+        netGallons: number; taxRate: number; taxOnAllocated: number; creditForPurchased: number; netTax: number;
+      }> = [];
+
+      // Compute real fleet MPG from fuel transactions for the quarter
+      let fleetMpg = 6.5; // default
+      if (db) {
+        try {
+          // Get per-state miles + fuel from tripStateMiles
+          const stateData = await db.select({
+            stateCode: tripStateMiles.stateCode,
+            totalMiles: sql<number>`SUM(${tripStateMiles.miles})`,
+            totalFuelGallons: sql<number>`SUM(${tripStateMiles.fuelGallons})`,
+          }).from(tripStateMiles)
+            .where(and(
+              gte(tripStateMiles.entryTime, start),
+              lte(tripStateMiles.exitTime, end),
+            ))
+            .groupBy(tripStateMiles.stateCode);
+
+          // Compute fleet-wide MPG from actual fuel transaction totals
+          const fuelAgg = await db.select({
+            totalGallons: sql<number>`SUM(${fuelTransactions.gallons})`,
+          }).from(fuelTransactions)
+            .where(and(
+              eq(fuelTransactions.companyId, companyId),
+              gte(fuelTransactions.transactionDate, start),
+              lte(fuelTransactions.transactionDate, end),
+            ));
+
+          const totalActualGallons = Number(fuelAgg[0]?.totalGallons) || 0;
+          const totalStateMiles = stateData.reduce((s, r) => s + (Number(r.totalMiles) || 0), 0);
+          if (totalActualGallons > 0 && totalStateMiles > 0) {
+            fleetMpg = totalStateMiles / totalActualGallons;
+          }
+
+          if (stateData.length > 0) {
+            // Build adjustment lookup
+            const adjMap = new Map((input.adjustments || []).map(a => [a.state, a]));
+
+            jurisdictions = stateData.map(r => {
+              const state = r.stateCode;
+              const adj = adjMap.get(state);
+              const miles = Math.round(Number(r.totalMiles) || 0) + (adj?.milesAdjustment || 0);
+              const allocatedGallons = Math.round(miles / fleetMpg);
+              // purchasedGallons: fuel bought in this state (from tripStateMiles fuelGallons)
+              const purchasedGallons = Math.round(Number(r.totalFuelGallons) || 0) + (adj?.gallonsAdjustment || 0);
+              const taxRate = IFTA_TAX_RATES[state] || 0.25;
+              const taxOnAllocated = Math.round(allocatedGallons * taxRate * 100) / 100;
+              const creditForPurchased = Math.round(purchasedGallons * taxRate * 100) / 100;
+
+              return {
+                state, miles, allocatedGallons, purchasedGallons,
+                netGallons: allocatedGallons - purchasedGallons,
+                taxRate, taxOnAllocated, creditForPurchased,
+                netTax: Math.round((taxOnAllocated - creditForPurchased) * 100) / 100,
+              };
+            });
+          }
+        } catch (error) {
+          logger.error("[FuelManagement] calculateIftaTax DB error:", error);
+        }
+      }
+
+      // Fallback: deterministic seeded data if no DB results
+      if (jurisdictions.length === 0) {
+        const rng = seededRandom(hashSeed(companyId, input.quarter, input.year, "iftaTax"));
+        jurisdictions = US_STATES.slice(0, 12).map(state => {
+          const miles = Math.round(rng() * 4000 + 200);
+          const allocatedGallons = Math.round(miles / fleetMpg);
+          const purchasedGallons = Math.round(allocatedGallons * (0.7 + rng() * 0.5));
+          const taxRate = IFTA_TAX_RATES[state] || 0.25;
+          const taxOnAllocated = Math.round(allocatedGallons * taxRate * 100) / 100;
+          const creditForPurchased = Math.round(purchasedGallons * taxRate * 100) / 100;
+
+          return {
+            state, miles, allocatedGallons, purchasedGallons,
+            netGallons: allocatedGallons - purchasedGallons,
+            taxRate, taxOnAllocated, creditForPurchased,
+            netTax: Math.round((taxOnAllocated - creditForPurchased) * 100) / 100,
+          };
+        });
+      }
 
       const totalNetTax = jurisdictions.reduce((s, j) => s + j.netTax, 0);
 
@@ -777,9 +937,11 @@ export const fuelManagementRouter = router({
     .query(async () => {
       const history: Array<{ week: string; doePrice: number; surchargePerMile: number }> = [];
       const now = new Date();
+      // TODO: Replace with real DOE price history from hzFuelPrices table once populated
+      const rng = seededRandom(hashSeed("fscHistory", now.getFullYear()));
       for (let i = 51; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 7 * 86400000);
-        const price = DOE_BASELINE_PRICE + (Math.sin(i / 8) * 0.25) + (Math.random() * 0.10 - 0.05);
+        const price = DOE_BASELINE_PRICE + (Math.sin(i / 8) * 0.25) + (rng() * 0.10 - 0.05);
         const diff = price - DOE_BASELINE_PRICE;
         history.push({
           week: d.toISOString().slice(0, 10),
@@ -885,10 +1047,54 @@ export const fuelManagementRouter = router({
           .orderBy(sql`SUM(${fuelTransactions.gallons}) ASC`)
           .limit(20);
 
+        // TODO: Join with tripStateMiles to get real miles per driver instead of estimating from gallons
+        // For now, query total miles from tripStateMiles for each driver's vehicles
+        let driverMilesMap = new Map<number, number>();
+        try {
+          const driverMiles = await db.select({
+            vehicleId: tripStateMiles.vehicleId,
+            totalMiles: sql<number>`SUM(${tripStateMiles.miles})`,
+          }).from(tripStateMiles)
+            .where(gte(tripStateMiles.entryTime, thirtyDaysAgo))
+            .groupBy(tripStateMiles.vehicleId);
+
+          // Map vehicle miles to drivers via fuel transactions (driver->vehicle correlation)
+          for (const dm of driverMiles) {
+            if (dm.vehicleId) {
+              // Find which driver used this vehicle from fuel transactions
+              const driverForVehicle = byDriver.find(d => {
+                // We'll match below in the ranking loop instead
+                return false;
+              });
+            }
+          }
+          // Simpler approach: get miles per driver by joining fuel transactions vehicle to tripStateMiles
+          // Since we don't have a direct driver->miles join, use fleet average MPG
+        } catch (_) { /* use fallback */ }
+
+        // Compute fleet-wide MPG from total gallons and total miles
+        const totalFleetGallons = byDriver.reduce((s, r) => s + (Number(r.totalGallons) || 0), 0);
+        let fleetAvgMpgCalc = 6.5;
+        try {
+          const totalMilesResult = await db.select({
+            totalMiles: sql<number>`SUM(${tripStateMiles.miles})`,
+          }).from(tripStateMiles)
+            .where(gte(tripStateMiles.entryTime, thirtyDaysAgo));
+          const totalMiles = Number(totalMilesResult[0]?.totalMiles) || 0;
+          if (totalFleetGallons > 0 && totalMiles > 0) {
+            fleetAvgMpgCalc = totalMiles / totalFleetGallons;
+          }
+        } catch (_) { /* use default */ }
+
         const rankings = byDriver.map((r, idx) => {
           const gallons = Number(r.totalGallons) || 1;
-          const estimatedMiles = gallons * (6.0 + Math.random() * 1.5);
+          // Use computed fleet MPG instead of random multiplier
+          const estimatedMiles = gallons * fleetAvgMpgCalc;
           const mpg = estimatedMiles / gallons;
+          // Deterministic trend: compare driver's gallons/tx ratio to fleet average
+          const avgGallonsPerTx = gallons / (Number(r.txCount) || 1);
+          const fleetAvgGallonsPerTx = totalFleetGallons / byDriver.reduce((s, d) => s + (Number(d.txCount) || 1), 0);
+          const trend = avgGallonsPerTx <= fleetAvgGallonsPerTx ? "improving" as const : "declining" as const;
           return {
             rank: idx + 1,
             id: String(r.driverId),
@@ -898,7 +1104,7 @@ export const fuelManagementRouter = router({
             totalSpent: Math.round(Number(r.totalSpent) * 100) / 100,
             costPerMile: estimatedMiles > 0 ? Math.round(Number(r.totalSpent) / estimatedMiles * 100) / 100 : 0,
             transactions: Number(r.txCount),
-            trend: Math.random() > 0.5 ? "improving" as const : "declining" as const,
+            trend,
           };
         });
 
@@ -986,9 +1192,12 @@ export const fuelManagementRouter = router({
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const budgetPerMonth = 15000; // example monthly budget
 
+      // Deterministic fallback: seeded by companyId + year so values are stable
+      const companyId = ctx.user?.companyId || 0;
+      const budgetRng = seededRandom(hashSeed(companyId, "budget", new Date().getFullYear()));
       let monthlyData = months.map((month, idx) => {
         const isFuture = idx >= new Date().getMonth();
-        const actual = isFuture ? 0 : Math.round(budgetPerMonth * (0.85 + Math.random() * 0.3));
+        const actual = isFuture ? 0 : Math.round(budgetPerMonth * (0.85 + budgetRng() * 0.3));
         const variance = actual - budgetPerMonth;
         const variancePct = budgetPerMonth > 0 ? Math.round((variance / budgetPerMonth) * 10000) / 100 : 0;
 
@@ -1207,14 +1416,16 @@ export const fuelManagementRouter = router({
         }
       }
 
-      // Fill with sample data if no DB results
+      // Fill with deterministic sample data if no DB results
       if (trends.length === 0) {
+        // TODO: Query hzFuelPrices for historical state-level diesel prices
+        const trendRng = seededRandom(hashSeed(ctx.user?.companyId || 0, "fuelTrend", new Date().getFullYear()));
         for (let i = 11; i >= 0; i--) {
           const d = new Date();
           d.setMonth(d.getMonth() - i);
           const month = d.toISOString().slice(0, 7);
-          const gallons = Math.round(3000 + Math.random() * 2000);
-          const price = 3.50 + Math.sin(i / 4) * 0.30 + Math.random() * 0.10;
+          const gallons = Math.round(3000 + trendRng() * 2000);
+          const price = 3.50 + Math.sin(i / 4) * 0.30 + trendRng() * 0.10;
           const cost = Math.round(gallons * price * 100) / 100;
           const miles = gallons * 6.5;
           trends.push({
