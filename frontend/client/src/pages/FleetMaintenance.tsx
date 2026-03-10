@@ -267,7 +267,7 @@ function WorkOrdersTab() {
   });
 
   const { data, isLoading, refetch } = trpc.fleetMaintenance.getWorkOrders.useQuery({
-    status: statusFilter, priority: priorityFilter, page: 1, limit: 50,
+    status: statusFilter as "completed" | "cancelled" | "open" | "in_progress" | "awaiting_parts" | undefined, priority: priorityFilter as "medium" | "low" | "high" | "critical" | undefined, page: 1, limit: 50,
   });
 
   const createMut = trpc.fleetMaintenance.createWorkOrder.useMutation({
@@ -976,9 +976,9 @@ function RecallsAlertsTab() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm text-zinc-300 flex items-center gap-2">
             <Bell className="h-4 w-4 text-red-400" /> Manufacturer Recalls
-            {recalls?.summary?.criticalUnresolved > 0 && (
+            {(recalls?.summary?.criticalUnresolved ?? 0) > 0 && (
               <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">
-                {recalls.summary.criticalUnresolved} Critical
+                {recalls?.summary?.criticalUnresolved} Critical
               </Badge>
             )}
           </CardTitle>
@@ -1050,9 +1050,9 @@ function RecallsAlertsTab() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-zinc-300 flex items-center gap-2">
               <Calendar className="h-4 w-4 text-orange-400" /> Compliance Deadlines (60d)
-              {compliance?.summary?.overdue > 0 && (
+              {(compliance?.summary?.overdue ?? 0) > 0 && (
                 <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">
-                  {compliance.summary.overdue} Overdue
+                  {compliance?.summary?.overdue} Overdue
                 </Badge>
               )}
             </CardTitle>

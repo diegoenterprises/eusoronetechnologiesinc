@@ -436,7 +436,7 @@ function IftaPanel() {
         <KpiCard icon={DollarSign} label="Tax Paid" value={`$${(iftaData?.totals?.totalTaxPaid || 0).toLocaleString()}`}
           color="bg-green-500/20 text-green-400" loading={iftaQuery.isLoading} />
         <KpiCard icon={DollarSign} label="Net Due" value={`$${(iftaData?.totals?.netDue || 0).toLocaleString()}`}
-          color={iftaData?.totals?.netDue > 0 ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400"}
+          color={(iftaData?.totals?.netDue ?? 0) > 0 ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400"}
           loading={iftaQuery.isLoading} />
       </div>
 
@@ -452,7 +452,7 @@ function IftaPanel() {
                 Deadline: {iftaData?.filingDeadline || ""}
               </Badge>
               <Badge className={cn(
-                iftaData?.status === "filed" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"
+                (iftaData?.status as string) === "filed" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"
               )}>{iftaData?.status || "draft"}</Badge>
             </div>
           </div>

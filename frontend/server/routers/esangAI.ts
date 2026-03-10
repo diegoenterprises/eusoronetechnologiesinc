@@ -7,6 +7,9 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { randomBytes } from "crypto";
+import { eq, sql, and, desc } from "drizzle-orm";
+import { getDb } from "../db";
+import { auditLogs, loads } from "../../drizzle/schema";
 
 function generateId(prefix: string): string {
   return `${prefix}-${Date.now()}-${randomBytes(3).toString("hex")}`;
@@ -38,19 +41,193 @@ function computeAccessorialConfidence(claimType: string, amount: number): number
 type DecisionType = "load_assignment" | "pricing" | "accessorial_approval" | "driver_recommendation" | "compliance_alert";
 type DecisionStatus = "pending" | "executed" | "overridden" | "rejected" | "expired";
 
-// ── In-memory stores (production: database tables) ──
-const decisionLog: any[] = [];
+// ── DB-backed helpers via auditLogs ──
+
 const modelMetrics: Record<string, { accuracy: number; overrideRate: number; totalDecisions: number; lastUpdated: string }> = {
   load_assignment: { accuracy: 92.3, overrideRate: 4.1, totalDecisions: 1847, lastUpdated: new Date().toISOString() },
   pricing: { accuracy: 88.7, overrideRate: 7.2, totalDecisions: 3241, lastUpdated: new Date().toISOString() },
   accessorial_approval: { accuracy: 95.1, overrideRate: 2.3, totalDecisions: 892, lastUpdated: new Date().toISOString() },
   driver_recommendation: { accuracy: 90.5, overrideRate: 5.8, totalDecisions: 1563, lastUpdated: new Date().toISOString() },
 };
-const disabledTypes = new Set<string>();
-let autoDispatchEnabled = true;
-let dailyAutoDispatchQuota = 0.05; // 5%
-let dailyAutoDispatched = 0;
-let dailyTotalLoads = 100;
+
+// ── Decision log helpers (entityType='ai_decision') ──
+
+async function getDecisionLog(opts?: { type?: string; minConfidence?: number; limit?: number }): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata, action: auditLogs.action })
+      .from(auditLogs)
+      .where(eq(auditLogs.entityType, "ai_decision"))
+      .orderBy(desc(auditLogs.createdAt));
+    const seen = new Set<string>();
+    let results: any[] = [];
+    for (const r of rows) {
+      if (seen.has(r.action)) continue;
+      seen.add(r.action);
+      if (r.metadata) results.push(r.metadata);
+    }
+    if (opts?.type) results = results.filter((d: any) => d.type === opts.type);
+    if (opts?.minConfidence !== undefined) results = results.filter((d: any) => d.confidence >= opts.minConfidence!);
+    results.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (opts?.limit) results = results.slice(0, opts.limit);
+    return results;
+  } catch { return []; }
+}
+
+async function getDecisionById(decisionId: string): Promise<any | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, "ai_decision"), eq(auditLogs.action, decisionId)))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(1);
+    return rows[0] ? (rows[0].metadata as any) : null;
+  } catch { return null; }
+}
+
+async function upsertDecision(decision: any): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(auditLogs).values({
+      action: decision.decisionId,
+      entityType: "ai_decision",
+      metadata: decision as any,
+      severity: "LOW",
+    } as any);
+  } catch { /* ignore */ }
+}
+
+// ── Disabled types helpers (entityType='ai_config', action='disabled_types') ──
+
+async function getDisabledTypes(): Promise<Set<string>> {
+  const db = await getDb();
+  if (!db) return new Set();
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, "ai_config"), eq(auditLogs.action, "disabled_types")))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(1);
+    if (rows[0] && rows[0].metadata) {
+      const arr = (rows[0].metadata as any).types;
+      return new Set<string>(Array.isArray(arr) ? arr : []);
+    }
+    return new Set();
+  } catch { return new Set(); }
+}
+
+async function saveDisabledTypes(types: Set<string>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(auditLogs).values({
+      action: "disabled_types",
+      entityType: "ai_config",
+      metadata: { types: Array.from(types) } as any,
+      severity: "LOW",
+    } as any);
+  } catch { /* ignore */ }
+}
+
+// ── Auto-dispatch config helpers (entityType='ai_config') ──
+
+async function getAutoDispatchEnabled(): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return true;
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, "ai_config"), eq(auditLogs.action, "auto_dispatch_enabled")))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(1);
+    if (rows[0] && rows[0].metadata) return (rows[0].metadata as any).enabled ?? true;
+    return true;
+  } catch { return true; }
+}
+
+async function saveAutoDispatchEnabled(enabled: boolean): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(auditLogs).values({
+      action: "auto_dispatch_enabled",
+      entityType: "ai_config",
+      metadata: { enabled } as any,
+      severity: "LOW",
+    } as any);
+  } catch { /* ignore */ }
+}
+
+async function getDailyAutoDispatchQuota(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0.05;
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, "ai_config"), eq(auditLogs.action, "daily_auto_dispatch_quota")))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(1);
+    if (rows[0] && rows[0].metadata) return (rows[0].metadata as any).quota ?? 0.05;
+    return 0.05;
+  } catch { return 0.05; }
+}
+
+async function saveDailyAutoDispatchQuota(quota: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(auditLogs).values({
+      action: "daily_auto_dispatch_quota",
+      entityType: "ai_config",
+      metadata: { quota } as any,
+      severity: "LOW",
+    } as any);
+  } catch { /* ignore */ }
+}
+
+// ── Daily auto-dispatched count: query auditLogs for today's auto-dispatch decisions ──
+
+async function getDailyAutoDispatched(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = await db
+      .select({ c: sql<number>`count(*)` })
+      .from(auditLogs)
+      .where(and(
+        eq(auditLogs.entityType, "ai_decision"),
+        sql`JSON_EXTRACT(${auditLogs.metadata}, '$.autoDispatched') = true`,
+        sql`DATE(${auditLogs.createdAt}) = ${today}`,
+      ));
+    return rows[0]?.c ?? 0;
+  } catch { return 0; }
+}
+
+// ── Daily total loads: query loads table for today ──
+
+async function getDailyTotalLoads(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 100;
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = await db
+      .select({ c: sql<number>`count(*)` })
+      .from(loads)
+      .where(sql`DATE(${loads.createdAt}) = ${today}`);
+    const count = rows[0]?.c ?? 0;
+    return count > 0 ? count : 100; // fallback to 100 when no loads exist yet
+  } catch { return 100; }
+}
 
 // ── Decision Log Sub-Router (Task 2.3.1) ──
 const decisionLogRouter = router({
@@ -60,36 +237,33 @@ const decisionLogRouter = router({
       type: z.string().optional(),
       minConfidence: z.number().min(0).max(1).optional(),
     }))
-    .query(({ input }) => {
-      let results = [...decisionLog];
-      if (input.type) results = results.filter(d => d.type === input.type);
-      if (input.minConfidence !== undefined) results = results.filter(d => d.confidence >= input.minConfidence!);
-      results.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      return { decisions: results.slice(0, input.limit), total: results.length };
+    .query(async ({ input }) => {
+      const results = await getDecisionLog({ type: input.type, minConfidence: input.minConfidence, limit: input.limit });
+      return { decisions: results, total: results.length };
     }),
 
   getById: protectedProcedure
     .input(z.object({ decisionId: z.string() }))
-    .query(({ input }) => {
-      const d = decisionLog.find(x => x.decisionId === input.decisionId);
-      return d || null;
+    .query(async ({ input }) => {
+      return await getDecisionById(input.decisionId);
     }),
 
   override: protectedProcedure
     .input(z.object({ decisionId: z.string(), reason: z.string(), newValue: z.any().optional() }))
-    .mutation(({ input }) => {
-      const d = decisionLog.find(x => x.decisionId === input.decisionId);
+    .mutation(async ({ input }) => {
+      const d = await getDecisionById(input.decisionId);
       if (!d) return { success: false, error: "Decision not found" };
       d.status = "overridden";
       d.override = { reason: input.reason, newValue: input.newValue, overriddenAt: new Date().toISOString() };
+      await upsertDecision(d);
       return { success: true, decisionId: input.decisionId };
     }),
 
   logAccuracy: protectedProcedure
     .input(z.object({ decisionId: z.string(), actual: z.any(), correct: z.boolean() }))
-    .mutation(({ input }) => {
-      const d = decisionLog.find(x => x.decisionId === input.decisionId);
-      if (d) { d.actual = input.actual; d.accuracyVerified = input.correct; }
+    .mutation(async ({ input }) => {
+      const d = await getDecisionById(input.decisionId);
+      if (d) { d.actual = input.actual; d.accuracyVerified = input.correct; await upsertDecision(d); }
       return { success: true };
     }),
 });
@@ -127,19 +301,23 @@ const modelPerformanceRouter = router({
 
   disableType: protectedProcedure
     .input(z.object({ type: z.string(), reason: z.string() }))
-    .mutation(({ input }) => {
-      disabledTypes.add(input.type);
+    .mutation(async ({ input }) => {
+      const types = await getDisabledTypes();
+      types.add(input.type);
+      await saveDisabledTypes(types);
       return { success: true, disabledAt: new Date().toISOString(), reason: input.reason, fallback: input.type === "load_assignment" ? "dispatcher_queue" : input.type === "pricing" ? "rule_based" : "manual_review" };
     }),
 
   enableType: protectedProcedure
     .input(z.object({ type: z.string() }))
-    .mutation(({ input }) => {
-      disabledTypes.delete(input.type);
+    .mutation(async ({ input }) => {
+      const types = await getDisabledTypes();
+      types.delete(input.type);
+      await saveDisabledTypes(types);
       return { success: true, enabledAt: new Date().toISOString() };
     }),
 
-  getDisabledTypes: protectedProcedure.query(() => Array.from(disabledTypes)),
+  getDisabledTypes: protectedProcedure.query(async () => Array.from(await getDisabledTypes())),
 
   getAlerts: protectedProcedure.query(() => {
     const alerts: any[] = [];
@@ -154,29 +332,45 @@ const modelPerformanceRouter = router({
 
 // ── Auto-Dispatch Sub-Router (Task 3.1.1) ──
 const autoDispatchRouter = router({
-  getConfig: protectedProcedure.query(() => ({
-    enabled: autoDispatchEnabled,
-    confidenceThreshold: 0.95,
-    dailyQuota: dailyAutoDispatchQuota,
-    dailyUsed: dailyAutoDispatched,
-    dailyTotal: dailyTotalLoads,
-    quotaPercent: dailyTotalLoads > 0 ? (dailyAutoDispatched / dailyTotalLoads) * 100 : 0,
-    overrideWindowHours: 2,
-  })),
+  getConfig: protectedProcedure.query(async () => {
+    const [enabled, quota, used, total] = await Promise.all([
+      getAutoDispatchEnabled(),
+      getDailyAutoDispatchQuota(),
+      getDailyAutoDispatched(),
+      getDailyTotalLoads(),
+    ]);
+    return {
+      enabled,
+      confidenceThreshold: 0.95,
+      dailyQuota: quota,
+      dailyUsed: used,
+      dailyTotal: total,
+      quotaPercent: total > 0 ? (used / total) * 100 : 0,
+      overrideWindowHours: 2,
+    };
+  }),
 
   updateConfig: protectedProcedure
     .input(z.object({ enabled: z.boolean().optional(), dailyQuota: z.number().min(0.01).max(0.20).optional() }))
-    .mutation(({ input }) => {
-      if (input.enabled !== undefined) autoDispatchEnabled = input.enabled;
-      if (input.dailyQuota !== undefined) dailyAutoDispatchQuota = input.dailyQuota;
-      return { success: true, config: { enabled: autoDispatchEnabled, dailyQuota: dailyAutoDispatchQuota } };
+    .mutation(async ({ input }) => {
+      if (input.enabled !== undefined) await saveAutoDispatchEnabled(input.enabled);
+      if (input.dailyQuota !== undefined) await saveDailyAutoDispatchQuota(input.dailyQuota);
+      const [enabled, quota] = await Promise.all([getAutoDispatchEnabled(), getDailyAutoDispatchQuota()]);
+      return { success: true, config: { enabled, dailyQuota: quota } };
     }),
 
   evaluate: protectedProcedure
     .input(z.object({ loadId: z.string() }))
-    .query(({ input }) => {
+    .query(async ({ input }) => {
       const confidence = computeDispatchConfidence(input.loadId);
-      const shouldAuto = confidence > 0.95 && autoDispatchEnabled && !disabledTypes.has("load_assignment") && (dailyAutoDispatched / Math.max(dailyTotalLoads, 1)) < dailyAutoDispatchQuota;
+      const [enabled, disabledSet, dispatched, totalLoads, quota] = await Promise.all([
+        getAutoDispatchEnabled(),
+        getDisabledTypes(),
+        getDailyAutoDispatched(),
+        getDailyTotalLoads(),
+        getDailyAutoDispatchQuota(),
+      ]);
+      const shouldAuto = confidence > 0.95 && enabled && !disabledSet.has("load_assignment") && (dispatched / Math.max(totalLoads, 1)) < quota;
       return {
         loadId: input.loadId,
         topDriver: { id: "pending", name: "Use autoDispatch service for real matching", score: Math.floor(confidence * 100) },
@@ -186,16 +380,16 @@ const autoDispatchRouter = router({
           `Rules-based confidence: ${(confidence * 100).toFixed(1)}%`,
           shouldAuto ? "All guardrails passed — eligible for auto-dispatch" : `Below threshold or quota exceeded`,
         ],
-        guardrails: { confidenceMet: confidence > 0.95, quotaMet: (dailyAutoDispatched / Math.max(dailyTotalLoads, 1)) < dailyAutoDispatchQuota, typeEnabled: !disabledTypes.has("load_assignment"), systemEnabled: autoDispatchEnabled },
+        guardrails: { confidenceMet: confidence > 0.95, quotaMet: (dispatched / Math.max(totalLoads, 1)) < quota, typeEnabled: !disabledSet.has("load_assignment"), systemEnabled: enabled },
       };
     }),
 
   execute: protectedProcedure
     .input(z.object({ loadId: z.string(), driverId: z.string(), confidence: z.number() }))
-    .mutation(({ input }) => {
+    .mutation(async ({ input }) => {
       if (input.confidence < 0.95) return { success: false, error: "Confidence below 95% threshold" };
-      if (!autoDispatchEnabled) return { success: false, error: "Auto-dispatch disabled" };
-      dailyAutoDispatched++;
+      const enabled = await getAutoDispatchEnabled();
+      if (!enabled) return { success: false, error: "Auto-dispatch disabled" };
       const decision = {
         decisionId: generateId("AD"),
         type: "load_assignment" as DecisionType,
@@ -208,14 +402,15 @@ const autoDispatchRouter = router({
         executionTimeMs: 0,
         autoDispatched: true,
       };
-      decisionLog.push(decision);
+      await upsertDecision(decision);
       return { success: true, ...decision };
     }),
 
   getLog: protectedProcedure
     .input(z.object({ limit: z.number().default(50) }))
-    .query(({ input }) => {
-      return decisionLog.filter(d => d.autoDispatched).slice(-input.limit).reverse();
+    .query(async ({ input }) => {
+      const all = await getDecisionLog();
+      return all.filter((d: any) => d.autoDispatched).slice(0, input.limit);
     }),
 });
 
@@ -223,11 +418,12 @@ const autoDispatchRouter = router({
 const autoApproveRouter = router({
   evaluate: protectedProcedure
     .input(z.object({ claimId: z.string(), claimType: z.string(), amount: z.number(), carrierId: z.string().optional() }))
-    .query(({ input }) => {
+    .query(async ({ input }) => {
       const confidence = computeAccessorialConfidence(input.claimType, input.amount);
       const thresholds: Record<string, number> = { detention: 0.90, fuel: 0.85, lumper: 0.88, layover: 0.87, tarp: 0.92, reweigh: 0.85, default: 0.90 };
       const threshold = thresholds[input.claimType] || thresholds.default;
-      const eligible = confidence > threshold && !disabledTypes.has("accessorial_approval");
+      const disabledSet = await getDisabledTypes();
+      const eligible = confidence > threshold && !disabledSet.has("accessorial_approval");
       return {
         claimId: input.claimId, claimType: input.claimType, amount: input.amount,
         confidence, threshold, autoApproveEligible: eligible,
@@ -238,7 +434,7 @@ const autoApproveRouter = router({
 
   approve: protectedProcedure
     .input(z.object({ claimId: z.string(), confidence: z.number(), claimType: z.string() }))
-    .mutation(({ input }) => {
+    .mutation(async ({ input }) => {
       const decision = {
         decisionId: generateId("AA"),
         type: "accessorial_approval" as DecisionType,
@@ -249,7 +445,7 @@ const autoApproveRouter = router({
         timestamp: new Date().toISOString(),
         executionTimeMs: 0,
       };
-      decisionLog.push(decision);
+      await upsertDecision(decision);
       return { success: true, ...decision, payoutScheduledFor: new Date(Date.now() + 86400000).toISOString() };
     }),
 

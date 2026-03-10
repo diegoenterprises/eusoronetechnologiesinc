@@ -9,6 +9,8 @@ import { z } from "zod";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
+import { eq, sql, and, desc } from "drizzle-orm";
+import { auditLogs } from "../../drizzle/schema";
 
 // ────────────────────────────────────────────────────────────
 // Deterministic seeded PRNG (replaces every Math.random call)
@@ -122,14 +124,154 @@ interface DrTestJob {
   } | null;
 }
 
-const migrationJobs: Map<string, MigrationJob> = new Map();
-const stressTests: Map<string, StressTestJob> = new Map();
-const drTests: Map<string, DrTestJob> = new Map();
+// ── In-memory caches for active simulation jobs (background timers need mutable refs) ──
+const migrationJobsCache: Map<string, MigrationJob> = new Map();
+const stressTestsCache: Map<string, StressTestJob> = new Map();
+const drTestsCache: Map<string, DrTestJob> = new Map();
 
 let idCounter = 0;
 function generateId(): string {
   idCounter += 1;
   return `${Date.now()}-${idCounter.toString(36).padStart(7, "0")}`;
+}
+
+// ── DB-backed helpers via auditLogs ──
+
+async function saveMigrationJob(job: MigrationJob): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(auditLogs).values({
+      action: job.id,
+      entityType: "migration_job",
+      metadata: job as any,
+      severity: "LOW",
+    } as any);
+  } catch { /* ignore */ }
+}
+
+async function getMigrationJob(jobId: string): Promise<MigrationJob | null> {
+  // Check live cache first (active simulations mutate in-place)
+  const cached = migrationJobsCache.get(jobId);
+  if (cached) return cached;
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, "migration_job"), eq(auditLogs.action, jobId)))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(1);
+    return rows[0] ? (rows[0].metadata as any) : null;
+  } catch { return null; }
+}
+
+async function getAllMigrationJobs(): Promise<MigrationJob[]> {
+  const db = await getDb();
+  const dbJobs: MigrationJob[] = [];
+  if (db) {
+    try {
+      const rows = await db
+        .select({ metadata: auditLogs.metadata, action: auditLogs.action })
+        .from(auditLogs)
+        .where(eq(auditLogs.entityType, "migration_job"))
+        .orderBy(desc(auditLogs.createdAt));
+      const seen = new Set<string>();
+      for (const r of rows) {
+        if (seen.has(r.action)) continue;
+        seen.add(r.action);
+        if (r.metadata) dbJobs.push(r.metadata as any);
+      }
+    } catch { /* ignore */ }
+  }
+  // Merge cache (active jobs) over DB rows
+  const merged = new Map<string, MigrationJob>();
+  for (const j of dbJobs) merged.set(j.id, j);
+  migrationJobsCache.forEach((j, id) => merged.set(id, j));
+  return Array.from(merged.values());
+}
+
+async function saveStressTest(test: StressTestJob): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(auditLogs).values({
+      action: test.id,
+      entityType: "stress_test",
+      metadata: test as any,
+      severity: "LOW",
+    } as any);
+  } catch { /* ignore */ }
+}
+
+async function getStressTest(testId: string): Promise<StressTestJob | null> {
+  const cached = stressTestsCache.get(testId);
+  if (cached) return cached;
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, "stress_test"), eq(auditLogs.action, testId)))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(1);
+    return rows[0] ? (rows[0].metadata as any) : null;
+  } catch { return null; }
+}
+
+async function getAllStressTests(): Promise<StressTestJob[]> {
+  const db = await getDb();
+  const dbTests: StressTestJob[] = [];
+  if (db) {
+    try {
+      const rows = await db
+        .select({ metadata: auditLogs.metadata, action: auditLogs.action })
+        .from(auditLogs)
+        .where(eq(auditLogs.entityType, "stress_test"))
+        .orderBy(desc(auditLogs.createdAt));
+      const seen = new Set<string>();
+      for (const r of rows) {
+        if (seen.has(r.action)) continue;
+        seen.add(r.action);
+        if (r.metadata) dbTests.push(r.metadata as any);
+      }
+    } catch { /* ignore */ }
+  }
+  const merged = new Map<string, StressTestJob>();
+  for (const t of dbTests) merged.set(t.id, t);
+  stressTestsCache.forEach((t, id) => merged.set(id, t));
+  return Array.from(merged.values());
+}
+
+async function saveDrTest(test: DrTestJob): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(auditLogs).values({
+      action: test.id,
+      entityType: "dr_test",
+      metadata: test as any,
+      severity: "LOW",
+    } as any);
+  } catch { /* ignore */ }
+}
+
+async function getDrTest(testId: string): Promise<DrTestJob | null> {
+  const cached = drTestsCache.get(testId);
+  if (cached) return cached;
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const rows = await db
+      .select({ metadata: auditLogs.metadata })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, "dr_test"), eq(auditLogs.action, testId)))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(1);
+    return rows[0] ? (rows[0].metadata as any) : null;
+  } catch { return null; }
 }
 
 // ────────────────────────────────────────────────────────────
@@ -196,15 +338,16 @@ async function timeQuery(tableName: string): Promise<number> {
 // Deterministic background processing helpers
 // ────────────────────────────────────────────────────────────
 function simulateMigrationProgress(jobId: string) {
-  const job = migrationJobs.get(jobId);
+  const job = migrationJobsCache.get(jobId);
   if (!job) return;
 
   // Deterministic increment: process 5% of remaining records each tick
   let tick = 0;
   const interval = setInterval(() => {
-    const j = migrationJobs.get(jobId);
+    const j = migrationJobsCache.get(jobId);
     if (!j || j.status === "cancelled" || j.status === "completed" || j.status === "failed") {
       clearInterval(interval);
+      if (j) { saveMigrationJob(j).then(() => migrationJobsCache.delete(jobId)).catch(() => {}); }
       return;
     }
     tick += 1;
@@ -229,6 +372,7 @@ function simulateMigrationProgress(jobId: string) {
       j.completedAt = new Date().toISOString();
       j.progress = 100;
       clearInterval(interval);
+      saveMigrationJob(j).then(() => migrationJobsCache.delete(jobId)).catch(() => {});
     } else {
       j.status = "importing";
     }
@@ -236,13 +380,13 @@ function simulateMigrationProgress(jobId: string) {
 }
 
 function simulateStressTest(testId: string) {
-  const test = stressTests.get(testId);
+  const test = stressTestsCache.get(testId);
   if (!test) return;
 
   // Deterministic completion delay based on requested duration
   const delayMs = Math.min(3000, 500 + test.durationSeconds * 20);
   setTimeout(() => {
-    const t = stressTests.get(testId);
+    const t = stressTestsCache.get(testId);
     if (!t || t.status === "cancelled") return;
 
     const rng = seededRng(t.concurrentUsers * 1000 + t.durationSeconds * 7 + t.requestsPerSecond);
@@ -306,15 +450,16 @@ function simulateStressTest(testId: string) {
       dbConnectionPool,
       timeline: timelinePoints,
     };
+    saveStressTest(t).then(() => stressTestsCache.delete(testId)).catch(() => {});
   }, delayMs);
 }
 
 function simulateDrTest(testId: string) {
-  const test = drTests.get(testId);
+  const test = drTestsCache.get(testId);
   if (!test) return;
 
   setTimeout(() => {
-    const t = drTests.get(testId);
+    const t = drTestsCache.get(testId);
     if (!t || t.status === "cancelled") return;
 
     // Deterministic DR results seeded from testId hash
@@ -350,6 +495,7 @@ function simulateDrTest(testId: string) {
       ],
       passed: rtoActual <= rtoTarget && rpoActual <= rpoTarget,
     };
+    saveDrTest(t).then(() => drTestsCache.delete(testId)).catch(() => {});
   }, 4000);
 }
 
@@ -362,7 +508,8 @@ export const dataMigrationRouter = router({
   // ═══════════════════════════════════════════
   getMigrationDashboard: protectedProcedure.query(async ({ ctx }) => {
     const companyId = (ctx.user as any)?.companyId || 0;
-    const jobs = Array.from(migrationJobs.values()).filter((j) => j.companyId === companyId);
+    const allJobs = await getAllMigrationJobs();
+    const jobs = allJobs.filter((j) => j.companyId === companyId);
     const activeJobs = jobs.filter((j) => !["completed", "failed", "cancelled"].includes(j.status));
     const completedJobs = jobs.filter((j) => j.status === "completed");
     const failedJobs = jobs.filter((j) => j.status === "failed");
@@ -465,9 +612,8 @@ export const dataMigrationRouter = router({
         progress: 0,
       };
 
-      migrationJobs.set(jobId, job);
-
       if (!input.dryRun) {
+        migrationJobsCache.set(jobId, job);
         simulateMigrationProgress(jobId);
       } else {
         job.status = "completed";
@@ -475,6 +621,7 @@ export const dataMigrationRouter = router({
         job.processedRecords = totalRecords;
         job.successRecords = totalRecords;
         job.progress = 100;
+        await saveMigrationJob(job);
       }
 
       logger.info(`[DataMigration] Started migration ${jobId} from ${input.source} for company ${companyId}`);
@@ -487,7 +634,7 @@ export const dataMigrationRouter = router({
   getMigrationStatus: protectedProcedure
     .input(z.object({ jobId: z.string() }))
     .query(async ({ input }) => {
-      const job = migrationJobs.get(input.jobId);
+      const job = await getMigrationJob(input.jobId);
       if (!job) return { found: false as const };
       return {
         found: true as const,
@@ -520,7 +667,8 @@ export const dataMigrationRouter = router({
     }))
     .query(async ({ input, ctx }) => {
       const companyId = (ctx.user as any)?.companyId || 0;
-      let jobs = Array.from(migrationJobs.values()).filter((j) => j.companyId === companyId);
+      const allJobsForHistory = await getAllMigrationJobs();
+      let jobs = allJobsForHistory.filter((j) => j.companyId === companyId);
       if (input.status) jobs = jobs.filter((j) => j.status === input.status);
       if (input.source) jobs = jobs.filter((j) => j.source === input.source);
       jobs.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
@@ -755,7 +903,7 @@ export const dataMigrationRouter = router({
         fieldMappings: {},
         progress: 0,
       };
-      migrationJobs.set(jobId, job);
+      migrationJobsCache.set(jobId, job);
       simulateMigrationProgress(jobId);
 
       return { jobId, status: "processing", totalRecords, message: `Bulk import started for ${totalRecords} ${input.entityType} records` };
@@ -979,7 +1127,7 @@ export const dataMigrationRouter = router({
         p95ResponseTime: avgQueryTime * 2.1,
         requestsPerMinute: totalRecords > 0 ? Math.floor(totalRecords / 10) + 50 : 0,
         errorRate: dbStatus === "healthy" ? 0 : 5.0,
-        activeRequests: migrationJobs.size + stressTests.size,
+        activeRequests: migrationJobsCache.size + stressTestsCache.size,
       },
       services: [
         { name: "API Server", status: "healthy", latency: Math.round(dbResponseTime * 0.5) },
@@ -1020,7 +1168,7 @@ export const dataMigrationRouter = router({
         createdBy: userId,
         results: null,
       };
-      stressTests.set(testId, test);
+      stressTestsCache.set(testId, test);
       simulateStressTest(testId);
 
       logger.info(`[DataMigration] Stress test ${testId} started: ${input.type}, ${input.concurrentUsers} users, ${input.durationSeconds}s`);
@@ -1033,7 +1181,7 @@ export const dataMigrationRouter = router({
   getStressTestResults: protectedProcedure
     .input(z.object({ testId: z.string() }))
     .query(async ({ input }) => {
-      const test = stressTests.get(input.testId);
+      const test = await getStressTest(input.testId);
       if (!test) return { found: false as const };
       return {
         found: true as const,
@@ -1133,7 +1281,8 @@ export const dataMigrationRouter = router({
       limit: z.number().min(1).max(50).optional().default(20),
     }))
     .query(async ({ input }) => {
-      const tests = Array.from(stressTests.values()).sort(
+      const allTests = await getAllStressTests();
+      const tests = allTests.sort(
         (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
       );
       const start = (input.page - 1) * input.limit;
@@ -1213,7 +1362,7 @@ export const dataMigrationRouter = router({
         createdBy: userId,
         results: null,
       };
-      drTests.set(testId, test);
+      drTestsCache.set(testId, test);
       simulateDrTest(testId);
 
       logger.info(`[DataMigration] DR test ${testId} started: ${input.type}`);
@@ -1226,7 +1375,7 @@ export const dataMigrationRouter = router({
   getDrTestResults: protectedProcedure
     .input(z.object({ testId: z.string() }))
     .query(async ({ input }) => {
-      const test = drTests.get(input.testId);
+      const test = await getDrTest(input.testId);
       if (!test) return { found: false as const };
       return {
         found: true as const,
@@ -1306,7 +1455,7 @@ export const dataMigrationRouter = router({
 
     // Derive bandwidth from record counts (proxy for activity)
     const estimatedBandwidthMbps = Math.max(1, Math.round(totalRecords / 1000 * 100) / 100);
-    const activeMigrations = Array.from(migrationJobs.values()).filter(j => !["completed", "failed", "cancelled"].includes(j.status)).length;
+    const activeMigrations = Array.from(migrationJobsCache.values()).filter(j => !["completed", "failed", "cancelled"].includes(j.status)).length;
 
     return {
       current: {

@@ -163,7 +163,7 @@ export default function AdvancedFinancials() {
 function OverviewTab({ isLight = false }: { isLight?: boolean }) {
   const dashQ = trpc.advancedFinancials.getFinancialDashboard.useQuery();
   const cashFlowQ = trpc.advancedFinancials.getCashFlowForecast.useQuery({ days: "30" });
-  const expensesQ = trpc.advancedFinancials.getExpenseCategories.useQuery();
+  const expensesQ = trpc.advancedFinancials.getExpenseCategories.useQuery({});
 
   const dash = dashQ.data;
   const cf = cashFlowQ.data;
@@ -505,7 +505,7 @@ function CurrencyTab({ isLight = false }: { isLight?: boolean }) {
   const rates = ratesQ.data;
 
   const handleConvert = async () => {
-    const result = await convertM.mutateAsync({ amount: parseFloat(amount) || 0, from, to, margin: 0.015 });
+    const result = await convertM.mutateAsync({ amount: parseFloat(amount) || 0, from: from as "USD" | "CAD" | "MXN", to: to as "USD" | "CAD" | "MXN", margin: 0.015 });
     setConvResult(result);
   };
 
@@ -712,8 +712,8 @@ function ProfitabilityTab({ isLight = false }: { isLight?: boolean }) {
 // ═══ FACTORING TAB ═══
 
 function FactoringTab({ isLight = false }: { isLight?: boolean }) {
-  const offersQ = trpc.advancedFinancials.getFactoringOffers.useQuery();
-  const revenueQ = trpc.advancedFinancials.getRevenueRecognition.useQuery();
+  const offersQ = trpc.advancedFinancials.getFactoringOffers.useQuery({});
+  const revenueQ = trpc.advancedFinancials.getRevenueRecognition.useQuery({});
 
   const offers = offersQ.data;
   const rev = revenueQ.data;

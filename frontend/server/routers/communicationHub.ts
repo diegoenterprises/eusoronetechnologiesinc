@@ -288,7 +288,7 @@ async function getBroadcasts(): Promise<Broadcast[]> { return queryByEntityType<
 async function getRules(): Promise<NotificationRule[]> { return queryByEntityType<NotificationRule>("comm_rule"); }
 async function getTemplates(): Promise<CommTemplate[]> { return queryByEntityType<CommTemplate>("comm_template"); }
 async function getEscalations(): Promise<EscalationWorkflow[]> { return queryByEntityType<EscalationWorkflow>("comm_escalation"); }
-async function getScheduledMessages(): Promise<ScheduledMessage[]> { return queryByEntityType<ScheduledMessage>("comm_scheduled"); }
+async function fetchScheduledMessages(): Promise<ScheduledMessage[]> { return queryByEntityType<ScheduledMessage>("comm_scheduled"); }
 async function getVoiceCalls(): Promise<VoiceCallEntry[]> { return queryByEntityType<VoiceCallEntry>("comm_voice_call"); }
 async function getActiveEscalations(): Promise<ActiveEscalation[]> { return queryByEntityType<ActiveEscalation>("comm_active_escalation"); }
 
@@ -472,7 +472,7 @@ export const communicationHubRouter = router({
 
   getCommunicationDashboard: protectedProcedure
     .query(async ({ ctx }) => {
-      ensureInMemorySeeded();
+      await ensureDbSeeded();
       const db = await getDb();
 
       let totalConversations = 0;
@@ -519,12 +519,19 @@ export const communicationHubRouter = router({
         }
       }
 
-      const recentBroadcasts = broadcastsStore.filter(b => {
+      const allBroadcasts = await getBroadcasts();
+      const allActiveEsc = await getActiveEscalations();
+      const allScheduled = await fetchScheduledMessages();
+      const allRules = await getRules();
+      const allTemplates = await getTemplates();
+      const allVoiceCalls = await getVoiceCalls();
+
+      const recentBroadcasts = allBroadcasts.filter(b => {
         return Date.now() - new Date(b.createdAt).getTime() < 7 * 86400000;
       }).length;
-      const activeEscCount = activeEscalations.filter(e => e.status === "pending" || e.status === "escalated").length;
-      const scheduledCount = scheduledStore.filter(s => s.status === "scheduled").length;
-      const activeRules = rulesStore.filter(r => r.isActive).length;
+      const activeEscCount = allActiveEsc.filter(e => e.status === "pending" || e.status === "escalated").length;
+      const scheduledCount = allScheduled.filter(s => s.status === "scheduled").length;
+      const activeRules = allRules.filter(r => r.isActive).length;
 
       return {
         summary: {
@@ -535,8 +542,8 @@ export const communicationHubRouter = router({
           activeEscalations: activeEscCount,
           scheduledMessages: scheduledCount,
           activeRules,
-          totalTemplates: templatesStore.filter(t => t.isActive).length,
-          totalVoiceCalls: voiceCallsStore.length,
+          totalTemplates: allTemplates.filter(t => t.isActive).length,
+          totalVoiceCalls: allVoiceCalls.length,
         },
         channelBreakdown,
         recentActivity: recentDbMessages.map(m => ({
@@ -549,14 +556,14 @@ export const communicationHubRouter = router({
           createdAt: m.createdAt?.toISOString?.() || new Date().toISOString(),
         })),
         urgentItems: [
-          ...broadcastsStore.filter(b => b.isEmergency && (!b.expiresAt || new Date(b.expiresAt) > new Date())).map(b => ({
+          ...allBroadcasts.filter(b => b.isEmergency && (!b.expiresAt || new Date(b.expiresAt) > new Date())).map(b => ({
             type: "emergency_broadcast" as const,
             id: b.id,
             title: b.title,
             priority: b.priority,
             createdAt: b.createdAt,
           })),
-          ...activeEscalations.filter(e => e.status === "escalated").map(e => ({
+          ...allActiveEsc.filter(e => e.status === "escalated").map(e => ({
             type: "escalation" as const,
             id: e.id,
             title: `Escalation Level ${e.currentLevel}`,
@@ -931,7 +938,7 @@ export const communicationHubRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // DISPATCH RADIO & BROADCASTS (in-memory — TODO: migrate to DB)
+  // DISPATCH RADIO & BROADCASTS (DB-backed via auditLogs)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getDispatchRadio: protectedProcedure
@@ -940,9 +947,9 @@ export const communicationHubRouter = router({
       includeExpired: z.boolean().optional(),
     }).optional())
     .query(async ({ input }) => {
-      ensureInMemorySeeded();
+      await ensureDbSeeded();
 
-      let broadcasts = [...broadcastsStore];
+      let broadcasts = await getBroadcasts();
       if (input?.group) {
         broadcasts = broadcasts.filter(b => b.targetGroup === input.group);
       }
@@ -1001,10 +1008,8 @@ export const communicationHubRouter = router({
       expiresInHours: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      ensureInMemorySeeded();
       const user = ctx.user as any;
 
-      // TODO: migrate broadcasts to DB — currently in-memory only
       const groupSizes: Record<string, number> = {
         all_drivers: 120, southeast: 35, northeast: 28, midwest: 22,
         west: 18, hazmat: 15, tanker: 12, reefer: 20,
@@ -1030,19 +1035,19 @@ export const communicationHubRouter = router({
           : null,
         createdAt: new Date().toISOString(),
       };
-      broadcastsStore.push(broadcast);
+      await persistEntity("comm_broadcast", broadcast.id, broadcast);
 
       return { success: true, broadcast };
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // AUTOMATED NOTIFICATIONS & RULES (in-memory — TODO: migrate to DB)
+  // AUTOMATED NOTIFICATIONS & RULES (DB-backed via auditLogs)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getAutomatedNotifications: protectedProcedure
     .query(async () => {
-      ensureInMemorySeeded();
-      const rules = [...rulesStore].sort((a, b) => {
+      await ensureDbSeeded();
+      const rules = (await getRules()).sort((a, b) => {
         if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
         return b.triggerCount - a.triggerCount;
       });
@@ -1070,12 +1075,10 @@ export const communicationHubRouter = router({
       metadata: z.record(z.string(), z.unknown()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      ensureInMemorySeeded();
       const user = ctx.user as any;
 
-      // TODO: migrate notification rules to DB
       if (input.id) {
-        const existing = rulesStore.find(r => r.id === input.id);
+        const existing = await queryOneByAction<NotificationRule>("comm_rule", input.id);
         if (existing) {
           Object.assign(existing, {
             name: input.name,
@@ -1088,6 +1091,7 @@ export const communicationHubRouter = router({
             cooldownMinutes: input.cooldownMinutes,
             metadata: input.metadata || {},
           });
+          await persistEntity("comm_rule", existing.id, existing);
           return { success: true, rule: existing };
         }
       }
@@ -1108,12 +1112,12 @@ export const communicationHubRouter = router({
         lastTriggeredAt: null,
         triggerCount: 0,
       };
-      rulesStore.push(rule);
+      await persistEntity("comm_rule", rule.id, rule);
       return { success: true, rule };
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // TEMPLATES (in-memory — TODO: migrate to DB)
+  // TEMPLATES (DB-backed via auditLogs)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getNotificationTemplates: protectedProcedure
@@ -1124,9 +1128,9 @@ export const communicationHubRouter = router({
       search: z.string().optional(),
     }).optional())
     .query(async ({ input }) => {
-      ensureInMemorySeeded();
-      // TODO: migrate templates to DB
-      let templates = [...templatesStore];
+      await ensureDbSeeded();
+      const allTemplates = await getTemplates();
+      let templates = [...allTemplates];
       if (input?.category) templates = templates.filter(t => t.category === input.category);
       if (input?.channel) templates = templates.filter(t => t.channel === input.channel);
       if (input?.language) templates = templates.filter(t => t.language === input.language);
@@ -1140,7 +1144,7 @@ export const communicationHubRouter = router({
 
       return {
         templates,
-        categories: Array.from(new Set(templatesStore.map(t => t.category))),
+        categories: Array.from(new Set(allTemplates.map(t => t.category))),
         totalTemplates: templates.length,
       };
     }),
@@ -1158,13 +1162,11 @@ export const communicationHubRouter = router({
       language: z.string().default("en"),
     }))
     .mutation(async ({ ctx, input }) => {
-      ensureInMemorySeeded();
       const user = ctx.user as any;
       const now = new Date().toISOString();
 
-      // TODO: migrate templates to DB
       if (input.id) {
-        const existing = templatesStore.find(t => t.id === input.id);
+        const existing = await queryOneByAction<CommTemplate>("comm_template", input.id);
         if (existing) {
           Object.assign(existing, {
             name: input.name,
@@ -1177,6 +1179,7 @@ export const communicationHubRouter = router({
             language: input.language,
             updatedAt: now,
           });
+          await persistEntity("comm_template", existing.id, existing);
           return { success: true, template: existing };
         }
       }
@@ -1196,26 +1199,27 @@ export const communicationHubRouter = router({
         updatedAt: now,
         usageCount: 0,
       };
-      templatesStore.push(template);
+      await persistEntity("comm_template", template.id, template);
       return { success: true, template };
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // ESCALATION WORKFLOWS (in-memory — TODO: migrate to DB)
+  // ESCALATION WORKFLOWS (DB-backed via auditLogs)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getEscalationWorkflows: protectedProcedure
     .query(async () => {
-      ensureInMemorySeeded();
-      // TODO: migrate escalation workflows to DB
+      await ensureDbSeeded();
+      const allEscalations = await getEscalations();
+      const allActiveEsc = await getActiveEscalations();
       return {
-        workflows: escalationsStore,
-        activeEscalations: activeEscalations.map(e => {
-          const wf = escalationsStore.find(w => w.id === e.workflowId);
+        workflows: allEscalations,
+        activeEscalations: allActiveEsc.map(e => {
+          const wf = allEscalations.find(w => w.id === e.workflowId);
           return { ...e, workflowName: wf?.name || "Unknown" };
         }),
-        totalWorkflows: escalationsStore.length,
-        activeCount: escalationsStore.filter(w => w.isActive).length,
+        totalWorkflows: allEscalations.length,
+        activeCount: allEscalations.filter(w => w.isActive).length,
       };
     }),
 
@@ -1237,13 +1241,11 @@ export const communicationHubRouter = router({
       isActive: z.boolean().default(true),
     }))
     .mutation(async ({ ctx, input }) => {
-      ensureInMemorySeeded();
       const user = ctx.user as any;
       const now = new Date().toISOString();
 
-      // TODO: migrate escalation workflows to DB
       if (input.id) {
-        const existing = escalationsStore.find(e => e.id === input.id);
+        const existing = await queryOneByAction<EscalationWorkflow>("comm_escalation", input.id);
         if (existing) {
           Object.assign(existing, {
             name: input.name,
@@ -1253,6 +1255,7 @@ export const communicationHubRouter = router({
             isActive: input.isActive,
             updatedAt: now,
           });
+          await persistEntity("comm_escalation", existing.id, existing);
           return { success: true, workflow: existing };
         }
       }
@@ -1268,7 +1271,7 @@ export const communicationHubRouter = router({
         createdAt: now,
         updatedAt: now,
       };
-      escalationsStore.push(workflow);
+      await persistEntity("comm_escalation", workflow.id, workflow);
       return { success: true, workflow };
     }),
 
@@ -1279,13 +1282,12 @@ export const communicationHubRouter = router({
       reason: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      ensureInMemorySeeded();
-      // TODO: migrate escalation state to DB
-      const workflow = escalationsStore.find(w => w.id === input.workflowId);
+      await ensureDbSeeded();
+      const workflow = await queryOneByAction<EscalationWorkflow>("comm_escalation", input.workflowId);
       if (!workflow) return { success: false, error: "Workflow not found" };
       if (!workflow.isActive) return { success: false, error: "Workflow is not active" };
 
-      const escalation = {
+      const escalation: ActiveEscalation = {
         id: nextId("aesc"),
         workflowId: input.workflowId,
         messageId: input.messageId || "",
@@ -1295,20 +1297,19 @@ export const communicationHubRouter = router({
         acknowledgedBy: null,
         resolvedAt: null,
       };
-      activeEscalations.push(escalation);
+      await persistEntity("comm_active_escalation", escalation.id, escalation);
 
       return { success: true, escalation, workflow: { name: workflow.name, firstStep: workflow.steps[0] } };
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // NOTIFICATION PREFERENCES (in-memory — TODO: migrate to DB)
+  // NOTIFICATION PREFERENCES (DB-backed via auditLogs)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getNotificationPreferences: protectedProcedure
     .query(async ({ ctx }) => {
-      // TODO: migrate notification preferences to DB
       const userId = Number((ctx.user as any).id) || 0;
-      const prefs = preferencesStore.get(userId);
+      const prefs = await getPreferences(userId);
       if (prefs) return prefs;
 
       // Default preferences
@@ -1351,15 +1352,14 @@ export const communicationHubRouter = router({
       language: z.string().default("en"),
     }))
     .mutation(async ({ ctx, input }) => {
-      // TODO: migrate notification preferences to DB
       const userId = Number((ctx.user as any).id) || 0;
       const prefs: NotifPreference = { userId, ...input };
-      preferencesStore.set(userId, prefs);
+      await persistEntity("comm_preferences", String(userId), prefs);
       return { success: true, preferences: prefs };
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // SCHEDULED MESSAGES (in-memory — TODO: migrate to DB)
+  // SCHEDULED MESSAGES (DB-backed via auditLogs)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getScheduledMessages: protectedProcedure
@@ -1367,9 +1367,8 @@ export const communicationHubRouter = router({
       status: z.enum(["scheduled", "sent", "cancelled", "failed"]).optional(),
     }).optional())
     .query(async ({ input }) => {
-      ensureInMemorySeeded();
-      // TODO: migrate scheduled messages to DB
-      let msgs = [...scheduledStore];
+      await ensureDbSeeded();
+      let msgs = await fetchScheduledMessages();
       if (input?.status) msgs = msgs.filter(m => m.status === input.status);
       msgs.sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime());
       return { messages: msgs, total: msgs.length };
@@ -1384,7 +1383,6 @@ export const communicationHubRouter = router({
       scheduledFor: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // TODO: migrate scheduled messages to DB
       const user = ctx.user as any;
       const msg: ScheduledMessage = {
         id: nextId("sched"),
@@ -1398,12 +1396,12 @@ export const communicationHubRouter = router({
         status: "scheduled",
         createdAt: new Date().toISOString(),
       };
-      scheduledStore.push(msg);
+      await persistEntity("comm_scheduled", msg.id, msg);
       return { success: true, message: msg };
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // ANALYTICS & COMPLIANCE (DB-backed for messages, in-memory for calls/broadcasts)
+  // ANALYTICS & COMPLIANCE (DB-backed)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getCommunicationAnalytics: protectedProcedure
@@ -1411,7 +1409,7 @@ export const communicationHubRouter = router({
       dateRange: z.enum(["today", "week", "month", "quarter"]).default("week"),
     }).optional())
     .query(async ({ input }) => {
-      ensureInMemorySeeded();
+      await ensureDbSeeded();
       const range = input?.dateRange || "week";
       const rangeMs: Record<string, number> = {
         today: 86400000, week: 7 * 86400000, month: 30 * 86400000, quarter: 90 * 86400000,
@@ -1483,8 +1481,8 @@ export const communicationHubRouter = router({
         }
       }
 
-      // Voice calls remain in-memory
-      const periodCalls = voiceCallsStore.filter(c => new Date(c.startedAt).getTime() > cutoff.getTime());
+      const allVoiceCalls = await getVoiceCalls();
+      const periodCalls = allVoiceCalls.filter(c => new Date(c.startedAt).getTime() > cutoff.getTime());
 
       // Hourly volume (simplified — would need raw message timestamps for accuracy)
       const hourlyVolume: Record<number, number> = {};
@@ -1494,7 +1492,7 @@ export const communicationHubRouter = router({
         period: range,
         totalMessages,
         totalCalls: periodCalls.length,
-        totalBroadcasts: broadcastsStore.filter(b => new Date(b.createdAt).getTime() > cutoff.getTime()).length,
+        totalBroadcasts: (await getBroadcasts()).filter(b => new Date(b.createdAt).getTime() > cutoff.getTime()).length,
         avgResponseTimeMs: 0,
         avgResponseTimeFormatted: "N/A",
         channelDistribution: channelDist,
@@ -1517,9 +1515,9 @@ export const communicationHubRouter = router({
 
   getEmergencyBroadcastHistory: protectedProcedure
     .query(async () => {
-      ensureInMemorySeeded();
-      // TODO: migrate broadcasts to DB
-      const emergencies = broadcastsStore
+      await ensureDbSeeded();
+      const allBroadcasts = await getBroadcasts();
+      const emergencies = allBroadcasts
         .filter(b => b.isEmergency)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -1540,7 +1538,7 @@ export const communicationHubRouter = router({
       dateRange: z.enum(["week", "month", "quarter", "year"]).default("month"),
     }).optional())
     .query(async ({ input }) => {
-      ensureInMemorySeeded();
+      await ensureDbSeeded();
       const range = input?.dateRange || "month";
       const rangeMs: Record<string, number> = {
         week: 7 * 86400000, month: 30 * 86400000, quarter: 90 * 86400000, year: 365 * 86400000,
@@ -1563,8 +1561,10 @@ export const communicationHubRouter = router({
         }
       }
 
-      const callRecords = voiceCallsStore.filter(c => new Date(c.startedAt).getTime() > cutoff.getTime()).length;
-      const broadcastRecords = broadcastsStore.filter(b => new Date(b.createdAt).getTime() > cutoff.getTime()).length;
+      const allVoiceCalls = await getVoiceCalls();
+      const callRecords = allVoiceCalls.filter(c => new Date(c.startedAt).getTime() > cutoff.getTime()).length;
+      const allBroadcasts = await getBroadcasts();
+      const broadcastRecords = allBroadcasts.filter(b => new Date(b.createdAt).getTime() > cutoff.getTime()).length;
 
       return {
         period: range,
@@ -1593,7 +1593,7 @@ export const communicationHubRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // VOICE CALL LOG (in-memory — TODO: migrate to DB)
+  // VOICE CALL LOG (DB-backed via auditLogs)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getVoiceCallLog: protectedProcedure
@@ -1604,9 +1604,9 @@ export const communicationHubRouter = router({
       limit: z.number().min(1).max(100).default(20),
     }).optional())
     .query(async ({ input }) => {
-      ensureInMemorySeeded();
-      // TODO: migrate voice call log to DB
-      let calls = [...voiceCallsStore];
+      await ensureDbSeeded();
+      const allCalls = await getVoiceCalls();
+      let calls = [...allCalls];
       if (input?.direction) calls = calls.filter(c => c.direction === input.direction);
       if (input?.status) calls = calls.filter(c => c.status === input.status);
       calls.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
@@ -1621,11 +1621,11 @@ export const communicationHubRouter = router({
         calls: items,
         pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
         stats: {
-          totalCalls: voiceCallsStore.length,
-          completed: voiceCallsStore.filter(c => c.status === "completed").length,
-          missed: voiceCallsStore.filter(c => c.status === "missed").length,
-          avgDuration: voiceCallsStore.filter(c => c.durationSeconds > 0).length > 0
-            ? Math.round(voiceCallsStore.filter(c => c.durationSeconds > 0).reduce((s, c) => s + c.durationSeconds, 0) / voiceCallsStore.filter(c => c.durationSeconds > 0).length)
+          totalCalls: allCalls.length,
+          completed: allCalls.filter(c => c.status === "completed").length,
+          missed: allCalls.filter(c => c.status === "missed").length,
+          avgDuration: allCalls.filter(c => c.durationSeconds > 0).length > 0
+            ? Math.round(allCalls.filter(c => c.durationSeconds > 0).reduce((s, c) => s + c.durationSeconds, 0) / allCalls.filter(c => c.durationSeconds > 0).length)
             : 0,
         },
       };
