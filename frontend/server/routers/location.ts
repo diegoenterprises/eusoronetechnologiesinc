@@ -104,6 +104,23 @@ function formatTriggerMessage(eventName: string, loadNumber: string, facilityNam
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// PER-DRIVER GPS BATCH RATE LIMITING
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Track last batch timestamp per driverId for rate limiting (2s cooldown) */
+const _gpsBatchLastTs = new Map<number, number>();
+const GPS_BATCH_COOLDOWN_MS = 2_000;
+const GPS_BATCH_STALE_MS = 60_000;
+
+/** Piggyback cleanup: remove entries older than 60s on each request */
+function _pruneGpsBatchRateMap() {
+  const cutoff = Date.now() - GPS_BATCH_STALE_MS;
+  for (const [key, ts] of _gpsBatchLastTs) {
+    if (ts < cutoff) _gpsBatchLastTs.delete(key);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // TELEMETRY SUB-ROUTER (GPS ingestion, fleet positions, breadcrumb trails)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -119,6 +136,18 @@ const telemetrySubRouter = router({
     .mutation(async ({ ctx, input }) => {
       const driverId = ctx.user?.id;
       if (!driverId) throw new Error("Not authenticated");
+
+      // Per-driver rate limiting: skip if batch submitted within last 2s
+      const numericDriverId = Number(driverId);
+      const now = Date.now();
+      _pruneGpsBatchRateMap();
+      const lastTs = _gpsBatchLastTs.get(numericDriverId);
+      if (lastTs && now - lastTs < GPS_BATCH_COOLDOWN_MS) {
+        // Silently skip — GPS clients retry anyway
+        return { inserted: 0, skipped: input.locations.length, rateLimited: true };
+      }
+      _gpsBatchLastTs.set(numericDriverId, now);
+
       const result = await ingestBreadcrumbs(
         Number(driverId), input.locations,
         input.loadId, input.vehicleId, input.loadState,

@@ -27,6 +27,16 @@ import {
 } from "../../drizzle/schema";
 
 // ═══════════════════════════════════════════════════════════════════════════
+// CONFIGURABLE DEFAULTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Default detention rate when load has no custom rate in specialInstructions */
+const DEFAULT_DETENTION_RATE_PER_HOUR = 75;
+
+/** Default free time (minutes) before detention charges begin accruing */
+const DEFAULT_FREE_TIME_MINUTES = 120;
+
+// ═══════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1031,13 +1041,26 @@ async function startDetentionClock(
   const db = await getDb();
   if (!db) return;
 
+  // Check if the load has a custom free time in specialInstructions
+  let freeTimeMinutes = DEFAULT_FREE_TIME_MINUTES;
+  try {
+    const [load] = await db.select({ specialInstructions: loads.specialInstructions })
+      .from(loads).where(eq(loads.id, loadId)).limit(1);
+    if (load?.specialInstructions) {
+      const parsed = JSON.parse(load.specialInstructions);
+      if (typeof parsed.freeTimeMinutes === "number" && parsed.freeTimeMinutes >= 0) {
+        freeTimeMinutes = parsed.freeTimeMinutes;
+      }
+    }
+  } catch { /* use default */ }
+
   await db.insert(detentionRecords).values({
     loadId,
     locationType,
     driverId,
     geofenceId,
     geofenceEnterAt: enterTime,
-    freeTimeMinutes: 120,
+    freeTimeMinutes,
   });
 }
 
@@ -1060,9 +1083,22 @@ async function stopDetentionClock(
 
   const dwellMs = exitTime.getTime() - record.geofenceEnterAt.getTime();
   const totalDwellMinutes = Math.round(dwellMs / 60000);
-  const freeTime = record.freeTimeMinutes || 120;
+  const freeTime = record.freeTimeMinutes || DEFAULT_FREE_TIME_MINUTES;
   const detentionMinutes = Math.max(0, totalDwellMinutes - freeTime);
-  const rate = 75; // $75/hr default
+
+  // Use custom detention rate from load specialInstructions, fall back to default
+  let rate = DEFAULT_DETENTION_RATE_PER_HOUR;
+  try {
+    const [load] = await db.select({ specialInstructions: loads.specialInstructions })
+      .from(loads).where(eq(loads.id, loadId)).limit(1);
+    if (load?.specialInstructions) {
+      const parsed = JSON.parse(load.specialInstructions);
+      if (typeof parsed.detentionRatePerHour === "number" && parsed.detentionRatePerHour > 0) {
+        rate = parsed.detentionRatePerHour;
+      }
+    }
+  } catch { /* use default */ }
+
   const detentionCharge = detentionMinutes > 0 ? Math.round((detentionMinutes / 60) * rate * 100) / 100 : 0;
 
   await db.update(detentionRecords).set({
@@ -1213,6 +1249,30 @@ export async function calculateETA(
         changeReason: "recalculation",
       });
     } catch { /* non-critical */ }
+  }
+
+  // Emit ETA update via WebSocket so subscribers get real-time updates
+  try {
+    const { wsService, WS_EVENTS, WS_CHANNELS } = await import("./websocket");
+    wsService.broadcastToChannel(
+      WS_CHANNELS.LOAD(String(loadId)),
+      {
+        type: WS_EVENTS.LOAD_ETA_UPDATED,
+        data: {
+          loadId: String(loadId),
+          newEta: estimatedArrival.toISOString(),
+          confidence,
+          remainingMiles: result.remainingMiles,
+          remainingMinutes: result.remainingMinutes,
+          trafficDelay: result.trafficDelay,
+          hosBreakNeeded: result.hosBreakNeeded,
+          timestamp: new Date().toISOString(),
+        },
+        timestamp: new Date().toISOString(),
+      }
+    );
+  } catch {
+    // Non-critical — ETA emission failure must not break GPS ingestion
   }
 
   return result;

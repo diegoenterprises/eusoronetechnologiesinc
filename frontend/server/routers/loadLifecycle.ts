@@ -57,6 +57,7 @@ import { onLoadStateChange as checkConvoySync } from "../services/loadLifecycle/
 import { createGeotag } from "../_core/locationEngine";
 import { getHOSSummary, canDriverAcceptLoad } from "../services/hosEngine";
 import { resolveComplianceMatrix, PRODUCT_CATALOG, TRAILER_PRODUCT_MAP } from "../seeds/complianceMatrix";
+import { SEGREGATION_TABLE } from "../_core/hazmatConstants";
 
 // ═══════════════════════════════════════════════════════════════
 // NOTIFICATION DISPATCHER — centralized load lifecycle notifications
@@ -478,21 +479,7 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
             AND status IN ('assigned', 'confirmed', 'en_route_pickup', 'at_pickup', 'loading', 'loaded', 'in_transit')
         `) as unknown as any[][];
         const otherLoads = otherRows || [];
-        const SEGREGATION: Record<string, string[]> = {
-          '1.1': ['2.1','2.3','3','4.1','4.2','4.3','5.1','5.2','6.1','7','8'],
-          '2.1': ['1.1','2.3','3','5.1','5.2','6.1'],
-          '2.3': ['1.1','2.1','3','4.1','4.2','4.3','5.1','5.2','6.1','8'],
-          '3': ['1.1','2.1','2.3','4.1','4.3','5.1','5.2','6.1'],
-          '4.1': ['1.1','2.3','3','5.1','5.2'],
-          '4.2': ['1.1','2.3','5.1','5.2','7','8'],
-          '4.3': ['1.1','2.3','3','5.1','5.2','8'],
-          '5.1': ['1.1','2.1','2.3','3','4.1','4.2','4.3','6.1','7'],
-          '5.2': ['1.1','2.1','2.3','3','4.1','4.2','4.3'],
-          '6.1': ['1.1','2.1','2.3','3','5.1'],
-          '7': ['1.1','4.2','5.1'],
-          '8': ['1.1','2.3','4.2','4.3'],
-        };
-        const incompatible = SEGREGATION[segHazmat] || [];
+        const incompatible = SEGREGATION_TABLE[segHazmat] || [];
         for (const other of otherLoads) {
           const otherClass = other.hazmatClass || other.hazardClassNumber;
           if (otherClass && incompatible.includes(otherClass)) {

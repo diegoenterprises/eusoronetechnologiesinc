@@ -133,8 +133,11 @@ export const interstateRouter = router({
         inspectionOk = report.safeToOperate;
         inspectionResult = report.overallResult;
         inspectionScore = report.complianceScore;
-      } catch {
-        inspectionResult = null;
+      } catch (err) {
+        // Surface inspection service errors — do not silently pass
+        inspectionOk = false;
+        inspectionResult = "error";
+        inspectionScore = null;
       }
 
       return {
@@ -176,10 +179,19 @@ export const interstateRouter = router({
         });
       }
 
-      // Validate pre-trip inspection
-      const report = await generatePhotoInspectionReport(
-        `VEH-${String(userId).padStart(3, "0")}`, String(userId), "pre_trip"
-      );
+      // Validate pre-trip inspection — service errors must block trip start
+      let report;
+      try {
+        report = await generatePhotoInspectionReport(
+          `VEH-${String(userId).padStart(3, "0")}`, String(userId), "pre_trip"
+        );
+      } catch (inspErr) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Pre-trip inspection service unavailable — cannot verify vehicle safety",
+          cause: inspErr,
+        });
+      }
       if (!report.safeToOperate) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",

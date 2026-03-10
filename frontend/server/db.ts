@@ -84,6 +84,38 @@ function startHealthCheck() {
   }, 30000); // Every 30 seconds
 }
 
+// Health check for read replica pool — same pattern as primary
+const _readPoolStats = { healthCheckFailures: 0 };
+let _readHealthCheckInterval: NodeJS.Timeout | null = null;
+function startReadReplicaHealthCheck() {
+  if (_readHealthCheckInterval) return;
+  _readHealthCheckInterval = setInterval(async () => {
+    if (!_readPool) return;
+    try {
+      const conn = _readPool.promise();
+      await conn.query("SELECT 1");
+      _readPoolStats.healthCheckFailures = 0;
+    } catch (err: any) {
+      _readPoolStats.healthCheckFailures++;
+      logger.error(`[Database] Read replica health check failed (${_readPoolStats.healthCheckFailures}x):`, err.message);
+      // If read pool is dead, tear it down so it falls back to primary
+      if (_readPoolStats.healthCheckFailures >= 3) {
+        logger.warn("[Database] Tearing down read replica pool after 3 consecutive health check failures — falling back to primary");
+        try {
+          _readPool?.end(() => {});
+        } catch {}
+        _readPool = null;
+        _readDb = null;
+        _readPoolStats.healthCheckFailures = 0;
+        if (_readHealthCheckInterval) {
+          clearInterval(_readHealthCheckInterval);
+          _readHealthCheckInterval = null;
+        }
+      }
+    }
+  }, 30000); // Every 30 seconds
+}
+
 // One-time startup cleanup — runs once after pool init
 let _startupCleanupDone = false;
 async function runStartupCleanup(db: ReturnType<typeof drizzle>) {
@@ -160,27 +192,7 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
   try {
     logger.info("[SchemaSync] Checking schema alignment...");
 
-    // --- loads table columns ---
-    await addColIfMissing("loads", "vehicleId", "INT DEFAULT NULL");
-    await addColIfMissing("loads", "hazmatClass", "VARCHAR(10) DEFAULT NULL");
-    await addColIfMissing("loads", "unNumber", "VARCHAR(10) DEFAULT NULL");
-    await addColIfMissing("loads", "volume", "DECIMAL(10,2) DEFAULT NULL");
-    await addColIfMissing("loads", "volumeUnit", "VARCHAR(10) DEFAULT 'gal'");
-    await addColIfMissing("loads", "estimatedDeliveryDate", "TIMESTAMP NULL DEFAULT NULL");
-    await addColIfMissing("loads", "actualDeliveryDate", "TIMESTAMP NULL DEFAULT NULL");
-    await addColIfMissing("loads", "distanceUnit", "VARCHAR(10) DEFAULT 'miles'");
-    await addColIfMissing("loads", "currency", "VARCHAR(3) DEFAULT 'USD'");
-    await addColIfMissing("loads", "specialInstructions", "TEXT DEFAULT NULL");
-    await addColIfMissing("loads", "commodityName", "VARCHAR(255) DEFAULT NULL");
-    await addColIfMissing("loads", "spectraMatchResult", "JSON DEFAULT NULL");
-    await addColIfMissing("loads", "documents", "JSON DEFAULT NULL");
-    await addColIfMissing("loads", "currentLocation", "JSON DEFAULT NULL");
-    await addColIfMissing("loads", "route", "JSON DEFAULT NULL");
-    await addColIfMissing("loads", "deletedAt", "TIMESTAMP NULL DEFAULT NULL");
-    await addColIfMissing("loads", "weightUnit", "VARCHAR(10) DEFAULT 'lbs'");
-    await addColIfMissing("loads", "distance", "DECIMAL(10,2) DEFAULT NULL");
-    await addColIfMissing("loads", "requiresEscort", "BOOLEAN NOT NULL DEFAULT FALSE");
-    await addColIfMissing("loads", "escortCount", "INT NOT NULL DEFAULT 0");
+    // --- loads table columns (removed — now defined in Drizzle schema) ---
 
     // --- documents table columns ---
     await addColIfMissing("documents", "agreementId", "INT DEFAULT NULL");
@@ -192,19 +204,7 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
     // --- agreements table columns ---
     await addColIfMissing("agreements", "rateSheetDocumentId", "INT DEFAULT NULL");
 
-    // --- users table columns ---
-    await addColIfMissing("users", "companyId", "INT DEFAULT NULL");
-    await addColIfMissing("users", "profilePicture", "VARCHAR(500) DEFAULT NULL");
-    await addColIfMissing("users", "phone", "VARCHAR(20) DEFAULT NULL");
-    await addColIfMissing("users", "metadata", "JSON DEFAULT NULL");
-    await addColIfMissing("users", "currentLocation", "JSON DEFAULT NULL");
-    await addColIfMissing("users", "lastGPSUpdate", "TIMESTAMP NULL DEFAULT NULL");
-    await addColIfMissing("users", "stripeCustomerId", "VARCHAR(100) DEFAULT NULL");
-    await addColIfMissing("users", "stripeConnectId", "VARCHAR(100) DEFAULT NULL");
-    await addColIfMissing("users", "deletedAt", "TIMESTAMP NULL DEFAULT NULL");
-    await addColIfMissing("users", "passwordHash", "VARCHAR(255) DEFAULT NULL");
-    await addColIfMissing("users", "isActive", "BOOLEAN DEFAULT TRUE");
-    await addColIfMissing("users", "isVerified", "BOOLEAN DEFAULT FALSE");
+    // --- users table columns (removed — now defined in Drizzle schema) ---
 
     // --- bids table columns ---
     await addColIfMissing("bids", "catalystId", "INT DEFAULT NULL");
@@ -213,8 +213,7 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
     await addColIfMissing("bids", "message", "TEXT DEFAULT NULL");
     await addColIfMissing("bids", "expiresAt", "TIMESTAMP NULL DEFAULT NULL");
 
-    // --- vehicles table columns ---
-    await addColIfMissing("vehicles", "mileage", "INT DEFAULT NULL");
+    // --- vehicles table columns (removed — now defined in Drizzle schema) ---
 
     // --- vehicles: extend vehicleType enum with FMCSA-derived trailer types ---
     try {
@@ -275,22 +274,9 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
     await addColIfMissing("wallets", "currency", "VARCHAR(3) DEFAULT 'USD'");
     await addColIfMissing("wallets", "isDefault", "BOOLEAN DEFAULT FALSE");
 
-    // --- companies table columns ---
-    await addColIfMissing("companies", "logo", "VARCHAR(500) DEFAULT NULL");
-    await addColIfMissing("companies", "hazmatLicense", "VARCHAR(100) DEFAULT NULL");
-    await addColIfMissing("companies", "hazmatExpiry", "TIMESTAMP NULL DEFAULT NULL");
-    await addColIfMissing("companies", "complianceStatus", "VARCHAR(50) DEFAULT NULL");
-    await addColIfMissing("companies", "insurancePolicy", "VARCHAR(100) DEFAULT NULL");
-    await addColIfMissing("companies", "insuranceExpiry", "TIMESTAMP NULL DEFAULT NULL");
+    // --- companies table columns (removed — now defined in Drizzle schema) ---
 
-    // --- Supply Chain: companies classification ---
-    await addColIfMissing("companies", "supplyChainRole", "ENUM('PRODUCER','REFINER','MARKETER','WHOLESALER','RETAILER','TERMINAL_OPERATOR','TRANSPORTER') DEFAULT NULL");
-    await addColIfMissing("companies", "marketerType", "ENUM('branded','independent','used_oil') DEFAULT NULL");
-    await addColIfMissing("companies", "supplyChainMeta", "JSON DEFAULT NULL");
-
-    // --- Supply Chain: loads terminal FKs ---
-    await addColIfMissing("loads", "originTerminalId", "INT DEFAULT NULL");
-    await addColIfMissing("loads", "destinationTerminalId", "INT DEFAULT NULL");
+    // --- Supply Chain: loads terminal FKs (removed — now defined in Drizzle schema) ---
 
     // --- Supply Chain: terminals expansion ---
     await addColIfMissing("terminals", "terminalType", "ENUM('refinery','storage','rack','pipeline','blending','distribution','marine','rail') DEFAULT 'storage'");
@@ -1084,9 +1070,7 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
     await addColIfMissing("road_segments", "lidarEnrichedAt", "TIMESTAMP NULL DEFAULT NULL");
     await addColIfMissing("road_segments", "truckRiskScore", "INT DEFAULT NULL");
 
-    // --- P0-Fix: loads table — double-brokering prevention columns ---
-    await addColIfMissing("loads", "originalShipperId", "INT DEFAULT NULL");
-    await addColIfMissing("loads", "brokerChainDepth", "INT NOT NULL DEFAULT 0");
+    // --- P0-Fix: loads double-brokering columns (removed — now defined in Drizzle schema) ---
 
     // --- P0-Fix: document_hashes table (WS-P0-019R — immutable content integrity) ---
     await ensureTable("document_hashes", `CREATE TABLE document_hashes (
@@ -1369,12 +1353,7 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX ins_alert_status_idx (status)
     )`);
 
-    // --- P0 Gold Standard: User account lifecycle columns ---
-    await addColIfMissing("users", "status", "VARCHAR(20) DEFAULT 'active'");
-    await addColIfMissing("users", "closedAt", "TIMESTAMP NULL");
-    await addColIfMissing("users", "closedReason", "TEXT NULL");
-    await addColIfMissing("users", "deactivatedAt", "TIMESTAMP NULL");
-    await addColIfMissing("users", "deactivatedBy", "INT NULL");
+    // --- P0 Gold Standard: User account lifecycle columns (removed — now defined in Drizzle schema) ---
 
     // --- P0 Gold Standard: Password Reset Tokens (Blocker 2) ---
     await ensureTable("password_reset_tokens", `CREATE TABLE IF NOT EXISTS password_reset_tokens (
@@ -1582,15 +1561,7 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX dah_created_idx (createdAt)
     )`);
 
-    // --- Phase 1: DOT Hazmat fields on loads table (49 CFR 172.200-204) ---
-    await addColIfMissing("loads", "properShippingName", "VARCHAR(255) DEFAULT NULL");
-    await addColIfMissing("loads", "packingGroup", "ENUM('I','II','III') DEFAULT NULL");
-    await addColIfMissing("loads", "technicalName", "VARCHAR(255) DEFAULT NULL");
-    await addColIfMissing("loads", "emergencyResponseNumber", "VARCHAR(10) DEFAULT NULL");
-    await addColIfMissing("loads", "emergencyPhone", "VARCHAR(20) DEFAULT NULL");
-    await addColIfMissing("loads", "hazardClassNumber", "VARCHAR(10) DEFAULT NULL");
-    await addColIfMissing("loads", "subsidiaryHazards", "JSON DEFAULT NULL");
-    await addColIfMissing("loads", "specialPermit", "VARCHAR(50) DEFAULT NULL");
+    // --- Phase 1: DOT Hazmat fields (removed — now defined in Drizzle schema) ---
 
     // --- Phase 4: Settlements table ---
     await ensureTable("settlements", `CREATE TABLE IF NOT EXISTS settlements (
@@ -2293,7 +2264,8 @@ export async function getReadDb() {
         connectTimeout: 15000,
       });
       _readDb = drizzle(_readPool);
-      logger.info("[LIGHTSPEED] Read replica pool initialized (limit: 80)");
+      startReadReplicaHealthCheck();
+      logger.info("[LIGHTSPEED] Read replica pool initialized (limit: 80, healthCheck: 30s)");
       return _readDb;
     } catch (err: any) {
       logger.warn("[LIGHTSPEED] Read replica unavailable, using primary:", err.message?.slice(0, 80));
@@ -2305,6 +2277,10 @@ export async function getReadDb() {
 
 // Graceful shutdown — call on process exit
 export async function closeDb(): Promise<void> {
+  if (_readHealthCheckInterval) {
+    clearInterval(_readHealthCheckInterval);
+    _readHealthCheckInterval = null;
+  }
   if (_readPool) {
     await new Promise<void>((resolve) => { _readPool!.end(() => resolve()); });
     _readPool = null;

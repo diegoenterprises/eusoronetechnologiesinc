@@ -18,6 +18,7 @@ import {
   emitBidAwarded,
   emitNotification,
 } from "../_core/websocket";
+import { TRAILER_HAZMAT_ALLOWED, SEGREGATION_TABLE, getRequiredCdlEndorsements } from "../_core/hazmatConstants";
 import { WS_EVENTS } from "@shared/websocket-events";
 import { emailService } from "../_core/email";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
@@ -252,14 +253,6 @@ export const loadsRouter = router({
       }
 
       // 2. Hazmat class vs trailer type validation
-      const TRAILER_HAZMAT_ALLOWED: Record<string, string[]> = {
-        liquid_tank: ["3", "5.1", "5.2", "6.1", "8"],
-        gas_tank: ["2.1", "2.2", "2.3"],
-        hazmat_van: ["1", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "2.1", "2.2", "2.3", "3", "4.1", "4.2", "4.3", "5.1", "5.2", "6.1", "6.2", "7", "8", "9"],
-        dry_van: ["9"],
-        reefer: ["9"],
-        flatbed: ["9"],
-      };
 
       const trailerType = input?.trailerType?.toLowerCase() || "";
       const hazmatClass = input?.hazmatClass || "";
@@ -282,19 +275,6 @@ export const loadsRouter = router({
       }
 
       // 3. Multi-compartment segregation check
-      const SEGREGATION_TABLE: Record<string, string[]> = {
-        "1": ["2.1","2.2","2.3","3","4.1","4.2","4.3","5.1","5.2","6.1","7","8"],
-        "2.1": ["1","2.3","3","4.1","4.2","4.3","5.1","5.2","6.1","7","8"],
-        "3": ["1","2.1","2.3","4.1","4.3","5.1","5.2","6.1","7","8"],
-        "4.1": ["1","2.1","2.3","3","4.3","5.1","5.2","6.1","7","8"],
-        "4.2": ["1","2.1","3","5.1","5.2","7","8"],
-        "4.3": ["1","2.1","3","4.1","5.1","5.2","6.1","7","8"],
-        "5.1": ["1","2.1","3","4.1","4.2","4.3","6.1","7","8"],
-        "5.2": ["1","2.1","3","4.1","4.2","4.3","6.1","7"],
-        "6.1": ["1","2.1","3","4.1","4.3","5.1","5.2","7","8"],
-        "7": ["1","2.1","3","4.1","4.2","4.3","5.1","5.2","6.1","8"],
-        "8": ["1","2.1","3","4.1","4.2","4.3","5.1","6.1","7"],
-      };
 
       const compartmentProducts = input?.compartmentProducts || [];
       const hazardClasses = compartmentProducts
@@ -318,23 +298,42 @@ export const loadsRouter = router({
       }
 
       // 4. CDL endorsement auto-requirement
-      const requiredEndorsements: string[] = [];
-      const isTankTrailer = trailerType.includes("tank");
-      if (hazmatClass && isTankTrailer) {
-        requiredEndorsements.push("X"); // Combined H+N
-      } else {
-        if (hazmatClass) requiredEndorsements.push("H");
-        if (isTankTrailer) requiredEndorsements.push("N");
-      }
+      const requiredEndorsements = getRequiredCdlEndorsements(hazmatClass, trailerType);
 
       // 5. Emergency phone validation for hazmat
       if (hazmatClass) {
         const phone = input?.emergencyPhone || "";
-        const digitCount = phone.replace(/\D/g, "").length;
-        if (!phone || digitCount < 10) {
+        // Strip non-digit characters (spaces, dashes, parens, dots, plus sign handled separately)
+        const startsWithPlus = phone.trimStart().startsWith("+");
+        const digits = phone.replace(/\D/g, "");
+
+        if (!phone || digits.length === 0) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Hazmat loads require a valid emergency phone number with at least 10 digits (49 CFR 172.604)",
+            message: "Hazmat loads require a valid emergency phone number (49 CFR 172.604)",
+          });
+        }
+
+        // Reject numbers with all identical digits (e.g., 0000000000)
+        if (/^(\d)\1+$/.test(digits)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Emergency phone number cannot consist of all identical digits",
+          });
+        }
+
+        // Validate format:
+        // - US: 10 digits, or 11 digits starting with country code 1
+        // - International (E.164): starts with + and has 10-15 digits total
+        const isUS10 = digits.length === 10;
+        const isUS11 = digits.length === 11 && digits.startsWith("1");
+        const isInternational = startsWithPlus && digits.length >= 10 && digits.length <= 15;
+
+        if (!isUS10 && !isUS11 && !isInternational) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "Invalid emergency phone number. Provide a 10-digit US number, an 11-digit US number starting with 1, or an international number in E.164 format (+country code, 10-15 digits). Required per 49 CFR 172.604.",
           });
         }
       }

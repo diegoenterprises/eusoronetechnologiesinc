@@ -186,30 +186,68 @@ export const alertsRouter = router({
    * Get weather forecast
    */
   getWeatherForecast: protectedProcedure
-    .input(z.object({ city: z.string(), state: z.string(), days: z.number().optional() }))
+    .input(z.object({
+      city: z.string(),
+      state: z.string(),
+      days: z.number().optional(),
+      lat: z.number().optional(),
+      lng: z.number().optional(),
+    }))
     .query(async ({ input }) => {
       // NWS Weather API (free)
+      const locationLabel = `${input.city}, ${input.state}`;
+      const emptyResult = { location: locationLabel, avgWindSpeed: 0, days: input.days || 5, forecasts: [] };
+
       try {
-        // Step 1: Geocode via NWS points API using known coords
+        // Fallback city coordinates (used when lat/lng not provided)
         const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
           'houston,tx': { lat: 29.76, lng: -95.37 }, 'dallas,tx': { lat: 32.78, lng: -96.80 },
           'austin,tx': { lat: 30.27, lng: -97.74 }, 'chicago,il': { lat: 41.88, lng: -87.63 },
           'phoenix,az': { lat: 33.45, lng: -112.07 }, 'los angeles,ca': { lat: 34.05, lng: -118.24 },
         };
-        const key = `${input.city.toLowerCase()},${input.state.toLowerCase()}`;
-        const coords = CITY_COORDS[key];
-        if (!coords) return { location: `${input.city}, ${input.state}`, avgWindSpeed: 0, days: input.days || 5, forecasts: [] };
-        const pointRes = await fetch(`https://api.weather.gov/points/${coords.lat},${coords.lng}`, { headers: { 'User-Agent': 'EusoTrip/1.0' } });
-        if (!pointRes.ok) return { location: `${input.city}, ${input.state}`, avgWindSpeed: 0, days: input.days || 5, forecasts: [] };
+
+        let lat: number | undefined;
+        let lng: number | undefined;
+
+        if (input.lat != null && input.lng != null) {
+          // Use client-provided coordinates directly
+          lat = input.lat;
+          lng = input.lng;
+        } else {
+          // Try exact city match from the hardcoded list
+          const key = `${input.city.toLowerCase()},${input.state.toLowerCase()}`;
+          const exact = CITY_COORDS[key];
+          if (exact) {
+            lat = exact.lat;
+            lng = exact.lng;
+          } else {
+            // No exact match — find the nearest city from the fallback list as a default
+            const cities = Object.values(CITY_COORDS);
+            if (cities.length > 0) {
+              // Without input coords we can't compute distance, so use a central US default (Kansas City area)
+              lat = 39.10;
+              lng = -94.58;
+            }
+          }
+        }
+
+        if (lat == null || lng == null) return emptyResult;
+
+        // Round to 4 decimal places (NWS API requirement)
+        const pointRes = await fetch(
+          `https://api.weather.gov/points/${lat.toFixed(4)},${lng.toFixed(4)}`,
+          { headers: { 'User-Agent': 'EusoTrip/1.0' } },
+        );
+        if (!pointRes.ok) return emptyResult;
         const pointData = await pointRes.json();
         const forecastUrl = pointData.properties?.forecast;
-        if (!forecastUrl) return { location: `${input.city}, ${input.state}`, avgWindSpeed: 0, days: input.days || 5, forecasts: [] };
+        if (!forecastUrl) return emptyResult;
         const fcRes = await fetch(forecastUrl, { headers: { 'User-Agent': 'EusoTrip/1.0' } });
-        if (!fcRes.ok) return { location: `${input.city}, ${input.state}`, avgWindSpeed: 0, days: input.days || 5, forecasts: [] };
+        if (!fcRes.ok) return emptyResult;
         const fcData = await fcRes.json();
         const periods = (fcData.properties?.periods || []).slice(0, (input.days || 5) * 2);
         return {
-          location: `${input.city}, ${input.state}`, avgWindSpeed: 0, days: input.days || 5,
+          location: locationLabel, avgWindSpeed: 0, days: input.days || 5,
           forecasts: periods.map((p: any) => ({
             name: p.name, temperature: p.temperature, temperatureUnit: p.temperatureUnit,
             windSpeed: p.windSpeed, windDirection: p.windDirection,
@@ -217,6 +255,6 @@ export const alertsRouter = router({
             isDaytime: p.isDaytime,
           })),
         };
-      } catch { return { location: `${input.city}, ${input.state}`, avgWindSpeed: 0, days: input.days || 5, forecasts: [] }; }
+      } catch { return emptyResult; }
     }),
 });

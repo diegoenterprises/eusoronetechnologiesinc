@@ -159,7 +159,7 @@ export const vehicles = mysqlTable(
   "vehicles",
   {
     id: int("id").autoincrement().primaryKey(),
-    companyId: int("companyId").notNull(),
+    companyId: int("companyId").notNull().references(() => companies.id),
     vin: varchar("vin", { length: 17 }).notNull().unique(),
     make: varchar("make", { length: 100 }),
     model: varchar("model", { length: 100 }),
@@ -237,10 +237,10 @@ export const loads = mysqlTable(
   "loads",
   {
     id: int("id").autoincrement().primaryKey(),
-    shipperId: int("shipperId").notNull(),
-    catalystId: int("catalystId"),
-    driverId: int("driverId"),
-    vehicleId: int("vehicleId"),
+    shipperId: int("shipperId").notNull().references(() => users.id),
+    catalystId: int("catalystId").references(() => users.id),
+    driverId: int("driverId").references(() => users.id),
+    vehicleId: int("vehicleId").references(() => vehicles.id),
     originTerminalId: int("originTerminalId"),
     destinationTerminalId: int("destinationTerminalId"),
     loadNumber: varchar("loadNumber", { length: 50 }).notNull().unique(),
@@ -1121,8 +1121,8 @@ export const drivers = mysqlTable(
   "drivers",
   {
     id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull().unique(),
-    companyId: int("companyId").notNull(),
+    userId: int("userId").notNull().unique().references(() => users.id),
+    companyId: int("companyId").notNull().references(() => companies.id),
     licenseNumber: varchar("licenseNumber", { length: 50 }),
     licenseState: varchar("licenseState", { length: 2 }),
     licenseExpiry: timestamp("licenseExpiry"),
@@ -1209,6 +1209,31 @@ export const terminals = mysqlTable(
 
 export type Terminal = typeof terminals.$inferSelect;
 export type InsertTerminal = typeof terminals.$inferInsert;
+
+// ============================================================================
+// CROSS-TABLE RELATIONS (for FK references that can't be inlined due to
+// declaration order — loads→terminals, vehicles→drivers)
+// ============================================================================
+
+export const loadsRelations = relations(loads, ({ one }) => ({
+  originTerminal: one(terminals, {
+    fields: [loads.originTerminalId],
+    references: [terminals.id],
+    relationName: "load_originTerminal",
+  }),
+  destinationTerminal: one(terminals, {
+    fields: [loads.destinationTerminalId],
+    references: [terminals.id],
+    relationName: "load_destinationTerminal",
+  }),
+}));
+
+export const vehiclesRelations = relations(vehicles, ({ one }) => ({
+  currentDriver: one(drivers, {
+    fields: [vehicles.currentDriverId],
+    references: [drivers.id],
+  }),
+}));
 
 // ============================================================================
 // TERMINAL PARTNERS (Supply Chain Junction)
