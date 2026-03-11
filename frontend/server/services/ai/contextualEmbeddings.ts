@@ -215,7 +215,7 @@ export async function buildContextualIndex(
       const batch = allChunks.slice(i, i + BATCH_SIZE);
       try {
         const texts = batch.map(c => c.contextualText);
-        const embeddings = await embeddingService.embed(texts);
+        const embeddings = await embeddingService.embed(texts, "RETRIEVAL_DOCUMENT");
 
         for (let j = 0; j < batch.length; j++) {
           if (embeddings[j]) {
@@ -278,7 +278,7 @@ export async function contextualSearch(
     }
 
     // Embed query (no context prefix for queries — the model handles asymmetric matching)
-    const queryVec = await embeddingService.embedOne(query);
+    const queryVec = await embeddingService.embedOne(query, "RETRIEVAL_QUERY");
 
     // Filter by categories if specified
     let candidates = contextualIndex;

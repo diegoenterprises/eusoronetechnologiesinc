@@ -13,5 +13,7 @@ export const ENV = {
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   azureEmailConnectionString: process.env.AZURE_EMAIL_CONNECTION_STRING ?? "",
   fromEmail: process.env.FROM_EMAIL ?? "DoNotReply@eusotrip.com",
-  embeddingServiceUrl: process.env.EMBEDDING_SERVICE_URL ?? "http://localhost:8090",
+  embeddingServiceUrl: process.env.EMBEDDING_SERVICE_URL ?? "http://localhost:8090", // Legacy TEI — deprecated, Gemini Embedding now primary
+  embeddingModel: process.env.EMBEDDING_MODEL ?? "gemini-embedding-001",
+  embeddingDimensions: parseInt(process.env.EMBEDDING_DIMS ?? "1536", 10),
 };

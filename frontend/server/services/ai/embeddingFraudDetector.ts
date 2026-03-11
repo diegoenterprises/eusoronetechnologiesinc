@@ -98,8 +98,8 @@ async function ensureCluster(
 
   try {
     const [legResults, susResults] = await Promise.all([
-      embeddingService.embed(legitimateTexts),
-      embeddingService.embed(suspiciousTexts),
+      embeddingService.embed(legitimateTexts, "CLUSTERING"),
+      embeddingService.embed(suspiciousTexts, "CLUSTERING"),
     ]);
 
     cluster.legitimate = legResults.map(r => r.embedding.values);
@@ -188,7 +188,7 @@ export async function screenLoad(loadText: string): Promise<EmbeddingFraudResult
   }
 
   try {
-    const vec = await embeddingService.embedOne(loadText);
+    const vec = await embeddingService.embedOne(loadText, "CLUSTERING");
     const { anomalyScore, legitimateAvg, suspiciousAvg } = computeAnomalyScore(
       vec.values, loadCluster.legitimate, loadCluster.suspicious,
     );
@@ -243,7 +243,7 @@ export async function screenBid(bidText: string): Promise<EmbeddingFraudResult> 
   }
 
   try {
-    const vec = await embeddingService.embedOne(bidText);
+    const vec = await embeddingService.embedOne(bidText, "CLUSTERING");
     const { anomalyScore, legitimateAvg, suspiciousAvg } = computeAnomalyScore(
       vec.values, bidCluster.legitimate, bidCluster.suspicious,
     );
@@ -289,7 +289,7 @@ export async function screenRegistration(registrationText: string): Promise<Embe
   }
 
   try {
-    const vec = await embeddingService.embedOne(registrationText);
+    const vec = await embeddingService.embedOne(registrationText, "CLUSTERING");
     const susAvg = avgSimilarity(vec.values, loadCluster.suspicious);
 
     const signals: EmbeddingFraudSignal[] = [];

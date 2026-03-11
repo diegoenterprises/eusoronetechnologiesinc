@@ -4,7 +4,7 @@
  */
 
 import { logger } from "../../_core/logger";
-import { embeddingService, EmbeddingService } from "./embeddingService";
+import { embeddingService, EmbeddingService, GeminiTaskType } from "./embeddingService";
 
 type EntityType = "load" | "document" | "knowledge" | "carrier" | "rate_sheet" | "agreement" | "erg_guide" | "zone_intelligence" | "support_ticket" | "message" | "compliance_record";
 
@@ -39,7 +39,7 @@ export async function indexEntity(req: IndexRequest): Promise<boolean> {
       .where(and(eq(embeddings.entityType, req.entityType), eq(embeddings.entityId, req.entityId)))
       .limit(1);
     if (existing && existing.contentHash === hash) return false;
-    const vec = await embeddingService.embedOne(req.text);
+    const vec = await embeddingService.embedOne(req.text, "RETRIEVAL_DOCUMENT");
     const row = {
       contentHash: hash,
       embedding: vec.values,
@@ -110,11 +110,12 @@ async function loadCandidates(entityTypes?: EntityType[]): Promise<CandidateRow[
       entityType: embeddings.entityType, entityId: embeddings.entityId,
       embedding: embeddings.embedding, sourceText: embeddings.sourceText, metadata: embeddings.metadata,
     }).from(embeddings);
+    const serviceDims = embeddingService.dimensions;
     _candidateCache = rows.map(c => ({
       entityType: c.entityType, entityId: c.entityId,
       embedding: Array.isArray(c.embedding) ? c.embedding as number[] : [],
       sourceText: c.sourceText, metadata: c.metadata,
-    }));
+    })).filter(c => c.embedding.length === serviceDims);
     _candidateCacheTs = now;
     logger.info(`[AITurbo] Candidate cache refreshed: ${_candidateCache.length} embeddings`);
   } catch (err) { logger.error("[AITurbo] loadCandidates error:", err); }
@@ -136,7 +137,7 @@ export async function semanticSearch(
 ): Promise<SearchResult[]> {
   try {
     if (!(await embeddingService.isHealthy())) return [];
-    const queryVec = await embeddingService.embedOne(query);
+    const queryVec = await embeddingService.embedOne(query, "RETRIEVAL_QUERY");
     const candidates = await loadCandidates(opts.entityTypes);
     if (!candidates.length) return [];
     return embeddingService.search(

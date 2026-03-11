@@ -83,7 +83,7 @@ async function initializeEmbeddings(): Promise<void> {
 
     try {
       const texts = ACTION_CATALOG.map(a => a.description);
-      const results = await embeddingService.embed(texts);
+      const results = await embeddingService.embed(texts, "CLASSIFICATION");
 
       actionEmbeddings = ACTION_CATALOG.map((action, i) => ({
         name: action.name,
@@ -173,7 +173,7 @@ export async function selectActions(
   }
 
   try {
-    const queryVec = await embeddingService.embedOne(query);
+    const queryVec = await embeddingService.embedOne(query, "CLASSIFICATION");
 
     const scored: ToolSelectionResult[] = [];
     for (const action of candidates) {

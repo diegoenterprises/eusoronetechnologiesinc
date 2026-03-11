@@ -161,7 +161,7 @@ export async function refreshLoadIndex(forceRefresh = false): Promise<number> {
     // Batch embed new loads
     if (toEmbed.length > 0) {
       const texts = toEmbed.map(e => e.text);
-      const embeddings = await embeddingService.embed(texts);
+      const embeddings = await embeddingService.embed(texts, "RETRIEVAL_DOCUMENT");
 
       for (let i = 0; i < toEmbed.length; i++) {
         const l = toEmbed[i].load;
@@ -217,7 +217,7 @@ export async function searchLoads(
   if (!healthy) return [];
 
   try {
-    const queryVec = await embeddingService.embedOne(queryToText(query));
+    const queryVec = await embeddingService.embedOne(queryToText(query), "RETRIEVAL_QUERY");
     const candidates = Array.from(loadIndex.values()).map(entry => ({
       embedding: entry.embedding,
       entityId: String(entry.loadId),
@@ -265,7 +265,7 @@ export async function matchLoadsForCarrier(
 
   try {
     const profileText = carrierToText(profile);
-    const profileVec = await embeddingService.embedOne(profileText);
+    const profileVec = await embeddingService.embedOne(profileText, "RETRIEVAL_QUERY");
 
     const candidates = Array.from(loadIndex.values()).map(entry => ({
       embedding: entry.embedding,
@@ -305,8 +305,8 @@ export async function computeSimilarity(textA: string, textB: string): Promise<n
 
   try {
     const [vecA, vecB] = await Promise.all([
-      embeddingService.embedOne(textA),
-      embeddingService.embedOne(textB),
+      embeddingService.embedOne(textA, "RETRIEVAL_QUERY"),
+      embeddingService.embedOne(textB, "RETRIEVAL_QUERY"),
     ]);
     return EmbeddingService.cosineSimilarity(vecA.values, vecB.values);
   } catch {

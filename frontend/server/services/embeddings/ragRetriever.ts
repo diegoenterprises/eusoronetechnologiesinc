@@ -84,7 +84,7 @@ export async function retrieveContext(
     }
 
     // Embed the query (uses LRU cache for repeat queries)
-    const queryVec = await embeddingService.embedOne(query);
+    const queryVec = await embeddingService.embedOne(query, "RETRIEVAL_QUERY");
 
     // Use intent-based routing if no explicit entity types provided
     const effectiveTypes = options.entityTypes?.length ? options.entityTypes : inferEntityTypes(query);
@@ -343,7 +343,7 @@ export async function seedKnowledgeBase(): Promise<{ indexed: number; errors: nu
   for (const chunk of knowledgeChunks) {
     try {
       const hash = await EmbeddingService.contentHash(chunk.text);
-      const results = await embeddingService.embed([chunk.text]);
+      const results = await embeddingService.embed([chunk.text], "RETRIEVAL_DOCUMENT");
       if (results.length > 0) {
         const { getDb } = await import("../../db");
         const { embeddings } = await import("../../../drizzle/schema");

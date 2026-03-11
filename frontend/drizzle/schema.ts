@@ -7252,8 +7252,8 @@ export type RoadLivePing = typeof roadLivePings.$inferSelect;
 export type InsertRoadLivePing = typeof roadLivePings.$inferInsert;
 
 // ============================================================================
-// PPLX-EMBED VECTOR EMBEDDINGS — Self-hosted semantic search index
-// Model: perplexity-ai/pplx-embed-v1-0.6b (1024-dim INT8, MIT license)
+// GEMINI EMBEDDING — Google Gemini Embedding 2 vector index
+// Model: gemini-embedding-001 (1536-dim float32, task-type-aware)
 // Stores embeddings for loads, documents, knowledge, carriers, rate sheets
 // for semantic search, RAG, and intelligent matching.
 // ============================================================================
@@ -7269,9 +7269,9 @@ export const embeddings = mysqlTable(
     ]).notNull(),
     entityId: varchar("entity_id", { length: 255 }).notNull(),
     contentHash: varchar("content_hash", { length: 16 }).notNull(),
-    embedding: json("embedding").notNull(),       // INT8 array (1024 values, ~4KB as JSON)
-    dimensions: int("dimensions").notNull().default(1024),
-    model: varchar("model", { length: 100 }).notNull().default("pplx-embed-v1-0.6b"),
+    embedding: json("embedding").notNull(),       // Float32 array (1536 values via Gemini Embedding)
+    dimensions: int("dimensions").notNull().default(1536),
+    model: varchar("model", { length: 100 }).notNull().default("gemini-embedding-001"),
     sourceText: text("source_text"),               // Original text that was embedded (for debugging/reindex)
     metadata: json("metadata"),                    // Flexible extra data (title, tags, etc.)
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -7339,8 +7339,8 @@ export const esangMemories = mysqlTable(
       "profile", "preference", "pattern", "context", "knowledge", "action_history",
     ]).notNull().default("context"),
     critical: boolean("critical").notNull().default(false),
-    embedding: json("embedding"),                // Dense vector (1024-dim) for semantic search
-    dimensions: int("dimensions").default(1024),
+    embedding: json("embedding"),                // Dense vector (1536-dim Gemini) for semantic search
+    dimensions: int("dimensions").default(1536),
     tokenCount: int("token_count").default(0),   // Pre-computed for budget management
     accessCount: int("access_count").default(0),
     sourceConversationId: varchar("source_conversation_id", { length: 100 }),

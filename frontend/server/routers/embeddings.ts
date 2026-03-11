@@ -1,14 +1,14 @@
 /**
- * PPLX-EMBED EMBEDDINGS ROUTER
- * 
+ * GEMINI EMBEDDING ROUTER
+ *
  * tRPC procedures for semantic indexing, search, and RAG operations
- * powered by self-hosted perplexity-ai/pplx-embed-v1-0.6b.
- * 
+ * powered by Google Gemini Embedding (gemini-embedding-001, 1536-dim).
+ *
  * Key operations:
- *   - index: Embed and store content for later retrieval
+ *   - index: Embed and store content with task-type specialization
  *   - search: Semantic search across indexed content
- *   - reindex: Re-embed stale content after updates
- *   - health: Check embedding service availability
+ *   - migrateEmbeddings: Re-embed old pplx-embed vectors to Gemini
+ *   - health: Check Gemini embedding API availability
  */
 
 import { z } from "zod";
@@ -26,7 +26,7 @@ const ENTITY_TYPES = [
 export const embeddingsRouter = router({
 
   /**
-   * Check if the self-hosted TEI embedding server is reachable.
+   * Check if the Gemini Embedding API is reachable.
    */
   health: protectedProcedure.query(async () => {
     const healthy = await embeddingService.isHealthy();
@@ -34,7 +34,7 @@ export const embeddingsRouter = router({
       healthy,
       model: embeddingService.modelId,
       dimensions: embeddingService.dimensions,
-      serviceUrl: embeddingService.serviceUrl,
+      provider: "gemini",
       queryCache: embeddingService.cacheStats,
     };
   }),
@@ -88,7 +88,7 @@ export const embeddingsRouter = router({
       }
 
       // Embed all texts in one batch
-      const results = await embeddingService.embed(toEmbed.map(i => i.text));
+      const results = await embeddingService.embed(toEmbed.map(i => i.text), "RETRIEVAL_DOCUMENT");
 
       // Upsert into DB
       let indexed = 0;
@@ -203,4 +203,64 @@ export const embeddingsRouter = router({
       dimensions: embeddingService.dimensions,
     };
   }),
+
+  /**
+   * Migrate old pplx-embed embeddings to Gemini.
+   * Re-embeds rows where model != current model and sourceText is available.
+   * Processes in batches to avoid rate limits.
+   */
+  migrateEmbeddings: protectedProcedure
+    .input(z.object({
+      batchSize: z.number().min(1).max(100).default(50),
+    }).optional())
+    .mutation(async ({ input }) => {
+      const batchSize = input?.batchSize ?? 50;
+      const { getDb } = await import("../db");
+      const { embeddings } = await import("../../drizzle/schema");
+      const { ne, and, isNotNull, eq } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const currentModel = embeddingService.modelId;
+
+      // Find rows that need migration
+      const stale = await db
+        .select({ id: embeddings.id, entityType: embeddings.entityType, entityId: embeddings.entityId, sourceText: embeddings.sourceText })
+        .from(embeddings)
+        .where(and(ne(embeddings.model, currentModel), isNotNull(embeddings.sourceText)))
+        .limit(batchSize);
+
+      if (stale.length === 0) {
+        return { migrated: 0, remaining: 0, message: "All embeddings are up to date" };
+      }
+
+      // Re-embed using Gemini
+      const texts = stale.map(r => r.sourceText || "");
+      const results = await embeddingService.embed(texts, "RETRIEVAL_DOCUMENT");
+
+      let migrated = 0;
+      for (let i = 0; i < stale.length; i++) {
+        const row = stale[i];
+        const emb = results[i];
+        if (!emb) continue;
+
+        await db.update(embeddings).set({
+          embedding: emb.embedding.values,
+          dimensions: emb.embedding.dimensions,
+          model: currentModel,
+          contentHash: await EmbeddingService.contentHash(texts[i]),
+          updatedAt: new Date(),
+        }).where(eq(embeddings.id, row.id));
+        migrated++;
+      }
+
+      // Count remaining
+      const { sql } = await import("drizzle-orm");
+      const [remaining] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(embeddings)
+        .where(and(ne(embeddings.model, currentModel), isNotNull(embeddings.sourceText)));
+
+      return { migrated, remaining: remaining?.count || 0 };
+    }),
 });

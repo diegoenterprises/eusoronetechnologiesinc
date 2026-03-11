@@ -201,7 +201,7 @@ export async function remember(
     try {
       const healthy = await embeddingService.isHealthy();
       if (healthy) {
-        const vec = await embeddingService.embedOne(content);
+        const vec = await embeddingService.embedOne(content, "SEMANTIC_SIMILARITY");
         embedding = vec.values;
         dimensions = vec.dimensions;
       }
@@ -281,7 +281,7 @@ export async function recall(
     try {
       const healthy = await embeddingService.isHealthy();
       if (healthy) {
-        const vec = await embeddingService.embedOne(query);
+        const vec = await embeddingService.embedOne(query, "SEMANTIC_SIMILARITY");
         queryVec = vec.values;
       }
     } catch { /* Embedding offline — fall back to recency-only scoring */ }
@@ -290,7 +290,8 @@ export async function recall(
       let score = 0;
 
       // Semantic similarity (0–1, weighted 60%)
-      if (queryVec && fact.embedding && fact.embedding.length > 0) {
+      // Skip dimension-mismatched embeddings (handles mixed 1024/1536 during migration)
+      if (queryVec && fact.embedding && fact.embedding.length > 0 && fact.embedding.length === queryVec.length) {
         score += cosineSim(queryVec, fact.embedding) * 0.6;
       } else {
         // Text overlap fallback
