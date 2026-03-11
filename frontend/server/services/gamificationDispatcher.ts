@@ -276,6 +276,19 @@ async function _processEvent(event: GamificationEvent): Promise<void> {
           } as any
         );
       } catch {}
+
+      // Post level-up announcement to The Haul Lobby
+      if (level > (profile.level || 1)) {
+        try {
+          // Look up user name
+          const [userRow] = await db.select({ name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+          const userName = (userRow as any)?.name || "A hauler";
+          await db.execute(
+            sql`INSERT INTO haul_lobby_messages (userId, userName, userRole, message, messageType, createdAt)
+                VALUES (${userId}, ${"The Haul"}, ${"SYSTEM"}, ${`⬆️ ${userName} reached Level ${level}!`}, ${"system"}, NOW())`
+          );
+        } catch {}
+      }
     }
   }
 

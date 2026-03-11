@@ -974,6 +974,15 @@ export const gamificationRouter = router({
         timestamp: new Date().toISOString(),
       });
 
+      // Post system announcement to The Haul Lobby
+      try {
+        const userName = (ctx.user as any)?.name || "A hauler";
+        await db.execute(
+          sql`INSERT INTO haul_lobby_messages (userId, userName, userRole, message, messageType, createdAt)
+              VALUES (${userId}, ${"The Haul"}, ${"SYSTEM"}, ${`🏆 ${userName} completed "${mission.name}" and earned ${mission.xpReward || 0} XP!`}, ${"achievement"}, NOW())`
+        );
+      } catch (e) { logger.warn("[Gamification] Lobby system message failed:", e); }
+
       return {
         success: true,
         reward: {
