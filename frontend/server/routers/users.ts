@@ -134,12 +134,13 @@ export const usersRouter = router({
       await ensureUserExists(ctx.user);
       // Query by email — select only safe columns (openId may not exist in DB)
       const userEmail = ctx.user?.email || "";
-      let user: { id: number; name: string | null; email: string | null; phone: string | null; role: string; isVerified: boolean; profilePicture: string | null; createdAt: Date } | null = null;
+      let user: { id: number; name: string | null; email: string | null; phone: string | null; role: string; isVerified: boolean; profilePicture: string | null; createdAt: Date; metadata: string | null; companyId: number | null } | null = null;
       if (userEmail) {
         const [found] = await db.select({
           id: users.id, name: users.name, email: users.email,
           phone: users.phone, role: users.role, isVerified: users.isVerified,
           profilePicture: users.profilePicture, createdAt: users.createdAt,
+          metadata: users.metadata, companyId: users.companyId,
         }).from(users).where(eq(users.email, userEmail)).limit(1);
         user = found;
       }
@@ -147,18 +148,35 @@ export const usersRouter = router({
       const createdAt = user?.createdAt || new Date();
       const daysActive = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
 
+      // Parse registration metadata for industry vertical & preferences
+      let meta: Record<string, any> = {};
+      try { meta = user?.metadata ? JSON.parse(user.metadata as string) : {}; } catch {}
+      const industryVertical = meta?.registration?.industryVertical || null;
+
+      // Resolve company name
+      let companyName = "";
+      if (user?.companyId) {
+        try {
+          const [co] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, user.companyId)).limit(1);
+          if (co?.name) companyName = co.name;
+        } catch {}
+      }
+
       return {
         id: user?.id || userOpenId,
         firstName: nameParts[0] || "User",
         lastName: nameParts.slice(1).join(" ") || "",
         email: user?.email || ctx.user?.email || "",
         phone: user?.phone || "",
-        company: "",
+        company: companyName,
+        companyId: user?.companyId || null,
         location: "",
         role: user?.role || ctx.user?.role || "shipper",
         verified: user?.isVerified || false,
         profilePicture: user?.profilePicture || null,
         createdAt: createdAt.toISOString(),
+        industryVertical,
+        approvalStatus: meta?.approvalStatus || null,
         loadsCreated: 0,
         loadsCompleted: 0,
         rating: "0",

@@ -342,6 +342,7 @@ export const registrationRouter = router({
       hasSecurityPlan: z.boolean().default(false),
       equipmentTypes: z.array(z.string()).optional(),
       products: z.array(z.string()).optional(),
+      industryVertical: z.string().optional(),
       complianceIds: complianceIdsSchema,
       documents: z.record(z.string(), z.string()).optional(),
     }))
@@ -391,6 +392,7 @@ export const registrationRouter = router({
         complianceIds: input.complianceIds,
         companyId,
         registration: {
+          industryVertical: input.industryVertical,
           dba: input.dba,
           companyType: input.companyType,
           yearEstablished: input.yearEstablished,
@@ -501,6 +503,16 @@ export const registrationRouter = router({
       clearinghouseRegistered: z.boolean().default(false),
       processAgentName: z.string().optional(),
       processAgentStates: z.array(z.string()).optional(),
+      industryVertical: z.string().optional(),
+      equipmentCapabilities: z.object({
+        hoseTypes: z.array(z.string()).optional(),
+        hoseLengths: z.array(z.string()).optional(),
+        fittingTypes: z.array(z.string()).optional(),
+        hasPump: z.boolean().optional(),
+        hasCompressor: z.boolean().optional(),
+        hasBottomLoadCapability: z.boolean().optional(),
+        hasVaporRecovery: z.boolean().optional(),
+      }).optional(),
       complianceIds: complianceIdsSchema,
       documents: z.record(z.string(), z.string()).optional(),
     }))
@@ -592,6 +604,7 @@ export const registrationRouter = router({
         complianceIds: input.complianceIds,
         companyId,
         registration: {
+          industryVertical: input.industryVertical,
           dba: input.dba,
           operatingStatus: input.operatingStatus,
           entityType: input.entityType,
@@ -615,6 +628,7 @@ export const registrationRouter = router({
           tankerEndorsement: input.tankerEndorsed,
           catalystType: input.catalystType,
           equipmentTypes: input.equipmentTypes,
+          equipmentCapabilities: input.equipmentCapabilities,
           products: input.products,
           liability: { carrier: input.liabilityCarrier, policy: input.liabilityPolicy, coverage: input.liabilityCoverage, expiration: input.liabilityExpiration },
           cargo: { carrier: input.cargoCarrier, policy: input.cargoPolicy, coverage: input.cargoCoverage, expiration: input.cargoExpiration },
@@ -732,6 +746,11 @@ export const registrationRouter = router({
       hazmatTrainingProvider: z.string().optional(),
       securityTrainingDate: z.string().optional(),
       additionalCerts: z.array(z.string()).optional(),
+      equipmentExperience: z.array(z.string()).optional(),
+      hoseExperience: z.boolean().optional(),
+      pumpExperience: z.boolean().optional(),
+      bottomLoadExperience: z.boolean().optional(),
+      vaporRecoveryExperience: z.boolean().optional(),
       yearsExperience: z.number().optional(),
       previousEmployers: z.array(z.object({
         name: z.string(),
@@ -827,6 +846,11 @@ export const registrationRouter = router({
           hazmatTrainingProvider: input.hazmatTrainingProvider,
           securityTrainingDate: input.securityTrainingDate,
           additionalCerts: input.additionalCerts,
+          equipmentExperience: input.equipmentExperience,
+          hoseExperience: input.hoseExperience,
+          pumpExperience: input.pumpExperience,
+          bottomLoadExperience: input.bottomLoadExperience,
+          vaporRecoveryExperience: input.vaporRecoveryExperience,
           yearsExperience: input.yearsExperience,
           previousEmployers: input.previousEmployers,
           consents: { psp: input.pspConsent, backgroundCheck: input.backgroundCheckConsent, drugTest: input.drugTestConsent },
@@ -878,6 +902,7 @@ export const registrationRouter = router({
       insurancePolicy: z.string().optional(),
       insuranceCoverage: z.string().optional(),
       insuranceExpiration: z.string().optional(),
+      industryVertical: z.string().optional(),
       complianceIds: complianceIdsSchema,
     }))
     .mutation(async ({ input }) => {
@@ -940,6 +965,7 @@ export const registrationRouter = router({
         complianceIds: input.complianceIds,
         companyId,
         registration: {
+          industryVertical: input.industryVertical,
           dba: input.dba,
           yearEstablished: input.yearEstablished,
           contactTitle: input.contactTitle,
@@ -1216,6 +1242,7 @@ export const registrationRouter = router({
       emergencyPhone: z.string().optional(),
       lastInspectionDate: z.string().optional(),
       oshaCompliant: z.boolean().default(false),
+      industryVertical: z.string().optional(),
       complianceIds: complianceIdsSchema,
     }))
     .mutation(async ({ input }) => {
@@ -1253,6 +1280,7 @@ export const registrationRouter = router({
         complianceIds: input.complianceIds,
         companyId,
         registration: {
+          industryVertical: input.industryVertical,
           // Flat convenience keys for compliance engine
           state: input.state,
           registeredState: input.state,
@@ -1637,6 +1665,16 @@ export const registrationRouter = router({
         .set({ isVerified: true, isActive: true })
         .where(eq(users.id, input.userId));
 
+      // Sync approvalStatus in metadata
+      try {
+        const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, input.userId)).limit(1);
+        let meta: Record<string, any> = {};
+        try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch {}
+        meta.approvalStatus = "approved";
+        meta.approvedAt = new Date().toISOString();
+        await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, input.userId));
+      } catch (e) { logger.warn("[Registration] approvalStatus metadata sync failed:", e); }
+
       return { success: true, message: "Registration approved" };
     }),
 
@@ -1659,6 +1697,17 @@ export const registrationRouter = router({
       await db.update(users)
         .set({ isActive: false, deletedAt: new Date() })
         .where(eq(users.id, input.userId));
+
+      // Sync rejection in metadata
+      try {
+        const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, input.userId)).limit(1);
+        let meta: Record<string, any> = {};
+        try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch {}
+        meta.approvalStatus = "rejected";
+        meta.rejectedAt = new Date().toISOString();
+        meta.rejectionReason = input.reason;
+        await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, input.userId));
+      } catch (e) { logger.warn("[Registration] rejection metadata sync failed:", e); }
 
       return { success: true, message: "Registration rejected" };
     }),

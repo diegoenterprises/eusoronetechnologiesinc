@@ -52,7 +52,7 @@ export function VerticalSelector({
   selectedVertical: string;
   onVerticalChange: (v: string) => void;
 }) {
-  const verticalsQuery = (trpc as any).industryVerticals?.getAll?.useQuery?.() || { data: null, isLoading: false };
+  const verticalsQuery = (trpc as any).industryVerticals?.getAll?.useQuery?.() || { data: null, isLoading: false, isError: false };
   const verticals: any[] = verticalsQuery.data || [];
 
   if (verticalsQuery.isLoading) {
@@ -60,6 +60,15 @@ export function VerticalSelector({
       <div className="space-y-2">
         <Label className="text-slate-300 text-xs">Industry Vertical</Label>
         <Skeleton className="h-10 w-full bg-slate-700/50" />
+      </div>
+    );
+  }
+
+  if (verticalsQuery.isError || verticals.length === 0) {
+    return (
+      <div className="space-y-2">
+        <Label className="text-slate-300 text-xs font-medium">Industry Vertical</Label>
+        <p className="text-xs text-slate-500">Industry verticals are loading. You can skip this step and configure later.</p>
       </div>
     );
   }

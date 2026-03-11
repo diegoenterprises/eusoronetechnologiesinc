@@ -17,10 +17,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Users, Building2, FileText, Shield, CreditCard, 
-  Upload, CheckCircle, AlertCircle, User, Mail, Phone, MapPin, Lock, ShieldCheck, Landmark, Truck, Package
+import {
+  Users, Building2, FileText, Shield, CreditCard,
+  Upload, CheckCircle, AlertCircle, User, Mail, Phone, MapPin, Lock, ShieldCheck, Landmark, Truck, Package, Layers
 } from "lucide-react";
+import { VerticalSelector } from "@/components/VerticalFieldsPanel";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import DatePicker from "@/components/DatePicker";
@@ -69,10 +70,13 @@ interface BrokerFormData {
   // Step 7: Compliance Integrations
   complianceIds: ComplianceIds;
   
+  // Industry Vertical
+  industryVertical: string;
+
   // Step 8: Products You Broker
   equipmentTypes: string[];
   products: string[];
-  
+
   // Step 9: Payment Setup
   businessType: "individual" | "company" | "";
   
@@ -110,6 +114,7 @@ const initialFormData: BrokerFormData = {
   password: "",
   confirmPassword: "",
   complianceIds: emptyComplianceIds,
+  industryVertical: "",
   equipmentTypes: [],
   products: [],
   businessType: "",
@@ -219,6 +224,7 @@ export default function RegisterBroker() {
       insurancePolicy: formData.policyNumber || undefined,
       insuranceCoverage: formData.coverageAmount || undefined,
       insuranceExpiration: formData.expirationDate || undefined,
+      industryVertical: formData.industryVertical || undefined,
       complianceIds: Object.fromEntries(
         Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
       ) || undefined,
@@ -230,6 +236,27 @@ export default function RegisterBroker() {
   };
 
   const steps: WizardStep[] = [
+    {
+      id: "industry",
+      title: "Industry Vertical",
+      description: "Select your primary brokerage industry to tailor your experience",
+      icon: <Layers className="w-5 h-5" />,
+      component: (
+        <div className="space-y-4">
+          <p className="text-slate-400 text-sm">This helps us customize your dashboard, load matching, compliance requirements, and available features for your brokerage.</p>
+          <VerticalSelector
+            selectedVertical={formData.industryVertical}
+            onVerticalChange={(v) => updateFormData({ industryVertical: v })}
+          />
+          {formData.industryVertical && (
+            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+              <span className="text-sm text-green-300">Industry vertical selected — your experience will be tailored accordingly</span>
+            </div>
+          )}
+        </div>
+      ),
+    },
     {
       id: "company",
       title: "Company Information",

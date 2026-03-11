@@ -16,10 +16,11 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { 
+import {
   Building2, User, FileText, Shield, MapPin,
-  CheckCircle, AlertCircle, Mail, Phone, Fuel, Database, Lock, ShieldCheck, Landmark, Package
+  CheckCircle, AlertCircle, Mail, Phone, Fuel, Database, Lock, ShieldCheck, Landmark, Package, Layers
 } from "lucide-react";
+import { VerticalSelector } from "@/components/VerticalFieldsPanel";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import DatePicker from "@/components/DatePicker";
@@ -64,9 +65,12 @@ interface TerminalFormData {
   password: string;
   confirmPassword: string;
   
+  // Industry Vertical
+  industryVertical: string;
+
   // Step 7: Compliance Integrations
   complianceIds: ComplianceIds;
-  
+
   // Step 8: Payment Setup
   businessType: "individual" | "company" | "";
   
@@ -104,6 +108,7 @@ const initialFormData: TerminalFormData = {
   oshaCompliant: false,
   password: "",
   confirmPassword: "",
+  industryVertical: "",
   complianceIds: emptyComplianceIds,
   businessType: "",
   acceptTerms: false,
@@ -177,6 +182,7 @@ export default function RegisterTerminal() {
       emergencyPhone: formData.emergencyPhone || undefined,
       lastInspectionDate: formData.lastInspectionDate || undefined,
       oshaCompliant: formData.oshaCompliant || false,
+      industryVertical: formData.industryVertical || undefined,
       complianceIds: Object.fromEntries(
         Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
       ) || undefined,
@@ -188,6 +194,27 @@ export default function RegisterTerminal() {
   };
 
   const steps: WizardStep[] = [
+    {
+      id: "industry",
+      title: "Industry Vertical",
+      description: "Select the primary industry your terminal serves",
+      icon: <Layers className="w-5 h-5" />,
+      component: (
+        <div className="space-y-4">
+          <p className="text-slate-400 text-sm">This helps us customize your dashboard, compliance requirements, and operational features for your facility type.</p>
+          <VerticalSelector
+            selectedVertical={formData.industryVertical}
+            onVerticalChange={(v) => updateFormData({ industryVertical: v })}
+          />
+          {formData.industryVertical && (
+            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+              <span className="text-sm text-green-300">Industry vertical selected — your terminal experience will be tailored accordingly</span>
+            </div>
+          )}
+        </div>
+      ),
+    },
     {
       id: "personal",
       title: "Personal Information",

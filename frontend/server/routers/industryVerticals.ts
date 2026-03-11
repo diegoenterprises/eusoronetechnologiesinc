@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { sql, desc } from "drizzle-orm";
-import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
+import { isolatedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, companies, inspections } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
@@ -658,7 +658,7 @@ const SPECIALIZED_EQUIPMENT: Record<string, {
 
 export const industryVerticalsRouter = router({
   // ── 1. getAll — List all available industry verticals ──────────────────────
-  getAll: protectedProcedure.query(async () => {
+  getAll: publicProcedure.query(async () => {
     const verticals = getAllVerticals();
 
     // Try to pull real load counts by cargoType from DB
