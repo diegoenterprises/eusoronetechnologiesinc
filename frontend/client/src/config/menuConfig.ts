@@ -128,6 +128,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
+      category: "Financial",
       description: "Wallet, payments, rates, invoices & escrow",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, payments & escrow" },
@@ -154,6 +155,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Shield",
       label: "Compliance",
       path: "/carrier-intelligence",
+      category: "Intelligence",
       badge: 0,
       description: "Carrier vetting, ELD & cross-border",
       children: [
@@ -252,6 +254,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Compliance",
       path: "/authority",
       badge: 0,
+      category: "Intelligence",
       description: "Authority, facilities, inspections & documentation",
       children: [
         { icon: "Shield", label: "Operating Authority", path: "/authority", badge: 0, description: "MC/DOT authority, lease-ons & trip leases" },
@@ -271,6 +274,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Analytics",
       path: "/analytics",
       badge: 0,
+      category: "Intelligence",
       description: "Performance metrics"
     },
     // ─── PLATFORM FOOTER ───
@@ -291,6 +295,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
+      category: "Financial",
       description: "Wallet, earnings, rates & payments",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, earnings & payments" },
@@ -402,6 +407,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Compliance",
       path: "/authority",
       badge: 0,
+      category: "Intelligence",
       description: "Authority verification & documentation",
       children: [
         { icon: "Shield", label: "Authority Verify", path: "/authority", badge: 0, description: "Verify carrier authority & lease status" },
@@ -428,6 +434,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
+      category: "Financial",
       description: "Balance, commission, rates & revenue",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, commission & payments" },
@@ -528,6 +535,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Vehicle",
       path: "/vehicle",
       badge: 0,
+      category: "Intelligence",
       description: "Vehicle info, hazmat safety, spill & fire response",
       children: [
         { icon: "Wrench", label: "ZEUN Mechanics", path: "/zeun-breakdown", badge: 0, mobileOnly: true, description: "Breakdown reporting and diagnostics" },
@@ -564,6 +572,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
+      category: "Financial",
       description: "Earnings, trip pay, settlements, bonuses & direct deposit",
       children: [
         { icon: "Wallet", label: "Balance", path: "/wallet", badge: 0, description: "Account balance & payments" },
@@ -697,6 +706,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Compliance",
       path: "/authority",
       badge: 0,
+      category: "Intelligence",
       description: "Authority, facilities & documentation",
       children: [
         { icon: "ShieldCheck", label: "Operating Authority", path: "/authority", badge: 0, description: "Verify carrier authority, MC/DOT & lease status" },
@@ -734,6 +744,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
+      category: "Financial",
       description: "Wallet, settlements, rates & payments",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, earnings & payments" },
@@ -865,6 +876,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Compliance",
       path: "/authority",
       badge: 0,
+      category: "Intelligence",
       description: "Authority, tracking, safety & documents",
       children: [
         { icon: "Shield", label: "Operating Authority", path: "/authority", badge: 0, description: "Verify carrier authority for oversized loads" },
@@ -893,6 +905,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
+      category: "Financial",
       description: "Earnings, invoices, payouts & market rates",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, earnings & payouts" },
@@ -985,6 +998,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
+      category: "Financial",
       description: "Funding disbursements, payments & market rates",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Funding disbursements & payments" },
@@ -1062,6 +1076,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Compliance",
       path: "/facility-search",
       badge: 0,
+      category: "Intelligence",
       description: "Facilities, documents, integrations & compliance",
       children: [
         { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities" },
@@ -1097,6 +1112,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
+      category: "Financial",
       description: "Wallet, rates, detention fees & payments",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, invoices & payments" },
@@ -1176,6 +1192,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Fleet & Drivers",
       path: "/fleet-compliance",
       badge: 0,
+      category: "Intelligence",
       description: "Vehicle & driver compliance, DQ files & ELD",
       children: [
         { icon: "Truck", label: "Fleet Compliance", path: "/fleet-compliance", badge: 0, description: "Vehicle compliance status" },
@@ -1237,6 +1254,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
+      category: "Financial",
       description: "Balance, payments & market rates",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance & payments" },
@@ -1298,6 +1316,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Monitoring",
       path: "/safety/scores",
       badge: 0,
+      category: "Intelligence",
       description: "Safety scores, drug/alcohol testing & ELD",
       children: [
         { icon: "BarChart3", label: "Safety Scores", path: "/safety/scores", badge: 0, description: "CSA scores & safety metrics" },
@@ -1352,6 +1371,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
+      category: "Financial",
       description: "Balance & payments",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance & payments" },
@@ -1406,6 +1426,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Intelligence",
       path: "/admin/esang-operations",
       badge: 0,
+      category: "Intelligence",
       description: "AI operations, ELD, carrier intel & infrastructure health",
       children: [
         { icon: "Brain", label: "ESANG AI Ops", path: "/admin/esang-operations", badge: 0, description: "Decision audit, model performance, auto-dispatch" },
@@ -1425,6 +1446,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet™ Finance",
       path: "/advanced-financials",
       badge: 0,
+      category: "Financial",
       description: "Advanced financials, claims, detention & broker ops",
       children: [
         { icon: "TrendingUp", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "Multi-currency, 1099, revenue recognition & collections" },
@@ -1465,6 +1487,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Operations Hub",
       path: "/yard-management",
       badge: 0,
+      category: "Operations",
       description: "Yard, documents, portal, communication & data tools",
       children: [
         { icon: "Warehouse", label: "Yard Management", path: "/yard-management", badge: 0, description: "Dock scheduling, trailer pool & cross-dock ops" },
@@ -1488,6 +1511,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Compliance & Safety",
       path: "/safety-risk",
       badge: 0,
+      category: "Compliance",
       description: "Safety, emergency protocols, cross-border & audit",
       children: [
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety analytics, risk scoring & incident tracking" },
@@ -1532,6 +1556,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Intelligence",
       path: "/competitive-intelligence",
       badge: 0,
+      category: "Intelligence",
       description: "Market intelligence, reporting, verticals & integrations",
       children: [
         { icon: "TrendingUp", label: "Competitive Intel", path: "/competitive-intelligence", badge: 0, description: "Market analysis, growth planning & SWOT" },
@@ -1641,6 +1666,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Monitoring",
       path: "/admin/telemetry",
       badge: 0,
+      category: "Intelligence",
       description: "Telemetry, fleet, analytics, ELD & intelligence",
       children: [
         { icon: "Activity", label: "Telemetry", path: "/admin/telemetry", badge: 0, description: "GPS tracking & system telemetry" },
@@ -1692,6 +1718,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Intelligence",
       path: "/competitive-intelligence",
       badge: 0,
+      category: "Intelligence",
       description: "Market intelligence, reporting, verticals & vision",
       children: [
         { icon: "TrendingUp", label: "Competitive Intel", path: "/competitive-intelligence", badge: 0, description: "Market analysis & growth planning" },
@@ -1706,6 +1733,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Compliance & Safety",
       path: "/safety-risk",
       badge: 0,
+      category: "Compliance",
       description: "Safety, emergency protocols, cross-border & audit",
       children: [
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety analytics & risk scoring" },
