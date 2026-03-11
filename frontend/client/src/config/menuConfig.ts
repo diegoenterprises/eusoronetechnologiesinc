@@ -1,7 +1,7 @@
 /**
  * EUSOTRIP MENU CONFIGURATION - 12-ROLE SYSTEM
  * TRILLION DOLLAR CODE STANDARD - NO PLACEHOLDERS
- * 
+ *
  * Defines role-specific navigation for all 12 user types:
  * - SHIPPER: Load posting, tracking, payments
  * - CATALYST: Load bidding, fleet management, earnings
@@ -30,24 +30,25 @@ export interface MenuItem {
   children?: MenuItem[]; // Sub-menu items (collapsible)
 }
 
-export type UserRole = 
-  | 'SHIPPER' 
-  | 'CATALYST' 
-  | 'BROKER' 
-  | 'DRIVER' 
-  | 'DISPATCH' 
-  | 'ESCORT' 
-  | 'TERMINAL_MANAGER' 
+export type UserRole =
+  | 'SHIPPER'
+  | 'CATALYST'
+  | 'BROKER'
+  | 'DRIVER'
+  | 'DISPATCH'
+  | 'ESCORT'
+  | 'TERMINAL_MANAGER'
   | 'FACTORING'
   | 'COMPLIANCE_OFFICER'
   | 'SAFETY_MANAGER'
-  | 'ADMIN' 
+  | 'ADMIN'
   | 'SUPER_ADMIN';
 
 // Menu configuration for all 12 user roles
 export const menuConfigs: Record<string, MenuItem[]> = {
+  // ═══════════════════════════════════════════════════════════════
   // SHIPPER: Load posting, terminal management, catalyst oversight
-  // Consolidated: 23 → 13 top-level
+  // ═══════════════════════════════════════════════════════════════
   SHIPPER: [
     {
       icon: "LayoutDashboard",
@@ -68,6 +69,9 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Repeat", label: "Recurring Loads", path: "/loads/recurring", badge: 0, description: "Schedule recurring shipments & dedicated lanes" },
         { icon: "FileText", label: "Load Templates", path: "/loads/templates", badge: 0, description: "Save & reuse frequent load configurations" },
         { icon: "Navigation", label: "Dispatch Control", path: "/shipper/dispatch", badge: 0, description: "Routes, tracking & catalyst coordination" },
+        { icon: "FileText", label: "RFP Manager", path: "/rfp-manager", badge: 0, description: "Create, distribute & award carrier RFPs" },
+        { icon: "Trophy", label: "Bid Review", path: "/bid-review", badge: 0, description: "Compare bids, negotiate counter-offers, and award lanes" },
+        { icon: "Combine", label: "Load Consolidation", path: "/load-consolidation", badge: 0, description: "Multi-shipper shipment consolidation for cost savings" },
       ],
     },
     {
@@ -131,6 +135,12 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
         { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
+        { icon: "Clock", label: "Demurrage Charges", path: "/demurrage-charges", badge: 0, description: "Automated demurrage & detention charge generation, review & approval" },
+        { icon: "Sparkles", label: "Smart Pricing", path: "/contextual-pricing", badge: 0, description: "AI-enriched dynamic pricing with real-time market signals" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
+        { icon: "Landmark", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "EusoWallet™ advanced financial management & reporting" },
+        { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
+        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
       ],
     },
     {
@@ -139,6 +149,18 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/the-haul",
       badge: 0,
       description: "Digital truck stop — lobby, missions, rewards"
+    },
+    {
+      icon: "Shield",
+      label: "Compliance",
+      path: "/carrier-intelligence",
+      badge: 0,
+      description: "Carrier vetting, ELD & cross-border",
+      children: [
+        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Carrier ELD tracking, fleet health & road intelligence on your shipments" },
+        { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
+        { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
+      ],
     },
     {
       icon: "Settings",
@@ -157,12 +179,19 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
         { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & documentation" },
+        { icon: "Gauge", label: "Carrier Capacity", path: "/carrier-capacity", badge: 0, description: "Capacity calendar, availability search & find similar carriers AI" },
+        { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking, competitor analysis & strategic insights" },
+        { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder, scheduled reports & data exports" },
+        { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Vertical-specific workflows for petroleum, pharma, agriculture & more" },
+        { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+        { icon: "Store", label: "Vendor Management", path: "/vendor-management", badge: 0, description: "Vendor relationships, contracts & procurement management" },
       ],
     },
   ],
 
+  // ═══════════════════════════════════════════════════════════════
   // CATALYST: Load bidding, fleet management, earnings
-  // Consolidated: 24 → 14 top-level
+  // ═══════════════════════════════════════════════════════════════
   CATALYST: [
     {
       icon: "LayoutDashboard",
@@ -170,6 +199,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/",
       badge: 0,
       description: "Catalyst dashboard with metrics"
+    },
+    {
+      icon: "Smartphone",
+      label: "Mobile Command Center",
+      path: "/mobile-command",
+      badge: 0,
+      mobileOnly: true,
+      description: "Mobile-optimized driver operations dashboard"
     },
     {
       icon: "Package",
@@ -182,6 +219,8 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Scale", label: "My Bids", path: "/bids", badge: 0, description: "Active and pending bids" },
         { icon: "CheckCircle", label: "Assigned Loads", path: "/loads", badge: 0, description: "Accepted loads" },
         { icon: "ArrowRightLeft", label: "Relay Mode", path: "/relay", badge: 0, description: "Multi-driver load handoff & relay legs" },
+        { icon: "Target", label: "Mission Balancer", path: "/mission-balancer", badge: 0, description: "AI-optimized load distribution & fleet workload balancing" },
+        { icon: "Combine", label: "Load Consolidation", path: "/load-consolidation", badge: 0, description: "Multi-shipper shipment consolidation for cost savings" },
       ],
     },
     {
@@ -194,6 +233,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "LayoutDashboard", label: "Fleet Hub", path: "/carrier/fleet-hub", badge: 0, description: "Fleet tracking, overview, management & command center" },
         { icon: "ShieldCheck", label: "Insurance Verification", path: "/insurance/verification", badge: 0, description: "AI document scanning & FMCSA cross-verification" },
         { icon: "Siren", label: "Active Trip", path: "/active-trip", badge: 0, description: "Real-time trip dashboard, SOS & ZEUN" },
+        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Fleet ELD health, HOS compliance, LiDAR road intelligence & network" },
+        { icon: "Gauge", label: "Carrier Capacity", path: "/carrier-capacity", badge: 0, description: "Capacity calendar, availability search & find similar carriers AI" },
+        { icon: "Route", label: "Route Optimization", path: "/route-optimization", badge: 0, description: "AI-powered route planning, fuel optimization & multi-stop routing" },
+        { icon: "LayoutGrid", label: "Capacity Planning", path: "/capacity-planning", badge: 0, description: "Fleet capacity forecasting, demand planning & resource allocation" },
+        { icon: "Radio", label: "Asset Tracking", path: "/asset-tracking", badge: 0, description: "Real-time asset tracking, IoT sensor data & geofence alerts" },
       ],
     },
     {
@@ -208,11 +252,18 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Compliance",
       path: "/authority",
       badge: 0,
-      description: "Authority, facilities & documentation",
+      description: "Authority, facilities, inspections & documentation",
       children: [
         { icon: "Shield", label: "Operating Authority", path: "/authority", badge: 0, description: "MC/DOT authority, lease-ons & trip leases" },
         { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Run tickets, BOLs & compliance docs" },
+        { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
+        { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
+        { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
+        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
+        { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
+        { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety scoring, risk assessment & mitigation strategies" },
+        { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "EusoTicket™ centralized document storage, versioning & digital signatures" },
       ],
     },
     {
@@ -232,6 +283,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
         { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+        { icon: "MessageSquare", label: "Communication Hub", path: "/communication-hub", badge: 0, description: "Unified messaging, notifications & broadcast communications" },
       ],
     },
     {
@@ -246,6 +298,12 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
         { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
+        { icon: "Clock", label: "Demurrage Charges", path: "/demurrage-charges", badge: 0, description: "Automated demurrage & detention charge generation, review & approval" },
+        { icon: "Sparkles", label: "Smart Pricing", path: "/contextual-pricing", badge: 0, description: "AI-enriched dynamic pricing with real-time market signals" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
+        { icon: "Landmark", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "EusoWallet™ advanced financial management & reporting" },
+        { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
+        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
       ],
     },
     {
@@ -253,7 +311,12 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "The Haul",
       path: "/the-haul",
       badge: 0,
-      description: "Digital truck stop — lobby, missions, rewards"
+      description: "Digital truck stop — lobby, missions, rewards",
+      children: [
+        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ advanced achievements, seasons, tournaments & rewards" },
+        { icon: "Heart", label: "Driver Wellness", path: "/driver-wellness", badge: 0, description: "The Haul™ driver wellness programs, health tracking & fatigue management" },
+        { icon: "Smartphone", label: "Driver Mobile", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first driver experience & on-the-road tools" },
+      ],
     },
     {
       icon: "Wrench",
@@ -264,8 +327,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Wrench", label: "Fleet Maintenance", path: "/fleet-maintenance", badge: 0, description: "PM scheduling, parts & DOT prep" },
         { icon: "Fuel", label: "Fuel Management", path: "/fuel-management", badge: 0, description: "Fuel cards & consumption analytics" },
-        { icon: "Route", label: "Route Optimization", path: "/route-optimization", badge: 0, description: "AI routing & toll optimization" },
-        { icon: "Radar", label: "Asset Tracking", path: "/asset-tracking", badge: 0, description: "IoT sensors & GPS tracking" },
       ],
     },
     {
@@ -285,12 +346,20 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
         { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
+        { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking, competitor analysis & strategic insights" },
+        { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder, scheduled reports & data exports" },
+        { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Vertical-specific workflows for petroleum, pharma, agriculture & more" },
+        { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "Emergency response plans, SOS procedures & incident workflows" },
+        { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+        { icon: "UserCog", label: "HR & Workforce", path: "/hr-workforce", badge: 0, description: "Driver onboarding, workforce management & HR compliance" },
+        { icon: "Store", label: "Vendor Management", path: "/vendor-management", badge: 0, description: "Vendor relationships, contracts & procurement management" },
       ],
     },
   ],
 
+  // ═══════════════════════════════════════════════════════════════
   // BROKER: Marketplace management, load distribution
-  // Consolidated: 24 → 13 top-level
+  // ═══════════════════════════════════════════════════════════════
   BROKER: [
     {
       icon: "LayoutDashboard",
@@ -311,6 +380,9 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Scale", label: "My Bids", path: "/bids", badge: 0, description: "Active and pending bids" },
         { icon: "CheckCircle", label: "My Loads", path: "/loads", badge: 0, description: "Track posted and assigned loads" },
         { icon: "MapPin", label: "Track Loads", path: "/fleet-tracking", badge: 0, description: "Real-time load tracking" },
+        { icon: "FileText", label: "RFP Manager", path: "/rfp-manager", badge: 0, description: "Create, distribute & award carrier RFPs" },
+        { icon: "Trophy", label: "Bid Review", path: "/bid-review", badge: 0, description: "Compare bids, negotiate counter-offers, and award lanes" },
+        { icon: "Combine", label: "Load Consolidation", path: "/load-consolidation", badge: 0, description: "Multi-shipper shipment consolidation for cost savings" },
       ],
     },
     {
@@ -334,9 +406,12 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Shield", label: "Authority Verify", path: "/authority", badge: 0, description: "Verify carrier authority & lease status" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Authority docs, surety bond & compliance" },
+        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Carrier ELD monitoring, fleet GPS & road condition alerts" },
+        { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
+        { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
       ],
     },
-    // ─── PLATFORM FOOTER ─── (Analytics absorbed into Dashboard tab — Task 4.5.1)
+    // ─── PLATFORM FOOTER ───
     {
       icon: "MessageSquare",
       label: "Messages",
@@ -360,6 +435,12 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates, surcharges & reconciliation" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
         { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
+        { icon: "Clock", label: "Demurrage Charges", path: "/demurrage-charges", badge: 0, description: "Automated demurrage & detention charge generation, review & approval" },
+        { icon: "Sparkles", label: "Smart Pricing", path: "/contextual-pricing", badge: 0, description: "AI-enriched dynamic pricing with real-time market signals" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
+        { icon: "Landmark", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "EusoWallet™ advanced financial management & reporting" },
+        { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
+        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
       ],
     },
     {
@@ -386,12 +467,19 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
         { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
+        { icon: "Gauge", label: "Carrier Capacity", path: "/carrier-capacity", badge: 0, description: "Capacity calendar, availability search & find similar carriers AI" },
+        { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking, competitor analysis & strategic insights" },
+        { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder, scheduled reports & data exports" },
+        { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Vertical-specific workflows for petroleum, pharma, agriculture & more" },
+        { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+        { icon: "Briefcase", label: "Broker Management", path: "/broker-management", badge: 0, description: "Broker relationships, commission tracking & performance management" },
       ],
     },
   ],
 
+  // ═══════════════════════════════════════════════════════════════
   // DRIVER: Job assignments, tracking, earnings
-  // Consolidated: 24 → 14 top-level. Phone-first simplicity.
+  // ═══════════════════════════════════════════════════════════════
   DRIVER: [
     {
       icon: "LayoutDashboard",
@@ -399,6 +487,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/",
       badge: 0,
       description: "Daily overview, schedule & availability"
+    },
+    {
+      icon: "Smartphone",
+      label: "Mobile Command Center",
+      path: "/mobile-command",
+      badge: 0,
+      mobileOnly: true,
+      description: "Mobile-optimized driver operations dashboard"
     },
     {
       icon: "Siren",
@@ -437,6 +533,8 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Wrench", label: "ZEUN Mechanics", path: "/zeun-breakdown", badge: 0, mobileOnly: true, description: "Breakdown reporting and diagnostics" },
         { icon: "ShieldCheck", label: "Insurance Verification", path: "/insurance/verification", badge: 0, description: "AI document scanning & FMCSA cross-verification" },
         { icon: "Navigation", label: "Live Tracking", path: "/live-tracking", badge: 0, description: "GPS navigation, route compliance & tracking" },
+        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Your ELD status, HOS clocks, road conditions & LiDAR intelligence" },
+        { icon: "Route", label: "Route Optimization", path: "/route-optimization", badge: 0, description: "AI-powered route planning, fuel optimization & multi-stop routing" },
       ],
     },
     {
@@ -449,6 +547,8 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Shield", label: "Operating Authority", path: "/authority", badge: 0, description: "Authority & lease status" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Run tickets, BOLs, license & permits" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
+        { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
+        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
       ],
     },
     {
@@ -471,6 +571,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "DollarSign", label: "Settlement History", path: "/driver/settlement-history", badge: 0, description: "Weekly/bi-weekly settlement statements" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
         { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
+        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
       ],
     },
     {
@@ -489,7 +590,12 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "The Haul",
       path: "/the-haul",
       badge: 0,
-      description: "Digital truck stop — missions, leaderboard, rewards"
+      description: "Digital truck stop — missions, leaderboard, rewards",
+      children: [
+        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ advanced achievements, seasons, tournaments & rewards" },
+        { icon: "Heart", label: "Driver Wellness", path: "/driver-wellness", badge: 0, description: "The Haul™ driver wellness programs, health tracking & fatigue management" },
+        { icon: "Smartphone", label: "Driver Mobile", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first driver experience & on-the-road tools" },
+      ],
     },
     {
       icon: "Settings",
@@ -508,13 +614,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, vehicle, or roadside incident" },
         { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
+        { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "Emergency response plans, SOS procedures & incident workflows" },
       ],
     },
   ],
 
+  // ═══════════════════════════════════════════════════════════════
   // DISPATCH: Fleet operations nerve center
-  // Consolidated: 24 → 15 top-level using children pattern
-  // Pattern: Operations hub → Business hub → Platform footer
+  // ═══════════════════════════════════════════════════════════════
   DISPATCH: [
     // ─── OPERATIONS ───
     {
@@ -523,6 +630,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/",
       badge: 0,
       description: "Dispatch dashboard overview"
+    },
+    {
+      icon: "Smartphone",
+      label: "Mobile Command Center",
+      path: "/mobile-command",
+      badge: 0,
+      mobileOnly: true,
+      description: "Mobile-optimized driver operations dashboard"
     },
     {
       icon: "Monitor",
@@ -549,6 +664,8 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Upload", label: "Bulk Import", path: "/dispatch/bulk-import", badge: 0, description: "CSV bulk load import with validation" },
         { icon: "CheckCircle", label: "Assigned Loads", path: "/dispatch/assigned", badge: 0, description: "All dispatched & assigned loads — status, tracking & POD" },
         { icon: "ArrowRightLeft", label: "Relay Mode", path: "/relay", badge: 0, description: "Multi-driver load handoff & relay leg management" },
+        { icon: "Target", label: "Mission Balancer", path: "/mission-balancer", badge: 0, description: "AI-optimized load distribution & fleet workload balancing" },
+        { icon: "Combine", label: "Load Consolidation", path: "/load-consolidation", badge: 0, description: "Multi-shipper shipment consolidation for cost savings" },
       ],
     },
     {
@@ -560,6 +677,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "ShieldCheck", label: "Insurance Verification", path: "/insurance/verification", badge: 0, description: "AI document scanning & FMCSA cross-verification" },
         { icon: "MapPin", label: "Fleet Tracking", path: "/fleet-tracking", badge: 0, description: "Real-time fleet GPS tracking & geofencing" },
+        { icon: "Activity", label: "ELD Intelligence", path: "/dispatch/eld", badge: 0, description: "Fleet ELD health, driver HOS compliance & road intelligence" },
+        { icon: "Gauge", label: "Carrier Capacity", path: "/carrier-capacity", badge: 0, description: "Capacity calendar, availability search & find similar carriers AI" },
+        { icon: "Route", label: "Route Optimization", path: "/route-optimization", badge: 0, description: "AI-powered route planning, fuel optimization & multi-stop routing" },
+        { icon: "LayoutGrid", label: "Capacity Planning", path: "/capacity-planning", badge: 0, description: "Fleet capacity forecasting, demand planning & resource allocation" },
+        { icon: "Radio", label: "Asset Tracking", path: "/asset-tracking", badge: 0, description: "Real-time asset tracking, IoT sensor data & geofence alerts" },
       ],
     },
     // ─── BUSINESS ───
@@ -580,6 +702,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "ShieldCheck", label: "Operating Authority", path: "/authority", badge: 0, description: "Verify carrier authority, MC/DOT & lease status" },
         { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities nationwide" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Run tickets, BOLs, compliance docs & certifications" },
+        { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
+        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
+        { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
+        { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety scoring, risk assessment & mitigation strategies" },
+        { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "EusoTicket™ centralized document storage, versioning & digital signatures" },
       ],
     },
     {
@@ -599,6 +726,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
         { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+        { icon: "MessageSquare", label: "Communication Hub", path: "/communication-hub", badge: 0, description: "Unified messaging, notifications & broadcast communications" },
       ],
     },
     {
@@ -615,6 +743,12 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU & accessorial fees" },
         { icon: "BookOpen", label: "Pricebook", path: "/dispatch/pricebook", badge: 0, description: "Rate sheets with cascading lookup priority" },
         { icon: "Fuel", label: "FSC Engine", path: "/dispatch/fsc-engine", badge: 0, description: "Per-contract fuel surcharge calculator" },
+        { icon: "Clock", label: "Demurrage Charges", path: "/demurrage-charges", badge: 0, description: "Automated demurrage & detention charge generation, review & approval" },
+        { icon: "Sparkles", label: "Smart Pricing", path: "/contextual-pricing", badge: 0, description: "AI-enriched dynamic pricing with real-time market signals" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
+        { icon: "Landmark", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "EusoWallet™ advanced financial management & reporting" },
+        { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
+        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
       ],
     },
     {
@@ -622,7 +756,23 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "The Haul",
       path: "/the-haul",
       badge: 0,
-      description: "Digital truck stop — lobby, missions, rewards"
+      description: "Digital truck stop — lobby, missions, rewards",
+      children: [
+        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ advanced achievements, seasons, tournaments & rewards" },
+        { icon: "Heart", label: "Driver Wellness", path: "/driver-wellness", badge: 0, description: "The Haul™ driver wellness programs, health tracking & fatigue management" },
+        { icon: "Smartphone", label: "Driver Mobile", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first driver experience & on-the-road tools" },
+      ],
+    },
+    {
+      icon: "Wrench",
+      label: "Zeun™ Fleet",
+      path: "/fleet-maintenance",
+      badge: 0,
+      description: "Fleet maintenance & fuel management",
+      children: [
+        { icon: "Wrench", label: "Fleet Maintenance", path: "/fleet-maintenance", badge: 0, description: "Zeun™ preventive maintenance scheduling, work orders & fleet health" },
+        { icon: "Fuel", label: "Fuel Management", path: "/fuel-management", badge: 0, description: "Fuel card management, consumption tracking & cost optimization" },
+      ],
     },
     {
       icon: "Settings",
@@ -641,12 +791,18 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
         { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & documentation" },
+        { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder, scheduled reports & data exports" },
+        { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "Emergency response plans, SOS procedures & incident workflows" },
+        { icon: "Warehouse", label: "Yard Management", path: "/yard-management", badge: 0, description: "Yard operations, trailer tracking & dock scheduling" },
+        { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+        { icon: "UserCog", label: "HR & Workforce", path: "/hr-workforce", badge: 0, description: "Driver onboarding, workforce management & HR compliance" },
       ],
     },
   ],
 
+  // ═══════════════════════════════════════════════════════════════
   // ESCORT: Convoy management, security coordination
-  // Consolidated: 21 → 13 top-level
+  // ═══════════════════════════════════════════════════════════════
   ESCORT: [
     {
       icon: "LayoutDashboard",
@@ -654,6 +810,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/",
       badge: 0,
       description: "Escort dashboard"
+    },
+    {
+      icon: "Smartphone",
+      label: "Mobile Command Center",
+      path: "/mobile-command",
+      badge: 0,
+      mobileOnly: true,
+      description: "Mobile-optimized driver operations dashboard"
     },
     {
       icon: "Car",
@@ -707,6 +871,9 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Navigation", label: "Live Tracking", path: "/live-tracking", badge: 0, description: "Real-time convoy tracking & GPS position" },
         { icon: "ShieldAlert", label: "Safety & Reports", path: "/escort/incidents", badge: 0, description: "Incidents, safety reports & convoy documentation" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "License, certifications & insurance docs" },
+        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Convoy ELD tracking, driver HOS & road condition alerts" },
+        { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
+        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
       ],
     },
     // ─── PLATFORM FOOTER ───
@@ -729,6 +896,9 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Earnings, invoices, payouts & market rates",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, earnings & payouts" },
+        { icon: "Clock", label: "Demurrage Charges", path: "/demurrage-charges", badge: 0, description: "Automated demurrage & detention charge generation, review & approval" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
+        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
       ],
     },
     {
@@ -736,7 +906,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "The Haul",
       path: "/the-haul",
       badge: 0,
-      description: "Digital truck stop — lobby, missions, rewards"
+      description: "Digital truck stop — lobby, missions, rewards",
+      children: [
+        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ advanced achievements, seasons, tournaments & rewards" },
+        { icon: "Heart", label: "Driver Wellness", path: "/driver-wellness", badge: 0, description: "The Haul™ driver wellness programs, health tracking & fatigue management" },
+      ],
     },
     {
       icon: "Settings",
@@ -755,12 +929,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety or roadside incident" },
         { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
+        { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "Emergency response plans, SOS procedures & incident workflows" },
       ],
     },
   ],
 
+  // ═══════════════════════════════════════════════════════════════
   // FACTORING: Invoice factoring, funding, risk
-  // Consolidated: 17 → 11 top-level
+  // ═══════════════════════════════════════════════════════════════
   FACTORING: [
     { icon: "LayoutDashboard", label: "Dashboard", path: "/factoring", badge: 0, description: "Factoring overview" },
     {
@@ -818,8 +994,9 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
   ],
 
+  // ═══════════════════════════════════════════════════════════════
   // TERMINAL_MANAGER: Full terminal operations
-  // Consolidated: 26 → 14 top-level
+  // ═══════════════════════════════════════════════════════════════
   TERMINAL_MANAGER: [
     {
       icon: "LayoutDashboard",
@@ -838,6 +1015,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "LayoutDashboard", label: "Terminal Hub", path: "/terminal/hub", badge: 0, description: "Dashboard, scheduling, inventory, SCADA & appointments" },
         { icon: "Container", label: "Dock Hub", path: "/terminal/dock-hub", badge: 0, description: "Dock management, bay assignment, loading & gate ops" },
         { icon: "Gauge", label: "Tank Monitor", path: "/tank-monitor", badge: 0, description: "Real-time tank levels, alerts & demand forecasting" },
+        { icon: "Warehouse", label: "Yard Management", path: "/yard-management", badge: 0, description: "Yard operations, trailer tracking & dock scheduling" },
       ],
     },
     {
@@ -884,11 +1062,15 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Compliance",
       path: "/facility-search",
       badge: 0,
-      description: "Facilities, documents & integrations",
+      description: "Facilities, documents, integrations & compliance",
       children: [
         { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Permits, compliance docs & certifications" },
         { icon: "Plug2", label: "Integrations", path: "/integrations", badge: 0, description: "Connect DTN, Enverus, OPIS & third-party systems" },
+        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Inbound fleet ELD status, HOS compliance & road intelligence" },
+        { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
+        { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
+        { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "EusoTicket™ centralized document storage, versioning & digital signatures" },
       ],
     },
     {
@@ -920,6 +1102,9 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, invoices & payments" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
         { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU & accessorial fees" },
+        { icon: "Clock", label: "Demurrage Charges", path: "/demurrage-charges", badge: 0, description: "Automated demurrage & detention charge generation, review & approval" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
+        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
       ],
     },
     {
@@ -946,12 +1131,18 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, environmental, or facility incident" },
         { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
+        { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder, scheduled reports & data exports" },
+        { icon: "Radio", label: "Asset Tracking", path: "/asset-tracking", badge: 0, description: "Real-time asset tracking, IoT sensor data & geofence alerts" },
+        { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Vertical-specific workflows for petroleum, pharma, agriculture & more" },
+        { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "Emergency response plans, SOS procedures & incident workflows" },
+        { icon: "Store", label: "Vendor Management", path: "/vendor-management", badge: 0, description: "Vendor relationships, contracts & procurement management" },
       ],
     },
   ],
 
+  // ═══════════════════════════════════════════════════════════════
   // COMPLIANCE_OFFICER: Regulatory compliance and safety oversight
-  // Consolidated: 23 → 12 top-level
+  // ═══════════════════════════════════════════════════════════════
   COMPLIANCE_OFFICER: [
     {
       icon: "LayoutDashboard",
@@ -971,6 +1162,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "AlertTriangle", label: "Regulatory Intelligence", path: "/compliance/regulatory-intelligence", badge: 0, description: "Violations, IFTA, MVR, SAFER & operating authority" },
         { icon: "CheckCircle", label: "Audits", path: "/audits", badge: 0, description: "Compliance audits" },
         { icon: "CalendarDays", label: "Compliance Calendar", path: "/compliance/calendar", badge: 0, description: "Expiration tracking & renewal deadlines" },
+        { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
+        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
+        { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
+        { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety scoring, risk assessment & mitigation strategies" },
+        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
+        { icon: "Brain", label: "Anomaly Monitor", path: "/anomaly-monitor", badge: 0, description: "AI-powered anomaly detection across all operations" },
+        { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "EusoTicket™ centralized document storage, versioning & digital signatures" },
       ],
     },
     {
@@ -984,6 +1182,10 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Users", label: "Driver Compliance", path: "/driver-compliance", badge: 0, description: "Driver certifications" },
         { icon: "FolderOpen", label: "DQ Files", path: "/compliance/dq-files", badge: 0, description: "Driver qualification file management" },
         { icon: "Activity", label: "ELD Logs", path: "/compliance/eld", badge: 0, description: "Electronic logging device compliance" },
+        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "ELD compliance dashboard, HOS violations & fleet health" },
+        { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
+        { icon: "Gauge", label: "Carrier Capacity", path: "/carrier-capacity", badge: 0, description: "Capacity calendar, availability search & find similar carriers AI" },
+        { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
       ],
     },
     {
@@ -1048,11 +1250,22 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Preferences"
     },
     { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
-    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+    {
+      icon: "MoreHorizontal",
+      label: "More",
+      path: "/support",
+      badge: 0,
+      description: "Additional tools & support",
+      children: [
+        { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+        { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder, scheduled reports & data exports" },
+      ],
+    },
   ],
 
+  // ═══════════════════════════════════════════════════════════════
   // SAFETY_MANAGER: Safety programs, incidents, inspections
-  // Consolidated: 21 → 12 top-level
+  // ═══════════════════════════════════════════════════════════════
   SAFETY_MANAGER: [
     {
       icon: "LayoutDashboard",
@@ -1072,6 +1285,12 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Users", label: "Safety Meetings", path: "/safety/meetings", badge: 0, description: "Schedule & document safety meetings" },
         { icon: "ClipboardCheck", label: "Inspections", path: "/safety/inspections", badge: 0, description: "Vehicle & facility inspections" },
         { icon: "AlertTriangle", label: "Incidents", path: "/safety/incident-management", badge: 0, description: "Incident reports, accidents & investigations" },
+        { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
+        { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
+        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
+        { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety scoring, risk assessment & mitigation strategies" },
+        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
+        { icon: "Brain", label: "Anomaly Monitor", path: "/anomaly-monitor", badge: 0, description: "AI-powered anomaly detection across all operations" },
       ],
     },
     {
@@ -1079,10 +1298,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Monitoring",
       path: "/safety/scores",
       badge: 0,
-      description: "Safety scores & drug/alcohol testing",
+      description: "Safety scores, drug/alcohol testing & ELD",
       children: [
         { icon: "BarChart3", label: "Safety Scores", path: "/safety/scores", badge: 0, description: "CSA scores & safety metrics" },
         { icon: "TestTube", label: "Drug & Alcohol", path: "/compliance/driver-qualification", badge: 0, description: "CDL, drug/alcohol testing & background checks" },
+        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Fleet ELD safety monitoring, HOS violations & road condition risks" },
+        { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
+        { icon: "Gauge", label: "Carrier Capacity", path: "/carrier-capacity", badge: 0, description: "Capacity calendar, availability search & find similar carriers AI" },
       ],
     },
     {
@@ -1130,7 +1352,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet",
       path: "/wallet",
       badge: 0,
-      description: "Balance, payments & market rates",
+      description: "Balance & payments",
       children: [
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance & payments" },
       ],
@@ -1143,11 +1365,22 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Preferences"
     },
     { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
-    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+    {
+      icon: "MoreHorizontal",
+      label: "More",
+      path: "/support",
+      badge: 0,
+      description: "Additional tools & support",
+      children: [
+        { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
+        { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "Emergency response plans, SOS procedures & incident workflows" },
+      ],
+    },
   ],
 
+  // ═══════════════════════════════════════════════════════════════
   // ADMIN: Platform management
-  // Consolidated: 18 → 10 top-level
+  // ═══════════════════════════════════════════════════════════════
   ADMIN: [
     {
       icon: "LayoutDashboard",
@@ -1169,15 +1402,38 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       ],
     },
     {
-      icon: "Package",
-      label: "Operations",
-      path: "/admin/loads",
+      icon: "Brain",
+      label: "Intelligence",
+      path: "/admin/esang-operations",
       badge: 0,
-      description: "Loads, telemetry & mechanics",
+      description: "AI operations, ELD, carrier intel & infrastructure health",
       children: [
-        { icon: "Package", label: "Loads", path: "/admin/loads", badge: 0, description: "Load management" },
-        { icon: "Activity", label: "Telemetry", path: "/admin/telemetry", badge: 0, description: "GPS tracking and telemetry" },
-        { icon: "Wrench", label: "ZEUN Mechanics", path: "/admin/zeun", badge: 0, description: "Breakdown and repair management" },
+        { icon: "Brain", label: "ESANG AI Ops", path: "/admin/esang-operations", badge: 0, description: "Decision audit, model performance, auto-dispatch" },
+        { icon: "Activity", label: "Uptime & DR", path: "/admin/uptime", badge: 0, description: "Service health, SLA tracking, backup & disaster recovery" },
+        { icon: "CloudLightning", label: "Disaster Resilience", path: "/admin/disaster-resilience", badge: 0, description: "Weather threats, auto-reroute, sheltering" },
+        { icon: "Globe", label: "Cross-Border", path: "/shipping-papers", badge: 0, description: "TDG, ACE/ACI, NOM multi-jurisdiction shipping papers" },
+        { icon: "Factory", label: "Industry Profiles", path: "/admin/industry-profiles", badge: 0, description: "Pharma, radioactive, explosives & 10+ verticals" },
+        { icon: "Code", label: "Developer Portal", path: "/admin/developer-portal", badge: 0, description: "API keys, MCP write tools, webhooks & SDK" },
+        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Platform ELD monitoring, fleet health & compliance overview" },
+        { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
+        { icon: "Brain", label: "Anomaly Monitor", path: "/anomaly-monitor", badge: 0, description: "AI-powered anomaly detection across all operations" },
+        { icon: "Gauge", label: "Carrier Capacity", path: "/carrier-capacity", badge: 0, description: "Capacity calendar, availability search & find similar carriers AI" },
+      ],
+    },
+    {
+      icon: "Wallet",
+      label: "EusoWallet™ Finance",
+      path: "/advanced-financials",
+      badge: 0,
+      description: "Advanced financials, claims, detention & broker ops",
+      children: [
+        { icon: "TrendingUp", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "Multi-currency, 1099, revenue recognition & collections" },
+        { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
+        { icon: "Clock", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention tracking, lumper, TONU & accessorial billing" },
+        { icon: "Landmark", label: "Broker Management", path: "/broker-management", badge: 0, description: "Scorecard, carrier pool, commission & 3PL SLA" },
+        { icon: "Sparkles", label: "Smart Pricing", path: "/contextual-pricing", badge: 0, description: "AI-enriched dynamic pricing with real-time market signals" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
+        { icon: "Clock", label: "Demurrage Charges", path: "/demurrage-charges", badge: 0, description: "Automated demurrage & detention charge generation, review & approval" },
       ],
     },
     {
@@ -1190,6 +1446,99 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "DollarSign", label: "Payments & Fees", path: "/admin/payments", badge: 0, description: "Payment processing & platform fees" },
         { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Platform wallet & escrow oversight" },
         { icon: "AlertTriangle", label: "Disputes", path: "/admin/disputes", badge: 0, description: "Dispute resolution" },
+      ],
+    },
+    {
+      icon: "Package",
+      label: "Operations",
+      path: "/admin/loads",
+      badge: 0,
+      description: "Loads, telemetry & mechanics",
+      children: [
+        { icon: "Package", label: "Loads", path: "/admin/loads", badge: 0, description: "Load management" },
+        { icon: "Activity", label: "Telemetry", path: "/admin/telemetry", badge: 0, description: "GPS tracking and telemetry" },
+        { icon: "Wrench", label: "ZEUN Mechanics", path: "/admin/zeun", badge: 0, description: "Breakdown and repair management" },
+      ],
+    },
+    {
+      icon: "LayoutGrid",
+      label: "Operations Hub",
+      path: "/yard-management",
+      badge: 0,
+      description: "Yard, documents, portal, communication & data tools",
+      children: [
+        { icon: "Warehouse", label: "Yard Management", path: "/yard-management", badge: 0, description: "Dock scheduling, trailer pool & cross-dock ops" },
+        { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "BOL, e-signatures, document workflows & archival" },
+        { icon: "KeyRound", label: "Customer Portal", path: "/portal", badge: 0, description: "CRM, rate management, contracts & self-service" },
+        { icon: "Radio", label: "Communication Hub", path: "/communication-hub", badge: 0, description: "Multi-channel messaging, broadcasts & notifications" },
+        { icon: "Smartphone", label: "Driver Mobile", path: "/mobile-command", badge: 0, description: "Mobile-first driver tools & field operations" },
+        { icon: "Handshake", label: "Vendor & Supplier", path: "/vendor-supplier", badge: 0, description: "Vendor management, procurement & SLA tracking" },
+        { icon: "HardDrive", label: "Data Migration", path: "/data-migration", badge: 0, description: "System migration, imports & data validation" },
+        { icon: "FileText", label: "RFP Manager", path: "/rfp-manager", badge: 0, description: "Create, distribute & award carrier RFPs" },
+        { icon: "Trophy", label: "Bid Review", path: "/bid-review", badge: 0, description: "Compare bids, negotiate counter-offers, and award lanes" },
+        { icon: "Target", label: "Mission Balancer", path: "/mission-balancer", badge: 0, description: "AI-optimized load distribution & fleet workload balancing" },
+        { icon: "Combine", label: "Load Consolidation", path: "/load-consolidation", badge: 0, description: "Multi-shipper shipment consolidation for cost savings" },
+        { icon: "Users", label: "Customer Portal", path: "/customer-portal", badge: 0, description: "Self-service customer portal for tracking, booking & communication" },
+        { icon: "LayoutGrid", label: "Capacity Planning", path: "/capacity-planning", badge: 0, description: "Fleet capacity forecasting, demand planning & resource allocation" },
+        { icon: "Store", label: "Vendor Management", path: "/vendor-management", badge: 0, description: "Vendor relationships, contracts & procurement management" },
+      ],
+    },
+    {
+      icon: "ShieldAlert",
+      label: "Compliance & Safety",
+      path: "/safety-risk",
+      badge: 0,
+      description: "Safety, emergency protocols, cross-border & audit",
+      children: [
+        { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety analytics, risk scoring & incident tracking" },
+        { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "HAZMAT spill, accident, weather & disaster routing" },
+        { icon: "Globe", label: "Cross-Border", path: "/cross-border", badge: 0, description: "Customs, multi-jurisdiction & international compliance" },
+        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-logs", badge: 0, description: "Deep compliance auditing & regulatory tracking" },
+        { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
+        { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
+        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "LMS, certifications, permits & CSA scores" },
+        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
+      ],
+    },
+    {
+      icon: "Trophy",
+      label: "The Haul™ Engage",
+      path: "/advanced-gamification",
+      badge: 0,
+      description: "Advanced gamification, wellness & workforce",
+      children: [
+        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "Guilds, prestige, rewards store & tournaments" },
+        { icon: "Heart", label: "Driver Wellness", path: "/driver-wellness", badge: 0, description: "Fatigue, mental health, retention & career dev" },
+        { icon: "Users2", label: "HR & Workforce", path: "/hr-workforce", badge: 0, description: "Recruiting, payroll, performance & benefits" },
+        { icon: "Smartphone", label: "Driver Mobile", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first driver experience & on-the-road tools" },
+      ],
+    },
+    {
+      icon: "Wrench",
+      label: "Zeun™ Fleet",
+      path: "/fleet-maintenance",
+      badge: 0,
+      description: "Fleet maintenance, fuel, route optimization & asset tracking",
+      children: [
+        { icon: "Wrench", label: "Fleet Maintenance", path: "/fleet-maintenance", badge: 0, description: "PM scheduling, parts, tires, DOT prep & warranties" },
+        { icon: "Fuel", label: "Fuel Management", path: "/fuel-management", badge: 0, description: "Fuel cards, consumption analytics & FSC engine" },
+        { icon: "Route", label: "Route Optimization", path: "/route-optimization", badge: 0, description: "AI routing, toll optimization & mileage analytics" },
+        { icon: "Radar", label: "Asset Tracking", path: "/asset-tracking", badge: 0, description: "IoT sensors, GPS, trailer & container tracking" },
+        { icon: "Ship", label: "Multi-Modal", path: "/multi-modal", badge: 0, description: "Intermodal, rail, port ops, drayage & container mgmt" },
+      ],
+    },
+    {
+      icon: "Globe",
+      label: "Intelligence",
+      path: "/competitive-intelligence",
+      badge: 0,
+      description: "Market intelligence, reporting, verticals & integrations",
+      children: [
+        { icon: "TrendingUp", label: "Competitive Intel", path: "/competitive-intelligence", badge: 0, description: "Market analysis, growth planning & SWOT" },
+        { icon: "PieChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom reports, dashboards & data exports" },
+        { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Petroleum, chemical, food, construction & environmental" },
+        { icon: "Plug", label: "Advanced Integrations", path: "/advanced-integrations", badge: 0, description: "EDI, fuel cards, ELD, accounting & API marketplace" },
+        { icon: "Rocket", label: "Future Vision", path: "/future-vision", badge: 0, description: "Autonomous, EV/hydrogen, blockchain, ESG & digital twin" },
       ],
     },
     {
@@ -1218,104 +1567,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       ],
     },
     {
-      icon: "Brain",
-      label: "Intelligence",
-      path: "/admin/esang-operations",
-      badge: 0,
-      description: "AI operations, infrastructure health & cross-border compliance",
-      children: [
-        { icon: "Brain", label: "ESANG AI Ops", path: "/admin/esang-operations", badge: 0, description: "Decision audit, model performance, auto-dispatch" },
-        { icon: "Activity", label: "Uptime & DR", path: "/admin/uptime", badge: 0, description: "Service health, SLA tracking, backup & disaster recovery" },
-        { icon: "CloudLightning", label: "Disaster Resilience", path: "/admin/disaster-resilience", badge: 0, description: "Weather threats, auto-reroute, sheltering" },
-        { icon: "Globe", label: "Cross-Border", path: "/shipping-papers", badge: 0, description: "TDG, ACE/ACI, NOM multi-jurisdiction shipping papers" },
-        { icon: "Factory", label: "Industry Profiles", path: "/admin/industry-profiles", badge: 0, description: "Pharma, radioactive, explosives & 10+ verticals" },
-        { icon: "Code", label: "Developer Portal", path: "/admin/developer-portal", badge: 0, description: "API keys, MCP write tools, webhooks & SDK" },
-      ],
-    },
-    {
-      icon: "Wrench",
-      label: "Zeun™ Fleet",
-      path: "/fleet-maintenance",
-      badge: 0,
-      description: "Fleet maintenance, fuel, route optimization & asset tracking",
-      children: [
-        { icon: "Wrench", label: "Fleet Maintenance", path: "/fleet-maintenance", badge: 0, description: "PM scheduling, parts, tires, DOT prep & warranties" },
-        { icon: "Fuel", label: "Fuel Management", path: "/fuel-management", badge: 0, description: "Fuel cards, consumption analytics & FSC engine" },
-        { icon: "Route", label: "Route Optimization", path: "/route-optimization", badge: 0, description: "AI routing, toll optimization & mileage analytics" },
-        { icon: "Radar", label: "Asset Tracking", path: "/asset-tracking", badge: 0, description: "IoT sensors, GPS, trailer & container tracking" },
-        { icon: "Ship", label: "Multi-Modal", path: "/multi-modal", badge: 0, description: "Intermodal, rail, port ops, drayage & container mgmt" },
-      ],
-    },
-    {
-      icon: "Wallet",
-      label: "EusoWallet™ Finance",
-      path: "/advanced-financials",
-      badge: 0,
-      description: "Advanced financials, claims, detention & broker ops",
-      children: [
-        { icon: "TrendingUp", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "Multi-currency, 1099, revenue recognition & collections" },
-        { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
-        { icon: "Clock", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention tracking, lumper, TONU & accessorial billing" },
-        { icon: "Landmark", label: "Broker Management", path: "/broker-management", badge: 0, description: "Scorecard, carrier pool, commission & 3PL SLA" },
-      ],
-    },
-    {
-      icon: "Trophy",
-      label: "The Haul™ Engage",
-      path: "/advanced-gamification",
-      badge: 0,
-      description: "Advanced gamification, wellness & workforce",
-      children: [
-        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "Guilds, prestige, rewards store & tournaments" },
-        { icon: "Heart", label: "Driver Wellness", path: "/driver-wellness", badge: 0, description: "Fatigue, mental health, retention & career dev" },
-        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "LMS, certifications, permits & CSA scores" },
-        { icon: "Users2", label: "HR & Workforce", path: "/hr-workforce", badge: 0, description: "Recruiting, payroll, performance & benefits" },
-      ],
-    },
-    {
-      icon: "Globe",
-      label: "Intelligence",
-      path: "/competitive-intelligence",
-      badge: 0,
-      description: "Market intelligence, reporting, verticals & integrations",
-      children: [
-        { icon: "TrendingUp", label: "Competitive Intel", path: "/competitive-intelligence", badge: 0, description: "Market analysis, growth planning & SWOT" },
-        { icon: "PieChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom reports, dashboards & data exports" },
-        { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Petroleum, chemical, food, construction & environmental" },
-        { icon: "Plug", label: "Advanced Integrations", path: "/advanced-integrations", badge: 0, description: "EDI, fuel cards, ELD, accounting & API marketplace" },
-        { icon: "Rocket", label: "Future Vision", path: "/future-vision", badge: 0, description: "Autonomous, EV/hydrogen, blockchain, ESG & digital twin" },
-      ],
-    },
-    {
-      icon: "ShieldAlert",
-      label: "Compliance & Safety",
-      path: "/safety-risk",
-      badge: 0,
-      description: "Safety, emergency protocols, cross-border & audit",
-      children: [
-        { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety analytics, risk scoring & incident tracking" },
-        { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "HAZMAT spill, accident, weather & disaster routing" },
-        { icon: "Globe", label: "Cross-Border", path: "/cross-border", badge: 0, description: "Customs, multi-jurisdiction & international compliance" },
-        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-logs", badge: 0, description: "Deep compliance auditing & regulatory tracking" },
-      ],
-    },
-    {
-      icon: "LayoutGrid",
-      label: "Operations Hub",
-      path: "/yard-management",
-      badge: 0,
-      description: "Yard, documents, portal, communication & data tools",
-      children: [
-        { icon: "Warehouse", label: "Yard Management", path: "/yard-management", badge: 0, description: "Dock scheduling, trailer pool & cross-dock ops" },
-        { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "BOL, e-signatures, document workflows & archival" },
-        { icon: "KeyRound", label: "Customer Portal", path: "/portal", badge: 0, description: "CRM, rate management, contracts & self-service" },
-        { icon: "Radio", label: "Communication Hub", path: "/communication-hub", badge: 0, description: "Multi-channel messaging, broadcasts & notifications" },
-        { icon: "Smartphone", label: "Driver Mobile", path: "/mobile-command", badge: 0, description: "Mobile-first driver tools & field operations" },
-        { icon: "Handshake", label: "Vendor & Supplier", path: "/vendor-supplier", badge: 0, description: "Vendor management, procurement & SLA tracking" },
-        { icon: "HardDrive", label: "Data Migration", path: "/data-migration", badge: 0, description: "System migration, imports & data validation" },
-      ],
-    },
-    {
       icon: "Settings",
       label: "Settings",
       path: "/admin/settings",
@@ -1326,8 +1577,9 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help" },
   ],
 
+  // ═══════════════════════════════════════════════════════════════
   // SUPER_ADMIN: Platform-wide oversight
-  // Consolidated: 21 → 9 top-level — executive view
+  // ═══════════════════════════════════════════════════════════════
   SUPER_ADMIN: [
     { icon: "LayoutDashboard", label: "Command Center", path: "/super-admin", badge: 0, description: "Platform-wide oversight dashboard" },
     {
@@ -1351,6 +1603,19 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Package", label: "Platform Oversight", path: "/admin/platform-oversight", badge: 0, description: "All loads, claims & support in one view" },
         { icon: "Wrench", label: "ZEUN Mechanics", path: "/admin/zeun", badge: 0, description: "Breakdown reports, diagnostics & repairs" },
+        { icon: "FileText", label: "RFP Manager", path: "/rfp-manager", badge: 0, description: "Create, distribute & award carrier RFPs" },
+        { icon: "Trophy", label: "Bid Review", path: "/bid-review", badge: 0, description: "Compare bids, negotiate counter-offers, and award lanes" },
+        { icon: "Target", label: "Mission Balancer", path: "/mission-balancer", badge: 0, description: "AI-optimized load distribution & fleet workload balancing" },
+        { icon: "Combine", label: "Load Consolidation", path: "/load-consolidation", badge: 0, description: "Multi-shipper shipment consolidation for cost savings" },
+        { icon: "Users", label: "Customer Portal", path: "/customer-portal", badge: 0, description: "Self-service customer portal for tracking, booking & communication" },
+        { icon: "LayoutGrid", label: "Capacity Planning", path: "/capacity-planning", badge: 0, description: "Fleet capacity forecasting, demand planning & resource allocation" },
+        { icon: "Warehouse", label: "Yard Management", path: "/yard-management", badge: 0, description: "Dock scheduling, trailer pool & cross-dock ops" },
+        { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "BOL, e-signatures, document workflows & archival" },
+        { icon: "Radio", label: "Communication Hub", path: "/communication-hub", badge: 0, description: "Multi-channel messaging, broadcasts & notifications" },
+        { icon: "Smartphone", label: "Driver Mobile", path: "/mobile-command", badge: 0, description: "Mobile-first driver tools & field operations" },
+        { icon: "Handshake", label: "Vendor & Supplier", path: "/vendor-supplier", badge: 0, description: "Vendor management, procurement & SLA tracking" },
+        { icon: "HardDrive", label: "Data Migration", path: "/data-migration", badge: 0, description: "System migration, imports & data validation" },
+        { icon: "Store", label: "Vendor Management", path: "/vendor-management", badge: 0, description: "Vendor relationships, contracts & procurement management" },
       ],
     },
     {
@@ -1358,10 +1623,17 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Finance",
       path: "/admin/platform-fees",
       badge: 0,
-      description: "Platform fees, wallet & revenue",
+      description: "Platform fees, wallet, financials & revenue",
       children: [
         { icon: "DollarSign", label: "Platform Fees", path: "/admin/platform-fees", badge: 0, description: "Fee configuration & commissions" },
         { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Platform wallet & all payments" },
+        { icon: "TrendingUp", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "Multi-currency, 1099, revenue recognition & collections" },
+        { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
+        { icon: "Clock", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention tracking, lumper, TONU & accessorial billing" },
+        { icon: "Landmark", label: "Broker Management", path: "/broker-management", badge: 0, description: "Scorecard, carrier pool, commission & 3PL SLA" },
+        { icon: "Sparkles", label: "Smart Pricing", path: "/contextual-pricing", badge: 0, description: "AI-enriched dynamic pricing with real-time market signals" },
+        { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
+        { icon: "Clock", label: "Demurrage Charges", path: "/demurrage-charges", badge: 0, description: "Automated demurrage & detention charge generation, review & approval" },
       ],
     },
     {
@@ -1369,12 +1641,17 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Monitoring",
       path: "/admin/telemetry",
       badge: 0,
-      description: "Telemetry, fleet, analytics & intelligence",
+      description: "Telemetry, fleet, analytics, ELD & intelligence",
       children: [
         { icon: "Activity", label: "Telemetry", path: "/admin/telemetry", badge: 0, description: "GPS tracking & system telemetry" },
         { icon: "MapPin", label: "Fleet Map", path: "/fleet-tracking", badge: 0, description: "System-wide fleet tracking" },
         { icon: "BarChart3", label: "Analytics", path: "/super-admin/monitoring", badge: 0, description: "Platform analytics & performance" },
         { icon: "FileText", label: "Audit Logs", path: "/super-admin/logs", badge: 0, description: "System-wide audit trail" },
+        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Platform-wide ELD health, fleet compliance & road intelligence" },
+        { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
+        { icon: "Crown", label: "Carrier Tiers", path: "/carrier-tiers", badge: 0, description: "Gold/Silver/Bronze carrier classification, benefits & promotion paths" },
+        { icon: "Gauge", label: "Carrier Capacity", path: "/carrier-capacity", badge: 0, description: "Capacity calendar, availability search & find similar carriers AI" },
+        { icon: "Brain", label: "Anomaly Monitor", path: "/anomaly-monitor", badge: 0, description: "AI-powered anomaly detection across all operations" },
       ],
     },
     {
@@ -1429,11 +1706,29 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Compliance & Safety",
       path: "/safety-risk",
       badge: 0,
-      description: "Safety, emergency protocols & audit",
+      description: "Safety, emergency protocols, cross-border & audit",
       children: [
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety analytics & risk scoring" },
         { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "HAZMAT, accident & disaster routing" },
         { icon: "Globe", label: "Cross-Border", path: "/cross-border", badge: 0, description: "Customs & international compliance" },
+        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-logs", badge: 0, description: "Deep compliance auditing & regulatory tracking" },
+        { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
+        { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
+        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "LMS, certifications, permits & CSA scores" },
+        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
+      ],
+    },
+    {
+      icon: "Trophy",
+      label: "The Haul™ Engage",
+      path: "/advanced-gamification",
+      badge: 0,
+      description: "Advanced gamification, wellness & workforce",
+      children: [
+        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "Guilds, prestige, rewards store & tournaments" },
+        { icon: "Heart", label: "Driver Wellness", path: "/driver-wellness", badge: 0, description: "Fatigue, mental health, retention & career dev" },
+        { icon: "Users2", label: "HR & Workforce", path: "/hr-workforce", badge: 0, description: "Recruiting, payroll, performance & benefits" },
+        { icon: "Smartphone", label: "Driver Mobile", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first driver experience & on-the-road tools" },
       ],
     },
     {
@@ -1453,43 +1748,43 @@ export const menuConfigs: Record<string, MenuItem[]> = {
 
   // Default/fallback menu
   default: [
-    { 
-      icon: "LayoutDashboard", 
-      label: "Dashboard", 
-      path: "/", 
-      badge: 0 
+    {
+      icon: "LayoutDashboard",
+      label: "Dashboard",
+      path: "/",
+      badge: 0
     },
-    { 
-      icon: "Package", 
-      label: "Loads", 
-      path: "/loads", 
-      badge: 0 
+    {
+      icon: "Package",
+      label: "Loads",
+      path: "/loads",
+      badge: 0
     },
-    { 
-      icon: "MessageSquare", 
-      label: "Messages", 
-      path: "/messages", 
-      badge: 0 
+    {
+      icon: "MessageSquare",
+      label: "Messages",
+      path: "/messages",
+      badge: 0
     },
-    { 
-      icon: "Wallet", 
-      label: "EusoWallet", 
-      path: "/wallet", 
+    {
+      icon: "Wallet",
+      label: "EusoWallet",
+      path: "/wallet",
       badge: 0,
       description: "Wallet, payments & escrow"
     },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/settings", 
+    {
+      icon: "Settings",
+      label: "Settings",
+      path: "/settings",
       badge: 0,
       description: "Profile, preferences & security"
     },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0 
+    {
+      icon: "HelpCircle",
+      label: "Support",
+      path: "/support",
+      badge: 0
     },
   ],
 };
@@ -1499,727 +1794,10 @@ export const menuConfigs: Record<string, MenuItem[]> = {
  * @param role - User role (SHIPPER, CATALYST, BROKER, DRIVER, DISPATCH, ESCORT, TERMINAL_MANAGER, ADMIN, SUPER_ADMIN)
  * @returns Array of menu items for the given role
  */
-// Roles that qualify for ELD Intelligence (everyone except FACTORING — financial only)
-const ELD_QUALIFYING_ROLES = new Set([
-  'SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT',
-  'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER', 'ADMIN', 'SUPER_ADMIN',
-]);
-
-// Role-specific ELD descriptions for organic context
-const ELD_DESCRIPTIONS: Record<string, string> = {
-  SHIPPER: "Carrier ELD tracking, fleet health & road intelligence on your shipments",
-  CATALYST: "Fleet ELD health, HOS compliance, LiDAR road intelligence & network",
-  BROKER: "Carrier ELD monitoring, fleet GPS & road condition alerts",
-  DRIVER: "Your ELD status, HOS clocks, road conditions & LiDAR intelligence",
-  DISPATCH: "Fleet ELD health, driver HOS compliance & road intelligence",
-  ESCORT: "Convoy ELD tracking, driver HOS & road condition alerts",
-  TERMINAL_MANAGER: "Inbound fleet ELD status, HOS compliance & road intelligence",
-  COMPLIANCE_OFFICER: "ELD compliance dashboard, HOS violations & fleet health",
-  SAFETY_MANAGER: "Fleet ELD safety monitoring, HOS violations & road condition risks",
-  ADMIN: "Platform ELD monitoring, fleet health & compliance overview",
-  SUPER_ADMIN: "Platform-wide ELD health, fleet compliance & road intelligence",
-};
-
 export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   if (!role) return menuConfigs.default;
-  
   const normalizedRole = String(role).toUpperCase() as UserRole;
-  const menu = menuConfigs[normalizedRole] || menuConfigs.default;
-
-  let result = [...menu];
-
-  // Dynamically inject ELD Intelligence for qualifying roles
-  if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/eld' || m.path === '/dispatch/eld')) {
-    const eldPath = normalizedRole === 'DISPATCH' ? '/dispatch/eld' : '/eld';
-    const eldItem: MenuItem = {
-      icon: "Activity",
-      label: "ELD Intelligence",
-      path: eldPath,
-      badge: 0,
-      category: "Intelligence",
-      description: ELD_DESCRIPTIONS[normalizedRole] || "Fleet ELD health, HOS compliance & road intelligence",
-    };
-    // Insert before The Haul (organic position)
-    const insertIdx = result.findIndex(m => m.path === '/the-haul');
-    if (insertIdx >= 0) result.splice(insertIdx, 0, eldItem);
-    else result.push(eldItem);
-  }
-
-  // Dynamically inject Carrier Intelligence (FMCSA Bulk Data) for qualifying roles
-  if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/carrier-intelligence')) {
-    const ciItem: MenuItem = {
-      icon: "Database",
-      label: "Carrier Intelligence",
-      path: "/carrier-intelligence",
-      badge: 0,
-      category: "Intelligence",
-      description: "FMCSA carrier vetting — authority, insurance, safety scores, inspections & monitoring",
-    };
-    // Insert after ELD Intelligence or after FMCSA Lookup
-    const eldIdx = result.findIndex(m => m.path === '/eld' || m.path === '/dispatch/eld');
-    const fmcsaIdx = result.findIndex(m => m.path === '/fmcsa-lookup');
-    const ciInsertIdx = eldIdx >= 0 ? eldIdx + 1 : fmcsaIdx >= 0 ? fmcsaIdx + 1 : result.length;
-    result.splice(ciInsertIdx, 0, ciItem);
-  }
-
-  // GAP-063: Inject Carrier Tier System — SUPER_ADMIN only
-  if (normalizedRole === 'SUPER_ADMIN' && !result.some(m => m.path === '/carrier-tiers')) {
-    const tierItem: MenuItem = {
-      icon: "Crown",
-      label: "Carrier Tiers",
-      path: "/carrier-tiers",
-      badge: 0,
-      category: "Intelligence",
-      description: "Gold/Silver/Bronze carrier classification, benefits & promotion paths",
-    };
-    const ciIdx = result.findIndex(m => m.path === '/carrier-intelligence');
-    const tierInsertIdx = ciIdx >= 0 ? ciIdx + 1 : result.length;
-    result.splice(tierInsertIdx, 0, tierItem);
-  }
-
-  // GAP-063 Task 6.2: Inject Carrier Capacity & Similar Carriers for qualifying roles
-  if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/carrier-capacity')) {
-    const capItem: MenuItem = {
-      icon: "Gauge",
-      label: "Carrier Capacity",
-      path: "/carrier-capacity",
-      badge: 0,
-      category: "Intelligence",
-      description: "Capacity calendar, availability search & find similar carriers AI",
-    };
-    const tierIdx = result.findIndex(m => m.path === '/carrier-tiers');
-    const capInsertIdx = tierIdx >= 0 ? tierIdx + 1 : result.length;
-    result.splice(capInsertIdx, 0, capItem);
-  }
-
-  // GAP-315: Inject Demurrage & Detention Charges for qualifying roles
-  if (ELD_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/demurrage-charges')) {
-    const dmrItem: MenuItem = {
-      icon: "Clock",
-      label: "Demurrage Charges",
-      path: "/demurrage-charges",
-      badge: 0,
-      category: "Financial",
-      description: "Automated demurrage & detention charge generation, review & approval",
-    };
-    const capIdx = result.findIndex(m => m.path === '/carrier-capacity');
-    const dmrInsertIdx = capIdx >= 0 ? capIdx + 1 : result.length;
-    result.splice(dmrInsertIdx, 0, dmrItem);
-  }
-
-  // GAP-339 & GAP-360: AI Load Creator and Voice ESANG merged into ESANG floating button (bottom-right)
-  // No longer shown as separate sidebar items
-
-  // GAP-062: Inject RFP Manager for shipper/broker roles
-  const RFP_QUALIFYING_ROLES = new Set(['SHIPPER', 'BROKER', 'ADMIN', 'SUPER_ADMIN', 'TERMINAL_MANAGER']);
-  if (RFP_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/rfp-manager')) {
-    const rfpItem: MenuItem = {
-      icon: "FileText",
-      label: "RFP Manager",
-      path: "/rfp-manager",
-      badge: 0,
-      category: "Procurement",
-      description: "Create, distribute & award carrier RFPs",
-    };
-    const dmrIdx2 = result.findIndex(m => m.path === '/demurrage-charges');
-    const rfpInsertIdx = dmrIdx2 >= 0 ? dmrIdx2 + 1 : result.length;
-    result.splice(rfpInsertIdx, 0, rfpItem);
-  }
-
-  // GAP-062 Task 11.2: Inject Bid Review after RFP Manager
-  if (RFP_QUALIFYING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/bid-review')) {
-    const bidReviewItem: MenuItem = {
-      icon: "Trophy",
-      label: "Bid Review",
-      path: "/bid-review",
-      badge: 0,
-      category: "Procurement",
-      description: "Compare bids, negotiate counter-offers, and award lanes",
-    };
-    const rfpIdx = result.findIndex(m => m.path === '/rfp-manager');
-    const bidInsertIdx = rfpIdx >= 0 ? rfpIdx + 1 : result.length;
-    result.splice(bidInsertIdx, 0, bidReviewItem);
-  }
-
-  // GAP-164: Inject Photo Inspection for carrier/driver/compliance roles
-  const PHOTO_INSP_ROLES = new Set(['CATALYST', 'DRIVER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER', 'ADMIN', 'SUPER_ADMIN']);
-  if (PHOTO_INSP_ROLES.has(normalizedRole) && !result.some(m => m.path === '/photo-inspection')) {
-    const photoInspItem: MenuItem = {
-      icon: "Camera",
-      label: "AI Photo Inspection",
-      path: "/photo-inspection",
-      badge: 0,
-      category: "Compliance",
-      description: "AI-powered pre-trip vehicle inspection with photo analysis",
-    };
-    const bidIdx = result.findIndex(m => m.path === '/bid-review');
-    const inspIdx = result.findIndex(m => m.path === '/inspection-forms');
-    const photoInsertIdx = inspIdx >= 0 ? inspIdx + 1 : bidIdx >= 0 ? bidIdx + 1 : result.length;
-    result.splice(photoInsertIdx, 0, photoInspItem);
-  }
-
-  // GAP-424: Inject Compliance Rules for compliance/safety/carrier/admin roles
-  const COMPLIANCE_RULES_ROLES = new Set(['COMPLIANCE_OFFICER', 'SAFETY_MANAGER', 'CATALYST', 'ADMIN', 'SUPER_ADMIN']);
-  if (COMPLIANCE_RULES_ROLES.has(normalizedRole) && !result.some(m => m.path === '/compliance-rules')) {
-    const compRulesItem: MenuItem = {
-      icon: "Shield",
-      label: "Compliance Rules",
-      path: "/compliance-rules",
-      badge: 0,
-      category: "Compliance",
-      description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement",
-    };
-    const photoIdx = result.findIndex(m => m.path === '/photo-inspection');
-    const compInsertIdx = photoIdx >= 0 ? photoIdx + 1 : result.length;
-    result.splice(compInsertIdx, 0, compRulesItem);
-  }
-
-  // GAP-367: Inject Anomaly Monitor for admin/compliance/safety roles
-  const ANOMALY_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER']);
-  if (ANOMALY_ROLES.has(normalizedRole) && !result.some(m => m.path === '/anomaly-monitor')) {
-    const anomalyItem: MenuItem = {
-      icon: "Brain",
-      label: "Anomaly Monitor",
-      path: "/anomaly-monitor",
-      badge: 0,
-      category: "Intelligence",
-      description: "AI-powered anomaly detection across all operations",
-    };
-    const compRulesIdx = result.findIndex(m => m.path === '/compliance-rules');
-    const anomalyInsertIdx = compRulesIdx >= 0 ? compRulesIdx + 1 : result.length;
-    result.splice(anomalyInsertIdx, 0, anomalyItem);
-  }
-
-  // GAP-438: Inject Mission Balancer for dispatch/carrier/admin roles
-  const MISSION_ROLES = new Set(['DISPATCH', 'CATALYST', 'ADMIN', 'SUPER_ADMIN']);
-  if (MISSION_ROLES.has(normalizedRole) && !result.some(m => m.path === '/mission-balancer')) {
-    const missionItem: MenuItem = {
-      icon: "Target",
-      label: "Mission Balancer",
-      path: "/mission-balancer",
-      badge: 0,
-      category: "Optimization",
-      description: "AI-optimized load distribution & fleet workload balancing",
-    };
-    const anomalyIdx = result.findIndex(m => m.path === '/anomaly-monitor');
-    const missionInsertIdx = anomalyIdx >= 0 ? anomalyIdx + 1 : result.length;
-    result.splice(missionInsertIdx, 0, missionItem);
-  }
-
-  // GAP-083: Inject Load Consolidation for shipper/broker/dispatch/admin roles
-  const CONSOLIDATION_ROLES = new Set(['SHIPPER', 'BROKER', 'DISPATCH', 'CATALYST', 'ADMIN', 'SUPER_ADMIN']);
-  if (CONSOLIDATION_ROLES.has(normalizedRole) && !result.some(m => m.path === '/load-consolidation')) {
-    const consolItem: MenuItem = {
-      icon: "Combine",
-      label: "Load Consolidation",
-      path: "/load-consolidation",
-      badge: 0,
-      category: "Optimization",
-      description: "Multi-shipper shipment consolidation for cost savings",
-    };
-    const missionIdx = result.findIndex(m => m.path === '/mission-balancer');
-    const consolInsertIdx = missionIdx >= 0 ? missionIdx + 1 : result.length;
-    result.splice(consolInsertIdx, 0, consolItem);
-  }
-
-  // Move Market Intelligence under Optimization category for all roles
-  if (!result.some(m => m.path === '/market-pricing')) {
-    const marketIntelItem: MenuItem = {
-      icon: "TrendingUp",
-      label: "Market Intelligence",
-      path: "/market-pricing",
-      badge: 0,
-      category: "Optimization",
-      description: "Freight rates, commodities, hot zones & demand heatmaps",
-    };
-    const consolIdx = result.findIndex(m => m.path === '/load-consolidation');
-    const marketInsertIdx = consolIdx >= 0 ? consolIdx + 1 : result.length;
-    result.splice(marketInsertIdx, 0, marketIntelItem);
-  }
-
-  // Task 21.1: Inject Mobile Command Center for driver/carrier/dispatch roles
-  const MOBILE_CMD_ROLES = new Set(['DRIVER', 'CATALYST', 'DISPATCH', 'ESCORT', 'ADMIN', 'SUPER_ADMIN']);
-  if (MOBILE_CMD_ROLES.has(normalizedRole) && !result.some(m => m.path === '/mobile-command')) {
-    const mobileItem: MenuItem = {
-      icon: "Smartphone",
-      label: "Mobile Command Center",
-      path: "/mobile-command",
-      badge: 0,
-      mobileOnly: true,
-      description: "Mobile-optimized driver operations dashboard",
-    };
-    // Insert near top for drivers, at end for others
-    const dashIdx = result.findIndex(m => m.path === '/dashboard' || m.path === '/');
-    const mobileInsertIdx = dashIdx >= 0 ? dashIdx + 1 : 0;
-    result.splice(mobileInsertIdx, 0, mobileItem);
-  }
-
-  // Task 13.1: Inject Contextual Pricing for shipper/broker/carrier/dispatch roles
-  const PRICING_ROLES = new Set(['SHIPPER', 'BROKER', 'CATALYST', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN']);
-  if (PRICING_ROLES.has(normalizedRole) && !result.some(m => m.path === '/contextual-pricing')) {
-    const pricingItem: MenuItem = {
-      icon: "Sparkles",
-      label: "Smart Pricing",
-      path: "/contextual-pricing",
-      badge: 0,
-      category: "Financial",
-      description: "AI-enriched dynamic pricing with real-time market signals",
-    };
-    const rateIdx = result.findIndex(m => m.path === '/rate-negotiations');
-    const pricingInsertIdx = rateIdx >= 0 ? rateIdx + 1 : result.length;
-    result.splice(pricingInsertIdx, 0, pricingItem);
-  }
-
-  // ─── Intelligence category injections (ROLE-GATED) ───
-  const compIntelRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN'];
-  if (compIntelRoles.includes(normalizedRole) && !result.some(m => m.path === '/competitive-intelligence')) {
-    const item: MenuItem = {
-      icon: "BarChart3",
-      label: "Competitive Intelligence",
-      path: "/competitive-intelligence",
-      badge: 0,
-      category: "Intelligence",
-      description: "Market benchmarking, competitor analysis & strategic insights",
-    };
-    const lastIntel = result.findIndex(m => m.path === '/carrier-capacity');
-    const idx = lastIntel >= 0 ? lastIntel + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  const reportingRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'ADMIN', 'SUPER_ADMIN'];
-  if (reportingRoles.includes(normalizedRole) && !result.some(m => m.path === '/reporting-engine')) {
-    const item: MenuItem = {
-      icon: "FileBarChart",
-      label: "Reporting Engine",
-      path: "/reporting-engine",
-      badge: 0,
-      category: "Intelligence",
-      description: "Custom report builder, scheduled reports & data exports",
-    };
-    const prev = result.findIndex(m => m.path === '/competitive-intelligence');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  const assetTrackRoles = ['CATALYST', 'DISPATCH', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
-  if (assetTrackRoles.includes(normalizedRole) && !result.some(m => m.path === '/asset-tracking')) {
-    const item: MenuItem = {
-      icon: "Radio",
-      label: "Asset Tracking & IoT",
-      path: "/asset-tracking",
-      badge: 0,
-      category: "Intelligence",
-      description: "Real-time asset tracking, IoT sensor data & geofence alerts",
-    };
-    const prev = result.findIndex(m => m.path === '/reporting-engine');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  const verticalRoles = ['CATALYST', 'SHIPPER', 'BROKER', 'DISPATCH', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
-  if (verticalRoles.includes(normalizedRole) && !result.some(m => m.path === '/industry-verticals')) {
-    const item: MenuItem = {
-      icon: "Factory",
-      label: "Industry Verticals",
-      path: "/industry-verticals",
-      badge: 0,
-      category: "Intelligence",
-      description: "Vertical-specific workflows for petroleum, pharma, agriculture & more",
-    };
-    const prev = result.findIndex(m => m.path === '/asset-tracking');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // ─── Financial category injections (EusoWallet™ — ROLE-GATED) ───
-  const advFinRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'FACTORING', 'ADMIN', 'SUPER_ADMIN'];
-  if (advFinRoles.includes(normalizedRole) && !result.some(m => m.path === '/advanced-financials')) {
-    const item: MenuItem = {
-      icon: "Landmark",
-      label: "Advanced Financials",
-      path: "/advanced-financials",
-      badge: 0,
-      category: "Financial",
-      description: "EusoWallet™ advanced financial management, GL integration & reporting",
-    };
-    const prev = result.findIndex(m => m.path === '/contextual-pricing');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  const freightClaimRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN'];
-  if (freightClaimRoles.includes(normalizedRole) && !result.some(m => m.path === '/freight-claims')) {
-    const item: MenuItem = {
-      icon: "FileWarning",
-      label: "Freight Claims",
-      path: "/freight-claims",
-      badge: 0,
-      category: "Financial",
-      description: "EusoWallet™ freight claim filing, tracking & resolution",
-    };
-    const prev = result.findIndex(m => m.path === '/advanced-financials');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  const detentionRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'DRIVER', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
-  if (detentionRoles.includes(normalizedRole) && !result.some(m => m.path === '/detention-accessorials')) {
-    const item: MenuItem = {
-      icon: "Timer",
-      label: "Detention & Accessorials",
-      path: "/detention-accessorials",
-      badge: 0,
-      category: "Financial",
-      description: "EusoWallet™ detention time tracking, accessorial charge management",
-    };
-    const prev = result.findIndex(m => m.path === '/freight-claims');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // ─── Compliance category injections (ROLE-GATED) ───
-  const trainingRoles = ['CATALYST', 'DISPATCH', 'DRIVER', 'ESCORT', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
-  if (trainingRoles.includes(normalizedRole) && !result.some(m => m.path === '/training-compliance')) {
-    const item: MenuItem = {
-      icon: "GraduationCap",
-      label: "Training & Compliance",
-      path: "/training-compliance",
-      badge: 0,
-      category: "Compliance",
-      description: "Training programs, certifications & compliance coursework",
-    };
-    const prev = result.findIndex(m => m.path === '/compliance-rules');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  const emergencyRoles = ['CATALYST', 'DISPATCH', 'DRIVER', 'ESCORT', 'TERMINAL_MANAGER', 'SAFETY_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
-  if (emergencyRoles.includes(normalizedRole) && !result.some(m => m.path === '/emergency-protocols')) {
-    const item: MenuItem = {
-      icon: "Siren",
-      label: "Emergency Protocols",
-      path: "/emergency-protocols",
-      badge: 0,
-      category: "Compliance",
-      description: "Emergency response plans, SOS procedures & incident workflows",
-    };
-    const prev = result.findIndex(m => m.path === '/training-compliance');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  const crossBorderRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'COMPLIANCE_OFFICER', 'ADMIN', 'SUPER_ADMIN'];
-  if (crossBorderRoles.includes(normalizedRole) && !result.some(m => m.path === '/cross-border')) {
-    const item: MenuItem = {
-      icon: "Globe",
-      label: "Cross-Border Shipping",
-      path: "/cross-border",
-      badge: 0,
-      category: "Compliance",
-      description: "International shipping compliance, customs & cross-border documentation",
-    };
-    const prev = result.findIndex(m => m.path === '/emergency-protocols');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  const safetyRiskRoles = ['CATALYST', 'DISPATCH', 'DRIVER', 'SAFETY_MANAGER', 'COMPLIANCE_OFFICER', 'ADMIN', 'SUPER_ADMIN'];
-  if (safetyRiskRoles.includes(normalizedRole) && !result.some(m => m.path === '/safety-risk')) {
-    const item: MenuItem = {
-      icon: "ShieldAlert",
-      label: "Safety & Risk",
-      path: "/safety-risk",
-      badge: 0,
-      category: "Compliance",
-      description: "Safety scoring, risk assessment & mitigation strategies",
-    };
-    const prev = result.findIndex(m => m.path === '/cross-border');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  const auditRoles = ['COMPLIANCE_OFFICER', 'SAFETY_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
-  if (auditRoles.includes(normalizedRole) && !result.some(m => m.path === '/audit-compliance')) {
-    const item: MenuItem = {
-      icon: "ClipboardCheck",
-      label: "Audit & Compliance",
-      path: "/audit-compliance",
-      badge: 0,
-      category: "Compliance",
-      description: "Audit trails, compliance checklists & regulatory reporting",
-    };
-    const prev = result.findIndex(m => m.path === '/safety-risk');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // ─── Optimization category injections (ROLE-GATED) ───
-  const routeOptRoles = ['CATALYST', 'DISPATCH', 'DRIVER', 'BROKER', 'ADMIN', 'SUPER_ADMIN'];
-  if (routeOptRoles.includes(normalizedRole) && !result.some(m => m.path === '/route-optimization')) {
-    const item: MenuItem = {
-      icon: "Route",
-      label: "Route Optimization",
-      path: "/route-optimization",
-      badge: 0,
-      category: "Optimization",
-      description: "AI-powered route planning, fuel optimization & multi-stop routing",
-    };
-    const prev = result.findIndex(m => m.path === '/market-pricing');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  const capacityRoles = ['CATALYST', 'DISPATCH', 'BROKER', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
-  if (capacityRoles.includes(normalizedRole) && !result.some(m => m.path === '/capacity-planning')) {
-    const item: MenuItem = {
-      icon: "LayoutGrid",
-      label: "Capacity Planning",
-      path: "/capacity-planning",
-      badge: 0,
-      category: "Optimization",
-      description: "Fleet capacity forecasting, demand planning & resource allocation",
-    };
-    const prev = result.findIndex(m => m.path === '/route-optimization');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  const yardRoles = ['CATALYST', 'DISPATCH', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
-  if (yardRoles.includes(normalizedRole) && !result.some(m => m.path === '/yard-management')) {
-    const item: MenuItem = {
-      icon: "Warehouse",
-      label: "Yard Management",
-      path: "/yard-management",
-      badge: 0,
-      category: "Optimization",
-      description: "Yard operations, trailer tracking & dock scheduling",
-    };
-    const prev = result.findIndex(m => m.path === '/capacity-planning');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  const multiModalRoles = ['CATALYST', 'BROKER', 'SHIPPER', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN'];
-  if (multiModalRoles.includes(normalizedRole) && !result.some(m => m.path === '/multi-modal')) {
-    const item: MenuItem = {
-      icon: "Ship",
-      label: "Multi-Modal Transport",
-      path: "/multi-modal",
-      badge: 0,
-      category: "Optimization",
-      description: "Intermodal shipping — truck, rail, ocean & air coordination",
-    };
-    const prev = result.findIndex(m => m.path === '/yard-management');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // Future Vision — admin-only (deferred — to be built collaboratively)
-  const futureVisionRoles = ['ADMIN', 'SUPER_ADMIN'];
-  if (futureVisionRoles.includes(normalizedRole) && !result.some(m => m.path === '/future-vision')) {
-    const item: MenuItem = {
-      icon: "Sparkles",
-      label: "Future Vision",
-      path: "/future-vision",
-      badge: 0,
-      category: "Optimization",
-      description: "Emerging tech, autonomous fleet planning & innovation roadmap",
-    };
-    const prev = result.findIndex(m => m.path === '/multi-modal');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // Customer Portal is admin-only — do not inject for non-admin roles
-  if (['ADMIN', 'SUPER_ADMIN'].includes(normalizedRole) && !result.some(m => m.path === '/customer-portal')) {
-    const item: MenuItem = {
-      icon: "Users",
-      label: "Customer Portal",
-      path: "/customer-portal",
-      badge: 0,
-      category: "Optimization",
-      description: "Self-service customer portal for tracking, booking & communication",
-    };
-    const prev = result.findIndex(m => m.path === '/future-vision');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // ─── Operations category injections (ROLE-GATED) ───
-  // Fleet Maintenance — carriers, dispatchers, terminal managers, admins only
-  const fleetRoles = ['CATALYST', 'DISPATCH', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
-  if (fleetRoles.includes(normalizedRole) && !result.some(m => m.path === '/fleet-maintenance')) {
-    const item: MenuItem = {
-      icon: "Wrench",
-      label: "Fleet Maintenance",
-      path: "/fleet-maintenance",
-      badge: 0,
-      category: "Operations",
-      description: "Zeun™ preventive maintenance scheduling, work orders & fleet health",
-    };
-    const prev = result.findIndex(m => m.path === '/customer-portal');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // Fuel Management — carriers, dispatchers, drivers, admins only
-  const fuelRoles = ['CATALYST', 'DISPATCH', 'DRIVER', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
-  if (fuelRoles.includes(normalizedRole) && !result.some(m => m.path === '/fuel-management')) {
-    const item: MenuItem = {
-      icon: "Fuel",
-      label: "Fuel Management",
-      path: "/fuel-management",
-      badge: 0,
-      category: "Operations",
-      description: "Fuel card management, consumption tracking & cost optimization",
-    };
-    const prev = result.findIndex(m => m.path === '/fleet-maintenance');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // Communication Hub — dispatchers, carriers, admins only (others use Messages)
-  const commHubRoles = ['CATALYST', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN'];
-  if (commHubRoles.includes(normalizedRole) && !result.some(m => m.path === '/communication-hub')) {
-    const item: MenuItem = {
-      icon: "MessageSquare",
-      label: "Communication Hub",
-      path: "/communication-hub",
-      badge: 0,
-      category: "Operations",
-      description: "Unified messaging, notifications & broadcast communications",
-    };
-    const prev = result.findIndex(m => m.path === '/fuel-management');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // Broker Management — brokers and admins only
-  const brokerMgmtRoles = ['BROKER', 'ADMIN', 'SUPER_ADMIN'];
-  if (brokerMgmtRoles.includes(normalizedRole) && !result.some(m => m.path === '/broker-management')) {
-    const item: MenuItem = {
-      icon: "Briefcase",
-      label: "Broker Management",
-      path: "/broker-management",
-      badge: 0,
-      category: "Operations",
-      description: "Broker relationships, commission tracking & performance management",
-    };
-    const prev = result.findIndex(m => m.path === '/communication-hub');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // Document Management — carriers, dispatchers, compliance, terminal managers, admins
-  const docMgmtRoles = ['CATALYST', 'DISPATCH', 'COMPLIANCE_OFFICER', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
-  if (docMgmtRoles.includes(normalizedRole) && !result.some(m => m.path === '/document-management')) {
-    const item: MenuItem = {
-      icon: "FileStack",
-      label: "Document Management",
-      path: "/document-management",
-      badge: 0,
-      category: "Operations",
-      description: "EusoTicket™ centralized document storage, versioning & digital signatures",
-    };
-    const prev = result.findIndex(m => m.path === '/broker-management');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // HR & Workforce — carriers, dispatchers, admins only
-  const hrRoles = ['CATALYST', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN'];
-  if (hrRoles.includes(normalizedRole) && !result.some(m => m.path === '/hr-workforce')) {
-    const item: MenuItem = {
-      icon: "UserCog",
-      label: "HR & Workforce",
-      path: "/hr-workforce",
-      badge: 0,
-      category: "Operations",
-      description: "Driver onboarding, workforce management & HR compliance",
-    };
-    const prev = result.findIndex(m => m.path === '/document-management');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // Vendor Management — carriers, shippers, terminal managers, admins
-  const vendorRoles = ['CATALYST', 'SHIPPER', 'TERMINAL_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
-  if (vendorRoles.includes(normalizedRole) && !result.some(m => m.path === '/vendor-management')) {
-    const item: MenuItem = {
-      icon: "Store",
-      label: "Vendor Management",
-      path: "/vendor-management",
-      badge: 0,
-      category: "Operations",
-      description: "Vendor relationships, contracts & procurement management",
-    };
-    const prev = result.findIndex(m => m.path === '/hr-workforce');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // Data Migration is admin-only — do not inject for non-admin roles
-  if (['ADMIN', 'SUPER_ADMIN'].includes(normalizedRole) && !result.some(m => m.path === '/data-migration')) {
-    const item: MenuItem = {
-      icon: "DatabaseZap",
-      label: "Data Migration",
-      path: "/data-migration",
-      badge: 0,
-      category: "Operations",
-      description: "Data import/export, system migration & ETL tools",
-    };
-    const prev = result.findIndex(m => m.path === '/vendor-management');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // ─── Gamification / The Haul™ injections (drivers, carriers, dispatchers, admins) ───
-  const haulRoles = ['DRIVER', 'CATALYST', 'DISPATCH', 'ESCORT', 'ADMIN', 'SUPER_ADMIN'];
-  if (haulRoles.includes(normalizedRole) && !result.some(m => m.path === '/advanced-gamification')) {
-    const item: MenuItem = {
-      icon: "Trophy",
-      label: "Advanced Gamification",
-      path: "/advanced-gamification",
-      badge: 0,
-      category: "The Haul",
-      description: "The Haul™ advanced achievements, seasons, tournaments & rewards",
-    };
-    const haulIdx = result.findIndex(m => m.path === '/the-haul');
-    const idx = haulIdx >= 0 ? haulIdx + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  if (haulRoles.includes(normalizedRole) && !result.some(m => m.path === '/driver-wellness')) {
-    const item: MenuItem = {
-      icon: "Heart",
-      label: "Driver Wellness",
-      path: "/driver-wellness",
-      badge: 0,
-      category: "The Haul",
-      description: "The Haul™ driver wellness programs, health tracking & fatigue management",
-    };
-    const prev = result.findIndex(m => m.path === '/advanced-gamification');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  // Driver Mobile — drivers, carriers, dispatchers, admins
-  const driverMobileRoles = ['DRIVER', 'CATALYST', 'DISPATCH', 'ADMIN', 'SUPER_ADMIN'];
-  if (driverMobileRoles.includes(normalizedRole) && !result.some(m => m.path === '/driver-mobile')) {
-    const item: MenuItem = {
-      icon: "Smartphone",
-      label: "Driver Mobile",
-      path: "/driver-mobile",
-      badge: 0,
-      category: "The Haul",
-      description: "The Haul™ mobile-first driver experience & on-the-road tools",
-    };
-    const prev = result.findIndex(m => m.path === '/driver-wellness');
-    const idx = prev >= 0 ? prev + 1 : result.length;
-    result.splice(idx, 0, item);
-  }
-
-  return result;
+  return menuConfigs[normalizedRole] || menuConfigs.default;
 }
 
 /**
@@ -2240,10 +1818,10 @@ const ALWAYS_ACCESSIBLE_PREFIXES = ["/admin", "/super-admin", "/factoring"];
 export function getMenuForRoleWithApproval(role?: string | UserRole): MenuItem[] {
   const items = getMenuForRole(role);
   const normalizedRole = String(role || "").toUpperCase();
-  
+
   // Admin/Super Admin bypass gating
   if (normalizedRole === "ADMIN" || normalizedRole === "SUPER_ADMIN") return items;
-  
+
   return items.map(item => {
     const accessible = ALWAYS_ACCESSIBLE.has(item.path) ||
       ALWAYS_ACCESSIBLE_PREFIXES.some(p => item.path.startsWith(p));
@@ -2257,14 +1835,20 @@ export function getMenuForRoleWithApproval(role?: string | UserRole): MenuItem[]
 }
 
 /**
- * Check if role has access to a specific path
+ * Check if role has access to a specific path (recursive child check)
  * @param role - User role
  * @param path - Path to check
  * @returns true if role has access to path
  */
 export function hasAccessToPath(role: string | UserRole, path: string): boolean {
   const menu = getMenuForRole(role);
-  return menu.some(item => item.path === path || item.children?.some(c => c.path === path));
+  const checkItems = (items: MenuItem[]): boolean => {
+    return items.some(item =>
+      item.path === path ||
+      (item.children ? checkItems(item.children) : false)
+    );
+  };
+  return checkItems(menu);
 }
 
 /**
@@ -2287,8 +1871,7 @@ export function getRoleDisplayName(role: string | UserRole): string {
     ADMIN: 'Administrator',
     SUPER_ADMIN: 'Super Administrator',
   };
-  
+
   const normalizedRole = String(role).toUpperCase();
   return roleMap[normalizedRole] || 'User';
 }
-
