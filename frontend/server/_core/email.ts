@@ -246,6 +246,127 @@ class EmailService {
       html,
     });
   }
+  /**
+   * Send account closed confirmation
+   */
+  async sendAccountClosedEmail(email: string, name: string): Promise<boolean> {
+    const html = this.brandedEmail("Account Closed", `
+      <p style="margin:0 0 12px;color:#CBD5E1">Hello ${name},</p>
+      <p style="margin:0 0 12px;color:#CBD5E1">Your EusoTrip account has been closed as requested. Your personal information has been anonymized.</p>
+      <div style="margin:20px 0;padding:16px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);border-radius:12px">
+        <p style="margin:0;font-size:13px;color:#FCA5A5;font-weight:600">What this means:</p>
+        <ul style="margin:8px 0 0;padding-left:16px;font-size:13px;color:#94A3B8;line-height:1.8">
+          <li>Your profile and personal data have been anonymized</li>
+          <li>You will no longer be able to log in</li>
+          <li>Active loads and financial records are retained for regulatory compliance</li>
+        </ul>
+      </div>
+      <p style="margin:12px 0 0;font-size:12px;color:#475569;line-height:1.5">If you did not request this action, contact support immediately at support@eusotrip.com.</p>
+    `);
+
+    return this.send({
+      to: email,
+      subject: "Your EusoTrip Account Has Been Closed",
+      html,
+      text: `Hello ${name}, your EusoTrip account has been closed as requested. If you did not request this, contact support@eusotrip.com immediately.`,
+    });
+  }
+
+  /**
+   * Send account deletion scheduled (30-day grace period)
+   */
+  async sendDeletionScheduledEmail(email: string, name: string, deletionDate: string): Promise<boolean> {
+    const formattedDate = new Date(deletionDate).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+    const html = this.brandedEmail("Account Deletion Scheduled", `
+      <p style="margin:0 0 12px;color:#CBD5E1">Hello ${name},</p>
+      <p style="margin:0 0 12px;color:#CBD5E1">Your account has been scheduled for permanent deletion.</p>
+      <div style="margin:20px 0;padding:16px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.15);border-radius:12px">
+        <p style="margin:0;font-size:13px;color:#FCD34D;font-weight:600">Deletion Date: ${formattedDate}</p>
+        <p style="margin:8px 0 0;font-size:13px;color:#94A3B8">You have 30 days to cancel this request. After this date, all your data will be permanently deleted in compliance with GDPR Article 17.</p>
+      </div>
+      <p style="margin:0 0 12px;color:#CBD5E1">To cancel the deletion, log in to your account and visit Settings.</p>
+      ${this.brandedButton(`${APP_URL}/settings?tab=account`, "Cancel Deletion", "#F59E0B")}
+      <p style="margin:12px 0 0;font-size:12px;color:#475569;line-height:1.5">If you did not request this, log in immediately and cancel the deletion, or contact support@eusotrip.com.</p>
+    `);
+
+    return this.send({
+      to: email,
+      subject: "EusoTrip Account Deletion Scheduled — 30 Days to Cancel",
+      html,
+      text: `Hello ${name}, your EusoTrip account is scheduled for permanent deletion on ${formattedDate}. Log in to cancel this request within 30 days.`,
+    });
+  }
+
+  /**
+   * Send deletion cancelled confirmation
+   */
+  async sendDeletionCancelledEmail(email: string, name: string): Promise<boolean> {
+    const html = this.brandedEmail("Deletion Cancelled", `
+      <p style="margin:0 0 12px;color:#CBD5E1">Hello ${name},</p>
+      <p style="margin:0 0 12px;color:#CBD5E1">Your account deletion request has been successfully cancelled. Your account is fully active again.</p>
+      <div style="margin:20px 0;padding:16px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15);border-radius:12px">
+        <p style="margin:0;font-size:13px;color:#6EE7B7;font-weight:600">Account Restored</p>
+        <p style="margin:8px 0 0;font-size:13px;color:#94A3B8">Your account is active and all your data remains intact. No action is needed.</p>
+      </div>
+      ${this.brandedButton(`${APP_URL}/dashboard`, "Go to Dashboard")}
+    `);
+
+    return this.send({
+      to: email,
+      subject: "EusoTrip Account Deletion Cancelled",
+      html,
+      text: `Hello ${name}, your EusoTrip account deletion has been cancelled. Your account is active again.`,
+    });
+  }
+
+  /**
+   * Send final deletion completed notice (sent before deleting email)
+   */
+  async sendDeletionCompletedEmail(email: string): Promise<boolean> {
+    const html = this.brandedEmail("Account Permanently Deleted", `
+      <p style="margin:0 0 12px;color:#CBD5E1">Your EusoTrip account has been permanently deleted as requested.</p>
+      <div style="margin:20px 0;padding:16px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);border-radius:12px">
+        <p style="margin:0;font-size:13px;color:#FCA5A5;font-weight:600">Deletion Complete</p>
+        <ul style="margin:8px 0 0;padding-left:16px;font-size:13px;color:#94A3B8;line-height:1.8">
+          <li>All personal data has been permanently removed</li>
+          <li>Financial and compliance records are retained per regulatory requirements</li>
+          <li>This action cannot be undone</li>
+        </ul>
+      </div>
+      <p style="margin:12px 0 0;font-size:12px;color:#475569;line-height:1.5">If you wish to use EusoTrip again, you are welcome to create a new account at any time.</p>
+    `);
+
+    return this.send({
+      to: email,
+      subject: "Your EusoTrip Account Has Been Permanently Deleted",
+      html,
+      text: "Your EusoTrip account has been permanently deleted. All personal data has been removed. Financial records are retained per regulatory requirements.",
+    });
+  }
+
+  /**
+   * Send GDPR data export ready notification
+   */
+  async sendDataExportEmail(email: string, name: string): Promise<boolean> {
+    const html = this.brandedEmail("Your Data Export Is Ready", `
+      <p style="margin:0 0 12px;color:#CBD5E1">Hello ${name},</p>
+      <p style="margin:0 0 12px;color:#CBD5E1">Your personal data export has been generated per GDPR Article 15 / CCPA Right to Know.</p>
+      <div style="margin:20px 0;padding:16px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);border-radius:12px">
+        <p style="margin:0;font-size:13px;color:#93C5FD;font-weight:600">Data Export Contents</p>
+        <p style="margin:8px 0 0;font-size:13px;color:#94A3B8">Profile, wallet history, load history, bids, documents, messages, notifications, and GPS summary.</p>
+      </div>
+      <p style="margin:0 0 12px;color:#CBD5E1">You can download your export from the Settings page in your account.</p>
+      ${this.brandedButton(`${APP_URL}/settings?tab=account`, "View Export")}
+    `);
+
+    return this.send({
+      to: email,
+      subject: "Your EusoTrip Data Export Is Ready",
+      html,
+      text: `Hello ${name}, your personal data export is ready. Log in to your EusoTrip account to download it.`,
+    });
+  }
 }
 
 export const emailService = new EmailService();

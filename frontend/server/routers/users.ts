@@ -126,6 +126,7 @@ export const usersRouter = router({
         language: "en",
         pendingDeletion: false,
         deletionDate: null,
+        status: "active",
       };
     }
 
@@ -153,6 +154,19 @@ export const usersRouter = router({
       try { meta = user?.metadata ? JSON.parse(user.metadata as string) : {}; } catch {}
       const industryVertical = meta?.registration?.industryVertical || null;
 
+      // Read real deletion state from metadata
+      const deletionScheduledAt = meta?.deletionScheduledAt || null;
+      const pendingDeletion = !!deletionScheduledAt;
+      const deletionDate = deletionScheduledAt || null;
+
+      // Read account status
+      let accountStatus = "active";
+      try {
+        const [statusRow] = await db.execute(sql`SELECT status FROM users WHERE id = ${user?.id || 0} LIMIT 1`);
+        const row = Array.isArray(statusRow) ? statusRow[0] : statusRow;
+        if ((row as any)?.status) accountStatus = (row as any).status;
+      } catch {}
+
       // Resolve company name
       let companyName = "";
       if (user?.companyId) {
@@ -161,6 +175,80 @@ export const usersRouter = router({
           if (co?.name) companyName = co.name;
         } catch {}
       }
+
+      // Build role-specific profile data from registration metadata
+      const reg = meta?.registration || {};
+      const roleData: Record<string, any> = {};
+      const userRole = user?.role || ctx.user?.role || "SHIPPER";
+
+      if (userRole === "DRIVER") {
+        roleData.cdl = reg.cdl || null;
+        roleData.hazmatEndorsement = reg.hazmatEndorsement || false;
+        roleData.hazmatExpiration = reg.hazmatExpiration || null;
+        roleData.tankerEndorsement = reg.tankerEndorsement || false;
+        roleData.twicCard = reg.twicCard || false;
+        roleData.twicNumber = reg.twicNumber || null;
+        roleData.twicExpiration = reg.twicExpiration || null;
+        roleData.medicalCardExpiration = reg.medicalCardExpiration || null;
+        roleData.equipmentExperience = reg.equipmentExperience || [];
+        roleData.hoseExperience = reg.hoseExperience || false;
+        roleData.pumpExperience = reg.pumpExperience || false;
+        roleData.bottomLoadExperience = reg.bottomLoadExperience || false;
+        roleData.vaporRecoveryExperience = reg.vaporRecoveryExperience || false;
+        roleData.yearsExperience = reg.yearsExperience || null;
+        roleData.additionalCerts = reg.additionalCerts || [];
+      } else if (userRole === "CATALYST") {
+        roleData.usdotNumber = reg.usdotNumber || null;
+        roleData.mcNumber = reg.mcNumber || null;
+        roleData.einNumber = reg.einNumber || null;
+        roleData.phmsaNumber = reg.phmsaNumber || null;
+        roleData.fleetSize = reg.fleetSize || null;
+        roleData.hazmatEndorsed = reg.hazmatEndorsed || false;
+        roleData.hazmatClasses = reg.hazmatClasses || [];
+        roleData.tankerEndorsed = reg.tankerEndorsed || false;
+        roleData.catalystType = reg.catalystType || null;
+        roleData.equipmentTypes = reg.equipmentTypes || [];
+        roleData.equipmentCapabilities = reg.equipmentCapabilities || null;
+        roleData.products = reg.products || [];
+        roleData.liabilityInsurance = { carrier: reg.liabilityCarrier, policy: reg.liabilityPolicy, coverage: reg.liabilityCoverage, expiration: reg.liabilityExpiration };
+        roleData.cargoInsurance = { carrier: reg.cargoCarrier, policy: reg.cargoPolicy, coverage: reg.cargoCoverage, expiration: reg.cargoExpiration };
+      } else if (userRole === "SHIPPER") {
+        roleData.dba = reg.dba || null;
+        roleData.companyType = reg.companyType || null;
+        roleData.hazmatEndorsed = reg.hazmatEndorsed || false;
+        roleData.hazmatClasses = reg.hazmatClasses || [];
+        roleData.phmsaNumber = reg.phmsaNumber || null;
+        roleData.epaId = reg.epaId || null;
+        roleData.equipmentTypes = reg.equipmentTypes || [];
+        roleData.products = reg.products || [];
+        roleData.operatingStates = reg.operatingStates || [];
+      } else if (userRole === "BROKER") {
+        roleData.mcNumber = reg.brokerMcNumber || reg.mcNumber || null;
+        roleData.licenseNumber = reg.licenseNumber || null;
+        roleData.dotNumber = reg.dotNumber || null;
+        roleData.operatingStates = reg.operatingStates || [];
+        roleData.specializations = reg.specializations || [];
+      } else if (userRole === "TERMINAL_MANAGER") {
+        roleData.facilityName = reg.facilityName || null;
+        roleData.facilityType = reg.facilityType || null;
+        roleData.operatingHours = reg.operatingHours || null;
+        roleData.hazmatCapable = reg.hazmatCapable || false;
+        roleData.storageCapacity = reg.storageCapacity || null;
+      } else if (userRole === "DISPATCH") {
+        roleData.fleetSize = reg.fleetSize || null;
+        roleData.dispatchTeamSize = reg.dispatchTeamSize || null;
+        roleData.software = reg.software || null;
+      } else if (userRole === "ESCORT") {
+        roleData.positionCapabilities = reg.positionCapabilities || [];
+        roleData.stateCertifications = reg.stateCertifications || [];
+        roleData.vehicleType = reg.vehicleType || null;
+      } else if (userRole === "FACTORING") {
+        roleData.factoringLicense = reg.factoringLicense || null;
+        roleData.advanceRate = reg.advanceRate || null;
+      }
+
+      // Include compliance IDs for all roles
+      roleData.complianceIds = meta?.complianceIds || null;
 
       return {
         id: user?.id || userOpenId,
@@ -171,7 +259,7 @@ export const usersRouter = router({
         company: companyName,
         companyId: user?.companyId || null,
         location: "",
-        role: user?.role || ctx.user?.role || "shipper",
+        role: userRole,
         verified: user?.isVerified || false,
         profilePicture: user?.profilePicture || null,
         createdAt: createdAt.toISOString(),
@@ -181,10 +269,12 @@ export const usersRouter = router({
         loadsCompleted: 0,
         rating: "0",
         daysActive,
-        timezone: "America/Chicago",
-        language: "en",
-        pendingDeletion: false,
-        deletionDate: null,
+        timezone: meta?.preferences?.timezone || "America/Chicago",
+        language: meta?.preferences?.language || "en",
+        pendingDeletion,
+        deletionDate,
+        status: accountStatus,
+        roleData,
       };
     } catch (error) {
       logger.error('[Users] getProfile error:', error);
@@ -207,6 +297,7 @@ export const usersRouter = router({
         language: "en",
         pendingDeletion: false,
         deletionDate: null,
+        status: "active",
       };
     }
   }),
@@ -392,15 +483,54 @@ export const usersRouter = router({
       } catch (e) { logger.warn("[Users] getActivityStats query failed:", e); return { totalActivities: 0, todayActivities: 0, weekActivities: 0, totalToday: 0, loadsToday: 0, bidsToday: 0, thisWeek: 0 }; }
     }),
 
-  // Get account info
+  // Get account info — reads real deletion state from DB
   getAccountInfo: protectedProcedure.query(async ({ ctx }) => {
-    return {
-      id: ctx.user?.id,
-      email: ctx.user?.email,
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
-      status: "active", pendingDeletion: false, deletionDate: null,
-    };
+    const db = await getDb();
+    const userEmail = ctx.user?.email || "";
+
+    if (!db || !userEmail) {
+      return {
+        id: ctx.user?.id, email: userEmail,
+        createdAt: new Date().toISOString(), lastLogin: new Date().toISOString(),
+        status: "active", pendingDeletion: false, deletionDate: null,
+      };
+    }
+
+    try {
+      const [found] = await db.select({
+        id: users.id, email: users.email, createdAt: users.createdAt, metadata: users.metadata,
+      }).from(users).where(eq(users.email, userEmail)).limit(1);
+
+      let meta: Record<string, any> = {};
+      try { meta = found?.metadata ? JSON.parse(found.metadata as string) : {}; } catch {}
+
+      const deletionScheduledAt = meta?.deletionScheduledAt || null;
+
+      // Read status column
+      let accountStatus = "active";
+      try {
+        const [statusRow] = await db.execute(sql`SELECT status FROM users WHERE id = ${found?.id || 0} LIMIT 1`);
+        const row = Array.isArray(statusRow) ? statusRow[0] : statusRow;
+        if ((row as any)?.status) accountStatus = (row as any).status;
+      } catch {}
+
+      return {
+        id: found?.id || ctx.user?.id,
+        email: found?.email || userEmail,
+        createdAt: found?.createdAt?.toISOString() || new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+        status: accountStatus,
+        pendingDeletion: !!deletionScheduledAt,
+        deletionDate: deletionScheduledAt,
+      };
+    } catch (e) {
+      logger.warn("[Users] getAccountInfo failed:", e);
+      return {
+        id: ctx.user?.id, email: userEmail,
+        createdAt: new Date().toISOString(), lastLogin: new Date().toISOString(),
+        status: "active", pendingDeletion: false, deletionDate: null,
+      };
+    }
   }),
 
   // Close account (GDPR Article 17 / CCPA compliant)
@@ -459,19 +589,97 @@ export const usersRouter = router({
         } as typeof auditLogs.$inferInsert);
       } catch (e) { logger.warn("[Users] closeAccount audit log failed:", e); }
 
+      // 6. Send closure confirmation email
+      try {
+        const { emailService } = await import("../_core/email");
+        await emailService.sendAccountClosedEmail(user.email || "", user.name || "User");
+      } catch (e) { logger.warn("[Users] closeAccount email failed:", e); }
+
       return { success: true, closedAt: closedAt.toISOString() };
     }),
 
-  // Request account deletion (alias for frontend compatibility)
+  // Request account deletion — GDPR Article 17 / CCPA (30-day grace period)
   requestAccountDeletion: protectedProcedure
     .input(z.object({ reason: z.string().optional() }))
-    .mutation(async () => {
-      return { success: true, scheduledFor: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() };
+    .mutation(async ({ ctx, input }) => {
+      const userId = await ensureUserExists(ctx.user);
+      if (!userId) throw new Error("Could not resolve user");
+
+      // Check no active loads
+      const db = await getDb();
+      if (db) {
+        try {
+          const { loads } = await import("../../drizzle/schema");
+          const [activeLoad] = await db.select({ id: loads.id }).from(loads)
+            .where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('en_route_pickup','en_route_delivery','at_pickup','at_delivery','loading','unloading','assigned')`))
+            .limit(1);
+          if (activeLoad) throw new Error("Cannot delete account with active loads in transit. Complete or cancel all active loads first.");
+        } catch (e) {
+          if ((e as Error).message?.includes("Cannot delete")) throw e;
+        }
+      }
+
+      const { scheduleAccountDeletion } = await import("../services/compliance/data-lifecycle");
+      const result = await scheduleAccountDeletion(userId, input.reason);
+
+      if (!result.success) throw new Error("Failed to schedule account deletion");
+
+      // Send email notification
+      try {
+        const { emailService } = await import("../_core/email");
+        const userName = ctx.user?.name || "User";
+        const userEmail = ctx.user?.email || "";
+        if (userEmail) {
+          await emailService.sendDeletionScheduledEmail(userEmail, userName, result.deletionDate.toISOString());
+        }
+      } catch (e) { logger.warn("[Users] deletion scheduled email failed:", e); }
+
+      return { success: true, scheduledFor: result.deletionDate.toISOString() };
     }),
 
-  // Cancel account deletion
-  cancelAccountDeletion: protectedProcedure.input(z.object({}).optional()).mutation(async () => {
+  // Cancel account deletion — within 30-day grace period
+  cancelAccountDeletion: protectedProcedure.input(z.object({}).optional()).mutation(async ({ ctx }) => {
+    const userId = await ensureUserExists(ctx.user);
+    if (!userId) throw new Error("Could not resolve user");
+
+    const { cancelAccountDeletion: cancelDeletion } = await import("../services/compliance/data-lifecycle");
+    const success = await cancelDeletion(userId);
+
+    if (!success) throw new Error("Failed to cancel account deletion. Account may not be pending deletion.");
+
+    // Send confirmation email
+    try {
+      const { emailService } = await import("../_core/email");
+      const userName = ctx.user?.name || "User";
+      const userEmail = ctx.user?.email || "";
+      if (userEmail) {
+        await emailService.sendDeletionCancelledEmail(userEmail, userName);
+      }
+    } catch (e) { logger.warn("[Users] deletion cancelled email failed:", e); }
+
     return { success: true };
+  }),
+
+  // Export personal data — GDPR Article 15 / CCPA Right to Know
+  exportPersonalData: protectedProcedure.input(z.object({}).optional()).mutation(async ({ ctx }) => {
+    const userId = await ensureUserExists(ctx.user);
+    if (!userId) throw new Error("Could not resolve user");
+
+    const { exportUserData } = await import("../services/compliance/data-lifecycle");
+    const data = await exportUserData(userId);
+
+    if (data.error) throw new Error(data.error);
+
+    // Send email notification
+    try {
+      const { emailService } = await import("../_core/email");
+      const userEmail = ctx.user?.email || "";
+      if (userEmail) {
+        await emailService.sendDataExportEmail(userEmail, ctx.user?.name || "User");
+      }
+    } catch (e) { logger.warn("[Users] data export email failed:", e); }
+
+    return { success: true, data };
   }),
 
   // Admin: Deactivate user account
@@ -684,7 +892,7 @@ export const usersRouter = router({
     } catch (e) { logger.warn("[Users] getActivityStatsDetailed query failed:", e); return { today: 0, thisWeek: 0, thisMonth: 0 }; }
   }),
 
-  // Update user profile
+  // Update user profile — supports core fields + role-specific metadata
   updateProfile: protectedProcedure
     .input(
       z.object({
@@ -696,6 +904,8 @@ export const usersRouter = router({
         company: z.string().optional(),
         timezone: z.string().optional(),
         language: z.string().optional(),
+        // Role-specific fields stored in metadata.registration
+        roleData: z.record(z.string(), z.any()).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -715,7 +925,77 @@ export const usersRouter = router({
         if (input.email) updateData.email = input.email;
         if (input.phone !== undefined) updateData.phone = input.phone;
 
+        // Update role-specific metadata and preferences
+        if (input.roleData || input.timezone || input.language) {
+          const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
+          let meta: Record<string, any> = {};
+          try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch {}
+
+          // Persist timezone/language in preferences
+          if (input.timezone || input.language) {
+            if (!meta.preferences) meta.preferences = {};
+            if (input.timezone) meta.preferences.timezone = input.timezone;
+            if (input.language) meta.preferences.language = input.language;
+          }
+
+          // Merge role-specific data into registration metadata
+          if (input.roleData) {
+            if (!meta.registration) meta.registration = {};
+            const role = ctx.user?.role || "SHIPPER";
+
+            // Allowed fields per role to prevent cross-role data injection
+            const allowedFields: Record<string, string[]> = {
+              DRIVER: ["cdl", "hazmatEndorsement", "hazmatExpiration", "tankerEndorsement", "twicCard", "twicNumber", "twicExpiration", "medicalCardExpiration", "equipmentExperience", "hoseExperience", "pumpExperience", "bottomLoadExperience", "vaporRecoveryExperience", "yearsExperience", "additionalCerts"],
+              CATALYST: ["usdotNumber", "mcNumber", "einNumber", "phmsaNumber", "fleetSize", "hazmatEndorsed", "hazmatClasses", "tankerEndorsed", "catalystType", "equipmentTypes", "equipmentCapabilities", "products", "liabilityCarrier", "liabilityPolicy", "liabilityCoverage", "liabilityExpiration", "cargoCarrier", "cargoPolicy", "cargoCoverage", "cargoExpiration"],
+              SHIPPER: ["dba", "companyType", "hazmatEndorsed", "hazmatClasses", "phmsaNumber", "epaId", "equipmentTypes", "products", "operatingStates"],
+              BROKER: ["brokerMcNumber", "mcNumber", "licenseNumber", "dotNumber", "operatingStates", "specializations"],
+              TERMINAL_MANAGER: ["facilityName", "facilityType", "operatingHours", "hazmatCapable", "storageCapacity"],
+              DISPATCH: ["fleetSize", "dispatchTeamSize", "software"],
+              ESCORT: ["positionCapabilities", "stateCertifications", "vehicleType"],
+              FACTORING: ["factoringLicense", "advanceRate"],
+              COMPLIANCE_OFFICER: [],
+              SAFETY_MANAGER: [],
+              ADMIN: [],
+              SUPER_ADMIN: [],
+            };
+
+            const allowed = allowedFields[role] || [];
+            for (const [key, value] of Object.entries(input.roleData)) {
+              if (allowed.includes(key)) {
+                // For nested objects like cdl, merge instead of replace
+                if (typeof value === "object" && value !== null && !Array.isArray(value) && typeof meta.registration[key] === "object") {
+                  meta.registration[key] = { ...meta.registration[key], ...value };
+                } else {
+                  meta.registration[key] = value;
+                }
+              }
+            }
+            meta.registration.lastUpdated = new Date().toISOString();
+          }
+
+          updateData.metadata = JSON.stringify(meta);
+        }
+
         await db.update(users).set(updateData).where(eq(users.id, userId));
+
+        // Sync driver table if driver CDL fields changed
+        if (input.roleData && ctx.user?.role === "DRIVER") {
+          try {
+            const { drivers } = await import("../../drizzle/schema");
+            const driverUpdate: Record<string, any> = {};
+            if (input.roleData.cdl?.number) driverUpdate.licenseNumber = input.roleData.cdl.number;
+            if (input.roleData.cdl?.state) driverUpdate.licenseState = input.roleData.cdl.state;
+            if (input.roleData.cdl?.expiration) driverUpdate.licenseExpiry = new Date(input.roleData.cdl.expiration);
+            if (input.roleData.medicalCardExpiration) driverUpdate.medicalCardExpiry = new Date(input.roleData.medicalCardExpiration);
+            if (input.roleData.hazmatEndorsement !== undefined) driverUpdate.hazmatEndorsement = input.roleData.hazmatEndorsement;
+            if (input.roleData.hazmatExpiration) driverUpdate.hazmatExpiry = new Date(input.roleData.hazmatExpiration);
+            if (input.roleData.twicExpiration) driverUpdate.twicExpiry = new Date(input.roleData.twicExpiration);
+            if (Object.keys(driverUpdate).length > 0) {
+              await db.update(drivers).set(driverUpdate).where(eq(drivers.userId, userId));
+            }
+          } catch (e) { logger.warn("[Users] updateProfile driver sync failed:", e); }
+        }
+
         return { success: true };
       } catch (error) {
         logger.error("[users.updateProfile] Error:", error);

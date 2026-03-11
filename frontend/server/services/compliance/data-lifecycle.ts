@@ -220,7 +220,18 @@ export async function executeScheduledDeletions(): Promise<number> {
 
     for (const user of usersToDelete) {
       const uid = Number((user as any).id);
+      const userEmail = (user as any).email;
       try {
+        // 0. Send final deletion notice before removing data
+        try {
+          const { emailService } = await import("../../_core/email");
+          if (userEmail && !userEmail.includes("@deleted.")) {
+            await emailService.sendDeletionCompletedEmail(userEmail);
+          }
+        } catch (emailErr) {
+          logger.warn(`[DataLifecycle] Final deletion email failed for user ${uid}:`, emailErr);
+        }
+
         // 1. Anonymize public data that must be retained
         await db.execute(sql`UPDATE loads SET driver_name = 'Deleted User' WHERE driver_id = ${uid}`);
 

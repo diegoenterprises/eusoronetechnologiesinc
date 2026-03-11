@@ -409,13 +409,56 @@ export const gamificationRouter = router({
       }).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = Number(ctx.user?.id) || 0;
+      const userRole = (ctx.user as any)?.role || "DRIVER";
+
+      // Find reward in catalog
+      const catalog = getRewardsCatalogForRole(userRole);
+      const item = catalog.rewards.find((r: any) => r.id === input.rewardId);
+      if (!item) throw new Error("Reward not found in catalog");
+
+      // Check user has enough points
+      const [profile] = await db.select().from(gamificationProfiles)
+        .where(eq(gamificationProfiles.userId, userId)).limit(1);
+      if (!profile) throw new Error("No gamification profile found");
+
+      const cost = item.cost || 0;
+      if ((profile.totalXp || 0) < cost) {
+        throw new Error(`Not enough points. Need ${cost}, have ${profile.totalXp || 0}`);
+      }
+
+      // Deduct points
+      await db.update(gamificationProfiles).set({
+        totalXp: sql`${gamificationProfiles.totalXp} - ${cost}`,
+      } as any).where(eq(gamificationProfiles.id, profile.id));
+
+      // Record redemption in rewards table
+      const redemptionId = `redeem_${Date.now()}_${userId}`;
+      try {
+        await db.insert(rewards).values({
+          userId, type: "redemption" as any, name: item.name || input.rewardId,
+          description: `Redeemed: ${item.name || input.rewardId}`,
+          pointsCost: cost, status: "claimed" as any,
+        } as any);
+      } catch (e) { logger.warn("[Gamification] redeemReward reward insert failed:", e); }
+
+      // Emit websocket event
+      try {
+        emitGamificationEvent(String(userId), "GAMIFICATION_EVENT" as any, {
+          eventType: "reward_redeemed", userId: String(userId),
+          data: { rewardId: input.rewardId, name: item.name, pointsSpent: cost },
+        } as any);
+      } catch {}
+
       return {
-        redemptionId: `redeem_${Date.now()}`,
+        redemptionId,
         rewardId: input.rewardId,
-        pointsDeducted: 500,
-        remainingPoints: 4350,
+        pointsDeducted: cost,
+        remainingPoints: (profile.totalXp || 0) - cost,
         status: "processing",
-        estimatedDelivery: "3-5 business days",
+        estimatedDelivery: item.digital ? "Instant" : "3-5 business days",
         redeemedBy: ctx.user?.id,
         redeemedAt: new Date().toISOString(),
       };

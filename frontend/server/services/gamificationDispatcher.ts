@@ -16,6 +16,8 @@ import {
   missionProgress,
   missions,
   gamificationProfiles,
+  badges,
+  userBadges,
 } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { emitGamificationEvent } from "../_core/websocket";
@@ -277,10 +279,134 @@ async function _processEvent(event: GamificationEvent): Promise<void> {
     }
   }
 
+  // Check for auto badge earning on milestones
+  if (totalXpEarned > 0 || completedMissions.length > 0) {
+    try {
+      await _checkBadgeMilestones(userId, type);
+    } catch (e) {
+      logger.warn(`[GamificationDispatcher] Badge check failed for user ${userId}:`, e);
+    }
+  }
+
   // Update streak on any activity
   try {
     await rewardsEngine.updateStreak(userId);
   } catch {}
+}
+
+// ─── Badge Auto-Earning ─────────────────────────────────────────────────────
+
+/**
+ * Check if user qualifies for any badges based on current stats.
+ * Badges have criteria: { type: string, value: number }
+ * Supported types: missions_completed, level_reached, streak_days, loads_completed,
+ *                  xp_earned, perfect_deliveries, first_load, hazmat_certified
+ */
+async function _checkBadgeMilestones(userId: number, eventType: GamificationEventType): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  // Get user's gamification profile
+  const [profile] = await db.select().from(gamificationProfiles)
+    .where(eq(gamificationProfiles.userId, userId)).limit(1);
+  if (!profile) return;
+
+  const stats = (profile.stats as any) || {};
+
+  // Get all active badges user doesn't already have
+  const earnedBadgeRows = await db.select({ badgeId: userBadges.badgeId })
+    .from(userBadges).where(eq(userBadges.userId, userId));
+  const earnedBadgeIds = new Set(earnedBadgeRows.map(r => r.badgeId));
+
+  const allBadges = await db.select().from(badges)
+    .where(eq(badges.isActive, true));
+
+  const newBadges: { id: number; name: string; xpValue: number }[] = [];
+
+  for (const badge of allBadges) {
+    if (earnedBadgeIds.has(badge.id)) continue;
+
+    const criteria = badge.criteria as { type: string; value: number; condition?: string } | null;
+    if (!criteria?.type) continue;
+
+    let earned = false;
+
+    switch (criteria.type) {
+      case "missions_completed":
+        earned = (stats.totalMissionsCompleted || 0) >= criteria.value;
+        break;
+      case "level_reached":
+        earned = (profile.level || 1) >= criteria.value;
+        break;
+      case "streak_days":
+        earned = (profile.streakDays || 0) >= criteria.value;
+        break;
+      case "xp_earned":
+        earned = (profile.totalXp || 0) >= criteria.value;
+        break;
+      case "perfect_deliveries":
+        earned = (stats.perfectDeliveries || 0) >= criteria.value;
+        break;
+      case "first_load":
+        earned = eventType === "first_load_completed" || eventType === "load_completed";
+        break;
+      case "hazmat_certified":
+        earned = eventType === "hazmat_certified";
+        break;
+      case "loads_completed":
+        earned = (stats.totalMissionsCompleted || 0) >= criteria.value; // missions as proxy
+        break;
+      case "on_time_rate":
+        earned = (stats.onTimeRate || 0) >= criteria.value;
+        break;
+      default:
+        break;
+    }
+
+    if (earned) {
+      newBadges.push({ id: badge.id, name: badge.name, xpValue: badge.xpValue || 0 });
+    }
+  }
+
+  // Award earned badges
+  for (const badge of newBadges) {
+    try {
+      await db.insert(userBadges).values({
+        userId, badgeId: badge.id, earnedAt: new Date(),
+      });
+
+      // Add XP for badge
+      if (badge.xpValue > 0) {
+        await db.update(gamificationProfiles).set({
+          totalXp: sql`${gamificationProfiles.totalXp} + ${badge.xpValue}`,
+          currentXp: sql`${gamificationProfiles.currentXp} + ${badge.xpValue}`,
+        } as any).where(eq(gamificationProfiles.id, profile.id));
+      }
+
+      // Update badge count in stats
+      stats.totalBadgesEarned = (stats.totalBadgesEarned || 0) + 1;
+
+      logger.info(`[GamificationDispatcher] 🏆 Badge "${badge.name}" auto-earned by user ${userId}`);
+
+      // Emit websocket event
+      try {
+        emitGamificationEvent(String(userId), "GAMIFICATION_EVENT" as any, {
+          eventType: "badge_earned", userId: String(userId),
+          data: { badgeId: badge.id, badgeName: badge.name, xpBonus: badge.xpValue },
+        } as any);
+      } catch {}
+    } catch (e: any) {
+      // Duplicate insert is fine — race condition guard
+      if (!e?.message?.includes("Duplicate")) {
+        logger.warn(`[GamificationDispatcher] Badge award failed for user ${userId}, badge ${badge.id}:`, e);
+      }
+    }
+  }
+
+  // Persist updated stats
+  if (newBadges.length > 0) {
+    await db.update(gamificationProfiles).set({ stats }).where(eq(gamificationProfiles.id, profile.id));
+  }
 }
 
 // ─── Gamification Lifecycle ──────────────────────────────────────────────────

@@ -18,7 +18,8 @@ import { getStripe } from "@/lib/stripe";
 import {
   Settings as SettingsIcon, User, Bell, Shield, CreditCard, Package,
   Save, Loader2, Camera, CheckCircle, Plus, Trash2, Star,
-  Lock, Eye, EyeOff, Building2, AlertTriangle, Heart, Phone, Landmark, ExternalLink
+  Lock, Eye, EyeOff, Building2, AlertTriangle, Heart, Phone, Landmark, ExternalLink,
+  Download, XCircle, Clock, FileDown, UserX
 } from "lucide-react";
 import MyProductsTab from "@/components/MyProductsTab";
 import { toast } from "sonner";
@@ -58,6 +59,8 @@ export default function Settings() {
     phone: "",
     company: "",
   });
+  const [roleForm, setRoleForm] = useState<Record<string, any>>({});
+  const [roleFormDirty, setRoleFormDirty] = useState(false);
 
   // --- Notification preferences state ---
   const [notifPrefs, setNotifPrefs] = useState({
@@ -88,6 +91,14 @@ export default function Settings() {
   // --- Billing state ---
   const [addingCard, setAddingCard] = useState(false);
   const [removingCardId, setRemovingCardId] = useState<string | null>(null);
+
+  // --- Account deletion state ---
+  const [deleteReason, setDeleteReason] = useState("");
+  const [closePassword, setClosePassword] = useState("");
+  const [showClosePassword, setShowClosePassword] = useState(false);
+  const [confirmDeleteText, setConfirmDeleteText] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   // --- Queries ---
   const profileQuery = (trpc as any).users.getProfile.useQuery();
@@ -173,6 +184,61 @@ export default function Settings() {
     onError: (error: any) => toast.error("Failed to set default", { description: error.message }),
   });
 
+  // --- Account lifecycle mutations ---
+  const accountInfoQuery = (trpc as any).users.getAccountInfo.useQuery(undefined, {
+    enabled: activeTab === "account",
+    retry: false,
+  });
+
+  const requestDeletionMutation = (trpc as any).users.requestAccountDeletion.useMutation({
+    onSuccess: (data: any) => {
+      toast.success("Account deletion scheduled", { description: `Your account will be deleted on ${new Date(data.scheduledFor).toLocaleDateString()}` });
+      setShowDeleteConfirm(false);
+      setConfirmDeleteText("");
+      setDeleteReason("");
+      profileQuery.refetch();
+      accountInfoQuery.refetch();
+    },
+    onError: (error: any) => toast.error("Failed to schedule deletion", { description: error.message }),
+  });
+
+  const cancelDeletionMutation = (trpc as any).users.cancelAccountDeletion.useMutation({
+    onSuccess: () => {
+      toast.success("Account deletion cancelled", { description: "Your account is active again" });
+      profileQuery.refetch();
+      accountInfoQuery.refetch();
+    },
+    onError: (error: any) => toast.error("Failed to cancel deletion", { description: error.message }),
+  });
+
+  const closeAccountMutation = (trpc as any).users.closeAccount.useMutation({
+    onSuccess: () => {
+      toast.success("Account closed successfully");
+      setShowCloseConfirm(false);
+      setClosePassword("");
+      // Redirect to login after a short delay
+      setTimeout(() => { window.location.href = "/login"; }, 2000);
+    },
+    onError: (error: any) => toast.error("Failed to close account", { description: error.message }),
+  });
+
+  const exportDataMutation = (trpc as any).users.exportPersonalData.useMutation({
+    onSuccess: (result: any) => {
+      // Download the export as JSON
+      const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `eusotrip-data-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Data export downloaded");
+    },
+    onError: (error: any) => toast.error("Failed to export data", { description: error.message }),
+  });
+
   const profile = profileQuery.data;
   const preferences = preferencesQuery.data;
   const paymentMethods = paymentMethodsQuery.data || [];
@@ -187,6 +253,10 @@ export default function Settings() {
         phone: profile.phone || "",
         company: profile.company || "",
       });
+      if (profile.roleData) {
+        setRoleForm(profile.roleData);
+        setRoleFormDirty(false);
+      }
     }
   }, [profile]);
 
@@ -223,7 +293,19 @@ export default function Settings() {
       email: profileForm.email.trim(),
       phone: profileForm.phone.trim(),
       company: profileForm.company.trim(),
+      ...(roleFormDirty ? { roleData: roleForm } : {}),
     });
+    setRoleFormDirty(false);
+  };
+
+  const updateRoleField = (key: string, value: any) => {
+    setRoleForm(prev => ({ ...prev, [key]: value }));
+    setRoleFormDirty(true);
+  };
+
+  const updateNestedRoleField = (parent: string, key: string, value: any) => {
+    setRoleForm(prev => ({ ...prev, [parent]: { ...(prev[parent] || {}), [key]: value } }));
+    setRoleFormDirty(true);
   };
 
   const handleSaveEmergencyContact = () => {
@@ -322,6 +404,9 @@ export default function Settings() {
           </TabsTrigger>
           <TabsTrigger value="products" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-lg text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">
             <Package className="w-4 h-4 mr-2" />My Products
+          </TabsTrigger>
+          <TabsTrigger value="account" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-lg text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">
+            <UserX className="w-4 h-4 mr-2" />Account
           </TabsTrigger>
         </TabsList>
 
@@ -460,6 +545,346 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+
+          {/* ── Role-Specific Credentials ── */}
+          {profile?.role === "DRIVER" && (
+            <Card className={`mt-6 ${cardCls} border-blue-200/50 dark:border-blue-500/20`}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-blue-500 dark:text-cyan-400" />CDL & Credentials
+                  {profile.industryVertical && <Badge className="ml-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0 text-xs">{profile.industryVertical}</Badge>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>CDL Number</Label>
+                      <Input value={roleForm.cdl?.number || ""} onChange={(e: any) => updateNestedRoleField("cdl", "number", e.target.value)} className={inputCls} placeholder="CDL number" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>CDL State</Label>
+                      <Input value={roleForm.cdl?.state || ""} onChange={(e: any) => updateNestedRoleField("cdl", "state", e.target.value)} className={inputCls} placeholder="e.g. TX" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>CDL Expiration</Label>
+                      <Input type="date" value={roleForm.cdl?.expiration || ""} onChange={(e: any) => updateNestedRoleField("cdl", "expiration", e.target.value)} className={inputCls} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>CDL Class</Label>
+                      <Input value={roleForm.cdl?.class || ""} onChange={(e: any) => updateNestedRoleField("cdl", "class", e.target.value)} className={inputCls} placeholder="A, B, or C" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>CDL Endorsements</Label>
+                      <Input value={(roleForm.cdl?.endorsements || []).join(", ")} onChange={(e: any) => updateNestedRoleField("cdl", "endorsements", e.target.value.split(",").map((s: string) => s.trim()).filter(Boolean))} className={inputCls} placeholder="H, N, T, X..." />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Years Experience</Label>
+                      <Input type="number" value={roleForm.yearsExperience || ""} onChange={(e: any) => updateRoleField("yearsExperience", e.target.value ? Number(e.target.value) : null)} className={inputCls} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Medical Card Expiry</Label>
+                      <Input type="date" value={roleForm.medicalCardExpiration || ""} onChange={(e: any) => updateRoleField("medicalCardExpiration", e.target.value)} className={inputCls} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Hazmat Expiration</Label>
+                      <Input type="date" value={roleForm.hazmatExpiration || ""} onChange={(e: any) => updateRoleField("hazmatExpiration", e.target.value)} className={inputCls} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>TWIC Expiration</Label>
+                      <Input type="date" value={roleForm.twicExpiration || ""} onChange={(e: any) => updateRoleField("twicExpiration", e.target.value)} className={inputCls} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[
+                      { key: "hazmatEndorsement", label: "Hazmat Endorsed" },
+                      { key: "tankerEndorsement", label: "Tanker Endorsed" },
+                      { key: "twicCard", label: "TWIC Card" },
+                      { key: "hoseExperience", label: "Hose Experience" },
+                      { key: "pumpExperience", label: "Pump Experience" },
+                      { key: "bottomLoadExperience", label: "Bottom Load" },
+                      { key: "vaporRecoveryExperience", label: "Vapor Recovery" },
+                    ].map(({ key, label }) => (
+                      <div key={key} className={switchRowCls}>
+                        <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">{label}</span>
+                        <Switch checked={!!roleForm[key]} onCheckedChange={(v) => updateRoleField(key, v)} />
+                      </div>
+                    ))}
+                  </div>
+                  <Button onClick={handleSaveProfile} className={btnCls} disabled={updateProfileMutation.isPending}>
+                    {updateProfileMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save Credentials
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {profile?.role === "CATALYST" && (
+            <Card className={`mt-6 ${cardCls} border-blue-200/50 dark:border-blue-500/20`}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-blue-500 dark:text-cyan-400" />Carrier Credentials & Fleet
+                  {profile.industryVertical && <Badge className="ml-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0 text-xs">{profile.industryVertical}</Badge>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>USDOT Number</Label>
+                      <Input value={roleForm.usdotNumber || ""} onChange={(e: any) => updateRoleField("usdotNumber", e.target.value)} className={inputCls} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>MC Number</Label>
+                      <Input value={roleForm.mcNumber || ""} onChange={(e: any) => updateRoleField("mcNumber", e.target.value)} className={inputCls} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>PHMSA Number</Label>
+                      <Input value={roleForm.phmsaNumber || ""} onChange={(e: any) => updateRoleField("phmsaNumber", e.target.value)} className={inputCls} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Catalyst Type</Label>
+                      <Input value={roleForm.catalystType || ""} onChange={(e: any) => updateRoleField("catalystType", e.target.value)} className={inputCls} placeholder="e.g. hazmat_carrier" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>EIN Number</Label>
+                      <Input value={roleForm.einNumber || ""} onChange={(e: any) => updateRoleField("einNumber", e.target.value)} className={inputCls} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/20 border border-slate-100 dark:border-slate-700/40">
+                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">Liability Insurance</p>
+                      <div className="space-y-2">
+                        <Input value={roleForm.liabilityInsurance?.carrier || ""} onChange={(e: any) => updateNestedRoleField("liabilityInsurance", "carrier", e.target.value)} className={inputCls} placeholder="Insurance carrier" />
+                        <Input value={roleForm.liabilityInsurance?.policy || ""} onChange={(e: any) => updateNestedRoleField("liabilityInsurance", "policy", e.target.value)} className={inputCls} placeholder="Policy number" />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input value={roleForm.liabilityInsurance?.coverage || ""} onChange={(e: any) => updateNestedRoleField("liabilityInsurance", "coverage", e.target.value)} className={inputCls} placeholder="Coverage amount" />
+                          <Input type="date" value={roleForm.liabilityInsurance?.expiration || ""} onChange={(e: any) => updateNestedRoleField("liabilityInsurance", "expiration", e.target.value)} className={inputCls} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/20 border border-slate-100 dark:border-slate-700/40">
+                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">Cargo Insurance</p>
+                      <div className="space-y-2">
+                        <Input value={roleForm.cargoInsurance?.carrier || ""} onChange={(e: any) => updateNestedRoleField("cargoInsurance", "carrier", e.target.value)} className={inputCls} placeholder="Insurance carrier" />
+                        <Input value={roleForm.cargoInsurance?.policy || ""} onChange={(e: any) => updateNestedRoleField("cargoInsurance", "policy", e.target.value)} className={inputCls} placeholder="Policy number" />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input value={roleForm.cargoInsurance?.coverage || ""} onChange={(e: any) => updateNestedRoleField("cargoInsurance", "coverage", e.target.value)} className={inputCls} placeholder="Coverage amount" />
+                          <Input type="date" value={roleForm.cargoInsurance?.expiration || ""} onChange={(e: any) => updateNestedRoleField("cargoInsurance", "expiration", e.target.value)} className={inputCls} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {[
+                      { key: "hazmatEndorsed", label: "Hazmat Authority" },
+                      { key: "tankerEndorsed", label: "Tanker Endorsed" },
+                    ].map(({ key, label }) => (
+                      <div key={key} className={switchRowCls}>
+                        <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">{label}</span>
+                        <Switch checked={!!roleForm[key]} onCheckedChange={(v) => updateRoleField(key, v)} />
+                      </div>
+                    ))}
+                  </div>
+                  <Button onClick={handleSaveProfile} className={btnCls} disabled={updateProfileMutation.isPending}>
+                    {updateProfileMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save Credentials
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {profile?.role === "SHIPPER" && (
+            <Card className={`mt-6 ${cardCls} border-blue-200/50 dark:border-blue-500/20`}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-blue-500 dark:text-cyan-400" />Shipper Details
+                  {profile.industryVertical && <Badge className="ml-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0 text-xs">{profile.industryVertical}</Badge>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>DBA Name</Label>
+                      <Input value={roleForm.dba || ""} onChange={(e: any) => updateRoleField("dba", e.target.value)} className={inputCls} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Company Type</Label>
+                      <Input value={roleForm.companyType || ""} onChange={(e: any) => updateRoleField("companyType", e.target.value)} className={inputCls} placeholder="LLC, Corp, etc." />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>PHMSA Number</Label>
+                      <Input value={roleForm.phmsaNumber || ""} onChange={(e: any) => updateRoleField("phmsaNumber", e.target.value)} className={inputCls} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>EPA ID</Label>
+                      <Input value={roleForm.epaId || ""} onChange={(e: any) => updateRoleField("epaId", e.target.value)} className={inputCls} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Operating States</Label>
+                      <Input value={(roleForm.operatingStates || []).join(", ")} onChange={(e: any) => updateRoleField("operatingStates", e.target.value.split(",").map((s: string) => s.trim()).filter(Boolean))} className={inputCls} placeholder="TX, LA, OK..." />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className={switchRowCls}>
+                      <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">Hazmat Endorsed</span>
+                      <Switch checked={!!roleForm.hazmatEndorsed} onCheckedChange={(v) => updateRoleField("hazmatEndorsed", v)} />
+                    </div>
+                  </div>
+                  <Button onClick={handleSaveProfile} className={btnCls} disabled={updateProfileMutation.isPending}>
+                    {updateProfileMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save Details
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {profile?.role === "BROKER" && (
+            <Card className={`mt-6 ${cardCls} border-blue-200/50 dark:border-blue-500/20`}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-blue-500 dark:text-cyan-400" />Broker Credentials
+                  {profile.industryVertical && <Badge className="ml-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0 text-xs">{profile.industryVertical}</Badge>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>MC Number</Label>
+                      <Input value={roleForm.mcNumber || ""} onChange={(e: any) => updateRoleField("mcNumber", e.target.value)} className={inputCls} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>DOT Number</Label>
+                      <Input value={roleForm.dotNumber || ""} onChange={(e: any) => updateRoleField("dotNumber", e.target.value)} className={inputCls} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>License Number</Label>
+                      <Input value={roleForm.licenseNumber || ""} onChange={(e: any) => updateRoleField("licenseNumber", e.target.value)} className={inputCls} />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className={labelCls}>Operating States</Label>
+                    <Input value={(roleForm.operatingStates || []).join(", ")} onChange={(e: any) => updateRoleField("operatingStates", e.target.value.split(",").map((s: string) => s.trim()).filter(Boolean))} className={inputCls} placeholder="TX, LA, OK..." />
+                  </div>
+                  <Button onClick={handleSaveProfile} className={btnCls} disabled={updateProfileMutation.isPending}>
+                    {updateProfileMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save Credentials
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {profile?.role === "TERMINAL_MANAGER" && (
+            <Card className={`mt-6 ${cardCls} border-blue-200/50 dark:border-blue-500/20`}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-blue-500 dark:text-cyan-400" />Facility Details
+                  {profile.industryVertical && <Badge className="ml-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0 text-xs">{profile.industryVertical}</Badge>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Facility Name</Label>
+                      <Input value={roleForm.facilityName || ""} onChange={(e: any) => updateRoleField("facilityName", e.target.value)} className={inputCls} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Facility Type</Label>
+                      <Input value={roleForm.facilityType || ""} onChange={(e: any) => updateRoleField("facilityType", e.target.value)} className={inputCls} placeholder="Terminal, Warehouse, Yard..." />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Operating Hours</Label>
+                      <Input value={roleForm.operatingHours || ""} onChange={(e: any) => updateRoleField("operatingHours", e.target.value)} className={inputCls} placeholder="24/7, M-F 6am-6pm..." />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Storage Capacity</Label>
+                      <Input value={roleForm.storageCapacity || ""} onChange={(e: any) => updateRoleField("storageCapacity", e.target.value)} className={inputCls} placeholder="e.g. 50,000 bbl" />
+                    </div>
+                  </div>
+                  <div className={switchRowCls}>
+                    <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">Hazmat Capable</span>
+                    <Switch checked={!!roleForm.hazmatCapable} onCheckedChange={(v) => updateRoleField("hazmatCapable", v)} />
+                  </div>
+                  <Button onClick={handleSaveProfile} className={btnCls} disabled={updateProfileMutation.isPending}>
+                    {updateProfileMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save Facility Details
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {profile?.role === "DISPATCH" && (
+            <Card className={`mt-6 ${cardCls} border-blue-200/50 dark:border-blue-500/20`}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-blue-500 dark:text-cyan-400" />Dispatch Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Fleet Size</Label>
+                      <Input value={roleForm.fleetSize || ""} onChange={(e: any) => updateRoleField("fleetSize", e.target.value)} className={inputCls} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Dispatch Team Size</Label>
+                      <Input value={roleForm.dispatchTeamSize || ""} onChange={(e: any) => updateRoleField("dispatchTeamSize", e.target.value)} className={inputCls} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className={labelCls}>Software</Label>
+                      <Input value={roleForm.software || ""} onChange={(e: any) => updateRoleField("software", e.target.value)} className={inputCls} placeholder="TMS, dispatch software..." />
+                    </div>
+                  </div>
+                  <Button onClick={handleSaveProfile} className={btnCls} disabled={updateProfileMutation.isPending}>
+                    {updateProfileMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save Details
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Compliance IDs — shown for all roles that have them */}
+          {profile?.roleData?.complianceIds && Object.values(profile.roleData.complianceIds).some((v: any) => v) && (
+            <Card className={`mt-6 ${cardCls} border-emerald-200/50 dark:border-emerald-500/20`}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-emerald-500" />Compliance IDs
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {Object.entries(profile.roleData.complianceIds as Record<string, string>)
+                    .filter(([, v]) => v)
+                    .map(([key, value]) => (
+                      <div key={key} className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/15">
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium capitalize">{key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())}</p>
+                        <p className="text-sm text-slate-800 dark:text-white font-mono mt-0.5">{value}</p>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* ======== NOTIFICATIONS TAB ======== */}
@@ -722,6 +1147,182 @@ export default function Settings() {
         {/* ======== MY PRODUCTS TAB ======== */}
         <TabsContent value="products" className="mt-6">
           <MyProductsTab />
+        </TabsContent>
+
+        {/* ======== ACCOUNT TAB ======== */}
+        <TabsContent value="account" className="mt-6 space-y-6">
+          {/* Data Export */}
+          <Card className={cardCls}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                <Download className="w-5 h-5 text-blue-500 dark:text-cyan-400" />Export Your Data
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                Download a copy of all your personal data stored on EusoTrip (GDPR Article 15 / CCPA Right to Know). This includes your profile, load history, wallet transactions, documents, and messages.
+              </p>
+              <Button onClick={() => exportDataMutation.mutate({})} className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg" disabled={exportDataMutation.isPending}>
+                {exportDataMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileDown className="w-4 h-4 mr-2" />}
+                Download My Data
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Pending Deletion Banner */}
+          {profile?.pendingDeletion && (
+            <Card className={`${cardCls} border-amber-200/50 dark:border-amber-500/30`}>
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-xl bg-amber-100 dark:bg-amber-500/15">
+                    <Clock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-amber-700 dark:text-amber-400">Account Deletion Scheduled</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                      Your account is scheduled for permanent deletion on{" "}
+                      <strong className="text-slate-700 dark:text-slate-300">
+                        {new Date(profile.deletionDate).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                      </strong>.
+                      All personal data will be permanently removed after this date.
+                    </p>
+                    <Button
+                      onClick={() => cancelDeletionMutation.mutate({})}
+                      className="mt-4 bg-amber-600 hover:bg-amber-700 text-white rounded-lg"
+                      disabled={cancelDeletionMutation.isPending}
+                    >
+                      {cancelDeletionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <XCircle className="w-4 h-4 mr-2" />}
+                      Cancel Deletion — Keep My Account
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Schedule Account Deletion (30-day grace) */}
+          {!profile?.pendingDeletion && (
+            <Card className={`${cardCls} border-red-200/30 dark:border-red-500/20`}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                  <Trash2 className="w-5 h-5 text-red-500" />Delete Account
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
+                  Schedule your account for permanent deletion. You will have a <strong className="text-slate-700 dark:text-slate-300">30-day grace period</strong> to cancel before all data is permanently removed.
+                </p>
+                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 mb-4">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-red-700 dark:text-red-400">
+                      <p className="font-medium mb-1">This will permanently delete:</p>
+                      <ul className="list-disc pl-4 space-y-0.5">
+                        <li>Your profile and personal information</li>
+                        <li>All messages and notifications</li>
+                        <li>Wallet and transaction history</li>
+                        <li>Uploaded documents</li>
+                      </ul>
+                      <p className="mt-1.5">Financial records and load history will be anonymized and retained for regulatory compliance (7 years).</p>
+                    </div>
+                  </div>
+                </div>
+
+                {!showDeleteConfirm ? (
+                  <Button onClick={() => setShowDeleteConfirm(true)} variant="outline" className="border-red-300 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg">
+                    <Trash2 className="w-4 h-4 mr-2" />Schedule Account Deletion
+                  </Button>
+                ) : (
+                  <div className="space-y-4 p-4 rounded-xl bg-red-50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/20">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm text-red-700 dark:text-red-400 font-medium">Reason (optional)</Label>
+                      <Input
+                        value={deleteReason}
+                        onChange={(e: any) => setDeleteReason(e.target.value)}
+                        className="bg-white dark:bg-slate-800 border-red-200 dark:border-red-500/30 text-slate-900 dark:text-white"
+                        placeholder="Why are you leaving?"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm text-red-700 dark:text-red-400 font-medium">
+                        Type <span className="font-mono bg-red-100 dark:bg-red-500/20 px-1.5 py-0.5 rounded text-xs">DELETE MY ACCOUNT</span> to confirm
+                      </Label>
+                      <Input
+                        value={confirmDeleteText}
+                        onChange={(e: any) => setConfirmDeleteText(e.target.value)}
+                        className="bg-white dark:bg-slate-800 border-red-200 dark:border-red-500/30 text-slate-900 dark:text-white font-mono"
+                        placeholder="DELETE MY ACCOUNT"
+                      />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        onClick={() => requestDeletionMutation.mutate({ reason: deleteReason || undefined })}
+                        className="bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                        disabled={confirmDeleteText !== "DELETE MY ACCOUNT" || requestDeletionMutation.isPending}
+                      >
+                        {requestDeletionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                        Confirm Deletion
+                      </Button>
+                      <Button variant="ghost" onClick={() => { setShowDeleteConfirm(false); setConfirmDeleteText(""); setDeleteReason(""); }} className="text-slate-500">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Immediate Account Closure */}
+          <Card className={`${cardCls} border-red-200/30 dark:border-red-500/20`}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                <UserX className="w-5 h-5 text-red-600" />Close Account Immediately
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                Immediately close your account and anonymize your personal data. This action is <strong className="text-red-600 dark:text-red-400">irreversible</strong> and takes effect instantly. You must verify your password to proceed.
+              </p>
+
+              {!showCloseConfirm ? (
+                <Button onClick={() => setShowCloseConfirm(true)} variant="outline" className="border-red-300 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg">
+                  <UserX className="w-4 h-4 mr-2" />Close Account Now
+                </Button>
+              ) : (
+                <div className="space-y-4 p-4 rounded-xl bg-red-50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/20">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-red-700 dark:text-red-400 font-medium">Confirm Your Password</Label>
+                    <div className="relative">
+                      <Input
+                        type={showClosePassword ? "text" : "password"}
+                        value={closePassword}
+                        onChange={(e: any) => setClosePassword(e.target.value)}
+                        className="bg-white dark:bg-slate-800 border-red-200 dark:border-red-500/30 text-slate-900 dark:text-white"
+                        placeholder="Enter your password"
+                      />
+                      <button type="button" onClick={() => setShowClosePassword(!showClosePassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        {showClosePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      onClick={() => closeAccountMutation.mutate({ confirmPassword: closePassword, reason: "user_requested_immediate_closure" })}
+                      className="bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                      disabled={!closePassword || closeAccountMutation.isPending}
+                    >
+                      {closeAccountMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserX className="w-4 h-4 mr-2" />}
+                      Close Account Permanently
+                    </Button>
+                    <Button variant="ghost" onClick={() => { setShowCloseConfirm(false); setClosePassword(""); }} className="text-slate-500">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
