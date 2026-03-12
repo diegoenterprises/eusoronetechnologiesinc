@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -303,6 +304,7 @@ function DashboardTab({ cardCls, titleCls, subtitleCls, L, accentBg }: TabProps)
 // ═══════════════════════════════════════════════════════════════════════════
 
 function TrainingTab({ cardCls, titleCls, subtitleCls, L, searchTerm }: TabProps) {
+  const [, navigate] = useLocation();
   const [category, setCategory] = useState<"all" | "safety" | "compliance" | "hazmat">("all");
   const q = (trpc as any).trainingCompliance?.getTrainingCatalog?.useQuery?.({ category, search: searchTerm }) ?? { data: null, isLoading: true };
   const statusQ = (trpc as any).trainingCompliance?.getDriverTrainingStatus?.useQuery?.({}) ?? { data: null, isLoading: false };
@@ -377,7 +379,7 @@ function TrainingTab({ cardCls, titleCls, subtitleCls, L, searchTerm }: TabProps
                     <LevelIcon className="w-3 h-3" />{course.level}
                   </span>
                 </div>
-                <Button size="sm" className={cn("w-full", L ? "" : "bg-blue-600 hover:bg-blue-700 text-white")}>
+                <Button size="sm" className={cn("w-full", L ? "" : "bg-blue-600 hover:bg-blue-700 text-white")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate("/training-lms"); }}>
                   <Play className="w-3 h-3 mr-1" /> Start Course
                 </Button>
               </CardContent>
@@ -913,7 +915,7 @@ function AuditTab({ cardCls, titleCls, subtitleCls, L }: TabProps) {
 // TAB: DQ Files
 // ═══════════════════════════════════════════════════════════════════════════
 
-function DqFilesTab({ cardCls, titleCls, subtitleCls, L }: TabProps) {
+function CoursesTab({ cardCls, titleCls, subtitleCls, L }: TabProps) {
   const [selectedDriver, setSelectedDriver] = useState(1);
   const q = (trpc as any).trainingCompliance?.getDriverQualificationFile?.useQuery?.({ driverId: selectedDriver }) ?? { data: null, isLoading: true };
   const d = q.data;
